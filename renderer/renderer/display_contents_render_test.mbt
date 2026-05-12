@@ -363,3 +363,33 @@ test "display_contents text contributes to flex item intrinsic width" {
   inspect(flex.children[0].width, content="8")
   inspect(flex.children[1].width, content="16")
 }
+
+///|
+test "display_inline_with_contents_child_stays_inline_sized" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1.2; }
+    #|.inline { display: inline; }
+    #|.contents { display: contents; }
+    #|</style>
+    #|<div id="root">
+    #|  <div class="inline"><div class="contents">4</div></div>
+    #|</div>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let outer = root.children[0]
+  let inline = outer.children[0]
+  inspect(inline.style.display, content="Inline")
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let outer_layout = layout.children[0]
+  let inline_layout = outer_layout.children[0]
+  inspect(
+    inline_layout.width,
+    content=(
+      #|8
+    ),
+  )
+}

@@ -3018,6 +3018,7 @@ describe("MoonBit module boundaries", () => {
       'test "display_contents_inline_flex_collapses_boundary_spaces"',
       'test "display_contents keeps inline parent shrink-to-fit and preserves child span"',
       'test "display_contents text contributes to flex item intrinsic width"',
+      'test "display_inline_with_contents_child_stays_inline_sized"',
     ] as const;
 
     expect(migratedTests.every((marker) => displayContentsSource.includes(marker))).toBe(true);
@@ -3170,13 +3171,180 @@ describe("MoonBit module boundaries", () => {
       "utf8",
     );
     const migratedTests = [
+      'test "contain_size_svg_leaf_collapses_to_border_box"',
       'test "contain_inline_size_uses_contain_intrinsic_inline_size_fallback"',
       'test "contain_inline_size_fieldset_uses_ua_defaults_and_legend_overlay"',
       'test "contain_inline_size_legend_respects_fieldset_ua_defaults"',
+      'test "contain_size_fieldset_uses_empty_intrinsic_width"',
+      'test "contain_paint_clip_abs_descendants_keep_outer_padding_box_reference"',
+      'test "wpt_contain_layout_ifc_002_inline_block_keeps_vertical_margins"',
+      'test "contain_layout_br_keeps_browser_like_baseline_offset"',
     ] as const;
 
     expect(migratedTests.every((marker) => containmentSource.includes(marker))).toBe(true);
     const offenders = migratedTests.filter((marker) => renderSource.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps renderer inline text regression tests in their own file", () => {
+    const inlineTextTestFile = path.join(
+      REPO_ROOT,
+      "renderer/renderer/inline_text_render_test.mbt",
+    );
+    expect(fs.existsSync(inlineTextTestFile)).toBe(true);
+
+    const inlineTextSource = fs.readFileSync(inlineTextTestFile, "utf8");
+    const renderSource = fs.readFileSync(
+      path.join(REPO_ROOT, "renderer/renderer/render_test.mbt"),
+      "utf8",
+    );
+    const migratedTests = [
+      'test "empty_inline_custom_element_between_blocks_does_not_add_line_box"',
+      'test "text_overflow_ellipsis_truncates_direct_text_in_paint_tree"',
+      'test "inline_text_and_span_without_space_stay_on_same_line"',
+      'test "letter_spacing_applied_to_text_measure"',
+    ] as const;
+
+    expect(migratedTests.every((marker) => inlineTextSource.includes(marker))).toBe(true);
+    const offenders = migratedTests.filter((marker) => renderSource.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps renderer root and body sizing regression tests in their own file", () => {
+    const rootBodyTestFile = path.join(
+      REPO_ROOT,
+      "renderer/renderer/root_body_render_test.mbt",
+    );
+    expect(fs.existsSync(rootBodyTestFile)).toBe(true);
+
+    const rootBodySource = fs.readFileSync(rootBodyTestFile, "utf8");
+    const renderSource = fs.readFileSync(
+      path.join(REPO_ROOT, "renderer/renderer/render_test.mbt"),
+      "utf8",
+    );
+    const migratedTests = [
+      'test "body_explicit_height_is_not_forced_to_viewport"',
+      'test "body_auto_height_follows_content_not_viewport"',
+      'test "empty_body_root_with_html_viewport_styles_keeps_viewport_height"',
+      'test "frameset_root_without_content_keeps_viewport_height"',
+      'test "body child percent height stays auto when body height is indefinite"',
+    ] as const;
+
+    expect(migratedTests.every((marker) => rootBodySource.includes(marker))).toBe(true);
+    const offenders = migratedTests.filter((marker) => renderSource.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps renderer writing mode regression tests in their own file", () => {
+    const writingModeTestFile = path.join(
+      REPO_ROOT,
+      "renderer/renderer/writing_mode_render_test.mbt",
+    );
+    expect(fs.existsSync(writingModeTestFile)).toBe(true);
+
+    const writingModeSource = fs.readFileSync(writingModeTestFile, "utf8");
+    const renderSource = fs.readFileSync(
+      path.join(REPO_ROOT, "renderer/renderer/render_test.mbt"),
+      "utf8",
+    );
+    const migratedTests = [
+      'test "orthogonal_block_auto_margin_centers_in_vertical_parent"',
+      'test "vertical_text_block_wraps_to_available_height"',
+      'test "wpt_logical_float_vertical_rl_auto_width_shift_keeps_float_positions"',
+    ] as const;
+
+    expect(migratedTests.every((marker) => writingModeSource.includes(marker))).toBe(true);
+    const offenders = migratedTests.filter((marker) => renderSource.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps renderer style cascade regression tests in their own file", () => {
+    const styleCascadeTestFile = path.join(
+      REPO_ROOT,
+      "renderer/renderer/style_cascade_render_test.mbt",
+    );
+    expect(fs.existsSync(styleCascadeTestFile)).toBe(true);
+
+    const styleCascadeSource = fs.readFileSync(styleCascadeTestFile, "utf8");
+    const renderSource = fs.readFileSync(
+      path.join(REPO_ROOT, "renderer/renderer/render_test.mbt"),
+      "utf8",
+    );
+    const migratedTests = [
+      'test "color_scheme_dark_resolves_light_dark_background"',
+      'test "css_variable_dark_toggle_inherits_from_root"',
+      'test "double_hyphen_class_selector_matches"',
+      'test "ua_text_decoration_applies_to_semantic_inline_tags"',
+      'test "link_color_overridden_by_css"',
+    ] as const;
+
+    expect(migratedTests.every((marker) => styleCascadeSource.includes(marker))).toBe(true);
+    const offenders = migratedTests.filter((marker) => renderSource.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps renderer overflow and scroll regression tests in their own file", () => {
+    const overflowScrollTestFile = path.join(
+      REPO_ROOT,
+      "renderer/renderer/overflow_scroll_render_test.mbt",
+    );
+    expect(fs.existsSync(overflowScrollTestFile)).toBe(true);
+
+    const overflowScrollSource = fs.readFileSync(overflowScrollTestFile, "utf8");
+    const renderSource = fs.readFileSync(
+      path.join(REPO_ROOT, "renderer/renderer/render_test.mbt"),
+      "utf8",
+    );
+    const migratedTests = [
+      'test "mixed_block_parent_ignores_overflowing_descendants_of_fixed_height_child"',
+      'test "scroll_snap_center_applies_initial_horizontal_offset"',
+    ] as const;
+
+    expect(migratedTests.every((marker) => overflowScrollSource.includes(marker))).toBe(true);
+    const offenders = migratedTests.filter((marker) => renderSource.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps renderer intrinsic sizing regression tests in their own file", () => {
+    const sizingTestFile = path.join(
+      REPO_ROOT,
+      "renderer/renderer/sizing_render_test.mbt",
+    );
+    expect(fs.existsSync(sizingTestFile)).toBe(true);
+
+    const sizingSource = fs.readFileSync(sizingTestFile, "utf8");
+    const renderSource = fs.readFileSync(
+      path.join(REPO_ROOT, "renderer/renderer/render_test.mbt"),
+      "utf8",
+    );
+    const migratedTests = [
+      'test "wpt_intrinsic_percent_non_replaced_calc_mixed_static_layout"',
+      'test "wpt_margin_collapse_indefinite_block_size_005_like_stretch_behaves_as_auto"',
+      'test "wpt_min_content_le_max_content_zero_font_whitespace_has_zero_advance"',
+    ] as const;
+
+    expect(migratedTests.every((marker) => sizingSource.includes(marker))).toBe(true);
+    const offenders = migratedTests.filter((marker) => renderSource.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps renderer public render API contract tests in their own file", () => {
+    const renderApiTestFile = path.join(REPO_ROOT, "renderer/renderer/render_api_test.mbt");
+    expect(fs.existsSync(renderApiTestFile)).toBe(true);
+
+    const renderApiSource = fs.readFileSync(renderApiTestFile, "utf8");
+    const rendererTestSource = fs.readFileSync(
+      path.join(REPO_ROOT, "renderer/renderer/renderer_test.mbt"),
+      "utf8",
+    );
+    const migratedTests = [
+      'test "layout_to_json serializes box model fields without changing schema"',
+      'test "render_to_node_and_layout_with_external_css is stable across repeated calls"',
+      'test "prepared external css renders same layout as css array path"',
+    ] as const;
+
+    expect(migratedTests.every((marker) => renderApiSource.includes(marker))).toBe(true);
+    const offenders = migratedTests.filter((marker) => rendererTestSource.includes(marker));
     expect(offenders).toEqual([]);
   });
 

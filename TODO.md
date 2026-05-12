@@ -112,7 +112,15 @@
   - 進捗: grid sizing / placement regression を `renderer/renderer/grid_render_test.mbt` へ移動
   - 進捗: flexbox / gap / alignment regression を `renderer/renderer/flex_render_test.mbt` へ移動
   - 進捗: ruby layout regression を `renderer/renderer/ruby_render_test.mbt` へ移動
-  - 進捗: containment / contain:inline-size regression を `renderer/renderer/containment_render_test.mbt` へ移動
+  - 進捗: containment / contain:size / contain:layout / contain:paint regression を `renderer/renderer/containment_render_test.mbt` へ移動
+  - 進捗: inline / text-overflow / whitespace regression を `renderer/renderer/inline_text_render_test.mbt` へ移動
+  - 進捗: root / body sizing regression を `renderer/renderer/root_body_render_test.mbt` へ移動
+  - 進捗: writing-mode / orthogonal flow regression を `renderer/renderer/writing_mode_render_test.mbt` へ移動
+  - 進捗: style cascade / color-scheme / UA default regression を `renderer/renderer/style_cascade_render_test.mbt` へ移動
+  - 進捗: overflow / scroll snap regression を `renderer/renderer/overflow_scroll_render_test.mbt` へ移動
+  - 進捗: intrinsic sizing / min-content / margin-collapse regression を `renderer/renderer/sizing_render_test.mbt` へ移動
+  - 進捗: `renderer/renderer/render_test.mbt` は legacy entrypoint comment のみに縮小
+  - 進捗: public render API / prepared CSS contract tests を `renderer/renderer/render_api_test.mbt` へ移動
   - 候補: inline/text, replaced element, generated content, SVG, abspos, table/flex/grid, containment
 - [x] `browser/shell/browser_js_wbtest.mbt` を interaction/navigation/runtime fixture ごとに分ける
   - 狙い: browser shell 変更時の conflict と focused test 実行コストを下げる
