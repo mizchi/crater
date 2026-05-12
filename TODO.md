@@ -112,6 +112,7 @@
   - 進捗: grid sizing / placement regression を `renderer/renderer/grid_render_test.mbt` へ移動
   - 進捗: flexbox / gap / alignment regression を `renderer/renderer/flex_render_test.mbt` へ移動
   - 進捗: ruby layout regression を `renderer/renderer/ruby_render_test.mbt` へ移動
+  - 進捗: containment / contain:inline-size regression を `renderer/renderer/containment_render_test.mbt` へ移動
   - 候補: inline/text, replaced element, generated content, SVG, abspos, table/flex/grid, containment
 - [x] `browser/shell/browser_js_wbtest.mbt` を interaction/navigation/runtime fixture ごとに分ける
   - 狙い: browser shell 変更時の conflict と focused test 実行コストを下げる
@@ -201,7 +202,7 @@
 
 - [ ] 上記の各 split に対応する `scripts/moon-module-boundary.test.ts` の boundary test を追加する
 - [x] compatibility bridge の棚卸しを `docs/compatibility-bridges.md` に追加し、canonical package を明文化する
-- [ ] file size regression guard を追加する
+- [x] file size regression guard を追加する
   - 候補: `bidi_protocol.mbt`, `bidi_server.mbt`, `renderer.mbt`, `painter/svg/types.mbt` に soft limit を置く
   - 目的: 新規実装が巨大 core に戻るのを防ぐ
 - [ ] `scripts/flaker-*` / `docs/flaker-runbook.md` の ownership と TODO を同期する

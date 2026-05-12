@@ -58,6 +58,10 @@ function collectMoonBitFiles(dir: string, out: string[] = []): string[] {
   return out;
 }
 
+function countLines(relativePath: string): number {
+  return fs.readFileSync(path.join(REPO_ROOT, relativePath), "utf8").split(/\r?\n/).length;
+}
+
 describe("MoonBit module boundaries", () => {
   it("keeps tui terminal protocol behind crater-terminal-protocol", () => {
     const offenders = collectMoonPackageFiles(REPO_ROOT)
@@ -2917,6 +2921,22 @@ describe("MoonBit module boundaries", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("guards split core files from size regression", () => {
+    const guardedFiles = [
+      { file: "webdriver/webdriver/bidi_protocol.mbt", maxLines: 8000 },
+      { file: "webdriver/webdriver/bidi_server.mbt", maxLines: 400 },
+      { file: "renderer/renderer/renderer.mbt", maxLines: 30 },
+      { file: "painter/svg/types.mbt", maxLines: 30 },
+      { file: "renderer/renderer/render_test.mbt", maxLines: 1800 },
+    ] as const;
+
+    const offenders = guardedFiles
+      .map(({ file, maxLines }) => ({ file, maxLines, lines: countLines(file) }))
+      .filter(({ lines, maxLines }) => lines > maxLines);
+
+    expect(offenders).toEqual([]);
+  });
+
   it("keeps renderer table layout regression tests in their own file", () => {
     const tableTestFile = path.join(REPO_ROOT, "renderer/renderer/table_render_test.mbt");
     expect(fs.existsSync(tableTestFile)).toBe(true);
@@ -3133,6 +3153,29 @@ describe("MoonBit module boundaries", () => {
     ] as const;
 
     expect(migratedTests.every((marker) => rubySource.includes(marker))).toBe(true);
+    const offenders = migratedTests.filter((marker) => renderSource.includes(marker));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps renderer containment regression tests in their own file", () => {
+    const containmentTestFile = path.join(
+      REPO_ROOT,
+      "renderer/renderer/containment_render_test.mbt",
+    );
+    expect(fs.existsSync(containmentTestFile)).toBe(true);
+
+    const containmentSource = fs.readFileSync(containmentTestFile, "utf8");
+    const renderSource = fs.readFileSync(
+      path.join(REPO_ROOT, "renderer/renderer/render_test.mbt"),
+      "utf8",
+    );
+    const migratedTests = [
+      'test "contain_inline_size_uses_contain_intrinsic_inline_size_fallback"',
+      'test "contain_inline_size_fieldset_uses_ua_defaults_and_legend_overlay"',
+      'test "contain_inline_size_legend_respects_fieldset_ua_defaults"',
+    ] as const;
+
+    expect(migratedTests.every((marker) => containmentSource.includes(marker))).toBe(true);
     const offenders = migratedTests.filter((marker) => renderSource.includes(marker));
     expect(offenders).toEqual([]);
   });
