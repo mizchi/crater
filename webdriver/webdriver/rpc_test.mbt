@@ -119,19 +119,43 @@ test "parse json object empty" {
 }
 
 ///|
+fn assert_parse_new_context(name : String) -> Unit raise Error {
+  match parse_method(name) {
+    Some(NewContext) => ()
+    _ => fail("Expected NewContext")
+  }
+}
+
+///|
+fn assert_parse_goto(name : String) -> Unit raise Error {
+  match parse_method(name) {
+    Some(Goto(page_id~, url~)) => {
+      assert_true(page_id == "")
+      assert_true(url == "")
+    }
+    _ => fail("Expected Goto")
+  }
+}
+
+///|
+fn assert_parse_click(name : String) -> Unit raise Error {
+  match parse_method(name) {
+    Some(Click(element_id~)) => assert_true(element_id == "")
+    _ => fail("Expected Click")
+  }
+}
+
+///|
 test "parse method names" {
-  inspect(parse_method("newContext"), content="Some(NewContext)")
-  inspect(parse_method("goto"), content="Some(Goto(page_id=\"\", url=\"\"))")
-  inspect(parse_method("click"), content="Some(Click(element_id=\"\"))")
-  inspect(parse_method("unknown_method"), content="None")
+  assert_parse_new_context("newContext")
+  assert_parse_goto("goto")
+  assert_parse_click("click")
+  assert_true(parse_method("unknown_method") is None)
 }
 
 ///|
 test "parse method with alias" {
-  inspect(parse_method("Browser.createContext"), content="Some(NewContext)")
-  inspect(
-    parse_method("Page.navigate"),
-    content="Some(Goto(page_id=\"\", url=\"\"))",
-  )
-  inspect(parse_method("Element.click"), content="Some(Click(element_id=\"\"))")
+  assert_parse_new_context("Browser.createContext")
+  assert_parse_goto("Page.navigate")
+  assert_parse_click("Element.click")
 }

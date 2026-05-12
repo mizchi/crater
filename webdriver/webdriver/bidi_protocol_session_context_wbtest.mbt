@@ -320,8 +320,8 @@ test "bidi browsingContext setViewport accepts user_contexts alias" {
   )
   let json = proto.take_messages()[0].to_json()
   assert_true(json.contains("\"type\":\"success\""))
-  assert_eq(proto.user_context_viewport_width.get("user-1"), Some(640))
-  assert_eq(proto.user_context_viewport_height.get("user-1"), Some(480))
+  assert_true(proto.user_context_viewport_width.get("user-1") == Some(640))
+  assert_true(proto.user_context_viewport_height.get("user-1") == Some(480))
 }
 
 ///|
@@ -337,7 +337,7 @@ test "bidi browsingContext setViewport accepts device_pixel_ratio alias" {
   )
   let json = proto.take_messages()[0].to_json()
   assert_true(json.contains("\"type\":\"success\""))
-  assert_eq(proto.context_device_pixel_ratio.get("session-1"), Some(2.0))
+  assert_true(proto.context_device_pixel_ratio.get("session-1") == Some(2.0))
 }
 
 ///|

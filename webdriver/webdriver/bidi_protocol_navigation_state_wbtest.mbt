@@ -216,7 +216,7 @@ test "bidi browsingContext navigateWithState defers blocked synthetic request" {
   let event_json = msgs[0].to_json()
   assert_true(event_json.contains("\"method\":\"network.beforeRequestSent\""))
   assert_true(event_json.contains("\"isBlocked\":true"))
-  assert_eq(proto.pending_navigation_request.get("session-1"), Some(4))
+  assert_true(proto.pending_navigation_request.get("session-1") == Some(4))
   assert_true(proto.in_flight_navigation_id.contains("session-1"))
 }
 
@@ -250,7 +250,7 @@ test "bidi browsingContext navigateWithState defers responseStarted blocked requ
     msgs[1].to_json().contains("\"method\":\"network.responseStarted\""),
   )
   assert_true(msgs[1].to_json().contains("\"isBlocked\":true"))
-  assert_eq(proto.pending_navigation_request.get("session-1"), Some(4))
+  assert_true(proto.pending_navigation_request.get("session-1") == Some(4))
   assert_true(proto.in_flight_navigation_id.contains("session-1"))
 }
 

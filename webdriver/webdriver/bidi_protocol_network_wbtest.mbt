@@ -988,7 +988,7 @@ test "bidi network continueBlockedResponse completes responseStarted deferred na
   assert_true(
     blocked_msgs[1].to_json().contains("\"method\":\"network.responseStarted\""),
   )
-  assert_eq(proto.pending_navigation_request.get("session-1"), Some(4))
+  assert_true(proto.pending_navigation_request.get("session-1") == Some(4))
 
   let _ = proto.process_message(
     "{\"id\":5,\"method\":\"network.continueBlockedResponse\",\"params\":{\"request\":\"request-1\",\"mode\":\"continueResponse\"}}",
