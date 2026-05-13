@@ -54,6 +54,29 @@ fn BidiProtocol::handle_script_disown(
 }
 
 ///|
+/// Handle script.addPreloadScript variants.
+fn BidiProtocol::handle_script_add_preload_script(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+  id_only : Bool,
+) -> Result[Unit, String] {
+  match self.parse_add_preload_script_params(request_id, params) {
+    Some(parsed) => {
+      let script_id = self.register_preload_script(parsed)
+      if id_only {
+        self.send_success(request_id, Some(Json::string(script_id)))
+      } else {
+        let result = make_object({ "script": Json::string(script_id) })
+        self.send_success(request_id, Some(result))
+      }
+      Ok(())
+    }
+    None => Ok(())
+  }
+}
+
+///|
 /// Handle script.removePreloadScript.
 fn BidiProtocol::handle_script_remove_preload_script(
   self : BidiProtocol,

@@ -109,24 +109,9 @@ fn BidiProtocol::dispatch_script(
       Ok(())
     }
     "addPreloadScript" =>
-      match self.parse_add_preload_script_params(request.id, request.params) {
-        Some(parsed) => {
-          let script_id = self.register_preload_script(parsed)
-          let result = make_object({ "script": Json::string(script_id) })
-          self.send_success(request.id, Some(result))
-          Ok(())
-        }
-        None => Ok(())
-      }
+      self.handle_script_add_preload_script(request.id, request.params, false)
     "addPreloadScriptId" =>
-      match self.parse_add_preload_script_params(request.id, request.params) {
-        Some(parsed) => {
-          let script_id = self.register_preload_script(parsed)
-          self.send_success(request.id, Some(Json::string(script_id)))
-          Ok(())
-        }
-        None => Ok(())
-      }
+      self.handle_script_add_preload_script(request.id, request.params, true)
     "removePreloadScript" => {
       self.handle_script_remove_preload_script(request.id, request.params)
       Ok(())
