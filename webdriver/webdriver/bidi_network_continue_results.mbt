@@ -12,61 +12,87 @@ fn BidiProtocol::apply_navigation_provide_response_body_override(
       ignore(evaluate_js_with_console(body_text, false, false, false, "{}"))
     "style" => {
       let body_json = Json::string(body_text).stringify()
-      let expression = "(() => {" +
-        "if (!document.body && document.documentElement && typeof document.createElement === \"function\") {" +
-        "const body = document.createElement(\"body\");" +
-        "document.documentElement.appendChild(body);" +
-        "}" +
-        "if (document.body && !document.querySelector(\"div\") && typeof document.createElement === \"function\") {" +
-        "const div = document.createElement(\"div\");" +
-        "document.body.appendChild(div);" +
-        "}" +
-        "const style = document.createElement(\"style\");" +
-        "style.textContent = " +
+      let expression = (
+          #|(() => {
+          #|  if (
+          #|    !document.body &&
+          #|    document.documentElement &&
+          #|    typeof document.createElement === "function"
+          #|  ) {
+          #|    const body = document.createElement("body");
+          #|    document.documentElement.appendChild(body);
+          #|  }
+          #|  if (
+          #|    document.body &&
+          #|    !document.querySelector("div") &&
+          #|    typeof document.createElement === "function"
+          #|  ) {
+          #|    const div = document.createElement("div");
+          #|    document.body.appendChild(div);
+          #|  }
+          #|  const style = document.createElement("style");
+        ) +
+        "  style.textContent = " +
         body_json +
-        ";" +
-        "const parent = document.head || document.documentElement;" +
-        "if (parent) parent.appendChild(style);" +
-        "const match = /color\\s*:\\s*([^;}\\n]+)/i.exec(style.textContent || \"\");" +
-        "const fallbackColor = match && match[1] ? String(match[1]).trim() : \"rgb(0, 0, 0)\";" +
-        "const originalGetComputedStyle = typeof globalThis.getComputedStyle === \"function\" ? globalThis.getComputedStyle.bind(globalThis) : null;" +
-        "const craterGetComputedStyle = function(el) {" +
-        "const base = originalGetComputedStyle ? originalGetComputedStyle(el) : ((el && el._style) || {});" +
-        "return new Proxy(base || {}, {" +
-        "get(target, prop) {" +
-        "if (prop === \"getPropertyValue\") {" +
-        "return function(name) {" +
-        "const raw = target && target[name] ? target[name] : \"\";" +
-        "if (String(name) === \"color\" && !raw) return fallbackColor;" +
-        "return raw || \"\";" +
-        "};" +
-        "}" +
-        "if (prop === \"color\") {" +
-        "const raw = target && target[prop] ? target[prop] : \"\";" +
-        "return raw || fallbackColor;" +
-        "}" +
-        "return target && target[prop] ? target[prop] : \"\";" +
-        "}" +
-        "});" +
-        "};" +
-        "globalThis.getComputedStyle = craterGetComputedStyle;" +
-        "window.getComputedStyle = craterGetComputedStyle;" +
-        "})()"
+        ";\n" +
+        (
+          #|  const parent = document.head || document.documentElement;
+          #|  if (parent) parent.appendChild(style);
+          #|  const match = /color\s*:\s*([^;}\n]+)/i.exec(style.textContent || "");
+          #|  const fallbackColor =
+          #|    match && match[1] ? String(match[1]).trim() : "rgb(0, 0, 0)";
+          #|  const originalGetComputedStyle =
+          #|    typeof globalThis.getComputedStyle === "function"
+          #|      ? globalThis.getComputedStyle.bind(globalThis)
+          #|      : null;
+          #|  const craterGetComputedStyle = function(el) {
+          #|    const base = originalGetComputedStyle
+          #|      ? originalGetComputedStyle(el)
+          #|      : (el && el._style) || {};
+          #|    return new Proxy(base || {}, {
+          #|      get(target, prop) {
+          #|        if (prop === "getPropertyValue") {
+          #|          return function(name) {
+          #|            const raw = target && target[name] ? target[name] : "";
+          #|            if (String(name) === "color" && !raw) return fallbackColor;
+          #|            return raw || "";
+          #|          };
+          #|        }
+          #|        if (prop === "color") {
+          #|          const raw = target && target[prop] ? target[prop] : "";
+          #|          return raw || fallbackColor;
+          #|        }
+          #|        return target && target[prop] ? target[prop] : "";
+          #|      },
+          #|    });
+          #|  };
+          #|  globalThis.getComputedStyle = craterGetComputedStyle;
+          #|  window.getComputedStyle = craterGetComputedStyle;
+          #|})()
+        )
       ignore(evaluate_js_with_console(expression, false, false, false, "{}"))
     }
     _ => {
       let body_json = Json::string(body_text).stringify()
-      let expression = "(() => {" +
-        "if (!document.body && document.documentElement && typeof document.createElement === \"function\") {" +
-        "const body = document.createElement(\"body\");" +
-        "document.documentElement.appendChild(body);" +
-        "}" +
-        "if (document.body) {" +
-        "document.body.innerHTML = " +
+      let expression = (
+          #|(() => {
+          #|  if (
+          #|    !document.body &&
+          #|    document.documentElement &&
+          #|    typeof document.createElement === "function"
+          #|  ) {
+          #|    const body = document.createElement("body");
+          #|    document.documentElement.appendChild(body);
+          #|  }
+          #|  if (document.body) {
+        ) +
+        "    document.body.innerHTML = " +
         body_json +
-        ";" +
-        "}" +
-        "})()"
+        ";\n" +
+        (
+          #|  }
+          #|})()
+        )
       ignore(evaluate_js_with_console(expression, false, false, false, "{}"))
     }
   }
