@@ -10,12 +10,7 @@ fn BidiProtocol::handle_network_add_intercept(
     Some(options) => options
     None => return
   }
-  let intercept_id = left_pad_with_zero(
-    self.network_state.next_network_intercept_id.to_string(),
-    32,
-  )
-  self.network_state.next_network_intercept_id += 1
-  self.network_state.network_intercepts[intercept_id] = make_object(options)
+  let intercept_id = self.add_network_intercept_options(options)
   self.send_success(
     request_id,
     Some(make_object({ "intercept": Json::string(intercept_id) })),
@@ -33,13 +28,22 @@ fn BidiProtocol::handle_network_add_intercept_id(
     Some(options) => options
     None => return
   }
+  let intercept_id = self.add_network_intercept_options(options)
+  self.send_success(request_id, Some(Json::string(intercept_id)))
+}
+
+///|
+fn BidiProtocol::add_network_intercept_options(
+  self : BidiProtocol,
+  options : Map[String, Json],
+) -> String {
   let intercept_id = left_pad_with_zero(
     self.network_state.next_network_intercept_id.to_string(),
     32,
   )
   self.network_state.next_network_intercept_id += 1
   self.network_state.network_intercepts[intercept_id] = make_object(options)
-  self.send_success(request_id, Some(Json::string(intercept_id)))
+  intercept_id
 }
 
 ///|

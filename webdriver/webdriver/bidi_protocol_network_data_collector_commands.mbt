@@ -10,12 +10,7 @@ fn BidiProtocol::handle_network_add_data_collector(
     Some(options) => options
     None => return
   }
-  let collector_id = "collector-" +
-    self.network_state.next_network_data_collector_id.to_string()
-  self.network_state.next_network_data_collector_id += 1
-  self.network_state.network_data_collectors[collector_id] = make_object(
-    options,
-  )
+  let collector_id = self.add_network_data_collector_options(options)
   self.send_success(
     request_id,
     Some(make_object({ "collector": Json::string(collector_id) })),
@@ -33,13 +28,22 @@ fn BidiProtocol::handle_network_add_data_collector_id(
     Some(options) => options
     None => return
   }
+  let collector_id = self.add_network_data_collector_options(options)
+  self.send_success(request_id, Some(Json::string(collector_id)))
+}
+
+///|
+fn BidiProtocol::add_network_data_collector_options(
+  self : BidiProtocol,
+  options : Map[String, Json],
+) -> String {
   let collector_id = "collector-" +
     self.network_state.next_network_data_collector_id.to_string()
   self.network_state.next_network_data_collector_id += 1
   self.network_state.network_data_collectors[collector_id] = make_object(
     options,
   )
-  self.send_success(request_id, Some(Json::string(collector_id)))
+  collector_id
 }
 
 ///|
