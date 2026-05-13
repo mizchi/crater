@@ -1216,7 +1216,7 @@ test "bidi print embeds filtered page content metadata" {
             _ => ""
           }
         }),
-        content="[\"Page 2\", \"Page 3\", \"Page 4\", \"Page 5\"]",
+        content="[Page 2, Page 3, Page 4, Page 5]",
       )
     }
     _ => assert_true(false)

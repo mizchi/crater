@@ -158,81 +158,16 @@ fn BidiProtocol::dispatch_browsing_context(
       }
     "close" => self.handle_browsing_context_close(request)
     "handleUserPrompt" => self.handle_browsing_context_user_prompt(request)
-    "captureScreenshot" => {
-      self.handle_capture_screenshot(request)
-      Ok(())
-    }
-    "captureScreenshotData" => {
-      self.handle_capture_screenshot_data(request.id, request.params)
-      Ok(())
-    }
-    "capturePaintData" => {
-      self.handle_capture_paint_data(request.id, request.params)
-      Ok(())
-    }
-    "capturePaintTree" => {
-      self.handle_capture_paint_tree(request.id, request.params)
-      Ok(())
-    }
-    "getResponsiveBreakpoints" => {
-      self.handle_get_responsive_breakpoints(request.id, request.params)
-      Ok(())
-    }
-    "getCssRuleViewportMap" => {
-      self.handle_get_css_rule_viewport_map(request.id, request.params)
-      Ok(())
-    }
-    "getCssRuleUsage" => {
-      self.handle_get_css_rule_usage(request.id, request.params)
-      Ok(())
-    }
-    "getRequiredTestViewports" => {
-      self.handle_get_required_test_viewports(request.id, request.params)
-      Ok(())
-    }
-    "batchRender" => {
-      self.handle_batch_render(request.id, request.params)
-      Ok(())
-    }
-    "getComputedStyles" => {
-      self.handle_get_computed_styles(request.id, request.params)
-      Ok(())
-    }
-    "getAllComputedStyles" => {
-      self.handle_get_all_computed_styles(request.id, request.params)
-      Ok(())
-    }
-    "getComputedStylesWithState" => {
-      self.handle_get_computed_styles_with_state(request.id, request.params)
-      Ok(())
-    }
-    "print" => {
-      self.handle_print(request)
-      Ok(())
-    }
-    "printData" => {
-      self.handle_print_data(request.id, request.params)
-      Ok(())
-    }
-    "locateNodes" => {
-      self.handle_locate_nodes(request)
-      Ok(())
-    }
-    "setViewport" => {
-      self.handle_set_viewport(request)
-      Ok(())
-    }
-    "traverseHistory" => {
-      self.handle_traverse_history(request)
-      Ok(())
-    }
-    _ => {
-      self.send_error(
-        request.id,
-        "unknown command",
-        "Unknown browsingContext method: " + action,
-      )
-      Ok(())
-    }
+    _ =>
+      if self.dispatch_browsing_context_rendering(request, action) {
+        Ok(())
+      } else {
+        self.send_error(
+          request.id,
+          "unknown command",
+          "Unknown browsingContext method: " + action,
+        )
+        Ok(())
+      }
   }
 }

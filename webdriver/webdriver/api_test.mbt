@@ -53,8 +53,8 @@ test "api error variants" {
     reason="Network error",
   )
   // Just check they can be created
-  inspect(err1, content="ElementNotFound(selector=\"#missing\")")
-  inspect(err2, content="Timeout(message=\"Waited too long\")")
+  inspect(err1, content="ElementNotFound(selector=#missing)")
+  inspect(err2, content="Timeout(message=Waited too long)")
   assert_true(err3.to_string().contains("NavigationFailed"))
 }
 
