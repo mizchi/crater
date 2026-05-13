@@ -105,56 +105,7 @@ fn BidiProtocol::dispatch_script(
       Ok(())
     }
     "disown" => {
-      match self.validate_script_target(request.id, request.params) {
-        Some(_) => return Ok(())
-        None => ()
-      }
-      let raw_handles = match get_param_raw(request.params, "handles") {
-        Some(Array(handles)) => handles
-        Some(_) => {
-          self.send_error(
-            request.id,
-            "invalid argument",
-            "handles must be an array",
-          )
-          return Ok(())
-        }
-        None => {
-          self.send_error(request.id, "invalid argument", "Missing handles")
-          return Ok(())
-        }
-      }
-      let handles : Array[String] = []
-      for raw_handle in raw_handles {
-        match raw_handle {
-          String(handle_id) => handles.push(handle_id)
-          _ => {
-            self.send_error(
-              request.id,
-              "invalid argument",
-              "handles entries must be strings",
-            )
-            return Ok(())
-          }
-        }
-      }
-      let (ctx_id_disown, realm_id_disown) = self.resolve_target_context_realm(
-        request.params,
-      )
-      let runtime_ctx_id_disown = resolve_runtime_context_id(
-        request.params,
-        ctx_id_disown,
-        realm_id_disown,
-        self.realm_sandbox.get(realm_id_disown) != None,
-      )
-      set_runtime_context(runtime_ctx_id_disown)
-      self.apply_effective_viewport_to_runtime_context(
-        runtime_ctx_id_disown, ctx_id_disown,
-      )
-      for handle_id in handles {
-        delete_runtime_handle(handle_id)
-      }
-      self.send_success(request.id, Some(make_object({})))
+      self.handle_script_disown(request.id, request.params)
       Ok(())
     }
     "addPreloadScript" =>
@@ -177,58 +128,7 @@ fn BidiProtocol::dispatch_script(
         None => Ok(())
       }
     "removePreloadScript" => {
-      let script_id = match get_param_raw(request.params, "script") {
-        Some(String(script_id)) => script_id
-        Some(Object(map)) =>
-          match map.get("script") {
-            Some(String(script_id)) => script_id
-            _ => {
-              self.send_error(
-                request.id,
-                "invalid argument",
-                "script must be a string",
-              )
-              return Ok(())
-            }
-          }
-        Some(_) => {
-          self.send_error(
-            request.id,
-            "invalid argument",
-            "script must be a string",
-          )
-          return Ok(())
-        }
-        None => {
-          self.send_error(request.id, "invalid argument", "Missing script")
-          return Ok(())
-        }
-      }
-      let remaining_entries : Array[PreloadScriptEntry] = []
-      let mut removed = false
-      let mut removed_entry : PreloadScriptEntry? = None
-      for entry in self.preload_scripts {
-        if !removed && entry.script_id == script_id {
-          removed = true
-          removed_entry = Some(entry)
-        } else {
-          remaining_entries.push(entry)
-        }
-      }
-      if !removed {
-        self.send_error(
-          request.id,
-          "no such script",
-          "Unknown preload script: " + script_id,
-        )
-        return Ok(())
-      }
-      self.preload_scripts = remaining_entries
-      match removed_entry {
-        Some(entry) => self.cleanup_removed_preload_entry(entry)
-        None => ()
-      }
-      self.send_success(request.id, Some(make_object({})))
+      self.handle_script_remove_preload_script(request.id, request.params)
       Ok(())
     }
     "removeAllPreloadScripts" => {
