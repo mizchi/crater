@@ -713,45 +713,6 @@ fn BidiProtocol::locate_nodes_css(
 }
 
 ///|
-/// Evaluate locateNodes expression and normalize result to nodes array.
-fn BidiProtocol::evaluate_locate_expression(
-  self : BidiProtocol,
-  ctx_id : String,
-  expression : String,
-  serialization_options_json : String,
-) -> Json {
-  set_runtime_context(ctx_id)
-  set_runtime_context_frames(
-    ctx_id,
-    self.context_children.get(ctx_id).unwrap_or([]),
-  )
-  self.apply_effective_viewport_to_runtime_context(ctx_id, ctx_id)
-  let eval_result_json = evaluate_js_with_console(
-    expression, false, false, false, serialization_options_json,
-  )
-  let eval_result = @json.parse(eval_result_json) catch {
-    _ => return Json::array([])
-  }
-
-  match get_string_field(eval_result, "type") {
-    Some("success") =>
-      match get_field(eval_result, "result") {
-        Some(Object(result_map)) =>
-          match result_map.get("type") {
-            Some(String("array")) =>
-              match result_map.get("value") {
-                Some(Array(values)) => Json::array(values)
-                _ => Json::array([])
-              }
-            _ => Json::array([])
-          }
-        _ => Json::array([])
-      }
-    _ => Json::array([])
-  }
-}
-
-///|
 /// Locate nodes with XPath selector.
 fn BidiProtocol::locate_nodes_xpath(
   self : BidiProtocol,
