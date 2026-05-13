@@ -1,4 +1,84 @@
 ///|
+fn BidiProtocol::handle_browsing_context_create_synthetic_child_context(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  let map = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return
+    }
+  }
+  let context_id = match map.get("context") {
+    Some(String(context_id)) => context_id
+    None =>
+      match get_map_field_with_alias(map, "parentContext", "parent_context") {
+        Some(String(context_id)) => context_id
+        _ => ""
+      }
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "parentContext must be a string",
+      )
+      return
+    }
+  }
+  if context_id == "" {
+    self.send_error(
+      request_id, "invalid argument", "parentContext must be a string",
+    )
+    return
+  }
+  if !self.manager.has_session(context_id) {
+    self.send_error(
+      request_id,
+      "no such frame",
+      "Unknown parent context: " + context_id,
+    )
+    return
+  }
+  let user_context_id = match
+    get_map_field_with_alias(map, "userContext", "user_context") {
+    Some(String(user_context_id)) =>
+      if user_context_id == "" || !self.user_contexts.contains(user_context_id) {
+        self.send_error(
+          request_id,
+          "no such user context",
+          "Unknown user context: " + user_context_id,
+        )
+        return
+      } else {
+        user_context_id
+      }
+    Some(Null) | None =>
+      self.context_user_context.get(context_id).unwrap_or("default")
+    Some(_) => {
+      self.send_error(
+        request_id, "invalid argument", "userContext must be a string",
+      )
+      return
+    }
+  }
+  let requested_url = match map.get("url") {
+    Some(String(url)) => url
+    Some(Null) | None => "about:blank"
+    Some(_) => {
+      self.send_error(request_id, "invalid argument", "url must be a string")
+      return
+    }
+  }
+
+  let result = self.create_synthetic_child_context_result(
+    context_id, requested_url, user_context_id,
+  )
+  self.send_success(request_id, Some(result))
+}
+
+///|
 fn BidiProtocol::handle_browsing_context_create_and_get_info(
   self : BidiProtocol,
   request_id : Int,
