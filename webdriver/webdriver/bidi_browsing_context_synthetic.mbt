@@ -497,9 +497,9 @@ fn BidiProtocol::remember_focused_element_remote(
     Some(shared_id) =>
       ignore(
         evaluate_js_with_console(
-          "(() => { const node = (globalThis.__bidiSharedNodeStore && globalThis.__bidiSharedNodeStore.get(\"" +
-          escape_js_string(shared_id) +
-          "\")) ?? undefined; globalThis.__bidiFocusedElement = node; return null; })()",
+          "(() => { const node = " +
+          bidi_shared_node_lookup_js(shared_id) +
+          "; globalThis.__bidiFocusedElement = node; return null; })()",
           false,
           false,
           false,

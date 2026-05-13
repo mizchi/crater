@@ -1,19 +1,27 @@
 ///|
 /// Convert BiDi remote value to JS literal for function arguments
+fn bidi_shared_node_lookup_js(shared_id : String) -> String {
+  "((globalThis.__bidiSharedNodeStore && globalThis.__bidiSharedNodeStore.get(\"" +
+  escape_js_string(shared_id) +
+  "\")) ?? undefined)"
+}
+
+///|
+fn bidi_handle_lookup_js(handle_id : String) -> String {
+  "((globalThis.__bidiHandleStore && globalThis.__bidiHandleStore.get(\"" +
+  escape_js_string(handle_id) +
+  "\")) ?? undefined)"
+}
+
+///|
 fn bidi_value_to_js_literal(value : Json) -> String {
   match value {
     Object(map) =>
       match map.get("sharedId") {
-        Some(String(shared_id)) =>
-          "((globalThis.__bidiSharedNodeStore && globalThis.__bidiSharedNodeStore.get(\"" +
-          escape_js_string(shared_id) +
-          "\")) ?? undefined)"
+        Some(String(shared_id)) => bidi_shared_node_lookup_js(shared_id)
         _ =>
           match map.get("handle") {
-            Some(String(handle_id)) =>
-              "((globalThis.__bidiHandleStore && globalThis.__bidiHandleStore.get(\"" +
-              escape_js_string(handle_id) +
-              "\")) ?? undefined)"
+            Some(String(handle_id)) => bidi_handle_lookup_js(handle_id)
             _ =>
               match map.get("type") {
                 Some(String("undefined")) => "undefined"

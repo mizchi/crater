@@ -36,48 +36,10 @@ fn BidiProtocol::locate_nodes_inner_text(
     "  const __max = " +
     max_count_literal +
     ";\n" +
+    locate_nodes_js_shared_roots_from_ids() +
+    locate_nodes_js_to_array() +
+    locate_nodes_js_collect_element_children() +
     (
-      #|  const __store = globalThis.__bidiSharedNodeStore || new Map();
-      #|  const __roots = [];
-      #|  const __toArray = (__valueLike) => {
-      #|    if (!__valueLike) return [];
-      #|    if (Array.isArray(__valueLike)) return __valueLike;
-      #|    try {
-      #|      return Array.from(__valueLike);
-      #|    } catch (_e) {}
-      #|    const __out = [];
-      #|    const __len = Number(__valueLike.length || 0);
-      #|    for (let __i = 0; __i < __len; __i++) __out.push(__valueLike[__i]);
-      #|    return __out;
-      #|  };
-      #|  if (__ids.length === 0) {
-      #|    if (globalThis.document) __roots.push(globalThis.document);
-      #|  } else {
-      #|    for (const __id of __ids) {
-      #|      const __node = __store.get(__id);
-      #|      if (__node) __roots.push(__node);
-      #|    }
-      #|  }
-      #|  const __collectChildren = (__node) => {
-      #|    const __out = [];
-      #|    if (!__node) return __out;
-      #|    const __direct = Array.isArray(__node._children)
-      #|      ? __node._children
-      #|      : __toArray(__node.children || __node.childNodes);
-      #|    for (const __child of __direct) {
-      #|      if (__child && __child.nodeType === 1) __out.push(__child);
-      #|    }
-      #|    const __shadow = __node.shadowRoot;
-      #|    if (__shadow) {
-      #|      const __shadowChildren = Array.isArray(__shadow._children)
-      #|        ? __shadow._children
-      #|        : __toArray(__shadow.children || __shadow.childNodes);
-      #|      for (const __child of __shadowChildren) {
-      #|        if (__child && __child.nodeType === 1) __out.push(__child);
-      #|      }
-      #|    }
-      #|    return __out;
-      #|  };
       #|  const __normalize = (__text) => {
       #|    let __t = String(__text ?? '');
       #|    if (__ignoreCase) __t = __t.toLowerCase();

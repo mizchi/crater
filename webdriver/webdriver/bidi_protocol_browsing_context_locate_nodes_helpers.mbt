@@ -162,6 +162,83 @@ fn js_string_array_literal(values : Array[String]) -> String {
 }
 
 ///|
+/// Shared locateNodes JS prelude for resolving start node shared ids.
+fn locate_nodes_js_shared_roots_from_ids() -> String {
+  (
+    #|  const __store = globalThis.__bidiSharedNodeStore || new Map();
+    #|  const __roots = [];
+    #|  if (__ids.length === 0) {
+    #|    if (globalThis.document) __roots.push(globalThis.document);
+    #|  } else {
+    #|    for (const __id of __ids) {
+    #|      const __node = __store.get(__id);
+    #|      if (__node) __roots.push(__node);
+    #|    }
+    #|  }
+  )
+}
+
+///|
+/// Shared array-like conversion helper used by locateNodes JS snippets.
+fn locate_nodes_js_to_array() -> String {
+  (
+    #|  const __toArray = (__valueLike) => {
+    #|    if (!__valueLike) return [];
+    #|    if (Array.isArray(__valueLike)) return __valueLike;
+    #|    try {
+    #|      return Array.from(__valueLike);
+    #|    } catch (_e) {}
+    #|    const __out = [];
+    #|    const __len = Number(__valueLike.length || 0);
+    #|    for (let __i = 0; __i < __len; __i++) __out.push(__valueLike[__i]);
+    #|    return __out;
+    #|  };
+  )
+}
+
+///|
+/// Shared child collector for element traversal that includes shadow roots.
+fn locate_nodes_js_collect_element_children() -> String {
+  (
+    #|  const __collectChildren = (__node) => {
+    #|    const __out = [];
+    #|    if (!__node) return __out;
+    #|    const __direct = Array.isArray(__node._children)
+    #|      ? __node._children
+    #|      : __toArray(__node.children || __node.childNodes);
+    #|    for (const __child of __direct) {
+    #|      if (__child && __child.nodeType === 1) __out.push(__child);
+    #|    }
+    #|    const __shadow = __node.shadowRoot;
+    #|    if (__shadow) {
+    #|      const __shadowChildren = Array.isArray(__shadow._children)
+    #|        ? __shadow._children
+    #|        : __toArray(__shadow.children || __shadow.childNodes);
+    #|      for (const __child of __shadowChildren) {
+    #|        if (__child && __child.nodeType === 1) __out.push(__child);
+    #|      }
+    #|    }
+    #|    return __out;
+    #|  };
+  )
+}
+
+///|
+/// Shared unique result push helper for locateNodes snippets.
+fn locate_nodes_js_unique_result_push() -> String {
+  (
+    #|  const __seen = new Set();
+    #|  const __result = [];
+    #|  const __push = (__node) => {
+    #|    if (!__node || __node.nodeType !== 1) return;
+    #|    if (__seen.has(__node)) return;
+    #|    __seen.add(__node);
+    #|    __result.push(__node);
+    #|  };
+  )
+}
+
+///|
 /// Evaluate locateNodes expression and normalize result to nodes array.
 fn BidiProtocol::evaluate_locate_expression(
   self : BidiProtocol,

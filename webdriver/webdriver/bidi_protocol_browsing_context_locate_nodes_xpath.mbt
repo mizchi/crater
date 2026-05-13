@@ -21,36 +21,9 @@ fn BidiProtocol::locate_nodes_xpath(
     "  const __max = " +
     max_count_literal +
     ";\n" +
+    locate_nodes_js_shared_roots_from_ids() +
+    locate_nodes_js_unique_result_push() +
     (
-      #|  const __store = globalThis.__bidiSharedNodeStore || new Map();
-      #|  const __roots = [];
-      #|  const __toArray = (__valueLike) => {
-      #|    if (!__valueLike) return [];
-      #|    if (Array.isArray(__valueLike)) return __valueLike;
-      #|    try {
-      #|      return Array.from(__valueLike);
-      #|    } catch (_e) {}
-      #|    const __out = [];
-      #|    const __len = Number(__valueLike.length || 0);
-      #|    for (let __i = 0; __i < __len; __i++) __out.push(__valueLike[__i]);
-      #|    return __out;
-      #|  };
-      #|  if (__ids.length === 0) {
-      #|    if (globalThis.document) __roots.push(globalThis.document);
-      #|  } else {
-      #|    for (const __id of __ids) {
-      #|      const __node = __store.get(__id);
-      #|      if (__node) __roots.push(__node);
-      #|    }
-      #|  }
-      #|  const __seen = new Set();
-      #|  const __result = [];
-      #|  const __push = (__node) => {
-      #|    if (!__node || __node.nodeType !== 1) return;
-      #|    if (__seen.has(__node)) return;
-      #|    __seen.add(__node);
-      #|    __result.push(__node);
-      #|  };
       #|  for (const __root of __roots) {
       #|    if (!__root) continue;
       #|    const __doc =
