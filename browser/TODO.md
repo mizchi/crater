@@ -49,7 +49,8 @@
   - `locateNodes(css|innerText|accessibility|xpath)` の shadow root `startNodes`
   - `getResponsiveBreakpoints` の shadow 内 `<style>`
   - `DOM.getDocument` / `requestChildNodes` / `getOuterHTML` の shadow root metadata
-- [ ] layout/render の `serialize -> reparse` 依存を減らし、composed tree を直接使う
+- [x] layout/render の `serialize -> reparse` 依存を減らし、composed tree を直接使う
+  - 完了: browser shell の render document は DomTree の composed children から直接構築し、HTML は snapshot/compat 用にのみ serialize する
 - [ ] selector/style の残件: `:host` の複合 selector, `::slotted`, `:host-context`
 - [ ] DOM surface の残件: `closed` shadow root, declarative shadow DOM, customized built-in, form-associated custom elements / `ElementInternals`
 - [ ] Playwright / CDP / jsbidi の query / action / inspection surface を shadow-aware に揃え切る

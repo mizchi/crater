@@ -158,6 +158,192 @@ fn create_empty_html_dom_tree() -> @dom.DomTree {
 }
 
 ///|
+fn html_classes_from_attr(class_attr : String?) -> Array[String] {
+  let classes : Array[String] = []
+  match class_attr {
+    Some(class_text) =>
+      for part in class_text.split(" ") {
+        let class_name = part.to_owned().trim()
+        if !class_name.is_empty() {
+          classes.push(class_name.to_owned())
+        }
+      }
+    None => ()
+  }
+  classes
+}
+
+///|
+fn html_element_from_dom_parts(
+  tag : String,
+  attrs : Map[String, String],
+  children : Array[@html.Node],
+) -> @html.Element {
+  {
+    tag,
+    id: attrs.get("id"),
+    classes: html_classes_from_attr(attrs.get("class")),
+    style: attrs.get("style"),
+    attributes: attrs,
+    children,
+  }
+}
+
+///|
+fn dom_node_attributes(
+  dom : @dom.DomTree,
+  node_id : @dom.NodeId,
+) -> Map[String, String] {
+  let attrs : Map[String, String] = {}
+  match dom.get_attributes(node_id) {
+    Ok(pairs) =>
+      for pair in pairs {
+        let (name, value) = pair
+        attrs[name] = value
+      }
+    Err(_) => ()
+  }
+  attrs
+}
+
+///|
+fn stylesheet_with_media(css : String, media : String?) -> String {
+  match media {
+    Some(raw_media) => {
+      let media_text = raw_media.trim().to_owned()
+      let media_lower = media_text.to_lower()
+      if media_text.is_empty() || media_lower == "all" {
+        css
+      } else {
+        "@media " + media_text + " {\n" + css + "\n}"
+      }
+    }
+    None => css
+  }
+}
+
+///|
+fn collect_render_document_resources(
+  elem : @html.Element,
+  stylesheets : Array[String],
+  links : Array[String],
+) -> Unit {
+  let tag = elem.tag.to_lower()
+  if tag == "noscript" {
+    return
+  }
+  if tag == "style" {
+    let css = html_element_text_content(elem)
+    if !css.is_empty() {
+      stylesheets.push(stylesheet_with_media(css, elem.attributes.get("media")))
+    }
+  } else if tag == "link" {
+    match (elem.attributes.get("rel"), elem.attributes.get("href")) {
+      (Some(rel), Some(href)) if rel.to_lower() == "stylesheet" =>
+        links.push(href)
+      _ => ()
+    }
+  }
+  for child in elem.children {
+    match child {
+      @html.Node::Element(child_elem) =>
+        collect_render_document_resources(child_elem, stylesheets, links)
+      @html.Node::Text(_) => ()
+    }
+  }
+}
+
+///|
+fn html_element_text_content(elem : @html.Element) -> String {
+  let buf = StringBuilder::new()
+  for child in elem.children {
+    match child {
+      @html.Node::Text(text) => buf.write_string(text)
+      @html.Node::Element(child_elem) =>
+        buf.write_string(html_element_text_content(child_elem))
+    }
+  }
+  buf.to_string()
+}
+
+///|
+fn build_render_nodes_from_dom_tree(
+  dom : @dom.DomTree,
+  node_id : @dom.NodeId,
+  shadow_host : @dom.NodeId?,
+) -> Array[@html.Node] {
+  let nodes : Array[@html.Node] = []
+  match dom.get_node_info(node_id) {
+    Ok(info) =>
+      match info.node_type {
+        @dom.Document | @dom.DocumentFragment | @dom.ShadowRoot =>
+          for child in dom.get_composed_children(node_id, shadow_host~) {
+            let child_nodes = build_render_nodes_from_dom_tree(
+              dom, child, shadow_host,
+            )
+            for child_node in child_nodes {
+              nodes.push(child_node)
+            }
+          }
+        @dom.Element => {
+          if shadow_host != None && dom.is_slot_element(node_id) {
+            for child in dom.get_composed_children(node_id, shadow_host~) {
+              let child_nodes = build_render_nodes_from_dom_tree(
+                dom, child, shadow_host,
+              )
+              for child_node in child_nodes {
+                nodes.push(child_node)
+              }
+            }
+            return nodes
+          }
+          let tag = dom.get_tag_name(node_id).unwrap_or(info.node_name)
+          let attrs = dom_node_attributes(dom, node_id)
+          let child_shadow_host = match dom.get_shadow_root(node_id) {
+            Ok(Some(_)) => Some(node_id)
+            _ => shadow_host
+          }
+          let children : Array[@html.Node] = []
+          for child in dom.get_composed_children(node_id, shadow_host~) {
+            let child_nodes = build_render_nodes_from_dom_tree(
+              dom, child, child_shadow_host,
+            )
+            for child_node in child_nodes {
+              children.push(child_node)
+            }
+          }
+          nodes.push(
+            @html.Node::Element(
+              html_element_from_dom_parts(tag, attrs, children),
+            ),
+          )
+        }
+        @dom.Text => nodes.push(@html.Node::Text(info.node_value))
+        _ => ()
+      }
+    Err(_) => ()
+  }
+  nodes
+}
+
+///|
+fn build_render_document_from_dom_tree(dom : @dom.DomTree) -> @html.Document {
+  let nodes = build_render_nodes_from_dom_tree(dom, dom.get_document(), None)
+  let root = if nodes.length() == 1 {
+    match nodes[0] {
+      @html.Node::Element(elem) if elem.tag.to_lower() == "html" => elem
+      _ => html_element_from_dom_parts("html", {}, nodes)
+    }
+  } else {
+    html_element_from_dom_parts("html", {}, nodes)
+  }
+  let stylesheets : Array[String] = []
+  let stylesheet_links : Array[String] = []
+  collect_render_document_resources(root, stylesheets, stylesheet_links)
+  @html.assign_synthetic_ids({ root, stylesheets, stylesheet_links })
+}
+
+///|
 fn normalize_declarative_shadow_source_html_with_hint(
   html : String,
   has_declarative_shadow_dom : Bool,
@@ -172,9 +358,7 @@ fn normalize_declarative_shadow_source_html_with_hint(
         return None
       }
       let snapshot_html = @js.serialize_dom_to_snapshot_html(dom)
-      let parsed_doc = @html.assign_synthetic_ids(
-        @html.parse_document(render_html),
-      )
+      let parsed_doc = build_render_document_from_dom_tree(dom)
       Some({ render_html, snapshot_html, parsed_doc })
     }
     None => None

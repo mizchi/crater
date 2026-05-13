@@ -133,6 +133,71 @@ test "Browser set_html_content eagerly normalizes declarative shadow DOM source"
 }
 
 ///|
+test "build_render_document_from_dom_tree builds composed shadow render document" {
+  let dom = @dom.DomTree::new()
+  let doc_node = dom.get_document()
+  let html = dom.create_element("html")
+  let body = dom.create_element("body")
+  let host = dom.create_element("div")
+  let light = dom.create_element("span")
+  let light_text = dom.create_text("light")
+  let named = dom.create_element("em")
+  let named_text = dom.create_text("named")
+  let shadow = dom.attach_shadow(host, "open").unwrap()
+  let style = dom.create_element("style")
+  let style_text = dom.create_text(".shadow { color: red; }")
+  let link = dom.create_element("link")
+  let section = dom.create_element("section")
+  let slot = dom.create_element("slot")
+
+  let _ = dom.append_child(doc_node, html)
+  let _ = dom.append_child(html, body)
+  let _ = dom.append_child(body, host)
+  let _ = dom.set_attribute(host, "id", "host")
+  let _ = dom.append_child(light, light_text)
+  let _ = dom.append_child(host, light)
+  let _ = dom.set_attribute(named, "slot", "label")
+  let _ = dom.append_child(named, named_text)
+  let _ = dom.append_child(host, named)
+  let _ = dom.set_attribute(style, "media", "(min-width: 1px)")
+  let _ = dom.append_child(style, style_text)
+  let _ = dom.append_child(shadow, style)
+  let _ = dom.set_attribute(link, "rel", "stylesheet")
+  let _ = dom.set_attribute(link, "href", "/shadow.css")
+  let _ = dom.append_child(shadow, link)
+  let _ = dom.append_child(shadow, section)
+  let _ = dom.set_attribute(slot, "name", "label")
+  let _ = dom.append_child(section, slot)
+
+  let render_doc = build_render_document_from_dom_tree(dom)
+  inspect(render_doc.root.tag, content="html")
+  inspect(render_doc.stylesheets.length(), content="1")
+  inspect(
+    render_doc.stylesheets[0],
+    content=(
+      #|@media (min-width: 1px) {
+      #|.shadow { color: red; }
+      #|}
+    ),
+  )
+  inspect(render_doc.stylesheet_links.length(), content="1")
+  inspect(render_doc.stylesheet_links[0], content="/shadow.css")
+  let rendered = @renderer.render_to_node_with_document(
+    render_doc,
+    @browser_contract.create_render_context(800, 600, false),
+    [],
+  )
+  inspect(rendered.children.length(), content="1")
+  inspect(rendered.children[0].id, content="div#host")
+  assert_true(rendered.children[0].children[0].id.has_prefix("section#"))
+  assert_true(rendered.children[0].children[0].children[0].id.has_prefix("em#"))
+  assert_true(
+    rendered.children[0].children[0].children[0].children[0].text ==
+    Some("named"),
+  )
+}
+
+///|
 test "Browser caches prepared render document for repeated graphics renders" {
   let browser = Browser::new(160, 120, terminal_cols=20)
   let html =

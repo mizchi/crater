@@ -87,9 +87,7 @@ fn Browser::sync_render_state_from_dom_tree(self : Browser) -> Bool {
       self.html_has_declarative_shadow_dom = html_source_has_declarative_shadow_dom(
         self.html_content,
       )
-      let next_doc = @html.assign_synthetic_ids(
-        @html.parse_document(self.html_content),
-      )
+      let next_doc = build_render_document_from_dom_tree(dom)
       self.parsed_doc = Some(next_doc)
       self.refresh_links_from_render_source()
       if self.links.length() == 0 {
