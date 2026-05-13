@@ -1,0 +1,138 @@
+import "package://pkg.pkl-lang.org/github.com/mizchi/pkfire/pkfire@0.10.0#/Taskfile.pkl" as pkfire
+
+import "sources.pkl" as src
+import "spec.pkl" as spec
+
+testMoon: pkfire.Task = new {
+  name = "test-moon"
+  description = "Run JS-target MoonBit tests"
+  cmd = "just test-js"
+  inputs = src.moonSources
+}
+
+testVitest: pkfire.Task = new {
+  name = "test-vitest"
+  description = "Run repository Vitest suites"
+  cmd = "pnpm test:vitest"
+  inputs = src.nodeSources
+}
+
+testNode: pkfire.Task = new {
+  name = "test-node"
+  description = "Run node:test JS/WASM/browser contract suites"
+  cmd = "pnpm test:node"
+  inputs = src.nodeSources
+}
+
+testTaffy: pkfire.Task = new {
+  name = "test-taffy"
+  description = "Run taffy compatibility tests"
+  cmd = "just test-taffy"
+  inputs = src.moonSources
+}
+
+testWasm: pkfire.Task = new {
+  name = "test-wasm"
+  description = "Run wasm component build and tests"
+  cmd = "just wasm"
+  cache = false
+  inputs {
+    ...src.moonSources
+    "wasm/**"
+  }
+}
+
+testNativeSmoke: pkfire.Task = new {
+  name = "test-native-smoke"
+  description = "Run native browser host facade smoke tests"
+  cmd = "just test-native-smoke"
+  inputs = src.moonSources
+}
+
+testPlaywright: pkfire.Task = new {
+  name = "test-playwright"
+  description = "Run Playwright adapter and user scenario tests"
+  cmd = "just test-playwright-adapter"
+  cache = false
+  inputs {
+    ...src.nodeSources
+    "webdriver/**"
+    "browser/**"
+  }
+}
+
+testWebsite: pkfire.Task = new {
+  name = "test-website"
+  description = "Run website loading and browser user scenario tests"
+  cmd = "just test-website"
+  cache = false
+  inputs {
+    ...src.nodeSources
+    "html_assets/**"
+    "browser/**"
+    "webdriver/**"
+  }
+}
+
+testVrt: pkfire.Task = new {
+  name = "test-vrt"
+  description = "Run paint visual regression tests"
+  cmd = "just test-vrt"
+  cache = false
+  inputs {
+    ...src.nodeSources
+    "tests/fixtures/**"
+    "renderer/**"
+    "painter/**"
+  }
+}
+
+testWptVrt: pkfire.Task = new {
+  name = "test-wpt-vrt"
+  description = "Run WPT visual regression tests"
+  cmd = "just test-wpt-vrt"
+  cache = false
+  inputs {
+    ...src.nodeSources
+    "wpt-vrt.json"
+    "tests/wpt-vrt-baseline.json"
+    "wpt/**"
+  }
+}
+
+test: pkfire.Task = new {
+  name = "test"
+  description = "Run fast unit and contract test gates"
+  cache = false
+  deps { testMoon; testVitest; testNode; spec.specTest }
+}
+
+testBrowser: pkfire.Task = new {
+  name = "test-browser"
+  description = "Run browser-facing non-VRT compatibility suites"
+  cache = false
+  deps { testPlaywright; testWebsite }
+}
+
+testVisual: pkfire.Task = new {
+  name = "test-visual"
+  description = "Run visual regression suites"
+  cache = false
+  deps { testVrt; testWptVrt }
+}
+
+tasks: Listing<pkfire.Task> = new {
+  testMoon
+  testVitest
+  testNode
+  testTaffy
+  testWasm
+  testNativeSmoke
+  testPlaywright
+  testWebsite
+  testVrt
+  testWptVrt
+  test
+  testBrowser
+  testVisual
+}

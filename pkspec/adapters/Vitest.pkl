@@ -1,0 +1,84 @@
+/// Built-in Vitest adapter definition.
+///
+/// The implementation is still a normal protocol command; this Pkl
+/// class only describes how pkspec should discover, batch, and run
+/// cases for a Vitest project.
+@ModuleInfo { minPklVersion = "0.31.0" }
+open module pkspec.adapters.Vitest
+
+import "../Adapter.pkl" as adapter
+
+open class Vitest extends adapter.Adapter {
+  id = "builtin.vitest"
+
+  adapterCommand: Listing<String> = new { "pkspec-adapter-vitest" }
+  configPath: String = "vitest.config.ts"
+  include: Listing<String> = new {}
+  exclude: Listing<String> = new {}
+  pool: String? = null
+  updateSnapshots: Boolean = false
+
+  config {
+    ["configPath"] = configPath
+    ["include"] = include
+    ["exclude"] = exclude
+    ["pool"] = pool
+  }
+
+  capabilities {
+    updateSnapshots = true
+    artifacts = true
+  }
+
+  discover = new adapter.Discover {
+    command = new adapter.Command {
+      argv {
+        ...adapterCommand
+        "discover"
+        "--config"
+        configPath
+        for (p in include) {
+          "--include"
+          p
+        }
+        for (p in exclude) {
+          "--exclude"
+          p
+        }
+        when (pool != null) {
+          "--pool"
+          pool!!
+        }
+      }
+    }
+  }
+
+  plan = new adapter.Plan {
+    batchBy = new {
+      "adapter.id"
+      "workdir"
+      "config.configPath"
+      "config.pool"
+    }
+  }
+
+  run = new adapter.Run {
+    command = new adapter.Command {
+      argv {
+        ...adapterCommand
+        "run"
+        "--config"
+        configPath
+        "--manifest"
+        "$PKSPEC_CASE_MANIFEST"
+        when (updateSnapshots) {
+          "--update-snapshots"
+        }
+        when (pool != null) {
+          "--pool"
+          pool!!
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,241 @@
+/// pkspec property-based testing helpers.
+///
+/// Pkl is side-effect-free, so "random" inputs come from a seeded
+/// PRNG (xorshift32) implemented in the language itself. Every run
+/// is deterministic — the seed is the bug ID.
+///
+/// Two usage modes:
+///
+/// 1. **Pkl-internal property check** (this module standalone).
+///    Use `intCases` + `checkAll`, or `checkAllInt` when the
+///    property is value-only and should shrink failures, against a
+///    Pkl predicate inside `pkl test` facts. Good for "this Pkl
+///    function is correct for every input in a range." Run via
+///    `pkspec run`.
+///
+/// 2. **Subprocess iteration** (paired with `Test.iterations` and
+///    `Test.iterationSeed` in `Test.pkl`). The seed stream is the
+///    same; pkspec runs the Test body N times and exposes the
+///    current seed via `$PKSPEC_SEED` so the subprocess can derive
+///    its own input.
+///
+/// The xorshift32 algorithm is identical on both sides (Pkl and
+/// the Go executor), so `seedAt(seed, i)` in Pkl matches the seed
+/// the executor injects on iteration `i`.
+@ModuleInfo { minPklVersion = "0.31.0" }
+module pkspec.QuickCheck
+
+class Case {
+  /// 0-based iteration index in the case stream.
+  index: Int
+
+  /// xorshift32 seed at this index. Use this as the "bug ID" when
+  /// a failure surfaces — pinning `Test.iterationSeed = <bad seed>`
+  /// reproduces the failing input.
+  seed: Int
+
+  /// Convenience field: a generator function may stuff its derived
+  /// value here. `intCases` populates it with the integer drawn
+  /// from the seed; custom generators can ignore it.
+  value: Int
+}
+
+class Failure {
+  index: Int
+  seed: Int
+  /// The final counterexample value. For `checkAll` this is the
+  /// first failing case's value; for `checkAllInt` this may be the
+  /// shrunk value.
+  value: Int
+  /// Original value before shrinking. Null when no shrink pass ran.
+  originalValue: Int? = null
+  /// Adopted shrink steps from original value to final value.
+  shrinks: Listing<ShrinkStep> = new {}
+}
+
+class ShrinkStep {
+  from: Int
+  to: Int
+}
+
+class IntShrinkResult {
+  value: Int
+  attempts: Int
+  steps: Listing<ShrinkStep>
+}
+
+class CandidatePick {
+  found: Boolean
+  value: Int
+  attempts: Int
+}
+
+class Result {
+  passed: Boolean
+  cases: Int
+  failure: Failure?
+  summary: String
+}
+
+local mask32: Int = 0xffffffff
+
+/// xorshift32 step. Pkl has `ushr` (unsigned shift right) but no
+/// shift-left method, so the left shifts use `* 2^n` + 32-bit
+/// mask. The Go executor reproduces this exact bit pattern.
+local function step(s: Int): Int =
+  let (s0 = s.and(mask32))
+  let (s1 = s0.xor((s0 * 8192).and(mask32))) // << 13
+  let (s2 = s1.xor(s1.ushr(17)))
+    s2.xor((s2 * 32).and(mask32)).and(mask32) // << 5
+
+/// `seedAt(seed, 0) == seed`. Each subsequent index advances the
+/// xorshift32 stream by one step. Used both by Pkl-internal
+/// `checkAll` and (in spirit) by the executor's iteration loop.
+function seedAt(seed: Int, index: Int): Int =
+  if (index <= 0)
+    seed
+  else
+    seedAt(step(seed), index - 1)
+
+/// Generate `count` integer cases with `value` ∈ [lo, hi] (inclusive).
+/// The cases are ordered by index 0..count-1.
+function intCases(seed: Int, count: Int, lo: Int, hi: Int): Listing<Case> =
+  let (range = hi - lo + 1)
+    new {
+      for (i in IntSeq(0, count - 1)) {
+        let (s = seedAt(seed, i))
+          new Case {
+            index = i
+            seed = s
+            value = lo + (s % range)
+          }
+      }
+    }
+
+local function intShrinkCandidates(value: Int, lo: Int): List<Int> =
+  if (value <= lo)
+    new Listing<Int> {}.toList()
+  else
+    let (half = lo + (((value - lo) / 2).toInt()))
+      List(lo, half, value - 1).filter((candidate) -> candidate >= lo && candidate < value)
+
+local function pickFailingCandidate(
+  candidates: List<Int>,
+  remaining: Int,
+  pred: (Int) -> Boolean,
+): CandidatePick =
+  if (remaining <= 0 || candidates.isEmpty)
+    new CandidatePick { found = false; value = 0; attempts = 0 }
+  else
+    let (candidate = candidates.first)
+      if (!pred.apply(candidate))
+        new CandidatePick { found = true; value = candidate; attempts = 1 }
+      else
+        let (rest = pickFailingCandidate(candidates.drop(1), remaining - 1, pred))
+          new CandidatePick {
+            found = rest.found
+            value = rest.value
+            attempts = 1 + rest.attempts
+          }
+
+local function shrinkIntValueLoop(
+  current: Int,
+  lo: Int,
+  remaining: Int,
+  used: Int,
+  history: Listing<ShrinkStep>,
+  pred: (Int) -> Boolean,
+): IntShrinkResult =
+  if (remaining <= 0)
+    new IntShrinkResult { value = current; attempts = used; steps = history }
+  else
+    let (pick = pickFailingCandidate(intShrinkCandidates(current, lo), remaining, pred))
+      if (!pick.found)
+        new IntShrinkResult {
+          value = current
+          attempts = used + pick.attempts
+          steps = history
+        }
+      else
+        shrinkIntValueLoop(
+          pick.value,
+          lo,
+          remaining - pick.attempts,
+          used + pick.attempts,
+          new Listing<ShrinkStep> {
+            ...history
+            new ShrinkStep { from = current; to = pick.value }
+          },
+          pred,
+        )
+
+/// Shrink one failing integer value toward `lo`.
+///
+/// `pred` must return true for passing values and false for failing
+/// values. The initial `value` is assumed to fail; candidates are
+/// tried in the same shape as the Go executor's IntInput shrinker:
+/// `[lo, lo + (value-lo)/2, value-1]`, adopting the first candidate
+/// that still fails and recursing until no candidate fails or the
+/// attempt budget is exhausted.
+function shrinkIntValue(value: Int, lo: Int, attempts: Int, pred: (Int) -> Boolean): IntShrinkResult =
+  shrinkIntValueLoop(value, lo, attempts, 0, new Listing<ShrinkStep> {}, pred)
+
+/// Runs `pred` against every case. Returns a Result with the first
+/// counterexample (if any) and a one-line summary suitable for a
+/// fact's power-assertion output.
+function checkAll(name: String, cases: Listing<Case>, pred: (Case) -> Boolean): Result =
+  let (failed = cases.toList().filter((c) -> !pred.apply(c)))
+  let (first = if (failed.isEmpty) null else failed.first)
+    new Result {
+      passed = failed.isEmpty
+      cases = cases.length
+      failure =
+        if (first == null)
+          null
+        else
+          new Failure { index = first.index; seed = first.seed; value = first.value }
+      summary =
+        if (first == null)
+          "PASS \(name) cases=\(cases.length)"
+        else
+          "FAIL \(name) seed=\(first.seed) index=\(first.index) value=\(first.value)"
+    }
+
+/// Convenience wrapper for value-only integer properties with
+/// shrinking. Use this when the property only depends on the
+/// generated integer value; use `checkAll` when it needs the full
+/// `Case` (seed/index/value) and shrinking would be misleading.
+function checkAllInt(
+  name: String,
+  seed: Int,
+  count: Int,
+  lo: Int,
+  hi: Int,
+  shrinkAttempts: Int,
+  pred: (Int) -> Boolean,
+): Result =
+  let (cases = intCases(seed, count, lo, hi))
+  let (failed = cases.toList().filter((c) -> !pred.apply(c.value)))
+  let (first = if (failed.isEmpty) null else failed.first)
+    new Result {
+      passed = failed.isEmpty
+      cases = cases.length
+      failure =
+        if (first == null)
+          null
+        else
+          let (shrunk = shrinkIntValue(first.value, lo, shrinkAttempts, pred))
+            new Failure {
+              index = first.index
+              seed = first.seed
+              value = shrunk.value
+              originalValue = first.value
+              shrinks = shrunk.steps
+            }
+      summary =
+        if (first == null)
+          "PASS \(name) cases=\(cases.length)"
+        else
+          let (shrunk = shrinkIntValue(first.value, lo, shrinkAttempts, pred))
+            "FAIL \(name) seed=\(first.seed) index=\(first.index) value=\(shrunk.value) original=\(first.value)"
+    }

@@ -1,0 +1,17 @@
+amends "package://pkg.pkl-lang.org/github.com/mizchi/pkfire/pkfire@0.10.0#/Taskfile.pkl"
+
+import "tasks/bench.pkl" as bench
+import "tasks/check.pkl" as check
+import "tasks/core.pkl" as core
+import "tasks/release.pkl" as release
+import "tasks/spec.pkl" as spec
+import "tasks/test.pkl" as test
+
+tasks {
+  ...core.tasks
+  ...check.tasks
+  ...spec.tasks
+  ...test.tasks
+  ...bench.tasks
+  ...release.tasks
+}

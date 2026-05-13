@@ -1,0 +1,47 @@
+import "package://pkg.pkl-lang.org/github.com/mizchi/pkfire/pkfire@0.10.0#/Taskfile.pkl" as pkfire
+
+import "sources.pkl" as src
+
+benchComponentVrt: pkfire.Task = new {
+  name = "bench-component-vrt"
+  description = "Run component VRT moon bench"
+  cmd = "pnpm bench:component-vrt"
+  inputs {
+    ...src.moonSources
+    "benchmarks/**"
+  }
+}
+
+benchComponentBaseline: pkfire.Task = new {
+  name = "bench-component-vrt-baseline"
+  description = "Check component VRT benchmark baseline"
+  cmd = "pnpm bench:component-vrt:check-baseline"
+  inputs {
+    "benchmarks/scripts/component-vrt-bench-baseline.mjs"
+    "benchmarks/tests/component-vrt-bench-baseline.json"
+  }
+}
+
+benchCraterCli: pkfire.Task = new {
+  name = "bench-crater-cli"
+  description = "Print crater CLI benchmark summary"
+  cmd = "pnpm bench:crater-cli"
+  inputs {
+    "benchmarks/scripts/crater-cli-bench-baseline.mjs"
+    "benchmarks/tests/crater-cli-bench-baseline.json"
+  }
+}
+
+bench: pkfire.Task = new {
+  name = "bench"
+  description = "Run benchmark smoke and baseline gates"
+  cache = false
+  deps { benchComponentVrt; benchComponentBaseline; benchCraterCli }
+}
+
+tasks: Listing<pkfire.Task> = new {
+  benchComponentVrt
+  benchComponentBaseline
+  benchCraterCli
+  bench
+}

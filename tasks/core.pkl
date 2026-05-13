@@ -1,0 +1,55 @@
+import "package://pkg.pkl-lang.org/github.com/mizchi/pkfire/pkfire@0.10.0#/Taskfile.pkl" as pkfire
+
+import "sources.pkl" as src
+
+default: pkfire.Task = new {
+  name = "default"
+  description = "List the curated pkfire task graph"
+  cmd = "pkf list -v"
+  cache = false
+}
+
+setup: pkfire.Task = new {
+  name = "setup"
+  description = "Install submodules, MoonBit deps, and Node deps"
+  cmd = "just setup"
+  cache = false
+  inputs {
+    ".gitmodules"
+    "moon.mod.json"
+    "moon.work"
+    "package.json"
+    "pnpm-lock.yaml"
+  }
+}
+
+fmt: pkfire.Task = new {
+  name = "fmt"
+  description = "Format every MoonBit workspace member"
+  cmd = "just fmt"
+  cache = false
+  inputs = src.moonSources
+}
+
+info: pkfire.Task = new {
+  name = "info"
+  description = "Regenerate MoonBit interface files"
+  cmd = "just info"
+  cache = false
+  inputs = src.moonSources
+}
+
+prepare: pkfire.Task = new {
+  name = "prepare"
+  description = "Run generated interface refresh and formatting before commit"
+  cache = false
+  deps { info; fmt }
+}
+
+tasks: Listing<pkfire.Task> = new {
+  default
+  setup
+  fmt
+  info
+  prepare
+}

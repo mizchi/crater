@@ -1,0 +1,51 @@
+import "package://pkg.pkl-lang.org/github.com/mizchi/pkfire/pkfire@0.10.0#/Taskfile.pkl" as pkfire
+
+import "sources.pkl" as src
+
+specCheck: pkfire.Task = new {
+  name = "spec-check"
+  description = "Validate approved pkspec scenarios are implemented"
+  cmd = "pkspec spec --check --strict specs/crater.pkl specs/tasks.Test.pkl"
+  cache = false
+  inputs = src.pkspecSources
+}
+
+specLint: pkfire.Task = new {
+  name = "spec-lint"
+  description = "Lint pkspec Goal/Scenario references and lifecycle metadata"
+  cmd = "pkspec spec --lint specs/crater.pkl specs/tasks.Test.pkl"
+  cache = false
+  inputs = src.pkspecSources
+}
+
+specDocs: pkfire.Task = new {
+  name = "spec-docs"
+  description = "Render docs/SPEC.md from pkspec sources"
+  cmd = "pkspec spec --output docs/SPEC.md specs/crater.pkl specs/tasks.Test.pkl"
+  cache = false
+  inputs = src.pkspecSources
+  outputs { "docs/SPEC.md" }
+}
+
+specTest: pkfire.Task = new {
+  name = "spec-test"
+  description = "Run lightweight pkspec shell tests for task/spec wiring"
+  cmd = "pkspec exec -f specs/tasks.Test.pkl --no-record-timings"
+  cache = false
+  inputs = src.pkspecSources
+}
+
+spec: pkfire.Task = new {
+  name = "spec"
+  description = "Run the full pkspec gate and refresh rendered docs"
+  cache = false
+  deps { specCheck; specLint; specTest; specDocs }
+}
+
+tasks: Listing<pkfire.Task> = new {
+  specCheck
+  specLint
+  specDocs
+  specTest
+  spec
+}

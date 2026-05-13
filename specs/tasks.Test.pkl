@@ -1,0 +1,133 @@
+amends "../pkspec/Test.pkl"
+
+import "../tasks/bench.pkl" as bench
+import "../tasks/check.pkl" as check
+import "../tasks/core.pkl" as core
+import "../tasks/release.pkl" as release
+import "../tasks/spec.pkl" as spec
+import "../tasks/test.pkl" as test
+
+local function graphTaskPath(name: String, field: String): String =
+  "tasks.#(name==\"" + name + "\")." + field
+
+tests {
+  new {
+    name = "pkfire_lists_default_task"
+    description = "The default task should remain discoverable as the task inventory entrypoint."
+    tags { "pkfire"; "smoke" }
+    specRef { "task.default" }
+    workdir = ".."
+    cmd = "pkf graph --json"
+    expectStdoutJsonPath {
+      [graphTaskPath(core.default.name, "name")] = core.default.name
+      [graphTaskPath(core.default.name, "kind")] = "task"
+    }
+  }
+  new {
+    name = "pkfire_lists_prepare_task"
+    description = "The prepare gate should stay visible for pre-commit generated-file refreshes."
+    tags { "pkfire"; "smoke" }
+    specRef { "task.prepare" }
+    workdir = ".."
+    cmd = "pkf graph --json"
+    expectStdoutJsonPath {
+      [graphTaskPath(core.prepare.name, "name")] = core.prepare.name
+      [graphTaskPath(core.prepare.name, "kind")] = "aggregate"
+    }
+  }
+  new {
+    name = "pkfire_lists_check_task"
+    description = "The static validation gate should stay visible as check."
+    tags { "pkfire"; "smoke" }
+    specRef { "task.check" }
+    workdir = ".."
+    cmd = "pkf graph --json"
+    expectStdoutJsonPath {
+      [graphTaskPath(check.check.name, "name")] = check.check.name
+      [graphTaskPath(check.check.name, "kind")] = "aggregate"
+    }
+  }
+  new {
+    name = "pkfire_lists_test_task"
+    description = "The fast executable gate should stay visible as test."
+    tags { "pkfire"; "smoke" }
+    specRef { "task.test" }
+    workdir = ".."
+    cmd = "pkf graph --json"
+    expectStdoutJsonPath {
+      [graphTaskPath(test.test.name, "name")] = test.test.name
+      [graphTaskPath(test.test.name, "kind")] = "aggregate"
+    }
+  }
+  new {
+    name = "pkfire_lists_bench_task"
+    description = "Benchmark smoke and baseline checks should stay grouped under bench."
+    tags { "pkfire"; "smoke" }
+    specRef { "task.bench" }
+    workdir = ".."
+    cmd = "pkf graph --json"
+    expectStdoutJsonPath {
+      [graphTaskPath(bench.bench.name, "name")] = bench.bench.name
+      [graphTaskPath(bench.bench.name, "kind")] = "aggregate"
+    }
+  }
+  new {
+    name = "pkspec_check_validates_declared_scenarios"
+    description =
+      "Approved crater scenarios should be linked to this Test module or explicit implementation pointers."
+    tags { "pkspec"; "contract" }
+    specRef { "spec.check" }
+    workdir = ".."
+    cmd = "pkspec spec --check --strict specs/crater.pkl specs/tasks.Test.pkl"
+  }
+  new {
+    name = "pkfire_lists_spec_test_task"
+    description = "The pkspec executable smoke suite should be exposed through pkfire."
+    tags { "pkspec"; "pkfire"; "smoke" }
+    specRef { "spec.test" }
+    workdir = ".."
+    cmd = "pkf graph --json"
+    expectStdoutJsonPath {
+      [graphTaskPath(spec.specTest.name, "name")] = spec.specTest.name
+      [graphTaskPath(spec.specTest.name, "kind")] = "task"
+    }
+  }
+  new {
+    name = "pkfire_lists_browser_compatibility_tasks"
+    description = "DOM and locator compatibility work should have a browser-facing pkfire group."
+    tags { "browser"; "playwright"; "pkfire" }
+    specRef { "browser.playwright" }
+    workdir = ".."
+    cmd = "pkf graph --json"
+    expectStdoutJsonPath {
+      [graphTaskPath(test.testBrowser.name, "name")] = test.testBrowser.name
+      [graphTaskPath(test.testBrowser.name, "kind")] = "aggregate"
+    }
+  }
+  new {
+    name = "pkfire_lists_visual_regression_tasks"
+    description =
+      "Visual regression work should have a separate pkfire group from browser API compatibility."
+    tags { "vrt"; "pkfire" }
+    specRef { "vrt.report" }
+    workdir = ".."
+    cmd = "pkf graph --json"
+    expectStdoutJsonPath {
+      [graphTaskPath(test.testVisual.name, "name")] = test.testVisual.name
+      [graphTaskPath(test.testVisual.name, "kind")] = "aggregate"
+    }
+  }
+  new {
+    name = "pkfire_lists_release_plan_tasks"
+    description =
+      "Release checks should expose publish-order validation and plan printing without publishing."
+    tags { "release"; "pkfire" }
+    specRef { "release.publish-order" }
+    workdir = ".."
+    cmd = "pkf graph --json"
+    expectStdoutJsonPath {
+      [graphTaskPath(release.releasePlan.name, "name")] = release.releasePlan.name
+      [graphTaskPath(release.releasePlan.name, "kind")] = "task"
+    }
+  }
+}

@@ -1,0 +1,40 @@
+moonSources: Listing<String> = new {
+  "moon.mod.json"
+  "moon.work"
+  "**/moon.mod.json"
+  "**/moon.pkg"
+  "**/*.mbt"
+  "**/*.mbti"
+}
+
+nodeSources: Listing<String> = new {
+  "package.json"
+  "pnpm-lock.yaml"
+  "pnpm-workspace.yaml"
+  "tsconfig.json"
+  "vitest.config.ts"
+  "playwright.config.ts"
+  "scripts/**/*.ts"
+  "scripts/**/*.mjs"
+  "tests/**/*.ts"
+  "browser/scripts/**/*.mjs"
+  "browser/tests/**/*.ts"
+  "benchmarks/**/*.mjs"
+  "benchmarks/**/*.ts"
+}
+
+pkspecSources: Listing<String> = new {
+  "Taskfile.pkl"
+  "tasks/**/*.pkl"
+  "pkspec/**/*.pkl"
+  "specs/**/*.pkl"
+}
+
+flakerSources: Listing<String> = new {
+  "flaker.star"
+  "flaker.toml"
+  "flaker-quarantine.json"
+  "scripts/flaker-*.ts"
+  "scripts/playwright-report-*.ts"
+  "tests/**/*.test.ts"
+}

@@ -1,0 +1,65 @@
+/// Built-in `node --test` adapter definition.
+@ModuleInfo { minPklVersion = "0.31.0" }
+open module pkspec.adapters.NodeTest
+
+import "../Adapter.pkl" as adapter
+
+open class NodeTest extends adapter.Adapter {
+  id = "builtin.node-test"
+
+  adapterCommand: Listing<String> = new { "pkspec-adapter-node-test" }
+  nodeBin: String = "node"
+  testPaths: Listing<String> = new { "test" }
+  testNamePattern: String? = null
+  testReporter: String = "spec"
+
+  config {
+    ["nodeBin"] = nodeBin
+    ["testPaths"] = testPaths
+    ["testNamePattern"] = testNamePattern
+    ["testReporter"] = testReporter
+  }
+
+  discover = new adapter.Discover {
+    command = new adapter.Command {
+      argv {
+        ...adapterCommand
+        "discover"
+        "--node"
+        nodeBin
+        for (p in testPaths) {
+          "--path"
+          p
+        }
+        when (testNamePattern != null) {
+          "--test-name-pattern"
+          testNamePattern!!
+        }
+      }
+    }
+  }
+
+  plan = new adapter.Plan {
+    batchBy = new {
+      "adapter.id"
+      "workdir"
+      "config.nodeBin"
+      "config.testReporter"
+    }
+  }
+
+  run = new adapter.Run {
+    command = new adapter.Command {
+      argv {
+        ...adapterCommand
+        "run"
+        "--node"
+        nodeBin
+        "--manifest"
+        "$PKSPEC_CASE_MANIFEST"
+        "--test-reporter"
+        testReporter
+      }
+    }
+  }
+}

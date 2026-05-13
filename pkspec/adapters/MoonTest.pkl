@@ -1,0 +1,65 @@
+/// Built-in MoonBit `moon test` adapter definition.
+@ModuleInfo { minPklVersion = "0.31.0" }
+open module pkspec.adapters.MoonTest
+
+import "../Adapter.pkl" as adapter
+
+open class MoonTest extends adapter.Adapter {
+  id = "builtin.moon-test"
+
+  adapterCommand: Listing<String> = new { "pkspec-adapter-moon-test" }
+  moonBin: String = "moon"
+  packages: Listing<String> = new {}
+  target: String? = null
+  update: Boolean = false
+
+  config {
+    ["moonBin"] = moonBin
+    ["packages"] = packages
+    ["target"] = target
+  }
+
+  discover = new adapter.Discover {
+    command = new adapter.Command {
+      argv {
+        ...adapterCommand
+        "discover"
+        "--moon"
+        moonBin
+        for (p in packages) {
+          "--package"
+          p
+        }
+        when (target != null) {
+          "--target"
+          target!!
+        }
+      }
+    }
+  }
+
+  plan = new adapter.Plan {
+    batchBy = new {
+      "adapter.id"
+      "workdir"
+      "config.moonBin"
+      "config.target"
+    }
+  }
+
+  run = new adapter.Run {
+    command = new adapter.Command {
+      argv {
+        ...adapterCommand
+        "run"
+        "--moon"
+        moonBin
+        "--manifest"
+        "$PKSPEC_CASE_MANIFEST"
+        when (update) {
+          "--update"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,1345 @@
+/// pkspec Test schema (Phase 2.5: steps + background + parallel).
+///
+/// A `Test` declares exactly one of `cmd`, `steps`, or `parallelSteps`,
+/// optionally with one or more `background` processes that the runner
+/// starts before the body and kills (with SIGTERM → grace → SIGKILL)
+/// after the body finishes. Resource cleanup is enforced by the runner;
+/// authors do not write `trap` plumbing.
+@ModuleInfo { minPklVersion = "0.31.0" }
+open module pkspec.Test
+
+/// HTTP request authored on a Step. When `Step.http` is non-null, the
+/// runner takes the HTTP path: it dispatches the request via Go's
+/// `net/http`, applies the `expectStatus` / `expectBody*` /
+/// `expectHeaders` assertions, and feeds `captureBody` /
+/// `captureStatus` back into the sequential step's env map.
+class HttpRequest {
+  method: String(matches(Regex(#"^(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)$"#))) = "GET"
+  url: String(length > 0)
+  headers: Mapping<String, String> = new {}
+
+  /// Raw request body. Mutually exclusive with `bodyJson`.
+  body: String? = null
+
+  /// Convenience: when non-null, the runner JSON-encodes this value
+  /// into the request body and adds `Content-Type: application/json`
+  /// unless already set in `headers`. Mutually exclusive with `body`.
+  /// Author with `bodyJson = new { ["k"] = v; ["nested"] { ... } }`;
+  /// scalars and Listings work too.
+  bodyJson: Any? = null
+
+  /// Per-request timeout. Independent of `Step.timeoutSec`.
+  timeoutSec: Int(this > 0) = 30
+}
+
+/// One step inside a `steps` (sequential) or `parallelSteps` (concurrent)
+/// list. Choose exactly one of `cmd` (shell), `http` (HTTP request),
+/// or `playwright` (browser script). The runner validates that the
+/// kind-specific expectations on a Step match the chosen body — an
+/// `expectStatus` on a `cmd` step is reported as an authoring error,
+/// not silently ignored.
+class Step {
+  /// Optional name for reporting. Defaults to the cmd / URL preview.
+  name: String? = null
+
+  /// Shell command — pick exactly one of `cmd` / `http` / `playwright`.
+  cmd: (String(length > 0))? = null
+  shell: String = "bash"
+  stdin: String? = null
+
+  /// HTTP request — pick exactly one of `cmd` / `http` / `playwright`.
+  http: HttpRequest? = null
+
+  /// Playwright script — pick exactly one of `cmd` / `http` /
+  /// `playwright` / `playwrightTest`. The runner spawns a Node
+  /// process that drives a browser via the playwright library
+  /// directly; per-script expectations (screenshot match, console
+  /// assertions) live on the spec. Use this for **lightweight**
+  /// browser smoke / spec — one page, one script, one screenshot.
+  /// Use `playwrightTest` (below) when you want trace, retry,
+  /// pixel-diff, or other features of the @playwright/test runner.
+  playwright: PlaywrightSpec? = null
+
+  /// @playwright/test invocation — pick exactly one of `cmd` /
+  /// `http` / `playwright` / `playwrightTest` / `sql`. The runner
+  /// shells out to `npx playwright test`, forces `--reporter=junit`,
+  /// parses the XML, and aggregates the inner test results into
+  /// this Step's outcome (all-pass → Passed, any-fail → Failed,
+  /// only-skip → Pending). Use this for visual-regression suites,
+  /// retry / trace / video flows, and anything that wants the
+  /// @playwright/test feature set rather than a one-shot browser
+  /// driver.
+  playwrightTest: PlaywrightTestSpec? = null
+
+  /// SQL query — pick exactly one of `cmd` / `http` / `playwright` /
+  /// `playwrightTest` / `sql`. The runner opens a database
+  /// connection (SQLite today; the DSN scheme `sqlite:` is the
+  /// only supported one for the initial ship), runs the query, and
+  /// applies the spec's assertions (`expectRowCount`,
+  /// `expectRowsJsonPath`). Use this for "did the row land?" /
+  /// "is the migration shape correct?" / "did the trigger fire?"
+  /// assertions in end-to-end DB tests.
+  sql: SqlSpec? = null
+
+  /// Computed discriminator. Set by the schema based on which body
+  /// slot is non-null. The runner reads it for dispatch and
+  /// validation; users never write to it.
+  ///
+  /// Pre-positioned for a future task-interface refactor — if the
+  /// flat `Step` becomes `abstract class Task` with subclasses, this
+  /// field is the discriminator that survives the migration without
+  /// touching the executor or the reporter.
+  kind: String =
+    if (cmd != null)
+      "shell"
+    else if (http != null)
+      "http"
+    else if (playwright != null)
+      "playwright"
+    else if (playwrightTest != null)
+      "playwright-test"
+    else if (sql != null)
+      "sql"
+    else
+      "invalid"
+
+  env: Mapping<String, String> = new {}
+  workdir: String? = null
+  timeoutSec: Int(this > 0) = 60
+
+  // ── Shell expectations ─────────────────────────────────────────
+  expectExitCode: Int = 0
+  expectStdout: String? = null
+  expectStderr: String? = null
+
+  /// Every listed substring must appear in the shell stdout/stderr.
+  /// Use this for CLI contracts where exact output would be brittle
+  /// but a task name, graph edge, or warning token is load-bearing.
+  expectStdoutContains: Listing<String> = new {}
+  expectStderrContains: Listing<String> = new {}
+
+  /// Every listed regular expression must match the shell stream.
+  /// Patterns are Go regexp strings evaluated by the runner.
+  expectStdoutMatches: Listing<String> = new {}
+  expectStderrMatches: Listing<String> = new {}
+
+  /// Map of JSON path → expected value, evaluated against the stream
+  /// parsed as JSON. Same gjson path syntax as `expectBodyJsonPath`.
+  /// The stream must be valid JSON when this map is non-empty.
+  expectStdoutJsonPath: Mapping<String, Any> = new {}
+  expectStderrJsonPath: Mapping<String, Any> = new {}
+
+  /// Inline snapshot of step stdout. Same semantics as
+  /// `Test.inlineStdout`: opt in by setting to `""` (or any string),
+  /// run with `--update-inline-snapshots` to populate, subsequent
+  /// runs do an exact compare. `null` (default) means "skip". Only
+  /// meaningful for shell steps; HTTP steps should use
+  /// `expectBodyEquals` / `expectBodyJsonPath` instead.
+  inlineStdout: String? = null
+
+  /// Inline snapshot of HTTP response body (http kind only). Same
+  /// semantics as `inlineStdout`: opt in by setting to any string,
+  /// mismatch fails the step unless `--update-inline-snapshots` is
+  /// set, in which case the captured body is written back into
+  /// this Pkl field. Requires `step.name` so the rewriter can
+  /// locate the source line. Multi-line bodies are emitted as Pkl
+  /// triple-quoted (`"""..."""`) literals when long.
+  inlineHttpBody: String? = null
+
+  /// Per-jsonpath inline snapshot. The key is a JSONPath
+  /// expression (same syntax as `expectBodyJsonPath`), the
+  /// value is the captured JSON-encoded subtree. On mismatch
+  /// the step fails unless `--update-inline-snapshots` is set,
+  /// in which case each authored entry's value is rewritten to
+  /// the live capture. Only entries the user has authored are
+  /// updated — `--update-inline-snapshots` does not add new
+  /// keys, the user opts in by listing the path with any
+  /// placeholder value (commonly `""`). Requires `step.name`.
+  inlineJsonPath: Mapping<String, String> = new {}
+
+  /// Per-header inline snapshot. The key is a header name,
+  /// the value is the snapshotted header value. Same
+  /// per-key opt-in contract as `inlineJsonPath`: only
+  /// authored headers are checked or rewritten. Header names
+  /// are case-insensitive on lookup (Go's http.Header.Get).
+  inlineHeaders: Mapping<String, String> = new {}
+
+  /// Per-jsonpath inline snapshot against SQL row output.
+  /// Same shape as `inlineJsonPath` but the path is evaluated
+  /// against the row-array JSON produced by a `sql` kind step
+  /// (`sql.expectRowsJsonPath`'s jsonpath syntax). Only takes
+  /// effect when `kind == "sql"`; ignored on other kinds.
+  inlineSqlRows: Mapping<String, String> = new {}
+
+  /// Inline snapshot of the playwright console stream as a
+  /// single newline-joined string. Same opt-in semantics as
+  /// `inlineStdout`: set to any string to opt in, the captured
+  /// console entries are written here on `--update-inline-
+  /// snapshots`. Only takes effect when `kind == "playwright"`;
+  /// ignored on other kinds.
+  inlineConsoleLog: String? = null
+
+  // ── HTTP expectations ──────────────────────────────────────────
+  expectStatus: Int? = null
+
+  /// Inclusive [low, high] status range. Combined (AND) with
+  /// `expectStatus` when both are set. Use a 2-element Listing:
+  /// `expectStatusBetween { 200; 299 }`. Empty (the default) means
+  /// "no range check"; any length other than 0 or 2 is rejected by
+  /// the runner.
+  expectStatusBetween: Listing<Int> = new {}
+
+  expectBodyEquals: String? = null
+  expectBodyContains: String? = null
+  expectHeaderEquals: Mapping<String, String> = new {}
+
+  /// Map of JSON path → expected value. Each path is evaluated
+  /// against the response body parsed as JSON; every entry must
+  /// match. Path syntax is gjson dot-style: `user.name`,
+  /// `items.0.id`, `users.#(active==true).name`. Leading `$.` or
+  /// `.` is accepted but optional.
+  expectBodyJsonPath: Mapping<String, Any> = new {}
+
+  /// When set on a sequential step, store the step's stdout (shell)
+  /// or body (http) into the named environment variable so subsequent
+  /// steps can `$VAR` it. The captured value loses a single trailing
+  /// newline for shell stdout; HTTP bodies are stored verbatim.
+  captureStdout: String? = null
+  captureExitCode: String? = null
+  captureBody: String? = null
+  captureStatus: String? = null
+
+  /// Map of JSON path → env-var name. The string value at that path
+  /// in the response body is stored, available as `$VAR` in
+  /// subsequent steps. Same path syntax as `expectBodyJsonPath`.
+  captureBodyJsonPath: Mapping<String, String> = new {}
+
+  /// Polling: when set, the runner re-executes this step (request +
+  /// assertions) until every assertion passes, or until `timeoutSec`
+  /// elapses. Captures from a failing attempt are discarded; only the
+  /// successful attempt's captures bind to the env. Distinct from
+  /// `Test.retries`, which retries the whole test on failure.
+  ///
+  /// Use sparingly on side-effecting steps — POST / DELETE inside an
+  /// `Eventually` block re-fires on every attempt.
+  eventually: Eventually? = null
+
+  /// Optional fuzzy assertion delegated to an external judge process
+  /// (typically a wrapper around an LLM). The runner caches the
+  /// verdict on disk keyed by `sha256(prompt + body)`, so the judge
+  /// is only invoked when the prompt or the response body actually
+  /// changes — same body, same verdict, no API call.
+  expectAi: AiAssertion? = null
+
+  /// HTTP record-and-replay cassette name. When set on an HTTP step,
+  /// the response (status / headers / body) is cached on first run
+  /// to `<workdir>/.pkspec/http/<cassette>.json` keyed by
+  /// `sha256(method + url + body)` and replayed on subsequent runs
+  /// with the same key. Hermetic by default after recording.
+  ///
+  /// Refresh with `--refresh-http`. Force replay-only (cassette
+  /// miss = error, never dispatch real requests) with
+  /// `--http-replay-only` — the CI-side hardening.
+  ///
+  /// Ignored for shell steps; only meaningful when `http` is set.
+  cassette: String(matches(Regex(#"^[a-zA-Z0-9_-]+$"#)))? = null
+
+  /// When true, run this step even if a previous sequential step
+  /// failed. Use for cleanup. Ignored inside `parallelSteps`.
+  always: Boolean = false
+
+  /// Repeat the step N times in sequence, each repetition seeing
+  /// `$PKSPEC_REPEAT` (0-based index) in its env. Useful for "POST
+  /// the same endpoint 5 times" / "warm up the cache 10 times"
+  /// patterns the Pkl-static schema can't express directly.
+  ///
+  /// Each repetition is fully re-executed (re-derives http body,
+  /// re-evaluates `$VAR`, etc.). Captures (`captureStdout` /
+  /// `captureBody` / ...) reflect the LAST repetition only —
+  /// intermediate repetitions are not surfaced. All repetitions
+  /// must pass for the step to be Passed; the first failing
+  /// repetition aborts and reports `repeat 3/5: <reason>` in the
+  /// step's Reasons.
+  ///
+  /// Ignored inside `parallelSteps` (repetition + parallel would
+  /// be confusing — fan out via separate parallel steps if both
+  /// are wanted).
+  repeat: Int(this > 0) = 1
+}
+
+/// External AI/LLM-backed assertion.
+///
+/// Authoring contract: the judge is any executable that receives the
+/// step's response body on stdin, the prompt via the env var
+/// `PKSPEC_AI_PROMPT`, and signals its verdict by exit code (0 = pass,
+/// non-zero = fail). Stdout is captured as the explanation surfaced
+/// in the report.
+///
+/// The runner caches the verdict under
+/// `<test-module-dir>/.pkspec/ai-snapshots/<snapshotName>.json`,
+/// keyed by `sha256(prompt + "\n" + body)`. Cache hits skip the cmd
+/// entirely; mismatches re-invoke and rewrite the snapshot.
+class AiAssertion {
+  /// Natural-language claim about the response body.
+  prompt: String(length > 0)
+
+  /// Shell command that judges the body. Receives the body on stdin
+  /// and the prompt via `$PKSPEC_AI_PROMPT`. Exit 0 = pass, non-0 =
+  /// fail. Stdout is captured as the explanation.
+  cmd: String(length > 0)
+
+  /// File name (under `.pkspec/ai-snapshots/`) where the cached
+  /// verdict is stored. Restricted to safe characters so the path
+  /// can never escape the snapshots dir.
+  snapshotName: String(matches(Regex(#"^[a-zA-Z0-9_\-]+$"#)))
+
+  /// When true (the default), the AI judge is skipped if the step
+  /// also carries at least one deterministic expectation
+  /// (`expectStatus`, `expectBodyEquals`, `expectBodyContains`,
+  /// `expectBodyJsonPath`, `expectHeaderEquals`, `expectStatusBetween`,
+  /// shell stdout/stderr assertions, `inlineStdout`). Reaching the AI
+  /// phase implies those checks have already passed, so the verdict is
+  /// mechanically determined and there is no reason to spend an LLM
+  /// call to confirm it.
+  ///
+  /// The mental model: expectAi is a scaffold — write it while the
+  /// spec is fuzzy, leave it in the source as living documentation,
+  /// and let deterministic expectations take over once the contract
+  /// is concrete. Setting this to false restores the legacy phase-33
+  /// behaviour (judge always runs alongside deterministic checks).
+  preferDeterministic: Boolean = true
+}
+
+/// Polling configuration for a flaky step. The runner re-runs the
+/// step body every `intervalMs` ms until either every assertion
+/// passes or `timeoutSec` is reached.
+class Eventually {
+  /// Polling interval in milliseconds.
+  intervalMs: Int(this > 0) = 100
+
+  /// Maximum total wait, including the first attempt.
+  timeoutSec: Int(this > 0) = 5
+}
+
+/// Playwright task spec. The `script` is a `.mjs` file resolved
+/// relative to the Test module's directory. The runner spawns
+/// `node` against the script with an injected harness that gives the
+/// script a `{page, ctx}` argument; the script's return value
+/// becomes the task output bytes (typically `{screenshot: Buffer}`
+/// for visual tests, or a JSON-serialisable object for non-visual
+/// playwright checks). Screenshot assertions use pixel diff when
+/// `pixelmatch` + `pngjs` are installed, falling back to byte-exact
+/// comparison otherwise.
+class PlaywrightSpec {
+  script: String(length > 0)
+  browser: String(matches(Regex(#"^(chromium|firefox|webkit)$"#))) = "chromium"
+
+  /// Visual regression: capture a screenshot from the script's
+  /// return value and compare against a committed PNG snapshot.
+  /// Same storage layout as `ReferenceSnapshot` but `.png` instead
+  /// of `.bytes` so review tooling renders the diff.
+  expectScreenshot: ScreenshotSnapshot? = null
+
+  /// Console message assertions. Harness attaches `page.on('console',
+  /// ...)` for the duration of the script and forwards every entry
+  /// to Go for evaluation. Use this to assert that a page logs
+  /// certain breadcrumbs, or to gate on the absence of error-level
+  /// messages.
+  expectConsole: ConsoleAssertion? = null
+}
+
+/// Assertions over the playwright page's console stream. Both
+/// `containsAll` and `containsNone` operate as substring matches
+/// against the message text (the result of `msg.text()` joined
+/// with the message type tag, e.g. `"login failed [error]"`).
+///
+/// Use `containsAll` for required breadcrumbs ("the page must log
+/// 'init complete'"), `containsNone` for forbidden patterns ("no
+/// uncaught errors").
+class ConsoleAssertion {
+  /// Each substring must appear in at least one console entry.
+  /// Empty (default) means no positive assertion.
+  containsAll: Listing<String> = new {}
+
+  /// No console entry may contain any of these substrings.
+  /// Empty (default) means no negative assertion. Common values:
+  /// "[error]" to forbid console.error, "Uncaught" to catch
+  /// rejected promises.
+  containsNone: Listing<String> = new {}
+}
+
+/// @playwright/test invocation spec. The runner shells out to
+/// `npx playwright test` with `--reporter=junit` forced; results
+/// are aggregated into one Step outcome.
+///
+/// Authoring side: the user writes `*.spec.ts` files using
+/// `@playwright/test`'s normal authoring conventions and a
+/// `playwright.config.ts` if the defaults don't fit. pkspec
+/// does not look inside the spec files; it only routes the run
+/// and consumes the JUnit output.
+///
+/// Inner test results collapse into the Step outcome as follows:
+///
+///   - every inner test passed   → Step passed
+///   - any inner test failed     → Step failed; reasons include
+///                                 each failing test's name + message
+///   - every inner test skipped  → Step pending
+///   - mix of pass + skip        → Step passed (skipped tests
+///                                 are pkspec's "pending"
+///                                 bucket; non-actionable)
+///
+/// When the runner is invoked with `--refresh-snapshots`, the
+/// `--update-snapshots` flag is forwarded to playwright-test so
+/// `toHaveScreenshot()` and snapshot files get regenerated.
+class PlaywrightTestSpec {
+  /// Spec file or directory to pass as a positional argument to
+  /// `npx playwright test`. Resolved relative to the Step workdir.
+  /// Use a directory to run a whole suite, a single file to run
+  /// only that spec; standard playwright-test path semantics.
+  specPath: String(length > 0)
+
+  /// Optional config file (`playwright.config.ts` / `.js`). When
+  /// null, playwright-test uses its own discovery rules from the
+  /// workdir. Set this when the config lives outside the workdir,
+  /// or when one project has multiple config files for different
+  /// suites.
+  configPath: String? = null
+
+  /// Optional `--grep <pattern>` filter applied at playwright-test
+  /// level (not pkspec's `--only`). Use this when the suite has more
+  /// tests than you want this Step to run.
+  grep: String? = null
+
+  /// Optional `--project <name>` filter. Repeatable in
+  /// playwright-test; each entry here is forwarded as its own
+  /// `--project` argument.
+  project: Listing<String> = new {}
+
+  /// Optional `--workers <n>` override. Null leaves
+  /// playwright-test's auto-sizing in effect.
+  workers: Int? = null
+
+  /// Optional `--shard <i/n>` for distributing the suite across
+  /// CI runners. Format: "1/3", "2/3", etc. — same as
+  /// playwright-test.
+  shard: String? = null
+}
+
+/// Base class for typed input generators. Concrete subclasses
+/// (`IntInput`, future `StringInput` / `ListIntInput` / ...) carry
+/// a `kind` discriminator so the Go side can dispatch on the
+/// value's `kind` field instead of relying on pkl-go's
+/// class-name routing. This keeps decode behaviour explicit and
+/// reporter / JUnit dumps carry the kind as a first-class
+/// field.
+abstract class Input {
+  /// Set by each concrete subclass; users don't write this.
+  kind: String
+}
+
+/// Generator + shrink spec for a single integer input. The runner
+/// derives a value in `[lo, hi]` from the iteration's seed for
+/// each named input, injects it into the env, and on failure
+/// shrinks the value toward `lo` via halving + decrement probes.
+class IntInput extends Input {
+  kind = "int"
+
+  /// Inclusive lower bound. Shrink targets this value as the
+  /// "simplest" candidate.
+  lo: Int
+
+  /// Inclusive upper bound. Generated values are in `[lo, hi]`.
+  hi: Int(this >= lo)
+}
+
+/// SQL query spec. The runner opens a database connection by DSN,
+/// executes the query, and serialises rows as JSON for downstream
+/// assertions.
+///
+/// DSN scheme today: `sqlite:./path/to.db` (relative to the Step
+/// workdir) or `sqlite::memory:` for an ephemeral in-process DB.
+/// Postgres / MySQL DSNs will be added as drivers are linked into
+/// the pkspec binary; for now SQLite is enough for the canonical
+/// "did the row land?" assertion.
+///
+/// All Step-level expectations (rowcount, jsonpath against the
+/// serialised row array) live ON THIS SPEC, not on Step. This
+/// keeps the flat-Step schema honest — sql doesn't borrow http's
+/// `expectBodyJsonPath` or shell's `expectStdout`; the assertion
+/// surface is sql-private.
+class SqlSpec {
+  /// Connection string. Today: `sqlite:./test.db` or
+  /// `sqlite::memory:`. Future schemes: `postgres://...`,
+  /// `mysql://...`. The scheme prefix picks the driver.
+  dsn: String(length > 0)
+
+  /// SQL to execute. Both SELECT (the rows are read out + asserted
+  /// on) and DDL/DML (the rows-affected count is reported as the
+  /// "row count") are accepted; the runner picks the database/sql
+  /// path based on the query prefix.
+  ///
+  /// Use `?` placeholders for values that should be bound rather
+  /// than concatenated (see `args` below). `$VAR` substitution
+  /// still applies to the query text, but **prefer placeholders
+  /// for any value-shaped position** — strings get quoted, types
+  /// are preserved, and SQL injection is structurally impossible.
+  query: String(length > 0)
+
+  /// Positional arguments bound to `?` placeholders in `query`.
+  /// Each entry is forwarded to the driver as-is, except for
+  /// String entries — those run through `$VAR` substitution
+  /// against the merged env first. The driver handles quoting and
+  /// type coercion; authors do not need to escape.
+  ///
+  /// Example:
+  ///   query = "SELECT * FROM users WHERE email = ? AND role = ?"
+  ///   args { "$USER_EMAIL"; "admin" }
+  args: Listing<Any> = new {}
+
+  /// Assert on the number of rows returned (SELECT) or affected
+  /// (INSERT / UPDATE / DELETE). Null = no rowcount assertion.
+  expectRowCount: Int? = null
+
+  /// Map of gjson path → expected value, evaluated against the
+  /// JSON array of row objects. Same path syntax as `Step.http`'s
+  /// `expectBodyJsonPath`. Example: `["0.name"] = "alice"` for
+  /// "the first row's name column is alice".
+  expectRowsJsonPath: Mapping<String, Any> = new {}
+}
+
+/// Screenshot snapshot reference. Stored at
+/// `<workdir>/.pkspec/screenshots/<name>.png`. The `thresholdPct`
+/// is the percentage of pixels that may differ before the assertion
+/// fails — small fonts and anti-aliasing rarely produce a 0% match,
+/// so a few tenths of a percent is the practical floor.
+class ScreenshotSnapshot {
+  name: String(matches(Regex(#"^[a-zA-Z0-9_\-]+$"#)))
+  thresholdPct: Float(this >= 0.0 && this <= 100.0) = 0.5
+}
+
+/// Reference to a committed snapshot file. The runner stores expected
+/// bytes under `<test-module-dir>/.pkspec/snapshots/<name>.bytes`.
+///
+/// Without a `generator`: on first encounter the consumer's own
+/// captured output becomes the snapshot, the test fails so the user
+/// reviews and commits, and subsequent runs do a byte-exact compare.
+/// `pkspec exec --refresh-snapshots` rewrites every snapshot.
+///
+/// With a `generator`: the runner instead executes the generator's
+/// shell command (typically a reference implementation) and uses
+/// its stdout as the snapshot. This is the "port testing" pattern —
+/// reference implementation defines the truth, the consumer must
+/// match it. The generator runs only when the snapshot file is
+/// missing or `--refresh-snapshots` is in effect; on a normal warm
+/// run, only the consumer's command executes.
+class ReferenceSnapshot {
+  /// Snapshot identifier. Becomes the file name; restricted to safe
+  /// characters so the path can never escape the snapshots dir.
+  name: String(matches(Regex(#"^[a-zA-Z0-9_\-]+$"#)))
+
+  /// Optional reference Test whose stdout becomes the snapshot when
+  /// the file does not exist or a refresh is requested.
+  generator: Test? = null
+}
+
+/// A long-running process the runner starts before the test body and
+/// terminates after it. Typical use: spinning up a dev server for an
+/// E2E run.
+class Background {
+  name: String? = null
+
+  cmd: String(length > 0)
+  shell: String = "bash"
+  env: Mapping<String, String> = new {}
+  workdir: String? = null
+
+  /// Optional readiness probe — the runner polls this command every
+  /// 200ms and proceeds when it exits 0. Mutually informative with
+  /// `readyStdoutMatches`; set whichever fits the process. If neither
+  /// is set, the runner gives the background a brief grace period and
+  /// proceeds optimistically.
+  readyProbe: String? = null
+
+  /// Alternative readiness signal: the literal substring must appear
+  /// in the background's stdout.
+  readyStdoutMatches: String? = null
+
+  readyTimeoutSec: Int(this > 0) = 30
+
+  /// Seconds to wait between SIGTERM and SIGKILL on shutdown.
+  graceTimeoutSec: Int(this > 0) = 5
+
+  /// When set, the runner asks the OS for a free TCP port before
+  /// spawning the background and injects it under this env-var
+  /// name. Use `$<portEnv>` inside `cmd` / `readyProbe` / step
+  /// URLs to reference it. Removes the need to hand-allocate
+  /// ports across Tests when several backgrounded servers run
+  /// in parallel.
+  ///
+  /// Example:
+  ///   portEnv = "APP_PORT"
+  ///   cmd = "python3 server.py $APP_PORT"
+  ///   readyProbe = "curl -fs http://127.0.0.1:$APP_PORT/health"
+  ///
+  /// The injected variable also lives in the Test body's env, so
+  /// steps see it under the same name.
+  portEnv: String? = null
+}
+
+/// A single test. Choose exactly one of `cmd`, `steps`, `parallelSteps`.
+class Test {
+  /// Names may start with a letter, digit, or underscore (number
+  /// prefixes like `01_setup` are useful for sort-order control,
+  /// matching the convention hook keys use). The regex was widened
+  /// in phase 28 after dogfooding (phase 27) revealed digit-prefix
+  /// names were rejected.
+  name: String(matches(Regex(#"^[a-zA-Z0-9_][a-zA-Z0-9_:.\-/ ]*$"#)))
+  description: String? = null
+
+  /// Free-form classification tags. Used by `pkspec exec --tag <name>` to
+  /// filter the run set and by `pkspec spec` to group tests in the
+  /// generated SPEC. Conventional values: "spec" (high-level behaviour
+  /// to verify against the implementation), "unit" (small deterministic
+  /// check), "regression" (pinned around a fixed bug). Authors may
+  /// introduce other tags; the runner stores them verbatim.
+  ///
+  /// A test with the "spec" tag and no body (no `cmd`, no `steps`, no
+  /// `parallelSteps`) is automatically treated as pending — the
+  /// expected behaviour is documented via `description` and any
+  /// `inlineStdout` / `expect*` fields, the body is filled in later.
+  tags: Listing<String> = new {}
+
+  /// Identifiers of spec entries this test verifies. Each id refers
+  /// to a `Scenario.id` declared in `Spec.pkl` (typically across a
+  /// boundary — the spec lives in one module, the implementing test
+  /// in another). `pkspec spec` cross-links id → verifying tests in the
+  /// generated SPEC.md, and `pkspec spec --check` reports declared
+  /// specs that no active test references.
+  ///
+  /// Auto-populated by `Spec.pkl` when a Scenario carries an `id`:
+  /// the resulting Test inherits `specRef = { id }`.
+  ///
+  /// Element regex `^[a-zA-Z0-9][a-zA-Z0-9_.\-/]*$` — same character
+  /// set as test names so cross-references stay typo-resistant.
+  specRef: Listing<String(matches(Regex(#"^[a-zA-Z0-9][a-zA-Z0-9_.\-/]*$"#)))> = new {}
+
+  shell: String = "bash"
+  env: Mapping<String, String> = new {}
+  workdir: String? = null
+
+  /// When true, the runner creates a fresh temp directory for this
+  /// Test's body and uses it as the workdir (overriding `workdir`
+  /// if also set). The directory is removed when the Test exits
+  /// (pass or fail), so leftover files like SQLite `.db`s or
+  /// generated artifacts don't accumulate in the user's working
+  /// tree.
+  ///
+  /// Use this for property tests that produce side-effecting files
+  /// (DBs, snapshots-in-progress) where the test author would
+  /// otherwise need an `always = true` cleanup step at the end of
+  /// every Test.
+  ephemeralWorkdir: Boolean = false
+
+  /// Wall-clock timeout for the entire test body (steps + cmd, NOT
+  /// counting background lifetime).
+  timeoutSec: Int(this > 0) = 60
+
+  /// Re-run the body on failure. 0 = no retry (default). Up to
+  /// `1 + retries` attempts in total. Backgrounds are NOT restarted
+  /// between attempts; they live for the full retry sequence.
+  retries: Int(this >= 0) = 0
+
+  /// When true and at least one attempt across `retries+1` passed,
+  /// the test is reported as `flaky` rather than `failed` and does
+  /// not contribute to the runner's non-zero exit code. Off by
+  /// default — every attempt must pass.
+  flakyAcceptable: Boolean = false
+
+  /// Mark the test as not-yet-implemented. The runner skips the body
+  /// entirely (no subprocess, no background, no snapshot work) and
+  /// reports `pending`. Pending tests are green for CI purposes —
+  /// they are a written record of known gaps, not failures.
+  pending: Boolean = false
+
+  /// Property-based: run the body `iterations` times. Each iteration
+  /// gets a fresh seed (xorshift32 stepped from `iterationSeed`)
+  /// injected as `$PKSPEC_SEED`, plus `$PKSPEC_ITERATION` (0-based). The
+  /// subprocess derives its own input from these values. Every
+  /// iteration must pass; the first failing iteration's seed is
+  /// surfaced in the result so the operator can pin
+  /// `iterationSeed = <bad seed>` for a deterministic reproduction.
+  ///
+  /// `retries` and `flakyAcceptable` are ignored when `iterations > 1`
+  /// — property checks treat the first failure as the bug, not as
+  /// flake.
+  iterations: Int(this > 0) = 1
+
+  /// Seed for the iteration sequence. The seed at iteration index
+  /// `i` is `QuickCheck.seedAt(iterationSeed, i)`; the Go executor
+  /// reproduces the exact xorshift32 stream that
+  /// `pkl/QuickCheck.pkl` generates, so a failure reported by pkspec
+  /// can be re-investigated inside `pkl test` with the same seed.
+  iterationSeed: Int = 1
+
+  /// Enable seed-space shrinking after a property failure. When
+  /// `iterations > 1` and the body fails at some seed S, the
+  /// runner re-runs with progressively smaller seeds (S/2, S/4,
+  /// ... bounded by `shrinkAttempts`) and reports the smallest
+  /// seed that still fails.
+  ///
+  /// **This is not true input shrinking.** pkspec does not know how
+  /// the body derives input from `$PKSPEC_SEED`; it can only try
+  /// numerically smaller seeds. The shrink is useful when the
+  /// derivation is monotonic-ish (`PKSPEC_SEED % N`, integer
+  /// division) and worthless when the derivation hashes the seed
+  /// or maps it non-monotonically. Treat the shrunk seed as a
+  /// hint, not a proof of minimality.
+  shrink: Boolean = false
+
+  /// Maximum number of shrink probes after the initial property
+  /// failure. Each probe is one body execution against a smaller
+  /// candidate seed. 32 probes covers seeds up to ~4 billion via
+  /// repeated halving.
+  shrinkAttempts: Int(this >= 0) = 32
+
+  /// Typed input-space generators. When non-empty, the runner
+  /// switches from raw `$PKSPEC_SEED` injection to per-input
+  /// generation: each entry's value is derived from the iteration
+  /// seed (using a per-input sub-seed via `QuickCheck.seedAt`) and
+  /// injected into the env under the entry's name.
+  ///
+  /// On failure, the runner performs **input-space shrinking**:
+  /// each input is independently reduced toward 0 (or `lo`) via
+  /// halving / decrement probes, candidates are re-run, and the
+  /// process recurses on any shrink that still fails. Result: the
+  /// reported failing input is genuinely minimal-ish per-input,
+  /// not just a smaller seed that happens to fail.
+  ///
+  /// MVP supports `IntInput` only. List / String / Map inputs
+  /// land in later phases — adding them is "add a subclass of
+  /// `Input` with its own `kind`" + one decode case in Go.
+  ///
+  /// `inputs` is mutually informative with `iterations` —
+  /// iterations > 1 + inputs non-empty enables the input-space
+  /// property loop. `iterationSeed` still controls the starting
+  /// seed; `shrink` / `shrinkAttempts` are reinterpreted as
+  /// per-input shrink budget when inputs are present.
+  inputs: Mapping<String, Input> = new {}
+
+  // ── Body: pick exactly one ─────────────────────────────────────
+  cmd: (String(length > 0))? = null
+  stdin: String? = null
+  expectExitCode: Int = 0
+  expectStdout: String? = null
+  expectStderr: String? = null
+  /// Every listed substring must appear in stdout/stderr.
+  expectStdoutContains: Listing<String> = new {}
+  expectStderrContains: Listing<String> = new {}
+
+  /// Every listed Go regexp pattern must match stdout/stderr.
+  expectStdoutMatches: Listing<String> = new {}
+  expectStderrMatches: Listing<String> = new {}
+
+  /// JSONPath assertions against stdout/stderr when the stream is
+  /// valid JSON. Same path syntax and value comparison semantics as
+  /// `expectBodyJsonPath`.
+  expectStdoutJsonPath: Mapping<String, Any> = new {}
+  expectStderrJsonPath: Mapping<String, Any> = new {}
+
+  /// Match captured stdout against a committed snapshot file.
+  /// Composes with `expectStdout`; both checks must pass when both set.
+  expectStdoutSnapshot: ReferenceSnapshot? = null
+  expectStderrSnapshot: ReferenceSnapshot? = null
+
+  /// Inline snapshot of stdout. Opt in by setting this to any string
+  /// (typically `""` on first authoring); the runner then rewrites
+  /// the field in-place inside the Test.pkl source on a mismatch when
+  /// invoked with `--update-inline-snapshots`. On subsequent runs the
+  /// captured stdout must match exactly.
+  ///
+  /// `null` (the default) means "no inline assertion here" — the
+  /// runner skips this field entirely. We can't distinguish a missing
+  /// field from one explicitly written as `null` via pkl-go decoding,
+  /// so `""` is the opt-in sentinel.
+  ///
+  /// Composes with `expectStdout` — both checks run if both are set.
+  /// Distinct from `expectStdoutSnapshot`, which stores bytes in a
+  /// separate file (.bytes); inline snapshots live in the Pkl source
+  /// itself and show up in code review diffs.
+  inlineStdout: String? = null
+  inlineStderr: String? = null
+
+  steps: Listing<Step> = new {}
+  parallelSteps: Listing<Step> = new {}
+  // ───────────────────────────────────────────────────────────────
+
+  background: Listing<Background> = new {}
+}
+
+class Defaults {
+  shell: String = "bash"
+  env: Mapping<String, String> = new {}
+}
+
+/// Lifecycle hook attached to a Plan's `before` or `after` section.
+///
+/// Hooks are named (via the Mapping key) and scoped:
+///
+///   - `scope = "all"`  — fires once per Run; before-hooks before any
+///     test, after-hooks after every test. Useful for shared
+///     fixtures (start a DB container, seed reference data).
+///   - `scope = "each"` — fires once per test; before-each before the
+///     test body, after-each after the body. Useful for state reset
+///     between tests (TRUNCATE table, clear cache).
+///
+/// Hooks compose across `amends`: a child module inherits parent
+/// hooks and runs in the merged set. Override is by key (child reuses
+/// the parent's key with new values), addition is by new key.
+class Hook {
+  /// Shell command to run. Same semantics as `Test.cmd`.
+  cmd: String(length > 0)
+
+  /// Lifecycle scope: "all" (once per Run) or "each" (per test).
+  scope: String(matches(Regex(#"^(all|each)$"#))) = "each"
+
+  shell: String = "bash"
+  env: Mapping<String, String> = new {}
+  workdir: String? = null
+  timeoutSec: Int(this > 0) = 60
+
+  /// When set, capture stdout into the named env var. For scope="all"
+  /// the capture lives for the whole Run and every test sees it; for
+  /// scope="each" the capture is rebuilt per test and only that
+  /// test's body sees it.
+  captureStdout: String? = null
+
+  /// after-hooks only. When true, the hook fires even if the
+  /// associated body failed (test body for scope="each", any test in
+  /// the suite for scope="all"). Ignored on before-hooks.
+  alwaysRun: Boolean = false
+}
+
+class RenderedHttpRequest {
+  method: String
+  url: String
+  headers: Mapping<String, String>
+  body: String?
+  bodyJson: Any?
+  timeoutSec: Int
+}
+
+class RenderedEventually {
+  intervalMs: Int
+  timeoutSec: Int
+}
+
+class RenderedAiAssertion {
+  prompt: String
+  cmd: String
+  snapshotName: String
+  preferDeterministic: Boolean
+}
+
+class RenderedPlaywrightSpec {
+  script: String
+  browser: String
+  expectScreenshot: RenderedScreenshotSnapshot?
+  expectConsole: RenderedConsoleAssertion?
+}
+
+class RenderedConsoleAssertion {
+  containsAll: Listing<String>
+  containsNone: Listing<String>
+}
+
+class RenderedPlaywrightTestSpec {
+  specPath: String
+  configPath: String?
+  grep: String?
+  project: Listing<String>
+  workers: Int?
+  shard: String?
+}
+
+class RenderedSqlSpec {
+  dsn: String
+  query: String
+  args: Listing<Any>
+  expectRowCount: Int?
+  expectRowsJsonPath: Mapping<String, Any>
+}
+
+class RenderedScreenshotSnapshot {
+  name: String
+  thresholdPct: Float
+}
+
+abstract class RenderedInput {
+  kind: String
+}
+
+class RenderedIntInput extends RenderedInput {
+  kind = "int"
+  lo: Int
+  hi: Int
+}
+
+class RenderedStep {
+  name: String?
+  kind: String
+  cmd: String?
+  shell: String
+  stdin: String?
+  http: RenderedHttpRequest?
+  playwright: RenderedPlaywrightSpec?
+  playwrightTest: RenderedPlaywrightTestSpec?
+  sql: RenderedSqlSpec?
+  env: Mapping<String, String>
+  workdir: String?
+  timeoutSec: Int
+  expectExitCode: Int
+  expectStdout: String?
+  expectStderr: String?
+  expectStdoutContains: Listing<String>
+  expectStderrContains: Listing<String>
+  expectStdoutMatches: Listing<String>
+  expectStderrMatches: Listing<String>
+  expectStdoutJsonPath: Mapping<String, Any>
+  expectStderrJsonPath: Mapping<String, Any>
+  inlineStdout: String?
+  inlineHttpBody: String?
+  inlineJsonPath: Mapping<String, String>
+  inlineHeaders: Mapping<String, String>
+  inlineSqlRows: Mapping<String, String>
+  inlineConsoleLog: String?
+  expectStatus: Int?
+  expectStatusBetween: Listing<Int>
+  expectBodyEquals: String?
+  expectBodyContains: String?
+  expectHeaderEquals: Mapping<String, String>
+  expectBodyJsonPath: Mapping<String, Any>
+  captureStdout: String?
+  captureExitCode: String?
+  captureBody: String?
+  captureStatus: String?
+  captureBodyJsonPath: Mapping<String, String>
+  eventually: RenderedEventually?
+  expectAi: RenderedAiAssertion?
+  cassette: String?
+  always: Boolean
+  repeat: Int
+}
+
+class RenderedBackground {
+  name: String?
+  cmd: String
+  shell: String
+  env: Mapping<String, String>
+  workdir: String?
+  readyProbe: String?
+  readyStdoutMatches: String?
+  readyTimeoutSec: Int
+  graceTimeoutSec: Int
+  portEnv: String?
+}
+
+class RenderedSnapshot {
+  name: String
+  generator: RenderedTest?
+}
+
+class RenderedTest {
+  description: String?
+  tags: Listing<String>
+  specRef: Listing<String>
+  shell: String
+  env: Mapping<String, String>
+  workdir: String?
+  ephemeralWorkdir: Boolean
+  timeoutSec: Int
+  retries: Int
+  flakyAcceptable: Boolean
+  pending: Boolean
+  iterations: Int
+  iterationSeed: Int
+  shrink: Boolean
+  shrinkAttempts: Int
+  inputs: Mapping<String, RenderedInput>
+
+  cmd: String?
+  stdin: String?
+  expectExitCode: Int
+  expectStdout: String?
+  expectStderr: String?
+  expectStdoutContains: Listing<String>
+  expectStderrContains: Listing<String>
+  expectStdoutMatches: Listing<String>
+  expectStderrMatches: Listing<String>
+  expectStdoutJsonPath: Mapping<String, Any>
+  expectStderrJsonPath: Mapping<String, Any>
+  expectStdoutSnapshot: RenderedSnapshot?
+  expectStderrSnapshot: RenderedSnapshot?
+  inlineStdout: String?
+  inlineStderr: String?
+
+  steps: Listing<RenderedStep>
+  parallelSteps: Listing<RenderedStep>
+  background: Listing<RenderedBackground>
+}
+
+class RenderedHook {
+  cmd: String
+  scope: String
+  shell: String
+  env: Mapping<String, String>
+  workdir: String?
+  timeoutSec: Int
+  captureStdout: String?
+  alwaysRun: Boolean
+}
+
+/// One entry in a Scenario's append-only decision log. The
+/// runner never modifies these — the Go side reads them, the
+/// `pkspec spec --decisions` command formats them. See
+/// `docs/notes/spec-graph.md` for the convention.
+class RenderedDecision {
+  date: String
+  author: String?
+  summary: String
+  rationale: String?
+}
+
+/// A Scenario rendered for the Go runner. Carries every
+/// metadata field needed by `pkspec spec --check / --coverage /
+/// --graph / --decisions / --goals / --next`. Test-execution
+/// semantics live on `RenderedTest`; `RenderedScenario` is the
+/// spec-side counterpart and is only consulted by spec tooling.
+class RenderedScenario {
+  name: String
+  id: String?
+  description: String?
+  tags: Listing<String>
+  dependsOn: Listing<String>
+  supersedes: Listing<String>
+  /// `parent` is the id of the broader Scenario this one refines —
+  /// e.g. AUTH-001 (parent) → AUTH-001a (sub: happy path) /
+  /// AUTH-001b (sub: invalid input). Distinct from `dependsOn`:
+  /// parent is "I am a more specific case of X"; dependsOn is
+  /// "I assume X works."
+  parent: String?
+  /// `contributes` lists `Goal.id` values this Scenario advances.
+  /// `pkspec spec --next` aggregates open contributions to suggest
+  /// which spec to implement next.
+  contributes: Listing<String>
+  reviewStatus: String // "draft" | "review" | "approved"
+  deprecated: Boolean
+  deprecatedReason: String?
+  replacedBy: String?
+  severity: String // "critical" | "major" | "minor"
+  /// How the scenario is verified — "test" (a Test.pkl with
+  /// matching specRef), "code" (framework-internal Go behaviour
+  /// pointed at by `implementedAt`), or "doc" (prose guarantee
+  /// pointed at by `implementedAt`). `pkspec spec --check` accepts
+  /// `code` / `doc` entries whose `implementedAt` is non-null.
+  implementedBy: String // "test" | "code" | "doc"
+  /// Free-form pointer to the implementing artefact —
+  /// "path/file.go:Symbol", "docs/x.md#anchor", etc. Used by
+  /// reviewers; the runner only validates that it is non-null
+  /// when `implementedBy != "test"`.
+  implementedAt: String?
+  openQuestions: Listing<String>
+  decisions: Listing<RenderedDecision>
+}
+
+/// A Goal rendered for the Go runner. Goals carry no test
+/// implementation themselves — they are user-facing value
+/// statements that Scenarios contribute toward via
+/// `Scenario.contributes`. `pkspec spec --next` ranks unimplemented
+/// scenarios by their parent Goal's priority.
+class RenderedGoal {
+  id: String
+  name: String
+  description: String?
+  /// Higher = more important. No fixed scale; the runner only
+  /// uses it for relative ordering in `--goals` and `--next`.
+  priority: Int
+  reviewStatus: String // "draft" | "review" | "approved"
+  deprecated: Boolean
+  rationale: String?
+}
+
+class Rendered {
+  defaults: Defaults
+  tests: Mapping<String, RenderedTest>
+  before: Mapping<String, RenderedHook>
+  after: Mapping<String, RenderedHook>
+  /// Scenario-side metadata, keyed by name (or id when name and id
+  /// differ). Populated by `Spec.pkl`; pure `Test.pkl` modules
+  /// render an empty Mapping.
+  scenarios: Mapping<String, RenderedScenario>
+  /// User-value Goals, keyed by `Goal.id`. Populated by
+  /// `Spec.pkl#goals`; pure `Test.pkl` modules leave it empty.
+  goals: Mapping<String, RenderedGoal>
+}
+
+defaults: Defaults = new {}
+
+tests: Listing<Test> = new {}
+
+/// Lifecycle hooks running before tests. Key is the hook name (used
+/// in reporter output and stable across `amends`); value is a Hook.
+/// Empty (the default) means "no before hooks". See `Hook` for scope
+/// semantics.
+before: Mapping<String, Hook> = new {}
+
+/// Lifecycle hooks running after tests. Same shape as `before`. Use
+/// `alwaysRun = true` for cleanup that must happen even when tests
+/// failed.
+after: Mapping<String, Hook> = new {}
+
+local testNames: List<String> = tests.toList().map((t) -> t.name)
+
+local duplicateNames: List<String> =
+  testNames.filter((n) -> testNames.count((m) -> m == n) > 1).distinct
+
+local function renderHttp(h: HttpRequest): RenderedHttpRequest = new {
+  method = h.method
+  url = h.url
+  headers = h.headers
+  body = h.body
+  bodyJson = h.bodyJson
+  timeoutSec = h.timeoutSec
+}
+
+local function renderPlaywright(p: PlaywrightSpec): RenderedPlaywrightSpec = new {
+  script = p.script
+  browser = p.browser
+  expectScreenshot =
+    if (p.expectScreenshot == null)
+      null
+    else
+      new RenderedScreenshotSnapshot {
+        name = p.expectScreenshot.name
+        thresholdPct = p.expectScreenshot.thresholdPct
+      }
+  expectConsole =
+    if (p.expectConsole == null)
+      null
+    else
+      new RenderedConsoleAssertion {
+        containsAll = p.expectConsole.containsAll
+        containsNone = p.expectConsole.containsNone
+      }
+}
+
+local function renderPlaywrightTest(p: PlaywrightTestSpec): RenderedPlaywrightTestSpec = new {
+  specPath = p.specPath
+  configPath = p.configPath
+  grep = p.grep
+  project = p.project
+  workers = p.workers
+  shard = p.shard
+}
+
+local function renderSql(s: SqlSpec): RenderedSqlSpec = new {
+  dsn = s.dsn
+  query = s.query
+  args = s.args
+  expectRowCount = s.expectRowCount
+  expectRowsJsonPath = s.expectRowsJsonPath
+}
+
+local function renderStep(s: Step): RenderedStep = new {
+  name = s.name
+  kind = s.kind
+  cmd = s.cmd
+  shell = s.shell
+  stdin = s.stdin
+  http = if (s.http == null) null else renderHttp(s.http)
+  playwright = if (s.playwright == null) null else renderPlaywright(s.playwright)
+  playwrightTest = if (s.playwrightTest == null) null else renderPlaywrightTest(s.playwrightTest)
+  sql = if (s.sql == null) null else renderSql(s.sql)
+  env = s.env
+  workdir = s.workdir
+  timeoutSec = s.timeoutSec
+  expectExitCode = s.expectExitCode
+  expectStdout = s.expectStdout
+  expectStderr = s.expectStderr
+  expectStdoutContains = s.expectStdoutContains
+  expectStderrContains = s.expectStderrContains
+  expectStdoutMatches = s.expectStdoutMatches
+  expectStderrMatches = s.expectStderrMatches
+  expectStdoutJsonPath = s.expectStdoutJsonPath
+  expectStderrJsonPath = s.expectStderrJsonPath
+  inlineStdout = s.inlineStdout
+  inlineHttpBody = s.inlineHttpBody
+  inlineJsonPath = s.inlineJsonPath
+  inlineHeaders = s.inlineHeaders
+  inlineSqlRows = s.inlineSqlRows
+  inlineConsoleLog = s.inlineConsoleLog
+  expectStatus = s.expectStatus
+  expectStatusBetween = s.expectStatusBetween
+  expectBodyEquals = s.expectBodyEquals
+  expectBodyContains = s.expectBodyContains
+  expectHeaderEquals = s.expectHeaderEquals
+  expectBodyJsonPath = s.expectBodyJsonPath
+  captureStdout = s.captureStdout
+  captureExitCode = s.captureExitCode
+  captureBody = s.captureBody
+  captureStatus = s.captureStatus
+  captureBodyJsonPath = s.captureBodyJsonPath
+  eventually =
+    if (s.eventually == null)
+      null
+    else
+      new RenderedEventually {
+        intervalMs = s.eventually.intervalMs
+        timeoutSec = s.eventually.timeoutSec
+      }
+  expectAi =
+    if (s.expectAi == null)
+      null
+    else
+      new RenderedAiAssertion {
+        prompt = s.expectAi.prompt
+        cmd = s.expectAi.cmd
+        snapshotName = s.expectAi.snapshotName
+        preferDeterministic = s.expectAi.preferDeterministic
+      }
+  cassette = s.cassette
+  always = s.always
+  repeat = s.repeat
+}
+
+local function renderBackground(b: Background): RenderedBackground = new {
+  name = b.name
+  cmd = b.cmd
+  shell = b.shell
+  env = b.env
+  workdir = b.workdir
+  readyProbe = b.readyProbe
+  readyStdoutMatches = b.readyStdoutMatches
+  readyTimeoutSec = b.readyTimeoutSec
+  graceTimeoutSec = b.graceTimeoutSec
+  portEnv = b.portEnv
+}
+
+// `renderTest` and `renderSnapshot` recurse into each other when a
+// snapshot has a generator: the generator is itself a Test that needs
+// rendering (its own `expectStdoutSnapshot` etc. could in principle
+// cycle, but in practice generators are leaf shell invocations).
+local function renderTest(t: Test): RenderedTest = new {
+  description = t.description
+  tags = t.tags
+  specRef = t.specRef
+  shell = t.shell
+  env = t.env
+  workdir = t.workdir
+  ephemeralWorkdir = t.ephemeralWorkdir
+  timeoutSec = t.timeoutSec
+  retries = t.retries
+  flakyAcceptable = t.flakyAcceptable
+  pending = t.pending
+  iterations = t.iterations
+  iterationSeed = t.iterationSeed
+  shrink = t.shrink
+  shrinkAttempts = t.shrinkAttempts
+  inputs = new Mapping<String, RenderedInput> {
+    for (k, v in t.inputs) {
+      [k] = new RenderedIntInput {
+        lo = v.lo
+        hi = v.hi
+      }
+    }
+  }
+  cmd = t.cmd
+  stdin = t.stdin
+  expectExitCode = t.expectExitCode
+  expectStdout = t.expectStdout
+  expectStderr = t.expectStderr
+  expectStdoutContains = t.expectStdoutContains
+  expectStderrContains = t.expectStderrContains
+  expectStdoutMatches = t.expectStdoutMatches
+  expectStderrMatches = t.expectStderrMatches
+  expectStdoutJsonPath = t.expectStdoutJsonPath
+  expectStderrJsonPath = t.expectStderrJsonPath
+  expectStdoutSnapshot =
+    if (t.expectStdoutSnapshot == null)
+      null
+    else
+      renderSnapshot(t.expectStdoutSnapshot)
+  expectStderrSnapshot =
+    if (t.expectStderrSnapshot == null)
+      null
+    else
+      renderSnapshot(t.expectStderrSnapshot)
+  inlineStdout = t.inlineStdout
+  inlineStderr = t.inlineStderr
+  steps = new Listing<RenderedStep> {
+    for (s in t.steps) { renderStep(s) }
+  }
+  parallelSteps = new Listing<RenderedStep> {
+    for (s in t.parallelSteps) { renderStep(s) }
+  }
+  background = new Listing<RenderedBackground> {
+    for (b in t.background) { renderBackground(b) }
+  }
+}
+
+local function renderSnapshot(s: ReferenceSnapshot): RenderedSnapshot = new {
+  name = s.name
+  generator = if (s.generator == null) null else renderTest(s.generator)
+}
+
+local rendered: Mapping<String, RenderedTest> = new Mapping {
+  for (t in tests) {
+    [t.name] = renderTest(t)
+  }
+}
+
+local function renderHook(h: Hook): RenderedHook = new {
+  cmd = h.cmd
+  scope = h.scope
+  shell = h.shell
+  env = h.env
+  workdir = h.workdir
+  timeoutSec = h.timeoutSec
+  captureStdout = h.captureStdout
+  alwaysRun = h.alwaysRun
+}
+
+local renderedBefore: Mapping<String, RenderedHook> = new Mapping {
+  for (k, h in before) {
+    [k] = renderHook(h)
+  }
+}
+
+local renderedAfter: Mapping<String, RenderedHook> = new Mapping {
+  for (k, h in after) {
+    [k] = renderHook(h)
+  }
+}
+
+/// Hook for `Spec.pkl` (or other amending modules) to inject
+/// Scenario-side metadata into the rendered Plan. Plain `Test.pkl`
+/// modules leave this empty — they declare tests, not scenarios.
+renderedScenarios: Mapping<String, RenderedScenario> = new {}
+
+/// Hook for `Spec.pkl` to inject Goal definitions. Plain
+/// `Test.pkl` modules leave this empty.
+renderedGoals: Mapping<String, RenderedGoal> = new {}
+
+output {
+  value = new Rendered {
+    defaults = module.defaults
+    tests =
+      if (duplicateNames.isEmpty)
+        rendered
+      else
+        throw("duplicate test names: \(duplicateNames.join(", "))")
+    before = renderedBefore
+    after = renderedAfter
+    scenarios = renderedScenarios
+    goals = renderedGoals
+  }
+}

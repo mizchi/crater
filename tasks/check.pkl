@@ -1,0 +1,39 @@
+import "package://pkg.pkl-lang.org/github.com/mizchi/pkfire/pkfire@0.10.0#/Taskfile.pkl" as pkfire
+
+import "sources.pkl" as src
+import "spec.pkl" as spec
+
+checkMoon: pkfire.Task = new {
+  name = "check-moon"
+  description = "Run the full MoonBit compile/check gate"
+  cmd = "just check"
+  inputs = src.moonSources
+}
+
+checkTs: pkfire.Task = new {
+  name = "check-ts"
+  description = "Run the TypeScript no-emit gate"
+  cmd = "pnpm typecheck"
+  inputs = src.nodeSources
+}
+
+checkFlaker: pkfire.Task = new {
+  name = "check-flaker"
+  description = "Validate flaker task ownership and quarantine metadata"
+  cmd = "just flaker-check && just flaker-quarantine-check"
+  inputs = src.flakerSources
+}
+
+check: pkfire.Task = new {
+  name = "check"
+  description = "Run fast local correctness gates"
+  cache = false
+  deps { checkMoon; checkTs; checkFlaker; spec.specCheck; spec.specLint }
+}
+
+tasks: Listing<pkfire.Task> = new {
+  checkMoon
+  checkTs
+  checkFlaker
+  check
+}

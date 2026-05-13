@@ -1,0 +1,86 @@
+/// Built-in Playwright Test adapter definition.
+@ModuleInfo { minPklVersion = "0.31.0" }
+open module pkspec.adapters.Playwright
+
+import "../Adapter.pkl" as adapter
+
+open class Playwright extends adapter.Adapter {
+  id = "builtin.playwright"
+
+  adapterCommand: Listing<String> = new { "pkspec-adapter-playwright" }
+  configPath: String = "playwright.config.ts"
+  specDir: String = "tests"
+  projects: Listing<String> = new {}
+  grep: String? = null
+  workers: Int(this > 0)? = null
+  updateSnapshots: Boolean = false
+
+  config {
+    ["configPath"] = configPath
+    ["specDir"] = specDir
+    ["projects"] = projects
+    ["grep"] = grep
+    ["workers"] = workers
+  }
+
+  capabilities {
+    updateSnapshots = true
+    artifacts = true
+  }
+
+  discover = new adapter.Discover {
+    command = new adapter.Command {
+      argv {
+        ...adapterCommand
+        "discover"
+        "--config"
+        configPath
+        "--spec-dir"
+        specDir
+        for (p in projects) {
+          "--project"
+          p
+        }
+        when (grep != null) {
+          "--grep"
+          grep!!
+        }
+      }
+    }
+  }
+
+  plan = new adapter.Plan {
+    batchBy = new {
+      "adapter.id"
+      "workdir"
+      "config.configPath"
+      "config.projects"
+      "config.grep"
+    }
+    parallelSafe = false
+  }
+
+  run = new adapter.Run {
+    command = new adapter.Command {
+      argv {
+        ...adapterCommand
+        "run"
+        "--config"
+        configPath
+        "--manifest"
+        "$PKSPEC_CASE_MANIFEST"
+        when (updateSnapshots) {
+          "--update-snapshots"
+        }
+        for (p in projects) {
+          "--project"
+          p
+        }
+        when (workers != null) {
+          "--workers"
+          "\(workers!!)"
+        }
+      }
+    }
+  }
+}

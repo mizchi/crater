@@ -1,0 +1,67 @@
+/// Built-in `go test` adapter definition.
+@ModuleInfo { minPklVersion = "0.31.0" }
+open module pkspec.adapters.GoTest
+
+import "../Adapter.pkl" as adapter
+
+open class GoTest extends adapter.Adapter {
+  id = "builtin.go-test"
+
+  adapterCommand: Listing<String> = new { "pkspec-adapter-go-test" }
+  goBin: String = "go"
+  packages: Listing<String> = new { "./..." }
+  runRegex: String? = null
+  count: Int(this > 0)? = null
+
+  config {
+    ["goBin"] = goBin
+    ["packages"] = packages
+    ["runRegex"] = runRegex
+    ["count"] = count
+  }
+
+  discover = new adapter.Discover {
+    command = new adapter.Command {
+      argv {
+        ...adapterCommand
+        "discover"
+        "--go"
+        goBin
+        for (p in packages) {
+          "--package"
+          p
+        }
+        when (runRegex != null) {
+          "--run"
+          runRegex!!
+        }
+      }
+    }
+  }
+
+  plan = new adapter.Plan {
+    batchBy = new {
+      "adapter.id"
+      "workdir"
+      "config.goBin"
+      "config.packages"
+    }
+  }
+
+  run = new adapter.Run {
+    command = new adapter.Command {
+      argv {
+        ...adapterCommand
+        "run"
+        "--go"
+        goBin
+        "--manifest"
+        "$PKSPEC_CASE_MANIFEST"
+        when (count != null) {
+          "--count"
+          "\(count!!)"
+        }
+      }
+    }
+  }
+}

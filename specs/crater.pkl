@@ -1,0 +1,193 @@
+amends "../pkspec/Spec.pkl"
+
+feature = "crater local gates"
+
+goals {
+  new Goal {
+    id = "goal.local-gates"
+    name = "contributors can run the right local gate"
+    priority = 90
+    reviewStatus = "approved"
+    description =
+      "A contributor can discover and run the smallest useful gate for formatting, checking, tests, benchmarks, and release planning."
+    rationale =
+      "The repository has several workspaces and runners. A typed task graph keeps routine validation predictable."
+  }
+  new Goal {
+    id = "goal.spec-contracts"
+    name = "spec coverage is mechanically checked"
+    priority = 80
+    reviewStatus = "approved"
+    description =
+      "Approved behavioural contracts are linked to lightweight executable tests or explicit implementation pointers."
+    rationale =
+      "The browser surface is broad enough that prose-only backlog items drift unless the spec index is checked."
+  }
+  new Goal {
+    id = "goal.browser-compat"
+    name = "browser compatibility work has focused gates"
+    priority = 75
+    reviewStatus = "approved"
+    description =
+      "DOM, locator, Playwright, and website scenarios have a named local gate distinct from VRT."
+    rationale =
+      "VRT is expensive and noisy; non-visual compatibility should stay independently runnable."
+  }
+  new Goal {
+    id = "goal.visual-regression"
+    name = "visual regressions are reproducible"
+    priority = 70
+    reviewStatus = "approved"
+    description =
+      "Paint VRT, WPT VRT, and report-generation tasks are grouped so visual diffs can be regenerated and inspected consistently."
+    rationale =
+      "Crater's rendering work needs a repeatable path from changed code to sampled visual evidence."
+  }
+  new Goal {
+    id = "goal.release-safety"
+    name = "workspace release order is inspectable"
+    priority = 60
+    reviewStatus = "approved"
+    description = "MoonBit publish order can be checked and printed before any publish operation."
+    rationale =
+      "The workspace is split into multiple packages, so publish order must remain explicit."
+  }
+}
+
+scenarios {
+  new {
+    id = "task.default"
+    name = "pkfire exposes task inventory"
+    description = "Running the default pkfire task lists the curated local task graph."
+    tags { "spec"; "pkfire" }
+    severity = "major"
+    reviewStatus = "approved"
+    contributes { "goal.local-gates" }
+    decisions {
+      new Decision {
+        date = "2026-05-13"
+        author = "mizchi"
+        summary = "Use pkfire as the typed local gate index"
+        rationale =
+          "justfile remains the detailed command catalog, while pkfire groups repeatable gates and dependencies."
+      }
+    }
+  }
+  new {
+    id = "task.prepare"
+    name = "prepare gate refreshes generated code"
+    description = "The prepare task depends on MoonBit interface generation and formatting."
+    tags { "spec"; "pkfire"; "moonbit" }
+    severity = "major"
+    reviewStatus = "approved"
+    dependsOn { "task.default" }
+    contributes { "goal.local-gates" }
+  }
+  new {
+    id = "task.check"
+    name = "check gate groups static validation"
+    description =
+      "The check task aggregates MoonBit checks, TypeScript checks, flaker metadata checks, and pkspec checks."
+    tags { "spec"; "pkfire"; "ci" }
+    severity = "critical"
+    reviewStatus = "approved"
+    dependsOn { "task.prepare"; "spec.check" }
+    contributes { "goal.local-gates"; "goal.spec-contracts" }
+  }
+  new {
+    id = "task.test"
+    name = "test gate groups fast executable tests"
+    description =
+      "The test task aggregates JS-target MoonBit tests, Vitest, node:test suites, and pkspec shell tests."
+    tags { "spec"; "pkfire"; "ci" }
+    severity = "critical"
+    reviewStatus = "approved"
+    dependsOn { "task.check"; "spec.test" }
+    contributes { "goal.local-gates"; "goal.spec-contracts" }
+  }
+  new {
+    id = "task.bench"
+    name = "benchmark gate is named"
+    description =
+      "The benchmark task groups component VRT bench, component baseline checks, and crater CLI bench output."
+    tags { "spec"; "pkfire"; "benchmark" }
+    severity = "major"
+    reviewStatus = "approved"
+    contributes { "goal.local-gates" }
+  }
+  new {
+    id = "spec.check"
+    name = "approved specs are linked"
+    description =
+      "pkspec --check runs over crater specs and fails when approved scenarios lack an implementing test."
+    tags { "spec"; "pkspec" }
+    severity = "critical"
+    reviewStatus = "approved"
+    contributes { "goal.spec-contracts" }
+  }
+  new {
+    id = "spec.test"
+    name = "spec wiring has executable smoke tests"
+    description =
+      "pkspec exec runs lightweight shell tests that validate task and spec wiring without launching heavy browser suites."
+    tags { "spec"; "pkspec" }
+    severity = "major"
+    reviewStatus = "approved"
+    dependsOn { "spec.check" }
+    contributes { "goal.spec-contracts"; "goal.local-gates" }
+  }
+  new {
+    id = "browser.playwright"
+    name = "browser compatibility gates are separated from VRT"
+    description =
+      "Playwright adapter and website scenario tasks are grouped under a browser-facing gate."
+    tags { "spec"; "browser"; "playwright" }
+    severity = "major"
+    reviewStatus = "approved"
+    contributes { "goal.browser-compat" }
+  }
+  new {
+    id = "vrt.report"
+    name = "visual regression gates are separated"
+    description =
+      "Paint VRT and WPT VRT tasks are grouped independently from DOM and locator compatibility gates."
+    tags { "spec"; "vrt"; "paint" }
+    severity = "major"
+    reviewStatus = "approved"
+    contributes { "goal.visual-regression" }
+  }
+  new {
+    id = "release.publish-order"
+    name = "publish order can be checked before release"
+    description =
+      "Release tasks expose dry validation and plan printing for MoonBit workspace publish order."
+    tags { "spec"; "release"; "moonbit" }
+    severity = "major"
+    reviewStatus = "approved"
+    contributes { "goal.release-safety" }
+  }
+  new {
+    id = "wpt.dom-contract"
+    name = "WPT DOM compatibility is tracked"
+    description =
+      "WPT DOM runner coverage should become a pkspec-linked compatibility contract once the stable subset is agreed."
+    tags { "spec"; "wpt"; "dom" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.browser-compat" }
+    openQuestions { "Which WPT DOM subset is stable enough to require in every local check?" }
+  }
+  new {
+    id = "studio.e2e-comparison"
+    name = "Studio e2e comparison is tracked"
+    description =
+      "The crater-vs-Chromium Studio scenario should become a pkspec-linked external compatibility contract."
+    tags { "spec"; "studio"; "e2e" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.browser-compat"; "goal.visual-regression" }
+    openQuestions {
+      "Which private Studio scenario can be represented by a public reusable contract?"
+    }
+  }
+}

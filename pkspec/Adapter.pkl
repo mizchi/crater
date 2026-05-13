@@ -1,0 +1,458 @@
+/// pkspec adapter DSL.
+///
+/// This module describes runner adapters as Pkl data. The Go runner
+/// should interpret `discover.command` / `run.command` generically;
+/// it does not need a hard-coded Vitest / Playwright / go-test
+/// registry. Built-ins live in `pkl/adapters/*.pkl` as subclasses
+/// of `Adapter`.
+@ModuleInfo { minPklVersion = "0.31.0" }
+open module pkspec.Adapter
+
+/// Command process description. Use argv, not a shell string, so
+/// adapters can be rendered without shell quoting rules.
+class Command {
+  argv: Listing<String(length > 0)>
+  env: Mapping<String, String> = new {}
+  workdir: String? = null
+  timeoutSec: Int(this > 0) = 300
+}
+
+/// Capability advertisement for human-facing docs and future
+/// runner validation. Capabilities do not change semantics by
+/// themselves; the `discover` / `run` command shapes are the
+/// contract.
+class Capabilities {
+  discover: Boolean = true
+  plan: Boolean = true
+  runBatch: Boolean = true
+  updateSnapshots: Boolean = false
+  artifacts: Boolean = false
+}
+
+/// Runner-native discovery output, normalised by a shim command.
+abstract class CaseOutput {
+  kind: String
+  options: Mapping<String, Any> = new {}
+}
+
+/// Preferred discovery format: one JSON object with `cases`.
+class PkspecCasesJson extends CaseOutput {
+  kind = "pkspec-cases-json"
+}
+
+/// Escape hatch for simple native tools whose discovery can be
+/// parsed line-by-line without a shim.
+class LineRegexCases extends CaseOutput {
+  kind = "line-regex-cases"
+  pattern: String(length > 0)
+  idGroup: String(length > 0) = "id"
+  nameGroup: String(length > 0) = "name"
+  options {
+    ["pattern"] = pattern
+    ["idGroup"] = idGroup
+    ["nameGroup"] = nameGroup
+  }
+}
+
+class Discover {
+  command: Command
+  output: CaseOutput = new PkspecCasesJson {}
+}
+
+/// How pkspec passes a planned batch to the adapter's run command.
+abstract class RunInput {
+  kind: String
+  options: Mapping<String, Any> = new {}
+}
+
+/// Write the batch manifest to a temp JSON file and expose the path
+/// through an env var.
+class RunInputFile extends RunInput {
+  kind = "manifest-file"
+  envVar: String(length > 0) = "PKSPEC_CASE_MANIFEST"
+  options {
+    ["envVar"] = envVar
+  }
+}
+
+/// Send the batch manifest JSON to stdin.
+class RunInputStdin extends RunInput {
+  kind = "stdin"
+}
+
+/// Adapter run output. Prefer JSONL events so long-running native
+/// runs can stream progress without waiting for process exit.
+abstract class ResultOutput {
+  kind: String
+  options: Mapping<String, Any> = new {}
+}
+
+class PkspecEventsJsonl extends ResultOutput {
+  kind = "pkspec-events-jsonl"
+}
+
+class JunitResults extends ResultOutput {
+  kind = "junit-results"
+  pathEnv: String(length > 0) = "PKSPEC_JUNIT_PATH"
+  options {
+    ["pathEnv"] = pathEnv
+  }
+}
+
+class TapResults extends ResultOutput {
+  kind = "tap-results"
+}
+
+class Run {
+  command: Command
+  input: RunInput = new RunInputFile {}
+  output: ResultOutput = new PkspecEventsJsonl {}
+}
+
+/// Post-run report output. Coverage is intentionally modelled with
+/// the same command + format shape as adapter discovery/results so
+/// coverage tools can be plugged in without core runner-specific
+/// parsers.
+abstract class ReportOutput {
+  kind: String
+  options: Mapping<String, Any> = new {}
+}
+
+/// Preferred normalised coverage format:
+/// `{ "metrics": [{ "name": "lines", "covered": 8, "total": 10 }] }`.
+class PkspecCoverageJson extends ReportOutput {
+  kind = "pkspec-coverage-json"
+}
+
+class LcovCoverage extends ReportOutput {
+  kind = "lcov-coverage"
+  path: String? = null
+  options {
+    ["path"] = path
+  }
+}
+
+class CoberturaCoverage extends ReportOutput {
+  kind = "cobertura-coverage"
+  path: String? = null
+  options {
+    ["path"] = path
+  }
+}
+
+class ReportCollector {
+  name: String(matches(Regex(#"^[a-zA-Z0-9_][a-zA-Z0-9_.\-/ ]*$"#)))
+  command: Command
+  output: ReportOutput = new PkspecCoverageJson {}
+}
+
+/// Batch planning hints. Adapters can keep this simple: pkspec can
+/// group by these stable fields before calling `run.command`.
+class Plan {
+  batchBy: Listing<String> = new {}
+  maxBatchSize: Int(this > 0)? = null
+  parallelSafe: Boolean = true
+}
+
+/// Base adapter contract. Concrete adapters fill `id`, `discover`,
+/// and `run`; configuration lives in ordinary Pkl fields and is
+/// mirrored into `config` so a generic runner can hash / display it.
+abstract class Adapter {
+  id: String(matches(Regex(#"^[a-zA-Z0-9][a-zA-Z0-9_.\-/]*$"#)))
+  protocol: String = "pkspec.adapter.v1"
+  config: Mapping<String, Any> = new {}
+  capabilities: Capabilities = new Capabilities {}
+  discover: Discover
+  plan: Plan = new Plan {}
+  run: Run
+}
+
+/// Generic external process adapter. It assumes the external command
+/// speaks `pkspec.adapter.v1` subcommands:
+/// `<baseCommand...> discover` and `<baseCommand...> run`.
+open class ExternalProtocolAdapter extends Adapter {
+  id: String(matches(Regex(#"^[a-zA-Z0-9][a-zA-Z0-9_.\-/]*$"#)))
+  baseCommand: Listing<String(length > 0)>
+
+  discover = new Discover {
+    command = new Command {
+      argv {
+        ...baseCommand
+        "discover"
+      }
+    }
+  }
+
+  run = new Run {
+    command = new Command {
+      argv {
+        ...baseCommand
+        "run"
+        "--manifest"
+        "$PKSPEC_CASE_MANIFEST"
+      }
+    }
+  }
+
+  plan = new Plan {
+    batchBy {
+      "adapter.id"
+      "workdir"
+      "config"
+    }
+  }
+}
+
+/// Metadata over a discovered native runner case. This lets pkspec
+/// add specRef / tags without taking ownership of the source test.
+class CaseOverlay {
+  specRef: Listing<String(matches(Regex(#"^[a-zA-Z0-9][a-zA-Z0-9_.\-/]*$"#)))> = new {}
+  tags: Listing<String> = new {}
+  pending: Boolean = false
+  timeoutSec: Int(this > 0)? = null
+}
+
+/// Explicit pkspec-owned case registration. JS adapters can turn
+/// these into generated `test(name, ...)` files that call the named
+/// export with `params`.
+class AdapterCase {
+  id: String(matches(Regex(#"^[a-zA-Z0-9][a-zA-Z0-9_.\-/ :]*$"#)))
+  name: String? = null
+  sourceModule: String(length > 0)? = null
+  exportName: String(length > 0)? = null
+  selector: Mapping<String, String> = new {}
+  params: Mapping<String, Any> = new {}
+  specRef: Listing<String(matches(Regex(#"^[a-zA-Z0-9][a-zA-Z0-9_.\-/]*$"#)))> = new {}
+  tags: Listing<String> = new {}
+  pending: Boolean = false
+  timeoutSec: Int(this > 0)? = null
+}
+
+class AdapterSuite {
+  name: String(matches(Regex(#"^[a-zA-Z0-9_][a-zA-Z0-9_:.\-/ ]*$"#)))
+  adapter: Adapter
+  workdir: String? = null
+  env: Mapping<String, String> = new {}
+  overlays: Mapping<String(length > 0), CaseOverlay> = new {}
+  cases: Listing<AdapterCase> = new {}
+  collectors: Listing<ReportCollector> = new {}
+}
+
+class RenderedDataFormat {
+  kind: String
+  options: Mapping<String, Any>
+}
+
+class RenderedCommand {
+  argv: Listing<String>
+  env: Mapping<String, String>
+  workdir: String?
+  timeoutSec: Int
+}
+
+class RenderedDiscover {
+  command: RenderedCommand
+  output: RenderedDataFormat
+}
+
+class RenderedRun {
+  command: RenderedCommand
+  input: RenderedDataFormat
+  output: RenderedDataFormat
+}
+
+class RenderedCollector {
+  name: String
+  command: RenderedCommand
+  output: RenderedDataFormat
+}
+
+class RenderedPlan {
+  batchBy: Listing<String>
+  maxBatchSize: Int?
+  parallelSafe: Boolean
+}
+
+class RenderedCapabilities {
+  discover: Boolean
+  plan: Boolean
+  runBatch: Boolean
+  updateSnapshots: Boolean
+  artifacts: Boolean
+}
+
+class RenderedAdapter {
+  id: String
+  protocol: String
+  config: Mapping<String, Any>
+  capabilities: RenderedCapabilities
+  discover: RenderedDiscover
+  plan: RenderedPlan
+  run: RenderedRun
+}
+
+class RenderedCaseOverlay {
+  specRef: Listing<String>
+  tags: Listing<String>
+  pending: Boolean
+  timeoutSec: Int?
+}
+
+class RenderedAdapterCase {
+  id: String
+  name: String?
+  sourceModule: String?
+  exportName: String?
+  selector: Mapping<String, String>
+  params: Mapping<String, Any>
+  specRef: Listing<String>
+  tags: Listing<String>
+  pending: Boolean
+  timeoutSec: Int?
+}
+
+class RenderedAdapterSuite {
+  name: String
+  adapter: RenderedAdapter
+  workdir: String?
+  env: Mapping<String, String>
+  overlays: Mapping<String, RenderedCaseOverlay>
+  cases: Listing<RenderedAdapterCase>
+  collectors: Listing<RenderedCollector>
+}
+
+class Rendered {
+  suites: Mapping<String, RenderedAdapterSuite>
+}
+
+suites: Listing<AdapterSuite> = new {}
+
+local suiteNames: List<String> = module.suites.toList().map((s) -> s.name)
+
+local duplicateSuiteNames: List<String> =
+  suiteNames.filter((n) -> suiteNames.count((m) -> m == n) > 1).distinct
+
+local function renderCommand(c: Command): RenderedCommand = new {
+  argv = c.argv
+  env = c.env
+  workdir = c.workdir
+  timeoutSec = c.timeoutSec
+}
+
+local function renderFormat(f: CaseOutput): RenderedDataFormat = new {
+  kind = f.kind
+  options = f.options
+}
+
+local function renderRunInput(f: RunInput): RenderedDataFormat = new {
+  kind = f.kind
+  options = f.options
+}
+
+local function renderResultOutput(f: ResultOutput): RenderedDataFormat = new {
+  kind = f.kind
+  options = f.options
+}
+
+local function renderReportOutput(f: ReportOutput): RenderedDataFormat = new {
+  kind = f.kind
+  options = f.options
+}
+
+local function renderCapabilities(c: Capabilities): RenderedCapabilities = new {
+  discover = c.discover
+  plan = c.plan
+  runBatch = c.runBatch
+  updateSnapshots = c.updateSnapshots
+  artifacts = c.artifacts
+}
+
+local function renderDiscover(d: Discover): RenderedDiscover = new {
+  command = renderCommand(d.command)
+  output = renderFormat(d.output)
+}
+
+local function renderPlan(p: Plan): RenderedPlan = new {
+  batchBy = p.batchBy
+  maxBatchSize = p.maxBatchSize
+  parallelSafe = p.parallelSafe
+}
+
+local function renderRun(r: Run): RenderedRun = new {
+  command = renderCommand(r.command)
+  input = renderRunInput(r.input)
+  output = renderResultOutput(r.output)
+}
+
+local function renderAdapter(a: Adapter): RenderedAdapter = new {
+  id = a.id
+  protocol = a.protocol
+  config = a.config
+  capabilities = renderCapabilities(a.capabilities)
+  discover = renderDiscover(a.discover)
+  plan = renderPlan(a.plan)
+  run = renderRun(a.run)
+}
+
+local function renderOverlay(o: CaseOverlay): RenderedCaseOverlay = new {
+  specRef = o.specRef
+  tags = o.tags
+  pending = o.pending
+  timeoutSec = o.timeoutSec
+}
+
+local function renderCase(c: AdapterCase): RenderedAdapterCase = new {
+  id = c.id
+  name = c.name
+  sourceModule = c.sourceModule
+  exportName = c.exportName
+  selector = c.selector
+  params = c.params
+  specRef = c.specRef
+  tags = c.tags
+  pending = c.pending
+  timeoutSec = c.timeoutSec
+}
+
+local function renderCollector(c: ReportCollector): RenderedCollector = new {
+  name = c.name
+  command = renderCommand(c.command)
+  output = renderReportOutput(c.output)
+}
+
+local function renderSuite(s: AdapterSuite): RenderedAdapterSuite = new {
+  name = s.name
+  adapter = renderAdapter(s.adapter)
+  workdir = s.workdir
+  env = s.env
+  overlays = new Mapping<String, RenderedCaseOverlay> {
+    for (k, v in s.overlays) {
+      [k] = renderOverlay(v)
+    }
+  }
+  cases = new Listing<RenderedAdapterCase> {
+    for (c in s.cases) { renderCase(c) }
+  }
+  collectors = new Listing<RenderedCollector> {
+    for (c in s.collectors) { renderCollector(c) }
+  }
+}
+
+local renderedSuites: Mapping<String, RenderedAdapterSuite> = new Mapping<
+  String,
+  RenderedAdapterSuite,
+> {
+  for (s in module.suites) {
+    [s.name] = renderSuite(s)
+  }
+}
+
+output {
+  value = new Rendered {
+    suites =
+      if (duplicateSuiteNames.isEmpty)
+        renderedSuites
+      else
+        throw("duplicate adapter suite names: \(duplicateSuiteNames.join(", "))")
+  }
+}

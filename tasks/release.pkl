@@ -1,0 +1,30 @@
+import "package://pkg.pkl-lang.org/github.com/mizchi/pkfire/pkfire@0.10.0#/Taskfile.pkl" as pkfire
+
+releaseCheck: pkfire.Task = new {
+  name = "release-check"
+  description = "Validate MoonBit publish order without publishing"
+  cmd = "pnpm release:moon:check"
+  inputs {
+    "package.json"
+    "scripts/moon-publish-workspace.mjs"
+    "moon.work"
+    "**/moon.mod.json"
+  }
+}
+
+releasePlan: pkfire.Task = new {
+  name = "release-plan"
+  description = "Print MoonBit publish order"
+  cmd = "pnpm release:moon:list"
+  inputs {
+    "package.json"
+    "scripts/moon-publish-workspace.mjs"
+    "moon.work"
+    "**/moon.mod.json"
+  }
+}
+
+tasks: Listing<pkfire.Task> = new {
+  releaseCheck
+  releasePlan
+}
