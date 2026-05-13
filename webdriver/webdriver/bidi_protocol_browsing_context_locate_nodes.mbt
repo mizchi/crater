@@ -752,69 +752,6 @@ fn BidiProtocol::evaluate_locate_expression(
 }
 
 ///|
-fn BidiProtocol::create_synthetic_child_context_result(
-  self : BidiProtocol,
-  context_id : String,
-  requested_url : String,
-  user_context_id : String,
-) -> Json {
-  let child_ctx_id = self.create_child_context(context_id, user_context_id)
-  self.context_had_synthetic_child[context_id] = true
-  let resolved_url = self.resolve_navigation_target_url(
-    context_id, requested_url,
-  )
-  let effective_url = self.normalize_wpt_navigation_target_url(
-    child_ctx_id, resolved_url,
-  )
-
-  self.emit_context_created(
-    child_ctx_id,
-    "tab",
-    "about:blank",
-    None,
-    Some(context_id),
-  )
-  let child_nav_id = self.next_navigation_id.to_string()
-  self.next_navigation_id += 1
-  if self.is_iframe_navigation_blocked(child_ctx_id, effective_url) {
-    self.emit_default_realm(child_ctx_id)
-    self.emit_navigation_started_event(
-      child_ctx_id, effective_url, child_nav_id,
-    )
-    self.emit_navigation_failed_event(child_ctx_id, effective_url, child_nav_id)
-    return make_object({
-      "context": Json::string(child_ctx_id),
-      "parentContext": Json::string(context_id),
-      "userContext": Json::string(user_context_id),
-      "url": Json::string(effective_url),
-    })
-  }
-  match self.manager.get_session(child_ctx_id) {
-    Some(child_session) => {
-      let _ = child_session.navigate_to(effective_url)
-    }
-    None => ()
-  }
-  self.load_data_url_content(child_ctx_id, effective_url)
-  self.clear_context_sandbox_realms(child_ctx_id)
-  let window_realm_id = self.assign_new_realm(child_ctx_id)
-  self.emit_default_realm(child_ctx_id)
-  self.emit_worker_realms_from_scripts(child_ctx_id, window_realm_id)
-  self.apply_preload_scripts_for_context(child_ctx_id)
-  self.execute_inline_scripts_for_context(child_ctx_id)
-  self.emit_navigation_events(child_ctx_id, effective_url, child_nav_id)
-  if effective_url != "about:blank" {
-    self.refresh_child_contexts_from_iframes_with_depth(child_ctx_id, 1)
-  }
-  make_object({
-    "context": Json::string(child_ctx_id),
-    "parentContext": Json::string(context_id),
-    "userContext": Json::string(user_context_id),
-    "url": Json::string(effective_url),
-  })
-}
-
-///|
 /// Locate nodes with XPath selector.
 fn BidiProtocol::locate_nodes_xpath(
   self : BidiProtocol,
