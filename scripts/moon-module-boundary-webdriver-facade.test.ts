@@ -354,6 +354,31 @@ describe("MoonBit WebDriver facade and contract boundaries", () => {
     }
   });
 
+  it("keeps protocol-neutral Set-Cookie formatting in crater-network", () => {
+    const expectedNetworkFiles = [
+      "network/cookie_headers.mbt",
+      "network/cookie_headers_test.mbt",
+    ] as const;
+    const missingFiles = expectedNetworkFiles.filter((file) => {
+      return !fs.existsSync(path.join(REPO_ROOT, file));
+    });
+
+    expect(missingFiles).toEqual([]);
+
+    const cookieFormatterFacade = read("webdriver/webdriver/bidi_network_set_cookie_format.mbt");
+    expect(cookieFormatterFacade).toContain(
+      "@crater_network.synthetic_network_format_set_cookie_header",
+    );
+    for (const implementationMarker of [
+      "let parts : Array[String]",
+      "SameSite=",
+      "Max-Age=",
+      "Expires=",
+    ] as const) {
+      expect(cookieFormatterFacade).not.toContain(implementationMarker);
+    }
+  });
+
   it("documents next module boundaries before further WebDriver extraction", () => {
     const todo = read("TODO.md");
     const requiredBoundaries = [

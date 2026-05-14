@@ -20,6 +20,8 @@ pub fn synthetic_network_cache_key(String, String) -> String
 
 pub fn synthetic_network_first_query_value(String, String) -> String?
 
+pub fn synthetic_network_format_set_cookie_header(Map[String, Json]) -> String
+
 pub fn synthetic_network_header_entries_from_object(Map[String, Json]) -> Array[Json]
 
 pub fn synthetic_network_header_entry_name(Json) -> String?
