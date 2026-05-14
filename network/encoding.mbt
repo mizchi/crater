@@ -24,6 +24,16 @@ extern "js" fn js_decode_query_component(value : String) -> String =
   #| }
 
 ///|
+extern "js" fn js_synthetic_network_decode_base64(base64 : String) -> String =
+  #| (base64) => {
+  #|   try {
+  #|     return atob(String(base64 ?? ""));
+  #|   } catch (_) {
+  #|     return "";
+  #|   }
+  #| }
+
+///|
 pub fn utf8_byte_length(value : String) -> Int {
   js_utf8_byte_length(value)
 }
@@ -36,4 +46,9 @@ pub fn base64_byte_length(value : String) -> Int {
 ///|
 pub fn decode_query_component(value : String) -> String {
   js_decode_query_component(value)
+}
+
+///|
+pub fn synthetic_network_decode_base64(base64 : String) -> String {
+  js_synthetic_network_decode_base64(base64)
 }

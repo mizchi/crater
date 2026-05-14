@@ -482,6 +482,38 @@ describe("MoonBit WebDriver facade and contract boundaries", () => {
     }
   });
 
+  it("keeps protocol-neutral network BytesValue and credentials normalization in crater-network", () => {
+    const continueValueSource = read("network/continue_values.mbt");
+    for (const symbol of [
+      "pub fn synthetic_network_normalize_bytes_value",
+      "pub fn synthetic_network_text_from_bytes_value",
+      "pub fn synthetic_network_string_from_bytes_value",
+      "pub fn synthetic_network_normalize_continue_credentials",
+      "pub fn synthetic_network_credentials_match_expected",
+    ] as const) {
+      expect(continueValueSource).toContain(symbol);
+    }
+
+    const webdriverSource = read("webdriver/webdriver/bidi_network_continue_values.mbt");
+    for (const symbol of [
+      "@crater_network.synthetic_network_normalize_bytes_value",
+      "@crater_network.synthetic_network_text_from_bytes_value",
+      "@crater_network.synthetic_network_string_from_bytes_value",
+      "@crater_network.synthetic_network_normalize_continue_credentials",
+      "@crater_network.synthetic_network_credentials_match_expected",
+    ] as const) {
+      expect(webdriverSource).toContain(symbol);
+    }
+    for (const implementationMarker of [
+      "credentials.type must be a string",
+      "field_name + \".value must be a string\"",
+      "return Some(decode_base64(payload))",
+      "synthetic_network_first_query_value(url, \"username\")",
+    ] as const) {
+      expect(webdriverSource).not.toContain(implementationMarker);
+    }
+  });
+
   it("documents next module boundaries before further WebDriver extraction", () => {
     const todo = read("TODO.md");
     const requiredBoundaries = [

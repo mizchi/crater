@@ -18,6 +18,12 @@ pub fn network_url_patterns_match(Map[String, Json], String) -> Bool
 
 pub fn synthetic_network_cache_key(String, String) -> String
 
+pub fn synthetic_network_credentials_match_expected(String, SyntheticNetworkContinueCredentials?) -> Bool
+
+pub fn synthetic_network_decode_base64(String) -> String
+
+pub fn synthetic_network_expected_auth_credentials(String) -> SyntheticNetworkContinueCredentials?
+
 pub fn synthetic_network_extract_set_cookie_entries(Array[Json], String, Int) -> Array[SyntheticNetworkCookie]
 
 pub fn synthetic_network_first_query_value(String, String) -> String?
@@ -44,6 +50,10 @@ pub fn synthetic_network_is_valid_header_string_value(String) -> Bool
 
 pub fn synthetic_network_merge_header_entries(Array[Json]) -> Array[Json]
 
+pub fn synthetic_network_normalize_bytes_value(Json, String) -> Result[Json, String]
+
+pub fn synthetic_network_normalize_continue_credentials(Json) -> Result[SyntheticNetworkContinueCredentials, String]
+
 pub fn synthetic_network_normalize_continue_url(Json) -> Result[String, String]
 
 pub fn synthetic_network_normalize_header_entries(Json?, String) -> Result[Array[Json], String]
@@ -65,6 +75,10 @@ pub fn synthetic_network_request_header_string_value(Array[Json], String) -> Str
 pub fn synthetic_network_request_path(String) -> String
 
 pub fn synthetic_network_status_text_for_code(Int) -> String
+
+pub fn synthetic_network_string_from_bytes_value(Json, String) -> Result[String, String]
+
+pub fn synthetic_network_text_from_bytes_value(Json, String) -> Result[String, String]
 
 pub fn synthetic_network_validate_header_entry(Json) -> Json?
 
