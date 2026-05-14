@@ -12,6 +12,12 @@ pub(all) struct SyntheticNetworkCookie {
 }
 
 ///|
+pub(all) struct SyntheticNetworkSetCookieOverrideEntry {
+  set_cookie_header_value : String
+  cookie : SyntheticNetworkCookie
+}
+
+///|
 extern "js" fn js_parse_cookie_expiry_seconds(value : String) -> Int =
   #| (value) => {
   #|   const text = String(value ?? "").trim();
@@ -146,6 +152,124 @@ pub fn synthetic_network_format_set_cookie_header(
     _ => ()
   }
   parts.join(";")
+}
+
+///|
+pub fn synthetic_network_normalize_set_cookie_override_entry(
+  entry : Map[String, Json],
+  name : String,
+  value_text : String,
+  base_url : String,
+  now_seconds : Int,
+) -> Result[SyntheticNetworkSetCookieOverrideEntry, String] {
+  if !is_valid_network_header_name_token(name) {
+    return Err("cookie name is invalid")
+  }
+  let mut domain = synthetic_network_cookie_domain_from_base_url(base_url)
+  let mut domain_explicit = false
+  let mut path = "/"
+  let mut http_only = false
+  let mut secure = false
+  let mut same_site = "none"
+  let mut expiry : Int? = None
+  let header_entry : Map[String, Json] = {}
+  header_entry["name"] = Json::string(name)
+  header_entry["value"] = Json::string(value_text)
+
+  match entry.get("domain") {
+    Some(String(raw_domain)) => {
+      let normalized_domain = synthetic_network_strip_leading_dot(
+        raw_domain.trim().to_owned().to_lower(),
+      )
+      domain = normalized_domain
+      domain_explicit = normalized_domain != ""
+      header_entry["domain"] = Json::string(raw_domain)
+    }
+    Some(_) => return Err("cookie domain must be a string")
+    None => ()
+  }
+  match entry.get("expiry") {
+    Some(String(raw_expiry)) => {
+      header_entry["expiry"] = Json::string(raw_expiry)
+      let parsed_expiry = js_parse_cookie_expiry_seconds(raw_expiry)
+      if parsed_expiry >= 0 {
+        expiry = Some(parsed_expiry)
+      }
+    }
+    Some(_) => return Err("cookie expiry must be a string")
+    None => ()
+  }
+  match entry.get("path") {
+    Some(String(raw_path)) => {
+      path = raw_path
+      header_entry["path"] = Json::string(raw_path)
+    }
+    Some(_) => return Err("cookie path must be a string")
+    None => ()
+  }
+  match entry.get("sameSite") {
+    Some(String(raw_same_site)) => {
+      let lowered_same_site = raw_same_site.to_lower()
+      if lowered_same_site != "none" &&
+        lowered_same_site != "lax" &&
+        lowered_same_site != "strict" {
+        return Err("cookie sameSite is invalid")
+      }
+      same_site = lowered_same_site
+      header_entry["sameSite"] = Json::string(lowered_same_site)
+    }
+    Some(_) => return Err("cookie sameSite must be a string")
+    None => ()
+  }
+  match entry.get("httpOnly") {
+    Some(True) => {
+      http_only = true
+      header_entry["httpOnly"] = Json::boolean(true)
+    }
+    Some(False) => header_entry["httpOnly"] = Json::boolean(false)
+    Some(_) => return Err("cookie httpOnly must be a boolean")
+    None => ()
+  }
+  match entry.get("secure") {
+    Some(True) => {
+      secure = true
+      header_entry["secure"] = Json::boolean(true)
+    }
+    Some(False) => header_entry["secure"] = Json::boolean(false)
+    Some(_) => return Err("cookie secure must be a boolean")
+    None => ()
+  }
+  match entry.get("maxAge") {
+    Some(raw_max_age) =>
+      match
+        synthetic_network_json_as_safe_int(
+          raw_max_age, -9007199254740991.0, 9007199254740991.0,
+        ) {
+        Some(max_age) => {
+          header_entry["maxAge"] = Json::number(max_age.to_double())
+          expiry = Some(now_seconds + max_age)
+        }
+        None => return Err("cookie maxAge must be an integer")
+      }
+    None => ()
+  }
+
+  Ok({
+    set_cookie_header_value: synthetic_network_format_set_cookie_header(
+      header_entry,
+    ),
+    cookie: {
+      name,
+      value_text,
+      domain,
+      domain_explicit,
+      path,
+      http_only,
+      secure,
+      same_site,
+      expiry,
+    },
+  })
 }
 
 ///|
@@ -352,6 +476,23 @@ fn network_slice_from(value : String, start : Int) -> String {
     ""
   } else {
     value.unsafe_substring(start~, end=value.length())
+  }
+}
+
+///|
+fn synthetic_network_json_as_safe_int(
+  value : Json,
+  min : Double,
+  max : Double,
+) -> Int? {
+  match value {
+    Number(n, ..) =>
+      if n == n.to_int64().to_double() && n >= min && n <= max {
+        Some(n.to_int64().to_int())
+      } else {
+        None
+      }
+    _ => None
   }
 }
 

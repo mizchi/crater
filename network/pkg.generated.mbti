@@ -40,6 +40,8 @@ pub fn synthetic_network_is_valid_continue_url(String) -> Bool
 
 pub fn synthetic_network_merge_header_entries(Array[Json]) -> Array[Json]
 
+pub fn synthetic_network_normalize_set_cookie_override_entry(Map[String, Json], String, String, String, Int) -> Result[SyntheticNetworkSetCookieOverrideEntry, String]
+
 pub fn synthetic_network_parse_document_cookie_assignment(String, String, String, Int) -> SyntheticNetworkCookie?
 
 pub fn synthetic_network_parse_set_cookie_header_value(String, String, Int) -> SyntheticNetworkCookie?
@@ -147,6 +149,11 @@ pub(all) struct SyntheticNetworkResponseOverrides {
   status : Int
   status_text : String
   auth_challenges : Json?
+}
+
+pub(all) struct SyntheticNetworkSetCookieOverrideEntry {
+  set_cookie_header_value : String
+  cookie : SyntheticNetworkCookie
 }
 
 // Type aliases

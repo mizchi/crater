@@ -124,3 +124,67 @@ test "network rejects document cookie assignment without name separator" {
     None => inspect("invalid", content="invalid")
   }
 }
+
+///|
+test "network normalizes set cookie override entry" {
+  let normalized = match
+    synthetic_network_normalize_set_cookie_override_entry(
+      {
+        "domain": Json::string(".Example.test"),
+        "path": Json::string("/app"),
+        "sameSite": Json::string("Lax"),
+        "httpOnly": Json::boolean(true),
+        "secure": Json::boolean(true),
+        "maxAge": Json::number(60),
+      },
+      "token",
+      "xyz",
+      "https://origin.test/page",
+      1000,
+    ) {
+    Ok(normalized) => normalized
+    Err(message) => fail("unexpected normalize error: " + message)
+  }
+  inspect(
+    normalized.set_cookie_header_value,
+    content="token=xyz;Path=/app;Domain=.Example.test;Max-Age=60;HttpOnly;Secure;SameSite=Lax",
+  )
+  inspect(normalized.cookie.domain, content="example.test")
+  inspect(normalized.cookie.domain_explicit, content="true")
+  inspect(normalized.cookie.path, content="/app")
+  inspect(normalized.cookie.same_site, content="lax")
+  match normalized.cookie.expiry {
+    Some(expiry) => inspect(expiry, content="1060")
+    None => fail("expected max-age expiry")
+  }
+}
+
+///|
+test "network rejects invalid set cookie override sameSite" {
+  match
+    synthetic_network_normalize_set_cookie_override_entry(
+      { "sameSite": Json::string("wide") },
+      "token",
+      "xyz",
+      "https://origin.test/page",
+      0,
+    ) {
+    Ok(_) => fail("expected invalid sameSite")
+    Err(message) => inspect(message, content="cookie sameSite is invalid")
+  }
+}
+
+///|
+test "network rejects unsafe set cookie override maxAge" {
+  match
+    synthetic_network_normalize_set_cookie_override_entry(
+      { "maxAge": Json::number(1.5) },
+      "token",
+      "xyz",
+      "https://origin.test/page",
+      0,
+    ) {
+    Ok(_) => fail("expected invalid maxAge")
+    Err(message) => inspect(message, content="cookie maxAge must be an integer")
+  }
+}

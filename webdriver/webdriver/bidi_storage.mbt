@@ -37,17 +37,6 @@ priv struct StoragePartitionInfo {
 }
 
 ///|
-extern "js" fn js_parse_cookie_expiry_seconds(value : String) -> Int =
-  #| (value) => {
-  #|   const text = String(value ?? "").trim();
-  #|   if (text.length === 0) return -1;
-  #|   const hasZone = /(?:GMT|UTC|[+-]\d{2}:?\d{2})$/i.test(text);
-  #|   const parsed = Date.parse(hasZone ? text : `${text} GMT`);
-  #|   if (!Number.isFinite(parsed)) return -1;
-  #|   return Math.floor(parsed / 1000);
-  #| }
-
-///|
 fn storage_now_seconds() -> Int {
   (input_now_ms() / 1000.0).to_int()
 }

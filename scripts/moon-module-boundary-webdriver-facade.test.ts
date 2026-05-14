@@ -365,18 +365,9 @@ describe("MoonBit WebDriver facade and contract boundaries", () => {
 
     expect(missingFiles).toEqual([]);
 
-    const cookieFormatterFacade = read("webdriver/webdriver/bidi_network_set_cookie_format.mbt");
-    expect(cookieFormatterFacade).toContain(
-      "@crater_network.synthetic_network_format_set_cookie_header",
-    );
-    for (const implementationMarker of [
-      "let parts : Array[String]",
-      "SameSite=",
-      "Max-Age=",
-      "Expires=",
-    ] as const) {
-      expect(cookieFormatterFacade).not.toContain(implementationMarker);
-    }
+    expect(
+      fs.existsSync(path.join(REPO_ROOT, "webdriver/webdriver/bidi_network_set_cookie_format.mbt")),
+    ).toBe(false);
   });
 
   it("keeps protocol-neutral Set-Cookie parsing in crater-network", () => {
@@ -416,6 +407,28 @@ describe("MoonBit WebDriver facade and contract boundaries", () => {
       "storage_now_seconds() + max_age",
     ] as const) {
       expect(storageSource).not.toContain(implementationMarker);
+    }
+  });
+
+  it("keeps protocol-neutral network cookie override normalization in crater-network", () => {
+    const cookieHeaderSource = read("network/cookie_headers.mbt");
+    expect(cookieHeaderSource).toContain(
+      "pub fn synthetic_network_normalize_set_cookie_override_entry",
+    );
+
+    const cookieOverrideSource = read("webdriver/webdriver/bidi_network_cookie_headers.mbt");
+    expect(cookieOverrideSource).toContain(
+      "@crater_network.synthetic_network_normalize_set_cookie_override_entry",
+    );
+    for (const implementationMarker of [
+      "is_valid_network_header_name_token(name)",
+      "storage_cookie_domain_from_base_url(base_url)",
+      "storage_strip_leading_dot",
+      "js_parse_cookie_expiry_seconds(raw_expiry)",
+      "storage_now_seconds() + max_age",
+      "synthetic_network_format_set_cookie_header(header_entry)",
+    ] as const) {
+      expect(cookieOverrideSource).not.toContain(implementationMarker);
     }
   });
 
