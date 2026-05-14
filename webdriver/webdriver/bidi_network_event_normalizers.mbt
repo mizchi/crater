@@ -4,78 +4,13 @@ fn BidiProtocol::normalize_synthetic_network_cookie_entries(
   request_id : Int,
   raw_cookies : Json?,
 ) -> @crater_network.SyntheticNetworkCookieOverride? {
-  match raw_cookies {
-    None => Some({ enabled: false, cookies: [] })
-    Some(Null) => Some({ enabled: true, cookies: [] })
-    Some(Array(items)) => {
-      let cookies : Array[Json] = []
-      for item in items {
-        let map = match item {
-          Object(map) => map
-          _ => {
-            self.send_error(
-              request_id, "invalid argument", "requestCookies entry must be an object",
-            )
-            return None
-          }
-        }
-        let name = match map.get("name") {
-          Some(String(name)) => name
-          _ => {
-            self.send_error(
-              request_id, "invalid argument", "requestCookies.name must be a string",
-            )
-            return None
-          }
-        }
-        let value = match map.get("value") {
-          Some(Object(value_map)) => {
-            let value_type = match value_map.get("type") {
-              Some(String(value_type)) => value_type
-              _ => {
-                self.send_error(
-                  request_id, "invalid argument", "requestCookies.value.type must be a string",
-                )
-                return None
-              }
-            }
-            let payload = match value_map.get("value") {
-              Some(String(payload)) => payload
-              _ => {
-                self.send_error(
-                  request_id, "invalid argument", "requestCookies.value.value must be a string",
-                )
-                return None
-              }
-            }
-            if value_type != "string" {
-              self.send_error(
-                request_id, "invalid argument", "requestCookies.value.type is invalid",
-              )
-              return None
-            }
-            make_object({
-              "type": Json::string("string"),
-              "value": Json::string(payload),
-            })
-          }
-          _ => {
-            self.send_error(
-              request_id, "invalid argument", "requestCookies.value must be an object",
-            )
-            return None
-          }
-        }
-        cookies.push(
-          make_object({ "name": Json::string(name), "value": value }),
-        )
-      }
-      Some({ enabled: true, cookies })
-    }
-    Some(_) => {
-      self.send_error(
-        request_id, "invalid argument", "requestCookies must be an array",
-      )
+  match
+    @crater_network.synthetic_network_normalize_request_cookie_entries(
+      raw_cookies,
+    ) {
+    Ok(cookies) => Some(cookies)
+    Err(message) => {
+      self.send_error(request_id, "invalid argument", message)
       None
     }
   }

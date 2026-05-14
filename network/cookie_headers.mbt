@@ -273,6 +273,54 @@ pub fn synthetic_network_normalize_set_cookie_override_entry(
 }
 
 ///|
+pub fn synthetic_network_normalize_request_cookie_entries(
+  raw_cookies : Json?,
+) -> Result[SyntheticNetworkCookieOverride, String] {
+  match raw_cookies {
+    None => Ok({ enabled: false, cookies: [] })
+    Some(Null) => Ok({ enabled: true, cookies: [] })
+    Some(Array(items)) => {
+      let cookies : Array[Json] = []
+      for item in items {
+        let map = match item {
+          Object(map) => map
+          _ => return Err("requestCookies entry must be an object")
+        }
+        let name = match map.get("name") {
+          Some(String(name)) => name
+          _ => return Err("requestCookies.name must be a string")
+        }
+        let value = match map.get("value") {
+          Some(Object(value_map)) => {
+            let value_type = match value_map.get("type") {
+              Some(String(value_type)) => value_type
+              _ => return Err("requestCookies.value.type must be a string")
+            }
+            let payload = match value_map.get("value") {
+              Some(String(payload)) => payload
+              _ => return Err("requestCookies.value.value must be a string")
+            }
+            if value_type != "string" {
+              return Err("requestCookies.value.type is invalid")
+            }
+            Json::object({
+              "type": Json::string("string"),
+              "value": Json::string(payload),
+            })
+          }
+          _ => return Err("requestCookies.value must be an object")
+        }
+        cookies.push(
+          Json::object({ "name": Json::string(name), "value": value }),
+        )
+      }
+      Ok({ enabled: true, cookies })
+    }
+    Some(_) => Err("requestCookies must be an array")
+  }
+}
+
+///|
 fn synthetic_network_cookie_domain_from_base_url(base_url : String) -> String {
   match canonicalize_network_http_url(base_url) {
     Some(parts) => parts.host

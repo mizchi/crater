@@ -432,6 +432,26 @@ describe("MoonBit WebDriver facade and contract boundaries", () => {
     }
   });
 
+  it("keeps protocol-neutral request cookie override normalization in crater-network", () => {
+    const cookieHeaderSource = read("network/cookie_headers.mbt");
+    expect(cookieHeaderSource).toContain(
+      "pub fn synthetic_network_normalize_request_cookie_entries",
+    );
+
+    const normalizerSource = read("webdriver/webdriver/bidi_network_event_normalizers.mbt");
+    expect(normalizerSource).toContain(
+      "@crater_network.synthetic_network_normalize_request_cookie_entries",
+    );
+    for (const implementationMarker of [
+      "requestCookies entry must be an object",
+      "requestCookies.value.type must be a string",
+      "requestCookies.value.type is invalid",
+      "make_object({ \"name\": Json::string(name), \"value\": value })",
+    ] as const) {
+      expect(normalizerSource).not.toContain(implementationMarker);
+    }
+  });
+
   it("documents next module boundaries before further WebDriver extraction", () => {
     const todo = read("TODO.md");
     const requiredBoundaries = [

@@ -188,3 +188,63 @@ test "network rejects unsafe set cookie override maxAge" {
     Err(message) => inspect(message, content="cookie maxAge must be an integer")
   }
 }
+
+///|
+test "network normalizes request cookie entries" {
+  let normalized = match
+    synthetic_network_normalize_request_cookie_entries(
+      Some(
+        Json::array([
+          Json::object({
+            "name": Json::string("token"),
+            "value": Json::object({
+              "type": Json::string("string"),
+              "value": Json::string("xyz"),
+            }),
+          }),
+        ]),
+      ),
+    ) {
+    Ok(normalized) => normalized
+    Err(message) => fail("unexpected request cookie error: " + message)
+  }
+  inspect(normalized.enabled, content="true")
+  inspect(normalized.cookies.length(), content="1")
+  inspect(
+    normalized.cookies[0].stringify(),
+    content="{\"name\":\"token\",\"value\":{\"type\":\"string\",\"value\":\"xyz\"}}",
+  )
+}
+
+///|
+test "network treats missing request cookie entries as disabled" {
+  let normalized = match
+    synthetic_network_normalize_request_cookie_entries(None) {
+    Ok(normalized) => normalized
+    Err(message) => fail("unexpected request cookie error: " + message)
+  }
+  inspect(normalized.enabled, content="false")
+  inspect(normalized.cookies.length(), content="0")
+}
+
+///|
+test "network rejects invalid request cookie value type" {
+  match
+    synthetic_network_normalize_request_cookie_entries(
+      Some(
+        Json::array([
+          Json::object({
+            "name": Json::string("token"),
+            "value": Json::object({
+              "type": Json::string("base64"),
+              "value": Json::string("eHl6"),
+            }),
+          }),
+        ]),
+      ),
+    ) {
+    Ok(_) => fail("expected invalid request cookie value type")
+    Err(message) =>
+      inspect(message, content="requestCookies.value.type is invalid")
+  }
+}
