@@ -6,8 +6,8 @@ fn BidiProtocol::build_synthetic_fetch_request_plan(
   http_method : String,
   request_headers : Array[Json],
   request_value : Json?,
-) -> Array[SyntheticFetchPlanEntry] {
-  let requests : Array[SyntheticFetchPlanEntry] = []
+) -> Array[@crater_network.SyntheticFetchPlanEntry] {
+  let requests : Array[@crater_network.SyntheticFetchPlanEntry] = []
   let actual_request_token = self.next_synthetic_network_request_id()
   if synthetic_fetch_requires_preflight(
       self.requested_navigation_url(context_id),

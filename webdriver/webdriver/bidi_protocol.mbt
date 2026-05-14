@@ -158,7 +158,7 @@ priv struct BidiProtocol {
   input_synthetic_events_by_context : Map[String, Array[Json]] // context -> synthetic window.allEvents.events entries
   context_synthetic_scrolled : Map[String, Bool] // context -> synthetic scroll fallback applied
   speculation_prefetch_target_by_context : Map[String, String] // context -> last synthetic prefetch target
-  network_state : BidiNetworkState
+  network_state : @crater_network.BidiNetworkState
   mut socket : @core.Any? // WebSocket for async responses
   mut socket_epoch : Int // Monotonic epoch for active WebSocket
   use_quickjs : Bool // Use QuickJS sandboxed runtime for script execution
@@ -322,7 +322,7 @@ fn BidiProtocol::new() -> BidiProtocol {
     input_synthetic_events_by_context: {},
     context_synthetic_scrolled: {},
     speculation_prefetch_target_by_context: {},
-    network_state: BidiNetworkState::new(),
+    network_state: @crater_network.BidiNetworkState::new(),
     socket: None,
     socket_epoch: 0,
     use_quickjs: false,

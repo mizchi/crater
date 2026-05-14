@@ -1,6 +1,6 @@
 ///|
 fn synthetic_navigation_blocked_request_payload(
-  input : SyntheticNetworkEventInput,
+  input : @crater_network.SyntheticNetworkEventInput,
   phase : String,
   response_event : Json?,
 ) -> Map[String, Json] {
@@ -48,7 +48,7 @@ fn synthetic_navigation_blocked_request_payload(
 
 ///|
 fn synthetic_navigation_requires_auth_event(
-  response_overrides : SyntheticNetworkResponseOverrides,
+  response_overrides : @crater_network.SyntheticNetworkResponseOverrides,
 ) -> Bool {
   response_overrides.status == 401 ||
   response_overrides.status == 407 ||

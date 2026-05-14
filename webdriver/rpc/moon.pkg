@@ -1,0 +1,5 @@
+import {
+  "mizchi/crater-webdriver-bidi/contract" @contract,
+}
+
+supported_targets = "js"

@@ -201,7 +201,7 @@ fn BidiProtocol::handle_network_continue_blocked_response(
     }
   }
 
-  let mut credentials : SyntheticNetworkContinueCredentials? = None
+  let mut credentials : @crater_network.SyntheticNetworkContinueCredentials? = None
   if map.contains("credentials") {
     match map.get("credentials") {
       Some(raw_credentials) =>
@@ -310,7 +310,7 @@ fn BidiProtocol::handle_network_continue_blocked_response(
   } else {
     resolved_overrides.auth_challenges
   }
-  let response_overrides : SyntheticNetworkResponseOverrides = {
+  let response_overrides : @crater_network.SyntheticNetworkResponseOverrides = {
     from_cache: resolved_overrides.from_cache,
     headers: response_headers,
     mime_type: resolved_overrides.mime_type,

@@ -3,6 +3,8 @@ package "mizchi/crater-webdriver-bidi"
 
 import {
   "mizchi/crater-browser/cdp",
+  "mizchi/crater-webdriver-bidi/contract",
+  "mizchi/crater-webdriver-bidi/rpc",
   "mizchi/crater-webdriver-bidi/webdriver",
 }
 
@@ -25,68 +27,68 @@ pub fn handle_get_title(@cdp.CdpSession) -> String
 
 pub fn handle_navigate(@cdp.CdpSession, String) -> Result[Unit, @webdriver.CdpHandlerError]
 
-pub fn handle_rpc(@webdriver.CdpSessionManager, @webdriver.RpcRequest) -> @webdriver.RpcResponse
+pub fn handle_rpc(@webdriver.CdpSessionManager, @rpc.RpcRequest) -> @rpc.RpcResponse
 
-pub fn parse_method(String) -> @webdriver.ApiMethod?
+pub fn parse_method(String) -> @contract.ApiMethod?
 
 // Errors
 
 // Types and methods
 
 // Type aliases
-pub using @webdriver {type ApiError}
+pub using @contract {type ApiError}
 
-pub using @webdriver {type ApiMethod}
+pub using @contract {type ApiMethod}
 
 pub using @webdriver {type BidiServer}
 
 pub using @webdriver {type BidiServerConfig}
 
-pub using @webdriver {type Capabilities}
+pub using @contract {type Capabilities}
 
 pub using @webdriver {type CdpHandlerError}
 
 pub using @webdriver {type CdpSessionManager}
 
-pub using @webdriver {type ErrorCode}
+pub using @contract {type ErrorCode}
 
-pub using @webdriver {type PageLoadStrategy}
+pub using @contract {type PageLoadStrategy}
 
-pub using @webdriver {type ProxyConfig}
+pub using @contract {type ProxyConfig}
 
-pub using @webdriver {type Rect}
+pub using @contract {type Rect}
 
-pub using @webdriver {type RpcErrorCode}
+pub using @rpc {type RpcErrorCode}
 
-pub using @webdriver {type RpcId}
+pub using @rpc {type RpcId}
 
-pub using @webdriver {type RpcRequest}
+pub using @rpc {type RpcRequest}
 
-pub using @webdriver {type RpcResponse}
+pub using @rpc {type RpcResponse}
 
-pub using @webdriver {type Selector}
+pub using @contract {type Selector}
 
-pub using @webdriver {type Session}
+pub using @contract {type Session}
 
 pub using @webdriver {type SessionManager}
 
 pub using @webdriver {type SessionState}
 
-pub using @webdriver {type Timeouts}
+pub using @contract {type Timeouts}
 
-pub using @webdriver {type Viewport}
+pub using @contract {type Viewport}
 
-pub using @webdriver {type WebDriverCommand}
+pub using @contract {type WebDriverCommand}
 
-pub using @webdriver {type WebDriverError}
+pub using @contract {type WebDriverError}
 
-pub using @webdriver {type WebDriverRequest}
+pub using @contract {type WebDriverRequest}
 
-pub using @webdriver {type WebDriverResponse}
+pub using @contract {type WebDriverResponse}
 
-pub using @webdriver {type WebDriverValue}
+pub using @contract {type WebDriverValue}
 
-pub using @webdriver {type WindowRect}
+pub using @contract {type WindowRect}
 
 // Traits
 

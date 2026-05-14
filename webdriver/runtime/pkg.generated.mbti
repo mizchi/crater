@@ -1,0 +1,44 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-webdriver-bidi/runtime"
+
+import {
+  "mizchi/js/core",
+}
+
+// Values
+pub fn build_html_data_url(String) -> String
+
+pub fn encode_base64_raw(String) -> String
+
+pub fn encode_base64_utf8(String) -> String
+
+pub fn extract_inline_script_blocks(String) -> Array[String]
+
+pub fn init_quickjs() -> @core.Any
+
+pub fn is_quickjs_initialized() -> Bool
+
+pub fn json_ensure_ascii(String) -> String
+
+pub fn mark_quickjs_initialized() -> Unit
+
+pub fn quickjs_eval_async(String, Bool) -> @core.Any
+
+pub fn quickjs_eval_module(String) -> @core.Any
+
+pub fn quickjs_eval_sync(String) -> String
+
+pub fn quickjs_eval_ws(@core.Any, Int, String, String) -> Unit
+
+pub fn quickjs_fetch(String) -> @core.Any
+
+pub fn quickjs_load(String) -> @core.Any
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

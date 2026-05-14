@@ -16,6 +16,7 @@ The current workspace members are:
 - `./testing`
 - `./webvitals`
 - `./http`
+- `./network`
 - `./http_sqlite`
 - `./css`
 - `./dom`
@@ -104,6 +105,7 @@ The intended direction is:
 | `mizchi/crater-renderer` | Canonical library | Renderer and VRT/export-oriented integration |
 | `mizchi/crater-browser-contract` | Canonical library | Shared browser-facing render/AOM helper functions for shell and BiDi |
 | `mizchi/crater-browser-runtime` | Canonical library | Shared JS runtime contract and DOM serializer |
+| `mizchi/crater-network` | Canonical library | Protocol-neutral network state and byte/query encoding helpers |
 | `mizchi/crater-browser-http-sqlite` | Adapter | Optional JS-only SQLite cache backend for `mizchi/crater-browser-http` |
 | `mizchi/crater-browser` | Integration | Browser shell, interaction, TUI, network/cache integration |
 | `mizchi/crater-webdriver-bidi` | Adapter | WebDriver BiDi server / protocol adapter |
@@ -119,8 +121,9 @@ already extracted `mizchi/crater-layout`, `mizchi/crater-css`,
 `mizchi/crater-dom`, `mizchi/crater-aomx`, `mizchi/crater-benchmarks`,
 `mizchi/crater-browser-contract`, `mizchi/crater-testing`,
 `mizchi/crater-webvitals`, `mizchi/crater-painter`, `mizchi/crater-renderer`,
-`mizchi/crater-browser-runtime`, and `mizchi/crater-browser-http-sqlite`. The
-browser-facing split is now underway in `mizchi/crater-browser`.
+`mizchi/crater-browser-runtime`, `mizchi/crater-network`, and
+`mizchi/crater-browser-http-sqlite`. The browser-facing split is now underway
+in `mizchi/crater-browser`.
 
 The old `mizchi/crater-browser/js` package remains only as a `0.17.x`
 compatibility facade over the extracted runtime contract.
@@ -205,6 +208,7 @@ For new code, prefer the narrowest module that matches the subsystem you need:
 | Renderer / VRT facade | `mizchi/crater-renderer` |
 | Browser shell / interaction / CDP | `mizchi/crater-browser` |
 | Browser runtime contract / DOM serializer | `mizchi/crater-browser-runtime` |
+| Protocol-neutral network state / byte helpers | `mizchi/crater-network` |
 | BiDi / WebDriver helper surface | `mizchi/crater-webdriver-bidi` |
 | Native V8 host bindings | `mizchi/crater-browser-native` |
 | JS exports | `mizchi/crater-js` |
@@ -415,6 +419,12 @@ module for runtime-facing helpers.
 The WebDriver BiDi adapter packages are kept in `webdriver/`:
 
 - `.`
+- `contract`
+- `rpc`
+- `runtime`
+- `protocol`
+- `network`
+- `font_runtime`
 - `webdriver`
 - `bidi_main`
 
@@ -424,7 +434,14 @@ The fixture-only builder now lives in the internal `testing/` module:
 
 The root package provides a small facade over the WebDriver helper surface
 without forcing consumers to import the larger `webdriver` package path
-directly.
+directly. Pure request/response/API contract types live in `contract`;
+JSON-RPC request/response helpers and method-name parsing live in `rpc`;
+QuickJS runtime FFI/state and JS-side navigation encoding helpers live in
+`runtime`; pure BiDi JSON parameter and validation helpers live in `protocol`;
+protocol-neutral network runtime state and byte/query helpers live in
+`mizchi/crater-network`, with `webdriver/network` kept as a compatibility
+adapter; the larger `webdriver` package remains a compatibility facade plus the
+current protocol/runtime implementation while those pieces are split out.
 
 ### `mizchi/crater-wasm`
 

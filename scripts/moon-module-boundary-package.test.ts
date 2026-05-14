@@ -124,6 +124,12 @@ describe("MoonBit package and compatibility boundaries", () => {
       "mizchi/crater-painter/paint/layout_bridge",
       "mizchi/crater-painter/paint/render_bridge",
       "mizchi/crater-painter/paint/glyph",
+      "mizchi/crater-webdriver-bidi/contract",
+      "mizchi/crater-webdriver-bidi/rpc",
+      "mizchi/crater-webdriver-bidi/runtime",
+      "mizchi/crater-webdriver-bidi/protocol",
+      "mizchi/crater-webdriver-bidi/network",
+      "mizchi/crater-network",
     ] as const;
 
     const missing = requiredBridges.filter((bridge) => !source.includes(bridge));

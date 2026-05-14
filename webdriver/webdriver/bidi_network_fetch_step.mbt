@@ -3,14 +3,14 @@ fn BidiProtocol::perform_synthetic_fetch_step(
   self : BidiProtocol,
   request_id : Int,
   context_id : String,
-  request_step : SyntheticFetchPlanEntry,
+  request_step : @crater_network.SyntheticFetchPlanEntry,
   raw_request_headers : Array[Json],
   should_abort : Bool,
-) -> SyntheticFetchStepResult {
+) -> @crater_network.SyntheticFetchStepResult {
   let resolved_request_headers = self.resolve_network_extra_header_entries(
     context_id, raw_request_headers,
   )
-  let base_input : SyntheticNetworkEventInput = {
+  let base_input : @crater_network.SyntheticNetworkEventInput = {
     context_id,
     url: request_step.url,
     http_method: request_step.http_method,
@@ -170,7 +170,7 @@ fn BidiProtocol::perform_synthetic_fetch_step(
     auth_required_intercepts.length() > 0
   let mut auth_required_event : Json? = None
   if auth_required_subscribed && auth_required_needed {
-    let auth_overrides : SyntheticNetworkResponseOverrides = if auth_required_blocked {
+    let auth_overrides : @crater_network.SyntheticNetworkResponseOverrides = if auth_required_blocked {
       {
         from_cache: response_overrides.from_cache,
         headers: response_overrides.headers,

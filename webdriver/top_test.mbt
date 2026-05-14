@@ -1,10 +1,16 @@
 ///|
 test "webdriver-bidi facade parses api method names" {
-  inspect(parse_method("newContext"), content="Some(NewContext)")
-  inspect(
-    parse_method("Page.navigate"),
-    content="Some(Goto(page_id=\"\", url=\"\"))",
-  )
+  match parse_method("newContext") {
+    Some(ApiMethod::NewContext) => ()
+    _ => fail("expected newContext to parse as NewContext")
+  }
+  match parse_method("Page.navigate") {
+    Some(ApiMethod::Goto(page_id~, url~)) => {
+      inspect(page_id, content="")
+      inspect(url, content="")
+    }
+    _ => fail("expected Page.navigate to parse as Goto")
+  }
 }
 
 ///|

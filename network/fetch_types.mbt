@@ -1,5 +1,5 @@
 ///|
-priv struct SyntheticFetchPlanEntry {
+pub(all) struct SyntheticFetchPlanEntry {
   url : String
   http_method : String
   request_token : String
@@ -8,13 +8,13 @@ priv struct SyntheticFetchPlanEntry {
 }
 
 ///|
-priv struct SyntheticFetchStepResult {
+pub(all) struct SyntheticFetchStepResult {
   blocked_text : String?
   response_value : Json?
 }
 
 ///|
-priv struct SyntheticFetchCommandResult {
+pub(all) struct SyntheticFetchCommandResult {
   blocked_text : String?
   response_value : Json
 }

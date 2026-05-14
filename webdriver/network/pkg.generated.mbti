@@ -1,0 +1,37 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-webdriver-bidi/network"
+
+import {
+  "mizchi/crater-network",
+}
+
+// Values
+pub fn base64_byte_length(String) -> Int
+
+pub fn decode_query_component(String) -> String
+
+pub fn utf8_byte_length(String) -> Int
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+pub using @crater-network {type BidiNetworkState}
+
+pub using @crater-network {type SyntheticFetchCommandResult}
+
+pub using @crater-network {type SyntheticFetchPlanEntry}
+
+pub using @crater-network {type SyntheticFetchStepResult}
+
+pub using @crater-network {type SyntheticNetworkContinueCredentials}
+
+pub using @crater-network {type SyntheticNetworkCookieOverride}
+
+pub using @crater-network {type SyntheticNetworkEventInput}
+
+pub using @crater-network {type SyntheticNetworkResponseOverrides}
+
+// Traits
+

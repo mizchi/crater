@@ -2,7 +2,7 @@
 fn BidiProtocol::build_synthetic_before_request_sent_event_json(
   self : BidiProtocol,
   request_id : Int,
-  input : SyntheticNetworkEventInput,
+  input : @crater_network.SyntheticNetworkEventInput,
 ) -> Json? {
   let now = input_now_ms()
   let request_payload = match
@@ -21,8 +21,8 @@ fn BidiProtocol::build_synthetic_before_request_sent_event_json(
 fn BidiProtocol::build_synthetic_response_event_json(
   self : BidiProtocol,
   request_id : Int,
-  input : SyntheticNetworkEventInput,
-  response_overrides : SyntheticNetworkResponseOverrides,
+  input : @crater_network.SyntheticNetworkEventInput,
+  response_overrides : @crater_network.SyntheticNetworkResponseOverrides,
 ) -> Json? {
   let now = input_now_ms()
   let request_payload = match
@@ -44,7 +44,7 @@ fn BidiProtocol::build_synthetic_response_event_json(
 fn BidiProtocol::build_synthetic_fetch_error_event_json(
   self : BidiProtocol,
   request_id : Int,
-  input : SyntheticNetworkEventInput,
+  input : @crater_network.SyntheticNetworkEventInput,
   error_text : String,
 ) -> Json? {
   let now = input_now_ms()
@@ -64,7 +64,7 @@ fn BidiProtocol::build_synthetic_fetch_error_event_json(
 fn BidiProtocol::build_synthetic_network_request_payload_json(
   self : BidiProtocol,
   request_id : Int,
-  input : SyntheticNetworkEventInput,
+  input : @crater_network.SyntheticNetworkEventInput,
   now : Double,
 ) -> Json? {
   let body_size = match
@@ -97,7 +97,7 @@ fn BidiProtocol::build_synthetic_network_request_payload_json(
 ///|
 fn BidiProtocol::build_synthetic_network_event_base_map(
   self : BidiProtocol,
-  input : SyntheticNetworkEventInput,
+  input : @crater_network.SyntheticNetworkEventInput,
   request_payload : Json,
   now : Double,
 ) -> Map[String, Json] {
@@ -149,7 +149,7 @@ fn BidiProtocol::build_synthetic_network_timings_json(
 fn BidiProtocol::build_synthetic_network_response_payload_json(
   self : BidiProtocol,
   url : String,
-  response_overrides : SyntheticNetworkResponseOverrides,
+  response_overrides : @crater_network.SyntheticNetworkResponseOverrides,
 ) -> Json {
   let _ = self
   let response : Map[String, Json] = {}

@@ -1,0 +1,76 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-webdriver-bidi/rpc"
+
+import {
+  "mizchi/crater-webdriver-bidi/contract",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn api_error_to_rpc(RpcId, @contract.ApiError) -> RpcResponse
+
+pub fn parse_json_object(String) -> Map[String, String]
+
+pub fn parse_method(String) -> @contract.ApiMethod?
+
+pub fn rpc_error(RpcId, RpcErrorCode, String) -> RpcResponse
+
+pub fn rpc_error_with_data(RpcId, RpcErrorCode, String, String) -> RpcResponse
+
+pub fn rpc_success_bool(RpcId, Bool) -> RpcResponse
+
+pub fn rpc_success_json(RpcId, String) -> RpcResponse
+
+pub fn rpc_success_null(RpcId) -> RpcResponse
+
+pub fn rpc_success_number(RpcId, Double) -> RpcResponse
+
+pub fn rpc_success_string(RpcId, String) -> RpcResponse
+
+// Errors
+
+// Types and methods
+pub(all) enum RpcErrorCode {
+  ParseError
+  InvalidRequest
+  MethodNotFound
+  InvalidParams
+  InternalError
+  ElementNotFound
+  PageNotFound
+  Timeout
+  NavigationFailed
+} derive(Eq, @debug.Debug)
+pub fn RpcErrorCode::code(Self) -> Int
+pub impl Show for RpcErrorCode
+
+pub(all) enum RpcId {
+  Num(Int)
+  Str(String)
+  Null
+} derive(Eq, @debug.Debug)
+pub fn RpcId::to_json(Self) -> String
+pub impl Show for RpcId
+
+pub(all) struct RpcRequest {
+  jsonrpc : String
+  id : RpcId
+  method_name : String
+  params : Map[String, String]
+} derive(@debug.Debug)
+pub impl Show for RpcRequest
+
+pub(all) enum RpcResponse {
+  Success(id~ : RpcId, result~ : String)
+  Error(id~ : RpcId, code~ : Int, message~ : String, data~ : String?)
+} derive(@debug.Debug)
+pub fn RpcResponse::to_json(Self) -> String
+pub impl Show for RpcResponse
+
+// Type aliases
+pub using @contract {type ApiError}
+
+pub using @contract {type ApiMethod}
+
+// Traits
+

@@ -53,26 +53,26 @@ extern "js" fn js_extract_inline_script_blocks(html : String) -> Array[String] =
   #| }
 
 ///|
-fn encode_base64_utf8(value : String) -> String {
+pub fn encode_base64_utf8(value : String) -> String {
   js_encode_base64_utf8(value)
 }
 
 ///|
-fn encode_base64_raw(value : String) -> String {
+pub fn encode_base64_raw(value : String) -> String {
   js_encode_base64_raw(value)
 }
 
 ///|
-fn json_ensure_ascii(value : String) -> String {
+pub fn json_ensure_ascii(value : String) -> String {
   js_json_ensure_ascii(value)
 }
 
 ///|
-fn extract_inline_script_blocks(html : String) -> Array[String] {
+pub fn extract_inline_script_blocks(html : String) -> Array[String] {
   js_extract_inline_script_blocks(html)
 }
 
 ///|
-fn build_html_data_url(html : String) -> String {
+pub fn build_html_data_url(html : String) -> String {
   "data:text/html;charset=utf-8;base64," + encode_base64_utf8(html)
 }

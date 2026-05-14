@@ -4,6 +4,9 @@
 /// Provides JSON-RPC 2.0 compatible request/response handling
 /// for the Browser API.
 
+///|
+pub using @contract {type ApiError, type ApiMethod}
+
 // =============================================================================
 // JSON-RPC Types
 // =============================================================================

@@ -5,7 +5,7 @@ fn BidiProtocol::emit_synthetic_network_event_sequence_internal(
   is_navigation : Bool,
   force_before_request_sent : Bool,
 ) -> Unit {
-  let base_input : SyntheticNetworkEventInput = {
+  let base_input : @crater_network.SyntheticNetworkEventInput = {
     context_id: request.context_id,
     url: request.url,
     http_method: "GET",
@@ -144,7 +144,7 @@ fn BidiProtocol::emit_synthetic_network_event_sequence_internal(
     auth_required_intercepts.length() > 0
   let mut auth_required_event : Json? = None
   if auth_required_subscribed && auth_required_needed {
-    let auth_overrides : SyntheticNetworkResponseOverrides = if auth_required_blocked {
+    let auth_overrides : @crater_network.SyntheticNetworkResponseOverrides = if auth_required_blocked {
       {
         from_cache: response_overrides.from_cache,
         headers: response_overrides.headers,

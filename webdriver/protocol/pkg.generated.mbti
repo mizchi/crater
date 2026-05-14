@@ -1,0 +1,46 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-webdriver-bidi/protocol"
+
+// Values
+pub fn canonicalize_serialization_options_map(Map[String, Json]) -> Map[String, Json]
+
+pub fn get_field(Json, String) -> Json?
+
+pub fn get_int_field(Json, String) -> Int?
+
+pub fn get_locate_nodes_serialization_options_json(Json?) -> String
+
+pub fn get_map_field_with_alias(Map[String, Json], String, String) -> Json?
+
+pub fn get_param_raw(Json?, String) -> Json?
+
+pub fn get_param_raw_with_alias(Json?, String, String) -> Json?
+
+pub fn get_serialization_options_json(Json?) -> String
+
+pub fn get_string_field(Json, String) -> String?
+
+pub fn get_string_param(Json?, String) -> String?
+
+pub fn has_serialization_options_param(Json?) -> Bool
+
+pub fn is_ascii_alnum(Char) -> Bool
+
+pub fn is_ascii_alpha(Char) -> Bool
+
+pub fn is_ascii_case_insensitive_equal(String, String) -> Bool
+
+pub fn make_object(Map[String, Json]) -> Json
+
+pub fn parse_decimal_string(String) -> Int?
+
+pub fn resolve_runtime_context_id(Json?, String, String, Bool) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

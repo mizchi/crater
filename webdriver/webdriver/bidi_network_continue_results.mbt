@@ -258,7 +258,7 @@ fn BidiProtocol::maybe_emit_followup_preflight_blocked_request(
     Some(String(initiator_type)) => Some(initiator_type)
     _ => Some("fetch")
   }
-  let input : SyntheticNetworkEventInput = {
+  let input : @crater_network.SyntheticNetworkEventInput = {
     context_id,
     url,
     http_method: "GET",
@@ -309,7 +309,7 @@ fn BidiProtocol::maybe_emit_followup_preflight_blocked_request(
 fn BidiProtocol::build_synthetic_auth_required_event_json(
   self : BidiProtocol,
   request_id : Int,
-  input : SyntheticNetworkEventInput,
+  input : @crater_network.SyntheticNetworkEventInput,
   blocked_request : Map[String, Json],
 ) -> Json? {
   let resolved_overrides = self.resolve_synthetic_response_overrides_internal(
@@ -323,7 +323,7 @@ fn BidiProtocol::build_synthetic_auth_required_event_json(
     "testrealm",
   )
   let status = synthetic_network_blocked_response_status(blocked_request)
-  let response_overrides : SyntheticNetworkResponseOverrides = {
+  let response_overrides : @crater_network.SyntheticNetworkResponseOverrides = {
     from_cache: resolved_overrides.from_cache,
     headers: if synthetic_network_blocked_response_headers(blocked_request).length() >
       0 {

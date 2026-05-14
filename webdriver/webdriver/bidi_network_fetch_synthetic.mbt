@@ -100,7 +100,7 @@ fn BidiProtocol::perform_synthetic_fetch_internal(
   request_headers : Array[Json],
   request_value : Json?,
   should_abort : Bool,
-) -> SyntheticFetchCommandResult {
+) -> @crater_network.SyntheticFetchCommandResult {
   let request_plan = self.build_synthetic_fetch_request_plan(
     context_id, url, http_method, request_headers, request_value,
   )

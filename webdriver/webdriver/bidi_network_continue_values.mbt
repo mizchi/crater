@@ -3,7 +3,7 @@ fn BidiProtocol::normalize_synthetic_network_continue_credentials(
   self : BidiProtocol,
   request_id : Int,
   raw_credentials : Json,
-) -> SyntheticNetworkContinueCredentials? {
+) -> @crater_network.SyntheticNetworkContinueCredentials? {
   let map = match raw_credentials {
     Object(map) => map
     _ => {
@@ -212,7 +212,7 @@ fn BidiProtocol::synthetic_network_string_from_bytes_value(
 ///|
 fn synthetic_network_credentials_match_expected(
   url : String,
-  credentials : SyntheticNetworkContinueCredentials?,
+  credentials : @crater_network.SyntheticNetworkContinueCredentials?,
 ) -> Bool {
   match credentials {
     Some(credentials) =>
@@ -229,7 +229,7 @@ fn synthetic_network_credentials_match_expected(
 ///|
 fn synthetic_network_expected_auth_credentials(
   url : String,
-) -> SyntheticNetworkContinueCredentials? {
+) -> @crater_network.SyntheticNetworkContinueCredentials? {
   let username = synthetic_network_first_query_value(url, "username")
   let password = synthetic_network_first_query_value(url, "password")
   match (username, password) {

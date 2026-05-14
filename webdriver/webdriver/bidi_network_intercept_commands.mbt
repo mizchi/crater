@@ -70,7 +70,7 @@ fn BidiProtocol::prepare_navigation_request_internal(
     navigation_id,
     Some(request_id),
   )
-  let input : SyntheticNetworkEventInput = {
+  let input : @crater_network.SyntheticNetworkEventInput = {
     context_id,
     url,
     http_method: "GET",
@@ -279,7 +279,7 @@ fn BidiProtocol::handle_network_continue_auth_request(
     false,
   )
   let status = synthetic_network_blocked_response_status(blocked_request)
-  let response_overrides : SyntheticNetworkResponseOverrides = {
+  let response_overrides : @crater_network.SyntheticNetworkResponseOverrides = {
     from_cache: resolved_overrides.from_cache,
     headers: synthetic_network_blocked_response_headers(blocked_request),
     mime_type: resolved_overrides.mime_type,

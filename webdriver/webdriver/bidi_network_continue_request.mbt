@@ -258,7 +258,7 @@ fn BidiProtocol::handle_network_continue_blocked_request(
       }
     }
   }
-  let response_overrides : SyntheticNetworkResponseOverrides = {
+  let response_overrides : @crater_network.SyntheticNetworkResponseOverrides = {
     from_cache: resolved_overrides.from_cache,
     headers: resolved_overrides.headers,
     mime_type: resolved_overrides.mime_type,

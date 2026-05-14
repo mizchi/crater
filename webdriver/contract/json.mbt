@@ -145,7 +145,7 @@ pub fn ElementRect::to_json(self : ElementRect) -> String {
 
 ///|
 /// Escape string for JSON
-fn escape_json_string(s : String) -> String {
+pub fn escape_json_string(s : String) -> String {
   let buf = StringBuilder::new()
   for c in s {
     match c {

@@ -173,7 +173,7 @@ fn BidiProtocol::resolve_synthetic_response_overrides_internal(
   http_method : String,
   request_headers : Array[Json],
   update_cache : Bool,
-) -> SyntheticNetworkResponseOverrides {
+) -> @crater_network.SyntheticNetworkResponseOverrides {
   let mut status = 200
   let mut from_cache = false
   let mut protocol = "http/1.1"
@@ -306,7 +306,7 @@ fn BidiProtocol::resolve_synthetic_response_overrides_internal(
 ///|
 fn BidiProtocol::synthetic_network_response_overrides_to_json(
   self : BidiProtocol,
-  overrides : SyntheticNetworkResponseOverrides,
+  overrides : @crater_network.SyntheticNetworkResponseOverrides,
 ) -> Json {
   let _ = self
   let result : Map[String, Json] = {}

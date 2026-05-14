@@ -3,7 +3,7 @@ fn BidiProtocol::normalize_synthetic_network_cookie_entries(
   self : BidiProtocol,
   request_id : Int,
   raw_cookies : Json?,
-) -> SyntheticNetworkCookieOverride? {
+) -> @crater_network.SyntheticNetworkCookieOverride? {
   match raw_cookies {
     None => Some({ enabled: false, cookies: [] })
     Some(Null) => Some({ enabled: true, cookies: [] })
@@ -144,7 +144,7 @@ fn BidiProtocol::normalize_synthetic_network_response_overrides(
   self : BidiProtocol,
   request_id : Int,
   raw_overrides : Json?,
-) -> SyntheticNetworkResponseOverrides? {
+) -> @crater_network.SyntheticNetworkResponseOverrides? {
   let overrides = match raw_overrides {
     None | Some(Null) =>
       return Some({

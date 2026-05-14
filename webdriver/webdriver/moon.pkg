@@ -1,4 +1,9 @@
 import {
+  "mizchi/crater-webdriver-bidi/contract" @contract,
+  "mizchi/crater-webdriver-bidi/rpc" @rpc,
+  "mizchi/crater-webdriver-bidi/runtime" @runtime,
+  "mizchi/crater-webdriver-bidi/protocol" @protocol,
+  "mizchi/crater-network" @crater_network,
   "mizchi/webdriver/bidi" @bidi_wire,
   "mizchi/crater-renderer/vrt" @vrt,
   "mizchi/crater-browser-contract" @browser_contract,

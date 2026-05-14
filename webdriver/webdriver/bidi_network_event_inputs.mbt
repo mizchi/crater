@@ -20,7 +20,7 @@ fn BidiProtocol::normalize_synthetic_network_event_input(
   self : BidiProtocol,
   request_id : Int,
   params : Json?,
-) -> SyntheticNetworkEventInput? {
+) -> @crater_network.SyntheticNetworkEventInput? {
   let map = match params {
     Some(Object(map)) => map
     _ => {
@@ -169,7 +169,7 @@ fn BidiProtocol::synthetic_network_event_input_from_blocked_request(
   request_id : Int,
   blocked_request_id : String,
   blocked_request : Map[String, Json],
-) -> SyntheticNetworkEventInput? {
+) -> @crater_network.SyntheticNetworkEventInput? {
   let context_id = match
     get_map_field_with_alias(blocked_request, "contextId", "context_id") {
     Some(String(context_id)) => context_id
