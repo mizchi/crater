@@ -41,7 +41,7 @@ describe("MoonBit WebDriver rendering boundaries", () => {
     const screenshotSource = read("webdriver/webdriver/bidi_protocol_browsing_context_screenshot.mbt");
     expect(screenshotSource).toContain("@rendering.normalize_capture_screenshot_options");
     const actualPaintSource = read("webdriver/webdriver/bidi_browsing_context_actual_paint.mbt");
-    for (const marker of ["@rendering.actual_paint_document_dimensions_from_node_and_layout", "@rendering.should_use_font_aware_text_provider", "@rendering.can_use_actual_paint_for_screenshot_data", "@rendering.resolve_text_intrinsic_size_from_provider_payload", "@rendering.parse_glyph_outline_commands_json", "@rendering.capture_paint_data_to_json"] as const) expect(actualPaintSource).toContain(marker);
+    for (const marker of ["@rendering.actual_paint_document_dimensions_from_node_and_layout", "@rendering.should_use_font_aware_text_provider", "@rendering.can_use_actual_paint_for_screenshot_data", "@rendering.resolve_text_intrinsic_size_from_provider_payload", "@rendering.parse_glyph_outline_commands_json", "@rendering.capture_paint_data_to_json", "@rendering.capture_paint_data_log_message", "@rendering.capture_screenshot_data_log_message", "@rendering.capture_paint_tree_to_json"] as const) expect(actualPaintSource).toContain(marker);
     const batchRenderSource = read("webdriver/webdriver/bidi_browsing_context_vrt.mbt");
     expect(batchRenderSource).toContain("@rendering.normalize_batch_render_options");
     expect(batchRenderSource).toContain("@rendering.batch_render_results_to_json");
@@ -68,6 +68,9 @@ describe("MoonBit WebDriver rendering boundaries", () => {
       "fn parse_csv_quad",
       "fn parse_outline_commands_json",
       "font_size * 0.5",
+      "capturePaintData: node_layout=",
+      "captureScreenshotData: node_layout=",
+      "\"paintTree\": Json::string",
       "Some(String(\"synthetic\"))",
       "fn capture_timing_to_json",
       "fn capture_visual_to_json",

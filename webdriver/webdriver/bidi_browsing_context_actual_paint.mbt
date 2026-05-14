@@ -691,22 +691,7 @@ fn BidiProtocol::resolve_capture_paint_data(
     rgba_encode_ms: t_encode1 - t_encode0,
     total_ms: frame.timing.total_ms + (t_encode1 - t_encode0),
   }
-  js_log_stderr(
-    "capturePaintData: node_layout=" +
-    timing.node_layout_ms.to_string() +
-    "ms paint_tree=" +
-    timing.paint_tree_ms.to_string() +
-    "ms raster=" +
-    timing.raster_ms.to_string() +
-    "ms rgba_encode=" +
-    timing.rgba_encode_ms.to_string() +
-    "ms total=" +
-    timing.total_ms.to_string() +
-    "ms non_white=" +
-    visual.non_white_pixels.to_string() +
-    " distinct=" +
-    visual.distinct_colors.to_string(),
-  )
+  js_log_stderr(@rendering.capture_paint_data_log_message(timing, visual))
   Some(
     @rendering.capture_paint_data_to_json(
       frame.width,
@@ -759,19 +744,7 @@ fn BidiProtocol::try_resolve_actual_capture_screenshot_data(
     png_encode_ms: t_encode1 - t_encode0,
     total_ms: frame.timing.total_ms + (t_encode1 - t_encode0),
   }
-  js_log_stderr(
-    "captureScreenshotData: node_layout=" +
-    timing.node_layout_ms.to_string() +
-    "ms paint_tree=" +
-    timing.paint_tree_ms.to_string() +
-    "ms raster=" +
-    timing.raster_ms.to_string() +
-    "ms png_encode=" +
-    timing.png_encode_ms.to_string() +
-    "ms total=" +
-    timing.total_ms.to_string() +
-    "ms",
-  )
+  js_log_stderr(@rendering.capture_screenshot_data_log_message(timing))
   Some(data)
 }
 
@@ -902,10 +875,6 @@ fn BidiProtocol::resolve_capture_paint_tree(
   }
   let json_str = @tui_paint_export.to_json_string(paint_node)
   Some(
-    make_object({
-      "width": Json::number(paint_width.to_double()),
-      "height": Json::number(paint_height.to_double()),
-      "paintTree": Json::string(json_str),
-    }),
+    @rendering.capture_paint_tree_to_json(paint_width, paint_height, json_str),
   )
 }
