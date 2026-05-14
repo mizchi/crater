@@ -1,12 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { REPO_ROOT } from "./moon-module-boundary-helpers";
+import { REPO_ROOT, readSvgInteropSources } from "./moon-module-boundary-helpers";
 
 describe("MoonBit SVG type facade interaction boundaries", () => {
   it("delegates SVG pointer event state to mizchi/svg", () => {
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/event.mbt"), "utf8");
-    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+    const interopSource = readSvgInteropSources();
 
     expect(source.includes("@msvg.PointerEvent::new(")).toBe(true);
     expect(source.includes("pointer_event_from_msvg(")).toBe(true);

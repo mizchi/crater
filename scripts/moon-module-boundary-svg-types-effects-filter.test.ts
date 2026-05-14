@@ -1,13 +1,13 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { REPO_ROOT, countLines } from "./moon-module-boundary-helpers";
+import { REPO_ROOT, countLines, readSvgInteropSources } from "./moon-module-boundary-helpers";
 
 describe("MoonBit SVG type facade filter and blend boundaries", () => {
   it("delegates SVG node effect setters to mizchi/svg", () => {
     const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/node.mbt"), "utf8");
-    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+    const interopSource = readSvgInteropSources();
     const effectStart = source.indexOf("/// Add a filter to the node");
     const effectEnd = source.indexOf("///|\n/// Clone an SVGNode", effectStart);
     const effectSource = source.slice(effectStart, effectEnd);
@@ -58,7 +58,7 @@ describe("MoonBit SVG type facade filter and blend boundaries", () => {
   it("delegates SVG blend mode math to mizchi/svg", () => {
     const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/blend.mbt"), "utf8");
-    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+    const interopSource = readSvgInteropSources();
 
     expect(source.includes("pub(all) enum BlendMode")).toBe(true);
     expect(source.includes("pub(all) enum Isolation")).toBe(true);

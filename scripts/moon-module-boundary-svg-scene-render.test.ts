@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { REPO_ROOT, countLines } from "./moon-module-boundary-helpers";
+import { REPO_ROOT, countLines, readSvgInteropSources } from "./moon-module-boundary-helpers";
 
 describe("MoonBit SVG scene render boundaries", () => {
   it("delegates SVG scene node factories to mizchi/svg", () => {
@@ -28,7 +28,7 @@ describe("MoonBit SVG scene render boundaries", () => {
   it("delegates SVG scene render entrypoints to mizchi/svg", () => {
     const sceneSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/scene.mbt"), "utf8");
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/scene_render.mbt"), "utf8");
-    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+    const interopSource = readSvgInteropSources();
 
     expect(source.includes("let scene = scene_to_msvg(self)")).toBe(true);
     expect(source.includes("scene.render(render_context_to_msvg(ctx))")).toBe(true);
@@ -45,7 +45,7 @@ describe("MoonBit SVG scene render boundaries", () => {
   it("delegates SVG render context constructors to mizchi/svg", () => {
     const sceneSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/scene.mbt"), "utf8");
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/render_context.mbt"), "utf8");
-    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+    const interopSource = readSvgInteropSources();
 
     expect(source.includes("pub(all) struct RenderContext")).toBe(true);
     expect(source.includes("render_context_from_msvg(")).toBe(true);

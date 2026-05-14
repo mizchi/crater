@@ -6,15 +6,16 @@ Last organized: 2026-05-14
 
 ## Now
 
-- [ ] `painter/svg/types.mbt` の facade をさらに薄くする
-  - `mizchi/svg` へ移譲済みの primitive が crater 側に重複して残っていないか棚卸しする
-  - public `.mbti` を維持する facade と、実装責務を持つ module を分ける
+- [ ] `painter/svg` facade の直接 re-export 候補を棚卸しする
+  - `interop_*.mbt` に分割済みの adapter 群から、crater-local compatibility wrapper と direct alias 可能な primitive を分ける
+  - public `.mbti` を維持したまま `mizchi/svg` の公開型へ寄せられるものを検証する
   - `moon info` で意図しない公開面変更がないことを確認する
 - [ ] `painter/paint/raster/paint_raster.mbt` / glyph 周辺の責務整理を閉じる
   - `painter/paint/glyph` に移した provider/cache/layout/rasterizer 以外に、raster 側へ残った glyph 実装責務を洗い出す
   - raster 側は blit/render/facade に寄せる
   - `mizchi/font` / `mizchi/svg` へ委譲できる処理は crater 側を adapter にする
 - [ ] 最新の split に対応する boundary guard を追加・更新する
+  - SVG interop adapter の file-size guard は追加済み。次は painter raster / browser / webdriver の split 状況を確認する
   - `scripts/moon-module-boundary.test.ts` 系の domain guard が、renderer / painter / browser / webdriver の現状を正しく見ているか確認する
   - 巨大 core への逆流を検出する file-size / symbol boundary を維持する
 - [ ] `scripts/flaker-*` / `docs/flaker-runbook.md` の ownership と TODO を同期する

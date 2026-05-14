@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { REPO_ROOT, countLines } from "./moon-module-boundary-helpers";
+import { REPO_ROOT, countLines, readSvgInteropSources } from "./moon-module-boundary-helpers";
 
 describe("MoonBit SVG scene dirty and z-order boundaries", () => {
   it("delegates SVG scene queries to mizchi/svg", () => {
@@ -19,7 +19,7 @@ describe("MoonBit SVG scene dirty and z-order boundaries", () => {
   it("delegates SVG dirty rendering to mizchi/svg", () => {
     const sceneSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/scene.mbt"), "utf8");
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/scene_dirty.mbt"), "utf8");
-    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+    const interopSource = readSvgInteropSources();
     const renderDirtyStart = source.indexOf("pub fn Scene::render_dirty(");
     const renderDirtyEnd = source.indexOf("///|\n/// Mark a node", renderDirtyStart);
     const renderDirtySource = source.slice(renderDirtyStart, renderDirtyEnd);
@@ -59,7 +59,7 @@ describe("MoonBit SVG scene dirty and z-order boundaries", () => {
   it("delegates SVG scene z-index operations to mizchi/svg", () => {
     const sceneSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/scene.mbt"), "utf8");
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/scene_z_order.mbt"), "utf8");
-    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+    const interopSource = readSvgInteropSources();
 
     expect(source.includes("scene.set_z_index(id, z_index)")).toBe(true);
     expect(source.includes("scene.bring_to_front(id)")).toBe(true);

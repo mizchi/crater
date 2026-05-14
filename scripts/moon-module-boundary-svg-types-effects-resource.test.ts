@@ -1,13 +1,13 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { REPO_ROOT, countLines } from "./moon-module-boundary-helpers";
+import { REPO_ROOT, countLines, readSvgInteropSources } from "./moon-module-boundary-helpers";
 
 describe("MoonBit SVG type facade resource effect boundaries", () => {
   it("delegates SVG mask math to mizchi/svg", () => {
     const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/mask.mbt"), "utf8");
-    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+    const interopSource = readSvgInteropSources();
 
     expect(source.includes("pub(all) enum MaskUnits")).toBe(true);
     expect(source.includes("pub(all) enum MaskType")).toBe(true);
@@ -32,7 +32,7 @@ describe("MoonBit SVG type facade resource effect boundaries", () => {
   it("delegates SVG pattern sampling to mizchi/svg", () => {
     const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/pattern.mbt"), "utf8");
-    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+    const interopSource = readSvgInteropSources();
 
     expect(source.includes("pub(all) struct Pattern")).toBe(true);
     expect(source.includes("pub(all) enum PatternUnits")).toBe(true);
@@ -51,7 +51,7 @@ describe("MoonBit SVG type facade resource effect boundaries", () => {
   it("delegates SVG marker transforms to mizchi/svg", () => {
     const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/marker.mbt"), "utf8");
-    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+    const interopSource = readSvgInteropSources();
 
     expect(source.includes("pub(all) struct Marker")).toBe(true);
     expect(source.includes("pub(all) enum MarkerOrient")).toBe(true);
@@ -73,7 +73,7 @@ describe("MoonBit SVG type facade resource effect boundaries", () => {
   it("delegates SVG marked line angle math to mizchi/svg", () => {
     const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/marker.mbt"), "utf8");
-    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+    const interopSource = readSvgInteropSources();
 
     expect(source.includes("pub(all) struct MarkedLine")).toBe(true);
     expect(source.includes("@msvg.MarkedLine::new(")).toBe(true);

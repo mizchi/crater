@@ -1,14 +1,14 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { REPO_ROOT } from "./moon-module-boundary-helpers";
+import { REPO_ROOT, readSvgInteropSources } from "./moon-module-boundary-helpers";
 
 describe("MoonBit SVG type facade animation boundaries", () => {
   it("delegates SVG image and sprite operations to mizchi/svg", () => {
     const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/image.mbt"), "utf8");
     const filterSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/filter.mbt"), "utf8");
-    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+    const interopSource = readSvgInteropSources();
 
     expect(source.includes("pub(all) struct Image")).toBe(true);
     expect(source.includes("pub(all) struct Sprite")).toBe(true);
@@ -38,7 +38,7 @@ describe("MoonBit SVG type facade animation boundaries", () => {
   it("delegates SVG animated sprite operations to mizchi/svg", () => {
     const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/image.mbt"), "utf8");
-    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+    const interopSource = readSvgInteropSources();
 
     expect(source.includes("pub(all) struct AnimatedSprite")).toBe(true);
     expect(source.includes("@msvg.AnimatedSprite::new(")).toBe(true);
@@ -56,7 +56,7 @@ describe("MoonBit SVG type facade animation boundaries", () => {
   it("delegates SVG particle operations to mizchi/svg", () => {
     const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/particle.mbt"), "utf8");
-    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+    const interopSource = readSvgInteropSources();
 
     expect(source.includes("pub(all) struct Particle")).toBe(true);
     expect(source.includes("pub(all) struct ParticleEmitter")).toBe(true);
@@ -78,7 +78,7 @@ describe("MoonBit SVG type facade animation boundaries", () => {
   it("delegates SVG path follower operations to mizchi/svg", () => {
     const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/path_animation.mbt"), "utf8");
-    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+    const interopSource = readSvgInteropSources();
 
     expect(source.includes("pub(all) struct PathFollower")).toBe(true);
     expect(source.includes("@msvg.PathFollower::new(")).toBe(true);
@@ -96,7 +96,7 @@ describe("MoonBit SVG type facade animation boundaries", () => {
   it("delegates SVG tween operations to mizchi/svg", () => {
     const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/tween.mbt"), "utf8");
-    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+    const interopSource = readSvgInteropSources();
 
     expect(source.includes("pub(all) enum Easing")).toBe(true);
     expect(source.includes("pub(all) enum AnimProperty")).toBe(true);
@@ -118,7 +118,7 @@ describe("MoonBit SVG type facade animation boundaries", () => {
   it("delegates SVG object pool operations to mizchi/svg", () => {
     const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/object_pool.mbt"), "utf8");
-    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+    const interopSource = readSvgInteropSources();
 
     expect(source.includes("@msvg.ObjectPool::new(")).toBe(true);
     expect(source.includes("object_pool_from_msvg(")).toBe(true);

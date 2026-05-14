@@ -1,13 +1,13 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { REPO_ROOT } from "./moon-module-boundary-helpers";
+import { REPO_ROOT, readSvgInteropSources } from "./moon-module-boundary-helpers";
 
 describe("MoonBit SVG type facade text and symbol boundaries", () => {
   it("delegates SVG text whitespace helpers to mizchi/svg", () => {
     const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/text.mbt"), "utf8");
-    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+    const interopSource = readSvgInteropSources();
 
     expect(source.includes("pub(all) enum WhiteSpace")).toBe(true);
     expect(source.includes("pub(all) enum TextOverflow")).toBe(true);
@@ -25,7 +25,7 @@ describe("MoonBit SVG type facade text and symbol boundaries", () => {
   it("delegates SVG text blocks to mizchi/svg", () => {
     const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/text.mbt"), "utf8");
-    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+    const interopSource = readSvgInteropSources();
 
     expect(source.includes("pub(all) struct TextStyle")).toBe(true);
     expect(source.includes("pub(all) struct TextSpan")).toBe(true);
@@ -46,7 +46,7 @@ describe("MoonBit SVG type facade text and symbol boundaries", () => {
   it("delegates SVG use element helpers to mizchi/svg", () => {
     const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/use_symbol.mbt"), "utf8");
-    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+    const interopSource = readSvgInteropSources();
     const instantiateStart = source.indexOf("pub fn UseElement::instantiate(");
     const instantiateEnd = source.length;
     const instantiateSource = source.slice(instantiateStart, instantiateEnd);
@@ -72,7 +72,7 @@ describe("MoonBit SVG type facade text and symbol boundaries", () => {
   it("delegates SVG symbol constructors to mizchi/svg", () => {
     const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/use_symbol.mbt"), "utf8");
-    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+    const interopSource = readSvgInteropSources();
 
     expect(source.includes("pub(all) struct Symbol")).toBe(true);
     expect(source.includes("pub(all) struct SymbolRegistry")).toBe(true);

@@ -99,9 +99,21 @@ pub impl Show for Shape with output(self, logger) {
       logger.write_string("Ellipse(cx=\{cx}, cy=\{cy}, rx=\{rx}, ry=\{ry})")
     Line(x1~, y1~, x2~, y2~) =>
       logger.write_string("Line(x1=\{x1}, y1=\{y1}, x2=\{x2}, y2=\{y2})")
-    Polyline(points~) => logger.write_string("Polyline(points=\{points})")
-    Polygon(points~) => logger.write_string("Polygon(points=\{points})")
-    Path(commands~) => logger.write_string("Path(commands=\{commands})")
+    Polyline(points~) => {
+      logger.write_string("Polyline(points=")
+      logger.write_object(to_repr(points))
+      logger.write_string(")")
+    }
+    Polygon(points~) => {
+      logger.write_string("Polygon(points=")
+      logger.write_object(to_repr(points))
+      logger.write_string(")")
+    }
+    Path(commands~) => {
+      logger.write_string("Path(commands=")
+      logger.write_object(to_repr(commands))
+      logger.write_string(")")
+    }
     Text(x~, y~, text~, font_size~) => {
       logger.write_string("Text(x=\{x}, y=\{y}, text=")
       logger.write_string("\"")

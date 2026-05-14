@@ -18,4 +18,21 @@ describe("MoonBit SVG type facade boundaries", () => {
     expect(missingFiles).toEqual([]);
     expect(countLines("scripts/moon-module-boundary-svg-types.test.ts")).toBeLessThanOrEqual(80);
   });
+
+  it("keeps mizchi/svg interop adapters split by SVG responsibility", () => {
+    const adapterFiles = [
+      "painter/svg/interop_animation_resource.mbt",
+      "painter/svg/interop_core.mbt",
+      "painter/svg/interop_geometry_node.mbt",
+      "painter/svg/interop_paint_effects.mbt",
+      "painter/svg/interop_text_symbol.mbt",
+    ];
+    const missingFiles = adapterFiles.filter((file) => !fs.existsSync(path.join(REPO_ROOT, file)));
+
+    expect(missingFiles).toEqual([]);
+    expect(countLines("painter/svg/interop.mbt")).toBeLessThanOrEqual(80);
+    for (const file of adapterFiles) {
+      expect(countLines(file)).toBeLessThanOrEqual(520);
+    }
+  });
 });

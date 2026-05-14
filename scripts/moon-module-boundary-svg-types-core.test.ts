@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { REPO_ROOT } from "./moon-module-boundary-helpers";
+import { REPO_ROOT, readSvgInteropSources } from "./moon-module-boundary-helpers";
 
 describe("MoonBit SVG type facade core boundaries", () => {
   it("delegates SVG viewBox transform math to mizchi/svg", () => {
@@ -62,7 +62,7 @@ describe("MoonBit SVG type facade core boundaries", () => {
 
   it("delegates SVG transform operations to mizchi/svg", () => {
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/transform.mbt"), "utf8");
-    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+    const interopSource = readSvgInteropSources();
     const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
 
     expect(source.includes("pub(all) struct Transform")).toBe(true);
@@ -96,7 +96,7 @@ describe("MoonBit SVG type facade core boundaries", () => {
   it("delegates SVG node cloning to mizchi/svg", () => {
     const typesSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/types.mbt"), "utf8");
     const source = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/node.mbt"), "utf8");
-    const interopSource = fs.readFileSync(path.join(REPO_ROOT, "painter/svg/interop.mbt"), "utf8");
+    const interopSource = readSvgInteropSources();
 
     expect(source.includes("pub(all) struct SVGNode")).toBe(true);
     expect(source.includes("svg_node_from_msvg(svg_node_to_msvg(self).clone())")).toBe(true);

@@ -60,3 +60,13 @@ export function collectMoonBitFiles(dir: string, out: string[] = []): string[] {
 export function countLines(relativePath: string): number {
   return fs.readFileSync(path.join(REPO_ROOT, relativePath), "utf8").split(/\r?\n/).length;
 }
+
+export function readSvgInteropSources(): string {
+  const svgDir = path.join(REPO_ROOT, "painter/svg");
+  return fs
+    .readdirSync(svgDir)
+    .filter((file) => file === "interop.mbt" || /^interop_[a-z_]+\.mbt$/.test(file))
+    .sort()
+    .map((file) => fs.readFileSync(path.join(svgDir, file), "utf8"))
+    .join("\n");
+}
