@@ -28,6 +28,8 @@ pub fn is_bold_font_weight(Double) -> Bool
 
 pub fn kern_from_provider(GlyphProvider, Int, Int, Double, Bool, String, Double) -> Double
 
+pub fn layout_glyph_bitmaps(GlyphProvider, Int, Int, String, Int, Double, Double, Bool, font_family? : String, letter_spacing? : Double, word_spacing? : Double, font_weight? : Double) -> (Array[GlyphPlacement], Int)
+
 pub fn measure_word_width(GlyphProvider, String, Double, Bool, font_family? : String, letter_spacing? : Double, word_spacing? : Double, font_weight? : Double) -> Double
 
 pub fn pre_rasterize_glyphs(Array[Double], font_family? : String) -> Int
@@ -54,6 +56,13 @@ pub(all) struct GlyphBitmap {
   offset_y : Int
   coverage : Array[Int]
   ss_factor : Int
+}
+
+pub(all) struct GlyphPlacement {
+  bitmap : GlyphBitmap
+  x : Double
+  y : Double
+  line_height : Double
 }
 
 pub(all) struct GlyphProvider {

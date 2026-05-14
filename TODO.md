@@ -11,8 +11,9 @@ Last organized: 2026-05-14
   - public `.mbti` を維持したまま `mizchi/svg` の公開型へ寄せられるものを検証する
   - `moon info` で意図しない公開面変更がないことを確認する
 - [ ] `painter/paint/raster/paint_raster.mbt` / glyph 周辺の責務整理を閉じる
-  - `painter/paint/glyph` に移した provider/cache/layout/rasterizer 以外に、raster 側へ残った glyph 実装責務を洗い出す
-  - raster 側は blit/render/facade に寄せる
+  - glyph bitmap 配置計算は `painter/paint/glyph` の `layout_glyph_bitmaps` へ移動済み
+  - raster 側に残すのは glyph blit / vertical clip / framebuffer compositing に限定する
+  - bitmap font fallback と glyph path render の責務境界をさらに見直す
   - `mizchi/font` / `mizchi/svg` へ委譲できる処理は crater 側を adapter にする
 - [ ] 最新の split に対応する boundary guard を追加・更新する
   - SVG interop adapter の file-size guard は追加済み。次は painter raster / browser / webdriver の split 状況を確認する

@@ -45,6 +45,12 @@ describe("MoonBit painter glyph boundaries", () => {
     expect(source.includes("pub fn measure_word_width(")).toBe(true);
     expect(source.includes("pub fn collapsed_space_advance(")).toBe(true);
     expect(source.includes("pub fn split_text_into_words(")).toBe(true);
+    expect(source.includes("pub(all) struct GlyphPlacement")).toBe(true);
+    expect(source.includes("pub fn layout_glyph_bitmaps(")).toBe(true);
+    expect(renderSource.includes("@glyph.layout_glyph_bitmaps(")).toBe(true);
+    expect(renderSource.includes("@glyph.split_text_into_words(")).toBe(false);
+    expect(renderSource.includes("@glyph.measure_word_width(")).toBe(false);
+    expect(renderSource.includes("@glyph.collapsed_space_advance(")).toBe(false);
     expect(renderSource.includes("let text_wrap_tolerance")).toBe(false);
     expect(renderSource.includes("fn resolve_text_wrap_tolerance(")).toBe(false);
     expect(renderSource.includes("fn measure_word_width(")).toBe(false);
