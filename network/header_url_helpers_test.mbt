@@ -77,6 +77,26 @@ test "network normalizes and validates header entries" {
     Ok(_) => fail("expected invalid header list")
     Err(message) => inspect(message, content="requestHeaders must be an array")
   }
+  match
+    synthetic_network_normalize_string_list(
+      Some(Json::array([Json::string("intercept-1")])),
+      "intercepts",
+    ) {
+    Ok(values) => {
+      inspect(values.length(), content="1")
+      inspect(values[0], content="intercept-1")
+    }
+    Err(message) => fail("unexpected string list error: " + message)
+  }
+  match
+    synthetic_network_normalize_string_list(
+      Some(Json::array([Json::number(1)])),
+      "intercepts",
+    ) {
+    Ok(_) => fail("expected invalid string list entry")
+    Err(message) =>
+      inspect(message, content="intercepts entries must be strings")
+  }
 }
 
 ///|

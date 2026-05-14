@@ -64,6 +64,8 @@ pub fn synthetic_network_normalize_response_overrides(Json?) -> Result[Synthetic
 
 pub fn synthetic_network_normalize_set_cookie_override_entry(Map[String, Json], String, String, String, Int) -> Result[SyntheticNetworkSetCookieOverrideEntry, String]
 
+pub fn synthetic_network_normalize_string_list(Json?, String) -> Result[Array[String], String]
+
 pub fn synthetic_network_parse_document_cookie_assignment(String, String, String, Int) -> SyntheticNetworkCookie?
 
 pub fn synthetic_network_parse_set_cookie_header_value(String, String, Int) -> SyntheticNetworkCookie?

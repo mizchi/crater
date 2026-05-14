@@ -357,13 +357,18 @@ describe("MoonBit WebDriver facade and contract boundaries", () => {
     expect(networkSource).toContain("pub fn synthetic_network_normalize_continue_url");
     expect(networkSource).toContain("pub fn synthetic_network_normalize_header_entries");
     expect(networkSource).toContain("pub fn synthetic_network_normalize_response_overrides");
+    expect(networkSource).toContain("pub fn synthetic_network_normalize_string_list");
     const eventNormalizerSource = read("webdriver/webdriver/bidi_network_event_normalizers.mbt");
     expect(eventNormalizerSource).toContain("@crater_network.synthetic_network_normalize_continue_url");
     expect(eventNormalizerSource).toContain(
       "@crater_network.synthetic_network_normalize_response_overrides",
     );
+    expect(eventNormalizerSource).toContain(
+      "@crater_network.synthetic_network_normalize_string_list",
+    );
     expect(eventNormalizerSource).not.toContain("synthetic_network_is_valid_continue_url(url)");
     for (const implementationMarker of [
+      "entries must be strings",
       "responseOverrides.fromCache must be a boolean",
       "responseOverrides.status must be a non-negative integer",
       "responseOverrides.authChallenges must be an array",

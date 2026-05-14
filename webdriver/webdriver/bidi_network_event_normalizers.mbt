@@ -38,31 +38,13 @@ fn BidiProtocol::normalize_synthetic_network_string_list(
   raw_list : Json?,
   field_name : String,
 ) -> Array[String]? {
-  match raw_list {
-    None | Some(Null) => Some([])
-    Some(Array(items)) => {
-      let values : Array[String] = []
-      for item in items {
-        match item {
-          String(value) => values.push(value)
-          _ => {
-            self.send_error(
-              request_id,
-              "invalid argument",
-              field_name + " entries must be strings",
-            )
-            return None
-          }
-        }
-      }
-      Some(values)
-    }
-    Some(_) => {
-      self.send_error(
-        request_id,
-        "invalid argument",
-        field_name + " must be an array",
-      )
+  match
+    @crater_network.synthetic_network_normalize_string_list(
+      raw_list, field_name,
+    ) {
+    Ok(values) => Some(values)
+    Err(message) => {
+      self.send_error(request_id, "invalid argument", message)
       None
     }
   }

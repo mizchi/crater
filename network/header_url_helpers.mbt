@@ -99,6 +99,27 @@ pub fn synthetic_network_normalize_header_entries(
 }
 
 ///|
+pub fn synthetic_network_normalize_string_list(
+  raw_list : Json?,
+  field_name : String,
+) -> Result[Array[String], String] {
+  match raw_list {
+    None | Some(Null) => Ok([])
+    Some(Array(items)) => {
+      let values : Array[String] = []
+      for item in items {
+        match item {
+          String(value) => values.push(value)
+          _ => return Err(field_name + " entries must be strings")
+        }
+      }
+      Ok(values)
+    }
+    Some(_) => Err(field_name + " must be an array")
+  }
+}
+
+///|
 pub fn synthetic_network_validate_header_entry(entry : Json) -> Json? {
   let map = match entry {
     Object(map) => map
