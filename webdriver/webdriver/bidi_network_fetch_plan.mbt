@@ -68,11 +68,13 @@ fn synthetic_fetch_requires_preflight(
   http_method : String,
   request_headers : Array[Json],
 ) -> Bool {
-  let source_origin = match canonicalize_network_http_url(source_url) {
+  let source_origin = match
+    @crater_network.canonicalize_network_http_url(source_url) {
     Some(source) => source
     None => return false
   }
-  let target_origin = match canonicalize_network_http_url(target_url) {
+  let target_origin = match
+    @crater_network.canonicalize_network_http_url(target_url) {
     Some(target) => target
     None => return false
   }

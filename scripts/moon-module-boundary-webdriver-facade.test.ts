@@ -289,6 +289,42 @@ describe("MoonBit WebDriver facade and contract boundaries", () => {
     expect(webdriverPackage).not.toContain('"mizchi/crater-webdriver-bidi/network" @network');
   });
 
+  it("keeps protocol-neutral network URL pattern matching in crater-network", () => {
+    const expectedNetworkFiles = [
+      "network/url_patterns.mbt",
+      "network/url_patterns_test.mbt",
+    ] as const;
+    const missingFiles = expectedNetworkFiles.filter((file) => {
+      return !fs.existsSync(path.join(REPO_ROOT, file));
+    });
+
+    expect(missingFiles).toEqual([]);
+
+    const networkPackage = read("network/moon.pkg");
+    expect(networkPackage).not.toContain("mizchi/crater-webdriver-bidi");
+    expect(networkPackage).not.toContain("mizchi/webdriver");
+
+    const matchingSource = read("webdriver/webdriver/bidi_network_intercept_matching.mbt");
+    for (const symbol of [
+      "@crater_network.network_intercept_matches_phase",
+      "@crater_network.network_option_contexts_match",
+      "@crater_network.network_url_patterns_match",
+    ] as const) {
+      expect(matchingSource).toContain(symbol);
+    }
+    for (const implementationMarker of [
+      "fn network_url_patterns_match",
+      "fn network_url_pattern_entry_matches",
+      "fn network_string_url_pattern_matches",
+      "fn network_object_url_pattern_matches",
+      "fn canonicalize_network_http_url",
+      "fn parse_network_host_and_port",
+      "fn normalize_network_pattern_protocol",
+    ] as const) {
+      expect(matchingSource).not.toContain(implementationMarker);
+    }
+  });
+
   it("documents next module boundaries before further WebDriver extraction", () => {
     const todo = read("TODO.md");
     const requiredBoundaries = [

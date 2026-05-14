@@ -1110,7 +1110,7 @@ fn BidiProtocol::handle_script_fetch_for_test(
     ignore(self.sync_document_cookies_for_test_context(ctx_id, runtime_ctx_id))
   }
 
-  if canonicalize_network_http_url(resolved_url) is Some(_) ||
+  if @crater_network.canonicalize_network_http_url(resolved_url) is Some(_) ||
     resolved_url.has_prefix("data:") {
     let result = self.perform_synthetic_fetch_internal(
       request_id, ctx_id, resolved_url, request_method, request_headers, request_value,

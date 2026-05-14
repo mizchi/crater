@@ -4,7 +4,17 @@ package "mizchi/crater-network"
 // Values
 pub fn base64_byte_length(String) -> Int
 
+pub fn canonicalize_network_http_url(String) -> CanonicalNetworkHttpUrl?
+
 pub fn decode_query_component(String) -> String
+
+pub fn extract_network_url_query(String) -> String
+
+pub fn network_intercept_matches_phase(Map[String, Json], String) -> Bool
+
+pub fn network_option_contexts_match(Map[String, Json], Array[String]) -> Bool
+
+pub fn network_url_patterns_match(Map[String, Json], String) -> Bool
 
 pub fn utf8_byte_length(String) -> Int
 
@@ -28,6 +38,14 @@ pub(all) struct BidiNetworkState {
   mut next_network_data_collector_id : Int
 }
 pub fn BidiNetworkState::new() -> Self
+
+pub(all) struct CanonicalNetworkHttpUrl {
+  scheme : String
+  host : String
+  port : Int
+  path : String
+  query : String
+}
 
 pub(all) struct SyntheticFetchCommandResult {
   blocked_text : String?

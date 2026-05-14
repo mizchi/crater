@@ -153,7 +153,7 @@ fn synthetic_navigation_synthesize_response_value(url : String) -> Json {
       None => ()
     }
   }
-  let path = match canonicalize_network_http_url(url) {
+  let path = match @crater_network.canonicalize_network_http_url(url) {
     Some(parts) => parts.path
     None => ""
   }
@@ -234,7 +234,7 @@ fn synthetic_navigation_raw_query_values(
   key : String,
 ) -> Array[String] {
   let values : Array[String] = []
-  let query = extract_network_url_query(url)
+  let query = @crater_network.extract_network_url_query(url)
   if query == "" {
     return values
   }

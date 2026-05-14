@@ -1,6 +1,6 @@
 ///|
 fn synthetic_fetch_is_headers_echo_url(url : String) -> Bool {
-  match canonicalize_network_http_url(url) {
+  match @crater_network.canonicalize_network_http_url(url) {
     Some(parts) =>
       parts.port == 8000 &&
       (parts.host == "localhost" || parts.host == "alt.localhost") &&
