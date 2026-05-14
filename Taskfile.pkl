@@ -15,3 +15,43 @@ tasks {
   ...bench.tasks
   ...release.tasks
 }
+
+workflowTests {
+  new {
+    name = "flaker config change runs full check gate"
+    changed { "flaker.toml" }
+    direct { check.checkFlaker.name }
+    tasks {
+      check.checkFlaker.name
+      check.checkMoon.name
+      check.checkTs.name
+      spec.specCheck.name
+      spec.specLint.name
+      check.check.name
+    }
+  }
+  new {
+    name = "wpt vrt config change runs visual gate"
+    changed { "wpt-vrt.json" }
+    direct { test.testWptVrt.name }
+    tasks {
+      test.testVrt.name
+      test.testWptVrt.name
+      test.testVisual.name
+    }
+  }
+  new {
+    name = "component bench baseline change runs bench gate"
+    changed { "benchmarks/tests/component-vrt-bench-baseline.json" }
+    direct {
+      bench.benchComponentVrt.name
+      bench.benchComponentBaseline.name
+    }
+    tasks {
+      bench.benchComponentVrt.name
+      bench.benchComponentBaseline.name
+      bench.benchCraterCli.name
+      bench.bench.name
+    }
+  }
+}

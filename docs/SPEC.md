@@ -1,6 +1,6 @@
 # Test SPEC
 
-23 tests across 2 module(s) — 12 pending, 11 active
+25 tests across 2 module(s) — 13 pending, 12 active
 
 ## `specs/`
 
@@ -14,6 +14,12 @@
 - [ ] **WPT DOM compatibility is tracked** [draft] — verifies: wpt.dom-contract — tags: spec, wpt, dom
   > WPT DOM runner coverage should become a pkspec-linked compatibility contract once the stable subset is agreed.
   - contributes to: goal.browser-compat
+  - body: _not yet implemented_
+
+- [ ] **affected task plans are pinned** — verifies: task.affected — tags: spec, pkfire, ci
+  > pkfire affected workflow tests document direct file-input matches and expanded aggregate task plans.
+  - contributes to: goal.local-gates
+  - depends on: task.default, task.check, task.bench, vrt.report
   - body: _not yet implemented_
 
 - [ ] **approved specs are linked** (critical) — verifies: spec.check — tags: spec, pkspec
@@ -72,6 +78,10 @@
   - body: _not yet implemented_
 
 ### `tasks.Test.pkl`
+
+- [x] **pkfire_checks_affected_workflow_tests** — verifies: task.affected — tags: pkfire, affected, contract
+  > The affected task contract should verify direct input matches and expanded aggregate task plans.
+  - body: `cmd` (exit 0 expected)
 
 - [x] **pkfire_lists_bench_task** — verifies: task.bench — tags: pkfire, smoke
   > Benchmark smoke and baseline checks should stay grouped under bench.

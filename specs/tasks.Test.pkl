@@ -162,4 +162,16 @@ tests {
       [graphTaskPath(release.releaseCheck.name, "visibility")] = "internal"
     }
   }
+  new {
+    name = "pkfire_checks_affected_workflow_tests"
+    description =
+      "The affected task contract should verify direct input matches and expanded aggregate task plans."
+    tags { "pkfire"; "affected"; "contract" }
+    specRef { "task.affected" }
+    workdir = ".."
+    cmd = "pkf affected --check"
+    expectStdoutContains {
+      "workflow test(s) passed"
+    }
+  }
 }

@@ -116,6 +116,17 @@ scenarios {
     contributes { "goal.local-gates" }
   }
   new {
+    id = "task.affected"
+    name = "affected task plans are pinned"
+    description =
+      "pkfire affected workflow tests document direct file-input matches and expanded aggregate task plans."
+    tags { "spec"; "pkfire"; "ci" }
+    severity = "major"
+    reviewStatus = "approved"
+    dependsOn { "task.default"; "task.check"; "task.bench"; "vrt.report" }
+    contributes { "goal.local-gates" }
+  }
+  new {
     id = "spec.check"
     name = "approved specs are linked"
     description =
