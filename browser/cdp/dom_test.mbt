@@ -353,7 +353,10 @@ test "DOM.querySelectorAll finds all descendants from shadow root node" {
 
   let result = dom.query_selector_all(shadow.to_int(), ".item")
   inspect(result is Ok(_), content="true")
-  inspect(result.unwrap(), content="[\{first.to_int()}, \{second.to_int()}]")
+  debug_inspect(
+    result.unwrap(),
+    content="[\{first.to_int()}, \{second.to_int()}]",
+  )
 }
 
 ///|

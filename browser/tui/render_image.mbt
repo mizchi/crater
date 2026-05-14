@@ -127,7 +127,7 @@ fn draw_image_placeholder_label(
       max_label_width > 3 {
       let chars = label.to_array()
       let truncated_chars = chars[:max_label_width - 3]
-      truncated_chars.to_string() + "..."
+      String::from_array(truncated_chars) + "..."
     } else {
       label
     }

@@ -143,8 +143,20 @@ pub impl Show for LinearGradient with output(self, logger) {
   logger.write_string("{angle_deg: ")
   logger.write_string(self.angle_deg.to_string())
   logger.write_string(", stops: ")
-  logger.write_string(self.stops.to_string())
+  write_gradient_stops(self.stops, logger)
   logger.write_string("}")
+}
+
+///|
+fn write_gradient_stops(stops : Array[GradientStop], logger : &Logger) -> Unit {
+  logger.write_string("[")
+  for i = 0; i < stops.length(); i = i + 1 {
+    if i > 0 {
+      logger.write_string(", ")
+    }
+    stops[i].output(logger)
+  }
+  logger.write_string("]")
 }
 
 ///|

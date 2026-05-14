@@ -31,20 +31,20 @@ pub impl Show for CssRuleViewportEntry with output(self, logger) {
   logger.write_string("{selector: ")
   logger.write_string(self.selector.to_string())
   logger.write_string(", properties: ")
-  logger.write_string(self.properties.to_string())
+  logger.write_object(to_repr(self.properties))
   logger.write_string(", media_condition: ")
   logger.write_string(self.media_condition.to_string())
   logger.write_string(", active_at_widths: ")
-  logger.write_string(self.active_at_widths.to_string())
+  logger.write_object(to_repr(self.active_at_widths))
   logger.write_string(", inactive_at_widths: ")
-  logger.write_string(self.inactive_at_widths.to_string())
+  logger.write_object(to_repr(self.inactive_at_widths))
   logger.write_string("}")
 }
 
 ///|
 pub impl Show for CssRuleViewportMap with output(self, logger) {
   logger.write_string("{rules: ")
-  logger.write_string(self.rules.to_string())
+  logger.write_object(to_repr(self.rules))
   logger.write_string("}")
 }
 
@@ -60,7 +60,7 @@ pub impl Show for RequiredTestViewport with output(self, logger) {
 ///|
 pub impl Show for RequiredTestViewportsResult with output(self, logger) {
   logger.write_string("{viewports: ")
-  logger.write_string(self.viewports.to_string())
+  logger.write_object(to_repr(self.viewports))
   logger.write_string("}")
 }
 

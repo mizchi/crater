@@ -268,11 +268,11 @@ test "bidi session subscribe and unsubscribe accept user_contexts alias" {
   )
   let subscribe_json = proto.take_messages()[0].to_json()
   assert_true(subscribe_json.contains("\"type\":\"success\""))
-  assert_eq(
+  debug_inspect(
     proto.subscription_state.user_context_subscriptions
     .get("user-1")
     .unwrap_or([]),
-    ["log.entryAdded"],
+    content="[\"log.entryAdded\"]",
   )
 
   let _ = proto.process_message(
@@ -280,11 +280,11 @@ test "bidi session subscribe and unsubscribe accept user_contexts alias" {
   )
   let unsubscribe_json = proto.take_messages()[0].to_json()
   assert_true(unsubscribe_json.contains("\"type\":\"success\""))
-  assert_eq(
+  debug_inspect(
     proto.subscription_state.user_context_subscriptions
     .get("user-1")
     .unwrap_or([]),
-    [],
+    content="[]",
   )
 }
 

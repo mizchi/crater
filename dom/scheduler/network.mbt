@@ -317,9 +317,9 @@ pub impl Show for NetworkRequest with output(self, logger) {
   logger.write_string(self.url)
   logger.write_string("\"")
   logger.write_string(", http_method: \{self.http_method}, ")
-  logger.write_string(
-    "resource_type: \{self.resource_type}, headers: \{self.headers}, ",
-  )
+  logger.write_string("resource_type: \{self.resource_type}, headers: ")
+  logger.write_object(to_repr(self.headers))
+  logger.write_string(", ")
   logger.write_string("document_url: ")
   logger.write_string("\"")
   logger.write_string(self.document_url)

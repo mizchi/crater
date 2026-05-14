@@ -226,8 +226,8 @@ test "tree_builder/document parsing moves metadata elements out of body flow" {
     }
   }
 
-  inspect(tags, content="[\"p\"]")
-  inspect(texts, content="[]")
+  debug_inspect(tags, content="[\"p\"]")
+  debug_inspect(texts, content="[]")
 }
 
 ///|

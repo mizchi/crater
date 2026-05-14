@@ -98,7 +98,7 @@ impl JsRuntime for FailRuntime with tick(
 ///|
 test "JsContext::new_with_runtime uses runtime trait for execution" {
   let dom = @dom.DomTree::new()
-  let init_calls = Ref::new(0)
+  let init_calls = Ref(0)
   let runtime : MockRuntime = { init_calls, }
   let ctx = JsContext::new_with_runtime(dom, runtime as &JsRuntime)
   let result = ctx.execute("1 + 2")
@@ -112,7 +112,7 @@ test "JsContext::new_with_runtime uses runtime trait for execution" {
 ///|
 test "JsContext::execute raises ExecutionError when runtime returns failure" {
   let dom = @dom.DomTree::new()
-  let init_calls = Ref::new(0)
+  let init_calls = Ref(0)
   let runtime : FailRuntime = { init_calls, }
   let ctx = JsContext::new_with_runtime(dom, runtime as &JsRuntime)
   let err_text = try {
@@ -130,7 +130,7 @@ test "JsContext::execute raises ExecutionError when runtime returns failure" {
 ///|
 test "JsContext::execute calls runtime.init on each execution" {
   let dom = @dom.DomTree::new()
-  let init_calls = Ref::new(0)
+  let init_calls = Ref(0)
   let runtime : MockRuntime = { init_calls, }
   let ctx = JsContext::new_with_runtime(dom, runtime as &JsRuntime)
   let _ = ctx.execute("first")

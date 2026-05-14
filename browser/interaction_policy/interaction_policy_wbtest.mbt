@@ -6,7 +6,7 @@ test "drag move target plan normalizes source and hover transitions" {
   let plan_2 = drag_move_target_plan("source", "", "target")
   let plan_3 = drag_move_target_plan("source", "target", "")
   let plan_4 = drag_move_target_plan("source", "old", "new")
-  inspect(
+  debug_inspect(
     (
       (
         plan_1.over_target,
@@ -33,13 +33,20 @@ test "drag move target plan normalizes source and hover transitions" {
         plan_4.emit_dragover,
       ),
     ),
-    content="((\"\", false, false, false), (\"target\", false, true, true), (\"\", true, false, false), (\"new\", true, true, true))",
+    content=(
+      #|(
+      #|  ("", false, false, false),
+      #|  ("target", false, true, true),
+      #|  ("", true, false, false),
+      #|  ("new", true, true, true),
+      #|)
+    ),
   )
 }
 
 ///|
 test "drag acceptance helpers only drop on accepted current target" {
-  inspect(
+  debug_inspect(
     (
       drag_accept_target("source", "target", true),
       drag_accept_target("source", "target", false),
@@ -54,7 +61,7 @@ test "drag acceptance helpers only drop on accepted current target" {
 
 ///|
 test "drop effect helpers normalize and validate browser-style defaults" {
-  inspect(
+  debug_inspect(
     (
       normalized_drop_effect("all", "none"),
       normalized_drop_effect("move", "none"),

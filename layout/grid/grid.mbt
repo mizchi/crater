@@ -1157,7 +1157,8 @@ fn compute_grid_layout_internal(
   // based on max_ascent + max_descent for each row
   if needs_baseline {
     // Calculate baseline info for each item (preliminary pass)
-    let row_baseline_heights : @hashmap.HashMap[Int, (Double, Double)] = @hashmap.new()
+    let row_baseline_heights : @hashmap.HashMap[Int, (Double, Double)] = @hashmap.HashMap([],
+    )
     for i = 0; i < children.length(); i = i + 1 {
       let child = children[i]
       let placement = adjusted_placements[i]
@@ -2170,7 +2171,7 @@ fn compute_grid_layout_internal(
   let child_layouts : Array[@types.Layout] = []
   if needs_baseline {
     // Group items by row and calculate max ascent per row
-    let row_max_ascent : @hashmap.HashMap[Int, Double] = @hashmap.new()
+    let row_max_ascent : @hashmap.HashMap[Int, Double] = @hashmap.HashMap([])
     for i = 0; i < baseline_infos.length(); i = i + 1 {
       let info = baseline_infos[i]
       if info.row >= 0 {

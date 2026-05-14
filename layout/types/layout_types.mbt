@@ -492,7 +492,7 @@ pub impl Show for TrackSizingFunction with output(self, logger) {
     MinContent => "MinContent"
     MaxContent => "MaxContent"
     MinMax(min, max) => "MinMax(\{min}, \{max})"
-    Repeat(count, tracks) => "Repeat(\{count}, \{tracks})"
+    Repeat(count, tracks) => "Repeat(\{count}, \{to_repr(tracks)})"
     FitContentLength(v) => "FitContentLength(\{v})"
     FitContentPercent(v) => "FitContentPercent(\{v})"
   }

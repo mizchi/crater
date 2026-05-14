@@ -128,14 +128,14 @@ test "bidi print embeds filtered page content metadata" {
   match meta.get("pages") {
     Some(Array(pages)) => {
       assert_eq(pages.length(), 4)
-      inspect(
+      debug_inspect(
         pages.map(fn(page) {
           match page {
             String(value) => value
             _ => ""
           }
         }),
-        content="[Page 2, Page 3, Page 4, Page 5]",
+        content="[\"Page 2\", \"Page 3\", \"Page 4\", \"Page 5\"]",
       )
     }
     _ => assert_true(false)

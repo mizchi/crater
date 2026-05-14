@@ -249,7 +249,7 @@ pub fn Browser::new(
     js_runtime_override: None,
     enable_js: false, // Disabled by default for security
     element_scroll_states: {},
-    focused_scrollable: Ref::new(None),
+    focused_scrollable: Ref(None),
     hovered_source_id: None,
     pressed_source_id: None,
     text_selection_anchor_source_id: None,

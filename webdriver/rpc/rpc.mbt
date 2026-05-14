@@ -63,7 +63,7 @@ pub impl Show for RpcRequest with output(self, logger) {
   logger.write_string(", method_name: ")
   self.method_name.output(logger)
   logger.write_string(", params: ")
-  self.params.output(logger)
+  logger.write_object(to_repr(self.params))
   logger.write_string("}")
 }
 

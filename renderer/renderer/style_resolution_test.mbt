@@ -87,7 +87,7 @@ test "debug stylesheet cascading" {
         _ => ()
       }
     }
-    inspect(
+    debug_inspect(
       props,
       content=(
         #|["display=flex", "flex-direction=row", "gap=10px"]
@@ -185,7 +185,7 @@ test "font-size cascading from stylesheet" {
         _ => ()
       }
     }
-    inspect(
+    debug_inspect(
       props,
       content=(
         #|["font-size=20px", "width=30px"]

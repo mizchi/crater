@@ -214,7 +214,9 @@ pub impl Show for RenderVariant with output(self, logger) {
   logger.write_string("\"")
   logger.write_string(self.id)
   logger.write_string("\"")
-  logger.write_string(", mutations: \{self.mutations}}")
+  logger.write_string(", mutations: ")
+  logger.write_object(to_repr(self.mutations))
+  logger.write_string("}")
 }
 
 ///|

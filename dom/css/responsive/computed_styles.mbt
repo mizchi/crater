@@ -44,11 +44,11 @@ pub impl Show for StylePropertyDiff with output(self, logger) {
 ///|
 pub impl Show for ComputedStylesWithStateResult with output(self, logger) {
   logger.write_string("{normal: ")
-  logger.write_string(self.normal.to_string())
+  logger.write_object(to_repr(self.normal))
   logger.write_string(", forced: ")
-  logger.write_string(self.forced.to_string())
+  logger.write_object(to_repr(self.forced))
   logger.write_string(", diff: ")
-  logger.write_string(self.diff.to_string())
+  logger.write_object(to_repr(self.diff))
   logger.write_string("}")
 }
 

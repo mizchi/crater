@@ -5,9 +5,9 @@ test "discover_css_rule_viewport_map with max-width rule" {
   assert_eq(result.rules.length(), 1)
   let rule = result.rules[0]
   assert_eq(rule.selector, ".stats")
-  assert_eq(rule.properties, ["grid-template-columns"])
-  assert_eq(rule.active_at_widths, [375, 640])
-  assert_eq(rule.inactive_at_widths, [768, 1024, 1280])
+  debug_inspect(rule.properties, content="[\"grid-template-columns\"]")
+  debug_inspect(rule.active_at_widths, content="[375, 640]")
+  debug_inspect(rule.inactive_at_widths, content="[768, 1024, 1280]")
 }
 
 ///|
@@ -17,8 +17,8 @@ test "discover_css_rule_viewport_map with min-width rule" {
   assert_eq(result.rules.length(), 1)
   let rule = result.rules[0]
   assert_eq(rule.selector, ".sidebar")
-  assert_eq(rule.active_at_widths, [768, 1024])
-  assert_eq(rule.inactive_at_widths, [375, 640])
+  debug_inspect(rule.active_at_widths, content="[768, 1024]")
+  debug_inspect(rule.inactive_at_widths, content="[375, 640]")
 }
 
 ///|
@@ -38,7 +38,7 @@ test "discover_css_rule_viewport_map ignores non-media rules" {
   let result = discover_css_rule_viewport_map(html, [375, 768])
   assert_eq(result.rules.length(), 1)
   assert_eq(result.rules[0].selector, ".card")
-  assert_eq(result.rules[0].properties, ["display"])
+  debug_inspect(result.rules[0].properties, content="[\"display\"]")
 }
 
 ///|

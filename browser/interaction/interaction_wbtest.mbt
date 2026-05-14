@@ -47,9 +47,16 @@ test "command_of_action normalizes tui actions into protocol-neutral commands" {
     Some(action) => command_name(command_of_action(action))
     None => fail("expected toggle-selection action")
   }
-  inspect(
+  debug_inspect(
     (scroll_down, page_up, mouse_down, toggle_selection),
-    content="(\"ScrollBy(50)\", \"PageScroll(-1)\", \"PointerDown(3,4)\", \"ToggleSelectionMode\")",
+    content=(
+      #|(
+      #|  "ScrollBy(50)",
+      #|  "PageScroll(-1)",
+      #|  "PointerDown(3,4)",
+      #|  "ToggleSelectionMode",
+      #|)
+    ),
   )
 }
 
@@ -68,14 +75,21 @@ async test "dispatch_command reports prompt and selection effects directly" {
 
 ///|
 test "command_name includes automation-oriented key and pointer button commands" {
-  inspect(
+  debug_inspect(
     (
       command_name(key_down_command("Enter")),
       command_name(key_up_command("a")),
       command_name(pointer_button_down_command(10, 20, 0)),
       command_name(pointer_button_up_command(10, 20, 2)),
     ),
-    content="(\"KeyDown(Enter)\", \"KeyUp(a)\", \"PointerButtonDown(10,20,0)\", \"PointerButtonUp(10,20,2)\")",
+    content=(
+      #|(
+      #|  "KeyDown(Enter)",
+      #|  "KeyUp(a)",
+      #|  "PointerButtonDown(10,20,0)",
+      #|  "PointerButtonUp(10,20,2)",
+      #|)
+    ),
   )
 }
 
@@ -157,7 +171,7 @@ test "dispatch_cdp_command accepts key and pointer button commands" {
 
 ///|
 test "pointer event sequence helpers preserve browser-style ordering" {
-  inspect(
+  debug_inspect(
     (
       pointer_dispatch_event_names(pointer_move_event_sequence("mouse")),
       hover_dispatch_event_labels(
@@ -172,7 +186,27 @@ test "pointer event sequence helpers preserve browser-style ordering" {
         pointer_post_release_mouse_event_sequence(2, true, false, false),
       ),
     ),
-    content="([\"pointermove\", \"mousemove\"], [\"PreviousTarget:pointerout\", \"PreviousTarget:mouseout\", \"PreviousTarget:pointerleave\", \"PreviousTarget:mouseleave\", \"CurrentTarget:pointerover\", \"CurrentTarget:mouseover\", \"CurrentTarget:pointerenter\", \"CurrentTarget:mouseenter\", \"CurrentTarget:pointermove\", \"CurrentTarget:mousemove\"], [\"pointerover\", \"pointerenter\", \"pointerdown\", \"mousedown\"], [\"pointerup\"], [\"mouseup\", \"click\", \"dblclick\"], [\"contextmenu\", \"mouseup\"])",
+    content=(
+      #|(
+      #|  ["pointermove", "mousemove"],
+      #|  [
+      #|    "PreviousTarget:pointerout",
+      #|    "PreviousTarget:mouseout",
+      #|    "PreviousTarget:pointerleave",
+      #|    "PreviousTarget:mouseleave",
+      #|    "CurrentTarget:pointerover",
+      #|    "CurrentTarget:mouseover",
+      #|    "CurrentTarget:pointerenter",
+      #|    "CurrentTarget:mouseenter",
+      #|    "CurrentTarget:pointermove",
+      #|    "CurrentTarget:mousemove",
+      #|  ],
+      #|  ["pointerover", "pointerenter", "pointerdown", "mousedown"],
+      #|  ["pointerup"],
+      #|  ["mouseup", "click", "dblclick"],
+      #|  ["contextmenu", "mouseup"],
+      #|)
+    ),
   )
 }
 
@@ -197,7 +231,7 @@ test "drag move target plan normalizes source and hover transitions" {
   let plan_2 = drag_move_target_plan("source", "", "target")
   let plan_3 = drag_move_target_plan("source", "target", "")
   let plan_4 = drag_move_target_plan("source", "old", "new")
-  inspect(
+  debug_inspect(
     (
       (
         plan_1.over_target,
@@ -224,13 +258,20 @@ test "drag move target plan normalizes source and hover transitions" {
         plan_4.emit_dragover,
       ),
     ),
-    content="((\"\", false, false, false), (\"target\", false, true, true), (\"\", true, false, false), (\"new\", true, true, true))",
+    content=(
+      #|(
+      #|  ("", false, false, false),
+      #|  ("target", false, true, true),
+      #|  ("", true, false, false),
+      #|  ("new", true, true, true),
+      #|)
+    ),
   )
 }
 
 ///|
 test "drag event sequence helpers preserve browser-style ordering" {
-  inspect(
+  debug_inspect(
     (
       drag_dispatch_event_labels(
         drag_move_event_sequence(
@@ -243,13 +284,25 @@ test "drag event sequence helpers preserve browser-style ordering" {
       drag_dispatch_event_labels(drag_release_event_sequence(emit_drop=true)),
       drag_dispatch_event_labels(drag_release_event_sequence(emit_drop=false)),
     ),
-    content="([\"Source:dragstart\", \"Source:drag\", \"PreviousTarget:dragleave\", \"CurrentTarget:dragenter\", \"CurrentTarget:dragover\"], [\"CurrentTarget:drop\", \"Source:dragend\"], [\"Source:dragend\"])",
+    content=(
+      #|(
+      #|  [
+      #|    "Source:dragstart",
+      #|    "Source:drag",
+      #|    "PreviousTarget:dragleave",
+      #|    "CurrentTarget:dragenter",
+      #|    "CurrentTarget:dragover",
+      #|  ],
+      #|  ["CurrentTarget:drop", "Source:dragend"],
+      #|  ["Source:dragend"],
+      #|)
+    ),
   )
 }
 
 ///|
 test "drag acceptance helpers only drop on accepted current target" {
-  inspect(
+  debug_inspect(
     (
       drag_accept_target("source", "target", true),
       drag_accept_target("source", "target", false),
@@ -264,7 +317,7 @@ test "drag acceptance helpers only drop on accepted current target" {
 
 ///|
 test "drop effect helpers normalize and validate browser-style defaults" {
-  inspect(
+  debug_inspect(
     (
       normalized_drop_effect("all", "none"),
       normalized_drop_effect("move", "none"),

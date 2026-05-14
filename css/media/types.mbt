@@ -250,13 +250,13 @@ pub impl Show for MediaQuery with output(self, logger) {
   logger.write_string(", media_type: ")
   logger.write_object(to_repr(self.media_type))
   logger.write_string(", conditions: ")
-  logger.write_string(self.conditions.to_string())
+  logger.write_object(to_repr(self.conditions))
   logger.write_string("}")
 }
 
 ///|
 pub impl Show for MediaQueryList with output(self, logger) {
   logger.write_string("{queries: ")
-  logger.write_string(self.queries.to_string())
+  logger.write_object(to_repr(self.queries))
   logger.write_string("}")
 }

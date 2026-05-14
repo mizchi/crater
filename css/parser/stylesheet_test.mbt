@@ -18,7 +18,7 @@ test "parse stylesheet with flex properties" {
       _ => ()
     }
   }
-  inspect(
+  debug_inspect(
     decl_strs,
     content=(
       #|["display: flex", "flex-direction: row", "gap: 10px"]
@@ -743,7 +743,7 @@ test "parse border-collapse property" {
       _ => ()
     }
   }
-  inspect(
+  debug_inspect(
     decl_strs,
     content=(
       #|["border-collapse: collapse", "border-spacing: 0"]

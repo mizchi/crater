@@ -931,7 +931,7 @@ test "parse transform skew" {
 test "parse transform matrix" {
   let style = parse_inline_style("transform: matrix(1, 0, -1, 1, 64, 0)")
   inspect(style.transform.has_matrix, content="true")
-  inspect(
+  debug_inspect(
     [
       style.transform.matrix_a,
       style.transform.matrix_b,
@@ -950,7 +950,7 @@ test "parse transform matrix3d as 2D affine matrix" {
     "transform: matrix3d(1, 0, 0, 0, -1, 1, 0, 0, 0, 0, 1, 0, 64, 0, 0, 1)",
   )
   inspect(style.transform.has_matrix, content="true")
-  inspect(
+  debug_inspect(
     [
       style.transform.matrix_a,
       style.transform.matrix_b,
@@ -974,7 +974,7 @@ test "parse clip-path inset" {
   let style = parse_inline_style("clip-path: inset(16px 0 25% 4px)")
   match style.clip_path {
     @style.ClipPath::Inset(top, right, bottom, left) =>
-      inspect([top, right, bottom, left], content="[16, 0, -0.25, 4]")
+      debug_inspect([top, right, bottom, left], content="[16, 0, -0.25, 4]")
     _ => fail("expected inset clip-path")
   }
 }
@@ -984,7 +984,7 @@ test "parse clip-path rect" {
   let style = parse_inline_style("clip-path: rect(16px 128px 64px 16px)")
   match style.clip_path {
     @style.ClipPath::Rect(top, right, bottom, left) =>
-      inspect([top, right, bottom, left], content="[16, 128, 64, 16]")
+      debug_inspect([top, right, bottom, left], content="[16, 128, 64, 16]")
     _ => fail("expected rect clip-path")
   }
 }
@@ -994,7 +994,7 @@ test "parse clip-path xywh" {
   let style = parse_inline_style("clip-path: xywh(16px 16px 112px 48px)")
   match style.clip_path {
     @style.ClipPath::Xywh(x, y, width, height) =>
-      inspect([x, y, width, height], content="[16, 16, 112, 48]")
+      debug_inspect([x, y, width, height], content="[16, 16, 112, 48]")
     _ => fail("expected xywh clip-path")
   }
 }
@@ -1004,7 +1004,7 @@ test "parse clip-path circle" {
   let style = parse_inline_style("clip-path: circle(24px at 24px 24px)")
   match style.clip_path {
     @style.ClipPath::Circle(radius, center_x, center_y) =>
-      inspect([radius, center_x, center_y], content="[24, 24, 24]")
+      debug_inspect([radius, center_x, center_y], content="[24, 24, 24]")
     _ => fail("expected circle clip-path")
   }
 }
@@ -1014,7 +1014,7 @@ test "parse clip-path ellipse" {
   let style = parse_inline_style("clip-path: ellipse(24px 16px at 32px 32px)")
   match style.clip_path {
     @style.ClipPath::Ellipse(radius_x, radius_y, center_x, center_y) =>
-      inspect(
+      debug_inspect(
         [radius_x, radius_y, center_x, center_y],
         content="[24, 16, 32, 32]",
       )
@@ -1033,7 +1033,7 @@ test "parse clip-path polygon" {
       let (x0, y0) = points[0]
       let (x1, y1) = points[1]
       let (x2, y2) = points[2]
-      inspect([x0, y0, x1, y1, x2, y2], content="[32, 0, 64, 64, 0, 64]")
+      debug_inspect([x0, y0, x1, y1, x2, y2], content="[32, 0, 64, 64, 0, 64]")
     }
     _ => fail("expected polygon clip-path")
   }
@@ -1048,7 +1048,7 @@ test "parse clip-path path as polygon" {
       let (x0, y0) = points[0]
       let (x1, y1) = points[1]
       let (x2, y2) = points[2]
-      inspect([x0, y0, x1, y1, x2, y2], content="[32, 0, 64, 64, 0, 64]")
+      debug_inspect([x0, y0, x1, y1, x2, y2], content="[32, 0, 64, 64, 0, 64]")
     }
     _ => fail("expected path clip-path polygon")
   }
@@ -1063,7 +1063,7 @@ test "parse clip-path quadratic path as polygon" {
       let (x0, y0) = points[0]
       let (x4, y4) = points[4]
       let (x8, y8) = points[8]
-      inspect([x0, y0, x4, y4, x8, y8], content="[0, 64, 32, 32, 64, 64]")
+      debug_inspect([x0, y0, x4, y4, x8, y8], content="[0, 64, 32, 32, 64, 64]")
     }
     _ => fail("expected quadratic path clip-path polygon")
   }
@@ -1080,7 +1080,7 @@ test "parse clip-path cubic path as polygon" {
       let (x0, y0) = points[0]
       let (x4, y4) = points[4]
       let (x8, y8) = points[8]
-      inspect([x0, y0, x4, y4, x8, y8], content="[0, 64, 32, 16, 64, 64]")
+      debug_inspect([x0, y0, x4, y4, x8, y8], content="[0, 64, 32, 16, 64, 64]")
     }
     _ => fail("expected cubic path clip-path polygon")
   }
@@ -1099,7 +1099,7 @@ test "parse clip-path smooth quadratic path as polygon" {
       let (x8, y8) = points[8]
       let (x12, y12) = points[12]
       let (x16, y16) = points[16]
-      inspect(
+      debug_inspect(
         [x0, y0, x4, y4, x8, y8, x12, y12, x16, y16],
         content="[0, 64, 16, 32, 32, 64, 48, 96, 64, 64]",
       )
@@ -1120,7 +1120,7 @@ test "parse clip-path smooth cubic path as polygon" {
       let (x8, y8) = points[8]
       let (x12, y12) = points[12]
       let (x16, y16) = points[16]
-      inspect(
+      debug_inspect(
         [x0, y0, x8, y8, x12, y12, x16, y16],
         content="[0, 64, 32, 64, 48, 112, 64, 64]",
       )

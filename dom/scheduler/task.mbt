@@ -200,7 +200,7 @@ pub impl Show for TaskConstraint with output(self, logger) {
   match self {
     MainThreadOnly => logger.write_string("MainThreadOnly")
     Parallel => logger.write_string("Parallel")
-    Blocking(sources) => logger.write_string("Blocking(\{sources})")
+    Blocking(sources) => logger.write_string("Blocking(\{to_repr(sources)})")
   }
 }
 
@@ -253,7 +253,7 @@ pub impl Show for TaskAction with output(self, logger) {
       logger.write_string(")")
     }
     ComputeStyle(node_ids~) =>
-      logger.write_string("ComputeStyle(node_ids=\{node_ids})")
+      logger.write_string("ComputeStyle(node_ids=\{to_repr(node_ids)})")
     ComputeLayout => logger.write_string("ComputeLayout")
     FetchResource(url~, resource_type~) => {
       logger.write_string("FetchResource(url=")
@@ -278,7 +278,7 @@ pub impl Show for TaskAction with output(self, logger) {
 pub impl Show for TaskResult with output(self, logger) {
   match self {
     Success(new_tasks~) =>
-      logger.write_string("Success(new_tasks=\{new_tasks})")
+      logger.write_string("Success(new_tasks=\{to_repr(new_tasks)})")
     Failure(error~) => {
       logger.write_string("Failure(error=")
       logger.write_string("\"")

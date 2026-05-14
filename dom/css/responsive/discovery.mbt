@@ -40,7 +40,7 @@ pub impl Show for ResponsiveBreakpoint with output(self, logger) {
   logger.write_string(", normalized: ")
   logger.write_string(self.normalized.to_string())
   logger.write_string(", guards: ")
-  logger.write_string(self.guards.to_string())
+  logger.write_object(to_repr(self.guards))
   logger.write_string(", rule_count: ")
   logger.write_string(self.rule_count.to_string())
   logger.write_string("}")
@@ -53,18 +53,18 @@ pub impl Show for BreakpointDiscoveryDiagnostics with output(self, logger) {
   logger.write_string(", rule_count: ")
   logger.write_string(self.rule_count.to_string())
   logger.write_string(", external_stylesheet_links: ")
-  logger.write_string(self.external_stylesheet_links.to_string())
+  logger.write_object(to_repr(self.external_stylesheet_links))
   logger.write_string(", ignored_queries: ")
-  logger.write_string(self.ignored_queries.to_string())
+  logger.write_object(to_repr(self.ignored_queries))
   logger.write_string(", unsupported_queries: ")
-  logger.write_string(self.unsupported_queries.to_string())
+  logger.write_object(to_repr(self.unsupported_queries))
   logger.write_string("}")
 }
 
 ///|
 pub impl Show for BreakpointDiscoveryResult with output(self, logger) {
   logger.write_string("{breakpoints: ")
-  logger.write_string(self.breakpoints.to_string())
+  logger.write_object(to_repr(self.breakpoints))
   logger.write_string(", diagnostics: ")
   logger.write_string(self.diagnostics.to_string())
   logger.write_string("}")

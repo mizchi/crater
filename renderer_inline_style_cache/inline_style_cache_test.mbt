@@ -4,8 +4,8 @@ test "parse_inline_declarations_cached normalizes properties" {
     " COLOR : red ; display: inline-block; ;",
   )
   inspect(declarations.length(), content="2")
-  inspect(declarations[0], content="(\"color\", \"red\")")
-  inspect(declarations[1], content="(\"display\", \"inline-block\")")
+  debug_inspect(declarations[0], content="(\"color\", \"red\")")
+  debug_inspect(declarations[1], content="(\"display\", \"inline-block\")")
 }
 
 ///|

@@ -328,7 +328,7 @@ test "V8+FullDOM: custom states round-trip into DomTree and render html" {
   match dom.query_selector(doc, "#panel") {
     Ok(Some(panel)) =>
       match dom.get_custom_states(panel) {
-        Ok(states) => inspect(states, content="[\"open\"]")
+        Ok(states) => debug_inspect(states, content="[\"open\"]")
         Err(_) => fail("missing custom states")
       }
     _ => fail("missing panel")

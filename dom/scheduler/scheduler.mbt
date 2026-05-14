@@ -14,7 +14,7 @@ struct BlockedSources {
 
 ///|
 fn BlockedSources::new() -> BlockedSources {
-  { sources: @hashset.new() }
+  { sources: @hashset.HashSet([]) }
 }
 
 ///|
@@ -61,7 +61,7 @@ pub fn Scheduler::new() -> Scheduler {
     ready_queue: TaskQueue::new(),
     source_queues: SourceQueueManager::new(),
     blocked: BlockedSources::new(),
-    completed_ids: @hashset.new(),
+    completed_ids: @hashset.HashSet([]),
   }
 }
 
