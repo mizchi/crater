@@ -69,3 +69,58 @@ test "network extracts Set-Cookie entries from header array" {
   inspect(cookies[0].domain, content="app.alt.localhost")
   inspect(cookies[0].same_site, content="none")
 }
+
+///|
+test "network parses document cookie assignment with webdriver defaults" {
+  let cookie = match
+    synthetic_network_parse_document_cookie_assignment(
+      "token=xyz; Domain=.Example.test; Path=/app; SameSite=None; Max-Age=60; HttpOnly; Secure",
+      "https://origin.test/page", "/default", 1000,
+    ) {
+    Some(cookie) => cookie
+    None => fail("expected parsed document cookie")
+  }
+  inspect(cookie.name, content="token")
+  inspect(cookie.value_text, content="xyz")
+  inspect(cookie.domain, content="example.test")
+  inspect(cookie.domain_explicit, content="true")
+  inspect(cookie.path, content="/app")
+  inspect(cookie.same_site, content="none")
+  inspect(cookie.http_only, content="true")
+  inspect(cookie.secure, content="true")
+  match cookie.expiry {
+    Some(expiry) => inspect(expiry, content="1060")
+    None => fail("expected max-age expiry")
+  }
+}
+
+///|
+test "network parses document cookie assignment default domain path and samesite" {
+  let cookie = match
+    synthetic_network_parse_document_cookie_assignment(
+      "token=xyz", "data:text/html,#domain=alt&subdomain=app", "/webdriver/tests/support",
+      2000,
+    ) {
+    Some(cookie) => cookie
+    None => fail("expected parsed document cookie")
+  }
+  inspect(cookie.domain, content="app.alt.localhost")
+  inspect(cookie.domain_explicit, content="false")
+  inspect(cookie.path, content="/webdriver/tests/support")
+  inspect(cookie.same_site, content="default")
+  match cookie.expiry {
+    Some(_) => fail("expected session cookie")
+    None => inspect("session", content="session")
+  }
+}
+
+///|
+test "network rejects document cookie assignment without name separator" {
+  match
+    synthetic_network_parse_document_cookie_assignment(
+      "token", "https://origin.test/page", "/", 0,
+    ) {
+    Some(_) => fail("expected invalid document cookie assignment")
+    None => inspect("invalid", content="invalid")
+  }
+}

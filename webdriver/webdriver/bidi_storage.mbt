@@ -53,11 +53,6 @@ fn storage_now_seconds() -> Int {
 }
 
 ///|
-fn storage_slice(value : String, start : Int, end : Int) -> String {
-  value.unsafe_substring(start~, end~)
-}
-
-///|
 fn storage_slice_from(value : String, start : Int) -> String {
   if start > value.length() {
     ""
@@ -1661,116 +1656,48 @@ fn BidiProtocol::remember_document_cookie(
   ctx_id : String,
   cookie_assignment : String,
 ) -> Unit {
-  let parts : Array[String] = []
-  for part in cookie_assignment.split(";") {
-    parts.push(part.to_owned().trim().to_owned())
+  let base_url = self.get_context_cookie_base_url(ctx_id)
+  let parsed_cookie = match
+    @crater_network.synthetic_network_parse_document_cookie_assignment(
+      cookie_assignment,
+      base_url,
+      storage_cookie_default_path(base_url),
+      storage_now_seconds(),
+    ) {
+    Some(cookie) => cookie
+    None => return
   }
-  if parts.length() == 0 {
-    return
+  let user_context = self.resolve_storage_user_context(ctx_id)
+  let source_origin = storage_cookie_origin_from_base_url(base_url)
+  let cookie : StoredCookie = {
+    name: parsed_cookie.name,
+    value_text: parsed_cookie.value_text,
+    domain: parsed_cookie.domain,
+    domain_explicit: parsed_cookie.domain_explicit,
+    path: parsed_cookie.path,
+    http_only: parsed_cookie.http_only,
+    secure: parsed_cookie.secure,
+    same_site: parsed_cookie.same_site,
+    expiry: parsed_cookie.expiry,
+    context_id: Some(ctx_id),
+    user_context: Some(user_context),
+    source_origin,
   }
-  let first_segment = parts[0]
-  match find_substring(first_segment, "=", 0) {
-    Some(eq_idx) => {
-      let name = storage_slice(first_segment, 0, eq_idx)
-      let value_start = eq_idx + 1
-      let value = storage_slice_from(first_segment, value_start)
-      let base_url = self.get_context_cookie_base_url(ctx_id)
-      let mut domain = storage_cookie_domain_from_base_url(base_url)
-      let mut domain_explicit = false
-      let mut path = storage_cookie_default_path(base_url)
-      let mut secure = false
-      let mut same_site = "default"
-      let mut http_only = false
-      let mut expiry : Int? = None
-
-      for raw_attr in parts {
-        if raw_attr == first_segment || raw_attr.length() == 0 {
-          continue
-        }
-        match find_substring(raw_attr, "=", 0) {
-          Some(attr_eq_idx) => {
-            let attr_name = storage_slice(raw_attr, 0, attr_eq_idx)
-              .trim()
-              .to_owned()
-              .to_lower()
-            let attr_value_start = attr_eq_idx + 1
-            let attr_value = storage_slice_from(raw_attr, attr_value_start)
-              .trim()
-              .to_owned()
-            if attr_name == "domain" {
-              let normalized_domain = storage_strip_leading_dot(
-                attr_value.trim().to_owned().to_lower(),
-              )
-              if normalized_domain.length() > 0 {
-                domain = normalized_domain
-                domain_explicit = true
-              }
-            } else if attr_name == "path" {
-              if attr_value.length() > 0 {
-                path = attr_value
-              }
-            } else if attr_name == "expires" {
-              let parsed_expiry = js_parse_cookie_expiry_seconds(attr_value)
-              if parsed_expiry >= 0 {
-                expiry = Some(parsed_expiry)
-              }
-            } else if attr_name == "max-age" {
-              match parse_decimal_string(attr_value) {
-                Some(max_age) => expiry = Some(storage_now_seconds() + max_age)
-                None => ()
-              }
-            } else if attr_name == "samesite" {
-              let lowered = attr_value.to_lower()
-              if lowered == "none" || lowered == "lax" || lowered == "strict" {
-                same_site = lowered
-              }
-            }
-          }
-          None => {
-            let attr_name = raw_attr.trim().to_owned().to_lower()
-            if attr_name == "secure" {
-              secure = true
-            } else if attr_name == "httponly" {
-              http_only = true
-            }
-          }
-        }
+  match cookie.expiry {
+    Some(cookie_expiry) =>
+      if cookie_expiry <= storage_now_seconds() {
+        self.delete_matching_storage_cookie_identity(
+          cookie.context_id,
+          cookie.user_context,
+          cookie.source_origin,
+          cookie.name,
+          cookie.domain,
+          cookie.path,
+        )
+      } else {
+        self.store_storage_cookie(cookie)
       }
-
-      let user_context = self.resolve_storage_user_context(ctx_id)
-      let source_origin = storage_cookie_origin_from_base_url(base_url)
-      let cookie : StoredCookie = {
-        name: name.trim().to_owned(),
-        value_text: value.trim().to_owned(),
-        domain,
-        domain_explicit,
-        path,
-        http_only,
-        secure,
-        same_site,
-        expiry,
-        context_id: Some(ctx_id),
-        user_context: Some(user_context),
-        source_origin,
-      }
-      match cookie.expiry {
-        Some(cookie_expiry) =>
-          if cookie_expiry <= storage_now_seconds() {
-            self.delete_matching_storage_cookie_identity(
-              cookie.context_id,
-              cookie.user_context,
-              cookie.source_origin,
-              cookie.name,
-              cookie.domain,
-              cookie.path,
-            )
-          } else {
-            self.store_storage_cookie(cookie)
-          }
-        None => self.store_storage_cookie(cookie)
-      }
-    }
-    None => ()
+    None => self.store_storage_cookie(cookie)
   }
 }
 

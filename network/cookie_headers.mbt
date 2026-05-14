@@ -73,109 +73,21 @@ pub fn synthetic_network_parse_set_cookie_header_value(
   base_url : String,
   now_seconds : Int,
 ) -> SyntheticNetworkCookie? {
-  let attributes : Array[String] = []
-  let mut first : String? = None
-  for raw_part in header_value.split(";") {
-    let part = raw_part.trim().to_owned()
-    match first {
-      Some(_) => attributes.push(part)
-      None => first = Some(part)
-    }
-  }
-  let first = match first {
-    Some(first) => first
-    None => return None
-  }
-  match find_substring(first, "=", 0) {
-    Some(eq_idx) => {
-      let name = network_slice(first, 0, eq_idx).trim().to_owned()
-      let value_start = eq_idx + 1
-      let value = if value_start <= first.length() {
-        network_slice_from(first, value_start).trim().to_owned()
-      } else {
-        ""
-      }
-      if name == "" || !is_valid_network_header_name_token(name) {
-        return None
-      }
-      let mut domain = synthetic_network_cookie_domain_from_base_url(base_url)
-      let mut domain_explicit = false
-      let mut path = "/"
-      let mut http_only = false
-      let mut secure = false
-      let mut same_site = "none"
-      let mut expiry : Int? = None
+  synthetic_network_parse_cookie_text(
+    header_value, base_url, "/", "none", now_seconds, true,
+  )
+}
 
-      for raw_attr in attributes {
-        let attr = raw_attr.trim().to_owned()
-        if attr == "" {
-          continue
-        }
-        let (attr_name, attr_value) = match find_substring(attr, "=", 0) {
-          Some(attr_eq_idx) => {
-            let attr_value_start = attr_eq_idx + 1
-            (
-              network_slice(attr, 0, attr_eq_idx).trim().to_owned().to_lower(),
-              if attr_value_start <= attr.length() {
-                network_slice_from(attr, attr_value_start).trim().to_owned()
-              } else {
-                ""
-              },
-            )
-          }
-          None => (attr.to_lower(), "")
-        }
-        if attr_name == "domain" {
-          let normalized_domain = synthetic_network_strip_leading_dot(
-            attr_value.trim().to_owned().to_lower(),
-          )
-          if normalized_domain != "" {
-            domain = normalized_domain
-            domain_explicit = true
-          }
-        } else if attr_name == "path" {
-          if attr_value != "" {
-            path = attr_value
-          }
-        } else if attr_name == "samesite" {
-          let lowered = attr_value.to_lower()
-          if lowered == "none" || lowered == "lax" || lowered == "strict" {
-            same_site = lowered
-          }
-        } else if attr_name == "max-age" {
-          let parsed_max_age : Int? = Some(@string.parse_int(attr_value)) catch {
-            _ => None
-          }
-          match parsed_max_age {
-            Some(parsed_max_age) => expiry = Some(now_seconds + parsed_max_age)
-            None => ()
-          }
-        } else if attr_name == "expires" {
-          let parsed_expiry = js_parse_cookie_expiry_seconds(attr_value)
-          if parsed_expiry >= 0 {
-            expiry = Some(parsed_expiry)
-          }
-        } else if attr_name == "httponly" {
-          http_only = true
-        } else if attr_name == "secure" {
-          secure = true
-        }
-      }
-
-      Some({
-        name,
-        value_text: value,
-        domain,
-        domain_explicit,
-        path,
-        http_only,
-        secure,
-        same_site,
-        expiry,
-      })
-    }
-    None => None
-  }
+///|
+pub fn synthetic_network_parse_document_cookie_assignment(
+  cookie_assignment : String,
+  base_url : String,
+  default_path : String,
+  now_seconds : Int,
+) -> SyntheticNetworkCookie? {
+  synthetic_network_parse_cookie_text(
+    cookie_assignment, base_url, default_path, "default", now_seconds, false,
+  )
 }
 
 ///|
@@ -311,6 +223,121 @@ fn synthetic_network_strip_leading_dot(value : String) -> String {
     network_slice_from(value, 1)
   } else {
     value
+  }
+}
+
+///|
+fn synthetic_network_parse_cookie_text(
+  cookie_text : String,
+  base_url : String,
+  default_path : String,
+  default_same_site : String,
+  now_seconds : Int,
+  require_valid_name : Bool,
+) -> SyntheticNetworkCookie? {
+  let attributes : Array[String] = []
+  let mut first : String? = None
+  for raw_part in cookie_text.split(";") {
+    let part = raw_part.trim().to_owned()
+    match first {
+      Some(_) => attributes.push(part)
+      None => first = Some(part)
+    }
+  }
+  let first = match first {
+    Some(first) => first
+    None => return None
+  }
+  match find_substring(first, "=", 0) {
+    Some(eq_idx) => {
+      let name = network_slice(first, 0, eq_idx).trim().to_owned()
+      let value_start = eq_idx + 1
+      let value = if value_start <= first.length() {
+        network_slice_from(first, value_start).trim().to_owned()
+      } else {
+        ""
+      }
+      if require_valid_name &&
+        (name == "" || !is_valid_network_header_name_token(name)) {
+        return None
+      }
+      let mut domain = synthetic_network_cookie_domain_from_base_url(base_url)
+      let mut domain_explicit = false
+      let mut path = default_path
+      let mut http_only = false
+      let mut secure = false
+      let mut same_site = default_same_site
+      let mut expiry : Int? = None
+
+      for raw_attr in attributes {
+        let attr = raw_attr.trim().to_owned()
+        if attr == "" {
+          continue
+        }
+        let (attr_name, attr_value) = match find_substring(attr, "=", 0) {
+          Some(attr_eq_idx) => {
+            let attr_value_start = attr_eq_idx + 1
+            (
+              network_slice(attr, 0, attr_eq_idx).trim().to_owned().to_lower(),
+              if attr_value_start <= attr.length() {
+                network_slice_from(attr, attr_value_start).trim().to_owned()
+              } else {
+                ""
+              },
+            )
+          }
+          None => (attr.to_lower(), "")
+        }
+        if attr_name == "domain" {
+          let normalized_domain = synthetic_network_strip_leading_dot(
+            attr_value.trim().to_owned().to_lower(),
+          )
+          if normalized_domain != "" {
+            domain = normalized_domain
+            domain_explicit = true
+          }
+        } else if attr_name == "path" {
+          if attr_value != "" {
+            path = attr_value
+          }
+        } else if attr_name == "samesite" {
+          let lowered = attr_value.to_lower()
+          if lowered == "none" || lowered == "lax" || lowered == "strict" {
+            same_site = lowered
+          }
+        } else if attr_name == "max-age" {
+          let parsed_max_age : Int? = Some(@string.parse_int(attr_value)) catch {
+            _ => None
+          }
+          match parsed_max_age {
+            Some(parsed_max_age) => expiry = Some(now_seconds + parsed_max_age)
+            None => ()
+          }
+        } else if attr_name == "expires" {
+          let parsed_expiry = js_parse_cookie_expiry_seconds(attr_value)
+          if parsed_expiry >= 0 {
+            expiry = Some(parsed_expiry)
+          }
+        } else if attr_name == "httponly" {
+          http_only = true
+        } else if attr_name == "secure" {
+          secure = true
+        }
+      }
+
+      Some({
+        name,
+        value_text: value,
+        domain,
+        domain_explicit,
+        path,
+        http_only,
+        secure,
+        same_site,
+        expiry,
+      })
+    }
+    None => None
   }
 }
 

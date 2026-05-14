@@ -40,6 +40,8 @@ pub fn synthetic_network_is_valid_continue_url(String) -> Bool
 
 pub fn synthetic_network_merge_header_entries(Array[Json]) -> Array[Json]
 
+pub fn synthetic_network_parse_document_cookie_assignment(String, String, String, Int) -> SyntheticNetworkCookie?
+
 pub fn synthetic_network_parse_set_cookie_header_value(String, String, Int) -> SyntheticNetworkCookie?
 
 pub fn synthetic_network_query_values(String, String) -> Array[String]
