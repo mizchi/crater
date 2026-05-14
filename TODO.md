@@ -16,7 +16,7 @@ Last organized: 2026-05-14
     - `webdriver/protocol`: BiDi command validation / dispatch table / event construction を、pure helper と wire serializer から順に分離する
     - `webdriver/protocol` / `webdriver/browser_domain`: intercept / fetch / cookie / storage / network event payload のうち BiDi 固有処理を分離する
     - `webdriver/browser_domain`: bluetooth / emulation / geolocation / permissions / screen / web extension など synthetic domain
-    - `webdriver/rendering`: screenshot / print / actual paint / VRT bridge（param validation / actual paint pure helpers / captureScreenshotData actual-paint routing predicate / text metrics parser/fallback / glyph outline parser / batchRender input normalization / VRT result serialization は分離済み。次は JS provider / raster orchestration）
+    - `webdriver/rendering`: screenshot / print / actual paint / VRT bridge（param validation / actual paint pure helpers / capturePaintData JSON / captureScreenshotData actual-paint routing predicate / text metrics parser/fallback / glyph outline parser / batchRender input normalization / VRT result serialization は分離済み。次は JS provider / raster orchestration）
     - `webdriver/server`: WebSocket transport / server state / session wiring
   - 外部化方針: `mizchi/font` は glyph provider / cache / rasterize / layout の実装責務、`mizchi/svg` は SVG primitive / scene / raster math の実装責務を持ち、crater 側は compatibility adapter に寄せる
 - [ ] `painter/svg` facade の直接 re-export 候補を棚卸しする

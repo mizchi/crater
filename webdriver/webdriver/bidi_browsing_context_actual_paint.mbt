@@ -708,13 +708,13 @@ fn BidiProtocol::resolve_capture_paint_data(
     visual.distinct_colors.to_string(),
   )
   Some(
-    make_object({
-      "width": Json::number(frame.width.to_double()),
-      "height": Json::number(frame.height.to_double()),
-      "data": Json::string(data),
-      "timing": @rendering.capture_timing_to_json(timing),
-      "visual": @rendering.capture_visual_to_json(visual),
-    }),
+    @rendering.capture_paint_data_to_json(
+      frame.width,
+      frame.height,
+      data,
+      timing,
+      visual,
+    ),
   )
 }
 

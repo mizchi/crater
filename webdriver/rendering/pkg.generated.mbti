@@ -20,6 +20,8 @@ pub fn batch_render_results_to_json(Array[@vrt.RenderVariantResult]) -> Json
 
 pub fn can_use_actual_paint_for_screenshot_data(Map[String, Json]) -> Bool
 
+pub fn capture_paint_data_to_json(Int, Int, String, PaintCaptureTiming, @export.VisualStats) -> Json
+
 pub fn capture_timing_to_json(PaintCaptureTiming) -> Json
 
 pub fn capture_visual_to_json(@export.VisualStats) -> Json

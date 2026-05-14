@@ -29,3 +29,20 @@ pub fn capture_visual_to_json(visual : @tui_paint_export.VisualStats) -> Json {
     "isBlank": Json::boolean(visual.is_blank),
   })
 }
+
+///|
+pub fn capture_paint_data_to_json(
+  width : Int,
+  height : Int,
+  data : String,
+  timing : PaintCaptureTiming,
+  visual : @tui_paint_export.VisualStats,
+) -> Json {
+  @protocol.make_object({
+    "width": Json::number(width.to_double()),
+    "height": Json::number(height.to_double()),
+    "data": Json::string(data),
+    "timing": capture_timing_to_json(timing),
+    "visual": capture_visual_to_json(visual),
+  })
+}
