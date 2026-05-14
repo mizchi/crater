@@ -4,11 +4,6 @@ fn js_utf8_byte_length(value : String) -> Int {
 }
 
 ///|
-fn js_base64_byte_length(value : String) -> Int {
-  @crater_network.base64_byte_length(value)
-}
-
-///|
 fn js_decode_query_component(value : String) -> String {
   @crater_network.decode_query_component(value)
 }

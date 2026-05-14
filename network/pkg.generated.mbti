@@ -70,9 +70,13 @@ pub fn synthetic_network_parse_set_cookie_header_value(String, String, Int) -> S
 
 pub fn synthetic_network_query_values(String, String) -> Array[String]
 
+pub fn synthetic_network_request_body_size(Json?, String) -> Result[Int, String]
+
 pub fn synthetic_network_request_header_string_value(Array[Json], String) -> String?
 
 pub fn synthetic_network_request_path(String) -> String
+
+pub fn synthetic_network_response_overrides_to_json(SyntheticNetworkResponseOverrides) -> Json
 
 pub fn synthetic_network_status_text_for_code(Int) -> String
 

@@ -486,6 +486,7 @@ describe("MoonBit WebDriver facade and contract boundaries", () => {
     const continueValueSource = read("network/continue_values.mbt");
     for (const symbol of [
       "pub fn synthetic_network_normalize_bytes_value",
+      "pub fn synthetic_network_request_body_size",
       "pub fn synthetic_network_text_from_bytes_value",
       "pub fn synthetic_network_string_from_bytes_value",
       "pub fn synthetic_network_normalize_continue_credentials",
@@ -511,6 +512,37 @@ describe("MoonBit WebDriver facade and contract boundaries", () => {
       "synthetic_network_first_query_value(url, \"username\")",
     ] as const) {
       expect(webdriverSource).not.toContain(implementationMarker);
+    }
+
+    const eventPayloadSource = read("webdriver/webdriver/bidi_network_event_payloads.mbt");
+    expect(eventPayloadSource).toContain(
+      "@crater_network.synthetic_network_request_body_size",
+    );
+    for (const implementationMarker of [
+      "requestValue.type must be a string",
+      "js_utf8_byte_length(payload)",
+      "js_base64_byte_length(payload)",
+    ] as const) {
+      expect(eventPayloadSource).not.toContain(implementationMarker);
+    }
+  });
+
+  it("keeps protocol-neutral response override serialization in crater-network", () => {
+    const networkSource = read("network/header_url_helpers.mbt");
+    expect(networkSource).toContain(
+      "pub fn synthetic_network_response_overrides_to_json",
+    );
+
+    const responseOverrideSource = read("webdriver/webdriver/bidi_network_response_overrides.mbt");
+    expect(responseOverrideSource).toContain(
+      "@crater_network.synthetic_network_response_overrides_to_json",
+    );
+    for (const implementationMarker of [
+      "result[\"fromCache\"] = Json::boolean",
+      "result[\"status\"] = Json::number",
+      "result[\"authChallenges\"] = auth_challenges",
+    ] as const) {
+      expect(responseOverrideSource).not.toContain(implementationMarker);
     }
   });
 

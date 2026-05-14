@@ -168,6 +168,8 @@ test "network normalizes synthetic response overrides" {
       inspect(overrides.mime_type, content="text/html")
       inspect(overrides.protocol, content="http/2")
       inspect(overrides.headers.length(), content="1")
+      let as_json = synthetic_network_response_overrides_to_json(overrides)
+      inspect(as_json.stringify().contains("\"status\":407"), content="true")
       match overrides.auth_challenges {
         Some(auth_challenges) =>
           inspect(auth_challenges.stringify(), content="[]")

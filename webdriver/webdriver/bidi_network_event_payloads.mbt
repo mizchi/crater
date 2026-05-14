@@ -177,43 +177,13 @@ fn BidiProtocol::synthetic_network_request_body_size(
   request_id : Int,
   raw_value : Json?,
 ) -> Int? {
-  let _ = self
-  match raw_value {
-    None | Some(Null) => Some(0)
-    Some(Object(map)) => {
-      let value_type = match map.get("type") {
-        Some(String(value_type)) => value_type
-        _ => {
-          self.send_error(
-            request_id, "invalid argument", "requestValue.type must be a string",
-          )
-          return None
-        }
-      }
-      let payload = match map.get("value") {
-        Some(String(payload)) => payload
-        _ => {
-          self.send_error(
-            request_id, "invalid argument", "requestValue.value must be a string",
-          )
-          return None
-        }
-      }
-      if value_type == "string" {
-        return Some(js_utf8_byte_length(payload))
-      }
-      if value_type == "base64" {
-        return Some(js_base64_byte_length(payload))
-      }
-      self.send_error(
-        request_id, "invalid argument", "requestValue.type is invalid",
-      )
-      None
-    }
-    Some(_) => {
-      self.send_error(
-        request_id, "invalid argument", "requestValue must be an object",
-      )
+  match
+    @crater_network.synthetic_network_request_body_size(
+      raw_value, "requestValue",
+    ) {
+    Ok(body_size) => Some(body_size)
+    Err(message) => {
+      self.send_error(request_id, "invalid argument", message)
       None
     }
   }

@@ -309,18 +309,7 @@ fn BidiProtocol::synthetic_network_response_overrides_to_json(
   overrides : @crater_network.SyntheticNetworkResponseOverrides,
 ) -> Json {
   let _ = self
-  let result : Map[String, Json] = {}
-  result["fromCache"] = Json::boolean(overrides.from_cache)
-  result["headers"] = Json::array(overrides.headers)
-  result["mimeType"] = Json::string(overrides.mime_type)
-  result["protocol"] = Json::string(overrides.protocol)
-  result["status"] = Json::number(overrides.status.to_double())
-  result["statusText"] = Json::string(overrides.status_text)
-  match overrides.auth_challenges {
-    Some(auth_challenges) => result["authChallenges"] = auth_challenges
-    None => ()
-  }
-  make_object(result)
+  @crater_network.synthetic_network_response_overrides_to_json(overrides)
 }
 
 ///|

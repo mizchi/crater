@@ -37,6 +37,45 @@ test "network normalizes BytesValue variants" {
     Ok(_) => fail("expected string-only BytesValue error")
     Err(message) => inspect(message, content="cookie.value.type is invalid")
   }
+  match
+    synthetic_network_request_body_size(
+      Some(
+        Json::object({
+          "type": Json::string("string"),
+          "value": Json::string("hello"),
+        }),
+      ),
+      "requestValue",
+    ) {
+    Ok(size) => inspect(size, content="5")
+    Err(message) => fail("unexpected body size error: " + message)
+  }
+  match
+    synthetic_network_request_body_size(
+      Some(
+        Json::object({
+          "type": Json::string("base64"),
+          "value": Json::string("aGVsbG8="),
+        }),
+      ),
+      "requestValue",
+    ) {
+    Ok(size) => inspect(size, content="5")
+    Err(message) => fail("unexpected base64 body size error: " + message)
+  }
+  match
+    synthetic_network_request_body_size(
+      Some(
+        Json::object({
+          "type": Json::string("bytes"),
+          "value": Json::string("hello"),
+        }),
+      ),
+      "requestValue",
+    ) {
+    Ok(_) => fail("expected invalid request body type")
+    Err(message) => inspect(message, content="requestValue.type is invalid")
+  }
 }
 
 ///|

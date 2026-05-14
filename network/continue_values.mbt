@@ -53,6 +53,34 @@ pub fn synthetic_network_normalize_bytes_value(
 }
 
 ///|
+pub fn synthetic_network_request_body_size(
+  raw_value : Json?,
+  field_name : String,
+) -> Result[Int, String] {
+  match raw_value {
+    None | Some(Null) => Ok(0)
+    Some(Object(map)) => {
+      let value_type = match map.get("type") {
+        Some(String(value_type)) => value_type
+        _ => return Err(field_name + ".type must be a string")
+      }
+      let payload = match map.get("value") {
+        Some(String(payload)) => payload
+        _ => return Err(field_name + ".value must be a string")
+      }
+      if value_type == "string" {
+        return Ok(utf8_byte_length(payload))
+      }
+      if value_type == "base64" {
+        return Ok(base64_byte_length(payload))
+      }
+      Err(field_name + ".type is invalid")
+    }
+    Some(_) => Err(field_name + " must be an object")
+  }
+}
+
+///|
 pub fn synthetic_network_text_from_bytes_value(
   raw_value : Json,
   field_name : String,
