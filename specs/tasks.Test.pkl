@@ -4,6 +4,7 @@ import "../tasks/bench.pkl" as bench
 import "../tasks/browser.pkl" as browser
 import "../tasks/check.pkl" as check
 import "../tasks/core.pkl" as core
+import "../tasks/diagnostics.pkl" as diagnostics
 import "../tasks/release.pkl" as release
 import "../tasks/spec.pkl" as spec
 import "../tasks/test.pkl" as test
@@ -212,5 +213,37 @@ tests {
     expectStdoutContains {
       "workflow test(s) passed"
     }
+  }
+  new {
+    name = "pkfire_lists_taskfile_diagnostics_tasks"
+    description =
+      "The Taskfile should expose pkfire lint, doctor, and long-list diagnostics without bloating the public task list."
+    tags { "pkfire"; "diagnostics"; "contract" }
+    specRef { "task.diagnostics" }
+    workdir = ".."
+    cmd = allGraphJson
+    expectStdoutJsonPath {
+      [graphTaskPath(check.checkTaskfile.name, "name")] = check.checkTaskfile.name
+      [graphTaskPath(check.checkTaskfile.name, "kind")] = "task"
+      [graphTaskPath(check.checkTaskfile.name, "visibility")] = "internal"
+      [graphTaskPath(diagnostics.taskfileDiagnostics.name, "name")] =
+        diagnostics.taskfileDiagnostics.name
+      [graphTaskPath(diagnostics.taskfileDiagnostics.name, "kind")] = "aggregate"
+      [graphTaskPath(diagnostics.taskfileDiagnostics.name, "visibility")] = "public"
+      [graphTaskPath(diagnostics.taskfileLintJson.name, "visibility")] = "internal"
+      [graphTaskPath(diagnostics.taskfileDoctorJson.name, "visibility")] = "internal"
+      [graphTaskPath(diagnostics.taskfileAudit.name, "visibility")] = "internal"
+      [graphTaskPath(diagnostics.taskfileDoctorFixPlan.name, "visibility")] = "internal"
+    }
+  }
+  new {
+    name = "ci_wires_pkfire_affected_with_cache"
+    description =
+      "The GitHub Actions CI should restore pkfire/Pkl caches and execute affected core gates against the resolved base."
+    tags { "ci"; "pkfire"; "affected" }
+    specRef { "ci.affected" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; for p in \"mizchi/pkfire@v0.10.0\" \"actions/cache@v4\" \"PKFIRE_CACHE_DIR\" \"~/.pkl/cache\" \"pkf pkl-cache warm\" \"scripts/ci/pkfire-affected-base.sh\" \"pkf affected\" \"--profile=ci\" \"check test test-taffy test-wasm test-native-smoke\"; do rg -q -- \"$p\" .github/workflows/ci.yml; done'"
   }
 }

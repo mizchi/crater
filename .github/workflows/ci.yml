@@ -12,6 +12,139 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  affected:
+    name: affected pkfire
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    env:
+      PKFIRE_CACHE_DIR: ${{ github.workspace }}/.cache/pkfire
+      GITHUB_EVENT_BEFORE: ${{ github.event.before }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Install pkfire
+        uses: mizchi/pkfire@v0.10.0
+
+      - name: Restore Pkl package cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.pkl/cache
+          key: pkl-cache-${{ runner.os }}-${{ hashFiles('**/PklProject.deps.json') }}
+          restore-keys: |
+            pkl-cache-${{ runner.os }}-
+            pkl-cache-
+
+      - name: Restore pkfire task cache
+        uses: actions/cache@v4
+        with:
+          path: .cache/pkfire
+          key: pkfire-task-${{ runner.os }}-${{ github.ref_name }}-${{ github.run_id }}
+          restore-keys: |
+            pkfire-task-${{ runner.os }}-${{ github.ref_name }}-
+            pkfire-task-${{ runner.os }}-main-
+            pkfire-task-${{ runner.os }}-
+
+      - name: Warm Pkl package cache
+        run: pkf pkl-cache warm
+
+      - name: Install just
+        uses: extractions/setup-just@v4
+        with:
+          just-version: '1.50.0'
+
+      - name: Install native system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsqlite3-dev
+
+      - name: Set up MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+
+      - name: Install wasm-tools
+        run: |
+          curl -LO https://github.com/bytecodealliance/wasm-tools/releases/download/v1.219.1/wasm-tools-1.219.1-x86_64-linux.tar.gz
+          tar xzf wasm-tools-1.219.1-x86_64-linux.tar.gz
+          sudo mv wasm-tools-1.219.1-x86_64-linux/wasm-tools /usr/local/bin/
+          wasm-tools --version
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v5
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Update MoonBit dependencies
+        run: |
+          moon update
+          moon update --manifest-path js/moon.mod.json
+          moon update --manifest-path browser/moon.mod.json
+          moon -C browser/native update
+          moon -C wasm update
+
+      - name: Prefetch MoonBit dependencies
+        run: |
+          bash scripts/ci/prefetch-moon-deps.sh
+          bash scripts/ci/prefetch-moon-deps.sh --manifest-path js/moon.mod.json
+          bash scripts/ci/prefetch-moon-deps.sh --manifest-path browser/moon.mod.json
+          bash scripts/ci/prefetch-moon-deps.sh --manifest-path browser/native/moon.mod.json
+          bash scripts/ci/prefetch-moon-deps.sh --manifest-path wasm/moon.mod.json
+
+      - name: Restore rusty_v8 source binding cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/.rusty_v8
+          key: rusty-v8-source-binding-v146.8.0-${{ runner.os }}
+
+      - name: Prefetch rusty_v8 source binding
+        run: node scripts/prefetch-rusty-v8-source-binding.mjs --release v146.8.0
+
+      - name: Resolve affected base
+        id: affected_base
+        run: |
+          base="$(bash scripts/ci/pkfire-affected-base.sh)"
+          echo "base=${base}" >> "$GITHUB_OUTPUT"
+          {
+            echo "### pkfire affected"
+            echo
+            echo "- base: \`${base}\`"
+            echo "- head: \`$(git rev-parse HEAD)\`"
+            echo
+            echo "Changed files:"
+            echo '```'
+            git diff --name-only --diff-filter=ACMR "${base}...HEAD" || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Preview affected core gates
+        run: |
+          pkf affected \
+            --since="${{ steps.affected_base.outputs.base }}" \
+            --profile=ci \
+            --explain \
+            --dry-run \
+            check test test-taffy test-wasm test-native-smoke
+
+      - name: Run affected core gates
+        run: |
+          pkf affected \
+            --since="${{ steps.affected_base.outputs.base }}" \
+            --profile=ci \
+            --keep-going \
+            --timing \
+            check test test-taffy test-wasm test-native-smoke
+
   test:
     runs-on: ubuntu-latest
 
@@ -34,7 +167,7 @@ jobs:
       - name: Set up MoonBit
         run: |
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
-          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
 
       - name: Show MoonBit version
         run: moon version --all
@@ -128,7 +261,7 @@ jobs:
       - name: Set up MoonBit
         run: |
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
-          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -175,7 +308,7 @@ jobs:
       - name: Set up MoonBit
         run: |
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
-          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
 
       - name: Install wasm-tools
         run: |
@@ -253,7 +386,7 @@ jobs:
       - name: Set up MoonBit
         run: |
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
-          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
 
       - name: Install wasm-tools
         run: |
@@ -315,7 +448,7 @@ jobs:
       - name: Set up MoonBit
         run: |
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
-          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -418,7 +551,7 @@ jobs:
       - name: Set up MoonBit
         run: |
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
-          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -526,7 +659,7 @@ jobs:
       - name: Set up MoonBit
         run: |
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
-          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -711,7 +844,7 @@ jobs:
       - name: Set up MoonBit
         run: |
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
-          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -738,9 +871,11 @@ jobs:
 
       - name: Publish VRT bench summary
         run: |
-          cat vrt-bench/api.md >> "$GITHUB_STEP_SUMMARY"
-          printf '\n\n' >> "$GITHUB_STEP_SUMMARY"
-          cat vrt-bench/phases.md >> "$GITHUB_STEP_SUMMARY"
+          {
+            cat vrt-bench/api.md
+            printf '\n\n'
+            cat vrt-bench/phases.md
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload VRT bench summary
         uses: actions/upload-artifact@v6
@@ -784,7 +919,7 @@ jobs:
       - name: Set up MoonBit
         run: |
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
-          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -1078,7 +1213,7 @@ jobs:
       - name: Set up MoonBit
         run: |
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
-          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
 
       - name: Set up Node.js
         uses: actions/setup-node@v6

@@ -127,6 +127,28 @@ scenarios {
     contributes { "goal.local-gates" }
   }
   new {
+    id = "task.diagnostics"
+    name = "Taskfile diagnostics are discoverable"
+    description =
+      "pkfire lint, doctor, and audit commands should be available through a named diagnostic gate."
+    tags { "spec"; "pkfire"; "diagnostics" }
+    severity = "major"
+    reviewStatus = "approved"
+    dependsOn { "task.default"; "task.check" }
+    contributes { "goal.local-gates"; "goal.spec-contracts" }
+  }
+  new {
+    id = "ci.affected"
+    name = "CI has an affected pkfire gate"
+    description =
+      "Pull requests and pushes should restore Pkl package and pkfire task caches, then run only core gates affected since the previous comparison point."
+    tags { "spec"; "ci"; "pkfire"; "affected" }
+    severity = "major"
+    reviewStatus = "approved"
+    dependsOn { "task.affected"; "task.diagnostics" }
+    contributes { "goal.local-gates" }
+  }
+  new {
     id = "spec.check"
     name = "approved specs are linked"
     description =

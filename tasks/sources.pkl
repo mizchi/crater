@@ -24,10 +24,12 @@ nodeSources: Listing<String> = new {
 }
 
 pkspecSources: Listing<String> = new {
+  ".github/workflows/**/*.yml"
   "Taskfile.pkl"
   "tasks/**/*.pkl"
   "pkspec/**/*.pkl"
   "specs/**/*.pkl"
+  "scripts/ci/**/*.sh"
 }
 
 flakerSources: Listing<String> = new {

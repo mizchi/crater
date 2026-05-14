@@ -4,6 +4,7 @@ import "tasks/bench.pkl" as bench
 import "tasks/browser.pkl" as browser
 import "tasks/check.pkl" as check
 import "tasks/core.pkl" as core
+import "tasks/diagnostics.pkl" as diagnostics
 import "tasks/release.pkl" as release
 import "tasks/spec.pkl" as spec
 import "tasks/test.pkl" as test
@@ -13,6 +14,7 @@ import "tasks/wpt.pkl" as wpt
 tasks {
   ...core.tasks
   ...check.tasks
+  ...diagnostics.tasks
   ...spec.tasks
   ...test.tasks
   ...browser.tasks
@@ -30,6 +32,7 @@ workflowTests {
     tasks {
       check.checkFlaker.name
       check.checkMoon.name
+      check.checkTaskfile.name
       check.checkTs.name
       spec.specCheck.name
       spec.specLint.name
@@ -78,6 +81,32 @@ workflowTests {
       wpt.testWptDom.name
       wpt.testWptWebdriver.name
       wpt.testWpt.name
+    }
+  }
+  new {
+    name = "ci workflow change runs spec-backed core gates"
+    changed { ".github/workflows/ci.yml" }
+    direct {
+      spec.specCheck.name
+      spec.specLint.name
+      spec.specDocs.name
+      spec.specTest.name
+    }
+    tasks {
+      check.checkFlaker.name
+      check.checkMoon.name
+      check.checkTaskfile.name
+      check.checkTs.name
+      spec.specCheck.name
+      spec.specLint.name
+      check.check.name
+      spec.specDocs.name
+      spec.specTest.name
+      spec.spec.name
+      test.testMoon.name
+      test.testNode.name
+      test.testVitest.name
+      test.test.name
     }
   }
   new {

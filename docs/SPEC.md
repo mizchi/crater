@@ -1,10 +1,16 @@
 # Test SPEC
 
-32 tests across 2 module(s) — 18 pending, 14 active
+36 tests across 2 module(s) — 20 pending, 16 active
 
 ## `specs/`
 
 ### `crater.pkl`
+
+- [ ] **CI has an affected pkfire gate** — verifies: ci.affected — tags: spec, ci, pkfire, affected
+  > Pull requests and pushes should restore Pkl package and pkfire task caches, then run only core gates affected since the previous comparison point.
+  - contributes to: goal.local-gates
+  - depends on: task.affected, task.diagnostics
+  - body: _not yet implemented_
 
 - [ ] **Preact compatibility gate is discoverable** — verifies: browser.preact — tags: spec, browser, preact, pkfire
   > Preact compatibility should have a named pkfire task that can run independently from VRT.
@@ -15,6 +21,12 @@
 - [ ] **Studio e2e comparison is tracked** [draft] — verifies: studio.e2e-comparison — tags: spec, studio, e2e
   > The crater-vs-Chromium Studio scenario should become a pkspec-linked external compatibility contract.
   - contributes to: goal.browser-compat, goal.visual-regression
+  - body: _not yet implemented_
+
+- [ ] **Taskfile diagnostics are discoverable** — verifies: task.diagnostics — tags: spec, pkfire, diagnostics
+  > pkfire lint, doctor, and audit commands should be available through a named diagnostic gate.
+  - contributes to: goal.local-gates, goal.spec-contracts
+  - depends on: task.default, task.check
   - body: _not yet implemented_
 
 - [ ] **WPT CSS gate is discoverable** — verifies: wpt.css — tags: spec, browser, wpt, css, pkfire
@@ -106,6 +118,10 @@
 
 ### `tasks.Test.pkl`
 
+- [x] **ci_wires_pkfire_affected_with_cache** — verifies: ci.affected — tags: ci, pkfire, affected
+  > The GitHub Actions CI should restore pkfire/Pkl caches and execute affected core gates against the resolved base.
+  - body: `cmd` (exit 0 expected)
+
 - [x] **pkfire_checks_affected_workflow_tests** — verifies: task.affected — tags: pkfire, affected, contract
   > The affected task contract should verify direct input matches and expanded aggregate task plans.
   - body: `cmd` (exit 0 expected)
@@ -140,6 +156,10 @@
 
 - [x] **pkfire_lists_spec_test_task** — verifies: spec.test — tags: pkspec, pkfire, smoke
   > The pkspec executable smoke suite should be exposed through pkfire.
+  - body: `cmd` (exit 0 expected)
+
+- [x] **pkfire_lists_taskfile_diagnostics_tasks** — verifies: task.diagnostics — tags: pkfire, diagnostics, contract
+  > The Taskfile should expose pkfire lint, doctor, and long-list diagnostics without bloating the public task list.
   - body: `cmd` (exit 0 expected)
 
 - [x] **pkfire_lists_test_task** — verifies: task.test — tags: pkfire, smoke

@@ -1,0 +1,52 @@
+import "package://pkg.pkl-lang.org/github.com/mizchi/pkfire/pkfire@0.10.0#/Taskfile.pkl" as pkfire
+
+taskfileLintJson: pkfire.Task = new {
+  name = "taskfile-lint-json"
+  description = "Emit structured pkfire lint findings"
+  visibility = "internal"
+  cmd = "pkf lint --json"
+  cache = false
+  quiet = true
+}
+
+taskfileDoctorJson: pkfire.Task = new {
+  name = "taskfile-doctor-json"
+  description = "Emit structured pkfire setup diagnostics"
+  visibility = "internal"
+  cmd = "pkf doctor --json"
+  cache = false
+  quiet = true
+}
+
+taskfileAudit: pkfire.Task = new {
+  name = "taskfile-audit"
+  description = "Print the full pkfire task audit table"
+  visibility = "internal"
+  cmd = "pkf list --long --all --color=never"
+  cache = false
+  quiet = true
+}
+
+taskfileDoctorFixPlan: pkfire.Task = new {
+  name = "taskfile-doctor-fix-plan"
+  description = "Preview pkfire setup fixes without applying them"
+  visibility = "internal"
+  cmd = "pkf doctor --fix --dry-run"
+  cache = false
+  quiet = true
+}
+
+taskfileDiagnostics: pkfire.Task = new {
+  name = "taskfile-diagnostics"
+  description = "Run pkfire lint, doctor, and audit diagnostics"
+  cache = false
+  deps { taskfileLintJson; taskfileDoctorJson; taskfileAudit }
+}
+
+tasks: Listing<pkfire.Task> = new {
+  taskfileLintJson
+  taskfileDoctorJson
+  taskfileAudit
+  taskfileDoctorFixPlan
+  taskfileDiagnostics
+}

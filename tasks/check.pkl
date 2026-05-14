@@ -27,16 +27,32 @@ checkFlaker: pkfire.Task = new {
   inputs = src.flakerSources
 }
 
+checkTaskfile: pkfire.Task = new {
+  name = "check-taskfile"
+  description = "Validate pkfire Taskfile wiring with pkf lint"
+  visibility = "internal"
+  cmd = "pkf lint --json > /dev/null"
+  cache = false
+}
+
 check: pkfire.Task = new {
   name = "check"
   description = "Run fast local correctness gates"
   cache = false
-  deps { checkMoon; checkTs; checkFlaker; spec.specCheck; spec.specLint }
+  deps {
+    checkMoon
+    checkTs
+    checkFlaker
+    checkTaskfile
+    spec.specCheck
+    spec.specLint
+  }
 }
 
 tasks: Listing<pkfire.Task> = new {
   checkMoon
   checkTs
   checkFlaker
+  checkTaskfile
   check
 }
