@@ -381,41 +381,15 @@ fn ensure_paint_provider_initialized() -> Unit {
         js_kern_advance(cp1, cp2, font_size, is_bold)
       },
       get_glyph: fn(codepoint, font_size, is_bold) {
-        let advance = js_glyph_advance(codepoint, font_size, is_bold)
-        if use_outline_commands {
-          let json = js_glyph_outline_commands(codepoint, font_size, is_bold)
-          if json.length() == 0 || json == "[]" {
-            return ([], advance)
-          }
-          let commands = @rendering.parse_glyph_outline_commands_json(json)
-          (commands, advance)
-        } else {
-          let svg_path = js_glyph_to_svg_path(codepoint, font_size, is_bold)
-          if svg_path.length() == 0 {
-            return ([], advance)
-          }
-          let commands = @svg.parse_path(svg_path)
-          (commands, advance)
-        }
+        resolve_js_glyph_commands(
+          use_outline_commands, codepoint, font_size, is_bold,
+        )
       },
       get_glyph_by_weight: Some(fn(codepoint, font_size, font_weight) {
         let is_bold = font_weight >= 600.0
-        let advance = js_glyph_advance(codepoint, font_size, is_bold)
-        if use_outline_commands {
-          let json = js_glyph_outline_commands(codepoint, font_size, is_bold)
-          if json.length() == 0 || json == "[]" {
-            return ([], advance)
-          }
-          let commands = @rendering.parse_glyph_outline_commands_json(json)
-          (commands, advance)
-        } else {
-          let svg_path = js_glyph_to_svg_path(codepoint, font_size, is_bold)
-          if svg_path.length() == 0 {
-            return ([], advance)
-          }
-          let commands = @svg.parse_path(svg_path)
-          (commands, advance)
-        }
+        resolve_js_glyph_commands(
+          use_outline_commands, codepoint, font_size, is_bold,
+        )
       }),
       get_kern_by_weight: Some(fn(cp1, cp2, font_size, font_weight) {
         js_kern_advance(cp1, cp2, font_size, font_weight >= 600.0)
@@ -426,31 +400,9 @@ fn ensure_paint_provider_initialized() -> Unit {
         is_bold,
         font_family,
       ) {
-        if use_outline_commands {
-          let json = js_outline_commands_for_family(
-            codepoint, font_size, is_bold, font_family,
-          )
-          if json.length() == 0 || json == "[]" {
-            return None
-          }
-          let advance = js_advance_for_family(
-            codepoint, font_size, is_bold, font_family,
-          )
-          let commands = @rendering.parse_glyph_outline_commands_json(json)
-          Some((commands, advance))
-        } else {
-          let svg_path = js_glyph_for_family(
-            codepoint, font_size, is_bold, font_family,
-          )
-          if svg_path.length() == 0 {
-            return None
-          }
-          let advance = js_advance_for_family(
-            codepoint, font_size, is_bold, font_family,
-          )
-          let commands = @svg.parse_path(svg_path)
-          Some((commands, advance))
-        }
+        resolve_js_family_glyph_commands(
+          use_outline_commands, codepoint, font_size, is_bold, font_family,
+        )
       }),
       get_kern_for_family: Some(fn(cp1, cp2, font_size, is_bold, font_family) {
         js_kern_for_family(cp1, cp2, font_size, is_bold, font_family)
@@ -462,31 +414,9 @@ fn ensure_paint_provider_initialized() -> Unit {
         font_family,
       ) {
         let is_bold = font_weight >= 600.0
-        if use_outline_commands {
-          let json = js_outline_commands_for_family(
-            codepoint, font_size, is_bold, font_family,
-          )
-          if json.length() == 0 || json == "[]" {
-            return None
-          }
-          let advance = js_advance_for_family(
-            codepoint, font_size, is_bold, font_family,
-          )
-          let commands = @rendering.parse_glyph_outline_commands_json(json)
-          Some((commands, advance))
-        } else {
-          let svg_path = js_glyph_for_family(
-            codepoint, font_size, is_bold, font_family,
-          )
-          if svg_path.length() == 0 {
-            return None
-          }
-          let advance = js_advance_for_family(
-            codepoint, font_size, is_bold, font_family,
-          )
-          let commands = @svg.parse_path(svg_path)
-          Some((commands, advance))
-        }
+        resolve_js_family_glyph_commands(
+          use_outline_commands, codepoint, font_size, is_bold, font_family,
+        )
       }),
       get_kern_for_family_by_weight: Some(fn(
         cp1,
@@ -508,6 +438,63 @@ fn ensure_paint_provider_initialized() -> Unit {
       }),
     }
     @raster.set_glyph_provider(glyph_provider)
+  }
+}
+
+///|
+fn resolve_js_glyph_commands(
+  use_outline_commands : Bool,
+  codepoint : Int,
+  font_size : Double,
+  is_bold : Bool,
+) -> (Array[@svg.PathCommand], Double) {
+  let advance = js_glyph_advance(codepoint, font_size, is_bold)
+  if use_outline_commands {
+    let json = js_glyph_outline_commands(codepoint, font_size, is_bold)
+    if json.length() == 0 || json == "[]" {
+      return ([], advance)
+    }
+    let commands = @rendering.parse_glyph_outline_commands_json(json)
+    (commands, advance)
+  } else {
+    let svg_path = js_glyph_to_svg_path(codepoint, font_size, is_bold)
+    if svg_path.length() == 0 {
+      return ([], advance)
+    }
+    let commands = @svg.parse_path(svg_path)
+    (commands, advance)
+  }
+}
+
+///|
+fn resolve_js_family_glyph_commands(
+  use_outline_commands : Bool,
+  codepoint : Int,
+  font_size : Double,
+  is_bold : Bool,
+  font_family : String,
+) -> (Array[@svg.PathCommand], Double)? {
+  let advance = js_advance_for_family(
+    codepoint, font_size, is_bold, font_family,
+  )
+  if use_outline_commands {
+    let json = js_outline_commands_for_family(
+      codepoint, font_size, is_bold, font_family,
+    )
+    if json.length() == 0 || json == "[]" {
+      return None
+    }
+    let commands = @rendering.parse_glyph_outline_commands_json(json)
+    Some((commands, advance))
+  } else {
+    let svg_path = js_glyph_for_family(
+      codepoint, font_size, is_bold, font_family,
+    )
+    if svg_path.length() == 0 {
+      return None
+    }
+    let commands = @svg.parse_path(svg_path)
+    Some((commands, advance))
   }
 }
 
