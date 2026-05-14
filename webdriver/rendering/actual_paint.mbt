@@ -83,6 +83,42 @@ pub fn parse_text_metrics_quad(
 }
 
 ///|
+pub fn resolve_text_intrinsic_size_from_provider_payload(
+  payload : String,
+  text : String,
+  font_size : Double,
+  line_height : Double,
+) -> @types.IntrinsicSize {
+  match parse_text_metrics_quad(payload) {
+    Some((min_width, max_width, min_height, max_height)) =>
+      { min_width, max_width, min_height, max_height }
+    None => fallback_text_intrinsic_size(text, font_size, line_height)
+  }
+}
+
+///|
+fn fallback_text_intrinsic_size(
+  text : String,
+  font_size : Double,
+  line_height : Double,
+) -> @types.IntrinsicSize {
+  let mut columns = 0
+  for _ in text.iter() {
+    columns = columns + 1
+  }
+  let cell_width = if font_size > 0.0 { font_size * 0.5 } else { 8.0 }
+  let width = columns.to_double() * cell_width
+  let height = if line_height > 0.0 {
+    line_height
+  } else if font_size > 0.0 {
+    font_size
+  } else {
+    16.0
+  }
+  { min_width: width, max_width: width, min_height: height, max_height: height }
+}
+
+///|
 pub fn parse_glyph_outline_commands_json(
   json_text : String,
 ) -> Array[@svg.PathCommand] {

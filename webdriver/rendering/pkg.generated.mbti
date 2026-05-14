@@ -36,6 +36,8 @@ pub fn parse_glyph_outline_commands_json(String) -> Array[@svg.PathCommand]
 
 pub fn parse_text_metrics_quad(String) -> (Double, Double, Double, Double)?
 
+pub fn resolve_text_intrinsic_size_from_provider_payload(String, String, Double, Double) -> @types.IntrinsicSize
+
 pub fn should_use_font_aware_text_provider(String) -> Bool
 
 // Errors

@@ -289,31 +289,9 @@ fn ensure_paint_text_provider() -> Unit {
               text, font_size, line_height, ws, wm, available_width, available_height,
             )
           }
-          match @rendering.parse_text_metrics_quad(payload) {
-            Some((min_w, max_w, min_h, max_h)) =>
-              {
-                min_width: min_w,
-                max_width: max_w,
-                min_height: min_h,
-                max_height: max_h,
-              }
-            None => {
-              let mut cols = 0
-              for _ in text.iter() {
-                cols = cols + 1
-              }
-              let cw = if font_size > 0.0 { font_size * 0.5 } else { 8.0 }
-              let w = cols.to_double() * cw
-              let h = if line_height > 0.0 {
-                line_height
-              } else if font_size > 0.0 {
-                font_size
-              } else {
-                16.0
-              }
-              { min_width: w, max_width: w, min_height: h, max_height: h }
-            }
-          }
+          @rendering.resolve_text_intrinsic_size_from_provider_payload(
+            payload, text, font_size, line_height,
+          )
         },
       }
     })

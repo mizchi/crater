@@ -68,6 +68,28 @@ test "text metrics quad parser rejects incomplete or invalid csv" {
 }
 
 ///|
+test "text intrinsic size prefers provider payload" {
+  let size = resolve_text_intrinsic_size_from_provider_payload(
+    "1,2,3,4", "abc", 10.0, 12.0,
+  )
+  inspect(size.min_width, content="1")
+  inspect(size.max_width, content="2")
+  inspect(size.min_height, content="3")
+  inspect(size.max_height, content="4")
+}
+
+///|
+test "text intrinsic size falls back to character count and line metrics" {
+  let size = resolve_text_intrinsic_size_from_provider_payload(
+    "", "abcd", 10.0, 0.0,
+  )
+  inspect(size.min_width, content="20")
+  inspect(size.max_width, content="20")
+  inspect(size.min_height, content="10")
+  inspect(size.max_height, content="10")
+}
+
+///|
 test "glyph outline command parser accepts move line curve and close" {
   let json =
     #|[["M",1,2],["L",3,4],["Q",5,6,7,8],["C",9,10,11,12,13,14],["Z"]]
