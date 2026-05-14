@@ -36,6 +36,10 @@ pub fn is_valid_print_page_range(String) -> Bool
 
 pub fn normalize_batch_render_options(Map[String, Json], String) -> Result[BatchRenderOptions, RenderingValidationError]
 
+pub fn normalize_capture_paint_data_options(Map[String, Json]) -> Result[String, RenderingValidationError]
+
+pub fn normalize_capture_paint_tree_options(Map[String, Json]) -> Result[String, RenderingValidationError]
+
 pub fn normalize_capture_screenshot_options(Map[String, Json]) -> Result[CaptureScreenshotOptions, RenderingValidationError]
 
 pub fn normalize_print_options(Map[String, Json]) -> Result[PrintOptions, RenderingValidationError]

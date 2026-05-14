@@ -49,6 +49,56 @@ test "actual paint screenshot predicate rejects synthetic clip and jpeg" {
 }
 
 ///|
+test "capture paint data options validate viewport only origin" {
+  match normalize_capture_paint_data_options({}) {
+    Ok(origin) => inspect(origin, content="viewport")
+    Err(error) => fail("unexpected paint data option error: " + error.message())
+  }
+  match
+    normalize_capture_paint_data_options({ "origin": Json::string("document") }) {
+    Ok(_) => fail("expected unsupported document origin")
+    Err(error) => {
+      inspect(error.name(), content="unsupported operation")
+      inspect(
+        error.message(),
+        content="capturePaintData currently supports only origin='viewport'",
+      )
+    }
+  }
+  match normalize_capture_paint_data_options({ "origin": Json::number(1.0) }) {
+    Ok(_) => fail("expected invalid origin")
+    Err(error) => {
+      inspect(error.name(), content="invalid argument")
+      inspect(error.message(), content="origin must be 'viewport'")
+    }
+  }
+}
+
+///|
+test "capture paint tree options validate viewport and document origins" {
+  match
+    normalize_capture_paint_tree_options({ "origin": Json::string("document") }) {
+    Ok(origin) => inspect(origin, content="document")
+    Err(error) => fail("unexpected paint tree option error: " + error.message())
+  }
+  match
+    normalize_capture_paint_tree_options({ "origin": Json::string("bad") }) {
+    Ok(_) => fail("expected invalid origin")
+    Err(error) => {
+      inspect(error.name(), content="invalid argument")
+      inspect(
+        error.message(),
+        content="origin must be 'viewport' or 'document'",
+      )
+    }
+  }
+  match normalize_capture_paint_tree_options({ "origin": Json::number(1.0) }) {
+    Ok(_) => fail("expected invalid origin type")
+    Err(error) => inspect(error.message(), content="origin must be a string")
+  }
+}
+
+///|
 test "text metrics quad parser accepts provider csv" {
   match parse_text_metrics_quad("1.5,2.5,3.5,4.5") {
     Some((min_w, max_w, min_h, max_h)) => {

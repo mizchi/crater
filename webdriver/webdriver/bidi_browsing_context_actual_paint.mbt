@@ -634,18 +634,10 @@ fn BidiProtocol::resolve_capture_paint_data(
     }
   }
 
-  match params.get("origin") {
-    None | Some(String("viewport")) => ()
-    Some(String(_)) => {
-      self.send_error(
-        request_id, "unsupported operation", "capturePaintData currently supports only origin='viewport'",
-      )
-      return None
-    }
-    Some(_) => {
-      self.send_error(
-        request_id, "invalid argument", "origin must be 'viewport'",
-      )
+  match @rendering.normalize_capture_paint_data_options(params) {
+    Ok(_) => ()
+    Err(error) => {
+      self.send_error(request_id, error.name(), error.message())
       return None
     }
   }
@@ -825,17 +817,10 @@ fn BidiProtocol::resolve_capture_paint_tree(
   }
   set_runtime_context(ctx_id)
   self.apply_effective_viewport_to_runtime_context(ctx_id, ctx_id)
-  let origin = match params.get("origin") {
-    None | Some(String("viewport")) => "viewport"
-    Some(String("document")) => "document"
-    Some(String(_)) => {
-      self.send_error(
-        request_id, "invalid argument", "origin must be 'viewport' or 'document'",
-      )
-      return None
-    }
-    Some(_) => {
-      self.send_error(request_id, "invalid argument", "origin must be a string")
+  let origin = match @rendering.normalize_capture_paint_tree_options(params) {
+    Ok(origin) => origin
+    Err(error) => {
+      self.send_error(request_id, error.name(), error.message())
       return None
     }
   }

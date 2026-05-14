@@ -229,6 +229,35 @@ pub fn can_use_actual_paint_for_screenshot_data(
 }
 
 ///|
+pub fn normalize_capture_paint_data_options(
+  params : Map[String, Json],
+) -> Result[String, RenderingValidationError] {
+  match params.get("origin") {
+    None | Some(String("viewport")) => Ok("viewport")
+    Some(String(_)) =>
+      Err(
+        UnsupportedOperation(
+          "capturePaintData currently supports only origin='viewport'",
+        ),
+      )
+    Some(_) => Err(InvalidArgument("origin must be 'viewport'"))
+  }
+}
+
+///|
+pub fn normalize_capture_paint_tree_options(
+  params : Map[String, Json],
+) -> Result[String, RenderingValidationError] {
+  match params.get("origin") {
+    None | Some(String("viewport")) => Ok("viewport")
+    Some(String("document")) => Ok("document")
+    Some(String(_)) =>
+      Err(InvalidArgument("origin must be 'viewport' or 'document'"))
+    Some(_) => Err(InvalidArgument("origin must be a string"))
+  }
+}
+
+///|
 fn actual_paint_node_contributes_document_overflow(node : @node.Node) -> Bool {
   node.style.position != @types.Fixed
 }

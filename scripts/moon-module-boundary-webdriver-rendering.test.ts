@@ -22,17 +22,12 @@ describe("MoonBit WebDriver rendering boundaries", () => {
       "webdriver/rendering/validation.mbt",
       "webdriver/rendering/validation_test.mbt",
     ] as const;
-    const missingFiles = expectedRenderingFiles.filter((file) => {
-      return !fs.existsSync(path.join(REPO_ROOT, file));
-    });
-
+    const missingFiles = expectedRenderingFiles.filter((file) => !fs.existsSync(path.join(REPO_ROOT, file)));
     expect(missingFiles).toEqual([]);
-
     const renderingPackage = read("webdriver/rendering/moon.pkg");
     expect(renderingPackage).not.toContain("mizchi/crater\"");
     expect(renderingPackage).not.toContain("mizchi/js");
     expect(renderingPackage).not.toContain("mizchi/webdriver");
-
     const webdriverPackage = read("webdriver/webdriver/moon.pkg");
     expect(webdriverPackage).toContain('"mizchi/crater-webdriver-bidi/rendering" @rendering');
     expect(fs.existsSync(path.join(REPO_ROOT, "webdriver/webdriver/bidi_rendering_validation.mbt"))).toBe(false);
@@ -41,7 +36,7 @@ describe("MoonBit WebDriver rendering boundaries", () => {
     const screenshotSource = read("webdriver/webdriver/bidi_protocol_browsing_context_screenshot.mbt");
     expect(screenshotSource).toContain("@rendering.normalize_capture_screenshot_options");
     const actualPaintSource = read("webdriver/webdriver/bidi_browsing_context_actual_paint.mbt");
-    for (const marker of ["@rendering.actual_paint_document_dimensions_from_node_and_layout", "@rendering.should_use_font_aware_text_provider", "@rendering.can_use_actual_paint_for_screenshot_data", "@rendering.resolve_text_intrinsic_size_from_provider_payload", "@rendering.parse_glyph_outline_commands_json", "@rendering.capture_paint_data_to_json", "@rendering.capture_paint_data_log_message", "@rendering.capture_screenshot_data_log_message", "@rendering.capture_paint_tree_to_json"] as const) expect(actualPaintSource).toContain(marker);
+    for (const marker of ["@rendering.actual_paint_document_dimensions_from_node_and_layout", "@rendering.should_use_font_aware_text_provider", "@rendering.can_use_actual_paint_for_screenshot_data", "@rendering.normalize_capture_paint_data_options", "@rendering.normalize_capture_paint_tree_options", "@rendering.resolve_text_intrinsic_size_from_provider_payload", "@rendering.parse_glyph_outline_commands_json", "@rendering.capture_paint_data_to_json", "@rendering.capture_paint_data_log_message", "@rendering.capture_screenshot_data_log_message", "@rendering.capture_paint_tree_to_json"] as const) expect(actualPaintSource).toContain(marker);
     const batchRenderSource = read("webdriver/webdriver/bidi_browsing_context_vrt.mbt");
     expect(batchRenderSource).toContain("@rendering.normalize_batch_render_options");
     expect(batchRenderSource).toContain("@rendering.batch_render_results_to_json");
@@ -71,6 +66,8 @@ describe("MoonBit WebDriver rendering boundaries", () => {
       "capturePaintData: node_layout=",
       "captureScreenshotData: node_layout=",
       "\"paintTree\": Json::string",
+      "capturePaintData currently supports only origin='viewport'",
+      "origin must be 'viewport' or 'document'",
       "Some(String(\"synthetic\"))",
       "fn capture_timing_to_json",
       "fn capture_visual_to_json",
