@@ -4,6 +4,8 @@ package "mizchi/crater-webdriver-bidi/protocol"
 // Values
 pub fn canonicalize_serialization_options_map(Map[String, Json]) -> Map[String, Json]
 
+pub fn extract_string_value_from_evaluate_result(String) -> String
+
 pub fn get_field(Json, String) -> Json?
 
 pub fn get_int_field(Json, String) -> Int?

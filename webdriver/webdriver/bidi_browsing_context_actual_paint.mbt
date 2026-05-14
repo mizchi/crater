@@ -1,21 +1,4 @@
 ///|
-fn extract_string_value_from_evaluate_result(json_str : String) -> String {
-  let parsed = @json.parse(json_str) catch { _ => return "" }
-  match parsed {
-    Object(map) =>
-      match map.get("result") {
-        Some(Object(result_map)) =>
-          match result_map.get("value") {
-            Some(String(val)) => val
-            _ => ""
-          }
-        _ => ""
-      }
-    _ => ""
-  }
-}
-
-///|
 /// Check if JS-side text metrics provider is available
 extern "js" fn has_paint_text_provider() -> Bool =
   #|() => typeof globalThis.__craterMeasureTextIntrinsic === "function"
@@ -531,7 +514,7 @@ fn ensure_paint_provider_initialized() -> Unit {
 ///|
 fn capture_current_paint_html() -> String {
   let html_json = evaluate_js(capture_paint_source_html_expr())
-  extract_string_value_from_evaluate_result(html_json)
+  @protocol.extract_string_value_from_evaluate_result(html_json)
 }
 
 ///|
@@ -921,7 +904,7 @@ fn BidiProtocol::resolve_capture_paint_tree(
   let width = self.resolve_effective_viewport_width(ctx_id)
   let height = self.resolve_effective_viewport_height(ctx_id)
   let html_json = evaluate_js(serialize_live_document_html_expr())
-  let html = extract_string_value_from_evaluate_result(html_json)
+  let html = @protocol.extract_string_value_from_evaluate_result(html_json)
   let ctx = @browser_contract.create_render_context(width, height, false)
   let (node, layout) = if origin == "document" {
     @renderer.render_to_node_and_layout_full_document(html, ctx)

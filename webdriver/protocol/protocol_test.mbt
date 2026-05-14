@@ -88,3 +88,24 @@ test "safe json int validation requires integer numbers inside range" {
   debug_inspect(json_as_safe_int(Json::number(2.5), 0.0, 3.0), content="None")
   debug_inspect(json_as_safe_int(Json::number(4.0), 0.0, 3.0), content="None")
 }
+
+///|
+test "evaluate result string helper extracts remote string value" {
+  let payload =
+    #|{"result":{"type":"success","value":"<main></main>"}}
+  inspect(
+    extract_string_value_from_evaluate_result(payload),
+    content="<main></main>",
+  )
+}
+
+///|
+test "evaluate result string helper defaults malformed or non string values" {
+  inspect(extract_string_value_from_evaluate_result("{"), content="")
+  let non_string_payload =
+    #|{"result":{"type":"success","value":42}}
+  inspect(
+    extract_string_value_from_evaluate_result(non_string_payload),
+    content="",
+  )
+}

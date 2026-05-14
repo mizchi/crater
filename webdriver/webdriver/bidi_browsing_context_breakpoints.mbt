@@ -111,7 +111,7 @@ fn responsive_breakpoint_source_html(mode : String) -> String {
     "html-inline" => evaluate_js("globalThis.__lastHTML || ''")
     _ => evaluate_js(serialize_live_document_html_expr())
   }
-  extract_string_value_from_evaluate_result(html_json)
+  @protocol.extract_string_value_from_evaluate_result(html_json)
 }
 
 ///|
@@ -131,7 +131,7 @@ fn responsive_breakpoint_source_html_with_shared_node_marker(
       ),
     ),
   )
-  extract_string_value_from_evaluate_result(html_json)
+  @protocol.extract_string_value_from_evaluate_result(html_json)
 }
 
 ///|
@@ -151,7 +151,7 @@ fn responsive_breakpoint_source_html_with_element_id_marker(
       ),
     ),
   )
-  extract_string_value_from_evaluate_result(html_json)
+  @protocol.extract_string_value_from_evaluate_result(html_json)
 }
 
 ///|

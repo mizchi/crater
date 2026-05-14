@@ -21,6 +21,23 @@ pub fn get_string_field(json : Json, key : String) -> String? {
 }
 
 ///|
+pub fn extract_string_value_from_evaluate_result(json_text : String) -> String {
+  let parsed = @json.parse(json_text) catch { _ => return "" }
+  match parsed {
+    Object(map) =>
+      match map.get("result") {
+        Some(Object(result_map)) =>
+          match result_map.get("value") {
+            Some(String(value)) => value
+            _ => ""
+          }
+        _ => ""
+      }
+    _ => ""
+  }
+}
+
+///|
 pub fn get_int_field(json : Json, key : String) -> Int? {
   match get_field(json, key) {
     Some(Number(n, ..)) => Some(n.to_int())
