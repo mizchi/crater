@@ -355,9 +355,33 @@ describe("MoonBit WebDriver facade and contract boundaries", () => {
 
     const networkSource = read("network/header_url_helpers.mbt");
     expect(networkSource).toContain("pub fn synthetic_network_normalize_continue_url");
+    expect(networkSource).toContain("pub fn synthetic_network_normalize_header_entries");
+    expect(networkSource).toContain("pub fn synthetic_network_normalize_response_overrides");
     const eventNormalizerSource = read("webdriver/webdriver/bidi_network_event_normalizers.mbt");
     expect(eventNormalizerSource).toContain("@crater_network.synthetic_network_normalize_continue_url");
+    expect(eventNormalizerSource).toContain(
+      "@crater_network.synthetic_network_normalize_response_overrides",
+    );
     expect(eventNormalizerSource).not.toContain("synthetic_network_is_valid_continue_url(url)");
+    for (const implementationMarker of [
+      "responseOverrides.fromCache must be a boolean",
+      "responseOverrides.status must be a non-negative integer",
+      "responseOverrides.authChallenges must be an array",
+    ] as const) {
+      expect(eventNormalizerSource).not.toContain(implementationMarker);
+    }
+
+    const headerNormalizerSource = read("webdriver/webdriver/bidi_network_extra_headers.mbt");
+    expect(headerNormalizerSource).toContain(
+      "@crater_network.synthetic_network_normalize_header_entries",
+    );
+    for (const implementationMarker of [
+      "match validate_network_extra_header_entry(item)",
+      "requestHeaders entry is invalid",
+      "requestHeaders must be an array",
+    ] as const) {
+      expect(headerNormalizerSource).not.toContain(implementationMarker);
+    }
   });
 
   it("keeps protocol-neutral Set-Cookie formatting in crater-network", () => {

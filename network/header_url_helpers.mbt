@@ -78,6 +78,113 @@ pub fn synthetic_network_header_entry_string_value(header : Json) -> String? {
 }
 
 ///|
+pub fn synthetic_network_normalize_header_entries(
+  raw_headers : Json?,
+  field_name : String,
+) -> Result[Array[Json], String] {
+  match raw_headers {
+    None | Some(Null) => Ok([])
+    Some(Array(items)) => {
+      let headers : Array[Json] = []
+      for item in items {
+        match synthetic_network_validate_header_entry(item) {
+          Some(header) => headers.push(header)
+          None => return Err(field_name + " entry is invalid")
+        }
+      }
+      Ok(headers)
+    }
+    Some(_) => Err(field_name + " must be an array")
+  }
+}
+
+///|
+pub fn synthetic_network_validate_header_entry(entry : Json) -> Json? {
+  let map = match entry {
+    Object(map) => map
+    _ => return None
+  }
+  let name = match map.get("name") {
+    Some(String(name)) =>
+      if synthetic_network_is_valid_header_name_token(name) {
+        name
+      } else {
+        return None
+      }
+    _ => return None
+  }
+  let value = match map.get("value") {
+    Some(value) =>
+      match synthetic_network_validate_header_value(value) {
+        Some(value) => value
+        None => return None
+      }
+    None => return None
+  }
+  Some(Json::object({ "name": Json::string(name), "value": value }))
+}
+
+///|
+pub fn synthetic_network_validate_header_value(value : Json) -> Json? {
+  let map = match value {
+    Object(map) => map
+    _ => return None
+  }
+  let value_type = match map.get("type") {
+    Some(String(value_type)) => value_type
+    _ => return None
+  }
+  if value_type != "string" {
+    return None
+  }
+  let raw_value = match map.get("value") {
+    Some(String(raw_value)) => raw_value
+    _ => return None
+  }
+  if !synthetic_network_is_valid_header_string_value(raw_value) {
+    return None
+  }
+  Some(
+    Json::object({
+      "type": Json::string("string"),
+      "value": Json::string(raw_value),
+    }),
+  )
+}
+
+///|
+pub fn synthetic_network_is_valid_header_name_token(name : String) -> Bool {
+  if name.length() == 0 {
+    return false
+  }
+  for c in name.iter() {
+    if !synthetic_network_is_valid_header_name_token_char(c) {
+      return false
+    }
+  }
+  true
+}
+
+///|
+pub fn synthetic_network_is_valid_header_string_value(value : String) -> Bool {
+  let chars = value.to_array()
+  if chars.length() > 0 {
+    let first = chars[0]
+    let last = chars[chars.length() - 1]
+    if first == ' ' || first == '\t' || last == ' ' || last == '\t' {
+      return false
+    }
+  }
+  for c in chars {
+    let code = c.to_int()
+    if code == 0 || code == 10 || code == 13 {
+      return false
+    }
+  }
+  true
+}
+
+///|
 fn synthetic_network_header_value_from_json(raw_value : Json) -> String {
   match raw_value {
     String(value) => value
@@ -338,6 +445,89 @@ pub fn synthetic_network_status_text_for_code(status : Int) -> String {
 }
 
 ///|
+pub fn synthetic_network_normalize_response_overrides(
+  raw_overrides : Json?,
+) -> Result[SyntheticNetworkResponseOverrides, String] {
+  let overrides = match raw_overrides {
+    None | Some(Null) =>
+      return Ok(synthetic_network_default_response_overrides())
+    Some(Object(map)) => map
+    Some(_) => return Err("responseOverrides must be an object")
+  }
+  let from_cache = match overrides.get("fromCache") {
+    Some(True) => true
+    Some(False) | None => false
+    Some(_) => return Err("responseOverrides.fromCache must be a boolean")
+  }
+  let headers = match
+    synthetic_network_normalize_header_entries(
+      overrides.get("headers"),
+      "requestHeaders",
+    ) {
+    Ok(headers) => headers
+    Err(message) => return Err(message)
+  }
+  let mime_type = match overrides.get("mimeType") {
+    Some(String(value)) => value
+    None => "text/plain"
+    Some(_) => return Err("responseOverrides.mimeType must be a string")
+  }
+  let protocol = match overrides.get("protocol") {
+    Some(String(value)) => value
+    None => "http/1.1"
+    Some(_) => return Err("responseOverrides.protocol must be a string")
+  }
+  let status = match overrides.get("status") {
+    Some(value) =>
+      match synthetic_network_json_as_safe_int(value, 0.0, 9007199254740991.0) {
+        Some(status) => status
+        None =>
+          return Err("responseOverrides.status must be a non-negative integer")
+      }
+    None => 200
+  }
+  let status_text = match overrides.get("statusText") {
+    Some(String(value)) => value
+    None => synthetic_network_status_text_for_code(status)
+    Some(_) => return Err("responseOverrides.statusText must be a string")
+  }
+  let mut auth_challenges : Json? = match overrides.get("authChallenges") {
+    None | Some(Null) => None
+    Some(Array(values)) => Some(Json::array(values))
+    Some(_) => return Err("responseOverrides.authChallenges must be an array")
+  }
+  let missing_auth_challenges = match auth_challenges {
+    None => true
+    Some(_) => false
+  }
+  if (status == 401 || status == 407) && missing_auth_challenges {
+    auth_challenges = Some(Json::array([]))
+  }
+  Ok({
+    from_cache,
+    headers,
+    mime_type,
+    protocol,
+    status,
+    status_text,
+    auth_challenges,
+  })
+}
+
+///|
+fn synthetic_network_default_response_overrides() -> SyntheticNetworkResponseOverrides {
+  {
+    from_cache: false,
+    headers: [],
+    mime_type: "text/plain",
+    protocol: "http/1.1",
+    status: 200,
+    status_text: "OK",
+    auth_challenges: None,
+  }
+}
+
+///|
 fn has_valid_http_host(url : String, scheme_len : Int) -> Bool {
   if url.length() <= scheme_len {
     return false
@@ -348,4 +538,32 @@ fn has_valid_http_host(url : String, scheme_len : Int) -> Bool {
     return false
   }
   true
+}
+
+///|
+fn synthetic_network_is_valid_header_name_token_char(c : Char) -> Bool {
+  let code = c.to_int()
+  if (code >= 48 && code <= 57) ||
+    (code >= 65 && code <= 90) ||
+    (code >= 97 && code <= 122) {
+    return true
+  }
+  match code {
+    33 => true
+    35 => true
+    36 => true
+    37 => true
+    38 => true
+    39 => true
+    42 => true
+    43 => true
+    45 => true
+    46 => true
+    94 => true
+    95 => true
+    96 => true
+    124 => true
+    126 => true
+    _ => false
+  }
 }

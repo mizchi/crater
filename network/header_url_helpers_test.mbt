@@ -29,6 +29,57 @@ test "network header helpers build read and merge string entries" {
 }
 
 ///|
+test "network normalizes and validates header entries" {
+  let raw_headers = Json::array([
+    synthetic_network_header_string_entry("x-test", "ok"),
+  ])
+  match
+    synthetic_network_normalize_header_entries(
+      Some(raw_headers),
+      "requestHeaders",
+    ) {
+    Ok(headers) => {
+      inspect(headers.length(), content="1")
+      match synthetic_network_header_entry_name(headers[0]) {
+        Some(name) => inspect(name, content="x-test")
+        None => fail("expected normalized header name")
+      }
+    }
+    Err(message) => fail("unexpected header normalization error: " + message)
+  }
+
+  assert_true(synthetic_network_is_valid_header_name_token("content-type"))
+  assert_false(synthetic_network_is_valid_header_name_token("bad name"))
+  assert_false(synthetic_network_is_valid_header_string_value(" bad"))
+  match
+    synthetic_network_normalize_header_entries(
+      Some(
+        Json::array([
+          Json::object({
+            "name": Json::string("bad name"),
+            "value": Json::object({
+              "type": Json::string("string"),
+              "value": Json::string("ok"),
+            }),
+          }),
+        ]),
+      ),
+      "requestHeaders",
+    ) {
+    Ok(_) => fail("expected invalid header entry")
+    Err(message) => inspect(message, content="requestHeaders entry is invalid")
+  }
+  match
+    synthetic_network_normalize_header_entries(
+      Some(Json::string("bad")),
+      "requestHeaders",
+    ) {
+    Ok(_) => fail("expected invalid header list")
+    Err(message) => inspect(message, content="requestHeaders must be an array")
+  }
+}
+
+///|
 test "network query helpers decode values and parse ints" {
   let url = "https://example.test/path?a=1&a=two+words&empty&bad=x"
   match synthetic_network_first_query_value(url, "a") {
@@ -84,4 +135,56 @@ test "network URL and response metadata helpers" {
     content="text/javascript",
   )
   inspect(synthetic_network_status_text_for_code(404), content="Not Found")
+}
+
+///|
+test "network normalizes synthetic response overrides" {
+  match synthetic_network_normalize_response_overrides(None) {
+    Ok(overrides) => {
+      inspect(overrides.status, content="200")
+      inspect(overrides.status_text, content="OK")
+      inspect(overrides.headers.length(), content="0")
+    }
+    Err(message) => fail("unexpected default overrides error: " + message)
+  }
+  match
+    synthetic_network_normalize_response_overrides(
+      Some(
+        Json::object({
+          "fromCache": Json::boolean(true),
+          "status": Json::number(407),
+          "mimeType": Json::string("text/html"),
+          "protocol": Json::string("http/2"),
+          "headers": Json::array([
+            synthetic_network_header_string_entry("content-type", "text/html"),
+          ]),
+        }),
+      ),
+    ) {
+    Ok(overrides) => {
+      inspect(overrides.from_cache, content="true")
+      inspect(overrides.status, content="407")
+      inspect(overrides.status_text, content="Proxy Authentication Required")
+      inspect(overrides.mime_type, content="text/html")
+      inspect(overrides.protocol, content="http/2")
+      inspect(overrides.headers.length(), content="1")
+      match overrides.auth_challenges {
+        Some(auth_challenges) =>
+          inspect(auth_challenges.stringify(), content="[]")
+        None => fail("expected default auth challenges")
+      }
+    }
+    Err(message) => fail("unexpected response overrides error: " + message)
+  }
+  match
+    synthetic_network_normalize_response_overrides(
+      Some(Json::object({ "status": Json::number(-1) })),
+    ) {
+    Ok(_) => fail("expected invalid status")
+    Err(message) =>
+      inspect(
+        message,
+        content="responseOverrides.status must be a non-negative integer",
+      )
+  }
 }

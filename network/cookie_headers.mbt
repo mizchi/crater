@@ -162,7 +162,7 @@ pub fn synthetic_network_normalize_set_cookie_override_entry(
   base_url : String,
   now_seconds : Int,
 ) -> Result[SyntheticNetworkSetCookieOverrideEntry, String] {
-  if !is_valid_network_header_name_token(name) {
+  if !synthetic_network_is_valid_header_name_token(name) {
     return Err("cookie name is invalid")
   }
   let mut domain = synthetic_network_cookie_domain_from_base_url(base_url)
@@ -430,7 +430,7 @@ fn synthetic_network_parse_cookie_text(
         ""
       }
       if require_valid_name &&
-        (name == "" || !is_valid_network_header_name_token(name)) {
+        (name == "" || !synthetic_network_is_valid_header_name_token(name)) {
         return None
       }
       let mut domain = synthetic_network_cookie_domain_from_base_url(base_url)
@@ -568,45 +568,4 @@ fn is_ascii_case_insensitive_equal(lhs : String, rhs : String) -> Bool {
     return false
   }
   true
-}
-
-///|
-fn is_valid_network_header_name_token(name : String) -> Bool {
-  if name.length() == 0 {
-    return false
-  }
-  for c in name.iter() {
-    if !is_valid_network_header_name_token_char(c) {
-      return false
-    }
-  }
-  true
-}
-
-///|
-fn is_valid_network_header_name_token_char(c : Char) -> Bool {
-  let code = c.to_int()
-  if (code >= 48 && code <= 57) ||
-    (code >= 65 && code <= 90) ||
-    (code >= 97 && code <= 122) {
-    return true
-  }
-  match code {
-    33 => true
-    35 => true
-    36 => true
-    37 => true
-    38 => true
-    39 => true
-    42 => true
-    43 => true
-    45 => true
-    46 => true
-    94 => true
-    95 => true
-    96 => true
-    124 => true
-    126 => true
-    _ => false
-  }
 }

@@ -38,11 +38,19 @@ pub fn synthetic_network_int_query_param(String, String, Int) -> Int
 
 pub fn synthetic_network_is_valid_continue_url(String) -> Bool
 
+pub fn synthetic_network_is_valid_header_name_token(String) -> Bool
+
+pub fn synthetic_network_is_valid_header_string_value(String) -> Bool
+
 pub fn synthetic_network_merge_header_entries(Array[Json]) -> Array[Json]
 
 pub fn synthetic_network_normalize_continue_url(Json) -> Result[String, String]
 
+pub fn synthetic_network_normalize_header_entries(Json?, String) -> Result[Array[Json], String]
+
 pub fn synthetic_network_normalize_request_cookie_entries(Json?) -> Result[SyntheticNetworkCookieOverride, String]
+
+pub fn synthetic_network_normalize_response_overrides(Json?) -> Result[SyntheticNetworkResponseOverrides, String]
 
 pub fn synthetic_network_normalize_set_cookie_override_entry(Map[String, Json], String, String, String, Int) -> Result[SyntheticNetworkSetCookieOverrideEntry, String]
 
@@ -57,6 +65,10 @@ pub fn synthetic_network_request_header_string_value(Array[Json], String) -> Str
 pub fn synthetic_network_request_path(String) -> String
 
 pub fn synthetic_network_status_text_for_code(Int) -> String
+
+pub fn synthetic_network_validate_header_entry(Json) -> Json?
+
+pub fn synthetic_network_validate_header_value(Json) -> Json?
 
 pub fn utf8_byte_length(String) -> Int
 

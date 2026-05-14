@@ -4,27 +4,13 @@ fn BidiProtocol::normalize_synthetic_network_header_entries(
   request_id : Int,
   raw_headers : Json?,
 ) -> Array[Json]? {
-  match raw_headers {
-    None | Some(Null) => Some([])
-    Some(Array(items)) => {
-      let headers : Array[Json] = []
-      for item in items {
-        match validate_network_extra_header_entry(item) {
-          Some(header) => headers.push(header)
-          None => {
-            self.send_error(
-              request_id, "invalid argument", "requestHeaders entry is invalid",
-            )
-            return None
-          }
-        }
-      }
-      Some(headers)
-    }
-    Some(_) => {
-      self.send_error(
-        request_id, "invalid argument", "requestHeaders must be an array",
-      )
+  match
+    @crater_network.synthetic_network_normalize_header_entries(
+      raw_headers, "requestHeaders",
+    ) {
+    Ok(headers) => Some(headers)
+    Err(message) => {
+      self.send_error(request_id, "invalid argument", message)
       None
     }
   }
