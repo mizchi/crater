@@ -2,10 +2,6 @@
   "name": "mizchi/crater-webdriver-bidi",
   "version": "0.17.1",
   "deps": {
-    "mizchi/crater": {
-      "path": "..",
-      "version": "0.17.1"
-    },
     "mizchi/crater-network": {
       "path": "../network",
       "version": "0.17.1"

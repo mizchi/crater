@@ -35,7 +35,6 @@
     "browser"
   ],
   "description": "CSS Layout Engine that implements Box/Flex/Grid",
-  "source": "src",
   "exclude": [
     "wpt",
     "_build",

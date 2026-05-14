@@ -117,7 +117,6 @@ describe("MoonBit package and compatibility boundaries", () => {
   it("documents compatibility bridge ownership", () => {
     const source = fs.readFileSync(path.join(REPO_ROOT, "docs/compatibility-bridges.md"), "utf8");
     const requiredBridges = [
-      "mizchi/crater/css",
       "mizchi/crater-browser/js",
       "mizchi/crater-browser-shell",
       "mizchi/crater-dom/layout/html_bridge",

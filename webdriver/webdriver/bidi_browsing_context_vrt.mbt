@@ -60,7 +60,7 @@ fn BidiProtocol::resolve_get_css_rule_viewport_map(
     }
   }
   let html = responsive_breakpoint_source_html("live-inline")
-  let map = @css.discover_css_rule_viewport_map(html, viewport_widths)
+  let map = @responsive.discover_css_rule_viewport_map(html, viewport_widths)
   let rules_json : Array[Json] = []
   for entry in map.rules {
     let item : Map[String, Json] = {}
@@ -127,8 +127,10 @@ fn BidiProtocol::resolve_get_css_rule_usage(
     }
   }
   let html = responsive_breakpoint_source_html("live-inline")
-  let usage = @css.discover_css_rule_usage(html)
-  let effective_sources = @css.discover_css_effective_property_sources(html)
+  let usage = @responsive.discover_css_rule_usage(html)
+  let effective_sources = @responsive.discover_css_effective_property_sources(
+    html,
+  )
   let rules_json : Array[Json] = []
   for entry in usage {
     let item : Map[String, Json] = {}
@@ -206,7 +208,7 @@ fn BidiProtocol::resolve_get_required_test_viewports(
     }
   }
   let html = responsive_breakpoint_source_html("live-inline")
-  let result = @css.discover_required_test_viewports(html)
+  let result = @responsive.discover_required_test_viewports(html)
   let viewports_json : Array[Json] = []
   for v in result.viewports {
     let item : Map[String, Json] = {}
@@ -380,7 +382,7 @@ fn BidiProtocol::resolve_get_computed_styles_with_state(
     _ => ()
   }
   let html = responsive_breakpoint_source_html("live-inline")
-  let result = @css.discover_computed_styles_with_state_names(
+  let result = @responsive.discover_computed_styles_with_state_names(
     html, selector, forced_state_names, properties,
   )
   // Build JSON response

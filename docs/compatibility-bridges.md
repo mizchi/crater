@@ -6,8 +6,6 @@ New code should depend on the canonical package listed below.
 
 | Compatibility package | Canonical package |
 | --- | --- |
-| `mizchi/crater` | Direct workspace modules such as `mizchi/crater-css`, `mizchi/crater-dom`, `mizchi/crater-renderer`, and `mizchi/crater-painter` |
-| `mizchi/crater/css` | `mizchi/crater-css/*` packages |
 | `mizchi/crater-browser/js` | `mizchi/crater-browser-runtime` |
 | `mizchi/crater-browser-shell` | `mizchi/crater-browser-shell/html_assets` and `mizchi/crater-terminal-image-cache` |
 | `mizchi/crater-dom/layout/html_bridge` | `mizchi/crater-dom/layout/html_tree` and `mizchi/crater-dom/layout/style_bridge` |
@@ -20,6 +18,11 @@ New code should depend on the canonical package listed below.
 | `mizchi/crater-webdriver-bidi/webdriver` pure BiDi protocol helpers | `mizchi/crater-webdriver-bidi/protocol` |
 | `mizchi/crater-webdriver-bidi/webdriver` BiDi wire parser/serializer | `mizchi/crater-webdriver-bidi/protocol/wire` |
 | `mizchi/crater-webdriver-bidi/network` | `mizchi/crater-network` |
+
+The old root facades `mizchi/crater` and `mizchi/crater/css` have been retired
+from the workspace. Use the dedicated modules directly, especially
+`mizchi/crater-css`, `mizchi/crater-layout`, `mizchi/crater-renderer`, and
+`mizchi/crater-painter`.
 
 Compatibility bridge packages should stay thin:
 

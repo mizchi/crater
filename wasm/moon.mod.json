@@ -2,10 +2,6 @@
   "name": "mizchi/crater-wasm",
   "version": "0.17.1",
   "deps": {
-    "mizchi/crater": {
-      "path": "..",
-      "version": "0.17.1"
-    },
     "mizchi/crater-js": {
       "path": "../js",
       "version": "0.17.1"

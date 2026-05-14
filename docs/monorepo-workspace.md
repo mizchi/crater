@@ -114,8 +114,6 @@ The intended direction is:
 | `mizchi/crater-wasm` | Adapter | WASM component packaging |
 | `mizchi/crater-benchmarks` | Internal / dev-only | Synthetic fixtures and benchmark suites for renderer/browser performance |
 | `mizchi/crater-testing` | Internal / dev-only | WPT runtime, browser-shell fixtures, and native/browser integration test packages |
-| `mizchi/crater` | Internal / compatibility | Historical all-in-one facade for compatibility |
-
 We do not need to create all of these at once. The current workspace has
 already extracted `mizchi/crater-layout`, `mizchi/crater-css`,
 `mizchi/crater-dom`, `mizchi/crater-aomx`, `mizchi/crater-benchmarks`,
@@ -125,19 +123,19 @@ already extracted `mizchi/crater-layout`, `mizchi/crater-css`,
 `mizchi/crater-browser-http-sqlite`. The browser-facing split is now underway
 in `mizchi/crater-browser`.
 
-The old `mizchi/crater-browser/js` package remains only as a `0.17.x`
-compatibility facade over the extracted runtime contract.
+The old `mizchi/crater-browser/js` package remains only as a compatibility
+facade over the extracted runtime contract.
 
-## Remaining Root Packages
+## Retired Root Packages
 
-The root module now mostly exists as a compatibility layer:
+The old root facades have been removed from the workspace:
 
 - `mizchi/crater`
 - `mizchi/crater/css`
 
-Implementation-heavy packages have been moved into dedicated modules. The root
-packages keep thin public wrappers and a small set of smoke tests so existing
-imports continue to work while new code can depend on narrower module paths.
+Implementation-heavy packages now live in dedicated modules. Internal packages
+should depend on the canonical module that owns the feature instead of routing
+through `src/` compatibility wrappers.
 
 ## Release Policy
 
@@ -173,10 +171,10 @@ MoonBit release order is derived from `moon.work` and the workspace-local
 - `.github/workflows/release-moon.yml`: manual Linux release workflow for
   `check` / `dry-run` / `publish`
 
-The default release set includes public workspace modules plus the root
-compatibility module when it is part of the dependency closure. Internal modules
-such as `mizchi/crater-benchmarks` and `mizchi/crater-testing` are intentionally
-excluded from the default publish plan.
+The default release set includes public workspace modules in dependency order.
+Internal modules such as `mizchi/crater-benchmarks` and
+`mizchi/crater-testing` are intentionally excluded from the default publish
+plan.
 
 When you need the adapter-only subset, use
 `node scripts/moon-publish-workspace.mjs --list --only-crater-star`. The script
@@ -214,9 +212,9 @@ For new code, prefer the narrowest module that matches the subsystem you need:
 | JS exports | `mizchi/crater-js` |
 | WASM component facade | `mizchi/crater-wasm` |
 
-Keep using `mizchi/crater` or `mizchi/crater/css` only when you need backwards
-compatibility with older imports or explicitly want the historical all-in-one
-surface.
+Do not add new dependencies on the retired `mizchi/crater` or
+`mizchi/crater/css` facades. Use the narrower module that matches the feature
+area instead.
 
 Prefer the layers in this order:
 
@@ -235,15 +233,13 @@ it.
 
 ## Compatibility Policy
 
-The root compatibility facades are intentionally still present:
+The root compatibility facades have been retired:
 
 - `mizchi/crater`
 - `mizchi/crater/css`
 
-They remain supported through the `0.17.x` line so existing consumers do not
-need an immediate rewrite. New code should move to direct module imports. The
-root facade is now a compatibility layer, not the default recommendation for
-new integrations.
+Existing consumers should migrate to direct module imports. The workspace no
+longer keeps `src/` wrappers for these facades.
 
 ## Split Quality Notes
 
@@ -460,14 +456,12 @@ incremental/accessibility/yoga interfaces.
 
 ## Migration Order
 
-1. Keep `mizchi/crater` as the integration module while workspace support is
-   active.
-2. Extract `layout/` as `mizchi/crater-layout`.
-3. Extract `css/` as `mizchi/crater-css`.
-4. Extract `dom/` as `mizchi/crater-dom`.
-5. Rewrite internal imports in dependent modules from `mizchi/crater/...` to
+1. Extract `layout/` as `mizchi/crater-layout`.
+2. Extract `css/` as `mizchi/crater-css`.
+3. Extract `dom/` as `mizchi/crater-dom`.
+4. Rewrite internal imports in dependent modules from `mizchi/crater/...` to
    the extracted module paths for moved packages.
-6. After the import graph stabilizes further, extract browser-facing runtime
+5. After the import graph stabilizes further, extract browser-facing runtime
    packages.
 
 ## Constraints During the Split

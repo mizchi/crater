@@ -104,7 +104,7 @@ fn BidiProtocol::resolve_get_computed_styles(
     Some(target) => target
     None => return None
   }
-  let result = @css.discover_computed_styles_with_state_names(
+  let result = @responsive.discover_computed_styles_with_state_names(
     html,
     target_selector,
     [],
@@ -194,7 +194,7 @@ fn BidiProtocol::resolve_get_all_computed_styles(
   }
 
   let html = responsive_breakpoint_source_html(mode)
-  let styles = @css.discover_all_computed_styles(html, properties)
+  let styles = @responsive.discover_all_computed_styles(html, properties)
   let styles_json : Map[String, Json] = {}
   styles.each(fn(selector, style_map) {
     let entry_json : Map[String, Json] = {}

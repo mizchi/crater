@@ -6,8 +6,8 @@
       "path": "../browser",
       "version": "0.17.1"
     },
-    "mizchi/crater": {
-      "path": "..",
+    "mizchi/crater-css": {
+      "path": "../css",
       "version": "0.17.1"
     },
     "mizchi/crater-dom": {

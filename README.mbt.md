@@ -257,15 +257,14 @@ moon bench -p html
 ## Installation
 
 ```bash
-moon add mizchi/crater
+moon add mizchi/crater-layout
+moon add mizchi/crater-css
 ```
 
 ### Package Selection
 
-For existing users, `mizchi/crater` and `mizchi/crater/css` remain available as
-compatibility facades in the `0.17.x` line.
-
-For new code, prefer importing the narrower module that matches your use case:
+The old `mizchi/crater` and `mizchi/crater/css` facades have been retired from
+the workspace. Import the narrower module that matches your use case:
 
 ```bash
 moon add mizchi/crater-layout
@@ -278,9 +277,8 @@ moon add mizchi/crater-webdriver-bidi
 moon add mizchi/crater-wasm
 ```
 
-Use the root module when you explicitly want the historical all-in-one surface.
-Use the split modules when you want a smaller dependency graph or a more stable
-public contract for one subsystem.
+Use the split modules for a smaller dependency graph and a clearer public
+contract for each subsystem.
 
 For browser runtime internals, `mizchi/crater-browser-runtime` is now the
 canonical shared contract for the JS runtime and DOM serializer. The older

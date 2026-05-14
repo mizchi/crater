@@ -1,6 +1,6 @@
 import {
   "moonbitlang/core/bench",
-  "mizchi/crater/css",
+  "mizchi/crater-css" @css,
   "mizchi/crater-dom/html",
   "mizchi/crater-renderer/renderer",
   "mizchi/crater-renderer/vrt",

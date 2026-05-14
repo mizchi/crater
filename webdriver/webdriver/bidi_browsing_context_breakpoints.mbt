@@ -94,7 +94,7 @@ fn BidiProtocol::resolve_get_responsive_breakpoints(
   }
 
   let html = responsive_breakpoint_source_html(mode)
-  let discovery = @css.discover_responsive_breakpoints(html)
+  let discovery = @responsive.discover_responsive_breakpoints(html)
   let result : Map[String, Json] = {}
   result["breakpoints"] = responsive_breakpoints_to_json(discovery.breakpoints)
   if include_diagnostics {
@@ -247,7 +247,7 @@ fn computed_styles_target_marker_selector() -> String {
 
 ///|
 fn responsive_breakpoints_to_json(
-  breakpoints : Array[@css.ResponsiveBreakpoint],
+  breakpoints : Array[@responsive.ResponsiveBreakpoint],
 ) -> Json {
   let items : Array[Json] = []
   for breakpoint in breakpoints {
@@ -270,7 +270,7 @@ fn responsive_breakpoints_to_json(
 
 ///|
 fn responsive_diagnostics_to_json(
-  diagnostics : @css.BreakpointDiscoveryDiagnostics,
+  diagnostics : @responsive.BreakpointDiscoveryDiagnostics,
 ) -> Json {
   let object : Map[String, Json] = {}
   object["stylesheetCount"] = Json::number(

@@ -5,7 +5,6 @@ This document describes the public interfaces provided by Crater for external us
 ## Package Overview
 
 ```
-mizchi/crater                        # Thin compatibility entry point
 mizchi/crater-layout                 # Layout entry point (Node, LayoutTree, compute_layout)
 mizchi/crater-layout/core_subset     # TUI-oriented checked layout subset
 mizchi/crater-dom/html               # HTML parser (parse_document, Element)
@@ -27,22 +26,7 @@ mizchi/crater-webvitals              # Web Vitals metrics (LCPTracker, LayoutShi
 
 ## High-Level API
 
-### `mizchi/crater` (Root Package)
-
-Compatibility entry point. Prefer narrower package boundaries for new code.
-
-```moonbit
-// Compute layout from a Node tree
-pub fn compute_layout(Node, Size[Double]) -> Layout
-
-// Compute layout with warnings for unsupported features
-pub fn compute_layout_with_warnings(Node, Size[Double]) -> LayoutResult
-
-// Compute CLS (Cumulative Layout Shift) score
-pub fn compute_total_cls(Array[BoundingRect], Array[BoundingRect], Size[Double]) -> Double
-```
-
-### `mizchi/crater/layout`
+### `mizchi/crater-layout`
 
 Layout-specific entry point. Use this when you want the layout engine boundary
 without pulling in the root package.
@@ -108,12 +92,11 @@ pub fn validate_core_subset(Node) -> Array[CoreIssue]
 pub fn compute_core_layout(Node, Size[Double]) -> CoreComputeResult
 ```
 
-### `mizchi/crater/css`
+### `mizchi/crater-css`
 
 Unified CSS entry point. This package groups parser / selector / cascade /
-computed-style APIs so they can later be split into a separate package with a
-single import surface. Responsive / breakpoint discovery helpers are re-exported
-from `mizchi/crater-dom/css/responsive`.
+computed-style APIs behind a single import surface. Responsive / breakpoint
+discovery helpers are re-exported from `mizchi/crater-dom/css/responsive`.
 
 ```moonbit
 pub fn parse_stylesheet(String) -> Stylesheet
@@ -534,7 +517,7 @@ pub enum Node {
 }
 ```
 
-### `mizchi/crater/css/parser`
+### `mizchi/crater-css/parser`
 
 CSS parser.
 
@@ -554,7 +537,7 @@ pub struct ParseResult {
 }
 ```
 
-### `mizchi/crater/css/cascade`
+### `mizchi/crater-css/cascade`
 
 CSS cascade algorithm.
 
@@ -585,7 +568,7 @@ pub enum Origin { UserAgent | User | Author }
 pub enum Importance { Normal | Important }
 ```
 
-### `mizchi/crater/css/selector`
+### `mizchi/crater-css/selector`
 
 CSS selector matching.
 
@@ -607,7 +590,7 @@ pub struct Specificity {
 }
 ```
 
-### `mizchi/crater/css/media`
+### `mizchi/crater-css/media`
 
 Media query support.
 
@@ -895,7 +878,7 @@ pub struct LCPCandidate {
 
 ## Diagnostics
 
-### `mizchi/crater/css/diagnostics`
+### `mizchi/crater-css/diagnostics`
 
 CSS property support diagnostics.
 

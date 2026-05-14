@@ -8,7 +8,7 @@ import {
   "mizchi/crater-network" @crater_network,
   "mizchi/crater-renderer/vrt" @vrt,
   "mizchi/crater-browser-contract" @browser_contract,
-  "mizchi/crater/css",
+  "mizchi/crater-dom/css/responsive" @responsive,
   "mizchi/crater-layout/types",
   "mizchi/crater-browser/cdp",
   "mizchi/crater-browser/interaction",
