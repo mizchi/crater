@@ -21,11 +21,6 @@ fn synthetic_network_header_entry_string_value(header : Json) -> String? {
 }
 
 ///|
-fn synthetic_network_is_valid_continue_url(url : String) -> Bool {
-  @crater_network.synthetic_network_is_valid_continue_url(url)
-}
-
-///|
 fn synthetic_network_cache_key(http_method : String, url : String) -> String {
   @crater_network.synthetic_network_cache_key(http_method, url)
 }

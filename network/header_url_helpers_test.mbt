@@ -54,6 +54,22 @@ test "network URL and response metadata helpers" {
     synthetic_network_is_valid_continue_url("https://example.test/path"),
   )
   assert_false(synthetic_network_is_valid_continue_url("https:///path"))
+  match
+    synthetic_network_normalize_continue_url(
+      Json::string("https://example.test/path"),
+    ) {
+    Ok(url) => inspect(url, content="https://example.test/path")
+    Err(message) => fail("unexpected continue url error: " + message)
+  }
+  match synthetic_network_normalize_continue_url(Json::number(1)) {
+    Ok(_) => fail("expected invalid continue url type")
+    Err(message) => inspect(message, content="url must be a string")
+  }
+  match
+    synthetic_network_normalize_continue_url(Json::string("https:///path")) {
+    Ok(_) => fail("expected invalid continue url")
+    Err(message) => inspect(message, content="url is invalid")
+  }
 
   inspect(
     synthetic_network_cache_key("GET", "https://example.test/"),

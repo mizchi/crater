@@ -352,6 +352,12 @@ describe("MoonBit WebDriver facade and contract boundaries", () => {
     ] as const) {
       expect(helperFacade).not.toContain(implementationMarker);
     }
+
+    const networkSource = read("network/header_url_helpers.mbt");
+    expect(networkSource).toContain("pub fn synthetic_network_normalize_continue_url");
+    const eventNormalizerSource = read("webdriver/webdriver/bidi_network_event_normalizers.mbt");
+    expect(eventNormalizerSource).toContain("@crater_network.synthetic_network_normalize_continue_url");
+    expect(eventNormalizerSource).not.toContain("synthetic_network_is_valid_continue_url(url)");
   });
 
   it("keeps protocol-neutral Set-Cookie formatting in crater-network", () => {

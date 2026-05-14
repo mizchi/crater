@@ -22,18 +22,12 @@ fn BidiProtocol::normalize_synthetic_network_continue_url(
   request_id : Int,
   raw_url : Json,
 ) -> String? {
-  let url = match raw_url {
-    String(url) => url
-    _ => {
-      self.send_error(request_id, "invalid argument", "url must be a string")
-      return None
+  match @crater_network.synthetic_network_normalize_continue_url(raw_url) {
+    Ok(url) => Some(url)
+    Err(message) => {
+      self.send_error(request_id, "invalid argument", message)
+      None
     }
-  }
-  if synthetic_network_is_valid_continue_url(url) {
-    Some(url)
-  } else {
-    self.send_error(request_id, "invalid argument", "url is invalid")
-    None
   }
 }
 

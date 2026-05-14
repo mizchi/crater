@@ -40,6 +40,8 @@ pub fn synthetic_network_is_valid_continue_url(String) -> Bool
 
 pub fn synthetic_network_merge_header_entries(Array[Json]) -> Array[Json]
 
+pub fn synthetic_network_normalize_continue_url(Json) -> Result[String, String]
+
 pub fn synthetic_network_normalize_request_cookie_entries(Json?) -> Result[SyntheticNetworkCookieOverride, String]
 
 pub fn synthetic_network_normalize_set_cookie_override_entry(Map[String, Json], String, String, String, Int) -> Result[SyntheticNetworkSetCookieOverrideEntry, String]

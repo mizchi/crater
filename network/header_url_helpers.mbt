@@ -104,6 +104,21 @@ pub fn synthetic_network_is_valid_continue_url(url : String) -> Bool {
 }
 
 ///|
+pub fn synthetic_network_normalize_continue_url(
+  raw_url : Json,
+) -> Result[String, String] {
+  let url = match raw_url {
+    String(url) => url
+    _ => return Err("url must be a string")
+  }
+  if synthetic_network_is_valid_continue_url(url) {
+    Ok(url)
+  } else {
+    Err("url is invalid")
+  }
+}
+
+///|
 pub fn synthetic_network_cache_key(
   http_method : String,
   url : String,
