@@ -325,6 +325,35 @@ describe("MoonBit WebDriver facade and contract boundaries", () => {
     }
   });
 
+  it("keeps protocol-neutral network header and query helpers in crater-network", () => {
+    const expectedNetworkFiles = [
+      "network/header_url_helpers.mbt",
+      "network/header_url_helpers_test.mbt",
+    ] as const;
+    const missingFiles = expectedNetworkFiles.filter((file) => {
+      return !fs.existsSync(path.join(REPO_ROOT, file));
+    });
+
+    expect(missingFiles).toEqual([]);
+
+    const helperFacade = read("webdriver/webdriver/bidi_network_header_url_helpers.mbt");
+    for (const symbol of [
+      "@crater_network.synthetic_network_header_entries_from_object",
+      "@crater_network.synthetic_network_first_query_value",
+      "@crater_network.synthetic_network_status_text_for_code",
+    ] as const) {
+      expect(helperFacade).toContain(symbol);
+    }
+    for (const implementationMarker of [
+      "for name, raw_value in raw_headers",
+      "let order : Array[String]",
+      "match find_substring(url, \"?\", 0)",
+      "101 => \"Switching Protocols\"",
+    ] as const) {
+      expect(helperFacade).not.toContain(implementationMarker);
+    }
+  });
+
   it("documents next module boundaries before further WebDriver extraction", () => {
     const todo = read("TODO.md");
     const requiredBoundaries = [

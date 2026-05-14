@@ -16,6 +16,34 @@ pub fn network_option_contexts_match(Map[String, Json], Array[String]) -> Bool
 
 pub fn network_url_patterns_match(Map[String, Json], String) -> Bool
 
+pub fn synthetic_network_cache_key(String, String) -> String
+
+pub fn synthetic_network_first_query_value(String, String) -> String?
+
+pub fn synthetic_network_header_entries_from_object(Map[String, Json]) -> Array[Json]
+
+pub fn synthetic_network_header_entry_name(Json) -> String?
+
+pub fn synthetic_network_header_entry_string_value(Json) -> String?
+
+pub fn synthetic_network_header_string_entry(String, String) -> Json
+
+pub fn synthetic_network_infer_mime_type(String, String) -> String
+
+pub fn synthetic_network_int_query_param(String, String, Int) -> Int
+
+pub fn synthetic_network_is_valid_continue_url(String) -> Bool
+
+pub fn synthetic_network_merge_header_entries(Array[Json]) -> Array[Json]
+
+pub fn synthetic_network_query_values(String, String) -> Array[String]
+
+pub fn synthetic_network_request_header_string_value(Array[Json], String) -> String?
+
+pub fn synthetic_network_request_path(String) -> String
+
+pub fn synthetic_network_status_text_for_code(Int) -> String
+
 pub fn utf8_byte_length(String) -> Int
 
 // Errors
