@@ -6,6 +6,7 @@ import "spec.pkl" as spec
 testMoon: pkfire.Task = new {
   name = "test-moon"
   description = "Run JS-target MoonBit tests"
+  visibility = "internal"
   cmd = "just test-js"
   inputs = src.moonSources
 }
@@ -13,6 +14,7 @@ testMoon: pkfire.Task = new {
 testVitest: pkfire.Task = new {
   name = "test-vitest"
   description = "Run repository Vitest suites"
+  visibility = "internal"
   cmd = "pnpm test:vitest"
   inputs = src.nodeSources
 }
@@ -20,6 +22,7 @@ testVitest: pkfire.Task = new {
 testNode: pkfire.Task = new {
   name = "test-node"
   description = "Run node:test JS/WASM/browser contract suites"
+  visibility = "internal"
   cmd = "pnpm test:node"
   inputs = src.nodeSources
 }
@@ -52,6 +55,7 @@ testNativeSmoke: pkfire.Task = new {
 testPlaywright: pkfire.Task = new {
   name = "test-playwright"
   description = "Run Playwright adapter and user scenario tests"
+  visibility = "internal"
   cmd = "just test-playwright-adapter"
   cache = false
   inputs {
@@ -64,6 +68,7 @@ testPlaywright: pkfire.Task = new {
 testWebsite: pkfire.Task = new {
   name = "test-website"
   description = "Run website loading and browser user scenario tests"
+  visibility = "internal"
   cmd = "just test-website"
   cache = false
   inputs {
@@ -77,6 +82,7 @@ testWebsite: pkfire.Task = new {
 testVrt: pkfire.Task = new {
   name = "test-vrt"
   description = "Run paint visual regression tests"
+  visibility = "internal"
   cmd = "just test-vrt"
   cache = false
   inputs {
@@ -90,6 +96,7 @@ testVrt: pkfire.Task = new {
 testWptVrt: pkfire.Task = new {
   name = "test-wpt-vrt"
   description = "Run WPT visual regression tests"
+  visibility = "internal"
   cmd = "just test-wpt-vrt"
   cache = false
   inputs {

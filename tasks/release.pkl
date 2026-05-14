@@ -3,6 +3,7 @@ import "package://pkg.pkl-lang.org/github.com/mizchi/pkfire/pkfire@0.10.0#/Taskf
 releaseCheck: pkfire.Task = new {
   name = "release-check"
   description = "Validate MoonBit publish order without publishing"
+  visibility = "internal"
   cmd = "pnpm release:moon:check"
   inputs {
     "package.json"

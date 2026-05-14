@@ -10,6 +10,10 @@ import "../tasks/test.pkl" as test
 local function graphTaskPath(name: String, field: String): String =
   "tasks.#(name==\"" + name + "\")." + field
 
+local publicGraphJson = "pkf graph --json"
+
+local allGraphJson = "pkf graph --json --all"
+
 tests {
   new {
     name = "pkfire_lists_default_task"
@@ -17,10 +21,11 @@ tests {
     tags { "pkfire"; "smoke" }
     specRef { "task.default" }
     workdir = ".."
-    cmd = "pkf graph --json"
+    cmd = publicGraphJson
     expectStdoutJsonPath {
       [graphTaskPath(core.default.name, "name")] = core.default.name
       [graphTaskPath(core.default.name, "kind")] = "task"
+      [graphTaskPath(core.default.name, "visibility")] = "public"
     }
   }
   new {
@@ -29,10 +34,11 @@ tests {
     tags { "pkfire"; "smoke" }
     specRef { "task.prepare" }
     workdir = ".."
-    cmd = "pkf graph --json"
+    cmd = publicGraphJson
     expectStdoutJsonPath {
       [graphTaskPath(core.prepare.name, "name")] = core.prepare.name
       [graphTaskPath(core.prepare.name, "kind")] = "aggregate"
+      [graphTaskPath(core.prepare.name, "visibility")] = "public"
     }
   }
   new {
@@ -41,10 +47,11 @@ tests {
     tags { "pkfire"; "smoke" }
     specRef { "task.check" }
     workdir = ".."
-    cmd = "pkf graph --json"
+    cmd = publicGraphJson
     expectStdoutJsonPath {
       [graphTaskPath(check.check.name, "name")] = check.check.name
       [graphTaskPath(check.check.name, "kind")] = "aggregate"
+      [graphTaskPath(check.check.name, "visibility")] = "public"
     }
   }
   new {
@@ -53,10 +60,11 @@ tests {
     tags { "pkfire"; "smoke" }
     specRef { "task.test" }
     workdir = ".."
-    cmd = "pkf graph --json"
+    cmd = publicGraphJson
     expectStdoutJsonPath {
       [graphTaskPath(test.test.name, "name")] = test.test.name
       [graphTaskPath(test.test.name, "kind")] = "aggregate"
+      [graphTaskPath(test.test.name, "visibility")] = "public"
     }
   }
   new {
@@ -65,10 +73,11 @@ tests {
     tags { "pkfire"; "smoke" }
     specRef { "task.bench" }
     workdir = ".."
-    cmd = "pkf graph --json"
+    cmd = publicGraphJson
     expectStdoutJsonPath {
       [graphTaskPath(bench.bench.name, "name")] = bench.bench.name
       [graphTaskPath(bench.bench.name, "kind")] = "aggregate"
+      [graphTaskPath(bench.bench.name, "visibility")] = "public"
     }
   }
   new {
@@ -86,10 +95,11 @@ tests {
     tags { "pkspec"; "pkfire"; "smoke" }
     specRef { "spec.test" }
     workdir = ".."
-    cmd = "pkf graph --json"
+    cmd = publicGraphJson
     expectStdoutJsonPath {
       [graphTaskPath(spec.specTest.name, "name")] = spec.specTest.name
       [graphTaskPath(spec.specTest.name, "kind")] = "task"
+      [graphTaskPath(spec.specTest.name, "visibility")] = "public"
     }
   }
   new {
@@ -98,10 +108,11 @@ tests {
     tags { "browser"; "playwright"; "pkfire" }
     specRef { "browser.playwright" }
     workdir = ".."
-    cmd = "pkf graph --json"
+    cmd = publicGraphJson
     expectStdoutJsonPath {
       [graphTaskPath(test.testBrowser.name, "name")] = test.testBrowser.name
       [graphTaskPath(test.testBrowser.name, "kind")] = "aggregate"
+      [graphTaskPath(test.testBrowser.name, "visibility")] = "public"
     }
   }
   new {
@@ -111,10 +122,11 @@ tests {
     tags { "vrt"; "pkfire" }
     specRef { "vrt.report" }
     workdir = ".."
-    cmd = "pkf graph --json"
+    cmd = publicGraphJson
     expectStdoutJsonPath {
       [graphTaskPath(test.testVisual.name, "name")] = test.testVisual.name
       [graphTaskPath(test.testVisual.name, "kind")] = "aggregate"
+      [graphTaskPath(test.testVisual.name, "visibility")] = "public"
     }
   }
   new {
@@ -124,10 +136,30 @@ tests {
     tags { "release"; "pkfire" }
     specRef { "release.publish-order" }
     workdir = ".."
-    cmd = "pkf graph --json"
+    cmd = publicGraphJson
     expectStdoutJsonPath {
       [graphTaskPath(release.releasePlan.name, "name")] = release.releasePlan.name
       [graphTaskPath(release.releasePlan.name, "kind")] = "task"
+      [graphTaskPath(release.releasePlan.name, "visibility")] = "public"
+    }
+  }
+  new {
+    name = "pkfire_marks_aggregate_dependencies_internal"
+    description =
+      "Leaf tasks that only implement public aggregate gates should stay hidden from the default task inventory."
+    tags { "pkfire"; "contract" }
+    specRef { "task.default" }
+    workdir = ".."
+    cmd = allGraphJson
+    expectStdoutJsonPath {
+      [graphTaskPath(check.checkMoon.name, "visibility")] = "internal"
+      [graphTaskPath(check.checkTs.name, "visibility")] = "internal"
+      [graphTaskPath(spec.specCheck.name, "visibility")] = "internal"
+      [graphTaskPath(bench.benchComponentVrt.name, "visibility")] = "internal"
+      [graphTaskPath(test.testMoon.name, "visibility")] = "internal"
+      [graphTaskPath(test.testPlaywright.name, "visibility")] = "internal"
+      [graphTaskPath(test.testVrt.name, "visibility")] = "internal"
+      [graphTaskPath(release.releaseCheck.name, "visibility")] = "internal"
     }
   }
 }

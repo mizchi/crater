@@ -1,6 +1,6 @@
 # Test SPEC
 
-22 tests across 2 module(s) — 12 pending, 10 active
+23 tests across 2 module(s) — 12 pending, 11 active
 
 ## `specs/`
 
@@ -107,6 +107,10 @@
 
 - [x] **pkfire_lists_visual_regression_tasks** — verifies: vrt.report — tags: vrt, pkfire
   > Visual regression work should have a separate pkfire group from browser API compatibility.
+  - body: `cmd` (exit 0 expected)
+
+- [x] **pkfire_marks_aggregate_dependencies_internal** — verifies: task.default — tags: pkfire, contract
+  > Leaf tasks that only implement public aggregate gates should stay hidden from the default task inventory.
   - body: `cmd` (exit 0 expected)
 
 - [x] **pkspec_check_validates_declared_scenarios** — verifies: spec.check — tags: pkspec, contract

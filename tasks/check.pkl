@@ -6,6 +6,7 @@ import "spec.pkl" as spec
 checkMoon: pkfire.Task = new {
   name = "check-moon"
   description = "Run the full MoonBit compile/check gate"
+  visibility = "internal"
   cmd = "just check"
   inputs = src.moonSources
 }
@@ -13,6 +14,7 @@ checkMoon: pkfire.Task = new {
 checkTs: pkfire.Task = new {
   name = "check-ts"
   description = "Run the TypeScript no-emit gate"
+  visibility = "internal"
   cmd = "pnpm typecheck"
   inputs = src.nodeSources
 }
@@ -20,6 +22,7 @@ checkTs: pkfire.Task = new {
 checkFlaker: pkfire.Task = new {
   name = "check-flaker"
   description = "Validate flaker task ownership and quarantine metadata"
+  visibility = "internal"
   cmd = "just flaker-check && just flaker-quarantine-check"
   inputs = src.flakerSources
 }

@@ -5,6 +5,7 @@ import "sources.pkl" as src
 benchComponentVrt: pkfire.Task = new {
   name = "bench-component-vrt"
   description = "Run component VRT moon bench"
+  visibility = "internal"
   cmd = "pnpm bench:component-vrt"
   inputs {
     ...src.moonSources
@@ -15,6 +16,7 @@ benchComponentVrt: pkfire.Task = new {
 benchComponentBaseline: pkfire.Task = new {
   name = "bench-component-vrt-baseline"
   description = "Check component VRT benchmark baseline"
+  visibility = "internal"
   cmd = "pnpm bench:component-vrt:check-baseline"
   inputs {
     "benchmarks/scripts/component-vrt-bench-baseline.mjs"
@@ -25,6 +27,7 @@ benchComponentBaseline: pkfire.Task = new {
 benchCraterCli: pkfire.Task = new {
   name = "bench-crater-cli"
   description = "Print crater CLI benchmark summary"
+  visibility = "internal"
   cmd = "pnpm bench:crater-cli"
   inputs {
     "benchmarks/scripts/crater-cli-bench-baseline.mjs"
