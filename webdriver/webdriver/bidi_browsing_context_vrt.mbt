@@ -261,86 +261,22 @@ fn BidiProtocol::resolve_batch_render(
       return None
     }
   }
-  let base_html = match params.get("baseHtml") {
-    Some(String(html)) => html
-    None => responsive_breakpoint_source_html("live-inline")
-    _ => {
-      self.send_error(
-        request_id, "invalid argument", "baseHtml must be a string",
-      )
+  let options = match
+    @rendering.normalize_batch_render_options(
+      params,
+      responsive_breakpoint_source_html("live-inline"),
+    ) {
+    Ok(options) => options
+    Err(error) => {
+      self.send_error(request_id, error.name(), error.message())
       return None
     }
   }
-  let viewport_width = match params.get("viewport") {
-    Some(Object(vp)) =>
-      match vp.get("width") {
-        Some(Number(w, ..)) => w
-        _ => 1280.0
-      }
-    _ => 1280.0
-  }
-  let viewport_height = match params.get("viewport") {
-    Some(Object(vp)) =>
-      match vp.get("height") {
-        Some(Number(h, ..)) => h
-        _ => 900.0
-      }
-    _ => 900.0
-  }
-  let variants_json = match params.get("variants") {
-    Some(Array(items)) => items
-    _ => {
-      self.send_error(
-        request_id, "invalid argument", "variants must be an array",
-      )
-      return None
-    }
-  }
-  let variants : Array[@vrt.RenderVariant] = []
-  for v in variants_json {
-    match v {
-      Object(obj) => {
-        let id = match obj.get("id") {
-          Some(String(s)) => s
-          _ => ""
-        }
-        let mutations : Array[@vrt.CssMutation] = []
-        match obj.get("mutations") {
-          Some(Array(muts)) =>
-            for m in muts {
-              match m {
-                Object(mobj) => {
-                  let selector = match mobj.get("selector") {
-                    Some(String(s)) => s
-                    _ => continue
-                  }
-                  let property = match mobj.get("property") {
-                    Some(String(s)) => s
-                    _ => continue
-                  }
-                  let action = match mobj.get("action") {
-                    Some(String("remove")) => @vrt.CssMutationAction::Remove
-                    Some(Object(aobj)) =>
-                      match aobj.get("override") {
-                        Some(String(v)) => @vrt.CssMutationAction::Override(v)
-                        _ => @vrt.CssMutationAction::Remove
-                      }
-                    _ => @vrt.CssMutationAction::Remove
-                  }
-                  mutations.push({ selector, property, action })
-                }
-                _ => ()
-              }
-            }
-          _ => ()
-        }
-        variants.push({ id, mutations })
-      }
-      _ => ()
-    }
-  }
-  let viewport = @types.Size::new(viewport_width, viewport_height)
-  let results = @vrt.render_html_batch_variants(base_html, viewport, variants)
+  let results = @vrt.render_html_batch_variants(
+    options.base_html,
+    options.viewport,
+    options.variants,
+  )
   let results_json : Array[Json] = []
   for r in results {
     let item : Map[String, Json] = {}

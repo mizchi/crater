@@ -5,6 +5,7 @@ import {
   "mizchi/crater-browser/tui/paint/export",
   "mizchi/crater-layout/node",
   "mizchi/crater-layout/types",
+  "mizchi/crater-renderer/vrt",
 }
 
 // Values
@@ -20,6 +21,8 @@ pub fn capture_visual_to_json(@export.VisualStats) -> Json
 
 pub fn is_valid_print_page_range(String) -> Bool
 
+pub fn normalize_batch_render_options(Map[String, Json], String) -> Result[BatchRenderOptions, RenderingValidationError]
+
 pub fn normalize_capture_screenshot_options(Map[String, Json]) -> Result[CaptureScreenshotOptions, RenderingValidationError]
 
 pub fn normalize_print_options(Map[String, Json]) -> Result[PrintOptions, RenderingValidationError]
@@ -29,6 +32,12 @@ pub fn should_use_font_aware_text_provider(String) -> Bool
 // Errors
 
 // Types and methods
+pub(all) struct BatchRenderOptions {
+  base_html : String
+  viewport : @types.Size[Double]
+  variants : Array[@vrt.RenderVariant]
+}
+
 pub(all) enum CaptureScreenshotClip {
   NoClip
   ElementClip(String)
