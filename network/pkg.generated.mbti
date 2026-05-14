@@ -18,6 +18,8 @@ pub fn network_url_patterns_match(Map[String, Json], String) -> Bool
 
 pub fn synthetic_network_cache_key(String, String) -> String
 
+pub fn synthetic_network_extract_set_cookie_entries(Array[Json], String, Int) -> Array[SyntheticNetworkCookie]
+
 pub fn synthetic_network_first_query_value(String, String) -> String?
 
 pub fn synthetic_network_format_set_cookie_header(Map[String, Json]) -> String
@@ -37,6 +39,8 @@ pub fn synthetic_network_int_query_param(String, String, Int) -> Int
 pub fn synthetic_network_is_valid_continue_url(String) -> Bool
 
 pub fn synthetic_network_merge_header_entries(Array[Json]) -> Array[Json]
+
+pub fn synthetic_network_parse_set_cookie_header_value(String, String, Int) -> SyntheticNetworkCookie?
 
 pub fn synthetic_network_query_values(String, String) -> Array[String]
 
@@ -98,6 +102,18 @@ pub(all) struct SyntheticFetchStepResult {
 pub(all) struct SyntheticNetworkContinueCredentials {
   username : String
   password : String
+}
+
+pub(all) struct SyntheticNetworkCookie {
+  name : String
+  value_text : String
+  domain : String
+  domain_explicit : Bool
+  path : String
+  http_only : Bool
+  secure : Bool
+  same_site : String
+  expiry : Int?
 }
 
 pub(all) struct SyntheticNetworkCookieOverride {
