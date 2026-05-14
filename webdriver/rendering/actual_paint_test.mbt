@@ -49,6 +49,25 @@ test "actual paint screenshot predicate rejects synthetic clip and jpeg" {
 }
 
 ///|
+test "text metrics quad parser accepts provider csv" {
+  match parse_text_metrics_quad("1.5,2.5,3.5,4.5") {
+    Some((min_w, max_w, min_h, max_h)) => {
+      inspect(min_w, content="1.5")
+      inspect(max_w, content="2.5")
+      inspect(min_h, content="3.5")
+      inspect(max_h, content="4.5")
+    }
+    None => fail("expected parsed metrics")
+  }
+}
+
+///|
+test "text metrics quad parser rejects incomplete or invalid csv" {
+  assert_true(parse_text_metrics_quad("1,2,3") is None)
+  assert_true(parse_text_metrics_quad("1,2,nope,4") is None)
+}
+
+///|
 fn actual_paint_test_layout(
   id : String,
   x? : Double = 0.0,

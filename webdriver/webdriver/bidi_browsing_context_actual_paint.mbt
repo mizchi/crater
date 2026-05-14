@@ -315,19 +315,6 @@ extern "js" fn call_bold_text_provider(
   #|}
 
 ///|
-fn parse_csv_quad(s : String) -> (Double, Double, Double, Double)? {
-  let parts = s.split(",").collect()
-  if parts.length() < 4 {
-    return None
-  }
-  let a = @string.parse_double(parts[0]) catch { _ => return None }
-  let b = @string.parse_double(parts[1]) catch { _ => return None }
-  let c = @string.parse_double(parts[2]) catch { _ => return None }
-  let d = @string.parse_double(parts[3]) catch { _ => return None }
-  Some((a, b, c, d))
-}
-
-///|
 fn ensure_paint_text_provider() -> Unit {
   if has_paint_text_provider() {
     let provider = @renderer.TextMetricsProvider::new(fn(
@@ -370,7 +357,7 @@ fn ensure_paint_text_provider() -> Unit {
               text, font_size, line_height, ws, wm, available_width, available_height,
             )
           }
-          match parse_csv_quad(payload) {
+          match @rendering.parse_text_metrics_quad(payload) {
             Some((min_w, max_w, min_h, max_h)) =>
               {
                 min_width: min_w,

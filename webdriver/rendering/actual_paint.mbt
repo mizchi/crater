@@ -68,6 +68,21 @@ pub fn should_use_font_aware_text_provider(font_family : String) -> Bool {
 }
 
 ///|
+pub fn parse_text_metrics_quad(
+  value : String,
+) -> (Double, Double, Double, Double)? {
+  let parts = value.split(",").collect()
+  if parts.length() < 4 {
+    return None
+  }
+  let min_width = @string.parse_double(parts[0]) catch { _ => return None }
+  let max_width = @string.parse_double(parts[1]) catch { _ => return None }
+  let min_height = @string.parse_double(parts[2]) catch { _ => return None }
+  let max_height = @string.parse_double(parts[3]) catch { _ => return None }
+  Some((min_width, max_width, min_height, max_height))
+}
+
+///|
 pub fn can_use_actual_paint_for_screenshot_data(
   params : Map[String, Json],
 ) -> Bool {

@@ -35,7 +35,6 @@ describe("MoonBit WebDriver rendering boundaries", () => {
 
     const webdriverPackage = read("webdriver/webdriver/moon.pkg");
     expect(webdriverPackage).toContain('"mizchi/crater-webdriver-bidi/rendering" @rendering');
-
     expect(fs.existsSync(path.join(REPO_ROOT, "webdriver/webdriver/bidi_rendering_validation.mbt"))).toBe(false);
     const printSource = read("webdriver/webdriver/bidi_protocol_browsing_context_print.mbt");
     expect(printSource).toContain("@rendering.normalize_print_options");
@@ -45,12 +44,12 @@ describe("MoonBit WebDriver rendering boundaries", () => {
     expect(actualPaintSource).toContain("@rendering.actual_paint_document_dimensions_from_node_and_layout");
     expect(actualPaintSource).toContain("@rendering.should_use_font_aware_text_provider");
     expect(actualPaintSource).toContain("@rendering.can_use_actual_paint_for_screenshot_data");
+    expect(actualPaintSource).toContain("@rendering.parse_text_metrics_quad");
     expect(actualPaintSource).toContain("@rendering.capture_timing_to_json");
     expect(actualPaintSource).toContain("@rendering.capture_visual_to_json");
     const batchRenderSource = read("webdriver/webdriver/bidi_browsing_context_vrt.mbt");
     expect(batchRenderSource).toContain("@rendering.normalize_batch_render_options");
     expect(batchRenderSource).toContain("@rendering.batch_render_results_to_json");
-
     const implementationSources = [
       "webdriver/webdriver/bidi_protocol_input_helpers.mbt",
       "webdriver/webdriver/bidi_browsing_context_actual_paint.mbt",
@@ -71,6 +70,7 @@ describe("MoonBit WebDriver rendering boundaries", () => {
       "fn actual_paint_document_dimensions_from_node_and_layout",
       "fn should_use_font_aware_text_provider",
       "fn capture_screenshot_data_can_use_actual_paint",
+      "fn parse_csv_quad",
       "Some(String(\"synthetic\"))",
       "fn capture_timing_to_json",
       "fn capture_visual_to_json",

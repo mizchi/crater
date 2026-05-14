@@ -31,6 +31,8 @@ pub fn normalize_capture_screenshot_options(Map[String, Json]) -> Result[Capture
 
 pub fn normalize_print_options(Map[String, Json]) -> Result[PrintOptions, RenderingValidationError]
 
+pub fn parse_text_metrics_quad(String) -> (Double, Double, Double, Double)?
+
 pub fn should_use_font_aware_text_provider(String) -> Bool
 
 // Errors

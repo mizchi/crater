@@ -5,6 +5,7 @@ import {
   "mizchi/crater-layout/types" @types,
   "mizchi/crater-renderer/vrt" @vrt,
   "moonbitlang/core/json",
+  "moonbitlang/core/string",
 }
 
 supported_targets = "js"
