@@ -45,6 +45,34 @@ workflowTests {
     }
   }
   new {
+    name = "wpt dom fixture change runs dom and visual gates"
+    changed { "wpt/dom/nodes/Document-createElement.html" }
+    direct {
+      visual.testWptVrt.name
+      browser.testWptDom.name
+    }
+    tasks {
+      visual.testVrt.name
+      visual.testWptVrt.name
+      visual.testVisual.name
+      browser.testWptDom.name
+    }
+  }
+  new {
+    name = "wpt webdriver fixture change runs webdriver and visual gates"
+    changed { "wpt/webdriver/tests/bidi/session/status/status.py" }
+    direct {
+      visual.testWptVrt.name
+      browser.testWptWebdriver.name
+    }
+    tasks {
+      visual.testVrt.name
+      visual.testWptVrt.name
+      visual.testVisual.name
+      browser.testWptWebdriver.name
+    }
+  }
+  new {
     name = "component bench baseline change runs bench gate"
     changed { "benchmarks/tests/component-vrt-bench-baseline.json" }
     direct {

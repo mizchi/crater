@@ -158,6 +158,39 @@ scenarios {
     contributes { "goal.browser-compat" }
   }
   new {
+    id = "browser.preact"
+    name = "Preact compatibility gate is discoverable"
+    description =
+      "Preact compatibility should have a named pkfire task that can run independently from VRT."
+    tags { "spec"; "browser"; "preact"; "pkfire" }
+    severity = "major"
+    reviewStatus = "approved"
+    dependsOn { "browser.playwright" }
+    contributes { "goal.browser-compat" }
+  }
+  new {
+    id = "browser.wpt-dom"
+    name = "WPT DOM gate is discoverable"
+    description =
+      "The WPT DOM runner should have a named pkfire task for DOM API compatibility checks."
+    tags { "spec"; "browser"; "wpt"; "dom"; "pkfire" }
+    severity = "major"
+    reviewStatus = "approved"
+    dependsOn { "browser.playwright" }
+    contributes { "goal.browser-compat" }
+  }
+  new {
+    id = "browser.webdriver-bidi"
+    name = "WebDriver BiDi gate is discoverable"
+    description =
+      "The WebDriver BiDi WPT runner should have a named pkfire task for protocol compatibility checks."
+    tags { "spec"; "browser"; "webdriver"; "bidi"; "pkfire" }
+    severity = "major"
+    reviewStatus = "approved"
+    dependsOn { "browser.playwright" }
+    contributes { "goal.browser-compat" }
+  }
+  new {
     id = "vrt.report"
     name = "visual regression gates are separated"
     description =

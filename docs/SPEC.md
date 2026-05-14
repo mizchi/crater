@@ -1,10 +1,16 @@
 # Test SPEC
 
-25 tests across 2 module(s) — 13 pending, 12 active
+29 tests across 2 module(s) — 16 pending, 13 active
 
 ## `specs/`
 
 ### `crater.pkl`
+
+- [ ] **Preact compatibility gate is discoverable** — verifies: browser.preact — tags: spec, browser, preact, pkfire
+  > Preact compatibility should have a named pkfire task that can run independently from VRT.
+  - contributes to: goal.browser-compat
+  - depends on: browser.playwright
+  - body: _not yet implemented_
 
 - [ ] **Studio e2e comparison is tracked** [draft] — verifies: studio.e2e-comparison — tags: spec, studio, e2e
   > The crater-vs-Chromium Studio scenario should become a pkspec-linked external compatibility contract.
@@ -14,6 +20,18 @@
 - [ ] **WPT DOM compatibility is tracked** [draft] — verifies: wpt.dom-contract — tags: spec, wpt, dom
   > WPT DOM runner coverage should become a pkspec-linked compatibility contract once the stable subset is agreed.
   - contributes to: goal.browser-compat
+  - body: _not yet implemented_
+
+- [ ] **WPT DOM gate is discoverable** — verifies: browser.wpt-dom — tags: spec, browser, wpt, dom, pkfire
+  > The WPT DOM runner should have a named pkfire task for DOM API compatibility checks.
+  - contributes to: goal.browser-compat
+  - depends on: browser.playwright
+  - body: _not yet implemented_
+
+- [ ] **WebDriver BiDi gate is discoverable** — verifies: browser.webdriver-bidi — tags: spec, browser, webdriver, bidi, pkfire
+  > The WebDriver BiDi WPT runner should have a named pkfire task for protocol compatibility checks.
+  - contributes to: goal.browser-compat
+  - depends on: browser.playwright
   - body: _not yet implemented_
 
 - [ ] **affected task plans are pinned** — verifies: task.affected — tags: spec, pkfire, ci
@@ -109,6 +127,10 @@
 
 - [x] **pkfire_lists_spec_test_task** — verifies: spec.test — tags: pkspec, pkfire, smoke
   > The pkspec executable smoke suite should be exposed through pkfire.
+  - body: `cmd` (exit 0 expected)
+
+- [x] **pkfire_lists_specialized_browser_compatibility_tasks** — verifies: browser.preact, browser.wpt-dom, browser.webdriver-bidi — tags: browser, wpt, pkfire
+  > Preact, WPT DOM, and WebDriver BiDi compatibility checks should be independently discoverable.
   - body: `cmd` (exit 0 expected)
 
 - [x] **pkfire_lists_test_task** — verifies: task.test — tags: pkfire, smoke

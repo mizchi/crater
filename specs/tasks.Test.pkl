@@ -118,6 +118,26 @@ tests {
     }
   }
   new {
+    name = "pkfire_lists_specialized_browser_compatibility_tasks"
+    description =
+      "Preact, WPT DOM, and WebDriver BiDi compatibility checks should be independently discoverable."
+    tags { "browser"; "wpt"; "pkfire" }
+    specRef { "browser.preact"; "browser.wpt-dom"; "browser.webdriver-bidi" }
+    workdir = ".."
+    cmd = publicGraphJson
+    expectStdoutJsonPath {
+      [graphTaskPath(browser.testPreact.name, "name")] = browser.testPreact.name
+      [graphTaskPath(browser.testPreact.name, "kind")] = "task"
+      [graphTaskPath(browser.testPreact.name, "visibility")] = "public"
+      [graphTaskPath(browser.testWptDom.name, "name")] = browser.testWptDom.name
+      [graphTaskPath(browser.testWptDom.name, "kind")] = "task"
+      [graphTaskPath(browser.testWptDom.name, "visibility")] = "public"
+      [graphTaskPath(browser.testWptWebdriver.name, "name")] = browser.testWptWebdriver.name
+      [graphTaskPath(browser.testWptWebdriver.name, "kind")] = "task"
+      [graphTaskPath(browser.testWptWebdriver.name, "visibility")] = "public"
+    }
+  }
+  new {
     name = "pkfire_lists_visual_regression_tasks"
     description =
       "Visual regression work should have a separate pkfire group from browser API compatibility."
