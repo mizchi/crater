@@ -19,6 +19,36 @@ test "font aware text provider skips empty and inherited keywords" {
 }
 
 ///|
+test "actual paint screenshot predicate accepts default and document png" {
+  assert_true(can_use_actual_paint_for_screenshot_data({}))
+  assert_true(
+    can_use_actual_paint_for_screenshot_data({
+      "origin": Json::string("document"),
+      "format": Json::object({ "type": Json::string("image/png") }),
+    }),
+  )
+}
+
+///|
+test "actual paint screenshot predicate rejects synthetic clip and jpeg" {
+  assert_false(
+    can_use_actual_paint_for_screenshot_data({
+      "backend": Json::string("synthetic"),
+    }),
+  )
+  assert_false(
+    can_use_actual_paint_for_screenshot_data({
+      "clip": Json::object({ "type": Json::string("box") }),
+    }),
+  )
+  assert_false(
+    can_use_actual_paint_for_screenshot_data({
+      "format": Json::object({ "type": Json::string("image/jpeg") }),
+    }),
+  )
+}
+
+///|
 fn actual_paint_test_layout(
   id : String,
   x? : Double = 0.0,

@@ -42,10 +42,9 @@ describe("MoonBit WebDriver rendering boundaries", () => {
     const screenshotSource = read("webdriver/webdriver/bidi_protocol_browsing_context_screenshot.mbt");
     expect(screenshotSource).toContain("@rendering.normalize_capture_screenshot_options");
     const actualPaintSource = read("webdriver/webdriver/bidi_browsing_context_actual_paint.mbt");
-    expect(actualPaintSource).toContain(
-      "@rendering.actual_paint_document_dimensions_from_node_and_layout",
-    );
+    expect(actualPaintSource).toContain("@rendering.actual_paint_document_dimensions_from_node_and_layout");
     expect(actualPaintSource).toContain("@rendering.should_use_font_aware_text_provider");
+    expect(actualPaintSource).toContain("@rendering.can_use_actual_paint_for_screenshot_data");
     expect(actualPaintSource).toContain("@rendering.capture_timing_to_json");
     expect(actualPaintSource).toContain("@rendering.capture_visual_to_json");
     const batchRenderSource = read("webdriver/webdriver/bidi_browsing_context_vrt.mbt");
@@ -71,6 +70,8 @@ describe("MoonBit WebDriver rendering boundaries", () => {
       "fn actual_paint_layout_content_bottom",
       "fn actual_paint_document_dimensions_from_node_and_layout",
       "fn should_use_font_aware_text_provider",
+      "fn capture_screenshot_data_can_use_actual_paint",
+      "Some(String(\"synthetic\"))",
       "fn capture_timing_to_json",
       "fn capture_visual_to_json",
       "baseHtml must be a string",
@@ -82,7 +83,6 @@ describe("MoonBit WebDriver rendering boundaries", () => {
       expect(implementationSources).not.toContain(marker);
     }
   });
-
   it("keeps rendering boundary tests small enough to stay focused", () => {
     expect(countLines("scripts/moon-module-boundary-webdriver-rendering.test.ts")).toBeLessThanOrEqual(90);
   });

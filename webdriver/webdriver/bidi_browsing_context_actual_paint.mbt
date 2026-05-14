@@ -835,40 +835,13 @@ fn BidiProtocol::resolve_capture_paint_data(
 }
 
 ///|
-fn capture_screenshot_data_can_use_actual_paint(
-  params : Map[String, Json],
-) -> Bool {
-  match params.get("backend") {
-    Some(String("synthetic")) => return false
-    _ => ()
-  }
-  match params.get("origin") {
-    None | Some(String("viewport")) | Some(String("document")) => ()
-    _ => return false
-  }
-  match params.get("clip") {
-    None => ()
-    _ => return false
-  }
-  match params.get("format") {
-    None => true
-    Some(Object(format)) =>
-      match format.get("type") {
-        None | Some(String("image/png")) => true
-        _ => false
-      }
-    _ => false
-  }
-}
-
-///|
 fn BidiProtocol::try_resolve_actual_capture_screenshot_data(
   self : BidiProtocol,
   request_id : Int,
   ctx_id : String,
   params : Map[String, Json],
 ) -> String? {
-  if !capture_screenshot_data_can_use_actual_paint(params) {
+  if !@rendering.can_use_actual_paint_for_screenshot_data(params) {
     return None
   }
   let html = capture_current_paint_html()

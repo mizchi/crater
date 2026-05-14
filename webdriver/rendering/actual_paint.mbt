@@ -68,6 +68,33 @@ pub fn should_use_font_aware_text_provider(font_family : String) -> Bool {
 }
 
 ///|
+pub fn can_use_actual_paint_for_screenshot_data(
+  params : Map[String, Json],
+) -> Bool {
+  match params.get("backend") {
+    Some(String("synthetic")) => return false
+    _ => ()
+  }
+  match params.get("origin") {
+    None | Some(String("viewport")) | Some(String("document")) => ()
+    _ => return false
+  }
+  match params.get("clip") {
+    None => ()
+    _ => return false
+  }
+  match params.get("format") {
+    None => true
+    Some(Object(format)) =>
+      match format.get("type") {
+        None | Some(String("image/png")) => true
+        _ => false
+      }
+    _ => false
+  }
+}
+
+///|
 fn actual_paint_node_contributes_document_overflow(node : @node.Node) -> Bool {
   node.style.position != @types.Fixed
 }
