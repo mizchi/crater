@@ -128,6 +128,7 @@ describe("MoonBit package and compatibility boundaries", () => {
       "mizchi/crater-webdriver-bidi/rpc",
       "mizchi/crater-webdriver-bidi/runtime",
       "mizchi/crater-webdriver-bidi/protocol",
+      "mizchi/crater-webdriver-bidi/protocol/wire",
       "mizchi/crater-webdriver-bidi/network",
       "mizchi/crater-network",
     ] as const;

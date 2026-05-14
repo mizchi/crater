@@ -18,6 +18,7 @@ New code should depend on the canonical package listed below.
 | `mizchi/crater-webdriver-bidi/webdriver` JSON-RPC facade | `mizchi/crater-webdriver-bidi/rpc` |
 | `mizchi/crater-webdriver-bidi/webdriver` QuickJS runtime facade | `mizchi/crater-webdriver-bidi/runtime` |
 | `mizchi/crater-webdriver-bidi/webdriver` pure BiDi protocol helpers | `mizchi/crater-webdriver-bidi/protocol` |
+| `mizchi/crater-webdriver-bidi/webdriver` BiDi wire parser/serializer | `mizchi/crater-webdriver-bidi/protocol/wire` |
 | `mizchi/crater-webdriver-bidi/network` | `mizchi/crater-network` |
 
 Compatibility bridge packages should stay thin:

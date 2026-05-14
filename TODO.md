@@ -8,12 +8,12 @@ Last organized: 2026-05-14
 
 - [ ] module boundary reset を段階的に進める
   - Red: `scripts/moon-module-boundary-*` に公開 facade / contract / implementation の逆流検出を追加する
-  - Green: `webdriver/contract` へ純粋な API 型・legacy WebDriver 型・JSON wire helper・HTTP route parser、`webdriver/rpc` へ JSON-RPC helper・method parser、`webdriver/runtime` へ QuickJS runtime FFI/state と navigation encoding helper、`webdriver/protocol` へ pure BiDi JSON param / validation helper、`mizchi/crater-network` へ network runtime state / synthetic network event 型 / synthetic fetch 型 / byte/query JS helper を切り出し、`webdriver/network` は互換 adapter、`webdriver/webdriver` は implementation package にする
+  - Green: `webdriver/contract` へ純粋な API 型・legacy WebDriver 型・JSON wire helper・HTTP route parser、`webdriver/rpc` へ JSON-RPC helper・method parser、`webdriver/runtime` へ QuickJS runtime FFI/state と navigation encoding helper、`webdriver/protocol` へ pure BiDi JSON param / validation helper、`webdriver/protocol/wire` へ BiDi wire parser / serializer、`mizchi/crater-network` へ network runtime state / synthetic network event 型 / synthetic fetch 型 / byte/query JS helper を切り出し、`webdriver/network` は互換 adapter、`webdriver/webdriver` は implementation package にする
   - Refactor: `webdriver/webdriver` から以下を順に切り出す
     - `webdriver/rpc`: JSON-RPC ID / error / response builder / method-name adapter
     - `webdriver/runtime`: DOM JS bridge / input runtime snippets
     - `webdriver/network`: `mizchi/crater-network` の互換 adapter として維持し、実装側は canonical module を直接参照する
-    - `webdriver/protocol`: BiDi command validation / dispatch table / event serialization を、pure helper から順に分離する
+    - `webdriver/protocol`: BiDi command validation / dispatch table / event construction を、pure helper と wire serializer から順に分離する
     - `webdriver/protocol` / `webdriver/browser_domain`: intercept / fetch / cookie / storage / network event payload のうち BiDi 固有処理を分離する
     - `webdriver/browser_domain`: bluetooth / emulation / geolocation / permissions / screen / web extension など synthetic domain
     - `webdriver/rendering`: screenshot / print / actual paint / VRT bridge

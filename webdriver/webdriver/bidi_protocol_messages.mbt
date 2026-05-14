@@ -43,7 +43,7 @@ fn BidiProtocol::process_message(
   self : BidiProtocol,
   json_str : String,
 ) -> Result[Unit, String] {
-  let parsed = match @bidi_wire.parse_request(json_str) {
+  let parsed = match @protocol_wire.parse_request(json_str) {
     Ok(request) => request
     Err(err) => return Err(err)
   }
@@ -108,18 +108,18 @@ fn BidiProtocol::send_error(
 fn response_to_json(resp : BidiResponse) -> String {
   match resp.error {
     Some(err) =>
-      @bidi_wire.error_response_to_json_with_stacktrace(
+      @protocol_wire.error_response_to_json(
         resp.id,
         err.error,
         err.message,
         err.stacktrace,
       )
-    None => @bidi_wire.success_response_to_json(resp.id, resp.result)
+    None => @protocol_wire.success_response_to_json(resp.id, resp.result)
   }
 }
 
 ///|
 /// Event JSON serialization
 fn event_to_json(evt : BidiEvent) -> String {
-  @bidi_wire.event_to_json(evt.event_method, evt.params)
+  @protocol_wire.event_to_json(evt.event_method, evt.params)
 }

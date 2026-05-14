@@ -183,6 +183,40 @@ describe("MoonBit WebDriver facade and contract boundaries", () => {
     expect(validationFacade).not.toContain("lhs.to_array()");
   });
 
+  it("keeps BiDi wire message parsing and serialization behind protocol wire", () => {
+    const expectedWireFiles = [
+      "webdriver/protocol/wire/moon.pkg",
+      "webdriver/protocol/wire/messages.mbt",
+      "webdriver/protocol/wire/messages_test.mbt",
+    ] as const;
+    const missingFiles = expectedWireFiles.filter((file) => {
+      return !fs.existsSync(path.join(REPO_ROOT, file));
+    });
+
+    expect(missingFiles).toEqual([]);
+
+    const wirePackage = read("webdriver/protocol/wire/moon.pkg");
+    expect(wirePackage).toContain('"mizchi/webdriver/bidi" @bidi_wire');
+    expect(wirePackage).not.toContain("mizchi/crater\"");
+    expect(wirePackage).not.toContain("mizchi/js");
+
+    const webdriverPackage = read("webdriver/webdriver/moon.pkg");
+    expect(webdriverPackage).toContain(
+      '"mizchi/crater-webdriver-bidi/protocol/wire" @protocol_wire',
+    );
+
+    const messageFacade = read("webdriver/webdriver/bidi_protocol_messages.mbt");
+    for (const symbol of [
+      "@protocol_wire.parse_request",
+      "@protocol_wire.success_response_to_json",
+      "@protocol_wire.error_response_to_json",
+      "@protocol_wire.event_to_json",
+    ] as const) {
+      expect(messageFacade).toContain(symbol);
+    }
+    expect(messageFacade).not.toContain("@bidi_wire");
+  });
+
   it("keeps network runtime state and JS helpers outside the implementation facade", () => {
     const moonWork = read("moon.work");
     expect(moonWork).toContain('"./network"');

@@ -1,0 +1,6 @@
+import {
+  "mizchi/webdriver/bidi" @bidi_wire,
+  "moonbitlang/core/json",
+}
+
+supported_targets = "js"

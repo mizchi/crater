@@ -423,6 +423,7 @@ The WebDriver BiDi adapter packages are kept in `webdriver/`:
 - `rpc`
 - `runtime`
 - `protocol`
+- `protocol/wire`
 - `network`
 - `font_runtime`
 - `webdriver`
@@ -437,7 +438,8 @@ without forcing consumers to import the larger `webdriver` package path
 directly. Pure request/response/API contract types live in `contract`;
 JSON-RPC request/response helpers and method-name parsing live in `rpc`;
 QuickJS runtime FFI/state and JS-side navigation encoding helpers live in
-`runtime`; pure BiDi JSON parameter and validation helpers live in `protocol`;
+`runtime`; pure BiDi JSON parameter and validation helpers live in `protocol`,
+while BiDi wire parsing/serialization lives in `protocol/wire`;
 protocol-neutral network runtime state and byte/query helpers live in
 `mizchi/crater-network`, with `webdriver/network` kept as a compatibility
 adapter; the larger `webdriver` package remains a compatibility facade plus the

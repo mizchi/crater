@@ -1,0 +1,25 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-webdriver-bidi/protocol/wire"
+
+// Values
+pub fn error_response_to_json(Int, String, String, String) -> String
+
+pub fn event_to_json(String, Json) -> String
+
+pub fn parse_request(String) -> Result[BidiWireRequest, String]
+
+pub fn success_response_to_json(Int, Json?) -> String
+
+// Errors
+
+// Types and methods
+pub(all) struct BidiWireRequest {
+  id : Int
+  method_name : String
+  params : Json?
+}
+
+// Type aliases
+
+// Traits
+
