@@ -1,0 +1,43 @@
+import "package://pkg.pkl-lang.org/github.com/mizchi/pkfire/pkfire@0.10.0#/Taskfile.pkl" as pkfire
+
+import "sources.pkl" as src
+
+testPlaywright: pkfire.Task = new {
+  name = "test-playwright"
+  description = "Run Playwright adapter and user scenario tests"
+  visibility = "internal"
+  cmd = "just test-playwright-adapter"
+  cache = false
+  inputs {
+    ...src.nodeSources
+    "webdriver/**"
+    "browser/**"
+  }
+}
+
+testWebsite: pkfire.Task = new {
+  name = "test-website"
+  description = "Run website loading and browser user scenario tests"
+  visibility = "internal"
+  cmd = "just test-website"
+  cache = false
+  inputs {
+    ...src.nodeSources
+    "html_assets/**"
+    "browser/**"
+    "webdriver/**"
+  }
+}
+
+testBrowser: pkfire.Task = new {
+  name = "test-browser"
+  description = "Run browser-facing non-VRT compatibility suites"
+  cache = false
+  deps { testPlaywright; testWebsite }
+}
+
+tasks: Listing<pkfire.Task> = new {
+  testPlaywright
+  testWebsite
+  testBrowser
+}

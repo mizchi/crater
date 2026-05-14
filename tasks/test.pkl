@@ -52,80 +52,11 @@ testNativeSmoke: pkfire.Task = new {
   inputs = src.moonSources
 }
 
-testPlaywright: pkfire.Task = new {
-  name = "test-playwright"
-  description = "Run Playwright adapter and user scenario tests"
-  visibility = "internal"
-  cmd = "just test-playwright-adapter"
-  cache = false
-  inputs {
-    ...src.nodeSources
-    "webdriver/**"
-    "browser/**"
-  }
-}
-
-testWebsite: pkfire.Task = new {
-  name = "test-website"
-  description = "Run website loading and browser user scenario tests"
-  visibility = "internal"
-  cmd = "just test-website"
-  cache = false
-  inputs {
-    ...src.nodeSources
-    "html_assets/**"
-    "browser/**"
-    "webdriver/**"
-  }
-}
-
-testVrt: pkfire.Task = new {
-  name = "test-vrt"
-  description = "Run paint visual regression tests"
-  visibility = "internal"
-  cmd = "just test-vrt"
-  cache = false
-  inputs {
-    ...src.nodeSources
-    "tests/fixtures/**"
-    "renderer/**"
-    "painter/**"
-  }
-}
-
-testWptVrt: pkfire.Task = new {
-  name = "test-wpt-vrt"
-  description = "Run WPT visual regression tests"
-  visibility = "internal"
-  cmd = "just test-wpt-vrt"
-  cache = false
-  inputs {
-    ...src.nodeSources
-    "wpt-vrt.json"
-    "tests/wpt-vrt-baseline.json"
-    "wpt/**"
-  }
-}
-
 test: pkfire.Task = new {
   name = "test"
   description = "Run fast unit and contract test gates"
   cache = false
   deps { testMoon; testVitest; testNode; spec.specTest }
-}
-
-testBrowser: pkfire.Task = new {
-  name = "test-browser"
-  description = "Run browser-facing non-VRT compatibility suites"
-  cache = false
-  deps { testPlaywright; testWebsite }
-}
-
-testVisual: pkfire.Task = new {
-  name = "test-visual"
-  description = "Run visual regression suites"
-  cache = false
-  deps { testVrt; testWptVrt }
 }
 
 tasks: Listing<pkfire.Task> = new {
@@ -135,11 +66,5 @@ tasks: Listing<pkfire.Task> = new {
   testTaffy
   testWasm
   testNativeSmoke
-  testPlaywright
-  testWebsite
-  testVrt
-  testWptVrt
   test
-  testBrowser
-  testVisual
 }

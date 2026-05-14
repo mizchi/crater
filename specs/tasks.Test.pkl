@@ -1,11 +1,13 @@
 amends "../pkspec/Test.pkl"
 
 import "../tasks/bench.pkl" as bench
+import "../tasks/browser.pkl" as browser
 import "../tasks/check.pkl" as check
 import "../tasks/core.pkl" as core
 import "../tasks/release.pkl" as release
 import "../tasks/spec.pkl" as spec
 import "../tasks/test.pkl" as test
+import "../tasks/visual.pkl" as visual
 
 local function graphTaskPath(name: String, field: String): String =
   "tasks.#(name==\"" + name + "\")." + field
@@ -110,9 +112,9 @@ tests {
     workdir = ".."
     cmd = publicGraphJson
     expectStdoutJsonPath {
-      [graphTaskPath(test.testBrowser.name, "name")] = test.testBrowser.name
-      [graphTaskPath(test.testBrowser.name, "kind")] = "aggregate"
-      [graphTaskPath(test.testBrowser.name, "visibility")] = "public"
+      [graphTaskPath(browser.testBrowser.name, "name")] = browser.testBrowser.name
+      [graphTaskPath(browser.testBrowser.name, "kind")] = "aggregate"
+      [graphTaskPath(browser.testBrowser.name, "visibility")] = "public"
     }
   }
   new {
@@ -124,9 +126,9 @@ tests {
     workdir = ".."
     cmd = publicGraphJson
     expectStdoutJsonPath {
-      [graphTaskPath(test.testVisual.name, "name")] = test.testVisual.name
-      [graphTaskPath(test.testVisual.name, "kind")] = "aggregate"
-      [graphTaskPath(test.testVisual.name, "visibility")] = "public"
+      [graphTaskPath(visual.testVisual.name, "name")] = visual.testVisual.name
+      [graphTaskPath(visual.testVisual.name, "kind")] = "aggregate"
+      [graphTaskPath(visual.testVisual.name, "visibility")] = "public"
     }
   }
   new {
@@ -157,8 +159,8 @@ tests {
       [graphTaskPath(spec.specCheck.name, "visibility")] = "internal"
       [graphTaskPath(bench.benchComponentVrt.name, "visibility")] = "internal"
       [graphTaskPath(test.testMoon.name, "visibility")] = "internal"
-      [graphTaskPath(test.testPlaywright.name, "visibility")] = "internal"
-      [graphTaskPath(test.testVrt.name, "visibility")] = "internal"
+      [graphTaskPath(browser.testPlaywright.name, "visibility")] = "internal"
+      [graphTaskPath(visual.testVrt.name, "visibility")] = "internal"
       [graphTaskPath(release.releaseCheck.name, "visibility")] = "internal"
     }
   }

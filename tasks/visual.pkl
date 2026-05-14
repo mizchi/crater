@@ -1,0 +1,44 @@
+import "package://pkg.pkl-lang.org/github.com/mizchi/pkfire/pkfire@0.10.0#/Taskfile.pkl" as pkfire
+
+import "sources.pkl" as src
+
+testVrt: pkfire.Task = new {
+  name = "test-vrt"
+  description = "Run paint visual regression tests"
+  visibility = "internal"
+  cmd = "just test-vrt"
+  cache = false
+  inputs {
+    ...src.nodeSources
+    "tests/fixtures/**"
+    "renderer/**"
+    "painter/**"
+  }
+}
+
+testWptVrt: pkfire.Task = new {
+  name = "test-wpt-vrt"
+  description = "Run WPT visual regression tests"
+  visibility = "internal"
+  cmd = "just test-wpt-vrt"
+  cache = false
+  inputs {
+    ...src.nodeSources
+    "wpt-vrt.json"
+    "tests/wpt-vrt-baseline.json"
+    "wpt/**"
+  }
+}
+
+testVisual: pkfire.Task = new {
+  name = "test-visual"
+  description = "Run visual regression suites"
+  cache = false
+  deps { testVrt; testWptVrt }
+}
+
+tasks: Listing<pkfire.Task> = new {
+  testVrt
+  testWptVrt
+  testVisual
+}

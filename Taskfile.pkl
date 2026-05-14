@@ -1,17 +1,21 @@
 amends "package://pkg.pkl-lang.org/github.com/mizchi/pkfire/pkfire@0.10.0#/Taskfile.pkl"
 
 import "tasks/bench.pkl" as bench
+import "tasks/browser.pkl" as browser
 import "tasks/check.pkl" as check
 import "tasks/core.pkl" as core
 import "tasks/release.pkl" as release
 import "tasks/spec.pkl" as spec
 import "tasks/test.pkl" as test
+import "tasks/visual.pkl" as visual
 
 tasks {
   ...core.tasks
   ...check.tasks
   ...spec.tasks
   ...test.tasks
+  ...browser.tasks
+  ...visual.tasks
   ...bench.tasks
   ...release.tasks
 }
@@ -33,11 +37,11 @@ workflowTests {
   new {
     name = "wpt vrt config change runs visual gate"
     changed { "wpt-vrt.json" }
-    direct { test.testWptVrt.name }
+    direct { visual.testWptVrt.name }
     tasks {
-      test.testVrt.name
-      test.testWptVrt.name
-      test.testVisual.name
+      visual.testVrt.name
+      visual.testWptVrt.name
+      visual.testVisual.name
     }
   }
   new {
