@@ -9,7 +9,7 @@ import path from 'path';
 import vm from 'vm';
 
 function buildMockDomCode(): string {
-  const mbtPath = path.join(process.cwd(), 'browser/src/js/js_runtime_quickjs.mbt');
+  const mbtPath = path.join(process.cwd(), 'runtime/js_runtime_quickjs_ffi.mbt');
   const content = fs.readFileSync(mbtPath, 'utf-8');
   const lines = content.split('\n');
   const setupLines: string[] = [];

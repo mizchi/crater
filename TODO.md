@@ -34,6 +34,7 @@ Last organized: 2026-05-14
   - 巨大 core への逆流を検出する file-size / symbol boundary を維持する
 - [ ] `scripts/flaker-*` / `docs/flaker-runbook.md` の ownership と TODO を同期する
   - `@mizchi/flaker` に upstream 済みの pure core と、crater に残す VRT domain extension を再分類する
+  - `src/` facade 削除後の実パスに合わせた fixture / runbook の更新は完了。次は VRT domain metadata の切り出し範囲を確認する
 
 ## Browser / Playwright / WebDriver
 
@@ -118,7 +119,9 @@ Last organized: 2026-05-14
 ## Workspace / Release
 
 - [ ] `benchmarks` / `testing` / adapter module の release note template と changelog 粒度を決める
-- [ ] `mizchi/crater` facade を `0.18` 以降で doc 上 deprecated 扱いに進めるか決める
+- [ ] root facade retirement 後の publish / release note を確認する
+  - `mizchi/crater` / `mizchi/crater/css` の `src/` wrapper は削除済み
+  - publish script / docs / downstream adapter が retired facade を参照しないことを release 前に再確認する
 - [ ] `browser/native` と `wasm` を CI の required check にどこまで含めるか決める
 - [ ] adapter module (`jsbidi`, `browser-native`, `js`, `wasm`) をどこまで公開サポート対象にするか決める
 

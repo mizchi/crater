@@ -19,7 +19,7 @@ just flaker api
 just flaker config list
 just flaker config check
 just flaker config report .flaker/report
-just flaker config affected src/layout/block.mbt tests/paint-vrt.test.ts
+just flaker config affected layout/block/block.mbt tests/paint-vrt.test.ts
 ```
 
 - `just flaker ...` を日常運用の入口にする
@@ -33,7 +33,7 @@ just flaker config affected src/layout/block.mbt tests/paint-vrt.test.ts
 just flaker config list
 just flaker config check
 just flaker config report .flaker/report
-just flaker config affected src/layout/block.mbt tests/paint-vrt.test.ts
+just flaker config affected layout/block/block.mbt tests/paint-vrt.test.ts
 ```
 
 - `flaker config list`: `flaker.star` から task と spec 所有を一覧する
@@ -137,7 +137,7 @@ just flaker task sample paint-vrt --count 20
 ### changed path から対象 task を決める
 
 ```bash
-just flaker config affected src/layout/block.mbt tests/paint-vrt.test.ts
+just flaker config affected layout/block/block.mbt tests/paint-vrt.test.ts
 just flaker task record paint-vrt
 ```
 

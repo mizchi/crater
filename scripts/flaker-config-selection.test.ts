@@ -14,19 +14,19 @@ task(
   id="paint-vrt",
   node="layout",
   cmd=["pnpm", "exec", "playwright", "test", "./tests/paint-vrt.test.ts"],
-  srcs=["src/layout/**"],
+  srcs=["layout/**"],
   trigger="auto",
 )
 `);
 
     const inputs = loadFlakerSelectionInputs(
       config,
-      ["/repo/src/layout/block.mbt", "./tests/paint-vrt.test.ts"],
+      ["/repo/layout/block/block.mbt", "./tests/paint-vrt.test.ts"],
       "/repo",
     );
 
     expect(inputs.changedPaths).toEqual([
-      "src/layout/block.mbt",
+      "layout/block/block.mbt",
       "tests/paint-vrt.test.ts",
     ]);
     expect(inputs.tasks.map((task) => ({ id: task.id, specs: task.specs }))).toEqual([
@@ -47,7 +47,7 @@ task(
   id="paint-vrt",
   node="layout",
   cmd=["pnpm", "exec", "playwright", "test", "tests/paint-vrt.test.ts"],
-  srcs=["src/layout/**"],
+  srcs=["layout/**"],
   trigger="auto",
 )
 task(
@@ -61,13 +61,13 @@ task(
   id="website-loading",
   node="fullstack",
   cmd=["pnpm", "exec", "playwright", "test", "tests/website-loading.test.ts"],
-  srcs=["src/layout/**", "tests/helpers/**"],
+  srcs=["layout/**", "tests/helpers/**"],
   needs=["paint-vrt", "playwright-adapter"],
   trigger="auto",
 )
 `);
 
-    const selection = selectAffectedTasks(config, ["src/layout/block.mbt"]);
+    const selection = selectAffectedTasks(config, ["layout/block/block.mbt"]);
 
     expect(selection.selectedTaskIds).toEqual([
       "paint-vrt",

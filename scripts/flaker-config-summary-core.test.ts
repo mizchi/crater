@@ -18,7 +18,7 @@ function makeTask(
     needs: [],
     srcCount: 1,
     command: ["pnpm", "exec", "playwright", "test", spec],
-    srcs: ["src/**"],
+    srcs: ["packages/**"],
     ...overrides,
   };
 }
@@ -33,7 +33,7 @@ describe("buildFlakerConfigSummary", () => {
           id: "task-a",
           node: "browser",
           cmd: ["pnpm", "exec", "playwright", "test", "tests/a.test.ts"],
-          srcs: ["src/**"],
+          srcs: ["packages/**"],
           needs: [],
           trigger: "auto",
         },
@@ -41,7 +41,7 @@ describe("buildFlakerConfigSummary", () => {
           id: "task-b",
           node: "browser",
           cmd: ["pnpm", "exec", "playwright", "test", "tests/a.test.ts"],
-          srcs: ["src/**"],
+          srcs: ["packages/**"],
           needs: [],
           trigger: "auto",
         },

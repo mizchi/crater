@@ -13,7 +13,7 @@ task(
   id="paint-vrt",
   node="layout",
   cmd=["pnpm", "exec", "playwright", "test", "tests/paint-vrt.test.ts"],
-  srcs=["src/layout/**"],
+  srcs=["layout/**"],
   needs=["wpt-vrt"],
   trigger="auto",
 )
@@ -32,7 +32,7 @@ task(
         id: "paint-vrt",
         node: "layout",
         cmd: ["pnpm", "exec", "playwright", "test", "tests/paint-vrt.test.ts"],
-        srcs: ["src/layout/**"],
+        srcs: ["layout/**"],
         needs: ["wpt-vrt"],
         trigger: "auto",
       },

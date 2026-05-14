@@ -315,22 +315,22 @@ align-self-001.html ~ align-self-013.html (一部)
 
 ### 実装済み
 
-1. **WritingMode 列挙型** (`src/style/style.mbt`)
+1. **WritingMode 列挙型** (`layout/style/style.mbt`)
    - `HorizontalTb` (デフォルト)
    - `VerticalRl` (縦書き、右から左)
    - `VerticalLr` (縦書き、左から右)
 
-2. **CSS パーサー** (`src/css/computed/properties.mbt`)
+2. **CSS パーサー** (`css/computed/properties.mbt`)
    - `horizontal-tb`, `vertical-rl`, `vertical-lr` をパース
    - レガシー値 (`lr`, `tb`, `tb-rl` など) もサポート
 
-3. **テキスト測定** (`src/renderer/renderer.mbt`)
+3. **テキスト測定** (`renderer/renderer/renderer.mbt`)
    - 縦書きモードでは width/height を入れ替え
    - 文字の流れが垂直になる
 
 ### 実装済み - Flex レイアウト軸入れ替え
 
-4. **Flex レイアウトの軸入れ替え** (`src/layout/flex/flex.mbt`)
+4. **Flex レイアウトの軸入れ替え** (`layout/flex/flex.mbt`)
    - 縦書きモードでは `flex-direction: row` が垂直方向にフローする
    - `is_vertical_writing` で writing-mode をチェックし、軸を XOR で入れ替え
    - 継承も正しく機能（`compute_element_style_indexed` で writing_mode を継承）
@@ -347,7 +347,7 @@ let is_row = if is_vertical_writing { not(direction_is_row) } else { direction_i
 
 ### 実装済み - Block レイアウト軸入れ替え
 
-5. **Block レイアウトの軸入れ替え** (`src/layout/block/block.mbt`)
+5. **Block レイアウトの軸入れ替え** (`layout/block/block.mbt`)
    - BFC パスで `is_vertical_writing` をチェック
    - 縦書きモードではブロックが水平方向にフロー
    - `current_pos` で位置を追跡し、width で進める（通常は height）
@@ -355,7 +355,7 @@ let is_row = if is_vertical_writing { not(direction_is_row) } else { direction_i
 
 ### 実装済み - Grid レイアウト軸入れ替え
 
-6. **Grid レイアウトの軸入れ替え** (`src/layout/grid/grid.mbt`)
+6. **Grid レイアウトの軸入れ替え** (`layout/grid/grid.mbt`)
    - 縦書きモードでは `grid-template-columns` が縦方向のトラックを定義
    - `grid-template-rows` が横方向のトラックを定義
    - `column_tracks` と `row_tracks` を入れ替えて item の位置・サイズを計算
@@ -375,7 +375,7 @@ let (item_x, item_width, item_y, item_height) = if is_vertical_writing {
 
 ### 実装済み - vertical-rl サポート
 
-7. **vertical-rl 対応** (`src/style/style.mbt`, 全レイアウトモジュール)
+7. **vertical-rl 対応** (`layout/style/style.mbt`, 全レイアウトモジュール)
    - `WritingMode::is_block_rtl()` メソッドを追加
    - Block, Flex, Grid すべてで vertical-rl の右から左へのフローをサポート
    - x 座標を `container_width - x - item_width` で反転

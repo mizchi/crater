@@ -20,7 +20,7 @@ describe("resolveTaskSummary", () => {
         "--grep",
         "hero",
       ],
-      srcs: ["src/layout/**", "tests/helpers/**"],
+      srcs: ["layout/**", "tests/helpers/**"],
       needs: ["paint-vrt", "playwright-adapter"],
       trigger: "auto",
     };
@@ -50,7 +50,7 @@ describe("resolveTaskSummary", () => {
         "tests/browser-ui.test.tsx",
         "tests/browser-ui.spec.tsx",
       ],
-      srcs: ["src/browser/**"],
+      srcs: ["browser/**"],
       needs: [],
       trigger: "auto",
     };
@@ -75,7 +75,7 @@ describe("resolveTaskSummaries", () => {
           id: "paint-vrt",
           node: "browser",
           cmd: ["pnpm", "exec", "playwright", "test", "tests/paint-vrt.test.ts"],
-          srcs: ["src/layout/**"],
+          srcs: ["layout/**"],
           needs: [],
         },
       ],
@@ -100,7 +100,7 @@ describe("isFilteredTask", () => {
       needs: [],
       srcCount: 1,
       command: ["pnpm"],
-      srcs: ["src/**"],
+      srcs: ["packages/**"],
     })).toBe(true);
 
     expect(isFilteredTask({
@@ -113,7 +113,7 @@ describe("isFilteredTask", () => {
       needs: [],
       srcCount: 1,
       command: ["pnpm"],
-      srcs: ["src/**"],
+      srcs: ["packages/**"],
     })).toBe(false);
   });
 });

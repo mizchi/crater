@@ -59,14 +59,14 @@ describe("parseFlakerConfigArgs", () => {
       "--config",
       "alt.star",
       "--select",
-      "src/layout/block.mbt",
+      "layout/block/block.mbt",
       "--not-a-flag",
     ]);
 
     expect(options).toMatchObject({
       configPath: "alt.star",
       selectMode: true,
-      changedPaths: ["src/layout/block.mbt", "--not-a-flag"],
+      changedPaths: ["layout/block/block.mbt", "--not-a-flag"],
     });
   });
 });
@@ -82,7 +82,7 @@ task(
   id="website-loading",
   node="browser",
   cmd=["pnpm", "exec", "playwright", "test", "tests/website-loading.test.ts", "--grep", "Website Loading Tests"],
-  srcs=["src/bidi/**"],
+  srcs=["webdriver/**"],
   trigger="auto",
 )
 `);
@@ -119,21 +119,21 @@ task(
   id="task-a",
   node="browser",
   cmd=["pnpm", "exec", "playwright", "test", "tests/a.test.ts"],
-  srcs=["src/**"],
+  srcs=["packages/**"],
   trigger="auto",
 )
 task(
   id="task-b",
   node="browser",
   cmd=["pnpm", "exec", "playwright", "test", "tests/a.test.ts"],
-  srcs=["src/**"],
+  srcs=["packages/**"],
   trigger="auto",
 )
 task(
   id="task-c",
   node="browser",
   cmd=["pnpm", "exec", "playwright", "test", "tests/b.test.ts"],
-  srcs=["src/**"],
+  srcs=["packages/**"],
   trigger="auto",
 )
 `);
@@ -155,14 +155,14 @@ task(
   id="website-loading",
   node="browser",
   cmd=["pnpm", "exec", "playwright", "test", "tests/website-loading.test.ts", "--grep", "Website Loading Tests"],
-  srcs=["src/**"],
+  srcs=["packages/**"],
   trigger="auto",
 )
 task(
   id="script-edge-cases",
   node="browser",
   cmd=["pnpm", "exec", "playwright", "test", "tests/website-loading.test.ts", "--grep", "Script Execution Edge Cases"],
-  srcs=["src/**"],
+  srcs=["packages/**"],
   trigger="auto",
 )
 `);
@@ -195,14 +195,14 @@ task(
   id="task-a",
   node="browser",
   cmd=["pnpm", "exec", "playwright", "test", "./tests/alpha.test.ts"],
-  srcs=["src/**"],
+  srcs=["packages/**"],
   trigger="auto",
 )
 task(
   id="task-b",
   node="browser",
   cmd=["pnpm", "exec", "playwright", "test", "tests/missing.test.ts"],
-  srcs=["src/**"],
+  srcs=["packages/**"],
   trigger="auto",
 )
 `);
@@ -219,7 +219,7 @@ task(
 });
 
 describe("selectAffectedTasks", () => {
-  it("selects tasks from src globs and expands task dependencies", () => {
+  it("selects tasks from source globs and expands task dependencies", () => {
     const config = parseFlakerStar(`
 workflow(name="example", max_parallel=1)
 node(id="layout", depends_on=[])
@@ -229,7 +229,7 @@ task(
   id="paint-vrt",
   node="layout",
   cmd=["pnpm", "exec", "playwright", "test", "tests/paint-vrt.test.ts"],
-  srcs=["src/layout/**"],
+  srcs=["layout/**"],
   trigger="auto",
 )
 task(
@@ -243,13 +243,13 @@ task(
   id="website-loading",
   node="fullstack",
   cmd=["pnpm", "exec", "playwright", "test", "tests/website-loading.test.ts"],
-  srcs=["src/layout/**", "tests/helpers/**"],
+  srcs=["layout/**", "tests/helpers/**"],
   needs=["paint-vrt", "playwright-adapter"],
   trigger="auto",
 )
 `);
 
-    const selection = selectAffectedTasks(config, ["src/layout/block.mbt"]);
+    const selection = selectAffectedTasks(config, ["layout/block/block.mbt"]);
 
     expect(selection.selectedTaskIds).toEqual([
       "paint-vrt",
@@ -258,7 +258,7 @@ task(
     ]);
     expect(selection.matchedTaskIds).toEqual(["paint-vrt", "website-loading"]);
     expect(selection.selectedTasks.find((task) => task.id === "website-loading")?.matchReasons).toEqual([
-      "srcs:src/layout/** <= src/layout/block.mbt",
+      "srcs:layout/** <= layout/block/block.mbt",
     ]);
     expect(selection.selectedTasks.find((task) => task.id === "playwright-adapter")?.includedBy).toEqual([
       "website-loading",
@@ -273,7 +273,7 @@ task(
   id="paint-vrt",
   node="layout",
   cmd=["pnpm", "exec", "playwright", "test", "tests/paint-vrt.test.ts"],
-  srcs=["src/layout/**"],
+  srcs=["layout/**"],
   trigger="auto",
 )
 `);
@@ -294,7 +294,7 @@ task(
   id="paint-vrt",
   node="layout",
   cmd=["pnpm", "exec", "playwright", "test", "tests/paint-vrt.test.ts"],
-  srcs=["src/layout/**"],
+  srcs=["layout/**"],
   trigger="auto",
 )
 `);
@@ -332,7 +332,7 @@ task(
   id="task-a",
   node="browser",
   cmd=["pnpm", "exec", "playwright", "test", "tests/a.test.ts"],
-  srcs=["src/**"],
+  srcs=["packages/**"],
   trigger="auto",
 )
 `,

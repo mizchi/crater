@@ -45,9 +45,9 @@ interface WptCompatShardReport {
   generatedAt: string;
 }
 
-// Read mock DOM setup from js_runtime_quickjs.mbt
+// Read mock DOM setup from the QuickJS FFI package.
 function extractMockDomSetup(): string {
-  const mbtPath = path.join(process.cwd(), 'browser/src/js/js_runtime_quickjs.mbt');
+  const mbtPath = path.join(process.cwd(), 'runtime/js_runtime_quickjs_ffi.mbt');
   const content = fs.readFileSync(mbtPath, 'utf-8');
 
   // Extract setupCode from the file
@@ -1314,10 +1314,9 @@ function buildDoctypeCode(htmlPath: string): string {
   ].join('\n');
 }
 
-// Build mock DOM code from the MBT file
+// Build mock DOM code from the MBT file.
 function buildMockDomCode(): string {
-  // Read the full js_runtime_quickjs.mbt and extract the setup code
-  const mbtPath = path.join(process.cwd(), 'browser/src/js/js_runtime_quickjs.mbt');
+  const mbtPath = path.join(process.cwd(), 'runtime/js_runtime_quickjs_ffi.mbt');
   const content = fs.readFileSync(mbtPath, 'utf-8');
 
   // Find all #| lines that form the setup code

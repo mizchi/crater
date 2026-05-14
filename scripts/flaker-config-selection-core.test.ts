@@ -16,7 +16,7 @@ function makeTask(
     needs: [],
     srcCount: 1,
     command: ["pnpm", "exec", "playwright", "test", `tests/${id}.test.ts`],
-    srcs: [`src/${id}/**`],
+    srcs: [`packages/${id}/**`],
     ...overrides,
   };
 }
@@ -24,12 +24,12 @@ function makeTask(
 describe("buildFlakerSelection", () => {
   it("selects direct matches and expands task dependencies from prepared inputs", () => {
     const selection = buildFlakerSelection({
-      changedPaths: ["src/layout/block.mbt", "docs/notes.md"],
+      changedPaths: ["layout/block/block.mbt", "docs/notes.md"],
       tasks: [
         makeTask("paint-vrt", {
           node: "layout",
           specs: ["tests/paint-vrt.test.ts"],
-          srcs: ["src/layout/**"],
+          srcs: ["layout/**"],
         }),
         makeTask("playwright-adapter", {
           node: "browser",
@@ -39,13 +39,13 @@ describe("buildFlakerSelection", () => {
         makeTask("website-loading", {
           node: "fullstack",
           specs: ["tests/website-loading.test.ts"],
-          srcs: ["src/layout/**", "tests/helpers/**"],
+          srcs: ["layout/**", "tests/helpers/**"],
           needs: ["paint-vrt", "playwright-adapter"],
         }),
       ],
     });
 
-    expect(selection.changedPaths).toEqual(["src/layout/block.mbt", "docs/notes.md"]);
+    expect(selection.changedPaths).toEqual(["layout/block/block.mbt", "docs/notes.md"]);
     expect(selection.matchedTaskIds).toEqual(["paint-vrt", "website-loading"]);
     expect(selection.selectedTaskIds).toEqual([
       "paint-vrt",
@@ -54,7 +54,7 @@ describe("buildFlakerSelection", () => {
     ]);
     expect(selection.unmatchedPaths).toEqual(["docs/notes.md"]);
     expect(selection.selectedTasks.find((task) => task.id === "website-loading")?.matchReasons).toEqual([
-      "srcs:src/layout/** <= src/layout/block.mbt",
+      "srcs:layout/** <= layout/block/block.mbt",
     ]);
     expect(selection.selectedTasks.find((task) => task.id === "playwright-adapter")?.includedBy).toEqual([
       "website-loading",

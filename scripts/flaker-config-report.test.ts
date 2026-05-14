@@ -46,7 +46,7 @@ const SUMMARY: FlakerSummary = {
 };
 
 const SELECTION: FlakerSelection = {
-  changedPaths: ["src/layout/block.mbt", "docs/notes.md"],
+  changedPaths: ["layout/block/block.mbt", "docs/notes.md"],
   matchedTaskIds: ["paint-vrt"],
   selectedTaskIds: ["paint-vrt", "wpt-vrt"],
   unmatchedPaths: ["docs/notes.md"],
@@ -57,7 +57,7 @@ const SELECTION: FlakerSelection = {
       specs: ["tests/paint-vrt.test.ts"],
       needs: [],
       command: ["pnpm", "exec", "playwright", "test"],
-      matchReasons: ["srcs:src/layout/** <= src/layout/block.mbt"],
+      matchReasons: ["srcs:layout/** <= layout/block/block.mbt"],
       includedBy: [],
     },
     {
@@ -91,9 +91,9 @@ describe("flaker-config-report", () => {
 
     expect(markdown).toContain("# Flaker Affected Tasks");
     expect(markdown).toContain("| Changed paths | 2 |");
-    expect(markdown).toContain("| paint-vrt |  | srcs:src/layout/** <= src/layout/block.mbt |");
+    expect(markdown).toContain("| paint-vrt |  | srcs:layout/** <= layout/block/block.mbt |");
     expect(markdown).toContain("## Unmatched Paths");
-    expect(list).toContain("paint-vrt\tsrcs:src/layout/** <= src/layout/block.mbt");
+    expect(list).toContain("paint-vrt\tsrcs:layout/** <= layout/block/block.mbt");
     expect(list).toContain("wpt-vrt\tdependency [included-by=paint-vrt]");
     expect(list).toContain("UNMATCHED\tdocs/notes.md");
   });

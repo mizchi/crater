@@ -58,21 +58,21 @@ task(
   id="task-a",
   node="browser",
   cmd=["pnpm", "exec", "playwright", "test", "tests/a.test.ts"],
-  srcs=["src/**"],
+  srcs=["packages/**"],
   trigger="auto",
 )
 task(
   id="task-b",
   node="browser",
   cmd=["pnpm", "exec", "playwright", "test", "tests/a.test.ts"],
-  srcs=["src/**"],
+  srcs=["packages/**"],
   trigger="auto",
 )
 task(
   id="task-c",
   node="browser",
   cmd=["pnpm", "exec", "playwright", "test", "tests/b.test.ts"],
-  srcs=["src/**"],
+  srcs=["packages/**"],
   trigger="auto",
 )
 `);

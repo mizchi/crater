@@ -68,14 +68,14 @@ describe("runFlakerEntryCli", () => {
 
   it("dispatches config affected paths", () => {
     const calls: Array<{ name: string; args: string[] }> = [];
-    runFlakerEntryCli(["config", "affected", "src/layout/block.mbt", "tests/paint-vrt.test.ts"], {
+    runFlakerEntryCli(["config", "affected", "layout/block/block.mbt", "tests/paint-vrt.test.ts"], {
       handlers: createHandlers(calls),
     });
 
     expect(calls).toEqual([
       {
         name: "config",
-        args: ["--select", "src/layout/block.mbt", "tests/paint-vrt.test.ts"],
+        args: ["--select", "layout/block/block.mbt", "tests/paint-vrt.test.ts"],
       },
     ]);
   });
