@@ -1,0 +1,70 @@
+import "package://pkg.pkl-lang.org/github.com/mizchi/pkfire/pkfire@0.10.0#/Taskfile.pkl" as pkfire
+
+import "sources.pkl" as src
+
+testWptCss: pkfire.Task = new {
+  name = "test-wpt-css"
+  description = "Run WPT CSS layout compatibility tests"
+  cmd = "just wpt-all"
+  cache = false
+  inputs {
+    ...src.nodeSources
+    "css/**"
+    "layout/**"
+    "painter/**"
+    "renderer/**"
+    "runtime/**"
+    "scripts/wpt-config.ts"
+    "scripts/wpt-html-utils.ts"
+    "scripts/wpt-runner.ts"
+    "wpt/css/**"
+    "wpt/resources/**"
+  }
+}
+
+testWptDom: pkfire.Task = new {
+  name = "test-wpt-dom"
+  description = "Run WPT DOM compatibility tests"
+  cmd = "just wpt-dom-all"
+  cache = false
+  inputs {
+    ...src.nodeSources
+    "dom/**"
+    "runtime/**"
+    "js/**"
+    "scripts/wpt-dom-runner.ts"
+    "wpt/dom/**"
+    "wpt/domparsing/**"
+    "wpt/resources/**"
+  }
+}
+
+testWptWebdriver: pkfire.Task = new {
+  name = "test-wpt-webdriver"
+  description = "Run WPT WebDriver BiDi protocol tests"
+  cmd = "just wpt-webdriver-all"
+  cache = false
+  inputs {
+    ...src.nodeSources
+    "browser/**"
+    "testing/**"
+    "webdriver/**"
+    "scripts/wpt-bidi-subset.json"
+    "scripts/wpt-webdriver-runner.ts"
+    "wpt/webdriver/**"
+  }
+}
+
+testWpt: pkfire.Task = new {
+  name = "test-wpt"
+  description = "Run WPT CSS, DOM, and WebDriver compatibility suites"
+  cache = false
+  deps { testWptCss; testWptDom; testWptWebdriver }
+}
+
+tasks: Listing<pkfire.Task> = new {
+  testWptCss
+  testWptDom
+  testWptWebdriver
+  testWpt
+}

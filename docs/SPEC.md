@@ -1,6 +1,6 @@
 # Test SPEC
 
-29 tests across 2 module(s) — 16 pending, 13 active
+32 tests across 2 module(s) — 18 pending, 14 active
 
 ## `specs/`
 
@@ -17,21 +17,30 @@
   - contributes to: goal.browser-compat, goal.visual-regression
   - body: _not yet implemented_
 
+- [ ] **WPT CSS gate is discoverable** — verifies: wpt.css — tags: spec, browser, wpt, css, pkfire
+  > The WPT CSS layout runner should have a named pkfire task for layout compatibility checks.
+  - contributes to: goal.browser-compat
+  - body: _not yet implemented_
+
 - [ ] **WPT DOM compatibility is tracked** [draft] — verifies: wpt.dom-contract — tags: spec, wpt, dom
   > WPT DOM runner coverage should become a pkspec-linked compatibility contract once the stable subset is agreed.
   - contributes to: goal.browser-compat
   - body: _not yet implemented_
 
-- [ ] **WPT DOM gate is discoverable** — verifies: browser.wpt-dom — tags: spec, browser, wpt, dom, pkfire
+- [ ] **WPT DOM gate is discoverable** — verifies: wpt.dom — tags: spec, browser, wpt, dom, pkfire
   > The WPT DOM runner should have a named pkfire task for DOM API compatibility checks.
   - contributes to: goal.browser-compat
-  - depends on: browser.playwright
   - body: _not yet implemented_
 
-- [ ] **WebDriver BiDi gate is discoverable** — verifies: browser.webdriver-bidi — tags: spec, browser, webdriver, bidi, pkfire
+- [ ] **WPT compatibility suite is grouped** — verifies: wpt.suite — tags: spec, browser, wpt, pkfire
+  > CSS, DOM, and WebDriver WPT tasks should be grouped under a named pkfire aggregate.
+  - contributes to: goal.browser-compat
+  - depends on: wpt.css, wpt.dom, wpt.webdriver-bidi
+  - body: _not yet implemented_
+
+- [ ] **WebDriver BiDi gate is discoverable** — verifies: wpt.webdriver-bidi — tags: spec, browser, webdriver, bidi, pkfire
   > The WebDriver BiDi WPT runner should have a named pkfire task for protocol compatibility checks.
   - contributes to: goal.browser-compat
-  - depends on: browser.playwright
   - body: _not yet implemented_
 
 - [ ] **affected task plans are pinned** — verifies: task.affected — tags: spec, pkfire, ci
@@ -117,6 +126,10 @@
   > The default task should remain discoverable as the task inventory entrypoint.
   - body: `cmd` (exit 0 expected)
 
+- [x] **pkfire_lists_preact_compatibility_task** — verifies: browser.preact — tags: browser, preact, pkfire
+  > Preact compatibility checks should be independently discoverable.
+  - body: `cmd` (exit 0 expected)
+
 - [x] **pkfire_lists_prepare_task** — verifies: task.prepare — tags: pkfire, smoke
   > The prepare gate should stay visible for pre-commit generated-file refreshes.
   - body: `cmd` (exit 0 expected)
@@ -129,16 +142,16 @@
   > The pkspec executable smoke suite should be exposed through pkfire.
   - body: `cmd` (exit 0 expected)
 
-- [x] **pkfire_lists_specialized_browser_compatibility_tasks** — verifies: browser.preact, browser.wpt-dom, browser.webdriver-bidi — tags: browser, wpt, pkfire
-  > Preact, WPT DOM, and WebDriver BiDi compatibility checks should be independently discoverable.
-  - body: `cmd` (exit 0 expected)
-
 - [x] **pkfire_lists_test_task** — verifies: task.test — tags: pkfire, smoke
   > The fast executable gate should stay visible as test.
   - body: `cmd` (exit 0 expected)
 
 - [x] **pkfire_lists_visual_regression_tasks** — verifies: vrt.report — tags: vrt, pkfire
   > Visual regression work should have a separate pkfire group from browser API compatibility.
+  - body: `cmd` (exit 0 expected)
+
+- [x] **pkfire_lists_wpt_compatibility_tasks** — verifies: wpt.css, wpt.dom, wpt.webdriver-bidi, wpt.suite — tags: wpt, pkfire
+  > CSS, DOM, and WebDriver WPT compatibility checks should have a dedicated pkfire module.
   - body: `cmd` (exit 0 expected)
 
 - [x] **pkfire_marks_aggregate_dependencies_internal** — verifies: task.default — tags: pkfire, contract

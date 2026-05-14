@@ -8,6 +8,7 @@ import "../tasks/release.pkl" as release
 import "../tasks/spec.pkl" as spec
 import "../tasks/test.pkl" as test
 import "../tasks/visual.pkl" as visual
+import "../tasks/wpt.pkl" as wpt
 
 local function graphTaskPath(name: String, field: String): String =
   "tasks.#(name==\"" + name + "\")." + field
@@ -118,23 +119,39 @@ tests {
     }
   }
   new {
-    name = "pkfire_lists_specialized_browser_compatibility_tasks"
-    description =
-      "Preact, WPT DOM, and WebDriver BiDi compatibility checks should be independently discoverable."
-    tags { "browser"; "wpt"; "pkfire" }
-    specRef { "browser.preact"; "browser.wpt-dom"; "browser.webdriver-bidi" }
+    name = "pkfire_lists_preact_compatibility_task"
+    description = "Preact compatibility checks should be independently discoverable."
+    tags { "browser"; "preact"; "pkfire" }
+    specRef { "browser.preact" }
     workdir = ".."
     cmd = publicGraphJson
     expectStdoutJsonPath {
       [graphTaskPath(browser.testPreact.name, "name")] = browser.testPreact.name
       [graphTaskPath(browser.testPreact.name, "kind")] = "task"
       [graphTaskPath(browser.testPreact.name, "visibility")] = "public"
-      [graphTaskPath(browser.testWptDom.name, "name")] = browser.testWptDom.name
-      [graphTaskPath(browser.testWptDom.name, "kind")] = "task"
-      [graphTaskPath(browser.testWptDom.name, "visibility")] = "public"
-      [graphTaskPath(browser.testWptWebdriver.name, "name")] = browser.testWptWebdriver.name
-      [graphTaskPath(browser.testWptWebdriver.name, "kind")] = "task"
-      [graphTaskPath(browser.testWptWebdriver.name, "visibility")] = "public"
+    }
+  }
+  new {
+    name = "pkfire_lists_wpt_compatibility_tasks"
+    description =
+      "CSS, DOM, and WebDriver WPT compatibility checks should have a dedicated pkfire module."
+    tags { "wpt"; "pkfire" }
+    specRef { "wpt.css"; "wpt.dom"; "wpt.webdriver-bidi"; "wpt.suite" }
+    workdir = ".."
+    cmd = publicGraphJson
+    expectStdoutJsonPath {
+      [graphTaskPath(wpt.testWptCss.name, "name")] = wpt.testWptCss.name
+      [graphTaskPath(wpt.testWptCss.name, "kind")] = "task"
+      [graphTaskPath(wpt.testWptCss.name, "visibility")] = "public"
+      [graphTaskPath(wpt.testWptDom.name, "name")] = wpt.testWptDom.name
+      [graphTaskPath(wpt.testWptDom.name, "kind")] = "task"
+      [graphTaskPath(wpt.testWptDom.name, "visibility")] = "public"
+      [graphTaskPath(wpt.testWptWebdriver.name, "name")] = wpt.testWptWebdriver.name
+      [graphTaskPath(wpt.testWptWebdriver.name, "kind")] = "task"
+      [graphTaskPath(wpt.testWptWebdriver.name, "visibility")] = "public"
+      [graphTaskPath(wpt.testWpt.name, "name")] = wpt.testWpt.name
+      [graphTaskPath(wpt.testWpt.name, "kind")] = "aggregate"
+      [graphTaskPath(wpt.testWpt.name, "visibility")] = "public"
     }
   }
   new {

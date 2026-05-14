@@ -44,39 +44,6 @@ testPreact: pkfire.Task = new {
   }
 }
 
-testWptDom: pkfire.Task = new {
-  name = "test-wpt-dom"
-  description = "Run WPT DOM compatibility tests"
-  cmd = "just wpt-dom-all"
-  cache = false
-  inputs {
-    ...src.nodeSources
-    "dom/**"
-    "runtime/**"
-    "js/**"
-    "scripts/wpt-dom-runner.ts"
-    "wpt/dom/**"
-    "wpt/domparsing/**"
-    "wpt/resources/**"
-  }
-}
-
-testWptWebdriver: pkfire.Task = new {
-  name = "test-wpt-webdriver"
-  description = "Run WPT WebDriver BiDi protocol tests"
-  cmd = "just wpt-webdriver-all"
-  cache = false
-  inputs {
-    ...src.nodeSources
-    "browser/**"
-    "testing/**"
-    "webdriver/**"
-    "scripts/wpt-bidi-subset.json"
-    "scripts/wpt-webdriver-runner.ts"
-    "wpt/webdriver/**"
-  }
-}
-
 testBrowser: pkfire.Task = new {
   name = "test-browser"
   description = "Run browser-facing non-VRT compatibility suites"
@@ -88,7 +55,5 @@ tasks: Listing<pkfire.Task> = new {
   testPlaywright
   testWebsite
   testPreact
-  testWptDom
-  testWptWebdriver
   testBrowser
 }

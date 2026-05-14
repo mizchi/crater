@@ -169,25 +169,44 @@ scenarios {
     contributes { "goal.browser-compat" }
   }
   new {
-    id = "browser.wpt-dom"
+    id = "wpt.dom"
     name = "WPT DOM gate is discoverable"
     description =
       "The WPT DOM runner should have a named pkfire task for DOM API compatibility checks."
     tags { "spec"; "browser"; "wpt"; "dom"; "pkfire" }
     severity = "major"
     reviewStatus = "approved"
-    dependsOn { "browser.playwright" }
     contributes { "goal.browser-compat" }
   }
   new {
-    id = "browser.webdriver-bidi"
+    id = "wpt.webdriver-bidi"
     name = "WebDriver BiDi gate is discoverable"
     description =
       "The WebDriver BiDi WPT runner should have a named pkfire task for protocol compatibility checks."
     tags { "spec"; "browser"; "webdriver"; "bidi"; "pkfire" }
     severity = "major"
     reviewStatus = "approved"
-    dependsOn { "browser.playwright" }
+    contributes { "goal.browser-compat" }
+  }
+  new {
+    id = "wpt.css"
+    name = "WPT CSS gate is discoverable"
+    description =
+      "The WPT CSS layout runner should have a named pkfire task for layout compatibility checks."
+    tags { "spec"; "browser"; "wpt"; "css"; "pkfire" }
+    severity = "major"
+    reviewStatus = "approved"
+    contributes { "goal.browser-compat" }
+  }
+  new {
+    id = "wpt.suite"
+    name = "WPT compatibility suite is grouped"
+    description =
+      "CSS, DOM, and WebDriver WPT tasks should be grouped under a named pkfire aggregate."
+    tags { "spec"; "browser"; "wpt"; "pkfire" }
+    severity = "major"
+    reviewStatus = "approved"
+    dependsOn { "wpt.css"; "wpt.dom"; "wpt.webdriver-bidi" }
     contributes { "goal.browser-compat" }
   }
   new {

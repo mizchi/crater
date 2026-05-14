@@ -8,6 +8,7 @@ import "tasks/release.pkl" as release
 import "tasks/spec.pkl" as spec
 import "tasks/test.pkl" as test
 import "tasks/visual.pkl" as visual
+import "tasks/wpt.pkl" as wpt
 
 tasks {
   ...core.tasks
@@ -15,6 +16,7 @@ tasks {
   ...spec.tasks
   ...test.tasks
   ...browser.tasks
+  ...wpt.tasks
   ...visual.tasks
   ...bench.tasks
   ...release.tasks
@@ -49,13 +51,16 @@ workflowTests {
     changed { "wpt/dom/nodes/Document-createElement.html" }
     direct {
       visual.testWptVrt.name
-      browser.testWptDom.name
+      wpt.testWptDom.name
     }
     tasks {
       visual.testVrt.name
       visual.testWptVrt.name
       visual.testVisual.name
-      browser.testWptDom.name
+      wpt.testWptCss.name
+      wpt.testWptDom.name
+      wpt.testWptWebdriver.name
+      wpt.testWpt.name
     }
   }
   new {
@@ -63,13 +68,16 @@ workflowTests {
     changed { "wpt/webdriver/tests/bidi/session/status/status.py" }
     direct {
       visual.testWptVrt.name
-      browser.testWptWebdriver.name
+      wpt.testWptWebdriver.name
     }
     tasks {
       visual.testVrt.name
       visual.testWptVrt.name
       visual.testVisual.name
-      browser.testWptWebdriver.name
+      wpt.testWptCss.name
+      wpt.testWptDom.name
+      wpt.testWptWebdriver.name
+      wpt.testWpt.name
     }
   }
   new {
