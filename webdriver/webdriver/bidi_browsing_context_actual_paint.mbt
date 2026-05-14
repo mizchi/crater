@@ -130,57 +130,6 @@ extern "js" fn js_outline_commands_for_family(
   #|}
 
 ///|
-/// Parse JSON array of outline commands into Array[@svg.PathCommand]
-/// Format: [["M",x,y], ["L",x,y], ["Q",cx,cy,x,y], ["C",cx1,cy1,cx2,cy2,x,y], ["Z"]]
-fn parse_outline_commands_json(json_str : String) -> Array[@svg.PathCommand] {
-  let result : Array[@svg.PathCommand] = []
-  let parsed = @json.parse(json_str) catch { _ => return result }
-  guard parsed is Array(cmds) else { return result }
-  for cmd in cmds {
-    guard cmd is Array(parts) else { continue }
-    if parts.length() == 0 {
-      continue
-    }
-    guard parts[0] is String(typ) else { continue }
-    match typ {
-      "M" =>
-        if parts.length() >= 3 {
-          guard parts[1] is Number(x, ..) else { continue }
-          guard parts[2] is Number(y, ..) else { continue }
-          result.push(@svg.MoveTo(x, y))
-        }
-      "L" =>
-        if parts.length() >= 3 {
-          guard parts[1] is Number(x, ..) else { continue }
-          guard parts[2] is Number(y, ..) else { continue }
-          result.push(@svg.LineTo(x, y))
-        }
-      "Q" =>
-        if parts.length() >= 5 {
-          guard parts[1] is Number(cx, ..) else { continue }
-          guard parts[2] is Number(cy, ..) else { continue }
-          guard parts[3] is Number(x, ..) else { continue }
-          guard parts[4] is Number(y, ..) else { continue }
-          result.push(@svg.QuadraticCurveTo(cx, cy, x, y))
-        }
-      "C" =>
-        if parts.length() >= 7 {
-          guard parts[1] is Number(cx1, ..) else { continue }
-          guard parts[2] is Number(cy1, ..) else { continue }
-          guard parts[3] is Number(cx2, ..) else { continue }
-          guard parts[4] is Number(cy2, ..) else { continue }
-          guard parts[5] is Number(x, ..) else { continue }
-          guard parts[6] is Number(y, ..) else { continue }
-          result.push(@svg.CurveTo(cx1, cy1, cx2, cy2, x, y))
-        }
-      "Z" => result.push(@svg.ClosePath)
-      _ => ()
-    }
-  }
-  result
-}
-
-///|
 /// Check if JS-side glyph functions are available (mizchi/font loaded)
 extern "js" fn has_glyph_functions() -> Bool =
   #|() => typeof globalThis.__craterGlyphToSvgPath === "function"
@@ -455,7 +404,7 @@ fn ensure_paint_provider_initialized() -> Unit {
           if json.length() == 0 || json == "[]" {
             return ([], advance)
           }
-          let commands = parse_outline_commands_json(json)
+          let commands = @rendering.parse_glyph_outline_commands_json(json)
           (commands, advance)
         } else {
           let svg_path = js_glyph_to_svg_path(codepoint, font_size, is_bold)
@@ -474,7 +423,7 @@ fn ensure_paint_provider_initialized() -> Unit {
           if json.length() == 0 || json == "[]" {
             return ([], advance)
           }
-          let commands = parse_outline_commands_json(json)
+          let commands = @rendering.parse_glyph_outline_commands_json(json)
           (commands, advance)
         } else {
           let svg_path = js_glyph_to_svg_path(codepoint, font_size, is_bold)
@@ -504,7 +453,7 @@ fn ensure_paint_provider_initialized() -> Unit {
           let advance = js_advance_for_family(
             codepoint, font_size, is_bold, font_family,
           )
-          let commands = parse_outline_commands_json(json)
+          let commands = @rendering.parse_glyph_outline_commands_json(json)
           Some((commands, advance))
         } else {
           let svg_path = js_glyph_for_family(
@@ -540,7 +489,7 @@ fn ensure_paint_provider_initialized() -> Unit {
           let advance = js_advance_for_family(
             codepoint, font_size, is_bold, font_family,
           )
-          let commands = parse_outline_commands_json(json)
+          let commands = @rendering.parse_glyph_outline_commands_json(json)
           Some((commands, advance))
         } else {
           let svg_path = js_glyph_for_family(

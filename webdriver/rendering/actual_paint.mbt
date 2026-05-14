@@ -83,6 +83,89 @@ pub fn parse_text_metrics_quad(
 }
 
 ///|
+pub fn parse_glyph_outline_commands_json(
+  json_text : String,
+) -> Array[@svg.PathCommand] {
+  let commands : Array[@svg.PathCommand] = []
+  let parsed = @json.parse(json_text) catch { _ => return commands }
+  guard parsed is Array(items) else { return commands }
+  for item in items {
+    match parse_glyph_outline_command_json(item) {
+      Some(command) => commands.push(command)
+      None => ()
+    }
+  }
+  commands
+}
+
+///|
+fn parse_glyph_outline_command_json(item : Json) -> @svg.PathCommand? {
+  guard item is Array(parts) else { return None }
+  if parts.length() == 0 {
+    return None
+  }
+  guard parts[0] is String(command) else { return None }
+  match command {
+    "M" => {
+      let (x, y) = match parse_outline_xy(parts, 1, 2) {
+        Some(value) => value
+        None => return None
+      }
+      Some(@svg.MoveTo(x, y))
+    }
+    "L" => {
+      let (x, y) = match parse_outline_xy(parts, 1, 2) {
+        Some(value) => value
+        None => return None
+      }
+      Some(@svg.LineTo(x, y))
+    }
+    "Q" => {
+      let (cx, cy) = match parse_outline_xy(parts, 1, 2) {
+        Some(value) => value
+        None => return None
+      }
+      let (x, y) = match parse_outline_xy(parts, 3, 4) {
+        Some(value) => value
+        None => return None
+      }
+      Some(@svg.QuadraticCurveTo(cx, cy, x, y))
+    }
+    "C" => {
+      let (cx1, cy1) = match parse_outline_xy(parts, 1, 2) {
+        Some(value) => value
+        None => return None
+      }
+      let (cx2, cy2) = match parse_outline_xy(parts, 3, 4) {
+        Some(value) => value
+        None => return None
+      }
+      let (x, y) = match parse_outline_xy(parts, 5, 6) {
+        Some(value) => value
+        None => return None
+      }
+      Some(@svg.CurveTo(cx1, cy1, cx2, cy2, x, y))
+    }
+    "Z" => Some(@svg.ClosePath)
+    _ => None
+  }
+}
+
+///|
+fn parse_outline_xy(
+  parts : Array[Json],
+  x_index : Int,
+  y_index : Int,
+) -> (Double, Double)? {
+  if parts.length() <= x_index || parts.length() <= y_index {
+    return None
+  }
+  guard parts[x_index] is Number(x, ..) else { return None }
+  guard parts[y_index] is Number(y, ..) else { return None }
+  Some((x, y))
+}
+
+///|
 pub fn can_use_actual_paint_for_screenshot_data(
   params : Map[String, Json],
 ) -> Bool {

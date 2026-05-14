@@ -68,6 +68,49 @@ test "text metrics quad parser rejects incomplete or invalid csv" {
 }
 
 ///|
+test "glyph outline command parser accepts move line curve and close" {
+  let json =
+    #|[["M",1,2],["L",3,4],["Q",5,6,7,8],["C",9,10,11,12,13,14],["Z"]]
+  let commands = parse_glyph_outline_commands_json(json)
+  inspect(commands.length(), content="5")
+  match commands[0] {
+    @svg.MoveTo(x, y) => {
+      inspect(x, content="1")
+      inspect(y, content="2")
+    }
+    _ => fail("expected MoveTo")
+  }
+  match commands[2] {
+    @svg.QuadraticCurveTo(cx, cy, x, y) => {
+      inspect(cx, content="5")
+      inspect(cy, content="6")
+      inspect(x, content="7")
+      inspect(y, content="8")
+    }
+    _ => fail("expected QuadraticCurveTo")
+  }
+  match commands[4] {
+    @svg.ClosePath => ()
+    _ => fail("expected ClosePath")
+  }
+}
+
+///|
+test "glyph outline command parser skips malformed entries" {
+  let json =
+    #|[["M",1],["unknown",1,2],["L",3,4],42]
+  let commands = parse_glyph_outline_commands_json(json)
+  inspect(commands.length(), content="1")
+  match commands[0] {
+    @svg.LineTo(x, y) => {
+      inspect(x, content="3")
+      inspect(y, content="4")
+    }
+    _ => fail("expected LineTo")
+  }
+}
+
+///|
 fn actual_paint_test_layout(
   id : String,
   x? : Double = 0.0,
