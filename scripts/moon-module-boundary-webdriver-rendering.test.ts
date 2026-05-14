@@ -50,6 +50,7 @@ describe("MoonBit WebDriver rendering boundaries", () => {
     expect(actualPaintSource).toContain("@rendering.capture_visual_to_json");
     const batchRenderSource = read("webdriver/webdriver/bidi_browsing_context_vrt.mbt");
     expect(batchRenderSource).toContain("@rendering.normalize_batch_render_options");
+    expect(batchRenderSource).toContain("@rendering.batch_render_results_to_json");
 
     const implementationSources = [
       "webdriver/webdriver/bidi_protocol_input_helpers.mbt",
@@ -76,6 +77,7 @@ describe("MoonBit WebDriver rendering boundaries", () => {
       "variants must be an array",
       "let variants : Array[@vrt.RenderVariant]",
       "CssMutationAction::Override",
+      "paint_tree.to_json_string",
     ] as const) {
       expect(implementationSources).not.toContain(marker);
     }

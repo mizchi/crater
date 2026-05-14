@@ -15,6 +15,8 @@ pub fn actual_paint_layout_content_bottom(@types.Layout) -> Double
 
 pub fn actual_paint_layout_content_right(@types.Layout) -> Double
 
+pub fn batch_render_results_to_json(Array[@vrt.RenderVariantResult]) -> Json
+
 pub fn capture_timing_to_json(PaintCaptureTiming) -> Json
 
 pub fn capture_visual_to_json(@export.VisualStats) -> Json

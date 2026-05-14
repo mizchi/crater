@@ -84,3 +84,35 @@ test "batch render options require variants array" {
     }
   }
 }
+
+///|
+test "batch render results serialize to bidi result object" {
+  let results = @vrt.render_html_batch_variants(
+    "<main>hello</main>",
+    @types.Size::new(120.0, 80.0),
+    [{ id: "base", mutations: [] }],
+  )
+  match batch_render_results_to_json(results) {
+    Object(output) =>
+      match output.get("results") {
+        Some(Array(items)) => {
+          inspect(items.length(), content="1")
+          match items[0] {
+            Object(item) => {
+              match item.get("id") {
+                Some(String(id)) => inspect(id, content="base")
+                _ => fail("expected id")
+              }
+              match item.get("paintTree") {
+                Some(Object(_)) => ()
+                _ => fail("expected paintTree object")
+              }
+            }
+            _ => fail("expected result object")
+          }
+        }
+        _ => fail("expected results array")
+      }
+    _ => fail("expected output object")
+  }
+}

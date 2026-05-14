@@ -131,3 +131,19 @@ fn normalize_batch_render_mutation_action(
     _ => @vrt.CssMutationAction::Remove
   }
 }
+
+///|
+pub fn batch_render_results_to_json(
+  results : Array[@vrt.RenderVariantResult],
+) -> Json {
+  let results_json : Array[Json] = []
+  for result in results {
+    let item : Map[String, Json] = {}
+    item["id"] = Json::string(result.id)
+    item["paintTree"] = @json.parse(result.paint_tree.to_json_string()) catch {
+      _ => Json::null()
+    }
+    results_json.push(@protocol.make_object(item))
+  }
+  @protocol.make_object({ "results": Json::array(results_json) })
+}

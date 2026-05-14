@@ -277,18 +277,7 @@ fn BidiProtocol::resolve_batch_render(
     options.viewport,
     options.variants,
   )
-  let results_json : Array[Json] = []
-  for r in results {
-    let item : Map[String, Json] = {}
-    item["id"] = Json::string(r.id)
-    item["paintTree"] = @json.parse(r.paint_tree.to_json_string()) catch {
-      _ => Json::null()
-    }
-    results_json.push(make_object(item))
-  }
-  let out : Map[String, Json] = {}
-  out["results"] = Json::array(results_json)
-  Some(make_object(out))
+  Some(@rendering.batch_render_results_to_json(results))
 }
 
 ///|
