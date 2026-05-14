@@ -107,6 +107,159 @@ test.describe("Crater Playwright adapter package", () => {
     expect(items).toBe("one,two");
   });
 
+  test("exposes WebMCP modelContext tools to the browser-side adapter", async () => {
+    await page.setContentWithScripts(`
+      <html>
+        <body>
+          <script>
+            navigator.modelContext.registerTool({
+              name: "summarize_selection",
+              description: "Summarize selected text.",
+              inputSchema: {
+                type: "object",
+                properties: {
+                  text: { type: "string" }
+                },
+                required: ["text"]
+              },
+              annotations: {
+                readOnlyHint: true,
+                untrustedContentHint: true
+              },
+              execute: async ({ text }) => ({
+                summary: String(text).toUpperCase(),
+                href: location.href
+              })
+            });
+          </script>
+        </body>
+      </html>
+    `);
+
+    await expect(page.modelContextTools()).resolves.toEqual([
+      {
+        name: "summarize_selection",
+        description: "Summarize selected text.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            text: { type: "string" },
+          },
+          required: ["text"],
+        },
+        annotations: {
+          readOnlyHint: true,
+          untrustedContentHint: true,
+        },
+      },
+    ]);
+    await expect(
+      page.callModelContextTool("summarize_selection", { text: "crater" }),
+    ).resolves.toEqual({
+      summary: "CRATER",
+      href: "about:blank",
+    });
+  });
+
+  test("validates WebMCP tool registration and unregisters on abort", async () => {
+    await page.setContentWithScripts(`
+      <html>
+        <body>
+          <script>
+            const signal = {
+              aborted: false,
+              addEventListener(type, listener) {
+                if (type === "abort") this.abortListener = listener;
+              },
+              removeEventListener(type, listener) {
+                if (type === "abort" && this.abortListener === listener) {
+                  this.abortListener = null;
+                }
+              }
+            };
+            globalThis.__webMcpAbortSignal = signal;
+            navigator.modelContext.registerTool({
+              name: "temporary_tool",
+              description: "Temporary tool.",
+              inputSchema: { type: "object" },
+              execute: () => "alive"
+            }, { signal });
+          </script>
+        </body>
+      </html>
+    `);
+
+    await expect(page.evaluate<boolean>("navigator.modelContext === navigator.modelContext")).resolves.toBe(true);
+    await expect(page.modelContextTools()).resolves.toMatchObject([
+      { name: "temporary_tool", description: "Temporary tool." },
+    ]);
+    await expect(
+      page.evaluate<string>(`
+        (() => {
+          try {
+            navigator.modelContext.registerTool({
+              name: "temporary_tool",
+              description: "Duplicate tool.",
+              execute: () => null
+            });
+            return "missing-error";
+          } catch (error) {
+            return error.name + ":" + error.message;
+          }
+        })()
+      `),
+    ).resolves.toContain("InvalidStateError");
+
+    await page.evaluate(`
+      (() => {
+        const signal = globalThis.__webMcpAbortSignal;
+        signal.aborted = true;
+        signal.abortListener();
+      })()
+    `);
+    await expect(page.modelContextTools()).resolves.toEqual([]);
+  });
+
+  test("isolates WebMCP tool registries across browser contexts", async () => {
+    const browser = createCraterBrowser();
+    try {
+      const firstContext = await browser.newContext();
+      const secondContext = await browser.newContext();
+      const firstPage = await firstContext.newPage();
+      const secondPage = await secondContext.newPage();
+
+      await firstPage.setContentWithScripts(`
+        <script>
+          navigator.modelContext.registerTool({
+            name: "context_tool",
+            description: "First context tool.",
+            execute: () => "first"
+          });
+        </script>
+      `);
+      await secondPage.setContentWithScripts(`
+        <script>
+          navigator.modelContext.registerTool({
+            name: "context_tool",
+            description: "Second context tool.",
+            execute: () => "second"
+          });
+        </script>
+      `);
+
+      await expect(firstPage.modelContextTools()).resolves.toMatchObject([
+        { name: "context_tool", description: "First context tool." },
+      ]);
+      await expect(secondPage.modelContextTools()).resolves.toMatchObject([
+        { name: "context_tool", description: "Second context tool." },
+      ]);
+      await expect(firstPage.callModelContextTool("context_tool")).resolves.toBe("first");
+      await expect(secondPage.callModelContextTool("context_tool")).resolves.toBe("second");
+    } finally {
+      await browser.close();
+    }
+  });
+
   test("captures live DOM after page-level scripted interactions", async () => {
     await page.setViewport(120, 80);
     await page.setContent(`

@@ -187,6 +187,18 @@ const CRATER_PLAYWRIGHT_API_SUPPORT_SOURCE = [
   },
   {
     owner: "page",
+    api: "modelContextTools",
+    status: "crater-extension",
+    notes: "Lists WebMCP tools registered through navigator.modelContext in the current Crater page for browser-side agent/testing inspection.",
+  },
+  {
+    owner: "page",
+    api: "callModelContextTool",
+    status: "crater-extension",
+    notes: "Invokes a WebMCP tool registered in the current Crater page and returns the callback result through the adapter.",
+  },
+  {
+    owner: "page",
     api: "ariaSnapshot",
     status: "partial",
     notes: "Returns a lightweight accessibility tree object with common roles, names, and states for inspection parity; Playwright's full ARIA YAML format and browser accessibility tree semantics are not implemented.",

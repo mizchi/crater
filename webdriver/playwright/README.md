@@ -159,7 +159,7 @@ that only provide a limited fixture-facing shape.
 |-------|---------|---------------|
 | `browser` | 4 | Lightweight `newContext()`, `newPage()`, `contexts()`, idempotent `close()` wrapper, with partial `storageState`, `viewport`, `userAgent`, `locale`, `offline`, `geolocation`, and `permissions` option support on `newContext()`. |
 | `context` | 15 | Lightweight `newPage()`, `pages()`, best-effort `storageState()` snapshot/path writing, visible cookie APIs, context init scripts/default timeout/offline/geolocation/permission overrides, delegated `route()`/`unroute()`, idempotent `close()` over a hidden transport page. |
-| `page` | 73 | Core page, locator/frame-locator factory, navigation, keyboard, wait, partial event APIs, network, file input upload, and Crater render/debug helpers. |
+| `page` | 75 | Core page, locator/frame-locator factory, navigation, keyboard, wait, partial event APIs, network, file input upload, WebMCP inspection, and Crater render/debug helpers. |
 | `locator` | 40 | Locator chaining, nested locator factories, actions, state checks, evaluation, text extraction, and file input upload. |
 
 The supported API contract is maintained in `supported-apis.ts` and checked by
@@ -179,3 +179,19 @@ Dialogs are backed by WebDriver BiDi user prompts and support `type()`,
 are backed by WebDriver BiDi download lifecycle events and expose `url()`,
 `suggestedFilename()`, `page()`, `path()`, `failure()`, `saveAs()`, `delete()`,
 and completion-safe `cancel()`.
+
+## WebMCP Model Demo
+
+`navigator.modelContext.registerTool()` can be exercised through a small
+chat-completion tool-calling demo:
+
+```bash
+pnpm webmcp:model -- --dry-run
+OPENAI_API_KEY=... pnpm webmcp:model -- --provider openai --model gpt-4.1-mini
+OPENROUTER_API_KEY=... pnpm webmcp:openrouter -- --model openai/gpt-4o-mini
+```
+
+The demo starts Crater, registers page-owned `read_page` and `set_status`
+WebMCP tools, exposes them to the selected provider as chat-completion tools,
+executes any tool calls returned by the model through
+`page.callModelContextTool()`, then prints the final page status.

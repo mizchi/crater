@@ -8,10 +8,19 @@ import {
   type EnsureCraterBidiServerOptions,
 } from "../../scripts/crater-bidi-server.ts";
 import { resolveBidiUrl } from "../../scripts/bidi-url.ts";
+import {
+  modelContextRuntimeExpression,
+  type CraterModelContextToolCallEnvelope,
+  type CraterModelContextToolDescriptor,
+} from "./model-context.ts";
 export {
   CRATER_PLAYWRIGHT_API_SUPPORT,
   craterPlaywrightApisFor,
 } from "./supported-apis.ts";
+export type {
+  CraterModelContextToolAnnotations,
+  CraterModelContextToolDescriptor,
+} from "./model-context.ts";
 export type {
   CraterPlaywrightApiEntry,
   CraterPlaywrightApiImplementation,
@@ -2977,6 +2986,7 @@ export class CraterBidiPage {
     }, closeHandler);
     const resp = await this.sendBidi("browsingContext.create", { type: "tab" });
     page.contextId = (resp.result as { context: string }).context;
+    await page.installModelContextRuntime({ resetRegistry: true });
     return page;
   }
 
@@ -3039,6 +3049,7 @@ export class CraterBidiPage {
 
   async setContent(html: string): Promise<void> {
     await this.prepareRuntimeDocumentForLoad();
+    await this.installModelContextRuntime({ resetRegistry: true });
     await this.syncRuntimeLocation("about:blank");
     await this.evaluate(`__loadHTML(${jsString(html)})`);
     await this.evaluate(`globalThis.__craterInstallScrollingStubs && globalThis.__craterInstallScrollingStubs()`);
@@ -3069,6 +3080,7 @@ export class CraterBidiPage {
   ): Promise<CraterPageLoadResult> {
     const executeScripts = options.executeScripts !== false;
     await this.prepareRuntimeDocumentForLoad({ resetWindow: true });
+    await this.installModelContextRuntime({ resetRegistry: true });
     await this.ensureNetworkHooksReady();
     const json = await this.evaluate<string>(
       `(async () => {
@@ -5174,6 +5186,27 @@ export class CraterBidiPage {
     `);
   }
 
+  async modelContextTools(): Promise<CraterModelContextToolDescriptor[]> {
+    await this.installModelContextRuntime();
+    return await this.evaluate<CraterModelContextToolDescriptor[]>(
+      "globalThis.__craterListModelContextTools()",
+    );
+  }
+
+  async callModelContextTool<T = unknown>(name: string, input?: unknown): Promise<T> {
+    await this.installModelContextRuntime();
+    const envelope = await this.evaluate<CraterModelContextToolCallEnvelope<T>>(
+      `(async () => await globalThis.__craterCallModelContextTool(${jsString(name)}, ${jsValue(input)}))()`,
+      { awaitPromise: true },
+    );
+    if (!envelope.ok) {
+      const error = new Error(envelope.error.message);
+      error.name = envelope.error.name;
+      throw error;
+    }
+    return envelope.value;
+  }
+
   async setViewport(width: number, height: number): Promise<void> {
     await this.sendBidi("browsingContext.setViewport", {
       context: this.requireContextId(),
@@ -5862,6 +5895,7 @@ export class CraterBidiPage {
             try {
               const resp = await this.sendBidi("browsingContext.create", { type: "tab" });
               this.contextId = (resp.result as { context: string }).context;
+              await this.installModelContextRuntime({ resetRegistry: true });
               clearTimeout(timer);
               resolve();
             } catch (error) {
@@ -5880,6 +5914,12 @@ export class CraterBidiPage {
           reject(error);
         });
     });
+  }
+
+  private async installModelContextRuntime(
+    options: { resetRegistry?: boolean } = {},
+  ): Promise<void> {
+    await this.evaluate(modelContextRuntimeExpression(options));
   }
 
   private async requestComputedStyles(params: Record<string, unknown>): Promise<Record<string, string>> {

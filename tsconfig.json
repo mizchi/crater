@@ -17,6 +17,7 @@
     "scripts/crater-bidi-server.ts",
     "scripts/luna-vrt-reference.ts",
     "scripts/vrt-url.ts",
-    "scripts/crater-playwright-smoke.ts"
+    "scripts/crater-playwright-smoke.ts",
+    "scripts/webmcp-openrouter-demo.ts"
   ]
 }

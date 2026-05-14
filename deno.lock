@@ -2134,6 +2134,7 @@
     "packageJson": {
       "dependencies": [
         "npm:@bytecodealliance/jco@^1.17.6",
+        "npm:@mizchi/flaker@0.12.6",
         "npm:@playwright/test@^1.59.1",
         "npm:@types/ws@^8.18.1",
         "npm:pixelmatch@^7.1.0",

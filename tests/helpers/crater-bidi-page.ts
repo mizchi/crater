@@ -16,6 +16,7 @@ export type {
   CraterBidiConnectOptions,
   CraterEvaluateOptions,
   CraterLoadState,
+  CraterModelContextToolDescriptor,
   CraterRequestMatcher,
   CraterResponseMatcher,
   CraterRouteContinueOptions,
