@@ -8,6 +8,7 @@ describe("MoonBit WebDriver boundary test organization", () => {
     const splitTestFiles = [
       "scripts/moon-module-boundary-webdriver-facade.test.ts",
       "scripts/moon-module-boundary-webdriver-protocol.test.ts",
+      "scripts/moon-module-boundary-webdriver-rendering.test.ts",
       "scripts/moon-module-boundary-webdriver-runtime.test.ts",
       "scripts/moon-module-boundary-webdriver-tests.test.ts",
     ] as const;

@@ -1,0 +1,72 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-webdriver-bidi/rendering"
+
+import {
+  "mizchi/crater-browser/tui/paint/export",
+  "mizchi/crater-layout/node",
+  "mizchi/crater-layout/types",
+}
+
+// Values
+pub fn actual_paint_document_dimensions_from_node_and_layout(@node.Node, @types.Layout, Int, Int) -> (Int, Int)
+
+pub fn actual_paint_layout_content_bottom(@types.Layout) -> Double
+
+pub fn actual_paint_layout_content_right(@types.Layout) -> Double
+
+pub fn capture_timing_to_json(PaintCaptureTiming) -> Json
+
+pub fn capture_visual_to_json(@export.VisualStats) -> Json
+
+pub fn is_valid_print_page_range(String) -> Bool
+
+pub fn normalize_capture_screenshot_options(Map[String, Json]) -> Result[CaptureScreenshotOptions, RenderingValidationError]
+
+pub fn normalize_print_options(Map[String, Json]) -> Result[PrintOptions, RenderingValidationError]
+
+pub fn should_use_font_aware_text_provider(String) -> Bool
+
+// Errors
+
+// Types and methods
+pub(all) enum CaptureScreenshotClip {
+  NoClip
+  ElementClip(String)
+  BoxClip(width~ : Double, height~ : Double)
+}
+
+pub(all) struct CaptureScreenshotOptions {
+  origin : String
+  clip : CaptureScreenshotClip
+}
+
+pub(all) struct PaintCaptureTiming {
+  node_layout_ms : Int
+  paint_tree_ms : Int
+  raster_ms : Int
+  png_encode_ms : Int
+  rgba_encode_ms : Int
+  total_ms : Int
+}
+
+pub(all) struct PrintOptions {
+  orientation : String
+  page_width_cm : Double
+  page_height_cm : Double
+  printable_width_cm : Double
+  printable_height_cm : Double
+  background : Bool
+}
+
+pub(all) enum RenderingValidationError {
+  InvalidArgument(String)
+  UnsupportedOperation(String)
+  UnableToCaptureScreen(String)
+}
+pub fn RenderingValidationError::message(Self) -> String
+pub fn RenderingValidationError::name(Self) -> String
+
+// Type aliases
+
+// Traits
+

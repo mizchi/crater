@@ -183,6 +183,25 @@ describe("MoonBit WebDriver facade and contract boundaries", () => {
     expect(validationFacade).not.toContain("lhs.to_array()");
   });
 
+  it("keeps protocol-neutral JSON number validation in protocol helpers", () => {
+    const protocolSource = read("webdriver/protocol/validation_shared.mbt");
+    expect(protocolSource).toContain("pub fn json_as_safe_int");
+    expect(protocolSource).toContain("pub fn json_as_safe_number");
+
+    const validationFacade = read("webdriver/webdriver/bidi_protocol_validation_shared.mbt");
+    expect(validationFacade).toContain("@protocol.json_as_safe_int");
+    expect(validationFacade).toContain("@protocol.json_as_safe_number");
+
+    const implementationSources = [
+      "webdriver/webdriver/bidi_protocol_input_helpers.mbt",
+      "webdriver/webdriver/bidi_protocol_browsing_context_print.mbt",
+      "webdriver/webdriver/bidi_protocol_browsing_context_screenshot.mbt",
+    ].map(read).join("\n");
+    for (const marker of ["fn json_as_safe_int", "fn json_as_safe_number"] as const) {
+      expect(implementationSources).not.toContain(marker);
+    }
+  });
+
   it("keeps BiDi wire message parsing and serialization behind protocol wire", () => {
     const expectedWireFiles = [
       "webdriver/protocol/wire/moon.pkg",

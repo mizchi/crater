@@ -16,7 +16,7 @@ Last organized: 2026-05-14
     - `webdriver/protocol`: BiDi command validation / dispatch table / event construction を、pure helper と wire serializer から順に分離する
     - `webdriver/protocol` / `webdriver/browser_domain`: intercept / fetch / cookie / storage / network event payload のうち BiDi 固有処理を分離する
     - `webdriver/browser_domain`: bluetooth / emulation / geolocation / permissions / screen / web extension など synthetic domain
-    - `webdriver/rendering`: screenshot / print / actual paint / VRT bridge
+    - `webdriver/rendering`: screenshot / print / actual paint / VRT bridge（param validation / actual paint pure helpers は分離済み。次は JS provider / raster orchestration / VRT glue）
     - `webdriver/server`: WebSocket transport / server state / session wiring
   - 外部化方針: `mizchi/font` は glyph provider / cache / rasterize / layout の実装責務、`mizchi/svg` は SVG primitive / scene / raster math の実装責務を持ち、crater 側は compatibility adapter に寄せる
 - [ ] `painter/svg` facade の直接 re-export 候補を棚卸しする
@@ -29,7 +29,7 @@ Last organized: 2026-05-14
   - bitmap font fallback と glyph path render の責務境界をさらに見直す
   - `mizchi/font` / `mizchi/svg` へ委譲できる処理は crater 側を adapter にする
 - [ ] 最新の split に対応する boundary guard を追加・更新する
-  - SVG interop adapter の file-size guard は追加済み。次は painter raster / browser / webdriver の split 状況を確認する
+  - SVG interop adapter と WebDriver rendering param validation の guard は追加済み。次は painter raster / browser / 残り WebDriver domain の split 状況を確認する
   - `scripts/moon-module-boundary.test.ts` 系の domain guard が、renderer / painter / browser / webdriver の現状を正しく見ているか確認する
   - 巨大 core への逆流を検出する file-size / symbol boundary を維持する
 - [ ] `scripts/flaker-*` / `docs/flaker-runbook.md` の ownership と TODO を同期する

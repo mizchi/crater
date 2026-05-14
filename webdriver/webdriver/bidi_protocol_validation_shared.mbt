@@ -7,6 +7,16 @@ fn parse_decimal_string(value : String) -> Int? {
 }
 
 ///|
+fn json_as_safe_int(value : Json, min : Double, max : Double) -> Int? {
+  @protocol.json_as_safe_int(value, min, max)
+}
+
+///|
+fn json_as_safe_number(value : Json, min : Double, max : Double) -> Double? {
+  @protocol.json_as_safe_number(value, min, max)
+}
+
+///|
 fn is_ascii_alpha(c : Char) -> Bool {
   @protocol.is_ascii_alpha(c)
 }

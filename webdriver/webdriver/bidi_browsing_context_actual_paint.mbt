@@ -328,17 +328,6 @@ fn parse_csv_quad(s : String) -> (Double, Double, Double, Double)? {
 }
 
 ///|
-fn should_use_font_aware_text_provider(font_family : String) -> Bool {
-  let normalized = font_family.trim().to_lower()
-  normalized.length() > 0 &&
-  normalized != "inherit" &&
-  normalized != "initial" &&
-  normalized != "unset" &&
-  normalized != "revert" &&
-  normalized != "revert-layer"
-}
-
-///|
 fn ensure_paint_text_provider() -> Unit {
   if has_paint_text_provider() {
     let provider = @renderer.TextMetricsProvider::new(fn(
@@ -356,7 +345,7 @@ fn ensure_paint_text_provider() -> Unit {
       let ff = font_family
       {
         func: fn(available_width, available_height) {
-          let payload = if should_use_font_aware_text_provider(ff) {
+          let payload = if @rendering.should_use_font_aware_text_provider(ff) {
             let multi = call_font_aware_text_provider(
               text, font_size, line_height, ws, wm, available_width, available_height,
               ff, is_bold,
@@ -434,22 +423,12 @@ extern "js" fn js_log_stderr(msg : String) -> Unit =
   #|(msg) => { console.error("[paint] " + msg); }
 
 ///|
-priv struct PaintCaptureTiming {
-  node_layout_ms : Int
-  paint_tree_ms : Int
-  raster_ms : Int
-  png_encode_ms : Int
-  rgba_encode_ms : Int
-  total_ms : Int
-}
-
-///|
 priv struct PaintCaptureFrame {
   width : Int
   height : Int
   framebuffer : @tui_paint_export.Framebuffer
   palette : @tui_paint_export.DynamicPalette
-  timing : PaintCaptureTiming
+  timing : @rendering.PaintCaptureTiming
   visual : @tui_paint_export.VisualStats?
 }
 
@@ -614,28 +593,6 @@ fn ensure_paint_provider_initialized() -> Unit {
 }
 
 ///|
-fn capture_timing_to_json(timing : PaintCaptureTiming) -> Json {
-  make_object({
-    "nodeLayoutMs": Json::number(timing.node_layout_ms.to_double()),
-    "paintTreeMs": Json::number(timing.paint_tree_ms.to_double()),
-    "rasterMs": Json::number(timing.raster_ms.to_double()),
-    "pngEncodeMs": Json::number(timing.png_encode_ms.to_double()),
-    "rgbaEncodeMs": Json::number(timing.rgba_encode_ms.to_double()),
-    "totalMs": Json::number(timing.total_ms.to_double()),
-  })
-}
-
-///|
-fn capture_visual_to_json(visual : @tui_paint_export.VisualStats) -> Json {
-  make_object({
-    "pixelCount": Json::number(visual.pixel_count.to_double()),
-    "nonWhitePixels": Json::number(visual.non_white_pixels.to_double()),
-    "distinctColors": Json::number(visual.distinct_colors.to_double()),
-    "isBlank": Json::boolean(visual.is_blank),
-  })
-}
-
-///|
 fn capture_current_paint_html() -> String {
   let html_json = evaluate_js(capture_paint_source_html_expr())
   extract_string_value_from_evaluate_result(html_json)
@@ -649,168 +606,6 @@ fn BidiProtocol::resolve_actual_paint_viewport_dimensions(
   let viewport_width = self.resolve_effective_viewport_width(ctx_id)
   let viewport_height = self.resolve_effective_viewport_height(ctx_id)
   (viewport_width, viewport_height)
-}
-
-///|
-fn actual_paint_layout_content_right(layout : @types.Layout) -> Double {
-  let mut right = layout.x + layout.width
-  match layout.overflow_x {
-    @types.Visible => {
-      let scroll_right = layout.x + layout.scroll_width
-      if scroll_right > right {
-        right = scroll_right
-      }
-      for child in layout.children {
-        let child_right = actual_paint_layout_content_right(child)
-        if child_right > right {
-          right = child_right
-        }
-      }
-    }
-    _ => ()
-  }
-  right
-}
-
-///|
-fn actual_paint_layout_content_bottom(layout : @types.Layout) -> Double {
-  let mut bottom = layout.y + layout.height
-  match layout.overflow_y {
-    @types.Visible => {
-      let scroll_bottom = layout.y + layout.scroll_height
-      if scroll_bottom > bottom {
-        bottom = scroll_bottom
-      }
-      for child in layout.children {
-        let child_bottom = actual_paint_layout_content_bottom(child)
-        if child_bottom > bottom {
-          bottom = child_bottom
-        }
-      }
-    }
-    _ => ()
-  }
-  bottom
-}
-
-///|
-fn actual_paint_node_contributes_document_overflow(node : @node.Node) -> Bool {
-  node.style.position != @types.Fixed
-}
-
-///|
-fn actual_paint_node_subtree_has_fixed_positioned(node : @node.Node) -> Bool {
-  if node.style.position == @types.Fixed {
-    return true
-  }
-  for child in node.children {
-    if actual_paint_node_subtree_has_fixed_positioned(child) {
-      return true
-    }
-  }
-  false
-}
-
-///|
-fn actual_paint_node_layout_child(
-  node : @node.Node,
-  index : Int,
-) -> @node.Node? {
-  if index < node.children.length() {
-    Some(node.children[index])
-  } else {
-    None
-  }
-}
-
-///|
-fn actual_paint_node_layout_content_right(
-  node : @node.Node,
-  layout : @types.Layout,
-) -> Double {
-  if !actual_paint_node_contributes_document_overflow(node) {
-    return 0.0
-  }
-  let mut right = layout.x + layout.width
-  match layout.overflow_x {
-    @types.Visible => {
-      if !actual_paint_node_subtree_has_fixed_positioned(node) {
-        let scroll_right = layout.x + layout.scroll_width
-        if scroll_right > right {
-          right = scroll_right
-        }
-      }
-      for i, child_layout in layout.children {
-        let child_right = match actual_paint_node_layout_child(node, i) {
-          Some(child_node) =>
-            actual_paint_node_layout_content_right(child_node, child_layout)
-          None => actual_paint_layout_content_right(child_layout)
-        }
-        if child_right > right {
-          right = child_right
-        }
-      }
-    }
-    _ => ()
-  }
-  right
-}
-
-///|
-fn actual_paint_node_layout_content_bottom(
-  node : @node.Node,
-  layout : @types.Layout,
-) -> Double {
-  if !actual_paint_node_contributes_document_overflow(node) {
-    return 0.0
-  }
-  let collapsed_top_margin = if layout.y == 0.0 && layout.margin.top > 0.0 {
-    layout.margin.top
-  } else {
-    0.0
-  }
-  let mut bottom = layout.y +
-    collapsed_top_margin +
-    layout.height +
-    layout.margin.bottom
-  match layout.overflow_y {
-    @types.Visible => {
-      if !actual_paint_node_subtree_has_fixed_positioned(node) {
-        let scroll_bottom = layout.y + layout.scroll_height
-        if scroll_bottom > bottom {
-          bottom = scroll_bottom
-        }
-      }
-      for i, child_layout in layout.children {
-        let child_bottom = match actual_paint_node_layout_child(node, i) {
-          Some(child_node) =>
-            actual_paint_node_layout_content_bottom(child_node, child_layout)
-          None => actual_paint_layout_content_bottom(child_layout)
-        }
-        if child_bottom > bottom {
-          bottom = child_bottom
-        }
-      }
-    }
-    _ => ()
-  }
-  bottom
-}
-
-///|
-fn actual_paint_document_dimensions_from_node_and_layout(
-  node : @node.Node,
-  layout : @types.Layout,
-  viewport_width : Int,
-  viewport_height : Int,
-) -> (Int, Int) {
-  let width = actual_paint_node_layout_content_right(node, layout)
-    .ceil()
-    .to_int()
-  let height = actual_paint_node_layout_content_bottom(node, layout)
-    .ceil()
-    .to_int()
-  (width.max(viewport_width).max(1), height.max(viewport_height).max(1))
 }
 
 ///|
@@ -838,7 +633,7 @@ fn BidiProtocol::build_actual_paint_frame(
   }
   let t1 = js_now_ms()
   let (width, height) = if origin == "document" {
-    actual_paint_document_dimensions_from_node_and_layout(
+    @rendering.actual_paint_document_dimensions_from_node_and_layout(
       node, layout, viewport_width, viewport_height,
     )
   } else {
@@ -1007,7 +802,7 @@ fn BidiProtocol::resolve_capture_paint_data(
     frame.palette,
   )
   let t_encode1 = js_now_ms()
-  let timing : PaintCaptureTiming = {
+  let timing : @rendering.PaintCaptureTiming = {
     ..frame.timing,
     rgba_encode_ms: t_encode1 - t_encode0,
     total_ms: frame.timing.total_ms + (t_encode1 - t_encode0),
@@ -1033,8 +828,8 @@ fn BidiProtocol::resolve_capture_paint_data(
       "width": Json::number(frame.width.to_double()),
       "height": Json::number(frame.height.to_double()),
       "data": Json::string(data),
-      "timing": capture_timing_to_json(timing),
-      "visual": capture_visual_to_json(visual),
+      "timing": @rendering.capture_timing_to_json(timing),
+      "visual": @rendering.capture_visual_to_json(visual),
     }),
   )
 }
@@ -1102,7 +897,7 @@ fn BidiProtocol::try_resolve_actual_capture_screenshot_data(
     frame.palette,
   )
   let t_encode1 = js_now_ms()
-  let timing : PaintCaptureTiming = {
+  let timing : @rendering.PaintCaptureTiming = {
     ..frame.timing,
     png_encode_ms: t_encode1 - t_encode0,
     total_ms: frame.timing.total_ms + (t_encode1 - t_encode0),
@@ -1225,7 +1020,7 @@ fn BidiProtocol::resolve_capture_paint_tree(
     @renderer.render_to_node_and_layout(html, ctx)
   }
   let (paint_width, paint_height) = if origin == "document" {
-    actual_paint_document_dimensions_from_node_and_layout(
+    @rendering.actual_paint_document_dimensions_from_node_and_layout(
       node, layout, width, height,
     )
   } else {

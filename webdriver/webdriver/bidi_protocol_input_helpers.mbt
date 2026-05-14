@@ -235,29 +235,6 @@ fn abs_double(value : Double) -> Double {
 }
 
 ///|
-/// Parse safe integer JSON value.
-fn json_as_safe_int(value : Json, min : Double, max : Double) -> Int? {
-  match value {
-    Number(n, ..) =>
-      if n == n.to_int64().to_double() && n >= min && n <= max {
-        Some(n.to_int64().to_int())
-      } else {
-        None
-      }
-    _ => None
-  }
-}
-
-///|
-/// Parse safe JSON number value.
-fn json_as_safe_number(value : Json, min : Double, max : Double) -> Double? {
-  match value {
-    Number(n, ..) => if n >= min && n <= max { Some(n) } else { None }
-    _ => None
-  }
-}
-
-///|
 /// Normalize WebDriver special key value for internal state tracking.
 fn normalize_input_key(value : String) -> String {
   match value {

@@ -16,6 +16,29 @@ pub fn parse_decimal_string(value : String) -> Int? {
 }
 
 ///|
+/// Parse safe integer JSON value.
+pub fn json_as_safe_int(value : Json, min : Double, max : Double) -> Int? {
+  match value {
+    Number(n, ..) =>
+      if n == n.to_int64().to_double() && n >= min && n <= max {
+        Some(n.to_int64().to_int())
+      } else {
+        None
+      }
+    _ => None
+  }
+}
+
+///|
+/// Parse safe JSON number value.
+pub fn json_as_safe_number(value : Json, min : Double, max : Double) -> Double? {
+  match value {
+    Number(n, ..) => if n >= min && n <= max { Some(n) } else { None }
+    _ => None
+  }
+}
+
+///|
 /// ASCII alphabetic helper.
 pub fn is_ascii_alpha(c : Char) -> Bool {
   (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')

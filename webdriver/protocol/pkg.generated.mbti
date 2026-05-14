@@ -30,6 +30,10 @@ pub fn is_ascii_alpha(Char) -> Bool
 
 pub fn is_ascii_case_insensitive_equal(String, String) -> Bool
 
+pub fn json_as_safe_int(Json, Double, Double) -> Int?
+
+pub fn json_as_safe_number(Json, Double, Double) -> Double?
+
 pub fn make_object(Map[String, Json]) -> Json
 
 pub fn parse_decimal_string(String) -> Int?

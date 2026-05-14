@@ -62,3 +62,29 @@ test "decimal and ascii helpers" {
   assert_true(is_ascii_case_insensitive_equal("Content-Type", "content-type"))
   assert_false(is_ascii_case_insensitive_equal("Content-Type", "content-type2"))
 }
+
+///|
+test "safe json number validation keeps non-numeric and out-of-range values out" {
+  debug_inspect(
+    json_as_safe_number(Json::number(1.5), 0.0, 2.0),
+    content="Some(1.5)",
+  )
+  debug_inspect(
+    json_as_safe_number(Json::number(-1.0), 0.0, 2.0),
+    content="None",
+  )
+  debug_inspect(
+    json_as_safe_number(Json::string("1"), 0.0, 2.0),
+    content="None",
+  )
+}
+
+///|
+test "safe json int validation requires integer numbers inside range" {
+  debug_inspect(
+    json_as_safe_int(Json::number(2.0), 0.0, 3.0),
+    content="Some(2)",
+  )
+  debug_inspect(json_as_safe_int(Json::number(2.5), 0.0, 3.0), content="None")
+  debug_inspect(json_as_safe_int(Json::number(4.0), 0.0, 3.0), content="None")
+}

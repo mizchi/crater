@@ -1,0 +1,9 @@
+import {
+  "mizchi/crater-webdriver-bidi/protocol" @protocol,
+  "mizchi/crater-browser/tui/paint/export" @tui_paint_export,
+  "mizchi/crater-layout/node" @node,
+  "mizchi/crater-layout/types" @types,
+  "moonbitlang/core/json",
+}
+
+supported_targets = "js"
