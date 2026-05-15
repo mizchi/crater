@@ -72,6 +72,35 @@ tests {
     }
   }
   new {
+    name = "pkfire_prepares_node_contract_artifacts"
+    description =
+      "The node:test contract suite should build clean CI artifacts before importing package dist files."
+    tags { "pkfire"; "node"; "contract" }
+    specRef { "task.test" }
+    workdir = ".."
+    cmd = allGraphJson
+    expectStdoutJsonPath {
+      [graphTaskPath(test.buildJsPackage.name, "name")] = test.buildJsPackage.name
+      [graphTaskPath(test.buildJsPackage.name, "visibility")] = "internal"
+    }
+    expectStdoutContains {
+      "\"outputs\": ["
+      "\"js/dist/**\""
+      "\"deps\": ["
+      "\"build-js-package\","
+      "\"test-wasm\""
+    }
+  }
+  new {
+    name = "pnpm_workspace_includes_browser_package"
+    description =
+      "Root pnpm install should materialize browser package dependencies before affected test-node runs."
+    tags { "pnpm"; "ci"; "node" }
+    specRef { "task.test" }
+    workdir = ".."
+    cmd = "grep -Fq -- \"  - browser\" pnpm-workspace.yaml"
+  }
+  new {
     name = "pkfire_lists_bench_task"
     description = "Benchmark smoke and baseline checks should stay grouped under bench."
     tags { "pkfire"; "smoke" }
@@ -244,6 +273,6 @@ tests {
     specRef { "ci.affected" }
     workdir = ".."
     cmd =
-      "bash -lc 'set -e; for p in \"mizchi/pkfire@v0.10.0\" \"mizchi/pkspec@v0.1.8\" \"actions/cache@v4\" \"PKFIRE_CACHE_DIR\" \"~/.pkl/cache\" \"pkf pkl-cache warm\" \"scripts/ci/pkfire-affected-base.sh\" \"pkf affected\" \"--profile=ci\" \"check test test-taffy test-wasm test-native-smoke\"; do grep -Fq -- \"$p\" .github/workflows/ci.yml; done'"
+      "bash -lc 'set -e; for p in \"mizchi/pkfire@v0.10.0\" \"mizchi/pkspec@v0.1.8\" \"actions/cache@v4\" \"PKFIRE_CACHE_DIR\" \"~/.pkl/cache\" \"pkf pkl-cache warm\" \"scripts/ci/pkfire-affected-base.sh\" \"pkf affected\" \"-j 1\" \"--profile=ci\" \"check test test-taffy test-wasm test-native-smoke\"; do grep -Fq -- \"$p\" .github/workflows/ci.yml; done'"
   }
 }

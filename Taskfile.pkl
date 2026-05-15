@@ -103,9 +103,11 @@ workflowTests {
       spec.specDocs.name
       spec.specTest.name
       spec.spec.name
+      test.buildJsPackage.name
       test.testMoon.name
-      test.testNode.name
       test.testVitest.name
+      test.testWasm.name
+      test.testNode.name
       test.test.name
     }
   }
