@@ -118,6 +118,10 @@ function asFiniteNumber(value: unknown): number | undefined {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
+function asNonEmptyString(value: unknown): string | undefined {
+  return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
 function asStatus(value: unknown): VrtArtifactStatus | undefined {
   return value === "pass" || value === "fail" || value === "unknown" ? value : undefined;
 }
@@ -364,6 +368,17 @@ export function buildStableVrtIdentity(input: {
   };
 }
 
+export function normalizeVrtStableIdentity(input: {
+  taskId?: string;
+  spec?: string;
+  filter?: string;
+  title: string;
+  variant?: Record<string, string> | null;
+  shard?: string;
+}): VrtStableIdentity {
+  return buildStableVrtIdentity(input);
+}
+
 export function createVrtArtifactReportContext(
   input: CreateVrtArtifactReportContextInput,
 ): VrtArtifactReportContext {
@@ -451,7 +466,7 @@ export function asNormalizedVrtArtifactReport(value: unknown): NormalizedVrtArti
     return null;
   }
   const identityRecord = asRecord(record.identity);
-  if (!identityRecord || typeof identityRecord.key !== "string" || typeof identityRecord.title !== "string") {
+  if (!identityRecord || typeof identityRecord.title !== "string") {
     return null;
   }
   const metadataRecord = asRecord(record.metadata);
@@ -468,15 +483,14 @@ export function asNormalizedVrtArtifactReport(value: unknown): NormalizedVrtArti
     suite: "vrt-artifact",
     status,
     title: record.title,
-    identity: {
-      key: identityRecord.key,
-      taskId: typeof identityRecord.taskId === "string" ? identityRecord.taskId : undefined,
-      spec: typeof identityRecord.spec === "string" ? identityRecord.spec : undefined,
-      filter: typeof identityRecord.filter === "string" ? identityRecord.filter : undefined,
+    identity: normalizeVrtStableIdentity({
+      taskId: asNonEmptyString(identityRecord.taskId),
+      spec: asNonEmptyString(identityRecord.spec),
+      filter: asNonEmptyString(identityRecord.filter),
       title: identityRecord.title,
       variant: asStringRecord(identityRecord.variant) ?? {},
-      shard: typeof identityRecord.shard === "string" ? identityRecord.shard : undefined,
-    },
+      shard: asNonEmptyString(identityRecord.shard),
+    }),
     durationMs: asFiniteNumber(record.durationMs),
     artifacts,
     metadata,
@@ -529,13 +543,7 @@ export function readVrtArtifactTitle(
 }
 
 export function readVrtArtifactIdentityKey(value: unknown): string | undefined {
-  const normalized = asNormalizedVrtArtifactReport(value);
-  if (normalized) {
-    return normalized.identity.key;
-  }
-  const record = asRecord(value);
-  const identityRecord = asRecord(record?.identity);
-  return typeof identityRecord?.key === "string" ? identityRecord.key : undefined;
+  return readVrtArtifactIdentity(value)?.key;
 }
 
 export function readVrtArtifactIdentity(value: unknown): VrtStableIdentity | undefined {
@@ -547,20 +555,18 @@ export function readVrtArtifactIdentity(value: unknown): VrtStableIdentity | und
   const identityRecord = asRecord(record?.identity);
   if (
     !identityRecord
-    || typeof identityRecord.key !== "string"
     || typeof identityRecord.title !== "string"
   ) {
     return undefined;
   }
-  return {
-    key: identityRecord.key,
-    taskId: typeof identityRecord.taskId === "string" ? identityRecord.taskId : undefined,
-    spec: typeof identityRecord.spec === "string" ? identityRecord.spec : undefined,
-    filter: typeof identityRecord.filter === "string" ? identityRecord.filter : undefined,
+  return normalizeVrtStableIdentity({
+    taskId: asNonEmptyString(identityRecord.taskId),
+    spec: asNonEmptyString(identityRecord.spec),
+    filter: asNonEmptyString(identityRecord.filter),
     title: identityRecord.title,
     variant: asStringRecord(identityRecord.variant) ?? {},
-    shard: typeof identityRecord.shard === "string" ? identityRecord.shard : undefined,
-  };
+    shard: asNonEmptyString(identityRecord.shard),
+  });
 }
 
 export function readVrtArtifactDurationMs(value: unknown): number | undefined {

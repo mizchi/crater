@@ -205,6 +205,18 @@ just flaker batch summary flaker-daily-artifacts
 
 この層は `crater` の repo layout と renderer domain に依存する。
 
+## VRT shared identity contract
+
+`vrt-report-contract.ts` は `crater` / `vrt-harness` の共有境界として扱う。
+
+- stable identity は `@mizchi/flaker/reporting/stable-test-identity` の key builder を使う
+- key の入力は `taskId + spec + filter + variant + optional shard`
+- `filter` がある場合、`title` は表示名であり key には入れない
+- external harness が `identity.key` を渡しても crater 側で canonical fields から再計算する
+- external harness は `identity.key` を省略できる。`identity.title` と canonical fields があれば crater が key を補完する
+
+VRT 固有の `diffRatio` / `threshold` / `backend` / `viewport` / `snapshotKind` は `metadata` として crater domain に残し、`flaker` core には stable identity と集約済み summary だけを渡す。
+
 ## 参照順
 
 1. `justfile`

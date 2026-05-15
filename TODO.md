@@ -97,6 +97,7 @@ Last organized: 2026-05-14
 - [ ] stable test identity を `crater` / `flaker` / `vrt-harness` で共有する
   - 候補: `taskId + spec + filter + variant + optional shard`
   - upstream issue: `mizchi/flaker#8`
+  - crater VRT artifact contract は `@mizchi/flaker/reporting/stable-test-identity` を使い、external harness の `identity.key` は canonical fields から再計算する。`identity.key` 省略 payload も受け入れ済み
 - [ ] `flaker core` と crater domain metadata の境界を固定する
   - core: selection / quarantine / summary / diff
   - crater: VRT 固有メトリクス (`diffRatio`, `threshold`, `backend`, `viewport`, `snapshotKind`)

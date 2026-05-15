@@ -6,6 +6,7 @@ import {
   createNormalizedVrtArtifactReport,
   inferVrtStableFilter,
   inferVrtSnapshotKind,
+  readVrtArtifactIdentityKey,
   readVrtArtifactStatus,
 } from "./vrt-report-contract.ts";
 
@@ -331,7 +332,7 @@ describe("vrt report contract", () => {
       status: "pass",
       title: "fixture-card",
       identity: {
-        key: "identity-key",
+        key: "{\"title\":\"fixture-card\",\"variant\":{\"backend\":\"sixel\"}}",
       },
       metadata: {
         diffRatio: 0.04,
@@ -339,6 +340,106 @@ describe("vrt report contract", () => {
         backend: "sixel",
       },
     });
+    expect(report?.identity.key).toBe(
+      "{\"title\":\"fixture-card\",\"variant\":{\"backend\":\"sixel\"}}",
+    );
+  });
+
+  it("recomputes external harness identity keys from canonical fields", () => {
+    const report = asNormalizedVrtArtifactReport({
+      schemaVersion: 1,
+      suite: "vrt-artifact",
+      status: "pass",
+      title: "renamed display title",
+      identity: {
+        key: "vrt-harness-local-key",
+        taskId: "paint-vrt",
+        spec: "tests/paint-vrt.test.ts",
+        filter: "https://example.com/",
+        title: "renamed display title",
+        variant: {
+          snapshotKind: "url",
+          backend: "native",
+        },
+      },
+      artifacts: {},
+      metadata: {
+        diffRatio: 0.04,
+        maxDiffRatio: 0.15,
+      },
+    });
+
+    expect(report?.identity.key).toBe(
+      "{\"taskId\":\"paint-vrt\",\"spec\":\"tests/paint-vrt.test.ts\",\"filter\":\"https://example.com/\",\"variant\":{\"backend\":\"native\",\"snapshotKind\":\"url\"}}",
+    );
+  });
+
+  it("accepts external harness payloads that omit precomputed identity keys", () => {
+    const report = asNormalizedVrtArtifactReport({
+      schemaVersion: 1,
+      suite: "vrt-artifact",
+      status: "pass",
+      title: "component button primary",
+      identity: {
+        taskId: "component-vrt",
+        spec: "component-vrt.json",
+        filter: "button-primary",
+        title: "component button primary",
+        variant: {
+          backend: "crater",
+          snapshotKind: "component",
+          viewport: "800x600",
+        },
+      },
+      artifacts: {},
+      metadata: {
+        diffRatio: 0.01,
+        maxDiffRatio: 0.05,
+      },
+    });
+
+    expect(report?.identity.key).toBe(
+      "{\"taskId\":\"component-vrt\",\"spec\":\"component-vrt.json\",\"filter\":\"button-primary\",\"variant\":{\"backend\":\"crater\",\"snapshotKind\":\"component\",\"viewport\":\"800x600\"}}",
+    );
+  });
+
+  it("recomputes legacy report identity keys from canonical fields", () => {
+    expect(readVrtArtifactIdentityKey({
+      title: "fixture-card display title",
+      diffRatio: 0.04,
+      identity: {
+        key: "legacy-local-key",
+        taskId: "paint-vrt",
+        spec: "tests/paint-vrt.test.ts",
+        filter: "fixture-card",
+        title: "fixture-card display title",
+        variant: {
+          snapshotKind: "fixture",
+          backend: "native",
+        },
+      },
+    })).toBe(
+      "{\"taskId\":\"paint-vrt\",\"spec\":\"tests/paint-vrt.test.ts\",\"filter\":\"fixture-card\",\"variant\":{\"backend\":\"native\",\"snapshotKind\":\"fixture\"}}",
+    );
+  });
+
+  it("accepts legacy report identities that omit precomputed keys", () => {
+    expect(readVrtArtifactIdentityKey({
+      title: "fixture-card display title",
+      diffRatio: 0.04,
+      identity: {
+        taskId: "paint-vrt",
+        spec: "tests/paint-vrt.test.ts",
+        filter: "fixture-card",
+        title: "fixture-card display title",
+        variant: {
+          backend: "native",
+          snapshotKind: "fixture",
+        },
+      },
+    })).toBe(
+      "{\"taskId\":\"paint-vrt\",\"spec\":\"tests/paint-vrt.test.ts\",\"filter\":\"fixture-card\",\"variant\":{\"backend\":\"native\",\"snapshotKind\":\"fixture\"}}",
+    );
   });
 
   it("rejects normalized vrt-artifact payloads when diffRatio is missing", () => {
