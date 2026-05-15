@@ -40,7 +40,9 @@ fixtures/
 wpt-tests/**/support/
 .wpt-safe-subset-cache.json
 
-# Real-world site downloads (regenerate with npm run download)
+# Real-world site downloads (regenerate with `just download-real-world-batch`).
+# `example-com` is the one snapshot pinned to repo state because
+# `tests/paint-vrt.test.ts` runs against it as a fixed visual-diff fixture.
 real-world/*
 !real-world/example-com/
 real-world/example-com/*
@@ -60,14 +62,10 @@ output/
 _build/
 
 # Local WPT investigation artifacts
-tmp/**/*.out
-tmp/**/*.log
-tmp/**/*.txt
-tmp/**/*.json
-tmp/wpt-modules/
-tmp/ws-video-test.html
+tmp/
 docs/private/
 ci-logs/
+test-results/
 trace.json
 browser/jsbidi/trace.json
 .playwright-mcp/
