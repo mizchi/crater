@@ -96,7 +96,7 @@ v3 (Balanced):  P=54.36%  R=39.85%  F1=45.99%  FP=89  FN=160  ← Best (after la
 ## ディレクトリ構造
 
 ```
-nav-benchmark/
+benchmarks/nav-extraction/
 ├── README.md
 ├── labels/
 │   ├── {hash}.json      # 各ページのラベル

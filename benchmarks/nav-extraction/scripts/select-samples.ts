@@ -180,7 +180,7 @@ async function main() {
   }
 
   // Save selection
-  const selectionFile = path.join(process.cwd(), 'nav-benchmark/samples.json');
+  const selectionFile = path.join(process.cwd(), 'benchmarks/nav-extraction/samples.json');
   fs.writeFileSync(selectionFile, JSON.stringify(output, null, 2));
   console.log(`\nSaved to: ${selectionFile}`);
 }
