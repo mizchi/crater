@@ -5,6 +5,6 @@ import {
 
 import {
   "mizchi/crater-layout" @node,
-  "mizchi/crater-layout/style",
+  "mizchi/crater-core/style",
   "mizchi/crater-core" @types,
 } for "test"

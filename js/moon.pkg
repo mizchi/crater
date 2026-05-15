@@ -7,7 +7,7 @@ import {
   "mizchi/crater-layout/tree",
   "mizchi/crater-css/computed",
   "mizchi/crater-css/media",
-  "mizchi/crater-layout/style",
+  "mizchi/crater-core/style",
   "mizchi/crater-dom/aom",
   "mizchi/crater-dom/html",
   "mizchi/crater-dom/layout/html_tree" @layout_html_tree,

@@ -10,10 +10,10 @@ import {
 }
 
 import {
-  "mizchi/crater-layout/style",
+  "mizchi/crater-core/style",
 } for "test"
 
 import {
-  "mizchi/crater-layout/style",
+  "mizchi/crater-core/style",
   "moonbitlang/core/bench",
 } for "wbtest"

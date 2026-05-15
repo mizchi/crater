@@ -83,7 +83,6 @@ digraph crater_modules {
   mizchi_crater_browser_helpers -> mizchi_crater_dom;
   mizchi_crater_browser_helpers -> mizchi_crater_aomx;
   mizchi_crater_css -> mizchi_crater_core;
-  mizchi_crater_css -> mizchi_crater_layout;
   mizchi_crater_dom -> mizchi_crater_core;
   mizchi_crater_dom -> mizchi_crater_css;
   mizchi_crater_dom -> mizchi_crater_layout;
@@ -117,7 +116,6 @@ digraph crater_modules {
   mizchi_crater_renderer -> mizchi_crater_renderer_inline_style_cache;
   mizchi_crater_renderer_inline_style_cache -> mizchi_crater_core;
   mizchi_crater_renderer_inline_style_cache -> mizchi_crater_css;
-  mizchi_crater_renderer_inline_style_cache -> mizchi_crater_layout;
   mizchi_crater_renderer_terminal -> mizchi_crater_css;
   mizchi_crater_renderer_terminal -> mizchi_crater_painter;
   mizchi_crater_renderer_terminal -> mizchi_crater_painter_terminal;

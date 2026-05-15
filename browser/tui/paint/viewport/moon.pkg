@@ -6,5 +6,5 @@ import {
 }
 
 import {
-  "mizchi/crater-layout/style",
+  "mizchi/crater-core/style",
 } for "test"

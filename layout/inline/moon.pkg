@@ -1,7 +1,7 @@
 import {
   "moonbitlang/core/double",
   "mizchi/crater-core" @types,
-  "mizchi/crater-layout/style",
+  "mizchi/crater-core/style",
   "mizchi/crater-layout/node",
   "mizchi/crater-layout/baseline",
 }

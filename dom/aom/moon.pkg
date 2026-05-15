@@ -8,7 +8,7 @@ import {
 
 import {
   "mizchi/crater-dom/layout/html_tree" @layout_html_tree,
-  "mizchi/crater-layout/style",
+  "mizchi/crater-core/style",
 } for "test"
 
 import {

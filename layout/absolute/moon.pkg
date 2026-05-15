@@ -2,5 +2,5 @@ import {
   "moonbitlang/core/double",
   "mizchi/crater-layout/core",
   "mizchi/crater-core" @types,
-  "mizchi/crater-layout/style",
+  "mizchi/crater-core/style",
 }

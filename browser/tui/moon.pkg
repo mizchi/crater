@@ -5,7 +5,7 @@ import {
   "mizchi/crater-browser/tui/paint/plain" @tui_paint_plain,
   "mizchi/crater-browser/tui/paint/runtime" @tui_paint_runtime,
   "mizchi/crater-browser/tui/paint/viewport" @tui_paint_viewport,
-  "mizchi/crater-layout/style",
+  "mizchi/crater-core/style",
   "mizchi/x/stdio",
   "mizchi/x/sys",
   "moonbitlang/async/js_async",

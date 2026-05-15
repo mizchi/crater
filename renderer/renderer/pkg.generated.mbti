@@ -3,12 +3,12 @@ package "mizchi/crater-renderer/renderer"
 
 import {
   "mizchi/crater-core",
+  "mizchi/crater-core/style",
   "mizchi/crater-css/cascade",
   "mizchi/crater-css/media",
   "mizchi/crater-css/selector",
   "mizchi/crater-dom/html",
   "mizchi/crater-layout/node",
-  "mizchi/crater-layout/style",
   "moonbitlang/core/ref",
 }
 

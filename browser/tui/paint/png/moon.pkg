@@ -4,7 +4,7 @@ import {
 
 import {
   "mizchi/crater-layout" @node,
-  "mizchi/crater-layout/style",
+  "mizchi/crater-core/style",
   "mizchi/crater-core" @types,
   "mizchi/crater-browser/tui/paint/plain" @paint_plain,
 } for "test"

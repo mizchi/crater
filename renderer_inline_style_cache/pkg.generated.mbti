@@ -3,7 +3,7 @@ package "mizchi/crater-renderer-inline-style-cache"
 
 import {
   "mizchi/crater-core",
-  "mizchi/crater-layout/style",
+  "mizchi/crater-core/style",
 }
 
 // Values

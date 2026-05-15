@@ -83,7 +83,6 @@ graph LR
   mizchi_crater_browser_helpers --> mizchi_crater_dom
   mizchi_crater_browser_helpers --> mizchi_crater_aomx
   mizchi_crater_css --> mizchi_crater_core
-  mizchi_crater_css --> mizchi_crater_layout
   mizchi_crater_dom --> mizchi_crater_core
   mizchi_crater_dom --> mizchi_crater_css
   mizchi_crater_dom --> mizchi_crater_layout
@@ -117,7 +116,6 @@ graph LR
   mizchi_crater_renderer --> mizchi_crater_renderer_inline_style_cache
   mizchi_crater_renderer_inline_style_cache --> mizchi_crater_core
   mizchi_crater_renderer_inline_style_cache --> mizchi_crater_css
-  mizchi_crater_renderer_inline_style_cache --> mizchi_crater_layout
   mizchi_crater_renderer_terminal --> mizchi_crater_css
   mizchi_crater_renderer_terminal --> mizchi_crater_painter
   mizchi_crater_renderer_terminal --> mizchi_crater_painter_terminal
@@ -150,14 +148,14 @@ graph LR
 | Layer | Module | Dir | In-deg | Internal deps |
 | --- | --- | --- | --- | --- |
 | Core | `crater-core` | `core` | 13 | — |
-| Foundation | `crater-css` | `css` | 10 | crater-core, crater-layout |
+| Foundation | `crater-css` | `css` | 10 | crater-core |
 | Foundation | `crater-dom` | `dom` | 11 | crater-core, crater-css, crater-layout |
 | Foundation | `crater-html-assets` | `html_assets` | 1 | — |
-| Foundation | `crater-layout` | `layout` | 14 | crater-core |
+| Foundation | `crater-layout` | `layout` | 12 | crater-core |
 | Foundation | `crater-network` | `network` | 1 | — |
 | Render | `crater-painter` | `painter` | 8 | crater-core, crater-layout |
 | Render | `crater-renderer` | `renderer` | 8 | crater-core, crater-css, crater-dom, crater-layout, crater-painter, crater-renderer-inline-style-cache |
-| Render | `crater-renderer-inline-style-cache` | `renderer_inline_style_cache` | 1 | crater-core, crater-css, crater-layout |
+| Render | `crater-renderer-inline-style-cache` | `renderer_inline_style_cache` | 1 | crater-core, crater-css |
 | Render | `crater-renderer-terminal` | `renderer_terminal` | 1 | crater-css, crater-painter, crater-painter-terminal, crater-renderer |
 | Render | `crater-webvitals` | `webvitals` | 1 | crater-core, crater-layout |
 | Terminal | `crater-painter-terminal` | `painter_terminal` | 3 | crater-core, crater-layout, crater-painter, crater-terminal-protocol |

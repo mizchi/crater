@@ -4,7 +4,7 @@ import {
   "moonbitlang/core/string",
   "mizchi/crater-css/cascade",
   "mizchi/crater-css/parser",
-  "mizchi/crater-layout/style",
+  "mizchi/crater-core/style",
   "mizchi/crater-core" @types,
 }
 
