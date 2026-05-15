@@ -5,6 +5,7 @@ import {
   "mizchi/crater-browser/cdp",
   "mizchi/crater-webdriver-bidi/contract",
   "mizchi/crater-webdriver-bidi/rpc",
+  "mizchi/crater-webdriver-bidi/server",
   "mizchi/crater-webdriver-bidi/webdriver",
 }
 
@@ -70,9 +71,9 @@ pub using @contract {type Selector}
 
 pub using @contract {type Session}
 
-pub using @webdriver {type SessionManager}
+pub using @server {type SessionManager}
 
-pub using @webdriver {type SessionState}
+pub using @server {type SessionState}
 
 pub using @contract {type Timeouts}
 

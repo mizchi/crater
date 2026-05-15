@@ -5,6 +5,7 @@ import {
   "mizchi/crater-browser/cdp",
   "mizchi/crater-webdriver-bidi/contract",
   "mizchi/crater-webdriver-bidi/rpc",
+  "mizchi/crater-webdriver-bidi/server",
   "mizchi/js/core",
   "moonbitlang/core/debug",
 }
@@ -251,25 +252,6 @@ pub fn Executor::screenshot(Self, String) -> @contract.ApiResult[String]
 pub fn Executor::title(Self, String) -> @contract.ApiResult[String]
 pub fn Executor::url(Self, String) -> @contract.ApiResult[String]
 
-pub(all) struct SessionManager {
-  sessions : Map[String, SessionState]
-  mut next_id : Int
-}
-pub fn SessionManager::create_session(Self, String) -> @contract.WebDriverResponse
-pub fn SessionManager::delete_session(Self, String) -> @contract.WebDriverResponse
-pub fn SessionManager::generate_id(Self) -> String
-pub fn SessionManager::get_session(Self, String) -> SessionState?
-pub fn SessionManager::handle_request(Self, @contract.WebDriverRequest) -> (Int, @contract.WebDriverResponse)
-pub fn SessionManager::new() -> Self
-
-pub(all) struct SessionState {
-  id : String
-  capabilities : @contract.Capabilities
-  mut current_url : String
-  mut title : String
-  window_rect : @contract.WindowRect
-}
-
 // Type aliases
 pub using @contract {type ApiError}
 
@@ -316,6 +298,10 @@ pub using @rpc {type RpcResponse}
 pub using @contract {type Selector}
 
 pub using @contract {type Session}
+
+pub using @server {type SessionManager}
+
+pub using @server {type SessionState}
 
 pub using @contract {type Timeouts}
 

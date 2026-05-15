@@ -1,8 +1,8 @@
 ///|
 /// Tests for WebDriver Server Handler
 test "status endpoint returns ready" {
-  let manager = SessionManager::new()
-  let req = parse_request("GET", "/status", "")
+  let manager = @server.SessionManager::new()
+  let req = @contract.parse_request("GET", "/status", "")
   let (status, resp) = manager.handle_request(req)
   inspect(status, content="200")
   let json = resp.to_json()
@@ -12,8 +12,8 @@ test "status endpoint returns ready" {
 
 ///|
 test "create new session" {
-  let manager = SessionManager::new()
-  let req = parse_request("POST", "/session", "{}")
+  let manager = @server.SessionManager::new()
+  let req = @contract.parse_request("POST", "/session", "{}")
   let (status, resp) = manager.handle_request(req)
   inspect(status, content="200")
   let json = resp.to_json()
@@ -24,12 +24,12 @@ test "create new session" {
 
 ///|
 test "delete session" {
-  let manager = SessionManager::new()
+  let manager = @server.SessionManager::new()
   // Create session first
-  let create_req = parse_request("POST", "/session", "{}")
+  let create_req = @contract.parse_request("POST", "/session", "{}")
   let (_, _) = manager.handle_request(create_req)
   // Delete session
-  let delete_req = parse_request("DELETE", "/session/session-1", "")
+  let delete_req = @contract.parse_request("DELETE", "/session/session-1", "")
   let (status, resp) = manager.handle_request(delete_req)
   inspect(status, content="200")
   inspect(resp.to_json(), content="{\"value\":null}")
@@ -37,8 +37,8 @@ test "delete session" {
 
 ///|
 test "delete non-existent session returns error" {
-  let manager = SessionManager::new()
-  let req = parse_request("DELETE", "/session/invalid-id", "")
+  let manager = @server.SessionManager::new()
+  let req = @contract.parse_request("DELETE", "/session/invalid-id", "")
   let (status, resp) = manager.handle_request(req)
   inspect(status, content="404")
   let json = resp.to_json()
@@ -47,12 +47,12 @@ test "delete non-existent session returns error" {
 
 ///|
 test "get current url" {
-  let manager = SessionManager::new()
+  let manager = @server.SessionManager::new()
   // Create session
-  let create_req = parse_request("POST", "/session", "{}")
+  let create_req = @contract.parse_request("POST", "/session", "{}")
   let (_, _) = manager.handle_request(create_req)
   // Get URL
-  let url_req = parse_request("GET", "/session/session-1/url", "")
+  let url_req = @contract.parse_request("GET", "/session/session-1/url", "")
   let (status, resp) = manager.handle_request(url_req)
   inspect(status, content="200")
   let json = resp.to_json()
@@ -61,18 +61,18 @@ test "get current url" {
 
 ///|
 test "navigate to url" {
-  let manager = SessionManager::new()
+  let manager = @server.SessionManager::new()
   // Create session
-  let create_req = parse_request("POST", "/session", "{}")
+  let create_req = @contract.parse_request("POST", "/session", "{}")
   let (_, _) = manager.handle_request(create_req)
   // Navigate
-  let nav_req = parse_request(
+  let nav_req = @contract.parse_request(
     "POST", "/session/session-1/url", "{\"url\":\"https://example.com\"}",
   )
   let (status, _) = manager.handle_request(nav_req)
   inspect(status, content="200")
   // Verify URL changed
-  let url_req = parse_request("GET", "/session/session-1/url", "")
+  let url_req = @contract.parse_request("GET", "/session/session-1/url", "")
   let (_, resp) = manager.handle_request(url_req)
   let json = resp.to_json()
   assert_true(json.contains("example.com"))
@@ -80,18 +80,18 @@ test "navigate to url" {
 
 ///|
 test "navigate to arbitrary url preserves request url" {
-  let manager = SessionManager::new()
-  let create_req = parse_request("POST", "/session", "{}")
+  let manager = @server.SessionManager::new()
+  let create_req = @contract.parse_request("POST", "/session", "{}")
   let (_, _) = manager.handle_request(create_req)
   let target = "https://mizchi.dev/docs?q=1#frag"
-  let nav_req = parse_request(
+  let nav_req = @contract.parse_request(
     "POST",
     "/session/session-1/url",
     "{\"url\":\"" + target + "\"}",
   )
   let (status, _) = manager.handle_request(nav_req)
   inspect(status, content="200")
-  let url_req = parse_request("GET", "/session/session-1/url", "")
+  let url_req = @contract.parse_request("GET", "/session/session-1/url", "")
   let (_, resp) = manager.handle_request(url_req)
   inspect(
     resp.to_json(),
@@ -101,10 +101,10 @@ test "navigate to arbitrary url preserves request url" {
 
 ///|
 test "navigate without url returns invalid argument" {
-  let manager = SessionManager::new()
-  let create_req = parse_request("POST", "/session", "{}")
+  let manager = @server.SessionManager::new()
+  let create_req = @contract.parse_request("POST", "/session", "{}")
   let (_, _) = manager.handle_request(create_req)
-  let nav_req = parse_request("POST", "/session/session-1/url", "{}")
+  let nav_req = @contract.parse_request("POST", "/session/session-1/url", "{}")
   let (status, resp) = manager.handle_request(nav_req)
   inspect(status, content="400")
   let json = resp.to_json()
@@ -114,17 +114,17 @@ test "navigate without url returns invalid argument" {
 
 ///|
 test "get title" {
-  let manager = SessionManager::new()
+  let manager = @server.SessionManager::new()
   // Create session
-  let create_req = parse_request("POST", "/session", "{}")
+  let create_req = @contract.parse_request("POST", "/session", "{}")
   let (_, _) = manager.handle_request(create_req)
   // Navigate
-  let nav_req = parse_request(
+  let nav_req = @contract.parse_request(
     "POST", "/session/session-1/url", "{\"url\":\"https://example.com\"}",
   )
   let (_, _) = manager.handle_request(nav_req)
   // Get title
-  let title_req = parse_request("GET", "/session/session-1/title", "")
+  let title_req = @contract.parse_request("GET", "/session/session-1/title", "")
   let (status, resp) = manager.handle_request(title_req)
   inspect(status, content="200")
   let json = resp.to_json()
@@ -133,12 +133,14 @@ test "get title" {
 
 ///|
 test "get window rect" {
-  let manager = SessionManager::new()
+  let manager = @server.SessionManager::new()
   // Create session
-  let create_req = parse_request("POST", "/session", "{}")
+  let create_req = @contract.parse_request("POST", "/session", "{}")
   let (_, _) = manager.handle_request(create_req)
   // Get window rect
-  let rect_req = parse_request("GET", "/session/session-1/window/rect", "")
+  let rect_req = @contract.parse_request(
+    "GET", "/session/session-1/window/rect", "",
+  )
   let (status, resp) = manager.handle_request(rect_req)
   inspect(status, content="200")
   let json = resp.to_json()
@@ -148,8 +150,8 @@ test "get window rect" {
 
 ///|
 test "unknown command returns 404" {
-  let manager = SessionManager::new()
-  let req = parse_request("GET", "/unknown/path", "")
+  let manager = @server.SessionManager::new()
+  let req = @contract.parse_request("GET", "/unknown/path", "")
   let (status, resp) = manager.handle_request(req)
   inspect(status, content="404")
   let json = resp.to_json()
@@ -158,12 +160,12 @@ test "unknown command returns 404" {
 
 ///|
 test "unimplemented command returns 501" {
-  let manager = SessionManager::new()
+  let manager = @server.SessionManager::new()
   // Create session
-  let create_req = parse_request("POST", "/session", "{}")
+  let create_req = @contract.parse_request("POST", "/session", "{}")
   let (_, _) = manager.handle_request(create_req)
   // Try to take screenshot (not yet implemented)
-  let req = parse_request("GET", "/session/session-1/screenshot", "")
+  let req = @contract.parse_request("GET", "/session/session-1/screenshot", "")
   let (status, resp) = manager.handle_request(req)
   inspect(status, content="501")
   let json = resp.to_json()

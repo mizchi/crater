@@ -1,6 +1,24 @@
 ///|
-/// WebDriver Server Handler
-/// Dispatches WebDriver commands to the browser implementation
+/// WebDriver HTTP/REST request handler.
+///
+/// Stateful dispatcher for non-BiDi (legacy REST) WebDriver commands.
+/// Lives in its own package so the transport surface is decoupled from
+/// the BiDi protocol implementation.
+pub using @contract {
+  type Capabilities,
+  type ErrorCode,
+  type PageLoadStrategy,
+  type Timeouts,
+  type WebDriverCommand,
+  type WebDriverRequest,
+  type WebDriverResponse,
+  type WebDriverValue,
+  type WindowRect,
+  error_response,
+  success_null,
+  success_object,
+  success_string,
+}
 
 ///|
 /// Session manager
