@@ -289,6 +289,9 @@ priv struct StyleBuilder {
   mut contain_intrinsic_block_size : Double?
   // Transform
   mut transform : @style.Transform
+  // CSS filter / backdrop-filter presence (not none). Layout uses this only
+  // to know that the element establishes a containing block for abspos.
+  mut has_filter : Bool
   // Zoom (affects layout scaling)
   mut zoom : Double
   // Table properties
@@ -414,6 +417,7 @@ fn StyleBuilder::new() -> StyleBuilder {
     contain_intrinsic_inline_size: None,
     contain_intrinsic_block_size: None,
     transform: @style.Transform::none(),
+    has_filter: false,
     zoom: 1.0,
     border_spacing: 0.0,
     border_spacing_vertical: 0.0,
@@ -537,6 +541,7 @@ fn StyleBuilder::from_style(style : @style.Style) -> StyleBuilder {
     contain_intrinsic_inline_size: style.contain_intrinsic_inline_size,
     contain_intrinsic_block_size: style.contain_intrinsic_block_size,
     transform: style.transform,
+    has_filter: style.has_filter,
     zoom: style.zoom,
     border_spacing: style.border_spacing,
     border_spacing_vertical: style.border_spacing_vertical,
@@ -671,6 +676,7 @@ fn StyleBuilder::build(self : StyleBuilder) -> @style.Style {
     contain_intrinsic_inline_size: self.contain_intrinsic_inline_size,
     contain_intrinsic_block_size: self.contain_intrinsic_block_size,
     transform: self.transform,
+    has_filter: self.has_filter,
     zoom: self.zoom,
     border_spacing: self.border_spacing,
     border_spacing_vertical: self.border_spacing_vertical,
@@ -2264,6 +2270,15 @@ fn apply_property(
     "font-family" => builder.font_family = parse_font_family(value)
     // Transform (visual position offset)
     "transform" => builder.transform = parse_transform(value)
+    // filter / backdrop-filter only need to be tracked as "present" for the
+    // containing-block rule in absolute positioning. The actual filter
+    // functions are paint-side and not modelled here.
+    "filter" | "backdrop-filter" => {
+      let v = value.trim().to_lower()
+      if v != "" && v != "none" && v != "initial" && v != "unset" {
+        builder.has_filter = true
+      }
+    }
     // Zoom (layout scaling, inherited)
     "zoom" => builder.zoom = parse_zoom(value)
     // Table properties

@@ -197,7 +197,8 @@ fn establishes_abs_containing_block(
         containment_applies(display) &&
         (style.contain.layout || style.contain.paint)
       ) ||
-      !style.transform.is_none()
+      !style.transform.is_none() ||
+      style.has_filter
   }
 }
 

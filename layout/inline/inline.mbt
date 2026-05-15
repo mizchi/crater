@@ -42,8 +42,12 @@ fn inline_establishes_abs_containing_block(style : @style.Style) -> Bool {
   match style.position {
     @types.Absolute | @types.Fixed | @types.Relative => true
     @types.Static =>
-      style.display != @types.Inline &&
-      (style.contain.layout || style.contain.paint)
+      (
+        style.display != @types.Inline &&
+        (style.contain.layout || style.contain.paint)
+      ) ||
+      !style.transform.is_none() ||
+      style.has_filter
   }
 }
 

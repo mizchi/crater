@@ -947,6 +947,10 @@ pub(all) struct Style {
   mut contain_intrinsic_block_size : Double?
   // CSS transform (visual offset, applied in paint phase)
   mut transform : Transform
+  // CSS filter / backdrop-filter presence flag. Layout only cares whether
+  // such a property establishes a containing block for abspos descendants,
+  // not the actual filter functions.
+  mut has_filter : Bool
   // CSS zoom (affects layout scaling, inherited)
   mut zoom : Double // zoom factor (1.0 = 100%, 2.0 = 200%)
   // Table properties
@@ -1081,6 +1085,7 @@ pub fn Style::default() -> Style {
     contain_intrinsic_inline_size: None,
     contain_intrinsic_block_size: None,
     transform: Transform::none(),
+    has_filter: false,
     zoom: 1.0,
     border_spacing: 0.0,
     border_spacing_vertical: 0.0,
