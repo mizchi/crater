@@ -53,7 +53,7 @@ fn BidiProtocol::resolve_permissions_set_permission(
   }
   let permission_name = match descriptor.get("name") {
     Some(String(permission_name)) =>
-      if is_supported_permission_name(permission_name) {
+      if @browser_domain.is_supported_permission_name(permission_name) {
         permission_name
       } else {
         self.send_error(
@@ -125,11 +125,11 @@ fn BidiProtocol::resolve_permissions_set_permission(
     None => ""
   }
 
-  let scope_key = permission_scope_key(
+  let scope_key = @browser_domain.permission_scope_key(
     permission_name,
     user_context_id,
-    normalize_permission_origin(origin),
-    normalize_permission_origin(embedded_origin),
+    @browser_domain.normalize_permission_origin(origin),
+    @browser_domain.normalize_permission_origin(embedded_origin),
   )
   if state == "prompt" {
     self.permission_state_by_scope.remove(scope_key)
@@ -137,21 +137,6 @@ fn BidiProtocol::resolve_permissions_set_permission(
     self.permission_state_by_scope[scope_key] = state
   }
   Some(true)
-}
-
-///|
-fn is_supported_permission_name(name : String) -> Bool {
-  name == "geolocation" || name == "storage-access"
-}
-
-///|
-fn permission_scope_key(
-  permission_name : String,
-  user_context_id : String,
-  origin : String,
-  embedded_origin : String,
-) -> String {
-  permission_name + "|" + user_context_id + "|" + origin + "|" + embedded_origin
 }
 
 ///|
@@ -206,7 +191,7 @@ fn BidiProtocol::try_handle_synthetic_permissions_query_call(
   let permission_name = match
     extract_permissions_query_name(function_declaration) {
     Some(permission_name) =>
-      if is_supported_permission_name(permission_name) {
+      if @browser_domain.is_supported_permission_name(permission_name) {
         permission_name
       } else {
         return false
@@ -264,23 +249,11 @@ fn extract_permissions_query_name(function_declaration : String) -> String? {
 }
 
 ///|
-fn normalize_permission_origin(origin : String) -> String {
-  if origin == "" || origin == "null" {
-    return origin
-  }
-  if origin.has_suffix("/") &&
-    (origin.has_prefix("http://") || origin.has_prefix("https://")) {
-    return origin.unsafe_substring(start=0, end=origin.length() - 1)
-  }
-  origin
-}
-
-///|
 fn BidiProtocol::permission_query_origin_for_context(
   self : BidiProtocol,
   ctx_id : String,
 ) -> String {
-  normalize_permission_origin(
+  @browser_domain.normalize_permission_origin(
     derive_realm_origin(self.requested_navigation_url(ctx_id)),
   )
 }
@@ -309,7 +282,7 @@ fn BidiProtocol::resolve_permission_state_for_context(
   } else {
     ""
   }
-  let scope_key = permission_scope_key(
+  let scope_key = @browser_domain.permission_scope_key(
     permission_name, user_context_id, origin, embedded_origin,
   )
   self.permission_state_by_scope.get(scope_key).unwrap_or("prompt")

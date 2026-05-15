@@ -1,29 +1,4 @@
 ///|
-fn default_geolocation_coordinates_json() -> Json {
-  make_object({
-    "latitude": Json::number(35.6895),
-    "longitude": Json::number(139.6917),
-    "accuracy": Json::number(1.0),
-  })
-}
-
-///|
-fn build_geolocation_coordinates_override(coordinates : Json) -> Json {
-  make_object({
-    "kind": Json::string("coordinates"),
-    "coordinates": coordinates,
-  })
-}
-
-///|
-fn build_geolocation_error_override(error_type : String) -> Json {
-  make_object({
-    "kind": Json::string("error"),
-    "error": make_object({ "type": Json::string(error_type) }),
-  })
-}
-
-///|
 fn BidiProtocol::resolve_effective_geolocation_override(
   self : BidiProtocol,
   ctx_id : String,
@@ -71,73 +46,9 @@ fn BidiProtocol::resolve_effective_geolocation_coordinates(
           Some(make_object(coords_map))
         _ => None
       }
-    None => Some(default_geolocation_coordinates_json())
+    None => Some(@browser_domain.default_geolocation_coordinates_json())
     _ => None
   }
-}
-
-///|
-fn push_geolocation_number_remote_entry(
-  entries : Array[Json],
-  coordinates_map : Map[String, Json],
-  key : String,
-) -> Unit {
-  match coordinates_map.get(key) {
-    Some(Number(value, ..)) =>
-      entries.push(
-        Json::array([
-          Json::string(key),
-          make_object({
-            "type": Json::string("number"),
-            "value": Json::number(value),
-          }),
-        ]),
-      )
-    _ => ()
-  }
-}
-
-///|
-fn build_geolocation_coordinates_remote_value(coordinates : Json) -> Json {
-  let entries : Array[Json] = []
-  match coordinates {
-    Object(coordinates_map) => {
-      push_geolocation_number_remote_entry(entries, coordinates_map, "latitude")
-      push_geolocation_number_remote_entry(
-        entries, coordinates_map, "longitude",
-      )
-      push_geolocation_number_remote_entry(entries, coordinates_map, "accuracy")
-      push_geolocation_number_remote_entry(entries, coordinates_map, "altitude")
-      push_geolocation_number_remote_entry(
-        entries, coordinates_map, "altitudeAccuracy",
-      )
-      push_geolocation_number_remote_entry(entries, coordinates_map, "heading")
-      push_geolocation_number_remote_entry(entries, coordinates_map, "speed")
-    }
-    _ => ()
-  }
-  make_object({ "type": Json::string("object"), "value": Json::array(entries) })
-}
-
-///|
-fn build_geolocation_error_remote_value(code : Int) -> Json {
-  make_object({
-    "type": Json::string("object"),
-    "value": Json::array([
-      Json::array([
-        Json::string("code"),
-        make_object({
-          "type": Json::string("number"),
-          "value": Json::number(code.to_double()),
-        }),
-      ]),
-    ]),
-  })
-}
-
-///|
-fn geolocation_watch_scope_key(ctx_id : String, watch_id : Int) -> String {
-  ctx_id + "|" + watch_id.to_string()
 }
 
 ///|
@@ -210,7 +121,7 @@ fn BidiProtocol::emit_geolocation_watch_update_for_scope(
           ctx_id,
           realm_id,
           channel,
-          build_geolocation_error_remote_value(code),
+          @browser_domain.build_geolocation_error_remote_value(code),
         )
       }
     None =>
@@ -219,12 +130,14 @@ fn BidiProtocol::emit_geolocation_watch_update_for_scope(
         .unwrap_or(false) {
         let coordinates = self
           .resolve_effective_geolocation_coordinates(ctx_id)
-          .unwrap_or(default_geolocation_coordinates_json())
+          .unwrap_or(@browser_domain.default_geolocation_coordinates_json())
         self.emit_script_message(
           ctx_id,
           realm_id,
           channel,
-          build_geolocation_coordinates_remote_value(coordinates),
+          @browser_domain.build_geolocation_coordinates_remote_value(
+            coordinates,
+          ),
         )
       }
   }
@@ -252,7 +165,7 @@ fn BidiProtocol::register_geolocation_watch(
 ) -> Int {
   let watch_id = self.next_geolocation_watch_id
   self.next_geolocation_watch_id = self.next_geolocation_watch_id + 1
-  let scope_key = geolocation_watch_scope_key(ctx_id, watch_id)
+  let scope_key = @browser_domain.geolocation_watch_scope_key(ctx_id, watch_id)
   self.geolocation_watch_channel_by_scope[scope_key] = channel
   self.geolocation_watch_realm_by_scope[scope_key] = realm_id
   self.geolocation_watch_notify_success_by_scope[scope_key] = notify_success
@@ -267,20 +180,11 @@ fn BidiProtocol::clear_geolocation_watch(
   ctx_id : String,
   watch_id : Int,
 ) -> Unit {
-  let scope_key = geolocation_watch_scope_key(ctx_id, watch_id)
+  let scope_key = @browser_domain.geolocation_watch_scope_key(ctx_id, watch_id)
   self.geolocation_watch_channel_by_scope.remove(scope_key)
   self.geolocation_watch_realm_by_scope.remove(scope_key)
   self.geolocation_watch_notify_success_by_scope.remove(scope_key)
   self.geolocation_watch_notify_error_by_scope.remove(scope_key)
-}
-
-///|
-fn normalize_geolocation_number_json(
-  value : Json,
-  min : Double,
-  max : Double,
-) -> Double? {
-  json_as_safe_number(value, min, max)
 }
 
 ///|
@@ -294,7 +198,10 @@ fn BidiProtocol::parse_geolocation_coordinates_param(
     Object(coordinates_map) => {
       let latitude = match coordinates_map.get("latitude") {
         Some(value) =>
-          match normalize_geolocation_number_json(value, -90.0, 90.0) {
+          match
+            @browser_domain.normalize_geolocation_number_json(
+              value, -90.0, 90.0,
+            ) {
             Some(parsed) => parsed
             None => {
               self.send_error(
@@ -312,7 +219,10 @@ fn BidiProtocol::parse_geolocation_coordinates_param(
       }
       let longitude = match coordinates_map.get("longitude") {
         Some(value) =>
-          match normalize_geolocation_number_json(value, -180.0, 180.0) {
+          match
+            @browser_domain.normalize_geolocation_number_json(
+              value, -180.0, 180.0,
+            ) {
             Some(parsed) => parsed
             None => {
               self.send_error(
@@ -331,7 +241,9 @@ fn BidiProtocol::parse_geolocation_coordinates_param(
       let accuracy = match coordinates_map.get("accuracy") {
         Some(value) =>
           match
-            normalize_geolocation_number_json(value, 0.0, 9007199254740991.0) {
+            @browser_domain.normalize_geolocation_number_json(
+              value, 0.0, 9007199254740991.0,
+            ) {
             Some(parsed) => parsed
             None => {
               self.send_error(
@@ -345,7 +257,7 @@ fn BidiProtocol::parse_geolocation_coordinates_param(
       let altitude = match coordinates_map.get("altitude") {
         Some(value) =>
           match
-            normalize_geolocation_number_json(
+            @browser_domain.normalize_geolocation_number_json(
               value, -9007199254740991.0, 9007199254740991.0,
             ) {
             Some(parsed) => Some(parsed)
@@ -364,7 +276,9 @@ fn BidiProtocol::parse_geolocation_coordinates_param(
         ) {
         Some(value) =>
           match
-            normalize_geolocation_number_json(value, 0.0, 9007199254740991.0) {
+            @browser_domain.normalize_geolocation_number_json(
+              value, 0.0, 9007199254740991.0,
+            ) {
             Some(parsed) => Some(parsed)
             None => {
               self.send_error(
@@ -383,7 +297,10 @@ fn BidiProtocol::parse_geolocation_coordinates_param(
       }
       let heading = match coordinates_map.get("heading") {
         Some(value) =>
-          match normalize_geolocation_number_json(value, 0.0, 359.999999999) {
+          match
+            @browser_domain.normalize_geolocation_number_json(
+              value, 0.0, 359.999999999,
+            ) {
             Some(parsed) => Some(parsed)
             None => {
               self.send_error(
@@ -397,7 +314,9 @@ fn BidiProtocol::parse_geolocation_coordinates_param(
       let speed = match coordinates_map.get("speed") {
         Some(value) =>
           match
-            normalize_geolocation_number_json(value, 0.0, 9007199254740991.0) {
+            @browser_domain.normalize_geolocation_number_json(
+              value, 0.0, 9007199254740991.0,
+            ) {
             Some(parsed) => Some(parsed)
             None => {
               self.send_error(
@@ -509,7 +428,11 @@ fn BidiProtocol::resolve_emulation_set_geolocation_override(
     }
     match normalized_coordinates {
       Some(normalized_coordinates) =>
-        Some(build_geolocation_coordinates_override(normalized_coordinates))
+        Some(
+          @browser_domain.build_geolocation_coordinates_override(
+            normalized_coordinates,
+          ),
+        )
       None => None
     }
   } else {
@@ -525,7 +448,8 @@ fn BidiProtocol::resolve_emulation_set_geolocation_override(
       return None
     }
     match error_type {
-      Some(error_type) => Some(build_geolocation_error_override(error_type))
+      Some(error_type) =>
+        Some(@browser_domain.build_geolocation_error_override(error_type))
       None => None
     }
   } else {
@@ -724,17 +648,17 @@ fn BidiProtocol::try_handle_synthetic_geolocation_call(
       self.send_script_remote_value_response(
         request_id,
         realm_id,
-        build_geolocation_error_remote_value(code),
+        @browser_domain.build_geolocation_error_remote_value(code),
         unwrap_result,
       )
     None => {
       let coordinates = self
         .resolve_effective_geolocation_coordinates(ctx_id)
-        .unwrap_or(default_geolocation_coordinates_json())
+        .unwrap_or(@browser_domain.default_geolocation_coordinates_json())
       self.send_script_remote_value_response(
         request_id,
         realm_id,
-        build_geolocation_coordinates_remote_value(coordinates),
+        @browser_domain.build_geolocation_coordinates_remote_value(coordinates),
         unwrap_result,
       )
     }

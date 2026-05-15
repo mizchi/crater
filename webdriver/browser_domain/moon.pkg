@@ -1,0 +1,5 @@
+import {
+  "mizchi/crater-webdriver-bidi/protocol" @protocol,
+}
+
+supported_targets = "js"
