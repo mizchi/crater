@@ -1317,8 +1317,14 @@ fn apply_property(
       builder.min_height = resolve_dimension_with_mixed_calc_fallback(
         "min-height", value, ctx,
       )
-    "max-width" => builder.max_width = resolve_dimension(value, ctx)
-    "max-height" => builder.max_height = resolve_dimension(value, ctx)
+    "max-width" =>
+      builder.max_width = resolve_dimension_with_calc_percent_fallback(
+        value, ctx,
+      )
+    "max-height" =>
+      builder.max_height = resolve_dimension_with_calc_percent_fallback(
+        value, ctx,
+      )
     // Logical sizing properties
     // In vertical writing-modes:
     // - inline axis is vertical -> inline-size maps to height
