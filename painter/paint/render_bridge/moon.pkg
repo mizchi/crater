@@ -2,7 +2,7 @@ import {
   "mizchi/crater-layout" @layout,
   "mizchi/crater-painter/paint/model" @model,
   "mizchi/crater-painter/paint/node_bridge" @node_bridge,
-  "mizchi/crater-layout/types",
+  "mizchi/crater-core" @types,
   "mizchi/crater-painter/paint/viewport_bridge" @viewport_bridge,
 }
 

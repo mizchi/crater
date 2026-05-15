@@ -10,6 +10,7 @@ responsibility boundaries.
 The current workspace members are:
 
 - `.`
+- `./core`
 - `./aomx`
 - `./benchmarks`
 - `./browser_helpers`
@@ -96,6 +97,7 @@ The intended direction is:
 
 | Module | Layer | Role |
 | --- | --- |
+| `mizchi/crater-core` | Pure interface | Geometry primitives, color, CSS value types, layout output records — no in-repo deps; every other module depends on this |
 | `mizchi/crater-layout` | Canonical library | Layout kernel, tree, shared layout data types |
 | `mizchi/crater-css` | Canonical library | CSS parsing, selector matching, cascade, and computed style engine |
 | `mizchi/crater-dom` | Canonical library | DOM, HTML parsing, scheduler, AOM, and HTML/CSS bridge-analysis packages |
@@ -115,7 +117,7 @@ The intended direction is:
 | `mizchi/crater-benchmarks` | Internal / dev-only | Synthetic fixtures and benchmark suites for renderer/browser performance |
 | `mizchi/crater-testing` | Internal / dev-only | WPT runtime, browser-shell fixtures, and native/browser integration test packages |
 We do not need to create all of these at once. The current workspace has
-already extracted `mizchi/crater-layout`, `mizchi/crater-css`,
+already extracted `mizchi/crater-core`, `mizchi/crater-layout`, `mizchi/crater-css`,
 `mizchi/crater-dom`, `mizchi/crater-aomx`, `mizchi/crater-benchmarks`,
 `mizchi/crater-browser-helpers`, `mizchi/crater-testing`,
 `mizchi/crater-webvitals`, `mizchi/crater-painter`, `mizchi/crater-renderer`,

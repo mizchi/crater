@@ -2,7 +2,7 @@ import {
   "mizchi/crater-layout" @node,
   "mizchi/crater-painter/paint/scroll" @paint_scroll,
   "mizchi/crater-painter/paint/traversal" @paint_traversal,
-  "mizchi/crater-layout/types",
+  "mizchi/crater-core" @types,
   "mizchi/crater-browser/tui/paint/plain" @paint_plain,
   "mizchi/crater-browser/tui/paint/viewport" @paint_viewport,
 }

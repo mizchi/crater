@@ -2,8 +2,8 @@
 package "mizchi/crater-painter/paint"
 
 import {
+  "mizchi/crater-core",
   "mizchi/crater-layout/node",
-  "mizchi/crater-layout/types",
   "mizchi/crater-painter/paint/diff",
   "mizchi/crater-painter/paint/model",
   "mizchi/crater-painter/paint/scroll",
@@ -18,13 +18,13 @@ pub fn find_scrollable_at(@model.PaintNode, Double, Double, Double, Double) -> @
 
 pub fn flatten_for_rendering(@model.PaintNode) -> Array[@model.PaintNode]
 
-pub fn from_layout(@types.Layout) -> @model.PaintNode
+pub fn from_layout(@crater-core.Layout) -> @model.PaintNode
 
-pub fn from_node_and_layout(@node.Node, @types.Layout) -> @model.PaintNode
+pub fn from_node_and_layout(@node.Node, @crater-core.Layout) -> @model.PaintNode
 
-pub fn from_node_and_layout_with_viewport(@node.Node, @types.Layout, Double, Double, Double) -> @model.PaintNode?
+pub fn from_node_and_layout_with_viewport(@node.Node, @crater-core.Layout, Double, Double, Double) -> @model.PaintNode?
 
-pub fn from_node_and_layout_with_viewport_rect(@node.Node, @types.Layout, Double, Double, Double, Double, Double, Double) -> @model.PaintNode?
+pub fn from_node_and_layout_with_viewport_rect(@node.Node, @crater-core.Layout, Double, Double, Double, Double, Double, Double) -> @model.PaintNode?
 
 pub fn sort_by_stacking_order(Array[@model.PaintNode]) -> Array[@model.PaintNode]
 

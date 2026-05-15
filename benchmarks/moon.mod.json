@@ -2,6 +2,10 @@
   "name": "mizchi/crater-benchmarks",
   "version": "0.17.1",
   "deps": {
+    "mizchi/crater-core": {
+      "path": "../core",
+      "version": "0.17.1"
+    },
     "mizchi/crater-browser": {
       "path": "../browser",
       "version": "0.17.1"

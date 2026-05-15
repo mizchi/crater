@@ -1,6 +1,6 @@
 import {
   "mizchi/crater-layout/node",
-  "mizchi/crater-layout/types",
+  "mizchi/crater-core" @types,
   "mizchi/crater-painter/layout_svg",
   "mizchi/crater-painter/paint",
   "mizchi/crater-painter/paint/diff" @paint_diff,

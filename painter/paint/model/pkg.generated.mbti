@@ -2,8 +2,8 @@
 package "mizchi/crater-painter/paint/model"
 
 import {
+  "mizchi/crater-core",
   "mizchi/crater-layout/style",
-  "mizchi/crater-layout/types",
 }
 
 // Values
@@ -18,11 +18,11 @@ pub(all) struct PaintNode {
   y : Double
   width : Double
   height : Double
-  overflow_x : @types.Overflow
-  overflow_y : @types.Overflow
+  overflow_x : @crater-core.Overflow
+  overflow_y : @crater-core.Overflow
   scroll_width : Double
   scroll_height : Double
-  clip : @types.ClipRect
+  clip : @crater-core.ClipRect
   paint : PaintProperties
   stacking_order : Int
   text : String?
@@ -38,7 +38,7 @@ pub fn PaintNode::has_horizontal_scrollbar(Self) -> Bool
 pub fn PaintNode::has_legacy_clip(Self) -> Bool
 pub fn PaintNode::has_vertical_scrollbar(Self) -> Bool
 pub fn PaintNode::is_scrollable(Self) -> Bool
-pub fn PaintNode::new(String, String, Double, Double, Double, Double, PaintProperties, Array[Self], text? : String?, src? : String?, overflow_x? : @types.Overflow, overflow_y? : @types.Overflow, scroll_width? : Double, scroll_height? : Double, clip? : @types.ClipRect, visual_polygon? : Array[(Double, Double)]) -> Self
+pub fn PaintNode::new(String, String, Double, Double, Double, Double, PaintProperties, Array[Self], text? : String?, src? : String?, overflow_x? : @crater-core.Overflow, overflow_y? : @crater-core.Overflow, scroll_width? : Double, scroll_height? : Double, clip? : @crater-core.ClipRect, visual_polygon? : Array[(Double, Double)]) -> Self
 pub fn PaintNode::to_json_string(Self) -> String
 pub impl Show for PaintNode
 
@@ -47,9 +47,9 @@ pub(all) struct PaintProperties {
   visibility : @style.Visibility
   pointer_events : @style.PointerEvents
   opacity : Double
-  color : @types.Color
-  background_color : @types.Color
-  background_image : @types.BackgroundImage
+  color : @crater-core.Color
+  background_color : @crater-core.Color
+  background_image : @crater-core.BackgroundImage
   box_shadows : Array[@style.BoxShadow]
   font_size : Double
   line_height : Double
@@ -63,8 +63,8 @@ pub(all) struct PaintProperties {
   border_top_right_radius : Double
   border_bottom_right_radius : Double
   border_bottom_left_radius : Double
-  overflow_x : @types.Overflow
-  overflow_y : @types.Overflow
+  overflow_x : @crater-core.Overflow
+  overflow_y : @crater-core.Overflow
   text_decoration_underline : Bool
   text_decoration_line_through : Bool
   text_decoration_overline : Bool
@@ -72,10 +72,10 @@ pub(all) struct PaintProperties {
   border_right_width : Double
   border_bottom_width : Double
   border_left_width : Double
-  border_top_color : @types.Color
-  border_right_color : @types.Color
-  border_bottom_color : @types.Color
-  border_left_color : @types.Color
+  border_top_color : @crater-core.Color
+  border_right_color : @crater-core.Color
+  border_bottom_color : @crater-core.Color
+  border_left_color : @crater-core.Color
 }
 pub fn PaintProperties::clips_overflow(Self) -> Bool
 pub fn PaintProperties::default() -> Self

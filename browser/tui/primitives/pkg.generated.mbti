@@ -2,19 +2,19 @@
 package "mizchi/crater-browser/tui/primitives"
 
 import {
-  "mizchi/crater-layout/types",
+  "mizchi/crater-core",
 }
 
 // Values
 pub fn ansi_bg_256(Int) -> String
 
-pub fn ansi_bg_color(@types.Color) -> String
+pub fn ansi_bg_color(@crater-core.Color) -> String
 
 pub fn ansi_bold() -> String
 
 pub fn ansi_fg_256(Int) -> String
 
-pub fn ansi_fg_color(@types.Color) -> String
+pub fn ansi_fg_color(@crater-core.Color) -> String
 
 pub fn ansi_hyperlink_end() -> String
 
@@ -40,17 +40,17 @@ pub fn buffer_to_plain_with_links(CharBuffer, Array[PlainLink]) -> String
 
 pub fn char_display_width(Char) -> Int
 
-pub fn color_to_256(@types.Color) -> Int
+pub fn color_to_256(@crater-core.Color) -> Int
 
 pub fn disable_mouse() -> String
 
-pub fn draw_box(CharBuffer, Int, Int, Int, Int, BoxStyle, @types.Color, @types.Color) -> Unit
+pub fn draw_box(CharBuffer, Int, Int, Int, Int, BoxStyle, @crater-core.Color, @crater-core.Color) -> Unit
 
-pub fn draw_filled_box(CharBuffer, Int, Int, Int, Int, BoxStyle, @types.Color, @types.Color) -> Unit
+pub fn draw_filled_box(CharBuffer, Int, Int, Int, Int, BoxStyle, @crater-core.Color, @crater-core.Color) -> Unit
 
 pub fn draw_heading(CharBuffer, Int, Int, String, Int, Int) -> Int
 
-pub fn draw_hline(CharBuffer, Int, Int, Int, BoxStyle, @types.Color) -> Unit
+pub fn draw_hline(CharBuffer, Int, Int, Int, BoxStyle, @crater-core.Color) -> Unit
 
 pub fn draw_link(CharBuffer, Int, Int, String, Int, Bool) -> Int
 
@@ -58,7 +58,7 @@ pub fn draw_scrollbar(CharBuffer, Int, Int, Int, Int, Int, Int) -> Unit
 
 pub fn draw_status_bar(CharBuffer, Int, String, Int, Int, focused_link_url? : String?, selection_mode? : Bool, dark_mode? : Bool) -> Unit
 
-pub fn draw_vline(CharBuffer, Int, Int, Int, BoxStyle, @types.Color) -> Unit
+pub fn draw_vline(CharBuffer, Int, Int, Int, BoxStyle, @crater-core.Color) -> Unit
 
 pub fn enable_mouse() -> String
 
@@ -80,7 +80,7 @@ pub struct CharBuffer {
   cells : Array[CharCell]
 }
 pub fn CharBuffer::clear(Self) -> Unit
-pub fn CharBuffer::fill_bg(Self, Int, Int, Int, Int, @types.Color) -> Unit
+pub fn CharBuffer::fill_bg(Self, Int, Int, Int, Int, @crater-core.Color) -> Unit
 pub fn CharBuffer::fill_rect(Self, Int, Int, Int, Int, CharCell) -> Unit
 pub fn CharBuffer::get_cell(Self, Int, Int) -> CharCell
 pub fn CharBuffer::get_row_text(Self, Int) -> String
@@ -92,15 +92,15 @@ pub fn CharBuffer::write_text_wrapped(Self, Int, Int, String, TextStyle, Int, In
 
 pub(all) struct CharCell {
   char : Char
-  fg : @types.Color
-  bg : @types.Color
+  fg : @crater-core.Color
+  bg : @crater-core.Color
   bold : Bool
   underline : Bool
   reverse : Bool
 }
 pub fn CharCell::default() -> Self
 pub fn CharCell::from_char(Char) -> Self
-pub fn CharCell::styled(Char, @types.Color, @types.Color) -> Self
+pub fn CharCell::styled(Char, @crater-core.Color, @crater-core.Color) -> Self
 pub impl Eq for CharCell
 
 pub(all) struct DirtyRect {
@@ -118,8 +118,8 @@ pub(all) struct PlainLink {
 }
 
 pub(all) struct TextStyle {
-  fg : @types.Color
-  bg : @types.Color
+  fg : @crater-core.Color
+  bg : @crater-core.Color
   bold : Bool
   underline : Bool
 }

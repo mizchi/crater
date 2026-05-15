@@ -2,14 +2,14 @@
 package "mizchi/crater-browser/tui/paint/runtime"
 
 import {
+  "mizchi/crater-core",
   "mizchi/crater-layout/node",
-  "mizchi/crater-layout/types",
   "mizchi/crater-painter/paint/model",
   "mizchi/crater-painter/paint/scroll",
 }
 
 // Values
-pub fn prepare_viewport_paint(@node.Node, @types.Layout, Double, Double, Double) -> PreparedPaint?
+pub fn prepare_viewport_paint(@node.Node, @crater-core.Layout, Double, Double, Double) -> PreparedPaint?
 
 // Errors
 

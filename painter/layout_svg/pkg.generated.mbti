@@ -2,14 +2,14 @@
 package "mizchi/crater-painter/layout_svg"
 
 import {
-  "mizchi/crater-layout/types",
+  "mizchi/crater-core",
   "mizchi/crater-painter/svg",
 }
 
 // Values
 pub fn attributes_to_svg_node(String, Array[(String, String)]) -> @svg.SVGNode
 
-pub fn create_svg_layout(String, Array[(String, String)], Double, Double?) -> @types.Layout
+pub fn create_svg_layout(String, Array[(String, String)], Double, Double?) -> @crater-core.Layout
 
 pub fn is_svg_element_tag(String) -> Bool
 

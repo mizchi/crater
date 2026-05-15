@@ -23,6 +23,9 @@ function walk(dir, out = []) {
 
 // Layer assignment by module name. Keep this small and obvious.
 const LAYERS = [
+  ["Core", new Set([
+    "mizchi/crater-core",
+  ])],
   ["Foundation", new Set([
     "mizchi/crater-css",
     "mizchi/crater-dom",

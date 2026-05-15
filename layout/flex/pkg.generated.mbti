@@ -2,9 +2,9 @@
 package "mizchi/crater-layout/flex"
 
 import {
+  "mizchi/crater-core",
   "mizchi/crater-layout/node",
   "mizchi/crater-layout/trace",
-  "mizchi/crater-layout/types",
 }
 
 // Values
@@ -12,13 +12,13 @@ pub fn clear_intrinsic_cache_for_node(Int) -> Unit
 
 pub fn clear_intrinsic_cache_for_subtree(@node.Node) -> Unit
 
-pub fn compute(@node.Node, @types.LayoutContext, @node.DispatchFn) -> @types.Layout
+pub fn compute(@node.Node, @crater-core.LayoutContext, @node.DispatchFn) -> @crater-core.Layout
 
-pub fn compute_root(@node.Node, @types.LayoutContext, @node.DispatchFn) -> @types.Layout
+pub fn compute_root(@node.Node, @crater-core.LayoutContext, @node.DispatchFn) -> @crater-core.Layout
 
-pub fn compute_with_trace(@node.Node, @types.LayoutContext, @node.DispatchFn) -> TracedLayoutResult
+pub fn compute_with_trace(@node.Node, @crater-core.LayoutContext, @node.DispatchFn) -> TracedLayoutResult
 
-pub fn compute_with_warnings(@node.Node, @types.LayoutContext, @node.DispatchFn) -> @types.LayoutResult
+pub fn compute_with_warnings(@node.Node, @crater-core.LayoutContext, @node.DispatchFn) -> @crater-core.LayoutResult
 
 pub fn reset_intrinsic_cache() -> Unit
 
@@ -28,8 +28,8 @@ pub fn reset_resolved_cache() -> Unit
 
 // Types and methods
 pub(all) struct TracedLayoutResult {
-  layout : @types.Layout
-  warnings : Array[@types.LayoutWarning]
+  layout : @crater-core.Layout
+  warnings : Array[@crater-core.LayoutWarning]
   tracer : @trace.LayoutTracer
 }
 

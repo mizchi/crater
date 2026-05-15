@@ -3,7 +3,7 @@ import {
   "mizchi/crater-layout/dispatch",
   "mizchi/crater-layout/flex",
   "mizchi/crater-layout/grid",
-  "mizchi/crater-layout/types",
+  "mizchi/crater-core" @types,
   "mizchi/crater-layout/style",
   "mizchi/crater-layout/node",
   "mizchi/crater-layout/tree",

@@ -2,17 +2,17 @@
 package "mizchi/crater-layout/grid"
 
 import {
+  "mizchi/crater-core",
   "mizchi/crater-layout/node",
-  "mizchi/crater-layout/types",
   "moonbitlang/core/debug",
 }
 
 // Values
-pub fn compute(@node.Node, @types.LayoutContext, @node.DispatchFn) -> @types.Layout
+pub fn compute(@node.Node, @crater-core.LayoutContext, @node.DispatchFn) -> @crater-core.Layout
 
-pub fn compute_grid_layout(@node.Node, Double, Double, @node.DispatchFn) -> @types.Layout
+pub fn compute_grid_layout(@node.Node, Double, Double, @node.DispatchFn) -> @crater-core.Layout
 
-pub fn compute_layout(@node.Node, Double, Double) -> @types.Layout
+pub fn compute_layout(@node.Node, Double, Double) -> @crater-core.Layout
 
 // Errors
 

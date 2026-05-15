@@ -2,14 +2,14 @@
 package "mizchi/crater-css/parser"
 
 import {
+  "mizchi/crater-core",
   "mizchi/crater-css/cascade",
   "mizchi/crater-css/diagnostics",
   "mizchi/crater-layout/style",
-  "mizchi/crater-layout/types",
 }
 
 // Values
-pub fn parse_grid_template_tracks_from_string(String) -> Array[@types.TrackSizingFunction]
+pub fn parse_grid_template_tracks_from_string(String) -> Array[@crater-core.TrackSizingFunction]
 
 pub fn parse_inline_style(String) -> @style.Style
 

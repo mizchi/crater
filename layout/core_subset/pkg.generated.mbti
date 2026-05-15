@@ -2,12 +2,12 @@
 package "mizchi/crater-layout/core_subset"
 
 import {
+  "mizchi/crater-core",
   "mizchi/crater-layout/node",
-  "mizchi/crater-layout/types",
 }
 
 // Values
-pub fn compute_core_layout(@node.Node, @types.Size[Double]) -> CoreComputeResult
+pub fn compute_core_layout(@node.Node, @crater-core.Size[Double]) -> CoreComputeResult
 
 pub fn validate_core_subset(@node.Node) -> Array[CoreIssue]
 
@@ -15,7 +15,7 @@ pub fn validate_core_subset(@node.Node) -> Array[CoreIssue]
 
 // Types and methods
 pub(all) struct CoreComputeResult {
-  layout : @types.Layout?
+  layout : @crater-core.Layout?
   issues : Array[CoreIssue]
 }
 

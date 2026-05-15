@@ -2,13 +2,13 @@
 package "mizchi/crater-renderer/renderer"
 
 import {
+  "mizchi/crater-core",
   "mizchi/crater-css/cascade",
   "mizchi/crater-css/media",
   "mizchi/crater-css/selector",
   "mizchi/crater-dom/html",
   "mizchi/crater-layout/node",
   "mizchi/crater-layout/style",
-  "mizchi/crater-layout/types",
   "moonbitlang/core/ref",
 }
 
@@ -23,7 +23,7 @@ pub fn clear_image_intrinsic_size_provider() -> Unit
 
 pub fn clear_text_metrics_provider() -> Unit
 
-pub fn compute_layout_from_render_root(@node.Node, PreparedRenderDocument, RenderContext) -> @types.Layout
+pub fn compute_layout_from_render_root(@node.Node, PreparedRenderDocument, RenderContext) -> @crater-core.Layout
 
 pub fn element_to_node(@html.Element, @style.Style?) -> @node.Node
 
@@ -35,7 +35,7 @@ pub fn get_content_height_with_document(@html.Document, Int, Int, Array[String])
 
 pub fn get_force_monospace_metrics() -> Bool
 
-pub fn layout_to_json(@types.Layout) -> String
+pub fn layout_to_json(@crater-core.Layout) -> String
 
 pub let perf_child_loop_us : @ref.Ref[Int64]
 
@@ -55,27 +55,27 @@ pub fn prepare_render_document(@html.Document, RenderContext, Array[String]) -> 
 
 pub fn prepare_render_document_with_prepared_external_css(@html.Document, RenderContext, PreparedExternalCss) -> PreparedRenderDocument
 
-pub fn print_layout_tree(@types.Layout, Int) -> Unit
+pub fn print_layout_tree(@crater-core.Layout, Int) -> Unit
 
-pub fn print_layout_tree_with_options(@types.Layout, Int, Bool) -> Unit
+pub fn print_layout_tree_with_options(@crater-core.Layout, Int, Bool) -> Unit
 
-pub fn render(String, RenderContext) -> @types.Layout
+pub fn render(String, RenderContext) -> @crater-core.Layout
 
-pub fn render_document_with_external_css(@html.Document, RenderContext, Array[String]) -> @types.Layout
+pub fn render_document_with_external_css(@html.Document, RenderContext, Array[String]) -> @crater-core.Layout
 
-pub fn render_document_with_prepared_external_css(@html.Document, RenderContext, PreparedExternalCss) -> @types.Layout
+pub fn render_document_with_prepared_external_css(@html.Document, RenderContext, PreparedExternalCss) -> @crater-core.Layout
 
 pub fn render_to_node(String, RenderContext) -> @node.Node
 
-pub fn render_to_node_and_layout(String, RenderContext) -> (@node.Node, @types.Layout)
+pub fn render_to_node_and_layout(String, RenderContext) -> (@node.Node, @crater-core.Layout)
 
-pub fn render_to_node_and_layout_full_document(String, RenderContext) -> (@node.Node, @types.Layout)
+pub fn render_to_node_and_layout_full_document(String, RenderContext) -> (@node.Node, @crater-core.Layout)
 
-pub fn render_to_node_and_layout_with_document(@html.Document, RenderContext, Array[String]) -> (@node.Node, @types.Layout)
+pub fn render_to_node_and_layout_with_document(@html.Document, RenderContext, Array[String]) -> (@node.Node, @crater-core.Layout)
 
-pub fn render_to_node_and_layout_with_external_css(String, RenderContext, Array[String]) -> (@node.Node, @types.Layout)
+pub fn render_to_node_and_layout_with_external_css(String, RenderContext, Array[String]) -> (@node.Node, @crater-core.Layout)
 
-pub fn render_to_node_and_layout_with_prepared_external_css(@html.Document, RenderContext, PreparedExternalCss) -> (@node.Node, @types.Layout)
+pub fn render_to_node_and_layout_with_prepared_external_css(@html.Document, RenderContext, PreparedExternalCss) -> (@node.Node, @crater-core.Layout)
 
 pub fn render_to_node_with_document(@html.Document, RenderContext, Array[String]) -> @node.Node
 
@@ -83,7 +83,7 @@ pub fn render_to_node_with_external_css(String, RenderContext, Array[String]) ->
 
 pub fn render_to_node_with_prepared_external_css(@html.Document, RenderContext, PreparedExternalCss) -> @node.Node
 
-pub fn render_with_external_css(String, RenderContext, Array[String]) -> @types.Layout
+pub fn render_with_external_css(String, RenderContext, Array[String]) -> @crater-core.Layout
 
 pub fn set_builtin_text_advance_ratio_override_for_test(Double) -> Unit
 
@@ -148,9 +148,9 @@ pub(all) struct RenderContext {
 pub fn RenderContext::default() -> Self
 
 pub struct TextMetricsProvider {
-  func : (String, Double, Double, @style.WhiteSpace, @style.WritingMode, Double, String) -> @types.MeasureFunc
+  func : (String, Double, Double, @style.WhiteSpace, @style.WritingMode, Double, String) -> @crater-core.MeasureFunc
 }
-pub fn TextMetricsProvider::new((String, Double, Double, @style.WhiteSpace, @style.WritingMode, Double, String) -> @types.MeasureFunc) -> Self
+pub fn TextMetricsProvider::new((String, Double, Double, @style.WhiteSpace, @style.WritingMode, Double, String) -> @crater-core.MeasureFunc) -> Self
 
 // Type aliases
 

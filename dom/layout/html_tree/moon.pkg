@@ -1,6 +1,6 @@
 import {
   "moonbitlang/core/string",
-  "mizchi/crater-layout/types",
+  "mizchi/crater-core" @types,
   "mizchi/crater-layout/tree",
   "mizchi/crater-dom/layout/style_bridge",
   "mizchi/crater-dom/html",

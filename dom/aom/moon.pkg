@@ -3,7 +3,7 @@ import {
   "mizchi/crater-dom/html",
   "mizchi/crater-css" @css,
   "mizchi/crater-layout" @layout,
-  "mizchi/crater-layout/types",
+  "mizchi/crater-core" @types,
 }
 
 import {

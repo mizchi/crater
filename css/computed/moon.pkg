@@ -5,7 +5,7 @@ import {
   "mizchi/crater-css/cascade",
   "mizchi/crater-css/parser",
   "mizchi/crater-layout/style",
-  "mizchi/crater-layout/types",
+  "mizchi/crater-core" @types,
 }
 
 import {

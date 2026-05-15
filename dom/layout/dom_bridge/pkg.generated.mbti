@@ -2,9 +2,9 @@
 package "mizchi/crater-dom/layout/dom_bridge"
 
 import {
+  "mizchi/crater-core",
   "mizchi/crater-dom/dom",
   "mizchi/crater-layout/tree",
-  "mizchi/crater-layout/types",
 }
 
 // Values
@@ -20,8 +20,8 @@ pub struct Document {
   mut needs_layout : Bool
 }
 pub fn Document::append_child(Self, @dom.NodeId, @dom.NodeId) -> Result[Unit, @dom.CoreError]
-pub fn Document::compute_layout(Self) -> @types.Layout
-pub fn Document::compute_layout_full(Self) -> @types.Layout
+pub fn Document::compute_layout(Self) -> @crater-core.Layout
+pub fn Document::compute_layout_full(Self) -> @crater-core.Layout
 pub fn Document::create_element(Self, String) -> @dom.NodeId
 pub fn Document::create_text(Self, String) -> @dom.NodeId
 pub fn Document::get_document_root(Self) -> @dom.NodeId
@@ -34,7 +34,7 @@ pub fn Document::query_selector(Self, String) -> Result[@dom.NodeId?, @dom.CoreE
 pub fn Document::resize_viewport(Self, Double, Double) -> Unit
 pub fn Document::set_attribute(Self, @dom.NodeId, String, String) -> Result[Unit, @dom.CoreError]
 pub fn Document::set_text_content(Self, @dom.NodeId, String) -> Result[Unit, @dom.CoreError]
-pub fn Document::update(Self) -> @types.Layout
+pub fn Document::update(Self) -> @crater-core.Layout
 
 // Type aliases
 

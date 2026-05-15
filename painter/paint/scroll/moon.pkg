@@ -3,7 +3,7 @@ import {
 }
 
 import {
-  "mizchi/crater-layout/types",
+  "mizchi/crater-core" @types,
 } for "test"
 
 import {

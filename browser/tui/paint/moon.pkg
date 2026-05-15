@@ -1,6 +1,6 @@
 import {
   "mizchi/crater-layout" @node,
-  "mizchi/crater-layout/types",
+  "mizchi/crater-core" @types,
   "mizchi/crater-browser/tui/paint/plain" @paint_plain,
   "mizchi/crater-browser/tui/paint/runtime" @paint_runtime,
   "mizchi/crater-browser/tui/paint/viewport" @paint_viewport,

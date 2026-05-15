@@ -2,12 +2,12 @@
 package "mizchi/crater-painter/paint/layout_tree_bridge"
 
 import {
-  "mizchi/crater-layout/types",
+  "mizchi/crater-core",
   "mizchi/crater-painter/paint/model",
 }
 
 // Values
-pub fn from_layout(@types.Layout) -> @model.PaintNode
+pub fn from_layout(@crater-core.Layout) -> @model.PaintNode
 
 // Errors
 
