@@ -22,10 +22,6 @@
       "path": "../painter",
       "version": "0.17.1"
     },
-    "mizchi/crater-painter-terminal": {
-      "path": "../painter_terminal",
-      "version": "0.17.1"
-    },
     "moonbitlang/async": "0.17.1"
   },
   "repository": "https://github.com/mizchi/crater",

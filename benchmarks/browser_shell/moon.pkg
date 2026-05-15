@@ -5,8 +5,8 @@ import {
   "mizchi/crater-benchmarks" @fixtures,
   "mizchi/crater-css" @css,
   "mizchi/crater-dom/html",
-  "mizchi/crater-painter-terminal/sixel",
-  "mizchi/crater-painter-terminal/kitty",
+  "mizchi/crater-painter/terminal/sixel",
+  "mizchi/crater-painter/terminal/kitty",
   "mizchi/crater-renderer/renderer",
 }
 

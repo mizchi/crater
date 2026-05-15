@@ -32,16 +32,19 @@ describe("MoonBit package and compatibility boundaries", () => {
           !source.includes("mizchi/crater-terminal-protocol/sixel");
         return (source.includes("mizchi/crater-terminal-protocol") && !allowedAnsiFacade) ||
           source.includes("mizchi/crater-painter/x/kitty") ||
-          source.includes("mizchi/crater-painter-terminal/kitty");
+          source.includes("mizchi/crater-painter/terminal/kitty");
       })
       .map((file) => path.relative(REPO_ROOT, file));
 
     expect(offenders).toEqual([]);
   });
 
-  it("keeps terminal protocol implementation out of crater-painter", () => {
+  it("keeps terminal protocol implementation out of non-terminal painter packages", () => {
     const offenders = collectMoonPackageFiles(path.join(REPO_ROOT, "painter"))
       .filter((file) => {
+        const relativeFile = path.relative(REPO_ROOT, file);
+        if (relativeFile.startsWith("painter/terminal/")) return false;
+        if (relativeFile === "painter/moon.mod.json") return false;
         const source = fs.readFileSync(file, "utf8");
         return source.includes("mizchi/crater-terminal-protocol") ||
           source.includes("mizchi/crater-painter/x/kitty");
@@ -55,16 +58,9 @@ describe("MoonBit package and compatibility boundaries", () => {
     expect(fs.existsSync(path.join(REPO_ROOT, "painter/paint/raster/sixel.mbt"))).toBe(false);
   });
 
-  it("keeps painter-terminal root facade behind terminal-specific packages", () => {
-    const rootPackage = path.join(REPO_ROOT, "painter_terminal/moon.pkg");
-    const source = fs.readFileSync(rootPackage, "utf8");
-
-    expect(source).not.toContain("mizchi/crater-terminal-protocol");
-  });
-
-  it("keeps terminal output helpers out of crater-renderer", () => {
+  it("keeps terminal output helpers out of non-terminal renderer packages", () => {
     const terminalOutputMarkers = [
-      "mizchi/crater-painter-terminal/kitty",
+      "mizchi/crater-painter/terminal/kitty",
       "mizchi/crater-painter/paint/raster",
       "render_to_sixel",
       "render_to_kitty",
@@ -72,6 +68,8 @@ describe("MoonBit package and compatibility boundaries", () => {
     ] as const;
     const offenders = collectMoonPackageFiles(path.join(REPO_ROOT, "renderer"))
       .filter((file) => {
+        const relativeFile = path.relative(REPO_ROOT, file);
+        if (relativeFile.startsWith("renderer/terminal/")) return false;
         const source = fs.readFileSync(file, "utf8");
         return terminalOutputMarkers.some((marker) => source.includes(marker));
       })

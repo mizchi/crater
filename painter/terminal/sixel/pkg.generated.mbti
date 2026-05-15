@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "mizchi/crater-painter-terminal/sixel"
+package "mizchi/crater-painter/terminal/sixel"
 
 import {
   "mizchi/crater-core",

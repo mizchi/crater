@@ -26,10 +26,6 @@
       "path": "../painter",
       "version": "0.17.1"
     },
-    "mizchi/crater-painter-terminal": {
-      "path": "../painter_terminal",
-      "version": "0.17.1"
-    },
     "mizchi/crater-renderer": {
       "path": "../renderer",
       "version": "0.17.1"
