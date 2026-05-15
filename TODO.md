@@ -1,6 +1,6 @@
 # TODO
 
-Last organized: 2026-05-14
+Last organized: 2026-05-15
 
 このファイルは「次に着手できる未完了タスク」だけを置く。完了済みの作業ログ、過去の WPT 数値、実装履歴は git history / docs / issue に寄せる。
 
@@ -35,7 +35,8 @@ Last organized: 2026-05-14
 - [ ] `scripts/flaker-*` / `docs/flaker-runbook.md` の ownership と TODO を同期する
   - `@mizchi/flaker` に upstream 済みの pure core と、crater に残す VRT domain extension を再分類する
   - `src/` facade 削除後の実パスに合わせた fixture / runbook の更新は完了
-  - VRT domain metadata は `flaker-batch-vrt-extension` / `vrt-report-*` / `wpt-vrt-summary-*` に閉じる方針を inventory guard で固定済み。次は `vrt-harness` 接続時の共有 schema を確認する
+  - VRT domain metadata は `flaker-batch-vrt-extension` / `vrt-report-*` / `wpt-vrt-summary-*` に閉じる方針を inventory guard で固定済み
+  - crater 側の VRT artifact schema / identity 受け入れ契約は完了。次は external `vrt-harness` payload fixture を loader -> summary -> batch summary loader に通す
 
 ## Browser / Playwright / WebDriver
 
@@ -94,18 +95,15 @@ Last organized: 2026-05-14
 
 ## Flaker / Test Management
 
-- [ ] stable test identity を `crater` / `flaker` / `vrt-harness` で共有する
-  - 候補: `taskId + spec + filter + variant + optional shard`
-  - upstream issue: `mizchi/flaker#8`
-  - crater VRT artifact contract は `@mizchi/flaker/reporting/stable-test-identity` を使い、external harness の `identity.key` は canonical fields から再計算する。`identity.key` 省略 payload も受け入れ済み
+- [ ] `vrt-harness` consumer payload を crater contract に接続する
+  - external `vrt-artifact` fixture は `identity.key` なし / 独自 key ありの両方を用意する
+  - crater path: `asNormalizedVrtArtifactReport` -> `loadVrtArtifactReports` -> `buildVrtArtifactSummary` -> `flaker-batch-summary-loader`
+  - 実 `vrt-harness` 側は crater の公開 API だけを使い、baseline 管理と fixture UX は `vrt-harness` に残す
+  - stable identity contract は `taskId + spec + filter + variant + optional shard`。upstream issue: `mizchi/flaker#8`
 - [ ] `flaker core` と crater domain metadata の境界を固定する
   - core: selection / quarantine / summary / diff
   - crater: VRT 固有メトリクス (`diffRatio`, `threshold`, `backend`, `viewport`, `snapshotKind`)
 - [ ] VRT 判定は crater に残しつつ、summary / identity / quarantine 連携だけ共通契約へ寄せる
-- [ ] `vrt-harness` を crater の consumer として接続する
-  - crater の公開 API だけを使う
-  - markup scenario から stable identity / normalized report を生成する
-  - baseline 管理と fixture UX は `vrt-harness` に残す
 - [ ] crater に残った汎用 test management code を削る
 - [ ] `flaker` issue と crater / `vrt-harness` TODO の相互参照を整え、drift を防ぐ
 
