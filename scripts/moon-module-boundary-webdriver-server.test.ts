@@ -70,11 +70,15 @@ describe("webdriver/server isolation", () => {
     expect(oldTestExists).toBe(false);
   });
 
-  it("webdriver/webdriver re-exports SessionManager/SessionState via a thin facade", () => {
-    const facade = read("webdriver/webdriver/server_facade.mbt");
-    expect(facade).toContain("pub using @server");
-    expect(facade).toContain("type SessionManager");
-    expect(facade).toContain("type SessionState");
+  it("top-level webdriver facade exposes SessionManager/SessionState directly from @server", () => {
+    const top = read("webdriver/top.mbt");
+    expect(top).toContain("pub using @server");
+    expect(top).toContain("type SessionManager");
+    expect(top).toContain("type SessionState");
+    // The intermediate `webdriver/webdriver` facade has been dropped.
+    expect(
+      fs.existsSync(path.join(REPO_ROOT, "webdriver/webdriver/server_facade.mbt")),
+    ).toBe(false);
   });
 
   it("server package only depends on contract + core/json", () => {

@@ -1,5 +1,8 @@
 import {
   "mizchi/crater-browser/cdp",
+  "mizchi/crater-webdriver-bidi/contract" @contract,
+  "mizchi/crater-webdriver-bidi/rpc" @rpc,
+  "mizchi/crater-webdriver-bidi/server" @server,
   "mizchi/crater-webdriver-bidi/webdriver",
 }
 

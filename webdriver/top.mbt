@@ -1,24 +1,21 @@
 ///|
-pub using @webdriver {
+/// Top-level public API surface for `mizchi/crater-webdriver-bidi`.
+///
+/// Re-exports come straight from the source packages (`contract` / `rpc` /
+/// `server`) rather than the kitchen-sink `webdriver` facade, so downstream
+/// consumers see a single hop to the real definition. `webdriver` is still
+/// re-exported for the transport (`BidiServer*`) and CDP-handler types that
+/// have not been split out yet.
+pub using @contract {
   type ApiError,
   type ApiMethod,
-  type BidiServer,
-  type BidiServerConfig,
   type Capabilities,
-  type CdpHandlerError,
-  type CdpSessionManager,
   type ErrorCode,
   type PageLoadStrategy,
   type ProxyConfig,
   type Rect,
-  type RpcErrorCode,
-  type RpcId,
-  type RpcRequest,
-  type RpcResponse,
   type Selector,
   type Session,
-  type SessionManager,
-  type SessionState,
   type Timeouts,
   type Viewport,
   type WebDriverCommand,
@@ -27,6 +24,25 @@ pub using @webdriver {
   type WebDriverResponse,
   type WebDriverValue,
   type WindowRect,
+}
+
+///|
+pub using @rpc {
+  type RpcErrorCode,
+  type RpcId,
+  type RpcRequest,
+  type RpcResponse,
+}
+
+///|
+pub using @server {type SessionManager, type SessionState}
+
+///|
+pub using @webdriver {
+  type BidiServer,
+  type BidiServerConfig,
+  type CdpHandlerError,
+  type CdpSessionManager,
 }
 
 ///|

@@ -5,23 +5,16 @@ import {
   "mizchi/crater-browser/cdp",
   "mizchi/crater-webdriver-bidi/contract",
   "mizchi/crater-webdriver-bidi/rpc",
-  "mizchi/crater-webdriver-bidi/server",
   "mizchi/js/core",
   "moonbitlang/core/debug",
 }
 
 // Values
-pub fn api_error_to_rpc(@rpc.RpcId, @contract.ApiError) -> @rpc.RpcResponse
-
 pub fn await_promise(@core.Any) -> String
 
 pub fn decode_base64(String) -> String
 
 pub fn delete_runtime_handle(String) -> Unit
-
-pub fn error_response(@contract.ErrorCode, String) -> @contract.WebDriverResponse
-
-pub fn escape_json_string(String) -> String
 
 pub fn eval_and_send_async(@core.Any, Int, String, String) -> Unit
 
@@ -107,11 +100,7 @@ pub fn mark_quickjs_initialized() -> Unit
 
 pub fn parse_data_url(String) -> (String, String)?
 
-pub fn parse_json_object(String) -> Map[String, String]
-
 pub fn parse_method(String) -> @contract.ApiMethod?
-
-pub fn parse_request(String, String, String) -> @contract.WebDriverRequest
 
 pub fn quickjs_eval_async(String, Bool) -> @core.Any
 
@@ -128,20 +117,6 @@ pub fn quickjs_load(String) -> @core.Any
 pub fn reset_paint_provider() -> Unit
 
 pub fn reset_runtime_event_buffers(String) -> Unit
-
-pub fn rpc_error(@rpc.RpcId, @rpc.RpcErrorCode, String) -> @rpc.RpcResponse
-
-pub fn rpc_error_with_data(@rpc.RpcId, @rpc.RpcErrorCode, String, String) -> @rpc.RpcResponse
-
-pub fn rpc_success_bool(@rpc.RpcId, Bool) -> @rpc.RpcResponse
-
-pub fn rpc_success_json(@rpc.RpcId, String) -> @rpc.RpcResponse
-
-pub fn rpc_success_null(@rpc.RpcId) -> @rpc.RpcResponse
-
-pub fn rpc_success_number(@rpc.RpcId, Double) -> @rpc.RpcResponse
-
-pub fn rpc_success_string(@rpc.RpcId, String) -> @rpc.RpcResponse
 
 pub fn runtime_shared_node_is_document(String) -> Bool
 
@@ -168,16 +143,6 @@ pub fn set_runtime_context_screen_orientation(String, String, Int) -> Unit
 pub fn set_runtime_context_user_agent(String, String) -> Unit
 
 pub fn set_runtime_context_viewport(String, Int, Int, Double) -> Unit
-
-pub fn success_bool(Bool) -> @contract.WebDriverResponse
-
-pub fn success_element(String) -> @contract.WebDriverResponse
-
-pub fn success_null() -> @contract.WebDriverResponse
-
-pub fn success_object(Map[String, @contract.WebDriverValue]) -> @contract.WebDriverResponse
-
-pub fn success_string(String) -> @contract.WebDriverResponse
 
 pub fn sync_runtime_html(String, String, Bool) -> Unit
 
@@ -253,71 +218,6 @@ pub fn Executor::title(Self, String) -> @contract.ApiResult[String]
 pub fn Executor::url(Self, String) -> @contract.ApiResult[String]
 
 // Type aliases
-pub using @contract {type ApiError}
-
-pub using @contract {type ApiMethod}
-
-pub using @contract {type ApiResult}
-
-pub using @contract {type Capabilities}
-
-pub using @contract {type ContextId}
-
-pub using @contract {type ElementId}
-
-pub using @contract {type ElementRect}
-
-pub using @contract {type ErrorCode}
-
-pub using @contract {type HttpMethod}
-
-pub using @contract {type LocatorStrategy}
-
-pub using @contract {type Modifiers}
-
-pub using @contract {type MouseButton}
-
-pub using @contract {type PageId}
-
-pub using @contract {type PageLoadStrategy}
-
-pub using @contract {type Point}
-
-pub using @contract {type ProxyConfig}
-
-pub using @contract {type Rect}
-
-pub using @rpc {type RpcErrorCode}
-
-pub using @rpc {type RpcId}
-
-pub using @rpc {type RpcRequest}
-
-pub using @rpc {type RpcResponse}
-
-pub using @contract {type Selector}
-
-pub using @contract {type Session}
-
-pub using @server {type SessionManager}
-
-pub using @server {type SessionState}
-
-pub using @contract {type Timeouts}
-
-pub using @contract {type Viewport}
-
-pub using @contract {type WebDriverCommand}
-
-pub using @contract {type WebDriverError}
-
-pub using @contract {type WebDriverRequest}
-
-pub using @contract {type WebDriverResponse}
-
-pub using @contract {type WebDriverValue}
-
-pub using @contract {type WindowRect}
 
 // Traits
 

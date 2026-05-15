@@ -54,24 +54,25 @@ describe("MoonBit WebDriver facade and contract boundaries", () => {
     expect(contractPackage).not.toContain("mizchi/js");
   });
 
-  it("keeps webdriver/webdriver as a compatibility facade over contract types", () => {
-    const packageSource = read("webdriver/webdriver/moon.pkg");
-    const facadeSource = read("webdriver/webdriver/contract.mbt");
-
-    expect(packageSource).toContain('"mizchi/crater-webdriver-bidi/contract" @contract');
-    expect(facadeSource).toContain("pub using @contract");
+  it("exposes contract types directly from the top-level facade", () => {
+    // Public re-exports now live on the top-level package; the
+    // intermediate `webdriver/webdriver/contract.mbt` only keeps a private
+    // `using` for the names actually referenced from internal code.
+    const topSource = read("webdriver/top.mbt");
+    expect(topSource).toContain('pub using @contract');
     for (const typeName of [
       "ApiError",
       "ApiMethod",
       "ErrorCode",
-      "HttpMethod",
       "WebDriverCommand",
       "WebDriverRequest",
       "WebDriverResponse",
       "WebDriverValue",
     ] as const) {
-      expect(facadeSource).toContain(`type ${typeName}`);
+      expect(topSource).toContain(`type ${typeName}`);
     }
+    const topPackage = read("webdriver/moon.pkg");
+    expect(topPackage).toContain('"mizchi/crater-webdriver-bidi/contract" @contract');
   });
 
   it("keeps JSON-RPC protocol helpers outside the implementation facade", () => {
@@ -95,13 +96,21 @@ describe("MoonBit WebDriver facade and contract boundaries", () => {
 
     const webdriverPackage = read("webdriver/webdriver/moon.pkg");
     const facadeSource = read("webdriver/webdriver/contract.mbt");
+    const topSource = read("webdriver/top.mbt");
     expect(webdriverPackage).toContain('"mizchi/crater-webdriver-bidi/rpc" @rpc');
-    expect(facadeSource).toContain("pub using @rpc");
-    for (const symbol of [
+    // RPC types are now re-exported from the top-level facade directly.
+    expect(topSource).toContain("pub using @rpc");
+    for (const typeName of [
       "RpcErrorCode",
       "RpcId",
       "RpcRequest",
       "RpcResponse",
+    ] as const) {
+      expect(topSource).toContain(`type ${typeName}`);
+    }
+    // The intermediate facade keeps thin pass-throughs that internal
+    // handlers still call without qualification.
+    for (const symbol of [
       "parse_method",
       "parse_json_object",
       "api_error_to_rpc",
