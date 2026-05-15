@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url'
 export const INTERNAL_MODULES = new Set([
   'mizchi/crater-benchmarks',
   'mizchi/crater-testing',
+  'mizchi/crater-tools',
 ])
 
 export function parseWorkspaceMembers(source) {

@@ -1,0 +1,15 @@
+{
+  "name": "mizchi/crater-tools",
+  "version": "0.17.1",
+  "deps": {
+    "mizchi/crater-webdriver-bidi": {
+      "path": "../webdriver",
+      "version": "0.17.1"
+    },
+    "mizchi/js": "0.10.13"
+  },
+  "repository": "https://github.com/mizchi/crater",
+  "license": "Apache-2.0",
+  "description": "Dev-only fixture/build tooling binaries (not published)",
+  "preferred-target": "js"
+}

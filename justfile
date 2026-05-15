@@ -249,7 +249,7 @@ ci-timing-summary input json markdown:
 build-bidi:
     moon -C webdriver build font_runtime --target js --release -j 1
     moon -C webdriver build bidi_main --target js --release -j 1
-    moon -C testing build webdriver_fixture_builder --target js --release -j 1
+    moon -C tools build webdriver_fixture_builder --target js --release -j 1
 
 # Start BiDi server (Deno)
 start-bidi:

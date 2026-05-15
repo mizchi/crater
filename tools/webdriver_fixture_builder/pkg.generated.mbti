@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "mizchi/crater-testing/webdriver_fixture_builder"
+package "mizchi/crater-tools/webdriver_fixture_builder"
 
 // Values
 
