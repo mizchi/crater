@@ -238,6 +238,7 @@ pub(all) struct Style {
   mut contain_intrinsic_inline_size : Double?
   mut contain_intrinsic_block_size : Double?
   mut transform : Transform
+  mut has_filter : Bool
   mut zoom : Double
   mut border_spacing : Double
   mut border_spacing_vertical : Double
