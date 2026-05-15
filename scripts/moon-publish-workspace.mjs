@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url'
 
 export const INTERNAL_MODULES = new Set([
   'mizchi/crater-benchmarks',
+  'mizchi/crater-conformance',
   'mizchi/crater-testing',
   'mizchi/crater-tools',
 ])

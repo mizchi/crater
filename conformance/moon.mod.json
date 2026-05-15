@@ -1,0 +1,26 @@
+{
+  "name": "mizchi/crater-conformance",
+  "version": "0.17.1",
+  "deps": {
+    "mizchi/crater-core": {
+      "path": "../core",
+      "version": "0.17.1"
+    },
+    "mizchi/crater-css": {
+      "path": "../css",
+      "version": "0.17.1"
+    },
+    "mizchi/crater-layout": {
+      "path": "../layout",
+      "version": "0.17.1"
+    },
+    "mizchi/crater-renderer": {
+      "path": "../renderer",
+      "version": "0.17.1"
+    }
+  },
+  "repository": "https://github.com/mizchi/crater",
+  "license": "Apache-2.0",
+  "description": "External-spec conformance tests (taffy layout snapshot, WPT runtime). Dev-only, not published.",
+  "preferred-target": "js"
+}

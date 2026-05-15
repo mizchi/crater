@@ -376,17 +376,26 @@ them through a dedicated module.
 
 ### `mizchi/crater-testing`
 
-The WPT runtime and MoonBit test packages have been moved into `testing/`:
+End-to-end integration test packages live under `testing/`:
 
 - `.`
 - `browser_shell`
-- `wpt_runtime`
 - `layout_css_e2e`
-- `taffy_compat`
-- `tui`
+- `native_e2e`
 
-This keeps integration-test-only packages and the lightweight WPT JS runtime
-out of the root compatibility layer.
+External-spec conformance (taffy snapshot, WPT runtime adapter) was
+extracted to `mizchi/crater-conformance`; the TUI bench moved to
+`benchmarks/tui`; the webdriver fixture builder binary moved to
+`mizchi/crater-tools`.
+
+### `mizchi/crater-conformance`
+
+External-spec conformance suites:
+
+- `taffy` — snapshot comparison against `mizchi/layout` (taffy) outputs
+- `wpt` — Web Platform Tests JS runtime adapter exporting `renderHtmlToJsonForWpt`
+
+Dev-only, not published.
 
 ### `mizchi/crater-renderer`
 

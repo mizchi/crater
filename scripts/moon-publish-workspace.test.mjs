@@ -89,7 +89,7 @@ test('--include-internal keeps internal modules after their public dependencies'
   assert.ok(names.includes('mizchi/crater-testing'))
   assertBefore(names, 'mizchi/crater-browser', 'mizchi/crater-benchmarks')
   assertBefore(names, 'mizchi/crater-renderer', 'mizchi/crater-benchmarks')
-  assertBefore(names, 'mizchi/crater-webdriver-bidi', 'mizchi/crater-testing')
+  assertBefore(names, 'mizchi/crater-webdriver-bidi', 'mizchi/crater-tools')
   assertBefore(names, 'mizchi/crater-browser-native', 'mizchi/crater-testing')
 })
 

@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "mizchi/crater-testing/wpt_runtime"
+package "mizchi/crater-conformance/wpt"
 
 // Values
 pub fn renderHtmlToJsonForWpt(String, Int, Int) -> String

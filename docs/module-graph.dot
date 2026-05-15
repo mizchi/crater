@@ -50,6 +50,7 @@ digraph crater_modules {
     label="Test / Dev";
     mizchi_crater_aomx [label="crater-aomx"];
     mizchi_crater_benchmarks [label="crater-benchmarks"];
+    mizchi_crater_conformance [label="crater-conformance"];
     mizchi_crater_testing [label="crater-testing"];
     mizchi_crater_tools [label="crater-tools"];
   }
@@ -83,6 +84,10 @@ digraph crater_modules {
   mizchi_crater_browser_helpers -> mizchi_crater_css;
   mizchi_crater_browser_helpers -> mizchi_crater_dom;
   mizchi_crater_browser_helpers -> mizchi_crater_aomx;
+  mizchi_crater_conformance -> mizchi_crater_core;
+  mizchi_crater_conformance -> mizchi_crater_css;
+  mizchi_crater_conformance -> mizchi_crater_layout;
+  mizchi_crater_conformance -> mizchi_crater_renderer;
   mizchi_crater_css -> mizchi_crater_core;
   mizchi_crater_dom -> mizchi_crater_core;
   mizchi_crater_dom -> mizchi_crater_css;
@@ -129,7 +134,6 @@ digraph crater_modules {
   mizchi_crater_testing -> mizchi_crater_css;
   mizchi_crater_testing -> mizchi_crater_dom;
   mizchi_crater_testing -> mizchi_crater_layout;
-  mizchi_crater_testing -> mizchi_crater_renderer;
   mizchi_crater_tools -> mizchi_crater_webdriver_bidi;
   mizchi_crater_wasm -> mizchi_crater_js;
   mizchi_crater_webdriver_bidi -> mizchi_crater_core;
