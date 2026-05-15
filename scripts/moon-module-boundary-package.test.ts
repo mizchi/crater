@@ -80,45 +80,16 @@ describe("MoonBit package and compatibility boundaries", () => {
     expect(offenders).toEqual([]);
   });
 
-  it("keeps terminal image cache implementation out of browser shell", () => {
-    const implementationMarkers = [
-      "pub struct ImageCache",
-      "pub(all) struct RgbaCacheEntry",
-      "pub(all) enum TerminalImageCacheEntry",
-      "js_decode_raster_image_to_rgba_base64",
-      "js_transcode_raster_image_to_png_base64",
-    ] as const;
-    const offenders = collectMoonBitFiles(path.join(REPO_ROOT, "browser_shell"))
-      .filter((file) => {
-        const source = fs.readFileSync(file, "utf8");
-        return implementationMarkers.some((marker) => source.includes(marker));
-      })
-      .map((file) => path.relative(REPO_ROOT, file));
-
-    expect(offenders).toEqual([]);
-  });
-
-  it("keeps html asset discovery implementation out of browser shell", () => {
-    const implementationMarkers = [
-      "is_img_tag_start",
-      "is_html_attr_name_char",
-      "read_html_attr_value",
-    ] as const;
-    const offenders = collectMoonBitFiles(path.join(REPO_ROOT, "browser_shell"))
-      .filter((file) => {
-        const source = fs.readFileSync(file, "utf8");
-        return implementationMarkers.some((marker) => source.includes(marker));
-      })
-      .map((file) => path.relative(REPO_ROOT, file));
-
-    expect(offenders).toEqual([]);
+  it("keeps the retired browser_shell facade out of the workspace", () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, "browser_shell"))).toBe(false);
+    const workspace = fs.readFileSync(path.join(REPO_ROOT, "moon.work"), "utf8");
+    expect(workspace).not.toContain('"./browser_shell"');
   });
 
   it("documents compatibility bridge ownership", () => {
     const source = fs.readFileSync(path.join(REPO_ROOT, "docs/compatibility-bridges.md"), "utf8");
     const requiredBridges = [
       "mizchi/crater-browser/js",
-      "mizchi/crater-browser-shell",
       "mizchi/crater-dom/layout/html_bridge",
       "mizchi/crater-painter/paint/layout_bridge",
       "mizchi/crater-painter/paint/render_bridge",

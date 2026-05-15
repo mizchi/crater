@@ -21,7 +21,6 @@ members = [
   "./runtime",
   "./html_assets",
   "./browser",
-  "./browser_shell",
   "./webdriver",
   "./browser/native",
   "./js",
