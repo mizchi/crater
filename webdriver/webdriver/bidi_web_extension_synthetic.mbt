@@ -124,7 +124,9 @@ fn BidiProtocol::resolve_web_extension_install(
                 request_id, "unknown error", "Unable to decode base64 extension payload",
               )
               None
-            } else if !is_valid_web_extension_archive_payload(decoded) {
+            } else if !@browser_domain.is_valid_web_extension_archive_payload(
+                decoded,
+              ) {
               self.send_error(
                 request_id, "invalid web extension", "Invalid web extension payload",
               )
@@ -309,11 +311,6 @@ fn BidiProtocol::resolve_web_extension_uninstall(
       None
     }
   }
-}
-
-///|
-fn is_valid_web_extension_archive_payload(decoded : String) -> Bool {
-  decoded.has_prefix("Cr24") || decoded.has_prefix("PK")
 }
 
 ///|

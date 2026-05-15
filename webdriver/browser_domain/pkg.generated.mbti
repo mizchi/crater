@@ -1,0 +1,90 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-webdriver-bidi/browser_domain"
+
+// Values
+pub fn bluetooth_characteristic_prefix_key(String, String, String) -> String
+
+pub fn bluetooth_characteristic_scope_key(String, String, String, String) -> String
+
+pub fn bluetooth_descriptor_prefix_key(String, String, String, String) -> String
+
+pub fn bluetooth_descriptor_scope_key(String, String, String, String, String) -> String
+
+pub fn bluetooth_device_field_string(Json, String) -> String?
+
+pub fn bluetooth_scope_key(String, String) -> String
+
+pub fn build_geolocation_coordinates_override(Json) -> Json
+
+pub fn build_geolocation_coordinates_remote_value(Json) -> Json
+
+pub fn build_geolocation_error_override(String) -> Json
+
+pub fn build_geolocation_error_remote_value(Int) -> Json
+
+pub fn build_screen_area_json(Int, Int) -> Json
+
+pub fn compute_screen_orientation_angle(String, String) -> Int
+
+pub fn default_geolocation_coordinates_json() -> Json
+
+pub fn default_runtime_user_agent() -> String
+
+pub fn default_screen_orientation_json() -> Json
+
+pub fn emulation_timezone_offset_minutes(String) -> Int?
+
+pub fn extract_bluetooth_byte_array_literal(String) -> Array[Json]
+
+pub fn extract_bluetooth_call_string_argument(String, String) -> String
+
+pub fn extract_bluetooth_uint8_array_data(String) -> Array[Json]
+
+pub fn extract_emulation_fetch_url(String) -> String?
+
+pub fn extract_first_bluetooth_string_argument(Json?) -> String?
+
+pub fn extract_permissions_query_name(String) -> String?
+
+pub fn find_bluetooth_device_for_name(Array[Json], String?) -> Json
+
+pub fn geolocation_watch_scope_context(String) -> String
+
+pub fn geolocation_watch_scope_key(String, Int) -> String
+
+pub fn is_supported_permission_name(String) -> Bool
+
+pub fn is_valid_screen_orientation_natural(String) -> Bool
+
+pub fn is_valid_screen_orientation_type(String) -> Bool
+
+pub fn is_valid_web_extension_archive_payload(String) -> Bool
+
+pub fn make_bluetooth_byte_remote_value(Array[Json]) -> Json
+
+pub fn make_bluetooth_requested_device_remote_value(String, String) -> Json
+
+pub fn normalize_geolocation_number_json(Json, Double, Double) -> Double?
+
+pub fn normalize_permission_origin(String) -> String
+
+pub fn normalize_screen_area_json(Json) -> Json?
+
+pub fn normalize_screen_orientation_json(Json) -> Json?
+
+pub fn permission_scope_belongs_to_user_context(String, String) -> Bool
+
+pub fn permission_scope_key(String, String, String, String) -> String
+
+pub fn push_geolocation_number_remote_entry(Array[Json], Map[String, Json], String) -> Unit
+
+pub fn upsert_bluetooth_device(Array[Json], Json, String) -> Array[Json]
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

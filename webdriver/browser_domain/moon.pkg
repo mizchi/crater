@@ -1,0 +1,6 @@
+import {
+  "mizchi/crater-webdriver-bidi/protocol" @protocol,
+  "moonbitlang/core/string",
+}
+
+supported_targets = "js"

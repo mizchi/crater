@@ -1,34 +1,4 @@
 ///|
-fn build_screen_area_json(width : Int, height : Int) -> Json {
-  make_object({
-    "width": Json::number(width.to_double()),
-    "height": Json::number(height.to_double()),
-    "availWidth": Json::number(width.to_double()),
-    "availHeight": Json::number(height.to_double()),
-  })
-}
-
-///|
-fn normalize_screen_area_json(value : Json) -> Json? {
-  let map = match value {
-    Object(map) => map
-    _ => return None
-  }
-  let width = match map.get("width") {
-    Some(width) => json_as_safe_int(width, 0.0, 9007199254740991.0)
-    None => None
-  }
-  let height = match map.get("height") {
-    Some(height) => json_as_safe_int(height, 0.0, 9007199254740991.0)
-    None => None
-  }
-  match (width, height) {
-    (Some(width), Some(height)) => Some(build_screen_area_json(width, height))
-    _ => None
-  }
-}
-
-///|
 fn BidiProtocol::resolve_effective_screen_area(
   self : BidiProtocol,
   ctx_id : String,
@@ -42,7 +12,7 @@ fn BidiProtocol::resolve_effective_screen_area(
     ) {
     Some(override_value) => override_value
     None =>
-      build_screen_area_json(
+      @browser_domain.build_screen_area_json(
         self.resolve_effective_viewport_width(ctx_id),
         self.resolve_effective_viewport_height(ctx_id),
       )
@@ -78,7 +48,7 @@ fn BidiProtocol::resolve_emulation_set_screen_settings_override(
     get_map_field_with_alias(map, "screenArea", "screen_area") {
     Some(Null) => None
     Some(value) =>
-      match normalize_screen_area_json(value) {
+      match @browser_domain.normalize_screen_area_json(value) {
         Some(normalized) => Some(normalized)
         None => {
           self.send_error(
