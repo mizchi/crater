@@ -12,7 +12,7 @@ The current workspace members are:
 - `.`
 - `./aomx`
 - `./benchmarks`
-- `./contract`
+- `./browser_helpers`
 - `./testing`
 - `./webvitals`
 - `./http`
@@ -103,7 +103,7 @@ The intended direction is:
 | `mizchi/crater-webvitals` | Canonical library | Web Vitals metrics such as CLS and LCP helpers |
 | `mizchi/crater-painter` | Canonical library | Paint model, SVG/image backends, terminal image output |
 | `mizchi/crater-renderer` | Canonical library | Renderer and VRT/export-oriented integration |
-| `mizchi/crater-browser-contract` | Canonical library | Shared browser-facing render/AOM helper functions for shell and BiDi |
+| `mizchi/crater-browser-helpers` | Canonical library | Shared browser-facing render/AOM helper functions for shell and BiDi |
 | `mizchi/crater-browser-runtime` | Canonical library | Shared JS runtime contract and DOM serializer |
 | `mizchi/crater-network` | Canonical library | Protocol-neutral network state and byte/query encoding helpers |
 | `mizchi/crater-browser-http-sqlite` | Adapter | Optional JS-only SQLite cache backend for `mizchi/crater-browser-http` |
@@ -117,7 +117,7 @@ The intended direction is:
 We do not need to create all of these at once. The current workspace has
 already extracted `mizchi/crater-layout`, `mizchi/crater-css`,
 `mizchi/crater-dom`, `mizchi/crater-aomx`, `mizchi/crater-benchmarks`,
-`mizchi/crater-browser-contract`, `mizchi/crater-testing`,
+`mizchi/crater-browser-helpers`, `mizchi/crater-testing`,
 `mizchi/crater-webvitals`, `mizchi/crater-painter`, `mizchi/crater-renderer`,
 `mizchi/crater-browser-runtime`, `mizchi/crater-network`, and
 `mizchi/crater-browser-http-sqlite`. The browser-facing split is now underway

@@ -50,6 +50,6 @@ async fn fetch_external_css(
   }
   println("Loaded " + css_contents.length().to_string() + " stylesheets")
   // Analyze CSS support
-  @browser_contract.report_css_support(css_contents)
+  @browser_helpers.report_css_support(css_contents)
   css_contents
 }

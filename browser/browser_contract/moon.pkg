@@ -1,5 +1,5 @@
 import {
-  "mizchi/crater-browser-contract" @contract_impl,
+  "mizchi/crater-browser-helpers" @helpers_impl,
 }
 
 supported_targets = "js+native"

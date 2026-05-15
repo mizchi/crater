@@ -30,7 +30,7 @@ graph LR
   subgraph Browser["Browser"]
     mizchi_crater_browser["crater-browser"]
     mizchi_crater_browser_native["crater-browser-native"]
-    mizchi_crater_browser_contract["crater-browser-contract"]
+    mizchi_crater_browser_helpers["crater-browser-helpers"]
     mizchi_crater_browser_http["crater-browser-http"]
     mizchi_crater_browser_http_sqlite["crater-browser-http-sqlite"]
     mizchi_crater_browser_runtime["crater-browser-runtime"]
@@ -65,7 +65,7 @@ graph LR
   mizchi_crater_browser --> mizchi_crater_painter
   mizchi_crater_browser --> mizchi_crater_renderer
   mizchi_crater_browser --> mizchi_crater_browser_runtime
-  mizchi_crater_browser --> mizchi_crater_browser_contract
+  mizchi_crater_browser --> mizchi_crater_browser_helpers
   mizchi_crater_browser --> mizchi_crater_browser_http
   mizchi_crater_browser --> mizchi_crater_html_assets
   mizchi_crater_browser --> mizchi_crater_painter_terminal
@@ -73,10 +73,10 @@ graph LR
   mizchi_crater_browser --> mizchi_crater_terminal_protocol
   mizchi_crater_browser_native --> mizchi_crater_browser_runtime
   mizchi_crater_browser_native --> mizchi_crater_dom
-  mizchi_crater_browser_contract --> mizchi_crater_renderer
-  mizchi_crater_browser_contract --> mizchi_crater_css
-  mizchi_crater_browser_contract --> mizchi_crater_dom
-  mizchi_crater_browser_contract --> mizchi_crater_aomx
+  mizchi_crater_browser_helpers --> mizchi_crater_renderer
+  mizchi_crater_browser_helpers --> mizchi_crater_css
+  mizchi_crater_browser_helpers --> mizchi_crater_dom
+  mizchi_crater_browser_helpers --> mizchi_crater_aomx
   mizchi_crater_css --> mizchi_crater_layout
   mizchi_crater_dom --> mizchi_crater_css
   mizchi_crater_dom --> mizchi_crater_layout
@@ -125,7 +125,7 @@ graph LR
   mizchi_crater_webdriver_bidi --> mizchi_crater_painter
   mizchi_crater_webdriver_bidi --> mizchi_crater_renderer
   mizchi_crater_webdriver_bidi --> mizchi_crater_browser
-  mizchi_crater_webdriver_bidi --> mizchi_crater_browser_contract
+  mizchi_crater_webdriver_bidi --> mizchi_crater_browser_helpers
   mizchi_crater_webvitals --> mizchi_crater_layout
 ```
 
@@ -146,13 +146,13 @@ graph LR
 | Terminal | `crater-painter-terminal` | `painter_terminal` | 3 | crater-layout, crater-painter, crater-terminal-protocol |
 | Terminal | `crater-terminal-image-cache` | `terminal_image_cache` | 1 | — |
 | Terminal | `crater-terminal-protocol` | `terminal_protocol` | 2 | — |
-| Browser | `crater-browser` | `browser` | 3 | crater-aomx, crater-browser-contract, crater-browser-http, crater-browser-runtime, crater-css, crater-dom, crater-html-assets, crater-layout, crater-painter, crater-painter-terminal, crater-renderer, crater-terminal-image-cache, crater-terminal-protocol |
-| Browser | `crater-browser-contract` | `contract` | 2 | crater-aomx, crater-css, crater-dom, crater-renderer |
+| Browser | `crater-browser` | `browser` | 3 | crater-aomx, crater-browser-helpers, crater-browser-http, crater-browser-runtime, crater-css, crater-dom, crater-html-assets, crater-layout, crater-painter, crater-painter-terminal, crater-renderer, crater-terminal-image-cache, crater-terminal-protocol |
+| Browser | `crater-browser-helpers` | `browser_helpers` | 2 | crater-aomx, crater-css, crater-dom, crater-renderer |
 | Browser | `crater-browser-http` | `http` | 2 | — |
 | Browser | `crater-browser-http-sqlite` | `http_sqlite` | 0 | crater-browser-http |
 | Browser | `crater-browser-native` | `browser/native` | 1 | crater-browser-runtime, crater-dom |
 | Browser | `crater-browser-runtime` | `runtime` | 3 | crater-dom |
-| Driver | `crater-webdriver-bidi` | `webdriver` | 1 | crater-browser, crater-browser-contract, crater-dom, crater-layout, crater-network, crater-painter, crater-renderer |
+| Driver | `crater-webdriver-bidi` | `webdriver` | 1 | crater-browser, crater-browser-helpers, crater-dom, crater-layout, crater-network, crater-painter, crater-renderer |
 | Distribution | `crater (umbrella)` | `.` | 0 | crater-css, crater-dom, crater-layout, crater-painter, crater-renderer, crater-webvitals |
 | Distribution | `crater-js` | `js` | 1 | crater-aomx, crater-css, crater-dom, crater-layout, crater-painter, crater-renderer, crater-renderer-terminal |
 | Distribution | `crater-wasm` | `wasm` | 0 | crater-js |

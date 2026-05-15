@@ -46,7 +46,7 @@ fn Browser::build_accessibility_tree(self : Browser) -> Unit {
     }
   }
   // Use the renderer's layout which applies CSS properly
-  let ctx = @browser_contract.create_render_context(
+  let ctx = @browser_helpers.create_render_context(
     self.viewport_width,
     self.viewport_height,
     false,
