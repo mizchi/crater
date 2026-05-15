@@ -68,8 +68,6 @@ pub fn has_runtime_handle(String) -> Bool
 
 pub fn has_runtime_shared_node(String) -> Bool
 
-pub fn init_quickjs() -> @core.Any
-
 pub fn input_clear_drag_transfer(String) -> Unit
 
 pub fn input_clear_pointer_event_properties() -> Unit
@@ -94,25 +92,9 @@ pub fn input_now_ms() -> Double
 
 pub fn input_set_pointer_event_properties(Double, Double, Double, Double, Double, Double, Double) -> Unit
 
-pub fn is_quickjs_initialized() -> Bool
-
-pub fn mark_quickjs_initialized() -> Unit
-
 pub fn parse_data_url(String) -> (String, String)?
 
 pub fn parse_method(String) -> @contract.ApiMethod?
-
-pub fn quickjs_eval_async(String, Bool) -> @core.Any
-
-pub fn quickjs_eval_module(String) -> @core.Any
-
-pub fn quickjs_eval_sync(String) -> String
-
-pub fn quickjs_eval_ws(@core.Any, Int, String, String) -> Unit
-
-pub fn quickjs_fetch(String) -> @core.Any
-
-pub fn quickjs_load(String) -> @core.Any
 
 pub fn reset_paint_provider() -> Unit
 
