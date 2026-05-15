@@ -41,7 +41,6 @@ const LAYERS = [
   ["Terminal", new Set([
     "mizchi/crater-terminal-protocol",
     "mizchi/crater-terminal-image-cache",
-    "mizchi/crater-painter-terminal",
   ])],
   ["Browser", new Set([
     "mizchi/crater-browser",

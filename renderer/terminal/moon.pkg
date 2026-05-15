@@ -2,7 +2,7 @@ import {
   "moonbitlang/async/io",
   "mizchi/crater-css" @css,
   "mizchi/crater-painter/paint/node_bridge" @paint_node,
-  "mizchi/crater-painter-terminal/kitty",
-  "mizchi/crater-painter-terminal/sixel",
+  "mizchi/crater-painter/terminal/kitty",
+  "mizchi/crater-painter/terminal/sixel",
   "mizchi/crater-renderer/renderer",
 }
