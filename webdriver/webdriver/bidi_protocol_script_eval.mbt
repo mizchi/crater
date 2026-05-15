@@ -398,10 +398,10 @@ fn BidiProtocol::handle_script_evaluate(
   let needs_mutation_observer_sync = expr.contains("setAttribute(") &&
     self.has_mutation_observer_preload_for_context(ctx_id)
 
-  if self.use_quickjs && is_quickjs_initialized() && !unwrap_result {
+  if self.use_quickjs && @runtime.is_quickjs_initialized() && !unwrap_result {
     match self.socket {
       Some(socket) => {
-        quickjs_eval_ws(socket, request.id, expr, ctx_id)
+        @runtime.quickjs_eval_ws(socket, request.id, expr, ctx_id)
         return
       }
       None => {
@@ -780,10 +780,10 @@ fn BidiProtocol::handle_script_call_function(
     "(" + func + ").call(" + this_json + ", " + args_json + ")"
   }
 
-  if self.use_quickjs && is_quickjs_initialized() && !unwrap_result {
+  if self.use_quickjs && @runtime.is_quickjs_initialized() && !unwrap_result {
     match self.socket {
       Some(socket) => {
-        quickjs_eval_ws(socket, request.id, call_expr, ctx_id_call)
+        @runtime.quickjs_eval_ws(socket, request.id, call_expr, ctx_id_call)
         return
       }
       None => {

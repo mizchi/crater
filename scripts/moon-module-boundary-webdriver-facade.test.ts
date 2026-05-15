@@ -133,21 +133,13 @@ describe("MoonBit WebDriver facade and contract boundaries", () => {
     expect(runtimePackage).not.toContain("mizchi/webdriver");
 
     const webdriverPackage = read("webdriver/webdriver/moon.pkg");
-    const facadeSource = read("webdriver/webdriver/runtime.mbt");
     expect(webdriverPackage).toContain('"mizchi/crater-webdriver-bidi/runtime" @runtime');
-    for (const symbol of [
-      "init_quickjs",
-      "mark_quickjs_initialized",
-      "is_quickjs_initialized",
-      "quickjs_eval_sync",
-      "quickjs_eval_async",
-      "quickjs_eval_ws",
-      "quickjs_eval_module",
-      "quickjs_load",
-      "quickjs_fetch",
-    ] as const) {
-      expect(facadeSource).toContain(symbol);
-    }
+    // The compatibility re-export layer in `webdriver/webdriver/runtime.mbt`
+    // has been dropped. Internal callers now reach quickjs helpers via
+    // `@runtime.<name>` directly. Confirm no shim leaks back in.
+    expect(
+      fs.existsSync(path.join(REPO_ROOT, "webdriver/webdriver/runtime.mbt")),
+    ).toBe(false);
 
     const encodingFacadeSource = read("webdriver/webdriver/navigation_encoding.mbt");
     for (const symbol of [
