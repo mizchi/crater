@@ -53,7 +53,7 @@ fn BidiProtocol::remember_network_state_channel_if_applicable(
   if !is_network_conditions_listener_registration(function_declaration) {
     return
   }
-  match extract_script_channel_name(params) {
+  match @browser_domain.extract_script_channel_name(params) {
     Some(channel_name) =>
       if channel_name != "" {
         self.network_state.network_state_channel_by_context[ctx_id] = channel_name

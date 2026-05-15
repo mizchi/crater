@@ -52,45 +52,6 @@ fn BidiProtocol::resolve_effective_geolocation_coordinates(
 }
 
 ///|
-fn extract_script_channel_name(params : Json?) -> String? {
-  match get_param_raw(params, "arguments") {
-    Some(Array(arguments)) =>
-      for argument in arguments {
-        match argument {
-          Object(argument_map) =>
-            match (argument_map.get("type"), argument_map.get("value")) {
-              (Some(String("channel")), Some(Object(channel_map))) =>
-                match channel_map.get("channel") {
-                  Some(String(channel_name)) =>
-                    if channel_name != "" {
-                      return Some(channel_name)
-                    }
-                  _ => ()
-                }
-              _ => ()
-            }
-          _ => ()
-        }
-      }
-    _ => ()
-  }
-  None
-}
-
-///|
-fn get_first_numeric_argument(params : Json?) -> Double? {
-  match get_param_raw(params, "arguments") {
-    Some(Array(arguments)) =>
-      if arguments.length() > 0 {
-        remote_value_as_number(arguments[0])
-      } else {
-        None
-      }
-    _ => None
-  }
-}
-
-///|
 fn BidiProtocol::emit_geolocation_watch_update_for_scope(
   self : BidiProtocol,
   scope_key : String,
@@ -597,7 +558,7 @@ fn BidiProtocol::try_handle_synthetic_geolocation_call(
   unwrap_result : Bool,
 ) -> Bool {
   if function_declaration.contains("navigator.geolocation.clearWatch(") {
-    let watch_id = match get_first_numeric_argument(params) {
+    let watch_id = match @browser_domain.get_first_numeric_argument(params) {
       Some(value) => value.to_int()
       None => 0
     }
@@ -607,7 +568,8 @@ fn BidiProtocol::try_handle_synthetic_geolocation_call(
   }
 
   if function_declaration.contains("navigator.geolocation.watchPosition(") {
-    let channel_name = match extract_script_channel_name(params) {
+    let channel_name = match
+      @browser_domain.extract_script_channel_name(params) {
       Some(channel_name) => channel_name
       None => return false
     }
