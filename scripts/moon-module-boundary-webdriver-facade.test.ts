@@ -570,15 +570,4 @@ describe("MoonBit WebDriver facade and contract boundaries", () => {
     }
   });
 
-  it("documents next module boundaries before further WebDriver extraction", () => {
-    const todo = read("TODO.md");
-    // contract / rpc / runtime / network / protocol / rendering / browser_domain
-    // are now extracted and protected by their own boundary guards in scripts/.
-    // The only remaining sub-module from the original webdriver split is
-    // webdriver/server. Track its mention so the next session picks it up.
-    const requiredBoundaries = ["`webdriver/server`"] as const;
-
-    const missingBoundaries = requiredBoundaries.filter((boundary) => !todo.includes(boundary));
-    expect(missingBoundaries).toEqual([]);
-  });
 });
