@@ -3,26 +3,33 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   buildFlakerUpstreamInventory,
+  type FlakerUpstreamGroup,
   renderFlakerUpstreamInventoryMarkdown,
   runFlakerUpstreamInventoryCli,
 } from "./flaker-upstream-inventory.ts";
 
 const SCRIPT_DIR = path.dirname(new URL(import.meta.url).pathname);
 
+function groupById(groups: FlakerUpstreamGroup[]): Map<string, FlakerUpstreamGroup> {
+  return new Map(groups.map((group) => [group.id, group]));
+}
+
 describe("buildFlakerUpstreamInventory", () => {
   it("groups files by upstream ownership and extraction unit", () => {
     const inventory = buildFlakerUpstreamInventory();
+    const groups = groupById(inventory.groups);
 
     expect(inventory.groups.map((group) => `${group.category}:${group.id}`)).toEqual([
       "metric-ci:playwright-report-core",
       "metric-ci:flaker-task-summary-core",
-      "metric-ci:flaker-batch-summary-core",
       "metric-ci:flaker-batch-plan-core",
       "metric-ci:flaker-quarantine-core",
       "metric-ci:flaker-config-core",
+      "crater-adapter:flaker-batch-summary-adapter",
       "crater-adapter:flaker-config-adapter",
       "crater-adapter:task-runner-adapter",
       "crater-adapter:flaker-report-loader-adapter",
+      "crater-domain:flaker-batch-vrt-extension",
       "crater-domain:vrt-report-core",
       "crater-domain:wpt-vrt-summary-core",
       "crater-tooling:report-cli-wrappers",
@@ -30,38 +37,62 @@ describe("buildFlakerUpstreamInventory", () => {
       "crater-tooling:upstream-staging-tooling",
       "crater-tooling:script-runtime-boundary",
     ]);
-    expect(inventory.groups[0]?.files).toContain("scripts/playwright-report-summary-core.ts");
-    expect(inventory.groups[0]?.origin).toBe("crater-extracted");
-    expect(inventory.groups[0]?.testFiles).toContain("scripts/playwright-report-summary.test.ts");
-    expect(inventory.groups[3]?.files).toContain("scripts/flaker-batch-plan-core.ts");
-    expect(inventory.groups[4]?.files).toContain("scripts/flaker-quarantine-contract.ts");
-    expect(inventory.groups[4]?.status).toBe("upstreamed");
-    expect(inventory.groups[5]?.files).toContain("scripts/flaker-config-parser.ts");
-    expect(inventory.groups[5]?.files).toContain("scripts/flaker-config-summary-core.ts");
-    expect(inventory.groups[5]?.files).toContain("scripts/flaker-config-task.ts");
-    expect(inventory.groups[5]?.testFiles).toContain("scripts/flaker-config-task.test.ts");
-    expect(inventory.groups[8]?.files).toContain("scripts/flaker-batch-summary-loader.ts");
-    expect(inventory.groups[8]?.files).toContain("scripts/flaker-quarantine-loader.ts");
-    expect(inventory.groups[8]?.testFiles).toContain("scripts/flaker-batch-summary-loader.test.ts");
-    expect(inventory.groups[8]?.testFiles).toContain("scripts/flaker-quarantine-loader.test.ts");
-    expect(inventory.groups[8]?.testFiles).toContain("scripts/vrt-report-loader.test.ts");
-    expect(inventory.groups[9]?.files).toContain("scripts/vrt-report-contract.ts");
-    expect(inventory.groups[9]?.files).toContain("scripts/vrt-report-summary-core.ts");
-    expect(inventory.groups[9]?.testFiles).toContain("scripts/vrt-report-contract.test.ts");
-    expect(inventory.groups[9]?.testFiles).toContain("scripts/vrt-report-summary.test.ts");
-    expect(inventory.groups[9]?.reason).toContain("VRT");
-    expect(inventory.groups[10]?.testFiles).toContain("scripts/wpt-vrt-summary.test.ts");
-    expect(inventory.groups[10]?.reason).toContain("VRT");
-    expect(inventory.groups[11]?.files).toContain("scripts/playwright-report-summary.ts");
-    expect(inventory.groups[11]?.files).toContain("scripts/vrt-report-summary.ts");
-    expect(inventory.groups[11]?.testFiles).toContain("scripts/playwright-report-summary-cli.test.ts");
-    expect(inventory.groups[11]?.testFiles).toContain("scripts/vrt-report-summary-cli.test.ts");
-    expect(inventory.groups[12]?.files).toContain("scripts/flaker-entry.ts");
-    expect(inventory.groups[12]?.files).toContain("scripts/flaker-cli-path.ts");
-    expect(inventory.groups[13]?.files).toContain("scripts/flaker-upstream-inventory.ts");
-    expect(inventory.groups[13]?.testFiles).toContain("scripts/flaker-upstream-export.test.ts");
-    expect(inventory.groups[14]?.files).toContain("scripts/flaker-collected-summary-paths.ts");
-    expect(inventory.groups[14]?.testFiles).toContain("scripts/flaker-collected-summary-paths.test.ts");
+    expect(groups.get("playwright-report-core")?.files).toContain("scripts/playwright-report-summary-core.ts");
+    expect(groups.get("playwright-report-core")?.origin).toBe("crater-extracted");
+    expect(groups.get("playwright-report-core")?.testFiles).toContain("scripts/playwright-report-summary.test.ts");
+    expect(groups.get("flaker-batch-plan-core")?.files).toContain("scripts/flaker-batch-plan-core.ts");
+    expect(groups.get("flaker-quarantine-core")?.files).toContain("scripts/flaker-quarantine-contract.ts");
+    expect(groups.get("flaker-quarantine-core")?.status).toBe("upstreamed");
+    expect(groups.get("flaker-config-core")?.files).toContain("scripts/flaker-config-parser.ts");
+    expect(groups.get("flaker-config-core")?.files).toContain("scripts/flaker-config-summary-core.ts");
+    expect(groups.get("flaker-config-core")?.files).toContain("scripts/flaker-config-task.ts");
+    expect(groups.get("flaker-config-core")?.testFiles).toContain("scripts/flaker-config-task.test.ts");
+    expect(groups.get("flaker-batch-summary-adapter")?.files).toEqual([
+      "scripts/flaker-batch-summary-core.ts",
+    ]);
+    expect(groups.get("flaker-batch-summary-adapter")?.category).toBe("crater-adapter");
+    expect(groups.get("flaker-batch-vrt-extension")?.files).toContain("scripts/flaker-batch-vrt-extension.ts");
+    expect(groups.get("flaker-batch-vrt-extension")?.testFiles).toContain("scripts/flaker-batch-vrt-extension.test.ts");
+    expect(groups.get("flaker-batch-vrt-extension")?.category).toBe("crater-domain");
+    expect(groups.get("flaker-report-loader-adapter")?.files).toContain("scripts/flaker-batch-summary-loader.ts");
+    expect(groups.get("flaker-report-loader-adapter")?.files).toContain("scripts/flaker-quarantine-loader.ts");
+    expect(groups.get("flaker-report-loader-adapter")?.testFiles).toContain("scripts/flaker-batch-summary-loader.test.ts");
+    expect(groups.get("flaker-report-loader-adapter")?.testFiles).toContain("scripts/flaker-quarantine-loader.test.ts");
+    expect(groups.get("flaker-report-loader-adapter")?.testFiles).toContain("scripts/vrt-report-loader.test.ts");
+    expect(groups.get("vrt-report-core")?.files).toContain("scripts/vrt-report-contract.ts");
+    expect(groups.get("vrt-report-core")?.files).toContain("scripts/vrt-report-summary-core.ts");
+    expect(groups.get("vrt-report-core")?.testFiles).toContain("scripts/vrt-report-contract.test.ts");
+    expect(groups.get("vrt-report-core")?.testFiles).toContain("scripts/vrt-report-summary.test.ts");
+    expect(groups.get("vrt-report-core")?.reason).toContain("VRT");
+    expect(groups.get("wpt-vrt-summary-core")?.testFiles).toContain("scripts/wpt-vrt-summary.test.ts");
+    expect(groups.get("wpt-vrt-summary-core")?.reason).toContain("VRT");
+    expect(groups.get("report-cli-wrappers")?.files).toContain("scripts/playwright-report-summary.ts");
+    expect(groups.get("report-cli-wrappers")?.files).toContain("scripts/vrt-report-summary.ts");
+    expect(groups.get("report-cli-wrappers")?.testFiles).toContain("scripts/playwright-report-summary-cli.test.ts");
+    expect(groups.get("report-cli-wrappers")?.testFiles).toContain("scripts/vrt-report-summary-cli.test.ts");
+    expect(groups.get("flaker-cli-tooling")?.files).toContain("scripts/flaker-entry.ts");
+    expect(groups.get("flaker-cli-tooling")?.files).toContain("scripts/flaker-cli-path.ts");
+    expect(groups.get("upstream-staging-tooling")?.files).toContain("scripts/flaker-upstream-inventory.ts");
+    expect(groups.get("upstream-staging-tooling")?.testFiles).toContain("scripts/flaker-upstream-export.test.ts");
+    expect(groups.get("script-runtime-boundary")?.files).toContain("scripts/flaker-collected-summary-paths.ts");
+    expect(groups.get("script-runtime-boundary")?.testFiles).toContain("scripts/flaker-collected-summary-paths.test.ts");
+  });
+
+  it("keeps VRT domain metadata out of metric-ci groups", () => {
+    const inventory = buildFlakerUpstreamInventory();
+    const metricCiGroups = inventory.groups.filter((group) => group.category === "metric-ci");
+    const metricCiText = metricCiGroups
+      .flatMap((group) => [
+        group.id,
+        group.title,
+        group.reason,
+        group.nextAction,
+        ...group.files,
+        ...group.testFiles,
+      ])
+      .join("\n");
+
+    expect(metricCiText).not.toMatch(/\bVRT\b|diffRatio|threshold|snapshotKind|backend|CssDead|vrt-/);
   });
 
   it("classifies every flaker/report/vrt script file into an inventory group", () => {

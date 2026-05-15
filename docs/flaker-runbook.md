@@ -201,7 +201,7 @@ just flaker batch summary flaker-daily-artifacts
 - task workspace の構築
 - Playwright task 実行、report 保存、artifact 配置
 - VRT / WPT / paint diff の domain metadata
-  - `vrt-report-contract.ts` / `vrt-report-summary-core.ts` / `wpt-vrt-summary-core.ts`
+  - `flaker-batch-vrt-extension.ts` / `vrt-report-contract.ts` / `vrt-report-summary-core.ts` / `wpt-vrt-summary-core.ts`
 
 この層は `crater` の repo layout と renderer domain に依存する。
 

@@ -97,7 +97,7 @@ describe("buildFlakerUpstreamExportStage", () => {
 describe("renderFlakerUpstreamExportMarkdown", () => {
   it("renders group metadata and staged file list", () => {
     const group = buildFlakerUpstreamInventory().groups.find((candidate) =>
-      candidate.id === "flaker-batch-summary-core"
+      candidate.id === "flaker-batch-summary-adapter"
     );
     expect(group).toBeDefined();
 
@@ -110,8 +110,8 @@ describe("renderFlakerUpstreamExportMarkdown", () => {
     const markdown = renderFlakerUpstreamExportMarkdown(stage.manifest);
 
     expect(markdown).toContain("# Metric CI Upstream Export");
-    expect(markdown).toContain("| Group | flaker-batch-summary-core |");
-    expect(markdown).toContain("| Test files | 2 |");
+    expect(markdown).toContain("| Group | flaker-batch-summary-adapter |");
+    expect(markdown).toContain("| Test files | 1 |");
     expect(markdown).toContain("scripts/flaker-batch-summary-core.ts");
     expect(markdown).toContain("| Kind | Source | Staged | Bytes |");
   });

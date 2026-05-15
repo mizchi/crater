@@ -78,21 +78,19 @@ const GROUPS: ReadonlyArray<Omit<FlakerUpstreamGroup, "status"> & {
     nextAction: "crater 側 wrapper は @mizchi/flaker/reporting/flaker-task-summary-* を参照し、task/workspace loader だけを crater に残す。",
   },
   {
-    id: "flaker-batch-summary-core",
-    title: "Flaker batch aggregate core",
-    category: "metric-ci",
+    id: "flaker-batch-summary-adapter",
+    title: "Flaker batch aggregate adapter",
+    category: "crater-adapter",
     status: "keep-in-crater",
     origin: "crater-extracted",
     files: [
       "scripts/flaker-batch-summary-core.ts",
-      "scripts/flaker-batch-vrt-extension.ts",
     ],
     testFiles: [
       "scripts/flaker-batch-summary-core.test.ts",
-      "scripts/flaker-batch-vrt-extension.test.ts",
     ],
-    reason: "@mizchi/flaker@0.12.1 の generic batch summary を下敷きにし、crater 固有の VRT/CSS 集約列を flaker-batch-vrt-extension として重ねている。",
-    nextAction: "VRT/CSS 集約 contract は crater domain extension として維持し、generic aggregate は @mizchi/flaker/reporting/flaker-batch-summary-core に追従する。",
+    reason: "@mizchi/flaker の generic batch summary に crater 固有の VRT extension を重ねる adapter。generic aggregate 自体は upstream 側を参照する。",
+    nextAction: "adapter として維持し、VRT/CSS 集約 contract は flaker-batch-vrt-extension に閉じ込める。",
   },
   {
     id: "flaker-batch-plan-core",
@@ -226,6 +224,21 @@ const GROUPS: ReadonlyArray<Omit<FlakerUpstreamGroup, "status"> & {
     ],
     reason: "artifact path 解決と VRT/quarantine file scan・ownership 解決は crater の workspace/layout に依存する loader 層。",
     nextAction: "pure core は upstream しつつ、repo 上の file scan と ownership 解決だけを local adapter として残す。",
+  },
+  {
+    id: "flaker-batch-vrt-extension",
+    title: "Flaker batch VRT domain extension",
+    category: "crater-domain",
+    status: "keep-in-crater",
+    origin: "crater-native",
+    files: [
+      "scripts/flaker-batch-vrt-extension.ts",
+    ],
+    testFiles: [
+      "scripts/flaker-batch-vrt-extension.test.ts",
+    ],
+    reason: "VRT/CSS 集約列は diffRatio / CSS dead rules など renderer domain metadata を含むため、metric-ci generic core ではなく crater domain extension として持つ。",
+    nextAction: "generic batch aggregate には VRT 列を戻さず、crater / vrt-harness の report schema から集約する。",
   },
   {
     id: "vrt-report-core",

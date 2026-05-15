@@ -34,7 +34,8 @@ Last organized: 2026-05-14
   - 巨大 core への逆流を検出する file-size / symbol boundary を維持する
 - [ ] `scripts/flaker-*` / `docs/flaker-runbook.md` の ownership と TODO を同期する
   - `@mizchi/flaker` に upstream 済みの pure core と、crater に残す VRT domain extension を再分類する
-  - `src/` facade 削除後の実パスに合わせた fixture / runbook の更新は完了。次は VRT domain metadata の切り出し範囲を確認する
+  - `src/` facade 削除後の実パスに合わせた fixture / runbook の更新は完了
+  - VRT domain metadata は `flaker-batch-vrt-extension` / `vrt-report-*` / `wpt-vrt-summary-*` に閉じる方針を inventory guard で固定済み。次は `vrt-harness` 接続時の共有 schema を確認する
 
 ## Browser / Playwright / WebDriver
 
