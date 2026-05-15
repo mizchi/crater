@@ -193,7 +193,7 @@ extern "js" fn js_decode_raster_image_to_rgba_base64(
 ) -> String =
   #| (imageFormat, b64Data) => {
   #|   try {
-  #|     if (typeof process === 'undefined' || process.platform !== 'darwin') {
+  #|     if (typeof process === 'undefined') {
   #|       return '';
   #|     }
   #|     const format = String(imageFormat || '').toLowerCase();
@@ -230,6 +230,9 @@ extern "js" fn js_decode_raster_image_to_rgba_base64(
   #|         ':' +
   #|         Buffer.from(decoded.data).toString('base64')
   #|       );
+  #|     }
+  #|     if (process.platform !== 'darwin') {
+  #|       return '';
   #|     }
   #|     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'crater-kitty-'));
   #|     const inputExt = format === 'jpeg' ? 'jpg' : 'gif';

@@ -80,6 +80,8 @@ importers:
         specifier: ^8.18.0
         version: 8.18.3
 
+  js: {}
+
   js/playground:
     devDependencies:
       vite:
