@@ -101,7 +101,7 @@ describe("buildFlakerUpstreamInventory", () => {
       inventory.groups.flatMap((group) => [...group.files, ...group.testFiles]),
     );
     const candidates = fs.readdirSync(SCRIPT_DIR)
-      .filter((fileName) => /^(flaker-|playwright-report-|vrt-report-|wpt-vrt-summary)/.test(fileName))
+      .filter((fileName) => /^(flaker-|playwright-report-|vrt-report-|wpt-vrt-summary|stable-test-identity)/.test(fileName))
       .map((fileName) => `scripts/${fileName}`)
       .sort();
 

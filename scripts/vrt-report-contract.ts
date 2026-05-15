@@ -2,7 +2,7 @@ import path from "node:path";
 import {
   buildStableIdentityKey,
   normalizeStableIdentityVariant,
-} from "./stable-test-identity.ts";
+} from "@mizchi/flaker/reporting/stable-test-identity";
 
 export type VrtArtifactStatus = "pass" | "fail" | "unknown";
 

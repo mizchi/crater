@@ -36,7 +36,8 @@ Last organized: 2026-05-15
   - `@mizchi/flaker` に upstream 済みの pure core と、crater に残す VRT domain extension を再分類する
   - `src/` facade 削除後の実パスに合わせた fixture / runbook の更新は完了
   - VRT domain metadata は `flaker-batch-vrt-extension` / `vrt-report-*` / `wpt-vrt-summary-*` に閉じる方針を inventory guard で固定済み
-  - crater 側の VRT artifact schema / identity 受け入れ契約は完了。次は external `vrt-harness` payload fixture を loader -> summary -> batch summary loader に通す
+  - crater 側の VRT artifact schema / identity 受け入れ契約と external `vrt-harness` payload fixture の loader -> summary -> batch summary loader guard は完了
+  - 次は実 `vrt-harness` 側を crater の公開 VRT contract に接続する
 
 ## Browser / Playwright / WebDriver
 
@@ -105,6 +106,8 @@ Last organized: 2026-05-15
   - crater: VRT 固有メトリクス (`diffRatio`, `threshold`, `backend`, `viewport`, `snapshotKind`)
 - [ ] VRT 判定は crater に残しつつ、summary / identity / quarantine 連携だけ共通契約へ寄せる
 - [ ] crater に残った汎用 test management code を削る
+  - `stable-test-identity.ts` local facade は削除済み。VRT contract は `@mizchi/flaker/reporting/stable-test-identity` を直接参照する
+  - 次は task selection / quarantine / batch summary の local wrapper が facade だけになっていないか棚卸しする
 - [ ] `flaker` issue と crater / `vrt-harness` TODO の相互参照を整え、drift を防ぐ
 
 ## CI / Task Runner
