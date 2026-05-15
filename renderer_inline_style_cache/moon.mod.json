@@ -9,10 +9,6 @@
     "mizchi/crater-css": {
       "path": "../css",
       "version": "0.17.1"
-    },
-    "mizchi/crater-layout": {
-      "path": "../layout",
-      "version": "0.17.1"
     }
   },
   "repository": "https://github.com/mizchi/crater",

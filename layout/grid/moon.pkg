@@ -3,7 +3,7 @@ import {
   "mizchi/crater-layout/core",
   "moonbitlang/core/hashmap",
   "mizchi/crater-core" @types,
-  "mizchi/crater-layout/style",
+  "mizchi/crater-core/style",
   "mizchi/crater-layout/node",
   "mizchi/crater-layout/flex",
   "mizchi/crater-layout/block",

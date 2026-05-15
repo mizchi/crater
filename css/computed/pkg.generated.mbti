@@ -3,8 +3,8 @@ package "mizchi/crater-css/computed"
 
 import {
   "mizchi/crater-core",
+  "mizchi/crater-core/style",
   "mizchi/crater-css/cascade",
-  "mizchi/crater-layout/style",
 }
 
 // Values

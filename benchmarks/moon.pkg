@@ -5,7 +5,7 @@ import {
   "mizchi/crater-renderer/renderer",
   "mizchi/crater-renderer/vrt",
   "mizchi/crater-layout" @tree,
-  "mizchi/crater-layout/style",
+  "mizchi/crater-core/style",
   "mizchi/crater-core" @types,
   "mizchi/crater-painter/paint/model" @paint_model,
   "mizchi/crater-painter/paint/traversal" @paint_traversal,

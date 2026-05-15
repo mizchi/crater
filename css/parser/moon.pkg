@@ -6,7 +6,7 @@ import {
   "mizchi/crater-css/cascade",
   "mizchi/crater-css/media",
   "mizchi/crater-css/diagnostics",
-  "mizchi/crater-layout/style",
+  "mizchi/crater-core/style",
   "mizchi/crater-core" @types,
 }
 
