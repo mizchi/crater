@@ -15,6 +15,7 @@ The current workspace members are:
 - `./benchmarks`
 - `./browser_helpers`
 - `./testing`
+- `./tools`
 - `./webvitals`
 - `./http`
 - `./network`
@@ -427,9 +428,9 @@ The WebDriver BiDi adapter packages are kept in `webdriver/`:
 - `webdriver`
 - `bidi_main`
 
-The fixture-only builder now lives in the internal `testing/` module:
+The fixture-only builder now lives in the internal `tools/` module:
 
-- `testing/webdriver_fixture_builder`
+- `tools/webdriver_fixture_builder`
 
 The root package provides a small facade over the WebDriver helper surface
 without forcing consumers to import the larger `webdriver` package path

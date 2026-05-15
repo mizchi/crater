@@ -603,7 +603,7 @@ jobs:
       - name: Build BiDi server
         run: |
           bash scripts/ci/run-moon-step.sh bidi-build moon -C webdriver build bidi_main --target js --release -j 1
-          bash scripts/ci/run-moon-step.sh webdriver-fixture-build moon -C testing build webdriver_fixture_builder --target js --release -j 1
+          bash scripts/ci/run-moon-step.sh webdriver-fixture-build moon -C tools build webdriver_fixture_builder --target js --release -j 1
 
       - name: Run WebDriver BiDi shard
         run: |

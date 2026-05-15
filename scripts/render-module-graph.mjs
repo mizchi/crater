@@ -64,6 +64,7 @@ const LAYERS = [
   ["Test / Dev", new Set([
     "mizchi/crater-testing",
     "mizchi/crater-benchmarks",
+    "mizchi/crater-tools",
     "mizchi/crater-aomx",
   ])],
 ];

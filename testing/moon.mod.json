@@ -18,10 +18,6 @@
       "path": "../runtime",
       "version": "0.17.1"
     },
-    "mizchi/crater-webdriver-bidi": {
-      "path": "../webdriver",
-      "version": "0.17.1"
-    },
     "mizchi/crater-css": {
       "path": "../css",
       "version": "0.17.1"
