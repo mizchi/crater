@@ -19,7 +19,7 @@ There are now two explicit native test layers:
   - does not require sqlite-backed browser e2e wiring
 
 - `just test-native-full`
-  - package: `mizchi/crater-testing/native_e2e`
+  - package: `mizchi/crater-testing/e2e/native_v8`
   - purpose: full native browser e2e coverage
   - includes: browser shell integration, Preact/React bundle helpers, and shell-driven navigation
   - lives in the internal `testing` module, not the published native adapter
@@ -36,7 +36,7 @@ There are now two explicit native test layers:
 
 Long-term, `browser/native` should stay a thin V8 host module and pull as little
 browser-shell/storage infrastructure as possible. The heavy native browser e2e
-coverage now starts in `mizchi/crater-testing/native_e2e`.
+coverage now starts in `mizchi/crater-testing/e2e/native_v8`.
 
 The current split is:
 
@@ -50,5 +50,5 @@ The current split is:
   - optional JS-only sqlite cache backend for `mizchi/crater-browser-http`
 - `mizchi/crater-browser-native/js_v8`
   - native V8 host runtime over the shared `mizchi/crater-browser-runtime` contract
-- `mizchi/crater-testing/native_e2e`
+- `mizchi/crater-testing/e2e/native_v8`
   - browser shell integration tests and full native browser e2e coverage
