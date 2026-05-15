@@ -242,7 +242,7 @@ fn BidiProtocol::try_handle_synthetic_user_agent_fetch_eval(
   if !expr.has_prefix("fetch(") || !expr.contains(".text()") {
     return false
   }
-  let request_url = match extract_emulation_fetch_url(expr) {
+  let request_url = match @browser_domain.extract_emulation_fetch_url(expr) {
     Some(request_url) => request_url
     None => return false
   }
@@ -375,34 +375,6 @@ fn BidiProtocol::extract_emulation_timezone_offset(
   }
   let timezone = self.resolve_effective_timezone(ctx_id)
   @browser_domain.emulation_timezone_offset_minutes(timezone)
-}
-
-///|
-fn extract_emulation_fetch_url(expression : String) -> String? {
-  let open_paren = match find_substring(expression, "fetch(", 0) {
-    Some(idx) => idx + 6
-    None => return None
-  }
-  let chars = expression.to_array()
-  let mut cursor = open_paren
-  while cursor < chars.length() && chars[cursor] == ' ' {
-    cursor = cursor + 1
-  }
-  if cursor >= chars.length() {
-    return None
-  }
-  let quote = chars[cursor]
-  if quote != '\'' && quote != '"' {
-    return None
-  }
-  let mut end = cursor + 1
-  while end < chars.length() && chars[end] != quote {
-    end = end + 1
-  }
-  if end >= chars.length() {
-    return None
-  }
-  Some(expression.unsafe_substring(start=cursor + 1, end~))
 }
 
 ///|

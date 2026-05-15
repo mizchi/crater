@@ -170,6 +170,56 @@ pub fn make_bluetooth_byte_remote_value(data : Array[Json]) -> Json {
 }
 
 ///|
+pub fn extract_bluetooth_call_string_argument(
+  source : String,
+  method_name : String,
+) -> String {
+  let single_prefix = method_name + "('"
+  match @protocol.find_substring(source, single_prefix, 0) {
+    Some(start_idx) => {
+      let value_start = start_idx + single_prefix.length()
+      match @protocol.find_substring(source, "')", value_start) {
+        Some(end_idx) if end_idx >= value_start =>
+          source.unsafe_substring(start=value_start, end=end_idx)
+        _ => ""
+      }
+    }
+    None => {
+      let double_prefix = method_name + "(\""
+      match @protocol.find_substring(source, double_prefix, 0) {
+        Some(start_idx) => {
+          let value_start = start_idx + double_prefix.length()
+          match @protocol.find_substring(source, "\")", value_start) {
+            Some(end_idx) if end_idx >= value_start =>
+              source.unsafe_substring(start=value_start, end=end_idx)
+            _ => ""
+          }
+        }
+        None => ""
+      }
+    }
+  }
+}
+
+///|
+pub fn extract_bluetooth_uint8_array_data(source : String) -> Array[Json] {
+  let prefix = "new Uint8Array("
+  match @protocol.find_substring(source, prefix, 0) {
+    Some(start_idx) => {
+      let data_start = start_idx + prefix.length()
+      match @protocol.find_substring(source, ")", data_start) {
+        Some(end_idx) if end_idx >= data_start => {
+          let raw = source.unsafe_substring(start=data_start, end=end_idx)
+          extract_bluetooth_byte_array_literal(raw.trim().to_owned())
+        }
+        _ => []
+      }
+    }
+    None => []
+  }
+}
+
+///|
 pub fn extract_bluetooth_byte_array_literal(raw : String) -> Array[Json] {
   if raw.length() < 2 || !raw.has_prefix("[") || !raw.has_suffix("]") {
     return []

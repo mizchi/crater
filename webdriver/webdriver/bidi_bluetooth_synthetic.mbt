@@ -1341,7 +1341,7 @@ fn BidiProtocol::try_handle_synthetic_bluetooth_gatt_call(
   if trimmed.contains("device.gatt.getPrimaryService(") &&
     trimmed.contains("getCharacteristics()") &&
     trimmed.contains("return characteristics.map(c => c.uuid)") {
-    let service_uuid = extract_bluetooth_call_string_argument(
+    let service_uuid = @browser_domain.extract_bluetooth_call_string_argument(
       trimmed, "getPrimaryService",
     )
     let prefix = @browser_domain.bluetooth_characteristic_prefix_key(
@@ -1376,10 +1376,10 @@ fn BidiProtocol::try_handle_synthetic_bluetooth_gatt_call(
   if trimmed.contains("device.gatt.getPrimaryService(") &&
     trimmed.contains("characteristic.getDescriptors()") &&
     trimmed.contains("return descriptors.map(d => d.uuid)") {
-    let service_uuid = extract_bluetooth_call_string_argument(
+    let service_uuid = @browser_domain.extract_bluetooth_call_string_argument(
       trimmed, "getPrimaryService",
     )
-    let characteristic_uuid = extract_bluetooth_call_string_argument(
+    let characteristic_uuid = @browser_domain.extract_bluetooth_call_string_argument(
       trimmed, "getCharacteristic",
     )
     let prefix = @browser_domain.bluetooth_descriptor_prefix_key(
@@ -1413,13 +1413,13 @@ fn BidiProtocol::try_handle_synthetic_bluetooth_gatt_call(
   if trimmed.contains("device.gatt.getPrimaryService(") &&
     trimmed.contains("getCharacteristic(") &&
     trimmed.contains("writeValueWithoutResponse(") {
-    let service_uuid = extract_bluetooth_call_string_argument(
+    let service_uuid = @browser_domain.extract_bluetooth_call_string_argument(
       trimmed, "getPrimaryService",
     )
-    let characteristic_uuid = extract_bluetooth_call_string_argument(
+    let characteristic_uuid = @browser_domain.extract_bluetooth_call_string_argument(
       trimmed, "getCharacteristic",
     )
-    let data = extract_bluetooth_uint8_array_data(trimmed)
+    let data = @browser_domain.extract_bluetooth_uint8_array_data(trimmed)
     self.bluetooth_pending_characteristic_request[ctx_id] = request_id
     self.bluetooth_pending_characteristic_realm[ctx_id] = realm_id
     self.bluetooth_pending_characteristic_unwrap_result[ctx_id] = unwrap_result
@@ -1440,13 +1440,13 @@ fn BidiProtocol::try_handle_synthetic_bluetooth_gatt_call(
   if trimmed.contains("device.gatt.getPrimaryService(") &&
     trimmed.contains("getCharacteristic(") &&
     trimmed.contains("writeValueWithResponse(") {
-    let service_uuid = extract_bluetooth_call_string_argument(
+    let service_uuid = @browser_domain.extract_bluetooth_call_string_argument(
       trimmed, "getPrimaryService",
     )
-    let characteristic_uuid = extract_bluetooth_call_string_argument(
+    let characteristic_uuid = @browser_domain.extract_bluetooth_call_string_argument(
       trimmed, "getCharacteristic",
     )
-    let data = extract_bluetooth_uint8_array_data(trimmed)
+    let data = @browser_domain.extract_bluetooth_uint8_array_data(trimmed)
     self.bluetooth_pending_characteristic_request[ctx_id] = request_id
     self.bluetooth_pending_characteristic_realm[ctx_id] = realm_id
     self.bluetooth_pending_characteristic_unwrap_result[ctx_id] = unwrap_result
@@ -1467,10 +1467,10 @@ fn BidiProtocol::try_handle_synthetic_bluetooth_gatt_call(
   if trimmed.contains("device.gatt.getPrimaryService(") &&
     trimmed.contains("getCharacteristic(") &&
     trimmed.contains("const value = await characteristic.readValue();") {
-    let service_uuid = extract_bluetooth_call_string_argument(
+    let service_uuid = @browser_domain.extract_bluetooth_call_string_argument(
       trimmed, "getPrimaryService",
     )
-    let characteristic_uuid = extract_bluetooth_call_string_argument(
+    let characteristic_uuid = @browser_domain.extract_bluetooth_call_string_argument(
       trimmed, "getCharacteristic",
     )
     self.bluetooth_pending_characteristic_request[ctx_id] = request_id
@@ -1493,10 +1493,10 @@ fn BidiProtocol::try_handle_synthetic_bluetooth_gatt_call(
   if trimmed.contains("device.gatt.getPrimaryService(") &&
     trimmed.contains("getCharacteristic(") &&
     trimmed.contains("startNotifications();") {
-    let service_uuid = extract_bluetooth_call_string_argument(
+    let service_uuid = @browser_domain.extract_bluetooth_call_string_argument(
       trimmed, "getPrimaryService",
     )
-    let characteristic_uuid = extract_bluetooth_call_string_argument(
+    let characteristic_uuid = @browser_domain.extract_bluetooth_call_string_argument(
       trimmed, "getCharacteristic",
     )
     self.bluetooth_pending_characteristic_request[ctx_id] = request_id
@@ -1519,10 +1519,10 @@ fn BidiProtocol::try_handle_synthetic_bluetooth_gatt_call(
   if trimmed.contains("device.gatt.getPrimaryService(") &&
     trimmed.contains("getCharacteristic(") &&
     trimmed.contains("stopNotifications();") {
-    let service_uuid = extract_bluetooth_call_string_argument(
+    let service_uuid = @browser_domain.extract_bluetooth_call_string_argument(
       trimmed, "getPrimaryService",
     )
-    let characteristic_uuid = extract_bluetooth_call_string_argument(
+    let characteristic_uuid = @browser_domain.extract_bluetooth_call_string_argument(
       trimmed, "getCharacteristic",
     )
     self.bluetooth_pending_characteristic_request[ctx_id] = request_id
@@ -1545,16 +1545,16 @@ fn BidiProtocol::try_handle_synthetic_bluetooth_gatt_call(
   if trimmed.contains("device.gatt.getPrimaryService(") &&
     trimmed.contains("getDescriptor(") &&
     trimmed.contains("descriptor.writeValue(") {
-    let service_uuid = extract_bluetooth_call_string_argument(
+    let service_uuid = @browser_domain.extract_bluetooth_call_string_argument(
       trimmed, "getPrimaryService",
     )
-    let characteristic_uuid = extract_bluetooth_call_string_argument(
+    let characteristic_uuid = @browser_domain.extract_bluetooth_call_string_argument(
       trimmed, "getCharacteristic",
     )
-    let descriptor_uuid = extract_bluetooth_call_string_argument(
+    let descriptor_uuid = @browser_domain.extract_bluetooth_call_string_argument(
       trimmed, "getDescriptor",
     )
-    let data = extract_bluetooth_uint8_array_data(trimmed)
+    let data = @browser_domain.extract_bluetooth_uint8_array_data(trimmed)
     self.bluetooth_pending_descriptor_request[ctx_id] = request_id
     self.bluetooth_pending_descriptor_realm[ctx_id] = realm_id
     self.bluetooth_pending_descriptor_unwrap_result[ctx_id] = unwrap_result
@@ -1577,13 +1577,13 @@ fn BidiProtocol::try_handle_synthetic_bluetooth_gatt_call(
   if trimmed.contains("device.gatt.getPrimaryService(") &&
     trimmed.contains("getDescriptor(") &&
     trimmed.contains("const value = await descriptor.readValue();") {
-    let service_uuid = extract_bluetooth_call_string_argument(
+    let service_uuid = @browser_domain.extract_bluetooth_call_string_argument(
       trimmed, "getPrimaryService",
     )
-    let characteristic_uuid = extract_bluetooth_call_string_argument(
+    let characteristic_uuid = @browser_domain.extract_bluetooth_call_string_argument(
       trimmed, "getCharacteristic",
     )
-    let descriptor_uuid = extract_bluetooth_call_string_argument(
+    let descriptor_uuid = @browser_domain.extract_bluetooth_call_string_argument(
       trimmed, "getDescriptor",
     )
     self.bluetooth_pending_descriptor_request[ctx_id] = request_id
@@ -1608,10 +1608,10 @@ fn BidiProtocol::try_handle_synthetic_bluetooth_gatt_call(
   if trimmed.contains("device.gatt.getPrimaryService(") &&
     trimmed.contains("getCharacteristic(") &&
     trimmed.contains("return toPropertyStrings(characteristic.properties);") {
-    let service_uuid = extract_bluetooth_call_string_argument(
+    let service_uuid = @browser_domain.extract_bluetooth_call_string_argument(
       trimmed, "getPrimaryService",
     )
-    let characteristic_uuid = extract_bluetooth_call_string_argument(
+    let characteristic_uuid = @browser_domain.extract_bluetooth_call_string_argument(
       trimmed, "getCharacteristic",
     )
     let scope_key = @browser_domain.bluetooth_characteristic_scope_key(
@@ -1946,38 +1946,6 @@ fn BidiProtocol::validate_bluetooth_characteristic_properties(
 }
 
 ///|
-fn extract_bluetooth_call_string_argument(
-  source : String,
-  method_name : String,
-) -> String {
-  let single_prefix = method_name + "('"
-  match find_substring(source, single_prefix, 0) {
-    Some(start_idx) => {
-      let value_start = start_idx + single_prefix.length()
-      match find_substring(source, "')", value_start) {
-        Some(end_idx) if end_idx >= value_start =>
-          source.unsafe_substring(start=value_start, end=end_idx)
-        _ => ""
-      }
-    }
-    None => {
-      let double_prefix = method_name + "(\""
-      match find_substring(source, double_prefix, 0) {
-        Some(start_idx) => {
-          let value_start = start_idx + double_prefix.length()
-          match find_substring(source, "\")", value_start) {
-            Some(end_idx) if end_idx >= value_start =>
-              source.unsafe_substring(start=value_start, end=end_idx)
-            _ => ""
-          }
-        }
-        None => ""
-      }
-    }
-  }
-}
-
-///|
 fn BidiProtocol::validate_bluetooth_response_data(
   self : BidiProtocol,
   request_id : Int,
@@ -2052,24 +2020,4 @@ fn BidiProtocol::clear_pending_bluetooth_descriptor(
   self.bluetooth_pending_descriptor_characteristic_uuid.remove(ctx_id)
   self.bluetooth_pending_descriptor_uuid.remove(ctx_id)
   self.bluetooth_pending_descriptor_type.remove(ctx_id)
-}
-
-///|
-fn extract_bluetooth_uint8_array_data(source : String) -> Array[Json] {
-  let prefix = "new Uint8Array("
-  match find_substring(source, prefix, 0) {
-    Some(start_idx) => {
-      let data_start = start_idx + prefix.length()
-      match find_substring(source, ")", data_start) {
-        Some(end_idx) if end_idx >= data_start => {
-          let raw = source.unsafe_substring(start=data_start, end=end_idx)
-          @browser_domain.extract_bluetooth_byte_array_literal(
-            raw.trim().to_owned(),
-          )
-        }
-        _ => []
-      }
-    }
-    None => []
-  }
 }

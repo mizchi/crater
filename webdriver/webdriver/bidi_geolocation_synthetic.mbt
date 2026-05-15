@@ -52,14 +52,6 @@ fn BidiProtocol::resolve_effective_geolocation_coordinates(
 }
 
 ///|
-fn geolocation_watch_scope_context(scope_key : String) -> String {
-  match find_substring(scope_key, "|", 0) {
-    Some(separator) => scope_key.unsafe_substring(start=0, end=separator)
-    None => scope_key
-  }
-}
-
-///|
 fn extract_script_channel_name(params : Json?) -> String? {
   match get_param_raw(params, "arguments") {
     Some(Array(arguments)) =>
@@ -103,7 +95,7 @@ fn BidiProtocol::emit_geolocation_watch_update_for_scope(
   self : BidiProtocol,
   scope_key : String,
 ) -> Unit {
-  let ctx_id = geolocation_watch_scope_context(scope_key)
+  let ctx_id = @browser_domain.geolocation_watch_scope_context(scope_key)
   let realm_id = match self.geolocation_watch_realm_by_scope.get(scope_key) {
     Some(realm_id) => realm_id
     None => return

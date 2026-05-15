@@ -146,33 +146,14 @@ fn BidiProtocol::remove_permission_state_for_user_context(
 ) -> Unit {
   let keys : Array[String] = []
   for key, _ in self.permission_state_by_scope {
-    if permission_scope_belongs_to_user_context(key, user_context_id) {
+    if @browser_domain.permission_scope_belongs_to_user_context(
+        key, user_context_id,
+      ) {
       keys.push(key)
     }
   }
   for key in keys {
     self.permission_state_by_scope.remove(key)
-  }
-}
-
-///|
-fn permission_scope_belongs_to_user_context(
-  key : String,
-  user_context_id : String,
-) -> Bool {
-  match find_substring(key, "|", 0) {
-    Some(first_sep) =>
-      match find_substring(key, "|", first_sep + 1) {
-        Some(second_sep) => {
-          let scope_user_context = key.unsafe_substring(
-            start=first_sep + 1,
-            end=second_sep,
-          )
-          scope_user_context == user_context_id
-        }
-        None => false
-      }
-    None => false
   }
 }
 
@@ -189,7 +170,7 @@ fn BidiProtocol::try_handle_synthetic_permissions_query_call(
     return false
   }
   let permission_name = match
-    extract_permissions_query_name(function_declaration) {
+    @browser_domain.extract_permissions_query_name(function_declaration) {
     Some(permission_name) =>
       if @browser_domain.is_supported_permission_name(permission_name) {
         permission_name
@@ -238,14 +219,6 @@ fn BidiProtocol::try_handle_synthetic_window_location_origin_call(
     unwrap_result,
   )
   true
-}
-
-///|
-fn extract_permissions_query_name(function_declaration : String) -> String? {
-  match extract_quoted_after_marker(function_declaration, "name: ") {
-    Some(name) => Some(name)
-    None => extract_quoted_after_marker(function_declaration, "name:")
-  }
 }
 
 ///|

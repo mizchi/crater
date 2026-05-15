@@ -36,9 +36,19 @@ pub fn emulation_timezone_offset_minutes(String) -> Int?
 
 pub fn extract_bluetooth_byte_array_literal(String) -> Array[Json]
 
+pub fn extract_bluetooth_call_string_argument(String, String) -> String
+
+pub fn extract_bluetooth_uint8_array_data(String) -> Array[Json]
+
+pub fn extract_emulation_fetch_url(String) -> String?
+
 pub fn extract_first_bluetooth_string_argument(Json?) -> String?
 
+pub fn extract_permissions_query_name(String) -> String?
+
 pub fn find_bluetooth_device_for_name(Array[Json], String?) -> Json
+
+pub fn geolocation_watch_scope_context(String) -> String
 
 pub fn geolocation_watch_scope_key(String, Int) -> String
 
@@ -61,6 +71,8 @@ pub fn normalize_permission_origin(String) -> String
 pub fn normalize_screen_area_json(Json) -> Json?
 
 pub fn normalize_screen_orientation_json(Json) -> Json?
+
+pub fn permission_scope_belongs_to_user_context(String, String) -> Bool
 
 pub fn permission_scope_key(String, String, String, String) -> String
 

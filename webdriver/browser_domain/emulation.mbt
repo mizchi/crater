@@ -7,6 +7,34 @@ pub fn default_runtime_user_agent() -> String {
 }
 
 ///|
+pub fn extract_emulation_fetch_url(expression : String) -> String? {
+  let open_paren = match @protocol.find_substring(expression, "fetch(", 0) {
+    Some(idx) => idx + 6
+    None => return None
+  }
+  let chars = expression.to_array()
+  let mut cursor = open_paren
+  while cursor < chars.length() && chars[cursor] == ' ' {
+    cursor = cursor + 1
+  }
+  if cursor >= chars.length() {
+    return None
+  }
+  let quote = chars[cursor]
+  if quote != '\'' && quote != '"' {
+    return None
+  }
+  let mut end = cursor + 1
+  while end < chars.length() && chars[end] != quote {
+    end = end + 1
+  }
+  if end >= chars.length() {
+    return None
+  }
+  Some(expression.unsafe_substring(start=cursor + 1, end~))
+}
+
+///|
 pub fn emulation_timezone_offset_minutes(timezone : String) -> Int? {
   if timezone.length() != 6 {
     return None
