@@ -44,6 +44,12 @@ pub fn make_object(Map[String, Json]) -> Json
 
 pub fn parse_decimal_string(String) -> Int?
 
+pub fn remote_value_as_bool(Json) -> Bool?
+
+pub fn remote_value_as_number(Json) -> Double?
+
+pub fn remote_value_as_string(Json) -> String?
+
 pub fn resolve_runtime_context_id(Json?, String, String, Bool) -> String
 
 // Errors

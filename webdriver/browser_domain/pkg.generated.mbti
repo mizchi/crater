@@ -46,11 +46,15 @@ pub fn extract_first_bluetooth_string_argument(Json?) -> String?
 
 pub fn extract_permissions_query_name(String) -> String?
 
+pub fn extract_script_channel_name(Json?) -> String?
+
 pub fn find_bluetooth_device_for_name(Array[Json], String?) -> Json
 
 pub fn geolocation_watch_scope_context(String) -> String
 
 pub fn geolocation_watch_scope_key(String, Int) -> String
+
+pub fn get_first_numeric_argument(Json?) -> Double?
 
 pub fn is_supported_permission_name(String) -> Bool
 

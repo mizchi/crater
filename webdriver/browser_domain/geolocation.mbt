@@ -109,3 +109,42 @@ pub fn normalize_geolocation_number_json(
 ) -> Double? {
   @protocol.json_as_safe_number(value, min, max)
 }
+
+///|
+pub fn extract_script_channel_name(params : Json?) -> String? {
+  match @protocol.get_param_raw(params, "arguments") {
+    Some(Array(arguments)) =>
+      for argument in arguments {
+        match argument {
+          Object(argument_map) =>
+            match (argument_map.get("type"), argument_map.get("value")) {
+              (Some(String("channel")), Some(Object(channel_map))) =>
+                match channel_map.get("channel") {
+                  Some(String(channel_name)) =>
+                    if channel_name != "" {
+                      return Some(channel_name)
+                    }
+                  _ => ()
+                }
+              _ => ()
+            }
+          _ => ()
+        }
+      }
+    _ => ()
+  }
+  None
+}
+
+///|
+pub fn get_first_numeric_argument(params : Json?) -> Double? {
+  match @protocol.get_param_raw(params, "arguments") {
+    Some(Array(arguments)) =>
+      if arguments.length() > 0 {
+        @protocol.remote_value_as_number(arguments[0])
+      } else {
+        None
+      }
+    _ => None
+  }
+}

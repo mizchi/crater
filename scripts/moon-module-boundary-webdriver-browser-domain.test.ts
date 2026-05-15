@@ -68,6 +68,8 @@ const MOVED_DEFINITIONS = [
   "fn extract_bluetooth_byte_array_literal",
   "fn extract_bluetooth_call_string_argument",
   "fn extract_bluetooth_uint8_array_data",
+  "fn extract_script_channel_name",
+  "fn get_first_numeric_argument",
 ] as const;
 
 describe("MoonBit WebDriver browser_domain boundaries", () => {
