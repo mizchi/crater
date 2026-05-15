@@ -236,10 +236,10 @@ test "bidi bluetooth getCharacteristics returns simulated uuids" {
       "knownServiceUuids": Json::array([]),
     }),
   ]
-  proto.bluetooth_services_by_scope[bluetooth_scope_key(ctx_id, address)] = [
-    service_uuid,
-  ]
-  proto.bluetooth_characteristics_by_scope[bluetooth_characteristic_scope_key(
+  proto.bluetooth_services_by_scope[@browser_domain.bluetooth_scope_key(
+    ctx_id, address,
+  )] = [service_uuid]
+  proto.bluetooth_characteristics_by_scope[@browser_domain.bluetooth_characteristic_scope_key(
     ctx_id, address, service_uuid, characteristic_uuid,
   )] = make_object({ "broadcast": Json::boolean(true) })
 
@@ -272,10 +272,10 @@ test "bidi bluetooth getCharacteristic returns simulated properties" {
       "knownServiceUuids": Json::array([]),
     }),
   ]
-  proto.bluetooth_services_by_scope[bluetooth_scope_key(ctx_id, address)] = [
-    service_uuid,
-  ]
-  proto.bluetooth_characteristics_by_scope[bluetooth_characteristic_scope_key(
+  proto.bluetooth_services_by_scope[@browser_domain.bluetooth_scope_key(
+    ctx_id, address,
+  )] = [service_uuid]
+  proto.bluetooth_characteristics_by_scope[@browser_domain.bluetooth_characteristic_scope_key(
     ctx_id, address, service_uuid, characteristic_uuid,
   )] = make_object({
     "broadcast": Json::boolean(true),

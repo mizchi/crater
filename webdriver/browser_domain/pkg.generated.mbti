@@ -2,6 +2,18 @@
 package "mizchi/crater-webdriver-bidi/browser_domain"
 
 // Values
+pub fn bluetooth_characteristic_prefix_key(String, String, String) -> String
+
+pub fn bluetooth_characteristic_scope_key(String, String, String, String) -> String
+
+pub fn bluetooth_descriptor_prefix_key(String, String, String, String) -> String
+
+pub fn bluetooth_descriptor_scope_key(String, String, String, String, String) -> String
+
+pub fn bluetooth_device_field_string(Json, String) -> String?
+
+pub fn bluetooth_scope_key(String, String) -> String
+
 pub fn build_geolocation_coordinates_override(Json) -> Json
 
 pub fn build_geolocation_coordinates_remote_value(Json) -> Json
@@ -22,6 +34,12 @@ pub fn default_screen_orientation_json() -> Json
 
 pub fn emulation_timezone_offset_minutes(String) -> Int?
 
+pub fn extract_bluetooth_byte_array_literal(String) -> Array[Json]
+
+pub fn extract_first_bluetooth_string_argument(Json?) -> String?
+
+pub fn find_bluetooth_device_for_name(Array[Json], String?) -> Json
+
 pub fn geolocation_watch_scope_key(String, Int) -> String
 
 pub fn is_supported_permission_name(String) -> Bool
@@ -31,6 +49,10 @@ pub fn is_valid_screen_orientation_natural(String) -> Bool
 pub fn is_valid_screen_orientation_type(String) -> Bool
 
 pub fn is_valid_web_extension_archive_payload(String) -> Bool
+
+pub fn make_bluetooth_byte_remote_value(Array[Json]) -> Json
+
+pub fn make_bluetooth_requested_device_remote_value(String, String) -> Json
 
 pub fn normalize_geolocation_number_json(Json, Double, Double) -> Double?
 
@@ -43,6 +65,8 @@ pub fn normalize_screen_orientation_json(Json) -> Json?
 pub fn permission_scope_key(String, String, String, String) -> String
 
 pub fn push_geolocation_number_remote_entry(Array[Json], Map[String, Json], String) -> Unit
+
+pub fn upsert_bluetooth_device(Array[Json], Json, String) -> Array[Json]
 
 // Errors
 
