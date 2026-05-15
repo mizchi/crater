@@ -252,7 +252,9 @@ describe("MoonBit WebDriver facade and contract boundaries", () => {
     expect(fs.existsSync(path.join(REPO_ROOT, "webdriver/network/encoding.mbt"))).toBe(false);
     expect(fs.existsSync(path.join(REPO_ROOT, "webdriver/network/event_types.mbt"))).toBe(false);
     expect(fs.existsSync(path.join(REPO_ROOT, "webdriver/network/fetch_types.mbt"))).toBe(false);
-    expect(fs.existsSync(path.join(REPO_ROOT, "webdriver/network/facade.mbt"))).toBe(true);
+    // The previous `webdriver/network` facade package has been removed —
+    // webdriver code now imports `@crater_network` directly.
+    expect(fs.existsSync(path.join(REPO_ROOT, "webdriver/network"))).toBe(false);
     expect(fs.existsSync(path.join(REPO_ROOT, "webdriver/webdriver/bidi_network_fetch_types.mbt"))).toBe(
       false,
     );
@@ -267,42 +269,6 @@ describe("MoonBit WebDriver facade and contract boundaries", () => {
     expect(webdriverNetworkTypes).not.toContain('extern "js" fn js_utf8_byte_length');
     expect(webdriverNetworkTypes).not.toContain('extern "js" fn js_base64_byte_length');
     expect(webdriverNetworkTypes).not.toContain('extern "js" fn js_decode_query_component');
-
-    const networkPackage = read("webdriver/network/moon.pkg");
-    expect(networkPackage).toContain('"mizchi/crater-network" @crater_network');
-    expect(networkPackage).not.toContain("mizchi/webdriver");
-    expect(networkPackage).not.toContain("mizchi/js");
-
-    const facadeSource = read("webdriver/network/facade.mbt");
-    expect(facadeSource).toContain("pub using @crater_network");
-    for (const symbol of [
-      "BidiNetworkState",
-      "SyntheticNetworkEventInput",
-      "SyntheticFetchPlanEntry",
-      "utf8_byte_length",
-      "base64_byte_length",
-      "decode_query_component",
-    ] as const) {
-      expect(facadeSource).toContain(symbol);
-    }
-
-    const webdriverNetworkFiles = fs
-      .readdirSync(path.join(REPO_ROOT, "webdriver/network"))
-      .filter((file) => file.endsWith(".mbt"));
-    const adapterImplementationMarkers = [
-      'extern "js"',
-      "struct BidiNetworkState",
-      "struct SyntheticNetworkEventInput",
-      "struct SyntheticNetworkResponseOverrides",
-      "struct SyntheticFetchPlanEntry",
-    ] as const;
-    const adapterOffenders = webdriverNetworkFiles.flatMap((file) => {
-      const source = read(path.join("webdriver/network", file));
-      return adapterImplementationMarkers
-        .filter((marker) => source.includes(marker))
-        .map((marker) => `${file}: ${marker}`);
-    });
-    expect(adapterOffenders).toEqual([]);
 
     const webdriverPackage = read("webdriver/webdriver/moon.pkg");
     expect(webdriverPackage).toContain('"mizchi/crater-network" @crater_network');
