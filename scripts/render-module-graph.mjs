@@ -45,7 +45,7 @@ const LAYERS = [
   ["Browser", new Set([
     "mizchi/crater-browser",
     "mizchi/crater-browser-runtime",
-    "mizchi/crater-browser-contract",
+    "mizchi/crater-browser-helpers",
     "mizchi/crater-browser-http",
     "mizchi/crater-browser-http-sqlite",
     "mizchi/crater-browser-native",

@@ -2,7 +2,7 @@ members = [
   ".",
   "./aomx",
   "./benchmarks",
-  "./contract",
+  "./browser_helpers",
   "./testing",
   "./webvitals",
   "./http",

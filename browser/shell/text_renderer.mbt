@@ -5,7 +5,7 @@ fn Browser::render_text(self : Browser) -> String {
     return ""
   }
   let rt0 = perf_now()
-  let ctx = @browser_contract.create_render_context(
+  let ctx = @browser_helpers.create_render_context(
     self.viewport_width,
     self.viewport_height,
     self.dark_mode,
@@ -244,7 +244,7 @@ pub fn Browser::render_text_full_page(self : Browser) -> String {
   if self.html_content.length() == 0 {
     return ""
   }
-  let ctx = @browser_contract.create_render_context(
+  let ctx = @browser_helpers.create_render_context(
     self.viewport_width,
     self.viewport_height,
     self.dark_mode,

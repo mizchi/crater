@@ -1,5 +1,5 @@
 {
-  "name": "mizchi/crater-browser-contract",
+  "name": "mizchi/crater-browser-helpers",
   "version": "0.17.1",
   "deps": {
     "mizchi/crater-renderer": {

@@ -184,7 +184,7 @@ test "build_render_document_from_dom_tree builds composed shadow render document
   inspect(render_doc.stylesheet_links[0], content="/shadow.css")
   let rendered = @renderer.render_to_node_with_document(
     render_doc,
-    @browser_contract.create_render_context(800, 600, false),
+    @browser_helpers.create_render_context(800, 600, false),
     [],
   )
   inspect(rendered.children.length(), content="1")

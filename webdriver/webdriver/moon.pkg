@@ -8,7 +8,7 @@ import {
   "mizchi/crater-webdriver-bidi/browser_domain" @browser_domain,
   "mizchi/crater-network" @crater_network,
   "mizchi/crater-renderer/vrt" @vrt,
-  "mizchi/crater-browser-contract" @browser_contract,
+  "mizchi/crater-browser-helpers" @browser_helpers,
   "mizchi/crater-dom/css/responsive" @responsive,
   "mizchi/crater-layout/types",
   "mizchi/crater-browser/cdp",

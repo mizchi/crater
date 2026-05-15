@@ -506,7 +506,7 @@ fn BidiProtocol::build_actual_paint_frame(
   let (viewport_width, viewport_height) = self.resolve_actual_paint_viewport_dimensions(
     ctx_id,
   )
-  let ctx = @browser_contract.create_render_context(
+  let ctx = @browser_helpers.create_render_context(
     viewport_width, viewport_height, false,
   )
   let t0 = js_now_ms()
@@ -828,7 +828,7 @@ fn BidiProtocol::resolve_capture_paint_tree(
   let height = self.resolve_effective_viewport_height(ctx_id)
   let html_json = evaluate_js(serialize_live_document_html_expr())
   let html = @protocol.extract_string_value_from_evaluate_result(html_json)
-  let ctx = @browser_contract.create_render_context(width, height, false)
+  let ctx = @browser_helpers.create_render_context(width, height, false)
   let (node, layout) = if origin == "document" {
     @renderer.render_to_node_and_layout_full_document(html, ctx)
   } else {

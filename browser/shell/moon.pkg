@@ -3,7 +3,7 @@ import {
   "moonbitlang/async/io",
   "mizchi/crater-renderer/renderer",
   "mizchi/crater-dom/html",
-  "mizchi/crater-browser-contract" @browser_contract,
+  "mizchi/crater-browser-helpers" @browser_helpers,
   "mizchi/crater-dom/aom",
   "mizchi/crater-layout" @layout,
   "mizchi/crater-layout/types",

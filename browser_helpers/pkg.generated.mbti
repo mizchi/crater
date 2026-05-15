@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "mizchi/crater-browser-contract"
+package "mizchi/crater-browser-helpers"
 
 import {
   "mizchi/crater-dom/aom",

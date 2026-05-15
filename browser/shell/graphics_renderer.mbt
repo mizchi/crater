@@ -5,7 +5,7 @@ fn Browser::render(self : Browser) -> String {
     return ""
   }
   let installed_provider = self.install_sixel_image_provider()
-  let ctx = @browser_contract.create_render_context(
+  let ctx = @browser_helpers.create_render_context(
     self.viewport_width,
     self.viewport_height,
     false,
@@ -30,7 +30,7 @@ fn Browser::render_kitty(self : Browser) -> String {
   if self.html_content.length() == 0 {
     return ""
   }
-  let ctx = @browser_contract.create_render_context(
+  let ctx = @browser_helpers.create_render_context(
     self.viewport_width,
     self.viewport_height,
     false,
@@ -60,7 +60,7 @@ async fn[T : @io.Writer] Browser::write_kitty_output(
   if self.html_content.length() == 0 {
     return
   }
-  let ctx = @browser_contract.create_render_context(
+  let ctx = @browser_helpers.create_render_context(
     self.viewport_width,
     self.viewport_height,
     false,

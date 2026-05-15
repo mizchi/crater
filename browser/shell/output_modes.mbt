@@ -5,7 +5,7 @@ pub fn Browser::debug_layout(self : Browser) -> Unit {
     println("No content loaded")
     return
   }
-  let ctx = @browser_contract.create_render_context(
+  let ctx = @browser_helpers.create_render_context(
     self.viewport_width,
     self.viewport_height,
     false,
@@ -48,7 +48,7 @@ fn Browser::render_aom(self : Browser) -> String {
 fn Browser::render_arc90(self : Browser) -> String {
   match self.a11y_tree {
     Some(tree) =>
-      @browser_contract.render_arc90_summary(
+      @browser_helpers.render_arc90_summary(
         tree,
         self.viewport_width,
         self.viewport_height,
@@ -62,7 +62,7 @@ fn Browser::render_arc90(self : Browser) -> String {
 fn Browser::render_extract_main(self : Browser) -> String {
   match self.a11y_tree {
     Some(tree) =>
-      @browser_contract.extract_main_text(
+      @browser_helpers.extract_main_text(
         tree,
         self.viewport_width,
         self.viewport_height,
@@ -76,7 +76,7 @@ fn Browser::render_extract_main(self : Browser) -> String {
 fn Browser::render_grounding(self : Browser) -> String {
   match self.a11y_tree {
     Some(tree) =>
-      @browser_contract.render_grounding_demo(
+      @browser_helpers.render_grounding_demo(
         tree,
         self.viewport_width,
         self.viewport_height,
