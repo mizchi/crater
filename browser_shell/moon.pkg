@@ -1,6 +1,0 @@
-import {
-  "mizchi/crater-html-assets" @html_assets,
-  "mizchi/crater-terminal-image-cache" @terminal_image_cache,
-}
-
-supported_targets = "js+native"

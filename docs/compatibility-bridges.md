@@ -7,7 +7,6 @@ New code should depend on the canonical package listed below.
 | Compatibility package | Canonical package |
 | --- | --- |
 | `mizchi/crater-browser/js` | `mizchi/crater-browser-runtime` |
-| `mizchi/crater-browser-shell` | `mizchi/crater-browser-shell/html_assets` and `mizchi/crater-terminal-image-cache` |
 | `mizchi/crater-dom/layout/html_bridge` | `mizchi/crater-dom/layout/html_tree` and `mizchi/crater-dom/layout/style_bridge` |
 | `mizchi/crater-painter/paint/layout_bridge` | `mizchi/crater-painter/paint/node_bridge`, `layout_tree_bridge`, and `viewport_bridge` |
 | `mizchi/crater-painter/paint/render_bridge` | `mizchi/crater-painter/paint/node_bridge` and `viewport_bridge` |
