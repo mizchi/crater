@@ -5,6 +5,7 @@ members = [
   "./benchmarks",
   "./browser_helpers",
   "./testing",
+  "./conformance",
   "./tools",
   "./webvitals",
   "./http",

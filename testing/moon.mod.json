@@ -29,12 +29,7 @@
     "mizchi/crater-layout": {
       "path": "../layout",
       "version": "0.17.1"
-    },
-    "mizchi/crater-renderer": {
-      "path": "../renderer",
-      "version": "0.17.1"
-    },
-    "mizchi/js": "0.10.13"
+    }
   },
   "repository": "https://github.com/mizchi/crater",
   "license": "Apache-2.0",

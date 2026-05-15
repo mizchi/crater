@@ -77,7 +77,7 @@ test-update:
 
 # Run taffy compatibility tests
 test-taffy:
-    moon test -p mizchi/crater-testing/taffy_compat --target js
+    moon test -p mizchi/crater-conformance/taffy --target js
 
 # Verify moon test result does not regress from recorded baseline
 test-baseline:

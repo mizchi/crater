@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "mizchi/crater-testing/taffy_compat"
+package "mizchi/crater-conformance/taffy"
 
 import {
   "mizchi/crater-core",

@@ -1,8 +1,8 @@
 (async () => {
   try {
     const candidates = [
-      '../_build/js/release/build/mizchi/crater-testing/wpt_runtime/wpt_runtime.js',
-      '../_build/js/release/build/wpt_runtime/wpt_runtime.js',
+      '../_build/js/release/build/mizchi/crater-conformance/wpt/wpt.js',
+      '../_build/js/release/build/wpt/wpt.js',
     ];
     let lastError = '';
     for (const candidate of candidates) {
