@@ -133,6 +133,7 @@ jobs:
       - name: Preview affected core gates
         run: |
           pkf affected \
+            -j 1 \
             --since="${{ steps.affected_base.outputs.base }}" \
             --profile=ci \
             --explain \
@@ -142,6 +143,7 @@ jobs:
       - name: Run affected core gates
         run: |
           pkf affected \
+            -j 1 \
             --since="${{ steps.affected_base.outputs.base }}" \
             --profile=ci \
             --keep-going \

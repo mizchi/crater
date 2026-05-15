@@ -1,4 +1,6 @@
 packages:
+  - browser
+  - js
   - js/playground/**
 
 onlyBuiltDependencies:

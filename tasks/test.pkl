@@ -19,12 +19,26 @@ testVitest: pkfire.Task = new {
   inputs = src.nodeSources
 }
 
+buildJsPackage: pkfire.Task = new {
+  name = "build-js-package"
+  description = "Build the JS package artifacts used by node:test contracts"
+  visibility = "internal"
+  cmd = "pnpm --dir js run build"
+  inputs {
+    ...src.moonSources
+    "js/package.json"
+    "js/scripts/**/*.mjs"
+  }
+  outputs { "js/dist/**" }
+}
+
 testNode: pkfire.Task = new {
   name = "test-node"
   description = "Run node:test JS/WASM/browser contract suites"
   visibility = "internal"
   cmd = "pnpm test:node"
   inputs = src.nodeSources
+  deps { buildJsPackage; testWasm }
 }
 
 testTaffy: pkfire.Task = new {
@@ -62,6 +76,7 @@ test: pkfire.Task = new {
 tasks: Listing<pkfire.Task> = new {
   testMoon
   testVitest
+  buildJsPackage
   testNode
   testTaffy
   testWasm

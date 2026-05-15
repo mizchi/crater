@@ -1,6 +1,6 @@
 # Test SPEC
 
-36 tests across 2 module(s) — 20 pending, 16 active
+38 tests across 2 module(s) — 20 pending, 18 active
 
 ## `specs/`
 
@@ -178,8 +178,16 @@
   > Leaf tasks that only implement public aggregate gates should stay hidden from the default task inventory.
   - body: `cmd` (exit 0 expected)
 
+- [x] **pkfire_prepares_node_contract_artifacts** — verifies: task.test — tags: pkfire, node, contract
+  > The node:test contract suite should build clean CI artifacts before importing package dist files.
+  - body: `cmd` (exit 0 expected)
+
 - [x] **pkspec_check_validates_declared_scenarios** — verifies: spec.check — tags: pkspec, contract
   > Approved crater scenarios should be linked to this Test module or explicit implementation pointers.
+  - body: `cmd` (exit 0 expected)
+
+- [x] **pnpm_workspace_includes_browser_package** — verifies: task.test — tags: pnpm, ci, node
+  > Root pnpm install should materialize browser package dependencies before affected test-node runs.
   - body: `cmd` (exit 0 expected)
 
 
