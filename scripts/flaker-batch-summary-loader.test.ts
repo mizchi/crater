@@ -2,7 +2,10 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { buildFlakerBatchSummary } from "./flaker-batch-summary-core.ts";
 import { loadFlakerBatchSummaryInputs } from "./flaker-batch-summary-loader.ts";
+import { loadVrtArtifactReports } from "./vrt-report-loader.ts";
+import { buildVrtArtifactSummary } from "./vrt-report-summary-core.ts";
 
 describe("loadFlakerBatchSummaryInputs", () => {
   it("loads playwright, flaker, and vrt summaries from downloaded artifacts", () => {
@@ -139,6 +142,122 @@ describe("loadFlakerBatchSummaryInputs", () => {
       unknown: 1,
       maxDiffRatio: 0.08,
     });
+  });
+
+  it("accepts external vrt-harness payloads through artifact summary and batch loading", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "crater-flaker-batch-summary-vrt-harness-"));
+    const rawDir = path.join(root, "raw-vrt-harness");
+    const collectDir = path.join(root, "component-vrt", "vrt-summary");
+    fs.mkdirSync(path.join(rawDir, "button-primary"), { recursive: true });
+    fs.mkdirSync(path.join(rawDir, "button-secondary"), { recursive: true });
+    fs.mkdirSync(collectDir, { recursive: true });
+
+    fs.writeFileSync(
+      path.join(rawDir, "button-primary", "report.json"),
+      JSON.stringify({
+        schemaVersion: 1,
+        suite: "vrt-artifact",
+        status: "pass",
+        title: "component button primary",
+        identity: {
+          taskId: "component-vrt",
+          spec: "component-vrt.json",
+          filter: "button-primary",
+          title: "component button primary",
+          variant: {
+            backend: "crater",
+            snapshotKind: "component",
+            viewport: "800x600",
+          },
+        },
+        artifacts: {},
+        metadata: {
+          diffRatio: 0.01,
+          maxDiffRatio: 0.05,
+          backend: "crater",
+          snapshotKind: "component",
+          cssRuleUsage: {
+            totalRules: 4,
+            deadRules: 1,
+          },
+        },
+      }),
+      "utf8",
+    );
+    fs.writeFileSync(
+      path.join(rawDir, "button-secondary", "report.json"),
+      JSON.stringify({
+        schemaVersion: 1,
+        suite: "vrt-artifact",
+        status: "fail",
+        title: "renamed component button secondary",
+        identity: {
+          key: "vrt-harness-local-key",
+          taskId: "component-vrt",
+          spec: "component-vrt.json",
+          filter: "button-secondary",
+          title: "renamed component button secondary",
+          variant: {
+            viewport: "800x600",
+            snapshotKind: "component",
+            backend: "crater",
+          },
+        },
+        artifacts: {},
+        metadata: {
+          diffRatio: 0.08,
+          maxDiffRatio: 0.05,
+          backend: "crater",
+          snapshotKind: "component",
+          cssRuleUsage: {
+            totalRules: 3,
+            deadRules: 1,
+            unusedRules: 1,
+          },
+        },
+      }),
+      "utf8",
+    );
+
+    const summary = buildVrtArtifactSummary(loadVrtArtifactReports(rawDir), "component-vrt");
+    const primary = summary.rows.find((row) => row.identity?.filter === "button-primary");
+    const secondary = summary.rows.find((row) => row.identity?.filter === "button-secondary");
+    expect(primary?.identityKey).toBe(
+      "{\"taskId\":\"component-vrt\",\"spec\":\"component-vrt.json\",\"filter\":\"button-primary\",\"variant\":{\"backend\":\"crater\",\"snapshotKind\":\"component\",\"viewport\":\"800x600\"}}",
+    );
+    expect(secondary?.identityKey).toBe(
+      "{\"taskId\":\"component-vrt\",\"spec\":\"component-vrt.json\",\"filter\":\"button-secondary\",\"variant\":{\"backend\":\"crater\",\"snapshotKind\":\"component\",\"viewport\":\"800x600\"}}",
+    );
+    expect(secondary?.identityKey).not.toBe("vrt-harness-local-key");
+
+    fs.writeFileSync(
+      path.join(collectDir, "component-vrt.json"),
+      JSON.stringify(summary),
+      "utf8",
+    );
+
+    const loaded = loadFlakerBatchSummaryInputs(root);
+    expect(loaded.vrtSummaries.get("component-vrt")).toEqual({
+      failed: 1,
+      unknown: 0,
+      maxDiffRatio: 0.08,
+      cssDeadRules: 2,
+      cssTotalRules: 7,
+      cssUnusedRules: 1,
+      cssOverriddenRules: 0,
+      cssNoEffectRules: 0,
+    });
+
+    const batchSummary = buildFlakerBatchSummary(loaded);
+    expect(batchSummary.failedTasks).toBe(1);
+    expect(batchSummary.tasks).toContainEqual(expect.objectContaining({
+      taskId: "component-vrt",
+      status: "failed",
+      vrtFailed: 1,
+      vrtMaxDiffRatio: 0.08,
+      vrtCssDeadRules: 2,
+      vrtCssTotalRules: 7,
+    }));
   });
 
   it("ignores aggregate wpt-vrt summary artifacts that are not task-scoped collect paths", () => {

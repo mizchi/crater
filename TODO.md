@@ -97,7 +97,7 @@ Last organized: 2026-05-15
 
 - [ ] `vrt-harness` consumer payload を crater contract に接続する
   - external `vrt-artifact` fixture は `identity.key` なし / 独自 key ありの両方を用意する
-  - crater path: `asNormalizedVrtArtifactReport` -> `loadVrtArtifactReports` -> `buildVrtArtifactSummary` -> `flaker-batch-summary-loader`
+  - crater path: `asNormalizedVrtArtifactReport` -> `loadVrtArtifactReports` -> `buildVrtArtifactSummary` -> `flaker-batch-summary-loader` -> `buildFlakerBatchSummary` の guard は追加済み
   - 実 `vrt-harness` 側は crater の公開 API だけを使い、baseline 管理と fixture UX は `vrt-harness` に残す
   - stable identity contract は `taskId + spec + filter + variant + optional shard`。upstream issue: `mizchi/flaker#8`
 - [ ] `flaker core` と crater domain metadata の境界を固定する
