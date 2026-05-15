@@ -254,7 +254,7 @@ pub struct RenderContext {
 pub fn RenderContext::default() -> Self
 ```
 
-### `mizchi/crater-renderer-terminal`
+### `mizchi/crater-renderer/terminal`
 
 Terminal graphics helpers layered on top of `mizchi/crater-renderer/renderer`.
 

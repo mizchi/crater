@@ -29,10 +29,6 @@
     "mizchi/crater-renderer": {
       "path": "../renderer",
       "version": "0.17.1"
-    },
-    "mizchi/crater-renderer-terminal": {
-      "path": "../renderer_terminal",
-      "version": "0.17.1"
     }
   },
   "readme": "README.md",
