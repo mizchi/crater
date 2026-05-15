@@ -31,6 +31,7 @@ workflowTests {
     direct { check.checkFlaker.name }
     tasks {
       check.checkFlaker.name
+      check.checkMbti.name
       check.checkMoon.name
       check.checkTaskfile.name
       check.checkTs.name
@@ -94,6 +95,7 @@ workflowTests {
     }
     tasks {
       check.checkFlaker.name
+      check.checkMbti.name
       check.checkMoon.name
       check.checkTaskfile.name
       check.checkTs.name

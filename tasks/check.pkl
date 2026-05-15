@@ -35,6 +35,14 @@ checkTaskfile: pkfire.Task = new {
   cache = false
 }
 
+checkMbti: pkfire.Task = new {
+  name = "check-mbti"
+  description = "Verify committed .mbti files match the current MoonBit sources"
+  visibility = "internal"
+  cmd = "moon info >/dev/null && git diff --exit-code -- '**/*.mbti'"
+  cache = false
+}
+
 check: pkfire.Task = new {
   name = "check"
   description = "Run fast local correctness gates"
@@ -44,6 +52,7 @@ check: pkfire.Task = new {
     checkTs
     checkFlaker
     checkTaskfile
+    checkMbti
     spec.specCheck
     spec.specLint
   }
@@ -54,5 +63,6 @@ tasks: Listing<pkfire.Task> = new {
   checkTs
   checkFlaker
   checkTaskfile
+  checkMbti
   check
 }
