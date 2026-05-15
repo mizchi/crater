@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "mizchi/crater-testing/layout_css_e2e"
+package "mizchi/crater-testing/e2e/browser_shell"
 
 // Values
 

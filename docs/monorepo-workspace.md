@@ -59,7 +59,7 @@ The same split now applies to `just` test recipes:
 - `just test-native` runs the `mizchi/crater-browser-native` smoke tests
 - `just test-native-smoke` is an explicit alias for the same native facade smoke suite
 - `just test-native-v8` runs the `mizchi/crater-browser-native/js_v8` runtime parity suite
-- `just test-native-full` runs `mizchi/crater-testing/native_e2e`
+- `just test-native-full` runs `mizchi/crater-testing/e2e/native_v8`
 - `just test-wasm-mbt` runs the MoonBit-side `mizchi/crater-wasm` tests
 - `just test-wasm` keeps its old meaning and runs the Node/JCO component test
 - `just status`, `just test-baseline`, and `just test-baseline-update` now all
@@ -116,7 +116,9 @@ The intended direction is:
 | `mizchi/crater-js` | Adapter | JS exports for layout/renderer consumers |
 | `mizchi/crater-wasm` | Adapter | WASM component packaging |
 | `mizchi/crater-benchmarks` | Internal / dev-only | Synthetic fixtures and benchmark suites for renderer/browser performance |
-| `mizchi/crater-testing` | Internal / dev-only | WPT runtime, browser-shell fixtures, and native/browser integration test packages |
+| `mizchi/crater-testing` | Internal / dev-only | E2E integration test packages (browser shell, CSS layout, native V8) |
+| `mizchi/crater-conformance` | Internal / dev-only | External-spec conformance (taffy snapshot, WPT runtime adapter) |
+| `mizchi/crater-tools` | Internal / dev-only | Dev-only build/fixture binaries (webdriver fixture builder) |
 We do not need to create all of these at once. The current workspace has
 already extracted `mizchi/crater-core`, `mizchi/crater-layout`, `mizchi/crater-css`,
 `mizchi/crater-dom`, `mizchi/crater-aomx`, `mizchi/crater-benchmarks`,

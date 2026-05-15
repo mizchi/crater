@@ -49,7 +49,7 @@ test-native-v8:
 # Run full native browser e2e tests.
 # This suite pulls browser shell/http and may require libsqlite3 headers on the host.
 test-native-full:
-    moon test --manifest-path testing/moon.mod.json -p mizchi/crater-testing/native_e2e --target native -j 1
+    moon test --manifest-path testing/moon.mod.json -p mizchi/crater-testing/e2e/native_v8 --target native -j 1
 
 # Run wasm-target MoonBit tests for the wasm component module
 test-wasm-mbt:
@@ -69,7 +69,7 @@ test-pkg-wasm pkg:
 
 # Run tests for a specific package with auto target selection.
 test-pkg pkg target='auto':
-    if [ "{{target}}" = "auto" ]; then case "{{pkg}}" in mizchi/crater-browser-native*) moon -C browser/native test -p {{pkg}} --target native -j 1 ;; mizchi/crater-testing/native_e2e) moon test --manifest-path testing/moon.mod.json -p {{pkg}} --target native -j 1 ;; mizchi/crater-wasm*) moon -C wasm test -p {{pkg}} --target wasm -j 1 ;; *) moon test -p {{pkg}} --target js ;; esac; elif [ "{{target}}" = "native" ]; then case "{{pkg}}" in mizchi/crater-browser-native*) moon -C browser/native test -p {{pkg}} --target native -j 1 ;; *) moon test --manifest-path testing/moon.mod.json -p {{pkg}} --target native -j 1 ;; esac; elif [ "{{target}}" = "wasm" ]; then moon -C wasm test -p {{pkg}} --target wasm -j 1; else moon test -p {{pkg}} --target {{target}}; fi
+    if [ "{{target}}" = "auto" ]; then case "{{pkg}}" in mizchi/crater-browser-native*) moon -C browser/native test -p {{pkg}} --target native -j 1 ;; mizchi/crater-testing/e2e/native_v8) moon test --manifest-path testing/moon.mod.json -p {{pkg}} --target native -j 1 ;; mizchi/crater-wasm*) moon -C wasm test -p {{pkg}} --target wasm -j 1 ;; *) moon test -p {{pkg}} --target js ;; esac; elif [ "{{target}}" = "native" ]; then case "{{pkg}}" in mizchi/crater-browser-native*) moon -C browser/native test -p {{pkg}} --target native -j 1 ;; *) moon test --manifest-path testing/moon.mod.json -p {{pkg}} --target native -j 1 ;; esac; elif [ "{{target}}" = "wasm" ]; then moon -C wasm test -p {{pkg}} --target wasm -j 1; else moon test -p {{pkg}} --target {{target}}; fi
 
 # Update test snapshots
 test-update:
