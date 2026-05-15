@@ -2,12 +2,12 @@
 package "mizchi/crater-renderer-inline-style-cache"
 
 import {
+  "mizchi/crater-core",
   "mizchi/crater-layout/style",
-  "mizchi/crater-layout/types",
 }
 
 // Values
-pub fn get_cached_inline_style_display(String) -> @types.Display?
+pub fn get_cached_inline_style_display(String) -> @crater-core.Display?
 
 pub fn inline_only_style_cache_get(String, String) -> @style.Style?
 

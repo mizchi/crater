@@ -2,14 +2,14 @@
 package "mizchi/crater-layout/block"
 
 import {
+  "mizchi/crater-core",
   "mizchi/crater-layout/node",
-  "mizchi/crater-layout/types",
 }
 
 // Values
-pub fn compute(@node.Node, @types.LayoutContext, @node.DispatchFn) -> @types.Layout
+pub fn compute(@node.Node, @crater-core.LayoutContext, @node.DispatchFn) -> @crater-core.Layout
 
-pub fn compute_with_warnings(@node.Node, @types.LayoutContext, @node.DispatchFn) -> @types.LayoutResult
+pub fn compute_with_warnings(@node.Node, @crater-core.LayoutContext, @node.DispatchFn) -> @crater-core.LayoutResult
 
 // Errors
 

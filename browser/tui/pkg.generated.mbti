@@ -3,8 +3,8 @@ package "mizchi/crater-browser/tui"
 
 import {
   "mizchi/crater-browser/tui/primitives",
+  "mizchi/crater-core",
   "mizchi/crater-layout/node",
-  "mizchi/crater-layout/types",
   "mizchi/crater-painter/paint/scroll",
   "moonbitlang/core/debug",
 }
@@ -12,13 +12,13 @@ import {
 // Values
 pub fn ansi_bg_256(Int) -> String
 
-pub fn ansi_bg_color(@types.Color) -> String
+pub fn ansi_bg_color(@crater-core.Color) -> String
 
 pub fn ansi_bold() -> String
 
 pub fn ansi_fg_256(Int) -> String
 
-pub fn ansi_fg_color(@types.Color) -> String
+pub fn ansi_fg_color(@crater-core.Color) -> String
 
 pub fn ansi_hyperlink_end() -> String
 
@@ -48,19 +48,19 @@ pub fn cleanup_stdin() -> Unit
 
 pub fn clear_screen() -> String
 
-pub fn color_to_256(@types.Color) -> Int
+pub fn color_to_256(@crater-core.Color) -> Int
 
-pub fn dirty_rects_to_cells(Array[@types.BoundingRect], Int, Int, Int, Int) -> Array[@primitives.DirtyRect]
+pub fn dirty_rects_to_cells(Array[@crater-core.BoundingRect], Int, Int, Int, Int) -> Array[@primitives.DirtyRect]
 
 pub fn disable_mouse() -> String
 
-pub fn draw_box(@primitives.CharBuffer, Int, Int, Int, Int, @primitives.BoxStyle, @types.Color, @types.Color) -> Unit
+pub fn draw_box(@primitives.CharBuffer, Int, Int, Int, Int, @primitives.BoxStyle, @crater-core.Color, @crater-core.Color) -> Unit
 
-pub fn draw_filled_box(@primitives.CharBuffer, Int, Int, Int, Int, @primitives.BoxStyle, @types.Color, @types.Color) -> Unit
+pub fn draw_filled_box(@primitives.CharBuffer, Int, Int, Int, Int, @primitives.BoxStyle, @crater-core.Color, @crater-core.Color) -> Unit
 
 pub fn draw_heading(@primitives.CharBuffer, Int, Int, String, Int, Int) -> Int
 
-pub fn draw_hline(@primitives.CharBuffer, Int, Int, Int, @primitives.BoxStyle, @types.Color) -> Unit
+pub fn draw_hline(@primitives.CharBuffer, Int, Int, Int, @primitives.BoxStyle, @crater-core.Color) -> Unit
 
 pub fn draw_link(@primitives.CharBuffer, Int, Int, String, Int, Bool) -> Int
 
@@ -68,7 +68,7 @@ pub fn draw_scrollbar(@primitives.CharBuffer, Int, Int, Int, Int, Int, Int) -> U
 
 pub fn draw_status_bar(@primitives.CharBuffer, Int, String, Int, Int, focused_link_url? : String?, selection_mode? : Bool, dark_mode? : Bool) -> Unit
 
-pub fn draw_vline(@primitives.CharBuffer, Int, Int, Int, @primitives.BoxStyle, @types.Color) -> Unit
+pub fn draw_vline(@primitives.CharBuffer, Int, Int, Int, @primitives.BoxStyle, @crater-core.Color) -> Unit
 
 pub fn enable_mouse() -> String
 
@@ -88,9 +88,9 @@ pub fn format_status_bar(String, Int, Int) -> String
 
 pub fn get_args() -> Array[String]
 
-pub fn get_content_extent(@types.Layout) -> Double
+pub fn get_content_extent(@crater-core.Layout) -> Double
 
-pub fn get_content_height_chars(@types.Layout) -> Int
+pub fn get_content_height_chars(@crater-core.Layout) -> Int
 
 pub fn get_terminal_size() -> (Int, Int)
 
@@ -114,17 +114,17 @@ pub async fn read_key_with_timeout(Int) -> String
 
 pub async fn read_line(String) -> String
 
-pub fn render_to_ansi(@node.Node, @types.Layout, Int, Int, Int, focused_element_name? : String?) -> RenderResult
+pub fn render_to_ansi(@node.Node, @crater-core.Layout, Int, Int, Int, focused_element_name? : String?) -> RenderResult
 
-pub fn render_to_ansi_with_hints(@node.Node, @types.Layout, Int, Int, Int, Array[HintData], String, focused_element_name? : String?) -> RenderResult
+pub fn render_to_ansi_with_hints(@node.Node, @crater-core.Layout, Int, Int, Int, Array[HintData], String, focused_element_name? : String?) -> RenderResult
 
-pub fn render_to_ansi_with_status(@node.Node, @types.Layout, Int, Int, Int, String, Int, Int, focused_element_name? : String?, focused_link_url? : String?, selection_mode? : Bool, dark_mode? : Bool) -> RenderResult
+pub fn render_to_ansi_with_status(@node.Node, @crater-core.Layout, Int, Int, Int, String, Int, Int, focused_element_name? : String?, focused_link_url? : String?, selection_mode? : Bool, dark_mode? : Bool) -> RenderResult
 
-pub fn render_to_buffer(@node.Node, @types.Layout, Int, Int, Int, focused_element_name? : String?) -> BufferRenderResult
+pub fn render_to_buffer(@node.Node, @crater-core.Layout, Int, Int, Int, focused_element_name? : String?) -> BufferRenderResult
 
-pub fn render_to_buffer_with_hints(@node.Node, @types.Layout, Int, Int, Int, Array[HintData], String, focused_element_name? : String?) -> BufferRenderResult
+pub fn render_to_buffer_with_hints(@node.Node, @crater-core.Layout, Int, Int, Int, Array[HintData], String, focused_element_name? : String?) -> BufferRenderResult
 
-pub fn render_to_buffer_with_status(@node.Node, @types.Layout, Int, Int, Int, String, Int, Int, focused_element_name? : String?, focused_link_url? : String?, selection_mode? : Bool, dark_mode? : Bool, total_content_height? : Int, show_scrollbar? : Bool, element_scroll_positions? : Map[String, ElementScrollPos]) -> BufferRenderResult
+pub fn render_to_buffer_with_status(@node.Node, @crater-core.Layout, Int, Int, Int, String, Int, Int, focused_element_name? : String?, focused_link_url? : String?, selection_mode? : Bool, dark_mode? : Bool, total_content_height? : Int, show_scrollbar? : Bool, element_scroll_positions? : Map[String, ElementScrollPos]) -> BufferRenderResult
 
 pub fn rgb_to_256(Int, Int, Int) -> Int
 

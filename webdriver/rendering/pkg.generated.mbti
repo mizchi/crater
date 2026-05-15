@@ -3,18 +3,18 @@ package "mizchi/crater-webdriver-bidi/rendering"
 
 import {
   "mizchi/crater-browser/tui/paint/export",
+  "mizchi/crater-core",
   "mizchi/crater-layout/node",
-  "mizchi/crater-layout/types",
   "mizchi/crater-painter/svg",
   "mizchi/crater-renderer/vrt",
 }
 
 // Values
-pub fn actual_paint_document_dimensions_from_node_and_layout(@node.Node, @types.Layout, Int, Int) -> (Int, Int)
+pub fn actual_paint_document_dimensions_from_node_and_layout(@node.Node, @crater-core.Layout, Int, Int) -> (Int, Int)
 
-pub fn actual_paint_layout_content_bottom(@types.Layout) -> Double
+pub fn actual_paint_layout_content_bottom(@crater-core.Layout) -> Double
 
-pub fn actual_paint_layout_content_right(@types.Layout) -> Double
+pub fn actual_paint_layout_content_right(@crater-core.Layout) -> Double
 
 pub fn batch_render_results_to_json(Array[@vrt.RenderVariantResult]) -> Json
 
@@ -48,7 +48,7 @@ pub fn parse_glyph_outline_commands_json(String) -> Array[@svg.PathCommand]
 
 pub fn parse_text_metrics_quad(String) -> (Double, Double, Double, Double)?
 
-pub fn resolve_text_intrinsic_size_from_provider_payload(String, String, Double, Double) -> @types.IntrinsicSize
+pub fn resolve_text_intrinsic_size_from_provider_payload(String, String, Double, Double) -> @crater-core.IntrinsicSize
 
 pub fn should_use_font_aware_text_provider(String) -> Bool
 
@@ -57,7 +57,7 @@ pub fn should_use_font_aware_text_provider(String) -> Bool
 // Types and methods
 pub(all) struct BatchRenderOptions {
   base_html : String
-  viewport : @types.Size[Double]
+  viewport : @crater-core.Size[Double]
   variants : Array[@vrt.RenderVariant]
 }
 

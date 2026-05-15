@@ -6,7 +6,7 @@ import {
   "mizchi/crater-browser-helpers" @browser_helpers,
   "mizchi/crater-dom/aom",
   "mizchi/crater-layout" @layout,
-  "mizchi/crater-layout/types",
+  "mizchi/crater-core" @types,
   "mizchi/crater-dom/dom",
   "mizchi/crater-dom/scheduler",
   "mizchi/crater-browser-http" @http,

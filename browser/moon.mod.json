@@ -2,6 +2,10 @@
   "name": "mizchi/crater-browser",
   "version": "0.17.1",
   "deps": {
+    "mizchi/crater-core": {
+      "path": "../core",
+      "version": "0.17.1"
+    },
     "mizchi/crater-aomx": {
       "path": "../aomx",
       "version": "0.17.1"

@@ -2,32 +2,32 @@
 package "mizchi/crater-layout"
 
 import {
+  "mizchi/crater-core",
   "mizchi/crater-layout/node",
   "mizchi/crater-layout/style",
   "mizchi/crater-layout/tree",
-  "mizchi/crater-layout/types",
 }
 
 // Values
 pub fn clear_intrinsic_cache_for_node(Int) -> Unit
 
-pub fn compute_block_layout(@node.Node, @types.LayoutContext) -> @types.Layout
+pub fn compute_block_layout(@node.Node, @crater-core.LayoutContext) -> @crater-core.Layout
 
-pub fn compute_block_layout_with_dispatch(@node.Node, @types.LayoutContext, @node.DispatchFn) -> @types.Layout
+pub fn compute_block_layout_with_dispatch(@node.Node, @crater-core.LayoutContext, @node.DispatchFn) -> @crater-core.Layout
 
-pub fn compute_flex_layout(@node.Node, @types.LayoutContext) -> @types.Layout
+pub fn compute_flex_layout(@node.Node, @crater-core.LayoutContext) -> @crater-core.Layout
 
-pub fn compute_flex_layout_with_dispatch(@node.Node, @types.LayoutContext, @node.DispatchFn) -> @types.Layout
+pub fn compute_flex_layout_with_dispatch(@node.Node, @crater-core.LayoutContext, @node.DispatchFn) -> @crater-core.Layout
 
-pub fn compute_grid_layout(@node.Node, Double, Double) -> @types.Layout
+pub fn compute_grid_layout(@node.Node, Double, Double) -> @crater-core.Layout
 
-pub fn compute_grid_layout_in_context(@node.Node, @types.LayoutContext, @node.DispatchFn) -> @types.Layout
+pub fn compute_grid_layout_in_context(@node.Node, @crater-core.LayoutContext, @node.DispatchFn) -> @crater-core.Layout
 
-pub fn compute_layout(@node.Node, @types.Size[Double]) -> @types.Layout
+pub fn compute_layout(@node.Node, @crater-core.Size[Double]) -> @crater-core.Layout
 
-pub fn compute_layout_in_context(@node.Node, @types.LayoutContext) -> @types.Layout
+pub fn compute_layout_in_context(@node.Node, @crater-core.LayoutContext) -> @crater-core.Layout
 
-pub fn compute_layout_with_warnings(@node.Node, @types.Size[Double]) -> @types.LayoutResult
+pub fn compute_layout_with_warnings(@node.Node, @crater-core.Size[Double]) -> @crater-core.LayoutResult
 
 pub fn layout_node_create(String) -> @tree.LayoutNode
 
@@ -39,7 +39,7 @@ pub fn reset_intrinsic_cache() -> Unit
 
 pub fn setup() -> Unit
 
-pub fn size(Double, Double) -> @types.Size[Double]
+pub fn size(Double, Double) -> @crater-core.Size[Double]
 
 // Errors
 

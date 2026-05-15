@@ -2,13 +2,13 @@
 package "mizchi/crater-browser/tui/paint/plain"
 
 import {
+  "mizchi/crater-core",
   "mizchi/crater-layout/node",
-  "mizchi/crater-layout/types",
   "mizchi/crater-painter/paint/model",
 }
 
 // Values
-pub fn from_node_and_layout(@node.Node, @types.Layout) -> @model.PaintNode
+pub fn from_node_and_layout(@node.Node, @crater-core.Layout) -> @model.PaintNode
 
 // Errors
 

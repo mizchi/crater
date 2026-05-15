@@ -3,7 +3,7 @@ import {
   "mizchi/crater-renderer-terminal" @renderer_terminal,
   "mizchi/crater-aomx/arc90",
   "mizchi/crater-painter/paint",
-  "mizchi/crater-layout/types",
+  "mizchi/crater-core" @types,
   "mizchi/crater-layout/tree",
   "mizchi/crater-css/computed",
   "mizchi/crater-css/media",

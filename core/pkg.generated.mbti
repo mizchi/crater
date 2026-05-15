@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "mizchi/crater-layout/types"
+package "mizchi/crater-core"
 
 import {
   "moonbitlang/core/debug",

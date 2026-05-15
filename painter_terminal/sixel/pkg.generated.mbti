@@ -2,19 +2,19 @@
 package "mizchi/crater-painter-terminal/sixel"
 
 import {
+  "mizchi/crater-core",
   "mizchi/crater-layout/node",
-  "mizchi/crater-layout/types",
   "mizchi/crater-painter/paint/model",
   "mizchi/crater-painter/paint/raster",
   "mizchi/crater-painter/svg",
 }
 
 // Values
-pub fn print_layout(@types.Layout, Int, Int) -> Unit
+pub fn print_layout(@crater-core.Layout, Int, Int) -> Unit
 
-pub fn render_layout(@types.Layout, Int, Int) -> String
+pub fn render_layout(@crater-core.Layout, Int, Int) -> String
 
-pub fn render_layout_with_options(@types.Layout, Int, Int, Bool) -> String
+pub fn render_layout_with_options(@crater-core.Layout, Int, Int, Bool) -> String
 
 pub fn render_paint_node_to_sixel(@model.PaintNode, Int, Int) -> String
 
@@ -28,9 +28,9 @@ pub fn render_svg_to_sixel(@svg.Scene, Int, Int) -> String
 
 pub fn render_svg_to_sixel_with_camera(@svg.Scene, @svg.Camera) -> String
 
-pub fn render_with_styles(@node.Node, @types.Layout, Int, Int) -> String
+pub fn render_with_styles(@node.Node, @crater-core.Layout, Int, Int) -> String
 
-pub fn render_with_styles_scrolled(@node.Node, @types.Layout, Int, Int, Int) -> String
+pub fn render_with_styles_scrolled(@node.Node, @crater-core.Layout, Int, Int, Int) -> String
 
 pub fn to_sixel(@raster.Framebuffer) -> String
 

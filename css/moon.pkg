@@ -7,3 +7,9 @@ import {
   "mizchi/crater-css/parser",
   "mizchi/crater-css/selector",
 }
+
+import {
+  "mizchi/crater-core" @types,
+} for "test"
+
+warnings = "-unused_package"

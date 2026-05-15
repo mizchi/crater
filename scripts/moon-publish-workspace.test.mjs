@@ -45,6 +45,11 @@ test('default publish plan excludes internal modules and respects dependency ord
   assert.ok(!names.includes('mizchi/crater-testing'))
   assert.equal(skippedLocalDeps.size, 0)
 
+  assertBefore(names, 'mizchi/crater-core', 'mizchi/crater-layout')
+  assertBefore(names, 'mizchi/crater-core', 'mizchi/crater-css')
+  assertBefore(names, 'mizchi/crater-core', 'mizchi/crater-painter')
+  assertBefore(names, 'mizchi/crater-core', 'mizchi/crater-renderer')
+  assertBefore(names, 'mizchi/crater-core', 'mizchi/crater-dom')
   assertBefore(names, 'mizchi/crater-layout', 'mizchi/crater-css')
   assertBefore(names, 'mizchi/crater-layout', 'mizchi/crater-webvitals')
   assertBefore(names, 'mizchi/crater-css', 'mizchi/crater-dom')

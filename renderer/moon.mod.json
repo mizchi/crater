@@ -2,6 +2,10 @@
   "name": "mizchi/crater-renderer",
   "version": "0.17.1",
   "deps": {
+    "mizchi/crater-core": {
+      "path": "../core",
+      "version": "0.17.1"
+    },
     "mizchi/crater-css": {
       "path": "../css",
       "version": "0.17.1"

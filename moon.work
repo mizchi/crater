@@ -1,5 +1,6 @@
 members = [
   ".",
+  "./core",
   "./aomx",
   "./benchmarks",
   "./browser_helpers",
