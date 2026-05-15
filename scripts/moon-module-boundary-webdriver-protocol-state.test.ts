@@ -83,9 +83,16 @@ describe("MoonBit WebDriver protocol state boundaries", () => {
   });
 
   it("keeps WebDriver BiDi subscription commands out of the protocol core", () => {
-    expect(
-      fs.existsSync(path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol_subscription.mbt")),
-    ).toBe(true);
+    const subscriptionCommandFiles = [
+      "webdriver/webdriver/bidi_protocol_subscription_lookup.mbt",
+      "webdriver/webdriver/bidi_protocol_subscription_log.mbt",
+      "webdriver/webdriver/bidi_protocol_subscription_state_ops.mbt",
+      "webdriver/webdriver/bidi_protocol_subscription_subscribe.mbt",
+      "webdriver/webdriver/bidi_protocol_subscription_unsubscribe.mbt",
+    ];
+    for (const file of subscriptionCommandFiles) {
+      expect(fs.existsSync(path.join(REPO_ROOT, file)), file).toBe(true);
+    }
 
     const source = fs.readFileSync(
       path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol.mbt"),

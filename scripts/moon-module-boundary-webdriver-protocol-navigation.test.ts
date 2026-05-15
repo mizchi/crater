@@ -5,9 +5,14 @@ import { REPO_ROOT, countLines } from "./moon-module-boundary-helpers";
 
 describe("MoonBit WebDriver protocol navigation boundaries", () => {
   it("keeps WebDriver BiDi navigation URL helpers out of the protocol core", () => {
-    expect(
-      fs.existsSync(path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol_navigation_url.mbt")),
-    ).toBe(true);
+    const navigationUrlFiles = [
+      "webdriver/webdriver/bidi_protocol_navigation_policy.mbt",
+      "webdriver/webdriver/bidi_protocol_navigation_resolution.mbt",
+      "webdriver/webdriver/bidi_protocol_navigation_wait.mbt",
+    ];
+    for (const file of navigationUrlFiles) {
+      expect(fs.existsSync(path.join(REPO_ROOT, file)), file).toBe(true);
+    }
 
     const source = fs.readFileSync(
       path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol.mbt"),
@@ -32,9 +37,16 @@ describe("MoonBit WebDriver protocol navigation boundaries", () => {
   });
 
   it("keeps WebDriver BiDi navigation state helpers out of the protocol core", () => {
-    expect(
-      fs.existsSync(path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol_navigation_state.mbt")),
-    ).toBe(true);
+    const navigationStateFiles = [
+      "webdriver/webdriver/bidi_protocol_browsing_context_navigation_state.mbt",
+      "webdriver/webdriver/bidi_protocol_browsing_context_navigation_state_helpers.mbt",
+      "webdriver/webdriver/bidi_protocol_navigation_completion.mbt",
+      "webdriver/webdriver/bidi_protocol_navigation_events.mbt",
+      "webdriver/webdriver/bidi_protocol_navigation_pending_state.mbt",
+    ];
+    for (const file of navigationStateFiles) {
+      expect(fs.existsSync(path.join(REPO_ROOT, file)), file).toBe(true);
+    }
 
     const source = fs.readFileSync(
       path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol.mbt"),

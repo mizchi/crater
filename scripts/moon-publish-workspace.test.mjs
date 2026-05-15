@@ -55,11 +55,12 @@ test('default publish plan excludes internal modules and respects dependency ord
   assertBefore(names, 'mizchi/crater-browser-runtime', 'mizchi/crater-browser')
   assertBefore(names, 'mizchi/crater-browser-contract', 'mizchi/crater-webdriver-bidi')
   assertBefore(names, 'mizchi/crater-browser-http', 'mizchi/crater-browser-http-sqlite')
-  assertBefore(names, 'mizchi/crater', 'mizchi/crater-js')
+  assertBefore(names, 'mizchi/crater-renderer', 'mizchi/crater')
+  assertBefore(names, 'mizchi/crater-webvitals', 'mizchi/crater')
   assertBefore(names, 'mizchi/crater-js', 'mizchi/crater-wasm')
 })
 
-test('--only-crater-star warns when selected modules still depend on root crater', () => {
+test('--only-crater-star has no skipped root crater dependency after facade split', () => {
   const modules = loadWorkspaceModules(rootDir)
   const { orderedModules, skippedLocalDeps } = buildPublishPlan(modules, {
     onlyCraterStar: true,
@@ -67,13 +68,10 @@ test('--only-crater-star warns when selected modules still depend on root crater
   const names = orderedModules.map((module) => module.name)
 
   assert.ok(!names.includes('mizchi/crater'))
+  assert.equal(skippedLocalDeps.size, 0)
   assert.deepEqual(skippedLocalDeps.get('mizchi/crater-browser') ?? [], [])
-  assert.deepEqual(skippedLocalDeps.get('mizchi/crater-js') ?? [], [
-    'mizchi/crater',
-  ])
-  assert.deepEqual(skippedLocalDeps.get('mizchi/crater-wasm') ?? [], [
-    'mizchi/crater',
-  ])
+  assert.deepEqual(skippedLocalDeps.get('mizchi/crater-js') ?? [], [])
+  assert.deepEqual(skippedLocalDeps.get('mizchi/crater-wasm') ?? [], [])
 })
 
 test('--include-internal keeps internal modules after their public dependencies', () => {

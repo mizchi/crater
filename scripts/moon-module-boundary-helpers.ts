@@ -7,6 +7,7 @@ const SKIP_DIRS = new Set([
   ".git",
   ".moon",
   ".mooncakes",
+  ".repos",
   "_build",
   "dist",
   "node_modules",

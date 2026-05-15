@@ -244,6 +244,6 @@ tests {
     specRef { "ci.affected" }
     workdir = ".."
     cmd =
-      "bash -lc 'set -e; for p in \"mizchi/pkfire@v0.10.0\" \"actions/cache@v4\" \"PKFIRE_CACHE_DIR\" \"~/.pkl/cache\" \"pkf pkl-cache warm\" \"scripts/ci/pkfire-affected-base.sh\" \"pkf affected\" \"--profile=ci\" \"check test test-taffy test-wasm test-native-smoke\"; do rg -q -- \"$p\" .github/workflows/ci.yml; done'"
+      "bash -lc 'set -e; for p in \"mizchi/pkfire@v0.10.0\" \"mizchi/pkspec@v0.1.8\" \"actions/cache@v4\" \"PKFIRE_CACHE_DIR\" \"~/.pkl/cache\" \"pkf pkl-cache warm\" \"scripts/ci/pkfire-affected-base.sh\" \"pkf affected\" \"--profile=ci\" \"check test test-taffy test-wasm test-native-smoke\"; do rg -q -- \"$p\" .github/workflows/ci.yml; done'"
   }
 }

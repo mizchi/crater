@@ -75,5 +75,6 @@ browser/jsbidi/trace.json
 .flaker/
 .tornado/
 .bidi-ws-url
+.cache/pkfire/
 .cache/paint-vrt-reference/
 .cache/wpt-vrt-reference/

@@ -5,11 +5,17 @@ import { REPO_ROOT, countLines } from "./moon-module-boundary-helpers";
 
 describe("MoonBit WebDriver protocol rendering boundaries", () => {
   it("keeps WebDriver BiDi browsingContext rendering commands out of the protocol core", () => {
-    expect(
-      fs.existsSync(
-        path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol_browsing_context_rendering.mbt"),
-      ),
-    ).toBe(true);
+    const renderingCommandFiles = [
+      "webdriver/webdriver/bidi_protocol_dispatch_browsing_context_rendering.mbt",
+      "webdriver/webdriver/bidi_protocol_browsing_context_viewport_history.mbt",
+      "webdriver/webdriver/bidi_protocol_browsing_context_screenshot.mbt",
+      "webdriver/webdriver/bidi_protocol_browsing_context_print.mbt",
+      "webdriver/webdriver/bidi_protocol_browsing_context_locate_nodes.mbt",
+      "webdriver/webdriver/bidi_protocol_browsing_context_locate_nodes_helpers.mbt",
+    ];
+    for (const file of renderingCommandFiles) {
+      expect(fs.existsSync(path.join(REPO_ROOT, file)), file).toBe(true);
+    }
 
     const source = fs.readFileSync(
       path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol.mbt"),

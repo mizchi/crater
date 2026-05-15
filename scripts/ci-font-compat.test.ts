@@ -28,11 +28,11 @@ describe("CI compatible font setup", () => {
   test("restores rusty_v8 source binding cache in all native or BiDi jobs", () => {
     const workflow = readRepoFile(".github/workflows/ci.yml");
     const matches = workflow.match(/Restore rusty_v8 source binding cache/g) ?? [];
-    expect(matches).toHaveLength(5);
+    expect(matches).toHaveLength(6);
     expect(workflow).toContain("path: ~/.cargo/.rusty_v8");
     const prefetchMatches =
       workflow.match(/node scripts\/prefetch-rusty-v8-source-binding\.mjs --release v146\.8\.0/g) ?? [];
-    expect(prefetchMatches).toHaveLength(5);
+    expect(prefetchMatches).toHaveLength(6);
   });
 
   test("uses Deno 2 in BiDi and VRT workflows for lockfile v5 compatibility", () => {

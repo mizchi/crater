@@ -5,9 +5,17 @@ import { REPO_ROOT, countLines } from "./moon-module-boundary-helpers";
 
 describe("MoonBit WebDriver protocol command boundaries", () => {
   it("keeps WebDriver BiDi browsing context handlers out of the protocol core", () => {
-    expect(
-      fs.existsSync(path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol_browsing_context.mbt")),
-    ).toBe(true);
+    const browsingContextFiles = [
+      "webdriver/webdriver/bidi_protocol_dispatch_browsing_context.mbt",
+      "webdriver/webdriver/bidi_protocol_browsing_context_create.mbt",
+      "webdriver/webdriver/bidi_protocol_browsing_context_query.mbt",
+      "webdriver/webdriver/bidi_protocol_browsing_context_tree.mbt",
+      "webdriver/webdriver/bidi_protocol_browsing_context_close_state.mbt",
+      "webdriver/webdriver/bidi_protocol_browsing_context_navigation_state_helpers.mbt",
+    ];
+    for (const file of browsingContextFiles) {
+      expect(fs.existsSync(path.join(REPO_ROOT, file)), file).toBe(true);
+    }
 
     const source = fs.readFileSync(
       path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol.mbt"),
@@ -31,9 +39,15 @@ describe("MoonBit WebDriver protocol command boundaries", () => {
   });
 
   it("keeps WebDriver BiDi network command handlers out of the protocol core", () => {
-    expect(
-      fs.existsSync(path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol_network_commands.mbt")),
-    ).toBe(true);
+    const networkCommandFiles = [
+      "webdriver/webdriver/bidi_protocol_dispatch_network.mbt",
+      "webdriver/webdriver/bidi_protocol_network_intercept_commands.mbt",
+      "webdriver/webdriver/bidi_protocol_network_data_collector_commands.mbt",
+      "webdriver/webdriver/bidi_protocol_network_extra_header_commands.mbt",
+    ];
+    for (const file of networkCommandFiles) {
+      expect(fs.existsSync(path.join(REPO_ROOT, file)), file).toBe(true);
+    }
 
     const source = fs.readFileSync(
       path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol.mbt"),

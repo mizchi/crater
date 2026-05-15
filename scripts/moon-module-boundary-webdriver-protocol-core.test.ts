@@ -5,9 +5,17 @@ import { REPO_ROOT, countLines } from "./moon-module-boundary-helpers";
 
 describe("MoonBit WebDriver protocol core boundaries", () => {
   it("keeps WebDriver BiDi validation helpers out of the protocol core", () => {
-    expect(
-      fs.existsSync(path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol_validation.mbt")),
-    ).toBe(true);
+    const validationFiles = [
+      "webdriver/webdriver/bidi_protocol_validation_browser.mbt",
+      "webdriver/webdriver/bidi_protocol_validation_session.mbt",
+      "webdriver/webdriver/bidi_protocol_validation_session_subscribe.mbt",
+      "webdriver/webdriver/bidi_protocol_network_add_intercept_validation.mbt",
+      "webdriver/webdriver/bidi_protocol_network_extra_headers_validation.mbt",
+      "webdriver/webdriver/bidi_protocol_network_structured_url_pattern_validation.mbt",
+    ];
+    for (const file of validationFiles) {
+      expect(fs.existsSync(path.join(REPO_ROOT, file)), file).toBe(true);
+    }
 
     const source = fs.readFileSync(
       path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol.mbt"),
@@ -78,17 +86,24 @@ describe("MoonBit WebDriver protocol core boundaries", () => {
     );
     expect(moduleJson.deps["mizchi/webdriver"]).toBe("0.2.6");
 
+    const protocolWirePackage = fs.readFileSync(
+      path.join(REPO_ROOT, "webdriver/protocol/wire/moon.pkg"),
+      "utf8",
+    );
+    expect(protocolWirePackage).toContain("\"mizchi/webdriver/bidi\" @bidi_wire");
+
     const packageSource = fs.readFileSync(path.join(REPO_ROOT, "webdriver/webdriver/moon.pkg"), "utf8");
-    expect(packageSource).toContain("\"mizchi/webdriver/bidi\" @bidi_wire");
+    expect(packageSource).toContain("\"mizchi/crater-webdriver-bidi/protocol/wire\" @protocol_wire");
+    expect(packageSource).not.toContain("\"mizchi/webdriver/bidi\" @bidi_wire");
 
     const messageSource = fs.readFileSync(
       path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol_messages.mbt"),
       "utf8",
     );
-    expect(messageSource).toContain("@bidi_wire.parse_request(");
-    expect(messageSource).toContain("@bidi_wire.success_response_to_json(");
-    expect(messageSource).toContain("@bidi_wire.error_response_to_json_with_stacktrace(");
-    expect(messageSource).toContain("@bidi_wire.event_to_json(");
+    expect(messageSource).toContain("@protocol_wire.parse_request(");
+    expect(messageSource).toContain("@protocol_wire.success_response_to_json(");
+    expect(messageSource).toContain("@protocol_wire.error_response_to_json(");
+    expect(messageSource).toContain("@protocol_wire.event_to_json(");
     expect(messageSource).not.toContain("@json.parse(json_str)");
     expect(messageSource).not.toContain("\"type\"] = Json::string(\"success\")");
   });

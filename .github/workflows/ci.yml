@@ -30,6 +30,9 @@ jobs:
       - name: Install pkfire
         uses: mizchi/pkfire@v0.10.0
 
+      - name: Install pkspec
+        uses: mizchi/pkspec@v0.1.8
+
       - name: Restore Pkl package cache
         uses: actions/cache@v4
         with:

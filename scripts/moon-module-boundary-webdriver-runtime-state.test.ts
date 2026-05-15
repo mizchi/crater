@@ -6,16 +6,20 @@ import { REPO_ROOT, countLines } from "./moon-module-boundary-helpers";
 describe("MoonBit WebDriver runtime state boundaries", () => {
   it("keeps WebDriver BiDi network runtime state out of the protocol core", () => {
     const stateSource = fs.readFileSync(
-      path.join(REPO_ROOT, "webdriver/webdriver/bidi_network_state.mbt"),
+      path.join(REPO_ROOT, "network/state.mbt"),
       "utf8",
     );
-    expect(stateSource).toContain("priv struct BidiNetworkState");
-    expect(stateSource).toContain("fn BidiNetworkState::new(");
+    expect(stateSource).toContain("pub(all) struct BidiNetworkState");
+    expect(stateSource).toContain("pub fn BidiNetworkState::new(");
+
+    const packageSource = fs.readFileSync(path.join(REPO_ROOT, "webdriver/webdriver/moon.pkg"), "utf8");
+    expect(packageSource).toContain("\"mizchi/crater-network\" @crater_network");
 
     const source = fs.readFileSync(
       path.join(REPO_ROOT, "webdriver/webdriver/bidi_protocol.mbt"),
       "utf8",
     );
+    expect(source).toContain("network_state : @crater_network.BidiNetworkState");
     const implementationMarkers = [
       "network_intercepts : Map[String, Json]",
       "next_network_intercept_id : Int",
