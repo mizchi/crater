@@ -1,0 +1,129 @@
+digraph crater_modules {
+  rankdir=LR;
+  node [shape=box, style=rounded, fontname="Helvetica"];
+  subgraph cluster_Foundation {
+    label="Foundation";
+    mizchi_crater_css [label="crater-css"];
+    mizchi_crater_dom [label="crater-dom"];
+    mizchi_crater_html_assets [label="crater-html-assets"];
+    mizchi_crater_layout [label="crater-layout"];
+    mizchi_crater_network [label="crater-network"];
+  }
+  subgraph cluster_Render {
+    label="Render";
+    mizchi_crater_painter [label="crater-painter"];
+    mizchi_crater_renderer [label="crater-renderer"];
+    mizchi_crater_renderer_inline_style_cache [label="crater-renderer-inline-style-cache"];
+    mizchi_crater_renderer_terminal [label="crater-renderer-terminal"];
+    mizchi_crater_webvitals [label="crater-webvitals"];
+  }
+  subgraph cluster_Terminal {
+    label="Terminal";
+    mizchi_crater_painter_terminal [label="crater-painter-terminal"];
+    mizchi_crater_terminal_image_cache [label="crater-terminal-image-cache"];
+    mizchi_crater_terminal_protocol [label="crater-terminal-protocol"];
+  }
+  subgraph cluster_Browser {
+    label="Browser";
+    mizchi_crater_browser [label="crater-browser"];
+    mizchi_crater_browser_native [label="crater-browser-native"];
+    mizchi_crater_browser_contract [label="crater-browser-contract"];
+    mizchi_crater_browser_http [label="crater-browser-http"];
+    mizchi_crater_browser_http_sqlite [label="crater-browser-http-sqlite"];
+    mizchi_crater_browser_runtime [label="crater-browser-runtime"];
+  }
+  subgraph cluster_Driver {
+    label="Driver";
+    mizchi_crater_webdriver_bidi [label="crater-webdriver-bidi"];
+  }
+  subgraph cluster_Distribution {
+    label="Distribution";
+    mizchi_crater_js [label="crater-js"];
+    mizchi_crater [label="crater (umbrella)"];
+    mizchi_crater_wasm [label="crater-wasm"];
+  }
+  subgraph cluster_Test _ Dev {
+    label="Test / Dev";
+    mizchi_crater_aomx [label="crater-aomx"];
+    mizchi_crater_benchmarks [label="crater-benchmarks"];
+    mizchi_crater_testing [label="crater-testing"];
+  }
+  mizchi_crater_aomx -> mizchi_crater_dom;
+  mizchi_crater_aomx -> mizchi_crater_layout;
+  mizchi_crater_benchmarks -> mizchi_crater_browser;
+  mizchi_crater_benchmarks -> mizchi_crater_css;
+  mizchi_crater_benchmarks -> mizchi_crater_dom;
+  mizchi_crater_benchmarks -> mizchi_crater_layout;
+  mizchi_crater_benchmarks -> mizchi_crater_painter;
+  mizchi_crater_benchmarks -> mizchi_crater_painter_terminal;
+  mizchi_crater_benchmarks -> mizchi_crater_renderer;
+  mizchi_crater_browser -> mizchi_crater_aomx;
+  mizchi_crater_browser -> mizchi_crater_dom;
+  mizchi_crater_browser -> mizchi_crater_css;
+  mizchi_crater_browser -> mizchi_crater_layout;
+  mizchi_crater_browser -> mizchi_crater_painter;
+  mizchi_crater_browser -> mizchi_crater_renderer;
+  mizchi_crater_browser -> mizchi_crater_browser_runtime;
+  mizchi_crater_browser -> mizchi_crater_browser_contract;
+  mizchi_crater_browser -> mizchi_crater_browser_http;
+  mizchi_crater_browser -> mizchi_crater_html_assets;
+  mizchi_crater_browser -> mizchi_crater_painter_terminal;
+  mizchi_crater_browser -> mizchi_crater_terminal_image_cache;
+  mizchi_crater_browser -> mizchi_crater_terminal_protocol;
+  mizchi_crater_browser_native -> mizchi_crater_browser_runtime;
+  mizchi_crater_browser_native -> mizchi_crater_dom;
+  mizchi_crater_browser_contract -> mizchi_crater_renderer;
+  mizchi_crater_browser_contract -> mizchi_crater_css;
+  mizchi_crater_browser_contract -> mizchi_crater_dom;
+  mizchi_crater_browser_contract -> mizchi_crater_aomx;
+  mizchi_crater_css -> mizchi_crater_layout;
+  mizchi_crater_dom -> mizchi_crater_css;
+  mizchi_crater_dom -> mizchi_crater_layout;
+  mizchi_crater_browser_http_sqlite -> mizchi_crater_browser_http;
+  mizchi_crater_js -> mizchi_crater_aomx;
+  mizchi_crater_js -> mizchi_crater_css;
+  mizchi_crater_js -> mizchi_crater_dom;
+  mizchi_crater_js -> mizchi_crater_layout;
+  mizchi_crater_js -> mizchi_crater_painter;
+  mizchi_crater_js -> mizchi_crater_renderer;
+  mizchi_crater_js -> mizchi_crater_renderer_terminal;
+  mizchi_crater -> mizchi_crater_css;
+  mizchi_crater -> mizchi_crater_dom;
+  mizchi_crater -> mizchi_crater_layout;
+  mizchi_crater -> mizchi_crater_webvitals;
+  mizchi_crater -> mizchi_crater_painter;
+  mizchi_crater -> mizchi_crater_renderer;
+  mizchi_crater_painter -> mizchi_crater_layout;
+  mizchi_crater_painter_terminal -> mizchi_crater_painter;
+  mizchi_crater_painter_terminal -> mizchi_crater_layout;
+  mizchi_crater_painter_terminal -> mizchi_crater_terminal_protocol;
+  mizchi_crater_renderer -> mizchi_crater_css;
+  mizchi_crater_renderer -> mizchi_crater_dom;
+  mizchi_crater_renderer -> mizchi_crater_layout;
+  mizchi_crater_renderer -> mizchi_crater_painter;
+  mizchi_crater_renderer -> mizchi_crater_renderer_inline_style_cache;
+  mizchi_crater_renderer_inline_style_cache -> mizchi_crater_css;
+  mizchi_crater_renderer_inline_style_cache -> mizchi_crater_layout;
+  mizchi_crater_renderer_terminal -> mizchi_crater_css;
+  mizchi_crater_renderer_terminal -> mizchi_crater_painter;
+  mizchi_crater_renderer_terminal -> mizchi_crater_painter_terminal;
+  mizchi_crater_renderer_terminal -> mizchi_crater_renderer;
+  mizchi_crater_browser_runtime -> mizchi_crater_dom;
+  mizchi_crater_testing -> mizchi_crater_browser;
+  mizchi_crater_testing -> mizchi_crater_browser_native;
+  mizchi_crater_testing -> mizchi_crater_browser_runtime;
+  mizchi_crater_testing -> mizchi_crater_webdriver_bidi;
+  mizchi_crater_testing -> mizchi_crater_css;
+  mizchi_crater_testing -> mizchi_crater_dom;
+  mizchi_crater_testing -> mizchi_crater_layout;
+  mizchi_crater_testing -> mizchi_crater_renderer;
+  mizchi_crater_wasm -> mizchi_crater_js;
+  mizchi_crater_webdriver_bidi -> mizchi_crater_network;
+  mizchi_crater_webdriver_bidi -> mizchi_crater_dom;
+  mizchi_crater_webdriver_bidi -> mizchi_crater_layout;
+  mizchi_crater_webdriver_bidi -> mizchi_crater_painter;
+  mizchi_crater_webdriver_bidi -> mizchi_crater_renderer;
+  mizchi_crater_webdriver_bidi -> mizchi_crater_browser;
+  mizchi_crater_webdriver_bidi -> mizchi_crater_browser_contract;
+  mizchi_crater_webvitals -> mizchi_crater_layout;
+}
