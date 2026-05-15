@@ -17,8 +17,6 @@ digraph crater_modules {
     label="Render";
     mizchi_crater_painter [label="crater-painter"];
     mizchi_crater_renderer [label="crater-renderer"];
-    mizchi_crater_renderer_inline_style_cache [label="crater-renderer-inline-style-cache"];
-    mizchi_crater_renderer_terminal [label="crater-renderer-terminal"];
     mizchi_crater_webvitals [label="crater-webvitals"];
   }
   subgraph cluster_Terminal {
@@ -100,7 +98,6 @@ digraph crater_modules {
   mizchi_crater_js -> mizchi_crater_layout;
   mizchi_crater_js -> mizchi_crater_painter;
   mizchi_crater_js -> mizchi_crater_renderer;
-  mizchi_crater_js -> mizchi_crater_renderer_terminal;
   mizchi_crater_layout -> mizchi_crater_core;
   mizchi_crater -> mizchi_crater_css;
   mizchi_crater -> mizchi_crater_dom;
@@ -119,13 +116,7 @@ digraph crater_modules {
   mizchi_crater_renderer -> mizchi_crater_dom;
   mizchi_crater_renderer -> mizchi_crater_layout;
   mizchi_crater_renderer -> mizchi_crater_painter;
-  mizchi_crater_renderer -> mizchi_crater_renderer_inline_style_cache;
-  mizchi_crater_renderer_inline_style_cache -> mizchi_crater_core;
-  mizchi_crater_renderer_inline_style_cache -> mizchi_crater_css;
-  mizchi_crater_renderer_terminal -> mizchi_crater_css;
-  mizchi_crater_renderer_terminal -> mizchi_crater_painter;
-  mizchi_crater_renderer_terminal -> mizchi_crater_painter_terminal;
-  mizchi_crater_renderer_terminal -> mizchi_crater_renderer;
+  mizchi_crater_renderer -> mizchi_crater_painter_terminal;
   mizchi_crater_browser_runtime -> mizchi_crater_dom;
   mizchi_crater_testing -> mizchi_crater_core;
   mizchi_crater_testing -> mizchi_crater_browser;

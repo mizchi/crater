@@ -36,8 +36,6 @@ const LAYERS = [
   ["Render", new Set([
     "mizchi/crater-painter",
     "mizchi/crater-renderer",
-    "mizchi/crater-renderer-terminal",
-    "mizchi/crater-renderer-inline-style-cache",
     "mizchi/crater-webvitals",
   ])],
   ["Terminal", new Set([

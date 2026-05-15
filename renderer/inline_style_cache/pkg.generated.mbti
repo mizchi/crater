@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "mizchi/crater-renderer-inline-style-cache"
+package "mizchi/crater-renderer/inline_style_cache"
 
 import {
   "mizchi/crater-core",
