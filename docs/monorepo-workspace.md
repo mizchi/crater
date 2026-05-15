@@ -413,16 +413,14 @@ now consumes these packages as an integration layer.
 
 ### `mizchi/crater-browser`
 
-The browser-facing packages have been moved into `browser/`:
+The browser-facing packages live in `browser/`:
 
-- `.`
-- `browser_contract`
-- `runtime`
+- `.` — shell/CDP/JS facade
+- `runtime` — JS runtime helpers consumed by shell and native
 
-The root package now provides a thin facade over the shell/CDP/JS entry points,
-while shell/native consumers share `browser/runtime` for the JS runtime
-contract and DOM serializer instead of reaching back into the root integration
-module for runtime-facing helpers.
+Browser integration helpers (render context factory, AOM extraction, CSS
+support diagnostics) live in the sibling `mizchi/crater-browser-helpers`
+module, not as a sub-package of `mizchi/crater-browser`.
 
 ### `mizchi/crater-webdriver-bidi`
 

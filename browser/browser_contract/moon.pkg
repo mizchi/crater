@@ -1,5 +1,0 @@
-import {
-  "mizchi/crater-browser-helpers" @helpers_impl,
-}
-
-supported_targets = "js+native"
