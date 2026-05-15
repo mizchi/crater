@@ -6,6 +6,7 @@ import {
   "mizchi/crater-webdriver-bidi/protocol/wire" @protocol_wire,
   "mizchi/crater-webdriver-bidi/rendering" @rendering,
   "mizchi/crater-webdriver-bidi/browser_domain" @browser_domain,
+  "mizchi/crater-webdriver-bidi/server" @server,
   "mizchi/crater-network" @crater_network,
   "mizchi/crater-renderer/vrt" @vrt,
   "mizchi/crater-browser-contract" @browser_contract,

@@ -1,0 +1,59 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-webdriver-bidi/server"
+
+import {
+  "mizchi/crater-webdriver-bidi/contract",
+}
+
+// Values
+pub fn error_response(@contract.ErrorCode, String) -> @contract.WebDriverResponse
+
+pub fn success_null() -> @contract.WebDriverResponse
+
+pub fn success_object(Map[String, @contract.WebDriverValue]) -> @contract.WebDriverResponse
+
+pub fn success_string(String) -> @contract.WebDriverResponse
+
+// Errors
+
+// Types and methods
+pub(all) struct SessionManager {
+  sessions : Map[String, SessionState]
+  mut next_id : Int
+}
+pub fn SessionManager::create_session(Self, String) -> @contract.WebDriverResponse
+pub fn SessionManager::delete_session(Self, String) -> @contract.WebDriverResponse
+pub fn SessionManager::generate_id(Self) -> String
+pub fn SessionManager::get_session(Self, String) -> SessionState?
+pub fn SessionManager::handle_request(Self, @contract.WebDriverRequest) -> (Int, @contract.WebDriverResponse)
+pub fn SessionManager::new() -> Self
+
+pub(all) struct SessionState {
+  id : String
+  capabilities : @contract.Capabilities
+  mut current_url : String
+  mut title : String
+  window_rect : @contract.WindowRect
+}
+
+// Type aliases
+pub using @contract {type Capabilities}
+
+pub using @contract {type ErrorCode}
+
+pub using @contract {type PageLoadStrategy}
+
+pub using @contract {type Timeouts}
+
+pub using @contract {type WebDriverCommand}
+
+pub using @contract {type WebDriverRequest}
+
+pub using @contract {type WebDriverResponse}
+
+pub using @contract {type WebDriverValue}
+
+pub using @contract {type WindowRect}
+
+// Traits
+

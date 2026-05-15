@@ -59,8 +59,9 @@ Last organized: 2026-05-15
 - [ ] `painter/paint/raster/paint_raster.mbt` / glyph 周辺の責務整理を閉じる
   - bitmap font fallback と glyph path render の境界を見直す
   - `mizchi/font` / `mizchi/svg` へ委譲できる処理は crater 側を adapter にする
-- [ ] `webdriver/server` を `webdriver/webdriver` から切り出す
-  - WebSocket transport / server state / session wiring
+- [ ] `webdriver/server` の WebSocket transport (`bidi_server.mbt`) を移す
+  - REST handler / session manager は `webdriver/server` に分離済 (#71)
+  - WebSocket 側は `reset_runtime_js_state` / `reset_paint_provider` のコールバック化が必要なので別 PR
 - [ ] `scripts/crater_bidi_adapter.py` から transport 以外の実装責務を削る
 - [ ] WebDriver tooling の `.ts` runner (`scripts/wpt-webdriver-runner.ts` / `scripts/wpt-runner.ts` / `scripts/wpt-dom-runner.ts`) の責務を整理する
 

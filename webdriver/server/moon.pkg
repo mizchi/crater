@@ -1,0 +1,10 @@
+import {
+  "mizchi/crater-webdriver-bidi/contract" @contract,
+  "moonbitlang/core/json",
+}
+
+import {
+  "mizchi/crater-webdriver-bidi/contract" @contract,
+} for "test"
+
+supported_targets = "js"
