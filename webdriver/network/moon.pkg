@@ -1,5 +1,0 @@
-import {
-  "mizchi/crater-network" @crater_network,
-}
-
-supported_targets = "js"
