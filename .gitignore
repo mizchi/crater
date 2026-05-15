@@ -40,8 +40,14 @@ fixtures/
 wpt-tests/**/support/
 .wpt-safe-subset-cache.json
 
-# Real-world site downloads (regenerate with `just download-real-world-batch`)
-real-world/
+# Real-world site downloads (regenerate with `just download-real-world-batch`).
+# `example-com` is the one snapshot pinned to repo state because
+# `tests/paint-vrt.test.ts` runs against it as a fixed visual-diff fixture.
+real-world/*
+!real-world/example-com/
+real-world/example-com/*
+!real-world/example-com/index.html
+!real-world/example-com/meta.json
 
 # WASM component transpiled output (regenerate with npm run build:wasm-component && npx jco transpile)
 wasm/dist/
