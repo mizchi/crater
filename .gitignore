@@ -40,12 +40,8 @@ fixtures/
 wpt-tests/**/support/
 .wpt-safe-subset-cache.json
 
-# Real-world site downloads (regenerate with npm run download)
-real-world/*
-!real-world/example-com/
-real-world/example-com/*
-!real-world/example-com/index.html
-!real-world/example-com/meta.json
+# Real-world site downloads (regenerate with `just download-real-world-batch`)
+real-world/
 
 # WASM component transpiled output (regenerate with npm run build:wasm-component && npx jco transpile)
 wasm/dist/
@@ -60,14 +56,10 @@ output/
 _build/
 
 # Local WPT investigation artifacts
-tmp/**/*.out
-tmp/**/*.log
-tmp/**/*.txt
-tmp/**/*.json
-tmp/wpt-modules/
-tmp/ws-video-test.html
+tmp/
 docs/private/
 ci-logs/
+test-results/
 trace.json
 browser/jsbidi/trace.json
 .playwright-mcp/
