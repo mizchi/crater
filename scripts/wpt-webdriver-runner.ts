@@ -95,6 +95,28 @@ export function resolveBidiServerPath(cwd: string = process.cwd()): string | nul
   return bidiBuildPaths.resolveBidiMainBuildPath(cwd);
 }
 
+export function buildPytestEnv(options: {
+  cwd?: string;
+  tempDir: string;
+  craterBidiUrl: string;
+  baseEnv?: NodeJS.ProcessEnv;
+}): NodeJS.ProcessEnv {
+  const cwd = options.cwd ?? process.cwd();
+  const baseEnv = options.baseEnv ?? process.env;
+  return {
+    ...baseEnv,
+    CRATER_BIDI_URL: options.craterBidiUrl,
+    PYTHONPATH: [
+      path.join(cwd, "scripts"),
+      options.tempDir,
+      cwd,
+      baseEnv.PYTHONPATH,
+    ]
+      .filter(Boolean)
+      .join(path.delimiter),
+  };
+}
+
 function startServer(): ChildProcess {
   console.log("Starting Crater BiDi server...");
   const serverPath = resolveBidiServerPath();
@@ -709,13 +731,10 @@ async function runTests(
   });
 
   // Run pytest with our adapter
-  const env = {
-    ...process.env,
-    CRATER_BIDI_URL: craterBidiUrl,
-    PYTHONPATH: [path.join(process.cwd(), "scripts"), tempDir, process.env.PYTHONPATH]
-      .filter(Boolean)
-      .join(path.delimiter),
-  };
+  const env = buildPytestEnv({
+    tempDir,
+    craterBidiUrl,
+  });
 
   const timeout = options.timeout || 30;
 

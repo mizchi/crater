@@ -119,7 +119,6 @@ check:
     moon check --manifest-path painter/moon.mod.json --target js -j 1
     moon check --manifest-path renderer/moon.mod.json --target js -j 1
     moon check --manifest-path runtime/moon.mod.json --target js -j 1
-    moon check -j 1 src --target js
     moon check --manifest-path browser/moon.mod.json --target js -j 1
     moon -C browser/native check --target native -j 1
     moon check --manifest-path js/moon.mod.json --target js

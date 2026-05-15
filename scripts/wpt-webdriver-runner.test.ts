@@ -3,6 +3,7 @@ import os from "os";
 import path from "path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  buildPytestEnv,
   extractPytestFailureDetails,
   parsePytestSummary,
   resolveBidiServerPath,
@@ -72,6 +73,29 @@ describe("resolveBidiServerPath", () => {
   it("returns null when no server file exists", () => {
     const cwd = mkTempProject();
     expect(resolveBidiServerPath(cwd)).toBe(null);
+  });
+});
+
+describe("buildPytestEnv", () => {
+  it("keeps both top-level and package-style script imports available to pytest", () => {
+    const cwd = path.join(path.sep, "repo");
+    const tempDir = path.join(cwd, ".wpt-temp");
+    const env = buildPytestEnv({
+      cwd,
+      tempDir,
+      craterBidiUrl: "ws://127.0.0.1:9222/session/example",
+      baseEnv: {
+        PYTHONPATH: path.join(path.sep, "existing"),
+      },
+    });
+
+    expect(env.CRATER_BIDI_URL).toBe("ws://127.0.0.1:9222/session/example");
+    expect(env.PYTHONPATH?.split(path.delimiter)).toEqual([
+      path.join(cwd, "scripts"),
+      tempDir,
+      cwd,
+      path.join(path.sep, "existing"),
+    ]);
   });
 });
 
