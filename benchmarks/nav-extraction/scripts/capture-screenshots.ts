@@ -2,8 +2,8 @@
  * Capture screenshots of selected samples for labeling reference.
  *
  * Usage:
- *   npx tsx nav-benchmark/scripts/capture-screenshots.ts
- *   npx tsx nav-benchmark/scripts/capture-screenshots.ts --limit 5
+ *   npx tsx benchmarks/nav-extraction/scripts/capture-screenshots.ts
+ *   npx tsx benchmarks/nav-extraction/scripts/capture-screenshots.ts --limit 5
  */
 
 import fs from 'fs';
@@ -16,8 +16,8 @@ const AEB_PATH = path.join(
   'ghq/github.com/scrapinghub/article-extraction-benchmark'
 );
 
-const SAMPLES_FILE = path.join(process.cwd(), 'nav-benchmark/samples.json');
-const OUTPUT_DIR = path.join(process.cwd(), 'nav-benchmark/screenshots');
+const SAMPLES_FILE = path.join(process.cwd(), 'benchmarks/nav-extraction/samples.json');
+const OUTPUT_DIR = path.join(process.cwd(), 'benchmarks/nav-extraction/screenshots');
 
 interface Sample {
   hash: string;

@@ -2,9 +2,9 @@
  * Evaluate nav extraction against labeled ground truth using IoU.
  *
  * Usage:
- *   npx tsx nav-benchmark/scripts/evaluate.ts
- *   npx tsx nav-benchmark/scripts/evaluate.ts --hash <hash>
- *   npx tsx nav-benchmark/scripts/evaluate.ts --iou-threshold 0.3
+ *   npx tsx benchmarks/nav-extraction/scripts/evaluate.ts
+ *   npx tsx benchmarks/nav-extraction/scripts/evaluate.ts --hash <hash>
+ *   npx tsx benchmarks/nav-extraction/scripts/evaluate.ts --iou-threshold 0.3
  */
 
 import fs from 'fs';
@@ -17,7 +17,7 @@ const AEB_PATH = path.join(
   'ghq/github.com/scrapinghub/article-extraction-benchmark'
 );
 
-const LABELS_DIR = path.join(process.cwd(), 'nav-benchmark/labels');
+const LABELS_DIR = path.join(process.cwd(), 'benchmarks/nav-extraction/labels');
 const LAYOUT_DIR = path.join(process.cwd(), 'render-results/aeb-layout');
 
 interface Rect {

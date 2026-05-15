@@ -3,16 +3,16 @@
  * Creates draft labels that need manual review.
  *
  * Usage:
- *   npx tsx nav-benchmark/scripts/init-labels.ts
- *   npx tsx nav-benchmark/scripts/init-labels.ts --hash <hash>
+ *   npx tsx benchmarks/nav-extraction/scripts/init-labels.ts
+ *   npx tsx benchmarks/nav-extraction/scripts/init-labels.ts --hash <hash>
  */
 
 import fs from 'fs';
 import path from 'path';
 
-const SAMPLES_FILE = path.join(process.cwd(), 'nav-benchmark/samples.json');
+const SAMPLES_FILE = path.join(process.cwd(), 'benchmarks/nav-extraction/samples.json');
 const LAYOUT_DIR = path.join(process.cwd(), 'render-results/aeb-layout');
-const LABELS_DIR = path.join(process.cwd(), 'nav-benchmark/labels');
+const LABELS_DIR = path.join(process.cwd(), 'benchmarks/nav-extraction/labels');
 
 interface Sample {
   hash: string;

@@ -8,7 +8,7 @@ import { gunzipSync } from 'zlib';
 import { accessibility } from '../../wasm/dist/crater.js';
 
 const AEB_PATH = path.join(process.env.HOME || '', 'ghq/github.com/scrapinghub/article-extraction-benchmark');
-const LABELS_DIR = path.join(process.cwd(), 'nav-benchmark/labels');
+const LABELS_DIR = path.join(process.cwd(), 'benchmarks/nav-extraction/labels');
 const LAYOUT_DIR = path.join(process.cwd(), 'render-results/aeb-layout');
 
 interface Rect { x: number; y: number; width: number; height: number; }
