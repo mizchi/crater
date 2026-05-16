@@ -15,13 +15,13 @@ pub(all) struct PathFollower {
 
 ///|
 pub fn PathFollower::new(path_data : String) -> PathFollower {
-  path_follower_from_msvg(@msvg.PathFollower::new(path_data))
+  PathFollower::from_msvg(@msvg.PathFollower::new(path_data))
 }
 
 ///|
 /// Get position at current progress
 pub fn PathFollower::get_position(self : PathFollower) -> (Double, Double) {
-  path_follower_to_msvg(self).get_position()
+  self.to_msvg().get_position()
 }
 
 ///|
@@ -31,8 +31,41 @@ pub fn PathFollower::update(
   dt : Double,
   speed : Double,
 ) -> Bool {
-  let follower = path_follower_to_msvg(self)
+  let follower = self.to_msvg()
   let active = follower.update(dt, speed)
-  copy_path_follower_state_from_msvg(self, follower)
+  self.sync_state_from_msvg(follower)
   active
+}
+
+///|
+fn PathFollower::from_msvg(follower : @msvg.PathFollower) -> PathFollower {
+  {
+    path: follower.path.map(path_command_from_msvg),
+    polyline: follower.polyline,
+    lengths: follower.lengths,
+    total_length: follower.total_length,
+    progress: follower.progress,
+    loop_anim: follower.loop_anim,
+  }
+}
+
+///|
+fn PathFollower::to_msvg(self : PathFollower) -> @msvg.PathFollower {
+  @msvg.PathFollower::{
+    path: self.path.map(path_command_to_msvg),
+    polyline: self.polyline,
+    lengths: self.lengths,
+    total_length: self.total_length,
+    progress: self.progress,
+    loop_anim: self.loop_anim,
+  }
+}
+
+///|
+fn PathFollower::sync_state_from_msvg(
+  self : PathFollower,
+  source : @msvg.PathFollower,
+) -> Unit {
+  self.progress = source.progress
+  self.loop_anim = source.loop_anim
 }

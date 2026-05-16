@@ -113,10 +113,10 @@ pub fn apply_mask_to_image(
   mask_buffer : Image,
   mask_type : MaskType,
 ) -> Image {
-  image_from_msvg(
+  Image::from_msvg(
     @msvg.apply_mask_to_image(
-      image_to_msvg(image),
-      image_to_msvg(mask_buffer),
+      image.to_msvg(),
+      mask_buffer.to_msvg(),
       mask_type_to_msvg(mask_type),
     ),
   )
