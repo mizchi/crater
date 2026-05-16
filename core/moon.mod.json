@@ -1,9 +1,11 @@
 {
   "name": "mizchi/crater-core",
   "version": "0.17.1",
-  "deps": {},
+  "deps": {
+    "mizchi/css": "0.1.0"
+  },
   "repository": "https://github.com/mizchi/crater",
   "license": "Apache-2.0",
-  "description": "Pure interface types (geometry, color, CSS values, layout output) shared across crater modules. No implementation; no other crater deps.",
+  "description": "Layout output types (Layout, LayoutResult, LayoutContext, MeasureFunc, ...) and Node tree for crater. Depends on mizchi/css for value types.",
   "preferred-target": "js"
 }

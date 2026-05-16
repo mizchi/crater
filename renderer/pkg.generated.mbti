@@ -2,11 +2,11 @@
 package "mizchi/crater-renderer"
 
 import {
-  "mizchi/crater-core/values",
   "mizchi/crater-painter/paint/diff",
   "mizchi/crater-painter/paint/model",
   "mizchi/crater-renderer/renderer",
   "mizchi/crater-renderer/vrt",
+  "mizchi/css/values",
 }
 
 // Values

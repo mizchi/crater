@@ -1,11 +1,11 @@
 import {
   "moonbitlang/core/string",
   "mizchi/crater-dom/html",
-  "mizchi/crater-css" @css,
+  "mizchi/css" @css,
   "mizchi/crater-layout" @node,
   "mizchi/crater-renderer/inline_style_cache" @inline_style_cache,
-  "mizchi/crater-core/style",
-  "mizchi/crater-core/values" @types,
+  "mizchi/css/style",
+  "mizchi/css/values" @types,
   "mizchi/crater-core" @layout_types,
 }
 

@@ -1,10 +1,10 @@
 import {
   "moonbitlang/core/string",
-  "mizchi/crater-core/values" @types,
+  "mizchi/css/values" @types,
   "mizchi/crater-layout/tree",
   "mizchi/crater-dom/layout/style_bridge",
   "mizchi/crater-dom/html",
-  "mizchi/crater-css" @css,
+  "mizchi/css" @css,
 }
 
 import {

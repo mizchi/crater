@@ -1,10 +1,10 @@
 import {
   "moonbitlang/core/bench",
-  "mizchi/crater-css" @css,
+  "mizchi/css" @css,
   "mizchi/crater-dom/aom",
   "mizchi/crater-dom/html",
   "mizchi/crater-layout" @layout,
-  "mizchi/crater-core/values" @types,
+  "mizchi/css/values" @types,
   "mizchi/crater-core" @layout_types,
   "mizchi/crater-browser/tui/paint/plain" @tui_paint_plain,
   "mizchi/crater-browser/tui/paint/export" @tui_paint_export,

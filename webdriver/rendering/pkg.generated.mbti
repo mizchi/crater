@@ -5,8 +5,8 @@ import {
   "mizchi/crater-browser/tui/paint/export",
   "mizchi/crater-core",
   "mizchi/crater-core/node",
-  "mizchi/crater-core/values",
   "mizchi/crater-renderer/vrt",
+  "mizchi/css/values",
   "mizchi/svg",
 }
 

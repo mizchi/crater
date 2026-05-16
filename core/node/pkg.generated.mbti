@@ -3,7 +3,7 @@ package "mizchi/crater-core/node"
 
 import {
   "mizchi/crater-core",
-  "mizchi/crater-core/style",
+  "mizchi/css/style",
 }
 
 // Values
