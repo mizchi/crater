@@ -126,5 +126,4 @@ digraph crater_modules {
   mizchi_crater_webdriver_bidi -> mizchi_crater_browser;
   mizchi_crater_webdriver_bidi -> mizchi_crater_browser_helpers;
   mizchi_crater_webvitals -> mizchi_crater_core;
-  mizchi_crater_webvitals -> mizchi_crater_layout;
 }

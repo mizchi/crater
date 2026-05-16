@@ -126,7 +126,6 @@ graph LR
   mizchi_crater_webdriver_bidi --> mizchi_crater_browser
   mizchi_crater_webdriver_bidi --> mizchi_crater_browser_helpers
   mizchi_crater_webvitals --> mizchi_crater_core
-  mizchi_crater_webvitals --> mizchi_crater_layout
 ```
 
 ## Modules and incoming-edge counts
@@ -137,11 +136,11 @@ graph LR
 | Foundation | `crater-css` | `css` | 9 | crater-core |
 | Foundation | `crater-dom` | `dom` | 11 | crater-core, crater-css, crater-layout |
 | Foundation | `crater-html-assets` | `html_assets` | 1 | — |
-| Foundation | `crater-layout` | `layout` | 11 | crater-core |
+| Foundation | `crater-layout` | `layout` | 10 | crater-core |
 | Foundation | `crater-network` | `network` | 1 | — |
 | Render | `crater-painter` | `painter` | 6 | crater-core, crater-terminal-protocol |
 | Render | `crater-renderer` | `renderer` | 7 | crater-core, crater-css, crater-dom, crater-layout, crater-painter |
-| Render | `crater-webvitals` | `webvitals` | 1 | crater-core, crater-layout |
+| Render | `crater-webvitals` | `webvitals` | 1 | crater-core |
 | Terminal | `crater-terminal-image-cache` | `terminal_image_cache` | 1 | — |
 | Terminal | `crater-terminal-protocol` | `terminal_protocol` | 2 | — |
 | Browser | `crater-browser` | `browser` | 3 | crater-aomx, crater-browser-helpers, crater-browser-http, crater-browser-runtime, crater-core, crater-css, crater-dom, crater-html-assets, crater-layout, crater-painter, crater-renderer, crater-terminal-image-cache, crater-terminal-protocol |

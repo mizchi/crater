@@ -1,0 +1,28 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-core/layout_view"
+
+// Values
+
+// Errors
+
+// Types and methods
+pub(all) enum ResourceLoadState {
+  Pending
+  Resolved
+  Error
+}
+
+// Type aliases
+
+// Traits
+pub(open) trait LayoutView {
+  uid(Self) -> Int
+  computed_x(Self) -> Double
+  computed_y(Self) -> Double
+  computed_width(Self) -> Double
+  computed_height(Self) -> Double
+  children(Self) -> Array[Self]
+  text(Self) -> String?
+  resource_state(Self) -> ResourceLoadState?
+}
+

@@ -297,33 +297,34 @@ fn LCPTracker::update_current_lcp(self : LCPTracker) -> Unit {
 // =============================================================================
 
 ///|
-/// Extract LCP candidates from a LayoutTree
-pub fn extract_lcp_candidates(
-  layout : @tree.LayoutTree,
+/// Extract LCP candidates from any layout view tree root.
+///
+/// The function is generic over the layout impl: pass the root of a
+/// concrete tree (e.g. `LayoutTree::root` from `crater-layout/tree`) or
+/// any other type that implements `@view.LayoutView`.
+pub fn[T : @view.LayoutView] extract_lcp_candidates(
+  root : T,
   viewport_width : Double,
   viewport_height : Double,
 ) -> Array[LCPCandidate] {
   let candidates : Array[LCPCandidate] = []
   extract_candidates_recursive(
-    layout.root,
-    candidates,
-    viewport_width,
-    viewport_height,
+    root, candidates, viewport_width, viewport_height,
   )
   candidates
 }
 
 ///|
-fn extract_candidates_recursive(
-  node : @tree.LayoutNode,
+fn[T : @view.LayoutView] extract_candidates_recursive(
+  node : T,
   candidates : Array[LCPCandidate],
   viewport_width : Double,
   viewport_height : Double,
 ) -> Unit {
-  let x = node.computed_x
-  let y = node.computed_y
-  let width = node.computed_width
-  let height = node.computed_height
+  let x = node.computed_x()
+  let y = node.computed_y()
+  let width = node.computed_width()
+  let height = node.computed_height()
 
   // Skip if completely outside viewport
   if x >= viewport_width ||
@@ -331,7 +332,7 @@ fn extract_candidates_recursive(
     x + width <= 0.0 ||
     y + height <= 0.0 {
     // Still check children as they might be positioned differently
-    for child in node.children {
+    for child in node.children() {
       extract_candidates_recursive(
         child, candidates, viewport_width, viewport_height,
       )
@@ -343,7 +344,7 @@ fn extract_candidates_recursive(
   match classify_lcp_element(node) {
     Some(element_type) => {
       let candidate = LCPCandidate::new(
-        node.uid.to_string(),
+        node.uid().to_string(),
         element_type,
         x,
         y,
@@ -361,7 +362,7 @@ fn extract_candidates_recursive(
   }
 
   // Recurse into children
-  for child in node.children {
+  for child in node.children() {
     extract_candidates_recursive(
       child, candidates, viewport_width, viewport_height,
     )
@@ -369,28 +370,26 @@ fn extract_candidates_recursive(
 }
 
 ///|
-/// Classify a layout node as an LCP element type (if applicable)
-fn classify_lcp_element(node : @tree.LayoutNode) -> LCPElementType? {
-  // Check for image elements (nodes with intrinsic state)
-  match node.intrinsic_state {
-    Some(state) =>
-      match state {
-        @tree.IntrinsicState::Pending(_) | @tree.IntrinsicState::Resolved(_) =>
-          // This is an image/resource node
-          return Some(Image(src=node.uid.to_string()))
-        @tree.IntrinsicState::Error => return None
-      }
+/// Classify a layout view node as an LCP element type (if applicable)
+fn[T : @view.LayoutView] classify_lcp_element(node : T) -> LCPElementType? {
+  // Check for image elements (nodes with a resource load state)
+  match node.resource_state() {
+    Some(@view.ResourceLoadState::Pending)
+    | Some(@view.ResourceLoadState::Resolved) =>
+      // This is an image/resource node
+      return Some(Image(src=node.uid().to_string()))
+    Some(@view.ResourceLoadState::Error) => return None
     None => ()
   }
 
   // Check node type for text blocks
   // Large text blocks (paragraphs, headings) are LCP candidates
   // Minimum size threshold: 10x10 pixels
-  let width = node.computed_width
-  let height = node.computed_height
+  let width = node.computed_width()
+  let height = node.computed_height()
   if width >= 10.0 && height >= 10.0 {
     // If it has no children and has text content, it's likely a text node
-    if node.children.is_empty() && node.text is Some(_) {
+    if node.children().is_empty() && node.text() is Some(_) {
       return Some(TextBlock)
     }
   }
