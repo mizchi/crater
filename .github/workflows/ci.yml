@@ -686,7 +686,9 @@ jobs:
       always()
       && (github.event_name == 'schedule'
         || github.event_name == 'push'
-        || needs.affected.outputs.paint_vrt == 'true')
+        || (github.event_name == 'pull_request'
+          && contains(github.event.pull_request.labels.*.name, 'vrt')
+          && needs.affected.outputs.paint_vrt == 'true'))
     env:
       METRIC_CI_ROOT: ${{ github.workspace }}/metric-ci
     strategy:
@@ -946,7 +948,9 @@ jobs:
       always()
       && (github.event_name == 'schedule'
         || github.event_name == 'push'
-        || needs.affected.outputs.wpt_vrt == 'true')
+        || (github.event_name == 'pull_request'
+          && contains(github.event.pull_request.labels.*.name, 'vrt')
+          && needs.affected.outputs.wpt_vrt == 'true'))
     outputs:
       matrix: ${{ steps.build.outputs.matrix }}
 
