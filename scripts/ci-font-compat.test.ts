@@ -62,6 +62,17 @@ describe("CI compatible font setup", () => {
     expect(script).toContain("sudo apt-get install -y --reinstall --no-install-recommends ttf-mscorefonts-installer || true");
   });
 
+  test("font install script pulls in medium-weight faces for paint.font-weight-numeric Layer C", () => {
+    const script = readRepoFile("scripts/ci/install-compatible-fonts.sh");
+
+    expect(script).toContain("fonts-roboto");
+    expect(script).toContain("fonts-noto-core");
+    expect(script).toContain("medium_weight_files=(");
+    expect(script).toContain("Roboto-Medium.ttf");
+    expect(script).toContain("NotoSans-Medium.ttf");
+    expect(script).toContain("No medium-weight font found");
+  });
+
   test("font resolvers include msttcorefonts file variants", () => {
     const bidiSource = readRepoFile("webdriver/bidi_main/start-with-font.ts");
     const resolverSource = readRepoFile("scripts/system-font-resolver.ts");
