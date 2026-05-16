@@ -1,6 +1,6 @@
 amends "../pkspec/Spec.pkl"
 
-feature = "crater local gates"
+feature = "crater quality contract"
 
 goals {
   new Goal {
@@ -24,29 +24,69 @@ goals {
       "The browser surface is broad enough that prose-only backlog items drift unless the spec index is checked."
   }
   new Goal {
-    id = "goal.browser-compat"
-    name = "browser compatibility work has focused gates"
+    id = "goal.css-compat"
+    name = "CSS compatibility baselines are tracked per WPT module"
     priority = 75
     reviewStatus = "approved"
     description =
-      "DOM, locator, Playwright, and website scenarios have a named local gate distinct from VRT."
+      "Each WPT CSS module Crater opts into has a measured pass-rate baseline and an explicit set of follow-up gaps so layout work has a single coverage ledger."
     rationale =
-      "VRT is expensive and noisy; non-visual compatibility should stay independently runnable."
+      "CSS coverage is the largest UX surface. Without per-module baselines, regressions hide and new modules drift between issues and ad-hoc memos."
   }
   new Goal {
-    id = "goal.visual-regression"
-    name = "visual regressions are reproducible"
+    id = "goal.dom-compat"
+    name = "DOM and Shadow DOM surface is covered"
     priority = 70
     reviewStatus = "approved"
     description =
-      "Paint VRT, WPT VRT, and report-generation tasks are grouped so visual diffs can be regenerated and inspected consistently."
+      "DOM, Shadow DOM, custom elements, and Web Components observation paths are exercised by WPT DOM and component-focused scenarios."
     rationale =
-      "Crater's rendering work needs a repeatable path from changed code to sampled visual evidence."
+      "Preact, Playwright, and downstream consumers depend on a faithful DOM surface; gaps surface as silent shadow-aware bugs."
+  }
+  new Goal {
+    id = "goal.protocol-compat"
+    name = "WebDriver BiDi / Playwright / CDP surfaces match upstream contracts"
+    priority = 65
+    reviewStatus = "approved"
+    description =
+      "Crater's protocol adapters expose the BiDi, Playwright, and CDP commands needed for adapter parity and component-level inspection."
+    rationale =
+      "Protocol drift breaks downstream automation silently; pinning the supported surface in pkspec keeps the contract explicit."
+  }
+  new Goal {
+    id = "goal.paint-accuracy"
+    name = "rendering accuracy is measured and reproducible"
+    priority = 60
+    reviewStatus = "approved"
+    description =
+      "Paint VRT, WPT VRT, Luna component VRT, and report-generation tasks share fixtures, thresholds, and a regeneration path so visual diffs can be reproduced and inspected consistently."
+    rationale =
+      "Crater's rendering work needs a repeatable path from changed code to sampled visual evidence with named accuracy targets."
+  }
+  new Goal {
+    id = "goal.diagnostic-api"
+    name = "Crater exposes rendering diagnostics beyond pixel diffs"
+    priority = 55
+    reviewStatus = "draft"
+    description =
+      "BiDi / CLI surfaces expose paint-tree diffs, computed style queries, selector-scoped renders, and property mutation so VRT tools can detect changes pixels miss."
+    rationale =
+      "VRT benchmarks show pixel-only detection plateaus around 50%; structural diagnostics are Crater's differentiator and should be a tracked contract instead of ad-hoc API surface."
+  }
+  new Goal {
+    id = "goal.ci-efficiency"
+    name = "CI keeps fast feedback at the affected surface"
+    priority = 50
+    reviewStatus = "approved"
+    description =
+      "Affected gating, pkfire cache reuse, and parallelised VRT shards keep PR wall time bounded while schedule runs cover the full matrix."
+    rationale =
+      "Heavy WPT and VRT shards dominate wall time. Without explicit efficiency targets, slow CI silently displaces actual review work."
   }
   new Goal {
     id = "goal.release-safety"
     name = "workspace release order is inspectable"
-    priority = 60
+    priority = 40
     reviewStatus = "approved"
     description = "MoonBit publish order can be checked and printed before any publish operation."
     rationale =
@@ -55,6 +95,10 @@ goals {
 }
 
 scenarios {
+  // ---------------------------------------------------------------------------
+  // Existing approved scenarios — pkfire / pkspec wiring contracts.
+  // contributes blocks updated to reflect the new 9-goal taxonomy.
+  // ---------------------------------------------------------------------------
   new {
     id = "task.default"
     name = "pkfire exposes task inventory"
@@ -113,7 +157,7 @@ scenarios {
     tags { "spec"; "pkfire"; "benchmark" }
     severity = "major"
     reviewStatus = "approved"
-    contributes { "goal.local-gates" }
+    contributes { "goal.local-gates"; "goal.paint-accuracy" }
   }
   new {
     id = "task.affected"
@@ -124,7 +168,7 @@ scenarios {
     severity = "major"
     reviewStatus = "approved"
     dependsOn { "task.default"; "task.check"; "task.bench"; "vrt.report" }
-    contributes { "goal.local-gates" }
+    contributes { "goal.local-gates"; "goal.ci-efficiency" }
   }
   new {
     id = "task.diagnostics"
@@ -146,7 +190,7 @@ scenarios {
     severity = "major"
     reviewStatus = "approved"
     dependsOn { "task.affected"; "task.diagnostics" }
-    contributes { "goal.local-gates" }
+    contributes { "goal.local-gates"; "goal.ci-efficiency" }
   }
   new {
     id = "spec.check"
@@ -177,7 +221,7 @@ scenarios {
     tags { "spec"; "browser"; "playwright" }
     severity = "major"
     reviewStatus = "approved"
-    contributes { "goal.browser-compat" }
+    contributes { "goal.protocol-compat" }
   }
   new {
     id = "browser.preact"
@@ -188,7 +232,7 @@ scenarios {
     severity = "major"
     reviewStatus = "approved"
     dependsOn { "browser.playwright" }
-    contributes { "goal.browser-compat" }
+    contributes { "goal.dom-compat"; "goal.protocol-compat" }
   }
   new {
     id = "wpt.dom"
@@ -198,7 +242,7 @@ scenarios {
     tags { "spec"; "browser"; "wpt"; "dom"; "pkfire" }
     severity = "major"
     reviewStatus = "approved"
-    contributes { "goal.browser-compat" }
+    contributes { "goal.dom-compat" }
   }
   new {
     id = "wpt.webdriver-bidi"
@@ -208,7 +252,7 @@ scenarios {
     tags { "spec"; "browser"; "webdriver"; "bidi"; "pkfire" }
     severity = "major"
     reviewStatus = "approved"
-    contributes { "goal.browser-compat" }
+    contributes { "goal.protocol-compat" }
   }
   new {
     id = "wpt.css"
@@ -218,7 +262,7 @@ scenarios {
     tags { "spec"; "browser"; "wpt"; "css"; "pkfire" }
     severity = "major"
     reviewStatus = "approved"
-    contributes { "goal.browser-compat" }
+    contributes { "goal.css-compat" }
   }
   new {
     id = "wpt.suite"
@@ -229,7 +273,7 @@ scenarios {
     severity = "major"
     reviewStatus = "approved"
     dependsOn { "wpt.css"; "wpt.dom"; "wpt.webdriver-bidi" }
-    contributes { "goal.browser-compat" }
+    contributes { "goal.css-compat"; "goal.dom-compat"; "goal.protocol-compat" }
   }
   new {
     id = "vrt.report"
@@ -239,7 +283,7 @@ scenarios {
     tags { "spec"; "vrt"; "paint" }
     severity = "major"
     reviewStatus = "approved"
-    contributes { "goal.visual-regression" }
+    contributes { "goal.paint-accuracy" }
   }
   new {
     id = "release.publish-order"
@@ -259,7 +303,7 @@ scenarios {
     tags { "spec"; "wpt"; "dom" }
     severity = "major"
     reviewStatus = "draft"
-    contributes { "goal.browser-compat" }
+    contributes { "goal.dom-compat" }
     openQuestions { "Which WPT DOM subset is stable enough to require in every local check?" }
   }
   new {
@@ -270,9 +314,449 @@ scenarios {
     tags { "spec"; "studio"; "e2e" }
     severity = "major"
     reviewStatus = "draft"
-    contributes { "goal.browser-compat"; "goal.visual-regression" }
+    contributes { "goal.paint-accuracy"; "goal.protocol-compat" }
     openQuestions {
       "Which private Studio scenario can be represented by a public reusable contract?"
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // New scenarios (Phase 1 stubs) — all draft, no implementing test required.
+  // Each carries a backlink to the originating issue or TODO bucket.
+  // ---------------------------------------------------------------------------
+
+  // -- CSS compatibility: per-module baselines and follow-up bugs -------------
+  new {
+    id = "compat.css-text-baseline"
+    name = "css-text WPT module baseline is established"
+    description =
+      "Measure and pin a per-module pass-rate baseline for the css-text WPT module, then close gaps as separate scenarios. Source: TODO Now (P0)."
+    tags { "wpt"; "css"; "baseline"; "todo:now" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.css-compat" }
+    openQuestions {
+      "Which css-text subset is in scope before the first wpt-config rollout?"
+    }
+  }
+  new {
+    id = "compat.css-backgrounds-baseline"
+    name = "css-backgrounds WPT module baseline is established"
+    description =
+      "Measure and pin a per-module pass-rate baseline for the css-backgrounds WPT module. Source: TODO Now (P0)."
+    tags { "wpt"; "css"; "baseline"; "todo:now" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.css-compat" }
+  }
+  new {
+    id = "compat.css-images-baseline"
+    name = "css-images WPT module baseline is enabled"
+    description =
+      "Promote css-images from manual baseline measurement (currently 93% pass) into wpt-config. See GitHub issue #65 for measurement scope and #68 for the gradient-with-border outlier."
+    tags { "wpt"; "css"; "baseline"; "issue:65"; "issue:68" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.css-compat" }
+  }
+  new {
+    id = "compat.css-values-baseline"
+    name = "css-values WPT module baseline is enabled"
+    description =
+      "Promote css-values from manual baseline measurement into wpt-config. See GitHub issue #65 (measurement) and #67 (calc() through table column-width outlier)."
+    tags { "wpt"; "css"; "baseline"; "issue:65"; "issue:67" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.css-compat" }
+  }
+  new {
+    id = "compat.css-inline-baseline"
+    name = "css-inline WPT module baseline is enabled"
+    description =
+      "Promote css-inline from manual baseline measurement into wpt-config. See GitHub issue #65 (measurement) and #66 (empty inline span height outlier)."
+    tags { "wpt"; "css"; "baseline"; "issue:65"; "issue:66" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.css-compat" }
+  }
+  new {
+    id = "compat.css-filter-effects"
+    name = "filter-effects WPT pass rate is closed out"
+    description =
+      "Drive the filter-effects WPT module from 98/106 to full pass. Implementing filter as an abs-pos containing block clears the bulk of failures. See GitHub issue #64."
+    tags { "wpt"; "css"; "filter"; "issue:64"; "todo:now" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.css-compat" }
+  }
+
+  // -- Paint accuracy: text wrap, font weight, glyph metrics -----------------
+  new {
+    id = "paint.text-wrap-layout-parity"
+    name = "painter text wrap matches the layout engine"
+    description =
+      "Close the gap between the painter's word-level wrap and the layout engine's precise wrap so real-world VRT diffs reflect text correctly. Source: TODO Now (P0)."
+    tags { "paint"; "text"; "wrap"; "todo:now" }
+    severity = "critical"
+    reviewStatus = "draft"
+    contributes { "goal.paint-accuracy" }
+  }
+  new {
+    id = "paint.font-weight-numeric"
+    name = "numeric font-weight survives paint"
+    description =
+      "Preserve the resolved numeric font-weight (e.g. 500) through the painter instead of collapsing to is_bold. Required for Luna VRT parity on medium UI labels. See GitHub issue #48."
+    tags { "paint"; "font"; "issue:48"; "todo:now" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.paint-accuracy" }
+  }
+  new {
+    id = "paint.text-glyph-metrics"
+    name = "glyph metrics and AA approach Chromium parity"
+    description =
+      "Reduce Luna VRT diffs dominated by glyph rasterization differences (slightly narrower / lighter than Chromium). See GitHub issue #47."
+    tags { "paint"; "font"; "vrt"; "issue:47" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.paint-accuracy" }
+  }
+
+  // -- DOM compatibility: Web Components residuals ---------------------------
+  new {
+    id = "compat.web-components-shadow-selectors"
+    name = "Shadow DOM selector surface is complete"
+    description =
+      "Implement remaining shadow-aware selectors: :host compound selectors, ::slotted, :host-context. Source: TODO Next (P1) and browser/TODO.md."
+    tags { "dom"; "shadow"; "selectors"; "todo:next" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.dom-compat" }
+  }
+  new {
+    id = "compat.web-components-element-internals"
+    name = "Web Components advanced surface is covered"
+    description =
+      "Close gaps in closed shadow root, declarative shadow DOM, customized built-in, form-associated custom elements, and ElementInternals. Source: TODO Next (P1)."
+    tags { "dom"; "shadow"; "custom-elements"; "todo:next" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.dom-compat" }
+  }
+
+  // -- Protocol compatibility: Playwright shadow-aware ----------------------
+  new {
+    id = "protocol.playwright-shadow-aware"
+    name = "Playwright / CDP / jsbidi inspection is shadow-aware"
+    description =
+      "Align the query / action / inspection surface across Playwright, CDP, and jsbidi for shadow DOM. Source: TODO Next (P1)."
+    tags { "protocol"; "playwright"; "shadow"; "todo:next" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.protocol-compat"; "goal.dom-compat" }
+  }
+
+  // -- Diagnostic APIs (vrt-harness CSS challenge driven) -------------------
+  new {
+    id = "diagnostic.paint-tree-diff"
+    name = "paint tree diff API is exposed"
+    description =
+      "Expose a structured paint-tree diff API so VRT tools can detect CSS changes that produce no pixel diff. See GitHub issue #23."
+    tags { "diagnostic"; "vrt"; "api"; "issue:23" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.diagnostic-api" }
+  }
+  new {
+    id = "diagnostic.css-property-mutation"
+    name = "CSS property mutation API is exposed"
+    description =
+      "Expose an API that renders a page with specific CSS properties toggled, returning the layout diff. Avoids re-parsing the entire stylesheet for mutation testing. See GitHub issue #24."
+    tags { "diagnostic"; "vrt"; "api"; "issue:24" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.diagnostic-api" }
+  }
+  new {
+    id = "diagnostic.selector-scoped-render"
+    name = "selector-scoped rendering API is exposed"
+    description =
+      "Expose an API to render only the subtree matched by a CSS selector for component-level VRT. See GitHub issue #25."
+    tags { "diagnostic"; "vrt"; "api"; "issue:25" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.diagnostic-api" }
+  }
+  new {
+    id = "protocol.bidi-computed-style"
+    name = "BiDi exposes computed CSS styles"
+    description =
+      "Add a BiDi command equivalent to getComputedStyle() so VRT tools can use computed-style diffs (single most impactful detection signal, +23% over pixel-only in the CSS challenge benchmark). See GitHub issue #26."
+    tags { "protocol"; "bidi"; "diagnostic"; "issue:26" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.diagnostic-api"; "goal.protocol-compat" }
+  }
+
+  // -- CI efficiency --------------------------------------------------------
+  new {
+    id = "ci.parallel-vrt-bottleneck"
+    name = "VRT shards stop dominating CI wall time"
+    description =
+      "Parallelise or shard the remaining VRT bottleneck jobs (playwright-paint-vrt, wpt-vrt display / flexbox / position) below the current ~20m ceiling. See GitHub issue #44."
+    tags { "ci"; "vrt"; "performance"; "issue:44" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.ci-efficiency" }
+  }
+  new {
+    id = "ci.flaker-effectiveness"
+    name = "flaker quarantine and fixtures stay effective"
+    description =
+      "Tighten flaker CI-time effectiveness: quarantine expiry, fixture coverage gaps, duckdb persistence. See GitHub issue #79."
+    tags { "ci"; "flaker"; "issue:79" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.ci-efficiency" }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Phase 2 stubs — remaining TODO buckets and issue-driven bugs reified as
+  // scenarios so TODO.md can collapse to a pkspec index. All draft.
+  // ---------------------------------------------------------------------------
+
+  // -- Additional CSS module baselines (TODO Now) ----------------------------
+  new {
+    id = "compat.css-color-baseline"
+    name = "css-color WPT module baseline is established"
+    description =
+      "Measure and pin a per-module pass-rate baseline for the css-color WPT module. Source: TODO Now (P0)."
+    tags { "wpt"; "css"; "baseline"; "todo:now" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.css-compat" }
+  }
+  new {
+    id = "compat.css-transforms-baseline"
+    name = "css-transforms WPT module baseline is established"
+    description =
+      "Measure and pin a per-module pass-rate baseline for the css-transforms WPT module. Source: TODO Now (P0)."
+    tags { "wpt"; "css"; "baseline"; "todo:now" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.css-compat" }
+  }
+  new {
+    id = "compat.css-pseudo-baseline"
+    name = "css-pseudo WPT module baseline is established"
+    description =
+      "Measure and pin a per-module pass-rate baseline for the css-pseudo WPT module (covers ::before / ::after content sizing residuals). Source: TODO Now (P0)."
+    tags { "wpt"; "css"; "baseline"; "todo:now" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.css-compat" }
+  }
+  new {
+    id = "compat.css-writing-modes-baseline"
+    name = "css-writing-modes WPT module baseline is established"
+    description =
+      "Measure and pin a per-module pass-rate baseline for the css-writing-modes WPT module. Source: TODO Now (P0)."
+    tags { "wpt"; "css"; "baseline"; "todo:now" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.css-compat" }
+  }
+  new {
+    id = "compat.css-ruby-baseline"
+    name = "css-ruby WPT module baseline is established"
+    description =
+      "Measure and pin a per-module pass-rate baseline for the css-ruby WPT module. Source: TODO Now (P0)."
+    tags { "wpt"; "css"; "baseline"; "todo:now" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.css-compat" }
+  }
+
+  // -- Browser shell controls (TODO Next) ------------------------------------
+  new {
+    id = "compat.browser-shell-form-controls"
+    name = "browser shell form control default actions match spec"
+    description =
+      "Close residuals in browser shell control default actions: select popup UI, blur-time change semantics, IME / selection / caret behaviour. Source: TODO Next (P1)."
+    tags { "dom"; "form-controls"; "ime"; "todo:next" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.dom-compat" }
+  }
+  new {
+    id = "compat.native-form-control-appearance"
+    name = "native form control appearance is policied"
+    description =
+      "Decide per-control whether select / button native appearance is masked in VRT or implemented as a paint target, then pin the chosen path. Source: TODO Next (P1)."
+    tags { "paint"; "form-controls"; "vrt"; "todo:next" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.paint-accuracy"; "goal.dom-compat" }
+    openQuestions {
+      "Which native controls (select, button, input[type=...]) become paint targets versus VRT-masked?"
+    }
+  }
+
+  // -- Paint accuracy: fixtures and real-world snapshots (TODO Next) --------
+  new {
+    id = "paint.real-world-snapshots"
+    name = "built-in real-world snapshots cover 3-5 pages"
+    description =
+      "Add 3-5 built-in real-world page snapshots and wire them into CI comparison so paint regressions on representative pages are observable. Source: TODO Next (P1)."
+    tags { "paint"; "vrt"; "fixtures"; "todo:next" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.paint-accuracy" }
+  }
+  new {
+    id = "paint.github-residual-diff"
+    name = "GitHub real-URL VRT residuals are reduced"
+    description =
+      "Reduce GitHub real-URL VRT residuals that survive --mask-assets: sticky nav, card border, list marker. Source: TODO Next (P1)."
+    tags { "paint"; "vrt"; "github"; "todo:next" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.paint-accuracy" }
+  }
+  new {
+    id = "compat.css-background-gradient-vrt"
+    name = "CSS gradient VRT fixture coverage is expanded"
+    description =
+      "Expand VRT fixtures for CSS background gradient and repeating-gradient so painter accuracy is measurable. Source: TODO Next (P1)."
+    tags { "css"; "paint"; "vrt"; "todo:next" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.css-compat"; "goal.paint-accuracy" }
+  }
+  new {
+    id = "paint.svg-logo-intrinsic"
+    name = "SVG logo intrinsic sizing has dedicated fixtures"
+    description =
+      "Separate SVG / logo intrinsic size and paint path from real-URL fixtures into dedicated reproducible fixtures. Source: TODO Next (P1)."
+    tags { "paint"; "svg"; "fixtures"; "todo:next" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.paint-accuracy" }
+  }
+  new {
+    id = "paint.browser-shell-fixture-expansion"
+    name = "browser shell fixtures grow toward real pages"
+    description =
+      "Expand browser shell fixtures toward real pages (article / dashboard / GitHub snapshot) with DOM mutation + repaint observation pinned. Source: TODO Next (P1)."
+    tags { "paint"; "vrt"; "browser-shell"; "todo:next" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.paint-accuracy" }
+  }
+
+  // -- Layout / paint bugs (issue-driven) ------------------------------------
+  new {
+    id = "bug.flexbox-min-width-justify"
+    name = "flexbox min_width with justify-content centers correctly"
+    description =
+      "Fix justify-content: center being a no-op when min_width is used instead of width on flex containers. See GitHub issue #2."
+    tags { "css"; "flexbox"; "bug"; "issue:2" }
+    severity = "minor"
+    reviewStatus = "draft"
+    contributes { "goal.css-compat" }
+  }
+  new {
+    id = "bug.inline-abspos-width-ahem"
+    name = "inline abspos text width matches Ahem"
+    description =
+      "Fix inline abspos text width estimation mismatch with Ahem font (position-absolute-in-inline-003/004). See GitHub issue #17."
+    tags { "css"; "inline"; "bug"; "issue:17" }
+    severity = "minor"
+    reviewStatus = "draft"
+    contributes { "goal.css-compat" }
+  }
+  new {
+    id = "bug.border-radius-paint"
+    name = "border-radius produces a pixel diff"
+    description =
+      "Removing border-radius should produce a pixel diff. Painter must render border-radius accurately for VRT detection. See GitHub issue #19."
+    tags { "paint"; "vrt"; "bug"; "issue:19" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.paint-accuracy" }
+  }
+  new {
+    id = "bug.flexbox-align-items"
+    name = "align-items on flex containers is reflected"
+    description =
+      "Removing align-items: center from a flex container must produce a pixel diff. See GitHub issue #22."
+    tags { "css"; "flexbox"; "bug"; "issue:22" }
+    severity = "minor"
+    reviewStatus = "draft"
+    contributes { "goal.css-compat"; "goal.paint-accuracy" }
+  }
+
+  // -- Diagnostic / Tools (issue-driven) -------------------------------------
+  new {
+    id = "diagnostic.css-rule-usage-tracking"
+    name = "CSS rule usage tracking identifies dead rules"
+    description =
+      "Track which CSS rules are matched and applied during rendering, then report unused or overridden rules. See GitHub issue #27."
+    tags { "diagnostic"; "css"; "api"; "issue:27" }
+    severity = "minor"
+    reviewStatus = "draft"
+    contributes { "goal.diagnostic-api" }
+  }
+  new {
+    id = "diagnostic.vrt-prescanner-tracker"
+    name = "VRT prescanner benchmark is tracked"
+    description =
+      "Use mizchi/vrt-harness CSS challenge benchmark as a continuous accuracy + speedup tracker for Crater's rendering work. See GitHub issue #29."
+    tags { "diagnostic"; "vrt"; "benchmark"; "issue:29" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.diagnostic-api"; "goal.paint-accuracy" }
+  }
+  new {
+    id = "tui.raster-image-display"
+    name = "TUI raster image display works for JPEG / PNG / GIF"
+    description =
+      "Make TUI raster image display robust for JPEG / PNG / GIF via kitty graphics or sixel fallback. SVG already works. See GitHub issue #16."
+    tags { "tui"; "paint"; "image"; "issue:16" }
+    severity = "minor"
+    reviewStatus = "draft"
+    contributes { "goal.paint-accuracy" }
+  }
+
+  // -- CI efficiency residuals -----------------------------------------------
+  new {
+    id = "ci.dead-module-detection"
+    name = "dead-module detection has documented methodology"
+    description =
+      "Document the dead-module sweep methodology and act on remaining cleanup candidates surfaced during pre-release boundary tightening. See GitHub issue #60."
+    tags { "ci"; "workspace"; "boundary"; "issue:60" }
+    severity = "minor"
+    reviewStatus = "draft"
+    contributes { "goal.ci-efficiency" }
+  }
+  new {
+    id = "ci.affected-required-check"
+    name = "affected pkfire gate is promoted or pinned"
+    description =
+      "Decide whether the affected pkfire job becomes a required check on PRs based on observed CI behaviour, and document fallback semantics for missing merge-base or push event.before. Source: TODO Backlog."
+    tags { "ci"; "pkfire"; "affected"; "todo:backlog" }
+    severity = "minor"
+    reviewStatus = "draft"
+    contributes { "goal.ci-efficiency" }
+  }
+  new {
+    id = "ci.flaker-vrt-harness-contract"
+    name = "vrt-harness consumer payload is wired to crater"
+    description =
+      "Wire the vrt-harness consumer payload to crater's stable identity contract (taskId + spec + filter + variant + optional shard), keeping VRT decision in crater and identity / summary in the shared contract. Upstream: mizchi/flaker#8."
+    tags { "ci"; "flaker"; "vrt-harness"; "todo:backlog" }
+    severity = "minor"
+    reviewStatus = "draft"
+    contributes { "goal.ci-efficiency"; "goal.paint-accuracy" }
   }
 }
