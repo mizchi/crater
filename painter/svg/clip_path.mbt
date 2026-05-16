@@ -13,7 +13,7 @@ pub(all) struct ClipPath {
 
 ///|
 pub fn ClipPath::new(id : String, shape : Shape) -> ClipPath {
-  clip_path_from_msvg(@msvg.ClipPath::new(id, shape_to_msvg(shape)))
+  ClipPath::from_msvg(@msvg.ClipPath::new(id, shape.to_msvg()))
 }
 
 ///|
@@ -22,10 +22,10 @@ pub fn ClipPath::with_transform(
   shape : Shape,
   transform : Transform,
 ) -> ClipPath {
-  clip_path_from_msvg(
+  ClipPath::from_msvg(
     @msvg.ClipPath::with_transform(
       id,
-      shape_to_msvg(shape),
+      shape.to_msvg(),
       transform.to_msvg(),
     ),
   )
@@ -34,7 +34,7 @@ pub fn ClipPath::with_transform(
 ///|
 /// Check if a point is inside the clip path
 pub fn ClipPath::contains(self : ClipPath, x : Double, y : Double) -> Bool {
-  clip_path_to_msvg(self).contains(x, y)
+  self.to_msvg().contains(x, y)
 }
 
 ///|
@@ -56,4 +56,25 @@ pub fn ClipPathRegistry::add(self : ClipPathRegistry, clip : ClipPath) -> Unit {
 ///|
 pub fn ClipPathRegistry::get(self : ClipPathRegistry, id : String) -> ClipPath? {
   self.clips.get(id)
+}
+
+///|
+fn ClipPath::from_msvg(clip : @msvg.ClipPath) -> ClipPath {
+  {
+    id: clip.id,
+    shape: Shape::from_msvg(clip.shape),
+    transform: Transform::from_msvg(clip.transform),
+    clip_rule: fill_rule_from_msvg(clip.clip_rule),
+  }
+}
+
+///|
+fn ClipPath::to_msvg(self : ClipPath) -> @msvg.ClipPath {
+  @msvg.ClipPath::{
+    id: self.id,
+    shape: self.shape.to_msvg(),
+    transform: self.transform.to_msvg(),
+    clip_rule: fill_rule_to_msvg(self.clip_rule),
+    units: @msvg.ClipPathUnits::UserSpaceOnUse,
+  }
 }

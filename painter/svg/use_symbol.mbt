@@ -13,7 +13,7 @@ pub(all) struct Symbol {
 
 ///|
 pub fn Symbol::new(id : String, content : SVGNode) -> Symbol {
-  symbol_from_msvg(@msvg.Symbol::new(id, svg_node_to_msvg(content)))
+  symbol_from_msvg(@msvg.Symbol::new(id, content.to_msvg()))
 }
 
 ///|
@@ -25,7 +25,7 @@ pub fn Symbol::with_viewbox(
   symbol_from_msvg(
     @msvg.Symbol::with_viewbox(
       id,
-      svg_node_to_msvg(content),
+      content.to_msvg(),
       view_box.to_msvg(),
     ),
   )
@@ -93,7 +93,7 @@ pub fn UseElement::instantiate(
 ) -> SVGNode? {
   match
     use_element_to_msvg(self).instantiate(symbol_registry_to_msvg(registry)) {
-    Some(node) => Some(svg_node_from_msvg(node))
+    Some(node) => Some(SVGNode::from_msvg(node))
     None => None
   }
 }

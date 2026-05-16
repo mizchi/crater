@@ -91,7 +91,7 @@ pub fn Tween::is_complete(self : Tween) -> Bool {
 /// Returns true if still running, false if complete
 pub fn Tween::update(self : Tween, dt : Double, node : SVGNode) -> Bool {
   let tween = self.to_msvg()
-  let msvg_node = svg_node_to_msvg(node)
+  let msvg_node = node.to_msvg()
   let running = tween.update(dt, msvg_node)
   self.sync_state_from_msvg(tween)
   node.sync_animation_state_from_msvg(msvg_node)

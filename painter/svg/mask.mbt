@@ -101,8 +101,8 @@ pub fn MaskRegistry::get(self : MaskRegistry, id : String) -> Mask? {
 ///|
 /// Get the mask region bounds for a given target bounds
 pub fn Mask::get_mask_bounds(self : Mask, target : BoundingBox) -> BoundingBox {
-  bounding_box_from_msvg(
-    mask_to_msvg(self).get_mask_bounds(bounding_box_to_msvg(target)),
+  BoundingBox::from_msvg(
+    mask_to_msvg(self).get_mask_bounds(target.to_msvg()),
   )
 }
 

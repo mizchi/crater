@@ -14,7 +14,7 @@ pub fn Scene::render_with_camera(
   camera : Camera,
 ) -> Unit {
   let scene = scene_to_msvg(self)
-  scene.render_with_camera(render_context_to_msvg(ctx), camera_to_msvg(camera))
+  scene.render_with_camera(render_context_to_msvg(ctx), camera.to_msvg())
   self.clear_dirty()
 }
 
@@ -49,7 +49,7 @@ pub fn Scene::render_with_viewbox_and_camera(
     render_context_to_msvg(ctx),
     viewbox.to_msvg(),
     preserve_aspect_ratio.to_msvg(),
-    camera_to_msvg(camera),
+    camera.to_msvg(),
   )
   self.clear_dirty()
 }
