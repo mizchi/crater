@@ -44,3 +44,12 @@ pub fn Scene::clear_dirty(self : Scene) -> Unit {
 pub fn Scene::get_root(self : Scene) -> SVGNode {
   self.root
 }
+
+///|
+fn Scene::sync_animation_state_from_msvg(
+  self : Scene,
+  source : @msvg.Scene,
+) -> Unit {
+  self.dirty = source.dirty
+  self.root.sync_animation_tree_state_from_msvg(source.root)
+}

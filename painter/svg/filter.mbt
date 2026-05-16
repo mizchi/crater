@@ -23,7 +23,11 @@ pub fn apply_blur(
   pixels : Array[Array[Color]],
   radius : Int,
 ) -> Array[Array[Color]] {
-  image_rows_from_msvg(@msvg.apply_blur(image_rows_to_msvg(pixels), radius))
+  @msvg.apply_blur(
+      pixels.map(fn(row) { row.map(fn(c) { c.to_msvg() }) }),
+      radius,
+    )
+    .map(fn(row) { row.map(Color::from_msvg) })
 }
 
 ///|
@@ -113,9 +117,9 @@ pub fn apply_drop_shadow(
   blur_radius : Int,
   shadow_color : Color,
 ) -> Image {
-  image_from_msvg(
+  Image::from_msvg(
     @msvg.apply_drop_shadow(
-      image_to_msvg(image),
+      image.to_msvg(),
       offset_x,
       offset_y,
       blur_radius,
@@ -127,7 +131,7 @@ pub fn apply_drop_shadow(
 ///|
 /// Apply a filter to an image (returns new image)
 pub fn apply_filter(image : Image, filter : Filter) -> Image {
-  image_from_msvg(
-    @msvg.apply_filter(image_to_msvg(image), filter_to_msvg(filter)),
+  Image::from_msvg(
+    @msvg.apply_filter(image.to_msvg(), filter_to_msvg(filter)),
   )
 }

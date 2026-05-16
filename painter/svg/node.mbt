@@ -110,3 +110,30 @@ pub fn SVGNode::clear_dirty(self : SVGNode) -> Unit {
 pub fn SVGNode::clone(self : SVGNode) -> SVGNode {
   svg_node_from_msvg(svg_node_to_msvg(self).clone())
 }
+
+///|
+fn SVGNode::sync_animation_state_from_msvg(
+  self : SVGNode,
+  source : @msvg.SVGNode,
+) -> Unit {
+  let current_color = Color::from_msvg_option(source.color)
+  self.transform = Transform::from_msvg(source.transform)
+  self.fill = paint_from_msvg(source.fill, current_color)
+  self.opacity = source.opacity
+}
+
+///|
+fn SVGNode::sync_animation_tree_state_from_msvg(
+  self : SVGNode,
+  source : @msvg.SVGNode,
+) -> Unit {
+  self.sync_animation_state_from_msvg(source)
+  let len = if self.children.length() < source.children.length() {
+    self.children.length()
+  } else {
+    source.children.length()
+  }
+  for i = 0; i < len; i = i + 1 {
+    self.children[i].sync_animation_tree_state_from_msvg(source.children[i])
+  }
+}

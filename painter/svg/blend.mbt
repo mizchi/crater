@@ -85,10 +85,10 @@ pub fn blend_images(
   source : Image,
   mode : BlendMode,
 ) -> Image {
-  image_from_msvg(
+  Image::from_msvg(
     @msvg.blend_images(
-      image_to_msvg(backdrop),
-      image_to_msvg(source),
+      backdrop.to_msvg(),
+      source.to_msvg(),
       blend_mode_to_msvg(mode),
     ),
   )
