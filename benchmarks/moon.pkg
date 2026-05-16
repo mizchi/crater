@@ -19,7 +19,7 @@ import {
 }
 
 import {
-  "mizchi/crater-layout/node" @node,
+  "mizchi/crater-core/node" @node,
 } for "wbtest"
 
 supported_targets = "js"

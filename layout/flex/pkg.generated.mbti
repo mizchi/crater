@@ -3,7 +3,7 @@ package "mizchi/crater-layout/flex"
 
 import {
   "mizchi/crater-core",
-  "mizchi/crater-layout/node",
+  "mizchi/crater-core/node",
   "mizchi/crater-layout/trace",
 }
 

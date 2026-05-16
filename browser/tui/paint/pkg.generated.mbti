@@ -4,7 +4,7 @@ package "mizchi/crater-browser/tui/paint"
 import {
   "mizchi/crater-browser/tui/paint/runtime",
   "mizchi/crater-core",
-  "mizchi/crater-layout/node",
+  "mizchi/crater-core/node",
   "mizchi/crater-painter/paint/model",
   "mizchi/crater-painter/paint/scroll",
 }

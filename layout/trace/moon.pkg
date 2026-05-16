@@ -1,5 +1,5 @@
 import {
-  "mizchi/crater-layout/node",
+  "mizchi/crater-core/node",
   "mizchi/crater-core" @types,
 }
 

@@ -3,7 +3,7 @@ package "mizchi/crater-browser/tui/paint/viewport"
 
 import {
   "mizchi/crater-core",
-  "mizchi/crater-layout/node",
+  "mizchi/crater-core/node",
   "mizchi/crater-painter/paint/model",
 }
 

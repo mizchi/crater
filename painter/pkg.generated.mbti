@@ -3,7 +3,7 @@ package "mizchi/crater-painter"
 
 import {
   "mizchi/crater-core",
-  "mizchi/crater-layout/node",
+  "mizchi/crater-core/node",
   "mizchi/crater-painter/paint/diff",
   "mizchi/crater-painter/paint/model",
   "mizchi/crater-painter/paint/scroll",
