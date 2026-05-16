@@ -17,6 +17,10 @@ testWptCss: pkfire.Task = new {
     "scripts/wpt-config.ts"
     "scripts/wpt-html-utils.ts"
     "scripts/wpt-runner.ts"
+    "scripts/test-wpt-module-baseline.sh"
+    "tests/wpt-baselines/**"
+    "tests/wpt-baseline.env"
+    "wpt.json"
     "wpt/css/**"
     "wpt/resources/**"
   }
