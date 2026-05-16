@@ -138,7 +138,7 @@ test "measure_word_width uses numeric font weight provider" {
 
 ///|
 test "glyph_provider_from_font exposes weight-aware font delegate" {
-  let provider = glyph_provider_from_font(static_test_ttfont())
+  let provider = @glyph.glyph_provider_from_font(static_test_ttfont())
   match provider.get_glyph_by_weight {
     Some(glyph_by_weight) => {
       let (_, advance) = glyph_by_weight('A'.to_int(), 100.0, 500.0)

@@ -6,13 +6,12 @@ import {
   "mizchi/crater-painter/paint/glyph",
   "mizchi/crater-core" @types,
   "mizchi/crater-painter/svg",
-  "mizchi/font" @font,
-  "mizchi/font/glyph_provider" @glyph_provider,
 }
+
+import {
+  "mizchi/font" @font,
+} for "wbtest"
 
 import {
   "mizchi/crater-core/style",
 } for "test"
-
-import {
-} for "wbtest"
