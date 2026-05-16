@@ -19,7 +19,6 @@ The current workspace members are:
 - `./webvitals`
 - `./http`
 - `./network`
-- `./http_sqlite`
 - `./css`
 - `./dom`
 - `./layout`
@@ -109,7 +108,6 @@ The intended direction is:
 | `mizchi/crater-browser-helpers` | Canonical library | Shared browser-facing render/AOM helper functions for shell and BiDi |
 | `mizchi/crater-browser-runtime` | Canonical library | Shared JS runtime contract and DOM serializer |
 | `mizchi/crater-network` | Canonical library | Protocol-neutral network state and byte/query encoding helpers |
-| `mizchi/crater-browser-http-sqlite` | Adapter | Optional JS-only SQLite cache backend for `mizchi/crater-browser-http` |
 | `mizchi/crater-browser` | Integration | Browser shell, interaction, TUI, network/cache integration |
 | `mizchi/crater-webdriver-bidi` | Adapter | WebDriver BiDi server / protocol adapter |
 | `mizchi/crater-browser-native` | Adapter | Native browser host bindings |
@@ -124,9 +122,8 @@ already extracted `mizchi/crater-core`, `mizchi/crater-layout`, `mizchi/crater-c
 `mizchi/crater-dom`, `mizchi/crater-aomx`, `mizchi/crater-benchmarks`,
 `mizchi/crater-browser-helpers`, `mizchi/crater-testing`,
 `mizchi/crater-webvitals`, `mizchi/crater-painter`, `mizchi/crater-renderer`,
-`mizchi/crater-browser-runtime`, `mizchi/crater-network`, and
-`mizchi/crater-browser-http-sqlite`. The browser-facing split is now underway
-in `mizchi/crater-browser`.
+`mizchi/crater-browser-runtime`, and `mizchi/crater-network`. The
+browser-facing split is now underway in `mizchi/crater-browser`.
 
 The old `mizchi/crater-browser/js` package remains only as a compatibility
 facade over the extracted runtime contract.
@@ -493,8 +490,7 @@ maintenance:
 
 1. keep CI and local recipes target-aware so root commands never rely on an
    implicit target
-2. keep `browser/native` smoke and full-test coverage separate, especially
-   around sqlite-backed packages
+2. keep `browser/native` smoke and full-test coverage separate
 3. document release and migration steps from the repo root so consumers can move
    from compatibility imports to direct module imports
 4. avoid reintroducing new runtime packages into the root integration layer

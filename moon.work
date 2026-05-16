@@ -9,7 +9,6 @@ members = [
   "./tools",
   "./webvitals",
   "./http",
-  "./http_sqlite",
   "./network",
   "./css",
   "./dom",

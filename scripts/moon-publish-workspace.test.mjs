@@ -58,7 +58,6 @@ test('default publish plan excludes internal modules and respects dependency ord
   assertBefore(names, 'mizchi/crater-renderer', 'mizchi/crater-browser-helpers')
   assertBefore(names, 'mizchi/crater-browser-runtime', 'mizchi/crater-browser')
   assertBefore(names, 'mizchi/crater-browser-helpers', 'mizchi/crater-webdriver-bidi')
-  assertBefore(names, 'mizchi/crater-browser-http', 'mizchi/crater-browser-http-sqlite')
   assertBefore(names, 'mizchi/crater-renderer', 'mizchi/crater')
   assertBefore(names, 'mizchi/crater-webvitals', 'mizchi/crater')
   assertBefore(names, 'mizchi/crater-js', 'mizchi/crater-wasm')
@@ -180,10 +179,10 @@ test('publish retries after registry propagation lag', () => {
   const errors = []
   const commands = [{
     module: {
-      name: 'mizchi/crater-browser-http-sqlite',
+      name: 'mizchi/crater-browser-helpers',
     },
-    args: ['publish', '--manifest-path', 'http_sqlite/moon.mod.json', '--frozen'],
-    command: 'moon publish --manifest-path http_sqlite/moon.mod.json --frozen',
+    args: ['publish', '--manifest-path', 'browser_helpers/moon.mod.json', '--frozen'],
+    command: 'moon publish --manifest-path browser_helpers/moon.mod.json --frozen',
   }]
   let publishAttempts = 0
 
@@ -207,7 +206,7 @@ test('publish retries after registry propagation lag', () => {
           status: 255,
           stdout: '',
           stderr:
-            'Error: Failed to resolve registry dependency `mizchi/crater-browser-http` for module `mizchi/crater-browser-http-sqlite`: module was not found in the registry\n',
+            'Error: Failed to resolve registry dependency `mizchi/crater-renderer` for module `mizchi/crater-browser-helpers`: module was not found in the registry\n',
         }
       }
       return {
@@ -220,9 +219,9 @@ test('publish retries after registry propagation lag', () => {
 
   assert.equal(exitCode, 0)
   assert.deepEqual(calls, [
-    'publish --manifest-path http_sqlite/moon.mod.json --frozen',
+    'publish --manifest-path browser_helpers/moon.mod.json --frozen',
     'update',
-    'publish --manifest-path http_sqlite/moon.mod.json --frozen',
+    'publish --manifest-path browser_helpers/moon.mod.json --frozen',
   ])
   assert.deepEqual(sleeps, [1234])
   assert.ok(

@@ -30,7 +30,6 @@ digraph crater_modules {
     mizchi_crater_browser_native [label="crater-browser-native"];
     mizchi_crater_browser_helpers [label="crater-browser-helpers"];
     mizchi_crater_browser_http [label="crater-browser-http"];
-    mizchi_crater_browser_http_sqlite [label="crater-browser-http-sqlite"];
     mizchi_crater_browser_runtime [label="crater-browser-runtime"];
   }
   subgraph cluster_Driver {
@@ -87,7 +86,6 @@ digraph crater_modules {
   mizchi_crater_dom -> mizchi_crater_core;
   mizchi_crater_dom -> mizchi_crater_css;
   mizchi_crater_dom -> mizchi_crater_layout;
-  mizchi_crater_browser_http_sqlite -> mizchi_crater_browser_http;
   mizchi_crater_js -> mizchi_crater_core;
   mizchi_crater_js -> mizchi_crater_aomx;
   mizchi_crater_js -> mizchi_crater_css;
