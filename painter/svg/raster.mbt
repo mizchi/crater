@@ -63,7 +63,7 @@ pub fn raster_line(
     y0,
     x1,
     y1,
-    color_to_msvg(color),
+    color.to_msvg(),
     pixel_setter_to_msvg(setter),
   )
 }
@@ -84,7 +84,7 @@ pub fn raster_line_dashed(
     y0,
     x1,
     y1,
-    color_to_msvg(color),
+    color.to_msvg(),
     dasharray,
     dashoffset,
     pixel_setter_to_msvg(setter),
@@ -101,7 +101,7 @@ pub fn raster_polyline_dashed(
 ) -> Unit {
   @msvg.raster_polyline_dashed(
     points,
-    color_to_msvg(color),
+    color.to_msvg(),
     dasharray,
     dashoffset,
     pixel_setter_to_msvg(setter),
@@ -122,7 +122,7 @@ pub fn raster_rect_stroke(
     y,
     w,
     h,
-    color_to_msvg(color),
+    color.to_msvg(),
     pixel_setter_to_msvg(setter),
   )
 }
@@ -141,7 +141,7 @@ pub fn raster_rect_fill(
     y,
     w,
     h,
-    color_to_msvg(color),
+    color.to_msvg(),
     pixel_setter_to_msvg(setter),
   )
 }
@@ -246,7 +246,7 @@ pub fn raster_rounded_rect_stroke(
     h,
     rx,
     ry,
-    color_to_msvg(color),
+    color.to_msvg(),
     pixel_setter_to_msvg(setter),
   )
 }
@@ -263,7 +263,7 @@ pub fn raster_circle_stroke(
     cx,
     cy,
     r,
-    color_to_msvg(color),
+    color.to_msvg(),
     pixel_setter_to_msvg(setter),
   )
 }
@@ -280,7 +280,7 @@ pub fn raster_circle_fill(
     cx,
     cy,
     r,
-    color_to_msvg(color),
+    color.to_msvg(),
     pixel_setter_to_msvg(setter),
   )
 }
@@ -299,7 +299,7 @@ pub fn raster_ellipse_stroke(
     cy,
     rx,
     ry,
-    color_to_msvg(color),
+    color.to_msvg(),
     pixel_setter_to_msvg(setter),
   )
 }
@@ -318,7 +318,7 @@ pub fn raster_ellipse_fill(
     cy,
     rx,
     ry,
-    color_to_msvg(color),
+    color.to_msvg(),
     pixel_setter_to_msvg(setter),
   )
 }
@@ -331,7 +331,7 @@ pub fn raster_polygon_fill(
 ) -> Unit {
   @msvg.raster_polygon_fill(
     points,
-    color_to_msvg(color),
+    color.to_msvg(),
     pixel_setter_to_msvg(setter),
   )
 }
@@ -344,7 +344,7 @@ pub fn raster_polygon_stroke(
 ) -> Unit {
   @msvg.raster_polygon_stroke(
     points,
-    color_to_msvg(color),
+    color.to_msvg(),
     pixel_setter_to_msvg(setter),
   )
 }
@@ -357,7 +357,7 @@ pub fn raster_polyline(
 ) -> Unit {
   @msvg.raster_polyline(
     points,
-    color_to_msvg(color),
+    color.to_msvg(),
     pixel_setter_to_msvg(setter),
   )
 }
@@ -378,7 +378,7 @@ pub fn raster_thick_line(
     x1,
     y1,
     thickness,
-    color_to_msvg(color),
+    color.to_msvg(),
     pixel_setter_to_msvg(setter),
   )
 }
@@ -397,7 +397,7 @@ pub fn raster_text(
     y,
     text,
     size,
-    color_to_msvg(color),
+    color.to_msvg(),
     pixel_setter_to_msvg(setter),
   )
 }

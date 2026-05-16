@@ -30,11 +30,11 @@ pub fn raster_path(
   @msvg.raster_path(
     path_commands_to_msvg(commands),
     match fill_color {
-      Some(color) => Some(color_to_msvg(color))
+      Some(color) => Some(color.to_msvg())
       None => None
     },
     match stroke_color {
-      Some(color) => Some(color_to_msvg(color))
+      Some(color) => Some(color.to_msvg())
       None => None
     },
     flatness,

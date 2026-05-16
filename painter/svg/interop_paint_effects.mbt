@@ -78,12 +78,12 @@ fn spread_method_to_msvg(spread : SpreadMethod) -> @msvg.SpreadMethod {
 
 ///|
 fn gradient_stop_from_msvg(stop : @msvg.GradientStop) -> GradientStop {
-  { offset: stop.offset, color: color_from_msvg(stop.color) }
+  { offset: stop.offset, color: Color::from_msvg(stop.color) }
 }
 
 ///|
 fn gradient_stop_to_msvg(stop : GradientStop) -> @msvg.GradientStop {
-  @msvg.GradientStop::{ offset: stop.offset, color: color_to_msvg(stop.color) }
+  @msvg.GradientStop::{ offset: stop.offset, color: stop.color.to_msvg() }
 }
 
 ///|
@@ -143,13 +143,13 @@ fn radial_gradient_to_msvg(grad : RadialGradient) -> @msvg.RadialGradient {
 ///|
 fn pixel_setter_to_msvg(setter : PixelSetter) -> @msvg.PixelSetter {
   @msvg.PixelSetter::{
-    set: fn(x, y, color) { setter.pixel(x, y, color_from_msvg(color)) },
+    set: fn(x, y, color) { setter.pixel(x, y, Color::from_msvg(color)) },
   }
 }
 
 ///|
 fn pixel_setter_from_msvg(setter : @msvg.PixelSetter) -> PixelSetter {
-  { set: fn(x, y, color) { setter.pixel(x, y, color_to_msvg(color)) } }
+  { set: fn(x, y, color) { setter.pixel(x, y, color.to_msvg()) } }
 }
 
 ///|
@@ -265,7 +265,7 @@ fn paint_fallback_from_msvg(
 ) -> Paint {
   match fallback {
     NoPaint => SolidColor(Color::black())
-    SolidColor(color) => SolidColor(color_from_msvg(color))
+    SolidColor(color) => SolidColor(Color::from_msvg(color))
     CurrentColor => SolidColor(current_color_or_black(current_color))
   }
 }
@@ -274,7 +274,7 @@ fn paint_fallback_from_msvg(
 fn paint_from_msvg(paint : @msvg.Paint, current_color : Color?) -> Paint {
   match paint {
     None => None
-    SolidColor(color) => SolidColor(color_from_msvg(color))
+    SolidColor(color) => SolidColor(Color::from_msvg(color))
     LinearGrad(grad) => LinearGrad(linear_gradient_from_msvg(grad))
     RadialGrad(grad) => RadialGrad(radial_gradient_from_msvg(grad))
     CurrentColor => SolidColor(current_color_or_black(current_color))
@@ -287,7 +287,7 @@ fn paint_from_msvg(paint : @msvg.Paint, current_color : Color?) -> Paint {
 fn paint_to_msvg(paint : Paint) -> @msvg.Paint {
   match paint {
     None => @msvg.Paint::None
-    SolidColor(color) => @msvg.Paint::SolidColor(color_to_msvg(color))
+    SolidColor(color) => @msvg.Paint::SolidColor(color.to_msvg())
     LinearGrad(grad) => @msvg.Paint::LinearGrad(linear_gradient_to_msvg(grad))
     RadialGrad(grad) => @msvg.Paint::RadialGrad(radial_gradient_to_msvg(grad))
   }
@@ -327,7 +327,7 @@ fn filter_from_msvg(filter : @msvg.Filter) -> Filter {
   match filter {
     Blur(value) => Blur(value)
     DropShadow(dx, dy, blur, color) =>
-      DropShadow(dx, dy, blur, color_from_msvg(color))
+      DropShadow(dx, dy, blur, Color::from_msvg(color))
     Brightness(value) => Brightness(value)
     Contrast(value) => Contrast(value)
     Grayscale(value) => Grayscale(value)
@@ -344,7 +344,7 @@ fn filter_to_msvg(filter : Filter) -> @msvg.Filter {
   match filter {
     Blur(value) => @msvg.Filter::Blur(value)
     DropShadow(dx, dy, blur, color) =>
-      @msvg.Filter::DropShadow(dx, dy, blur, color_to_msvg(color))
+      @msvg.Filter::DropShadow(dx, dy, blur, color.to_msvg())
     Brightness(value) => @msvg.Filter::Brightness(value)
     Contrast(value) => @msvg.Filter::Contrast(value)
     Grayscale(value) => @msvg.Filter::Grayscale(value)

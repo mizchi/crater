@@ -1,17 +1,9 @@
 ///|
-fn color_from_msvg_option(color : @msvg.Color?) -> Color? {
-  match color {
-    Some(c) => Some(color_from_msvg(c))
-    None => None
-  }
-}
-
-///|
 fn image_from_msvg(image : @msvg.Image) -> Image {
   {
     width: image.width,
     height: image.height,
-    pixels: image.pixels.map(color_from_msvg),
+    pixels: image.pixels.map(Color::from_msvg),
   }
 }
 
@@ -20,7 +12,7 @@ fn image_to_msvg(image : Image) -> @msvg.Image {
   @msvg.Image::{
     width: image.width,
     height: image.height,
-    pixels: image.pixels.map(color_to_msvg),
+    pixels: image.pixels.map(fn(c) { c.to_msvg() }),
   }
 }
 
@@ -32,7 +24,7 @@ fn copy_image_pixels_from_msvg(target : Image, source : @msvg.Image) -> Unit {
     source.pixels.length()
   }
   for i in 0..<len {
-    target.pixels[i] = color_from_msvg(source.pixels[i])
+    target.pixels[i] = Color::from_msvg(source.pixels[i])
   }
 }
 
@@ -40,12 +32,12 @@ fn copy_image_pixels_from_msvg(target : Image, source : @msvg.Image) -> Unit {
 fn image_rows_from_msvg(
   rows : Array[Array[@msvg.Color]],
 ) -> Array[Array[Color]] {
-  rows.map(fn(row) { row.map(color_from_msvg) })
+  rows.map(fn(row) { row.map(Color::from_msvg) })
 }
 
 ///|
 fn image_rows_to_msvg(rows : Array[Array[Color]]) -> Array[Array[@msvg.Color]] {
-  rows.map(fn(row) { row.map(color_to_msvg) })
+  rows.map(fn(row) { row.map(fn(c) { c.to_msvg() }) })
 }
 
 ///|
@@ -139,7 +131,7 @@ fn particle_from_msvg(particle : @msvg.Particle) -> Particle {
     life: particle.life,
     max_life: particle.max_life,
     size: particle.size,
-    color: color_from_msvg(particle.color),
+    color: Color::from_msvg(particle.color),
     active: particle.active,
   }
 }
@@ -154,7 +146,7 @@ fn particle_to_msvg(particle : Particle) -> @msvg.Particle {
     life: particle.life,
     max_life: particle.max_life,
     size: particle.size,
-    color: color_to_msvg(particle.color),
+    color: particle.color.to_msvg(),
     active: particle.active,
   }
 }
@@ -168,7 +160,7 @@ fn copy_particle_from_msvg(target : Particle, source : @msvg.Particle) -> Unit {
   target.life = source.life
   target.max_life = source.max_life
   target.size = source.size
-  target.color = color_from_msvg(source.color)
+  target.color = Color::from_msvg(source.color)
   target.active = source.active
 }
 
@@ -184,8 +176,8 @@ fn emitter_config_from_msvg(config : @msvg.EmitterConfig) -> EmitterConfig {
     angle_max: config.angle_max,
     size_start: config.size_start,
     size_end: config.size_end,
-    color_start: color_from_msvg(config.color_start),
-    color_end: color_from_msvg(config.color_end),
+    color_start: Color::from_msvg(config.color_start),
+    color_end: Color::from_msvg(config.color_end),
     gravity_x: config.gravity_x,
     gravity_y: config.gravity_y,
   }
@@ -203,8 +195,8 @@ fn emitter_config_to_msvg(config : EmitterConfig) -> @msvg.EmitterConfig {
     angle_max: config.angle_max,
     size_start: config.size_start,
     size_end: config.size_end,
-    color_start: color_to_msvg(config.color_start),
-    color_end: color_to_msvg(config.color_end),
+    color_start: config.color_start.to_msvg(),
+    color_end: config.color_end.to_msvg(),
     gravity_x: config.gravity_x,
     gravity_y: config.gravity_y,
   }
@@ -334,7 +326,7 @@ fn anim_property_to_msvg(property : AnimProperty) -> @msvg.AnimProperty {
     ScaleUniform(s) => @msvg.AnimProperty::ScaleUniform(s)
     Rotation(r) => @msvg.AnimProperty::Rotation(r)
     Opacity(o) => @msvg.AnimProperty::Opacity(o)
-    FillColor(color) => @msvg.AnimProperty::FillColor(color_to_msvg(color))
+    FillColor(color) => @msvg.AnimProperty::FillColor(color.to_msvg())
   }
 }
 
@@ -350,7 +342,7 @@ fn anim_property_from_msvg(property : @msvg.AnimProperty) -> AnimProperty {
     ScaleUniform(s) => ScaleUniform(s)
     Rotation(r) => Rotation(r)
     Opacity(o) => Opacity(o)
-    FillColor(color) => FillColor(color_from_msvg(color))
+    FillColor(color) => FillColor(Color::from_msvg(color))
   }
 }
 
@@ -395,8 +387,8 @@ fn copy_svg_node_animation_state_from_msvg(
   target : SVGNode,
   source : @msvg.SVGNode,
 ) -> Unit {
-  let current_color = color_from_msvg_option(source.color)
-  target.transform = transform_from_msvg(source.transform)
+  let current_color = Color::from_msvg_option(source.color)
+  target.transform = Transform::from_msvg(source.transform)
   target.fill = paint_from_msvg(source.fill, current_color)
   target.opacity = source.opacity
 }

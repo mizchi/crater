@@ -29,43 +29,43 @@ pub fn apply_blur(
 ///|
 /// Apply brightness filter to a color
 pub fn apply_brightness(color : Color, factor : Double) -> Color {
-  color_from_msvg(@msvg.apply_brightness(color_to_msvg(color), factor))
+  Color::from_msvg(@msvg.apply_brightness(color.to_msvg(), factor))
 }
 
 ///|
 /// Apply grayscale filter to a color
 pub fn apply_grayscale(color : Color, amount : Double) -> Color {
-  color_from_msvg(@msvg.apply_grayscale(color_to_msvg(color), amount))
+  Color::from_msvg(@msvg.apply_grayscale(color.to_msvg(), amount))
 }
 
 ///|
 /// Apply contrast filter to a color
 pub fn apply_contrast(color : Color, factor : Double) -> Color {
-  color_from_msvg(@msvg.apply_contrast(color_to_msvg(color), factor))
+  Color::from_msvg(@msvg.apply_contrast(color.to_msvg(), factor))
 }
 
 ///|
 /// Apply sepia filter to a color
 pub fn apply_sepia(color : Color, amount : Double) -> Color {
-  color_from_msvg(@msvg.apply_sepia(color_to_msvg(color), amount))
+  Color::from_msvg(@msvg.apply_sepia(color.to_msvg(), amount))
 }
 
 ///|
 /// Apply hue rotation to a color
 pub fn apply_hue_rotate(color : Color, angle_degrees : Double) -> Color {
-  color_from_msvg(@msvg.apply_hue_rotate(color_to_msvg(color), angle_degrees))
+  Color::from_msvg(@msvg.apply_hue_rotate(color.to_msvg(), angle_degrees))
 }
 
 ///|
 /// Apply invert filter to a color
 pub fn apply_invert(color : Color, amount : Double) -> Color {
-  color_from_msvg(@msvg.apply_invert(color_to_msvg(color), amount))
+  Color::from_msvg(@msvg.apply_invert(color.to_msvg(), amount))
 }
 
 ///|
 /// Apply saturate filter to a color
 pub fn apply_saturate(color : Color, factor : Double) -> Color {
-  color_from_msvg(@msvg.apply_saturate(color_to_msvg(color), factor))
+  Color::from_msvg(@msvg.apply_saturate(color.to_msvg(), factor))
 }
 
 ///|
@@ -77,7 +77,7 @@ pub fn apply_saturate(color : Color, factor : Double) -> Color {
 /// [A'] = [a30 a31 a32 a33 a34] [A]
 ///                              [1]
 pub fn apply_color_matrix(color : Color, matrix : FixedArray[Double]) -> Color {
-  color_from_msvg(@msvg.apply_color_matrix(color_to_msvg(color), matrix))
+  Color::from_msvg(@msvg.apply_color_matrix(color.to_msvg(), matrix))
 }
 
 ///|
@@ -119,7 +119,7 @@ pub fn apply_drop_shadow(
       offset_x,
       offset_y,
       blur_radius,
-      color_to_msvg(shadow_color),
+      shadow_color.to_msvg(),
     ),
   )
 }

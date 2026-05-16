@@ -9,5 +9,5 @@ pub fn parse_svg(svg_str : String) -> SVGNode? {
 
 ///|
 pub fn parse_transform(value : String) -> Transform {
-  transform_from_msvg(@msvg.parse_transform(value))
+  Transform::from_msvg(@msvg.parse_transform(value))
 }

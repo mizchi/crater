@@ -66,7 +66,7 @@ pub fn Marker::get_transform(
   angle : Double,
   stroke_width : Double,
 ) -> Transform {
-  transform_from_msvg(
+  Transform::from_msvg(
     marker_to_msvg(self).get_transform(x, y, angle, stroke_width),
   )
 }

@@ -19,15 +19,35 @@ pub fn PointerEvent::new(
   button : Int,
   target : String,
 ) -> PointerEvent {
-  pointer_event_from_msvg(@msvg.PointerEvent::new(x, y, button, target))
+  PointerEvent::from_msvg(@msvg.PointerEvent::new(x, y, button, target))
 }
 
 ///|
 /// Stop event propagation (prevent bubbling)
 pub fn PointerEvent::stop_propagation(self : PointerEvent) -> Unit {
-  let event = pointer_event_to_msvg(self)
+  let event = self.to_msvg()
   event.stop_propagation()
-  copy_pointer_event_state_from_msvg(self, event)
+  self.propagation_stopped = event.propagation_stopped
+}
+
+///|
+fn PointerEvent::from_msvg(e : @msvg.PointerEvent) -> PointerEvent {
+  {
+    x: e.x,
+    y: e.y,
+    button: e.button,
+    target: e.target,
+    propagation_stopped: e.propagation_stopped,
+  }
+}
+
+///|
+fn PointerEvent::to_msvg(self : PointerEvent) -> @msvg.PointerEvent {
+  let event = @msvg.PointerEvent::new(self.x, self.y, self.button, self.target)
+  if self.propagation_stopped {
+    event.stop_propagation()
+  }
+  event
 }
 
 ///|

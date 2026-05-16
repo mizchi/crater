@@ -75,5 +75,5 @@ pub fn Camera::screen_to_world(
 ///|
 /// Get transform matrix for this camera
 pub fn Camera::get_transform(self : Camera) -> Transform {
-  transform_from_msvg(camera_to_msvg(self).get_transform())
+  Transform::from_msvg(camera_to_msvg(self).get_transform())
 }

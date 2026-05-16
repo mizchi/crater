@@ -97,6 +97,50 @@ pub fn ViewBox::get_transform(
 }
 
 ///|
+/// Extract the root SVG viewBox with the shared SVG parser.
+pub fn extract_root_view_box(svg_text : String) -> ViewBox? {
+  match @msvg.parse_svg_document(svg_text) {
+    Some(doc) =>
+      match doc.root.view_box {
+        Some(view_box) => Some(ViewBox::from_msvg(view_box))
+        None => None
+      }
+    None => None
+  }
+}
+
+///|
+fn ViewBox::from_msvg(v : @msvg.ViewBox) -> ViewBox {
+  { min_x: v.min_x, min_y: v.min_y, width: v.width, height: v.height }
+}
+
+///|
+fn ViewBox::to_msvg(self : ViewBox) -> @msvg.ViewBox {
+  @msvg.ViewBox::{
+    min_x: self.min_x,
+    min_y: self.min_y,
+    width: self.width,
+    height: self.height,
+  }
+}
+
+///|
+fn ViewBox::from_msvg_option(v : @msvg.ViewBox?) -> ViewBox? {
+  match v {
+    Some(vb) => Some(ViewBox::from_msvg(vb))
+    None => None
+  }
+}
+
+///|
+fn ViewBox::to_msvg_option(v : ViewBox?) -> @msvg.ViewBox? {
+  match v {
+    Some(vb) => Some(vb.to_msvg())
+    None => None
+  }
+}
+
+///|
 fn Align::to_msvg(self : Align) -> @msvg.Align {
   match self {
     None => @msvg.Align::None

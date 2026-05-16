@@ -69,10 +69,10 @@ pub fn blend_with_mode(
   source : Color,
   mode : BlendMode,
 ) -> Color {
-  color_from_msvg(
+  Color::from_msvg(
     @msvg.blend_with_mode(
-      color_to_msvg(backdrop),
-      color_to_msvg(source),
+      backdrop.to_msvg(),
+      source.to_msvg(),
       blend_mode_to_msvg(mode),
     ),
   )
