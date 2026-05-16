@@ -74,8 +74,8 @@ fn Pattern::from_msvg(
     width: pattern.width,
     height: pattern.height,
     content,
-    pattern_units: pattern_units_from_msvg(pattern.pattern_units),
-    pattern_content_units: pattern_units_from_msvg(
+    pattern_units: PatternUnits::from_msvg(pattern.pattern_units),
+    pattern_content_units: PatternUnits::from_msvg(
       pattern.pattern_content_units,
     ),
     transform: Transform::from_msvg(pattern.transform),
@@ -89,10 +89,26 @@ fn Pattern::to_msvg(self : Pattern) -> @msvg.Pattern {
     width: self.width,
     height: self.height,
     content: self.content.map(fn(n) { n.to_msvg() }),
-    pattern_units: pattern_units_to_msvg(self.pattern_units),
-    pattern_content_units: pattern_units_to_msvg(self.pattern_content_units),
+    pattern_units: self.pattern_units.to_msvg(),
+    pattern_content_units: self.pattern_content_units.to_msvg(),
     transform: self.transform.to_msvg(),
     view_box: None,
     preserve_aspect_ratio: @msvg.PreserveAspectRatio::default(),
+  }
+}
+
+///|
+fn PatternUnits::from_msvg(units : @msvg.PatternUnits) -> PatternUnits {
+  match units {
+    UserSpaceOnUse => UserSpaceOnUse
+    ObjectBoundingBox => ObjectBoundingBox
+  }
+}
+
+///|
+fn PatternUnits::to_msvg(self : PatternUnits) -> @msvg.PatternUnits {
+  match self {
+    UserSpaceOnUse => @msvg.PatternUnits::UserSpaceOnUse
+    ObjectBoundingBox => @msvg.PatternUnits::ObjectBoundingBox
   }
 }

@@ -45,8 +45,8 @@ pub fn SVGNode::new(shape : Shape) -> SVGNode {
 /// Add a filter to the node
 pub fn SVGNode::add_filter(self : SVGNode, filter : Filter) -> Unit {
   let node = self.to_msvg()
-  node.add_filter(filter_to_msvg(filter))
-  copy_svg_node_effect_state_from_msvg(self, node)
+  node.add_filter(filter.to_msvg())
+  self.sync_effect_state_from_msvg(node)
 }
 
 ///|
@@ -54,7 +54,7 @@ pub fn SVGNode::add_filter(self : SVGNode, filter : Filter) -> Unit {
 pub fn SVGNode::clear_filters(self : SVGNode) -> Unit {
   let node = self.to_msvg()
   node.clear_filters()
-  copy_svg_node_effect_state_from_msvg(self, node)
+  self.sync_effect_state_from_msvg(node)
 }
 
 ///|
@@ -62,7 +62,7 @@ pub fn SVGNode::clear_filters(self : SVGNode) -> Unit {
 pub fn SVGNode::set_mask(self : SVGNode, mask_id : String) -> Unit {
   let node = self.to_msvg()
   node.set_mask(mask_id)
-  copy_svg_node_effect_state_from_msvg(self, node)
+  self.sync_effect_state_from_msvg(node)
 }
 
 ///|
@@ -70,7 +70,7 @@ pub fn SVGNode::set_mask(self : SVGNode, mask_id : String) -> Unit {
 pub fn SVGNode::clear_mask(self : SVGNode) -> Unit {
   let node = self.to_msvg()
   node.clear_mask()
-  copy_svg_node_effect_state_from_msvg(self, node)
+  self.sync_effect_state_from_msvg(node)
 }
 
 ///|
@@ -78,7 +78,7 @@ pub fn SVGNode::clear_mask(self : SVGNode) -> Unit {
 pub fn SVGNode::set_clip_path(self : SVGNode, clip_path_id : String) -> Unit {
   let node = self.to_msvg()
   node.set_clip_path(clip_path_id)
-  copy_svg_node_effect_state_from_msvg(self, node)
+  self.sync_effect_state_from_msvg(node)
 }
 
 ///|
@@ -86,7 +86,7 @@ pub fn SVGNode::set_clip_path(self : SVGNode, clip_path_id : String) -> Unit {
 pub fn SVGNode::clear_clip_path(self : SVGNode) -> Unit {
   let node = self.to_msvg()
   node.clear_clip_path()
-  copy_svg_node_effect_state_from_msvg(self, node)
+  self.sync_effect_state_from_msvg(node)
 }
 
 ///|
@@ -94,7 +94,7 @@ pub fn SVGNode::clear_clip_path(self : SVGNode) -> Unit {
 pub fn SVGNode::mark_dirty(self : SVGNode) -> Unit {
   let node = self.to_msvg()
   node.mark_dirty()
-  copy_svg_node_effect_state_from_msvg(self, node)
+  self.sync_effect_state_from_msvg(node)
 }
 
 ///|
@@ -102,7 +102,7 @@ pub fn SVGNode::mark_dirty(self : SVGNode) -> Unit {
 pub fn SVGNode::clear_dirty(self : SVGNode) -> Unit {
   let node = self.to_msvg()
   node.clear_dirty()
-  copy_svg_node_effect_state_from_msvg(self, node)
+  self.sync_effect_state_from_msvg(node)
 }
 
 ///|
@@ -118,7 +118,7 @@ fn SVGNode::sync_animation_state_from_msvg(
 ) -> Unit {
   let current_color = Color::from_msvg_option(source.color)
   self.transform = Transform::from_msvg(source.transform)
-  self.fill = paint_from_msvg(source.fill, current_color)
+  self.fill = Paint::from_msvg(source.fill, current_color)
   self.opacity = source.opacity
 }
 
@@ -127,10 +127,10 @@ fn SVGNode::to_msvg(self : SVGNode) -> @msvg.SVGNode {
   let node = @msvg.SVGNode::new(self.shape.to_msvg())
   node.id = self.id
   node.transform = self.transform.to_msvg()
-  node.fill = paint_to_msvg(self.fill)
-  node.fill_rule = fill_rule_to_msvg(self.fill_rule)
+  node.fill = self.fill.to_msvg()
+  node.fill_rule = self.fill_rule.to_msvg()
   node.fill_opacity = self.fill_opacity
-  node.stroke = stroke_style_to_msvg(self.stroke)
+  node.stroke = self.stroke.to_msvg()
   node.stroke_opacity = self.stroke_opacity
   node.opacity = self.opacity
   node.z_index = self.z_index
@@ -139,7 +139,7 @@ fn SVGNode::to_msvg(self : SVGNode) -> @msvg.SVGNode {
     Some(bbox) => Some(bbox.to_msvg())
     None => None
   }
-  node.filters = self.filters.map(filter_to_msvg)
+  node.filters = self.filters.map(fn(f) { f.to_msvg() })
   node.mask_id = self.mask_id
   node.clip_path_id = self.clip_path_id
   for child in self.children {
@@ -154,16 +154,16 @@ fn SVGNode::from_msvg(source : @msvg.SVGNode) -> SVGNode {
   let node = SVGNode::new(Shape::from_msvg(source.shape))
   node.id = source.id
   node.transform = Transform::from_msvg(source.transform)
-  node.fill = paint_from_msvg(source.fill, current_color)
-  node.fill_rule = fill_rule_from_msvg(source.fill_rule)
+  node.fill = Paint::from_msvg(source.fill, current_color)
+  node.fill_rule = FillRule::from_msvg(source.fill_rule)
   node.fill_opacity = source.fill_opacity
-  node.stroke = stroke_style_from_msvg(source.stroke, current_color)
+  node.stroke = StrokeStyle::from_msvg(source.stroke, current_color)
   node.stroke_opacity = source.stroke_opacity
   node.opacity = source.opacity
   node.z_index = source.z_index
   node.node_dirty = source.node_dirty
   node.prev_bounds = BoundingBox::from_msvg_option(source.prev_bounds)
-  node.filters = source.filters.map(filter_from_msvg)
+  node.filters = source.filters.map(Filter::from_msvg)
   node.mask_id = source.mask_id
   node.clip_path_id = source.clip_path_id
   for child in source.children {
@@ -186,4 +186,48 @@ fn SVGNode::sync_animation_tree_state_from_msvg(
   for i = 0; i < len; i = i + 1 {
     self.children[i].sync_animation_tree_state_from_msvg(source.children[i])
   }
+}
+
+///|
+fn SVGNode::sync_dirty_state_from_msvg(
+  self : SVGNode,
+  source : @msvg.SVGNode,
+) -> Unit {
+  self.node_dirty = source.node_dirty
+  self.prev_bounds = BoundingBox::from_msvg_option(source.prev_bounds)
+  let len = if self.children.length() < source.children.length() {
+    self.children.length()
+  } else {
+    source.children.length()
+  }
+  for i = 0; i < len; i = i + 1 {
+    self.children[i].sync_dirty_state_from_msvg(source.children[i])
+  }
+}
+
+///|
+fn SVGNode::sync_z_order_state_from_msvg(
+  self : SVGNode,
+  source : @msvg.SVGNode,
+) -> Unit {
+  self.z_index = source.z_index
+  let len = if self.children.length() < source.children.length() {
+    self.children.length()
+  } else {
+    source.children.length()
+  }
+  for i = 0; i < len; i = i + 1 {
+    self.children[i].sync_z_order_state_from_msvg(source.children[i])
+  }
+}
+
+///|
+fn SVGNode::sync_effect_state_from_msvg(
+  self : SVGNode,
+  source : @msvg.SVGNode,
+) -> Unit {
+  self.filters = source.filters.map(Filter::from_msvg)
+  self.mask_id = source.mask_id
+  self.clip_path_id = source.clip_path_id
+  self.node_dirty = source.node_dirty
 }

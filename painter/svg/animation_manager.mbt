@@ -69,7 +69,7 @@ pub fn AnimationManager::update(
   scene : Scene,
 ) -> Bool {
   let manager = self.to_msvg()
-  let msvg_scene = scene_to_msvg(scene)
+  let msvg_scene = scene.to_msvg()
   let any_running = manager.update(dt, msvg_scene)
   self.sync_state_from_msvg(manager)
   scene.sync_animation_state_from_msvg(msvg_scene)
