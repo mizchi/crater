@@ -4,7 +4,7 @@ package "mizchi/crater-browser/tui"
 import {
   "mizchi/crater-browser/tui/primitives",
   "mizchi/crater-core",
-  "mizchi/crater-layout/node",
+  "mizchi/crater-core/node",
   "mizchi/crater-painter/paint/scroll",
   "moonbitlang/core/debug",
 }

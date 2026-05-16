@@ -101,7 +101,6 @@ digraph crater_modules {
   mizchi_crater -> mizchi_crater_painter;
   mizchi_crater -> mizchi_crater_renderer;
   mizchi_crater_painter -> mizchi_crater_core;
-  mizchi_crater_painter -> mizchi_crater_layout;
   mizchi_crater_painter -> mizchi_crater_terminal_protocol;
   mizchi_crater_renderer -> mizchi_crater_core;
   mizchi_crater_renderer -> mizchi_crater_css;

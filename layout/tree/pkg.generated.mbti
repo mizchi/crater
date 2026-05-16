@@ -3,8 +3,8 @@ package "mizchi/crater-layout/tree"
 
 import {
   "mizchi/crater-core",
+  "mizchi/crater-core/node",
   "mizchi/crater-core/style",
-  "mizchi/crater-layout/node",
   "moonbitlang/core/debug",
   "moonbitlang/core/hashset",
 }

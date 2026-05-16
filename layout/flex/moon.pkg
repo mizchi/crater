@@ -3,7 +3,7 @@ import {
   "mizchi/crater-layout/core",
   "mizchi/crater-core" @types,
   "mizchi/crater-core/style",
-  "mizchi/crater-layout/node",
+  "mizchi/crater-core/node",
   "mizchi/crater-layout/absolute",
   "mizchi/crater-layout/alignment",
   "mizchi/crater-layout/baseline",

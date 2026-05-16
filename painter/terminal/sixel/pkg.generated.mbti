@@ -3,7 +3,7 @@ package "mizchi/crater-painter/terminal/sixel"
 
 import {
   "mizchi/crater-core",
-  "mizchi/crater-layout/node",
+  "mizchi/crater-core/node",
   "mizchi/crater-painter/paint/model",
   "mizchi/crater-painter/paint/raster",
   "mizchi/crater-painter/svg",

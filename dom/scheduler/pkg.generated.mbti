@@ -3,10 +3,10 @@ package "mizchi/crater-dom/scheduler"
 
 import {
   "mizchi/crater-core",
+  "mizchi/crater-core/node",
   "mizchi/crater-css/cascade",
   "mizchi/crater-css/selector",
   "mizchi/crater-dom/html",
-  "mizchi/crater-layout/node",
   "mizchi/crater-layout/tree",
   "moonbitlang/core/debug",
   "moonbitlang/core/hashset",

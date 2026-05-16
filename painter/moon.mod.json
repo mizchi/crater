@@ -6,10 +6,6 @@
       "path": "../core",
       "version": "0.17.1"
     },
-    "mizchi/crater-layout": {
-      "path": "../layout",
-      "version": "0.17.1"
-    },
     "mizchi/crater-terminal-protocol": {
       "path": "../terminal_protocol",
       "version": "0.17.1"
