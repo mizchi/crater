@@ -2,8 +2,8 @@
 package "mizchi/crater-painter/paint/model"
 
 import {
-  "mizchi/crater-core/style",
-  "mizchi/crater-core/values",
+  "mizchi/css/style",
+  "mizchi/css/values",
 }
 
 // Values

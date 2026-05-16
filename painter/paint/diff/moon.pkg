@@ -1,6 +1,6 @@
 import {
   "mizchi/crater-painter/paint/model" @model,
-  "mizchi/crater-core/values" @types,
+  "mizchi/css/values" @types,
 }
 
 import {

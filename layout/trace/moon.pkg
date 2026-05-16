@@ -4,9 +4,9 @@ import {
 }
 
 import {
-  "mizchi/crater-core/style",
+  "mizchi/css/style",
   "mizchi/crater-layout/flex",
-  "mizchi/crater-core/values" @types,
+  "mizchi/css/values" @types,
 } for "test"
 
 import {

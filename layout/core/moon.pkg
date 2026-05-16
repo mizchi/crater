@@ -1,5 +1,5 @@
 import {
-  "mizchi/crater-core/values" @types,
+  "mizchi/css/values" @types,
   "mizchi/layout/kernel" @layout_kernel,
   "mizchi/layout/types" @lt,
 }

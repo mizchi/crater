@@ -2,9 +2,9 @@
 package "mizchi/crater-dom/layout/html_bridge"
 
 import {
-  "mizchi/crater-css/cascade",
   "mizchi/crater-dom/html",
   "mizchi/crater-layout/tree",
+  "mizchi/css/cascade",
 }
 
 // Values

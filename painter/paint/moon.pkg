@@ -7,15 +7,15 @@ import {
   "mizchi/crater-painter/paint/model" @paint_model,
   "mizchi/crater-core" @layout_types,
   "mizchi/crater-core/node" @node,
-  "mizchi/crater-core/values" @types,
+  "mizchi/css/values" @types,
 }
 
 import {
-  "mizchi/crater-core/style",
+  "mizchi/css/style",
 } for "test"
 
 import {
-  "mizchi/crater-core/style",
+  "mizchi/css/style",
   "moonbitlang/core/bench",
 } for "wbtest"
 

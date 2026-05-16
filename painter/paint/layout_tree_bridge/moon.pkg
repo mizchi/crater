@@ -1,6 +1,6 @@
 import {
   "mizchi/crater-painter/paint/model" @model,
-  "mizchi/crater-core/style",
+  "mizchi/css/style",
   "mizchi/crater-core" @layout_types,
 }
 
@@ -8,5 +8,5 @@ import {
 } for "wbtest"
 
 import {
-  "mizchi/crater-core/values" @types,
+  "mizchi/css/values" @types,
 } for "test"

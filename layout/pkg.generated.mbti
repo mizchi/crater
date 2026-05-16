@@ -4,9 +4,9 @@ package "mizchi/crater-layout"
 import {
   "mizchi/crater-core",
   "mizchi/crater-core/node",
-  "mizchi/crater-core/style",
-  "mizchi/crater-core/values",
   "mizchi/crater-layout/tree",
+  "mizchi/css/style",
+  "mizchi/css/values",
 }
 
 // Values

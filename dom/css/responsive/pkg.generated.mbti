@@ -2,7 +2,7 @@
 package "mizchi/crater-dom/css/responsive"
 
 import {
-  "mizchi/crater-css/selector",
+  "mizchi/css/selector",
   "moonbitlang/core/debug",
 }
 

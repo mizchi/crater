@@ -2,8 +2,8 @@
 package "mizchi/crater-layout/alignment"
 
 import {
-  "mizchi/crater-core/values",
   "mizchi/crater-layout/core",
+  "mizchi/css/values",
 }
 
 // Values
