@@ -1,6 +1,8 @@
 import {
   "mizchi/crater-browser/cdp",
   "mizchi/crater-browser-http" @http,
+  "mizchi/crater-browser-http/cache" @http_cache,
+  "mizchi/crater-browser-http/cookie_jar" @http_cookie_jar,
   "mizchi/crater-browser-runtime" @js,
   "mizchi/crater-browser/shell",
   "mizchi/crater-dom/dom",

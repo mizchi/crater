@@ -14,7 +14,7 @@ async fn fetch_external_css(
   html : String,
   base_url : String,
   sandbox : @http.RequestSandbox,
-  cache : @http.MemoryCacheBackend,
+  cache : @http_cache.MemoryCacheBackend,
 ) -> Array[String] {
   // Use lightweight extraction instead of full DOM parsing
   let stylesheet_links = @html.extract_stylesheet_links(html)
@@ -36,7 +36,7 @@ async fn fetch_external_css(
         origin: base_url,
         sandbox,
       }
-      let response = @http.cached_fetch_async(
+      let response = @http_cache.cached_fetch_async(
         url=css_url,
         options~,
         cache~,

@@ -1,0 +1,40 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-browser-http/cookie_jar"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn parse_set_cookie(String, String, String) -> ParsedCookie?
+
+// Errors
+
+// Types and methods
+pub struct CookieJar {
+  cookies : Array[ParsedCookie]
+  enabled : Bool
+}
+pub fn CookieJar::clear(Self) -> Unit
+pub fn CookieJar::get_cookie_header(Self, String, Bool, Bool, site_origin? : String, is_top_level_navigation? : Bool) -> String?
+pub fn CookieJar::new(enabled? : Bool) -> Self
+pub fn CookieJar::size(Self) -> Int
+pub fn CookieJar::store_from_header(Self, String, String, Bool) -> Unit
+
+pub(all) struct ParsedCookie {
+  name : String
+  value : String
+  domain : String
+  path : String
+  secure : Bool
+  http_only : Bool
+  same_site : String
+  max_age : Int?
+  expires : String?
+} derive(@debug.Debug)
+pub impl Show for ParsedCookie
+
+// Type aliases
+
+// Traits
+

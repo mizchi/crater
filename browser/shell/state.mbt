@@ -193,9 +193,9 @@ struct Browser {
   /// Visible kitty placements from the previous text render
   mut kitty_visible_placements : Map[String, KittyPlacement]
   /// HTTP cache for static assets (CSS, images, scripts, fonts)
-  http_cache : @http.MemoryCacheBackend
+  http_cache : @http_cache.MemoryCacheBackend
   /// Cookie jar (disabled by default for security)
-  mut cookie_jar : @http.CookieJar
+  mut cookie_jar : @http_cookie_jar.CookieJar
 }
 
 ///|
@@ -264,7 +264,7 @@ pub fn Browser::new(
     image_cache: @terminal_image_cache.ImageCache::new(),
     kitty_uploaded_image_ids: {},
     kitty_visible_placements: {},
-    http_cache: @http.MemoryCacheBackend::new(max_entries=1000),
-    cookie_jar: @http.CookieJar::new(), // disabled by default
+    http_cache: @http_cache.MemoryCacheBackend::new(max_entries=1000),
+    cookie_jar: @http_cookie_jar.CookieJar::new(), // disabled by default
   }
 }

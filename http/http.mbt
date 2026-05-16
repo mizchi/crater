@@ -9,7 +9,7 @@ pub(all) struct HttpResponse {
 ///|
 /// HTTP Error types
 #warnings("-unused_constructor")
-pub suberror HttpError {
+pub(all) suberror HttpError {
   NetworkError(String)
   InvalidUrl(String)
   TimeoutError
@@ -232,7 +232,7 @@ fn prepare_fetch_options(
 }
 
 ///|
-fn get_header(headers : Map[String, String], name : String) -> String? {
+pub fn get_header(headers : Map[String, String], name : String) -> String? {
   let key = name.to_lower()
   if headers.contains(key) {
     headers.get(key)
@@ -297,7 +297,7 @@ fn filter_cors_headers(
 ///|
 /// Enforce CORS based on response headers
 #warnings("-unused_value")
-fn enforce_cors_response(
+pub fn enforce_cors_response(
   url : String,
   options : FetchOptions,
   response : HttpResponse,

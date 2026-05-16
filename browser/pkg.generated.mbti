@@ -3,6 +3,8 @@ package "mizchi/crater-browser"
 
 import {
   "mizchi/crater-browser-http",
+  "mizchi/crater-browser-http/cache",
+  "mizchi/crater-browser-http/cookie_jar",
   "mizchi/crater-browser-runtime",
   "mizchi/crater-browser/cdp",
   "mizchi/crater-browser/shell",
@@ -29,9 +31,9 @@ pub using @crater-browser-runtime {type AsyncExecutionMode}
 
 pub using @shell {type Browser}
 
-pub using @crater-browser-http {type CacheDirectives}
+pub using @cache {type CacheDirectives}
 
-pub using @crater-browser-http {type CacheEntry}
+pub using @cache {type CacheEntry}
 
 pub using @cdp {type CdpBoxModel}
 
@@ -65,7 +67,7 @@ pub using @cdp {type CdpResponseError}
 
 pub using @cdp {type CdpSession}
 
-pub using @crater-browser-http {type CookieJar}
+pub using @cookie_jar {type CookieJar}
 
 pub using @crater-browser-http {type CredentialsMode}
 
@@ -81,13 +83,13 @@ pub using @crater-browser-runtime {type JsContext}
 
 pub using @crater-browser-runtime {type JsResult}
 
-pub using @crater-browser-http {type MemoryCacheBackend}
+pub using @cache {type MemoryCacheBackend}
 
 pub using @shell {type OutputMode}
 
 pub using @cdp {type PageDomain}
 
-pub using @crater-browser-http {type ParsedCookie}
+pub using @cookie_jar {type ParsedCookie}
 
 pub using @crater-browser-http {type RequestMode}
 

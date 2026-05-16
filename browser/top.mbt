@@ -26,17 +26,22 @@ pub using @cdp {
 
 ///|
 pub using @http {
-  type CacheDirectives,
-  type CacheEntry,
-  type CookieJar,
   type CredentialsMode,
   type FetchOptions,
   type HttpResponse,
-  type MemoryCacheBackend,
-  type ParsedCookie,
   type RequestMode,
   type RequestSandbox,
 }
+
+///|
+pub using @http_cache {
+  type CacheDirectives,
+  type CacheEntry,
+  type MemoryCacheBackend,
+}
+
+///|
+pub using @http_cookie_jar {type CookieJar, type ParsedCookie}
 
 ///|
 pub using @js {

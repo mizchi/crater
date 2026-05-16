@@ -206,8 +206,8 @@ test "cached_fetch: miss then hit" {
   let log : Array[String] = []
   let fetcher = fn(
     url : String,
-    _options : FetchOptions,
-  ) -> HttpResponse raise HttpError {
+    _options : @http.FetchOptions,
+  ) -> @http.HttpResponse raise @http.HttpError {
     log.push(url)
     {
       status: 200,
@@ -215,7 +215,7 @@ test "cached_fetch: miss then hit" {
       body: ".h1{color:red}",
     }
   }
-  let opts = FetchOptions::default()
+  let opts = @http.FetchOptions::default()
   let r1 = cached_fetch(
     url="https://example.com/style.css",
     options=opts,
@@ -239,14 +239,14 @@ test "cached_fetch: no-store skips cache" {
   let cache = MemoryCacheBackend::new(max_entries=10)
   let fetcher = fn(
     url : String,
-    _options : FetchOptions,
-  ) -> HttpResponse raise HttpError {
+    _options : @http.FetchOptions,
+  ) -> @http.HttpResponse raise @http.HttpError {
     let _ = url
     { status: 200, headers: { "cache-control": "no-store" }, body: "body" }
   }
   let _ = cached_fetch(
     url="https://example.com/ns.css",
-    options=FetchOptions::default(),
+    options=@http.FetchOptions::default(),
     cache~,
     fetcher~,
   )
@@ -269,13 +269,13 @@ test "cached_fetch: stale with etag sends conditional request" {
   cache.store(stale)
   let fetcher = fn(
     _url : String,
-    _options : FetchOptions,
-  ) -> HttpResponse raise HttpError {
+    _options : @http.FetchOptions,
+  ) -> @http.HttpResponse raise @http.HttpError {
     { status: 304, headers: {}, body: "" }
   }
   let r = cached_fetch(
     url="https://example.com/old.css",
-    options=FetchOptions::default(),
+    options=@http.FetchOptions::default(),
     cache~,
     fetcher~,
   )
@@ -288,15 +288,18 @@ test "cached_fetch: non-GET bypasses cache" {
   let cache = MemoryCacheBackend::new(max_entries=10)
   let fetcher = fn(
     _url : String,
-    _options : FetchOptions,
-  ) -> HttpResponse raise HttpError {
+    _options : @http.FetchOptions,
+  ) -> @http.HttpResponse raise @http.HttpError {
     {
       status: 200,
       headers: { "cache-control": "max-age=3600" },
       body: "response",
     }
   }
-  let opts : FetchOptions = { ..FetchOptions::default(), http_method: "POST" }
+  let opts : @http.FetchOptions = {
+    ..@http.FetchOptions::default(),
+    http_method: "POST",
+  }
   let _ = cached_fetch(
     url="https://example.com/api",
     options=opts,
@@ -370,8 +373,8 @@ test "cached_fetch: 404 response is not cached" {
   let cache = MemoryCacheBackend::new(max_entries=10)
   let fetcher = fn(
     _url : String,
-    _options : FetchOptions,
-  ) -> HttpResponse raise HttpError {
+    _options : @http.FetchOptions,
+  ) -> @http.HttpResponse raise @http.HttpError {
     {
       status: 404,
       headers: { "cache-control": "max-age=300" },
@@ -380,7 +383,7 @@ test "cached_fetch: 404 response is not cached" {
   }
   let _ = cached_fetch(
     url="https://example.com/missing",
-    options=FetchOptions::default(),
+    options=@http.FetchOptions::default(),
     cache~,
     fetcher~,
   )
@@ -392,13 +395,13 @@ test "cached_fetch: 500 response is not cached" {
   let cache = MemoryCacheBackend::new(max_entries=10)
   let fetcher = fn(
     _url : String,
-    _options : FetchOptions,
-  ) -> HttpResponse raise HttpError {
+    _options : @http.FetchOptions,
+  ) -> @http.HttpResponse raise @http.HttpError {
     { status: 500, headers: {}, body: "error" }
   }
   let _ = cached_fetch(
     url="https://example.com/err",
-    options=FetchOptions::default(),
+    options=@http.FetchOptions::default(),
     cache~,
     fetcher~,
   )
@@ -410,8 +413,8 @@ test "cached_fetch: 301 response is cached" {
   let cache = MemoryCacheBackend::new(max_entries=10)
   let fetcher = fn(
     _url : String,
-    _options : FetchOptions,
-  ) -> HttpResponse raise HttpError {
+    _options : @http.FetchOptions,
+  ) -> @http.HttpResponse raise @http.HttpError {
     {
       status: 301,
       headers: {
@@ -423,7 +426,7 @@ test "cached_fetch: 301 response is cached" {
   }
   let _ = cached_fetch(
     url="https://example.com/old",
-    options=FetchOptions::default(),
+    options=@http.FetchOptions::default(),
     cache~,
     fetcher~,
   )
@@ -448,14 +451,14 @@ test "cached_fetch: no-cache forces revalidation even when entry exists" {
   let log : Array[String] = []
   let fetcher = fn(
     url : String,
-    _options : FetchOptions,
-  ) -> HttpResponse raise HttpError {
+    _options : @http.FetchOptions,
+  ) -> @http.HttpResponse raise @http.HttpError {
     log.push(url)
     { status: 304, headers: {}, body: "" }
   }
   let r = cached_fetch(
     url="https://example.com/nc.css",
-    options=FetchOptions::default(),
+    options=@http.FetchOptions::default(),
     cache~,
     fetcher~,
   )
@@ -549,13 +552,13 @@ test "cache attack: stale revalidation with 500 should not poison cache" {
   // Attacker causes server to return 500 during revalidation
   let fetcher = fn(
     _url : String,
-    _options : FetchOptions,
-  ) -> HttpResponse raise HttpError {
+    _options : @http.FetchOptions,
+  ) -> @http.HttpResponse raise @http.HttpError {
     { status: 500, headers: {}, body: "attacker-controlled-error" }
   }
   let r = cached_fetch(
     url="https://victim.test/api.js",
-    options=FetchOptions::default(),
+    options=@http.FetchOptions::default(),
     cache~,
     fetcher~,
   )
@@ -578,11 +581,14 @@ test "cache attack: HEAD response should not pollute GET cache" {
   let cache = MemoryCacheBackend::new(max_entries=10)
   let fetcher = fn(
     _url : String,
-    _options : FetchOptions,
-  ) -> HttpResponse raise HttpError {
+    _options : @http.FetchOptions,
+  ) -> @http.HttpResponse raise @http.HttpError {
     { status: 200, headers: { "cache-control": "max-age=300" }, body: "" }
   }
-  let opts : FetchOptions = { ..FetchOptions::default(), http_method: "HEAD" }
+  let opts : @http.FetchOptions = {
+    ..@http.FetchOptions::default(),
+    http_method: "HEAD",
+  }
   let _ = cached_fetch(
     url="https://victim.test/secret",
     options=opts,
@@ -599,15 +605,18 @@ test "cache attack: DELETE response should not be cached" {
   let cache = MemoryCacheBackend::new(max_entries=10)
   let fetcher = fn(
     _url : String,
-    _options : FetchOptions,
-  ) -> HttpResponse raise HttpError {
+    _options : @http.FetchOptions,
+  ) -> @http.HttpResponse raise @http.HttpError {
     {
       status: 200,
       headers: { "cache-control": "max-age=300" },
       body: "deleted",
     }
   }
-  let opts : FetchOptions = { ..FetchOptions::default(), http_method: "DELETE" }
+  let opts : @http.FetchOptions = {
+    ..@http.FetchOptions::default(),
+    http_method: "DELETE",
+  }
   let _ = cached_fetch(
     url="https://victim.test/resource",
     options=opts,
@@ -624,13 +633,13 @@ test "cache attack: response without any cache hints is still stored but immedia
   let cache = MemoryCacheBackend::new(max_entries=10)
   let fetcher = fn(
     _url : String,
-    _options : FetchOptions,
-  ) -> HttpResponse raise HttpError {
+    _options : @http.FetchOptions,
+  ) -> @http.HttpResponse raise @http.HttpError {
     { status: 200, headers: {}, body: "no-cache-headers" }
   }
   let _ = cached_fetch(
     url="https://example.com/no-hints",
-    options=FetchOptions::default(),
+    options=@http.FetchOptions::default(),
     cache~,
     fetcher~,
   )
@@ -650,8 +659,8 @@ test "cache attack: different query params are separate cache keys" {
   let call_count = [0]
   let fetcher = fn(
     _url : String,
-    _options : FetchOptions,
-  ) -> HttpResponse raise HttpError {
+    _options : @http.FetchOptions,
+  ) -> @http.HttpResponse raise @http.HttpError {
     call_count[0] = call_count[0] + 1
     {
       status: 200,
@@ -659,7 +668,7 @@ test "cache attack: different query params are separate cache keys" {
       body: "response-" + call_count[0].to_string(),
     }
   }
-  let opts = FetchOptions::default()
+  let opts = @http.FetchOptions::default()
   let r1 = cached_fetch(
     url="https://example.com/api?user=alice",
     options=opts,
@@ -686,8 +695,8 @@ test "cache key: URLs differing only in fragment are separate (conservative)" {
   let call_count = [0]
   let fetcher = fn(
     _url : String,
-    _options : FetchOptions,
-  ) -> HttpResponse raise HttpError {
+    _options : @http.FetchOptions,
+  ) -> @http.HttpResponse raise @http.HttpError {
     call_count[0] = call_count[0] + 1
     {
       status: 200,
@@ -695,7 +704,7 @@ test "cache key: URLs differing only in fragment are separate (conservative)" {
       body: "r" + call_count[0].to_string(),
     }
   }
-  let opts = FetchOptions::default()
+  let opts = @http.FetchOptions::default()
   // Current behavior: fragment is part of URL string → separate keys
   // This is conservative (safe, but wastes cache)
   let _ = cached_fetch(
@@ -732,13 +741,13 @@ test "cache attack: 304 on no-store entry should not refresh" {
   cache.store(bad_entry) // Simulating a bug that stored a no-store entry
   let fetcher = fn(
     _url : String,
-    _options : FetchOptions,
-  ) -> HttpResponse raise HttpError {
+    _options : @http.FetchOptions,
+  ) -> @http.HttpResponse raise @http.HttpError {
     { status: 304, headers: {}, body: "" }
   }
   let r = cached_fetch(
     url="https://example.com/secret",
-    options=FetchOptions::default(),
+    options=@http.FetchOptions::default(),
     cache~,
     fetcher~,
   )
@@ -790,8 +799,8 @@ test "WCD: private response with .css suffix must not be cached" {
   let cache = MemoryCacheBackend::new(max_entries=10)
   let fetcher = fn(
     _url : String,
-    _options : FetchOptions,
-  ) -> HttpResponse raise HttpError {
+    _options : @http.FetchOptions,
+  ) -> @http.HttpResponse raise @http.HttpError {
     {
       status: 200,
       headers: {
@@ -803,7 +812,7 @@ test "WCD: private response with .css suffix must not be cached" {
   }
   let _ = cached_fetch(
     url="https://example.com/account/settings/evil.css",
-    options=FetchOptions::default(),
+    options=@http.FetchOptions::default(),
     cache~,
     fetcher~,
   )
@@ -822,8 +831,8 @@ test "WCD: URL-encoded path is distinct cache key" {
   let call_count = [0]
   let fetcher = fn(
     _url : String,
-    _options : FetchOptions,
-  ) -> HttpResponse raise HttpError {
+    _options : @http.FetchOptions,
+  ) -> @http.HttpResponse raise @http.HttpError {
     call_count[0] = call_count[0] + 1
     {
       status: 200,
@@ -831,7 +840,7 @@ test "WCD: URL-encoded path is distinct cache key" {
       body: "resp" + call_count[0].to_string(),
     }
   }
-  let opts = FetchOptions::default()
+  let opts = @http.FetchOptions::default()
   let _ = cached_fetch(
     url="https://example.com/account/settings",
     options=opts,
@@ -893,14 +902,14 @@ test "XS-Leak: no-cache always revalidates (timing-safe)" {
   let fetcher_called = [false]
   let fetcher = fn(
     _url : String,
-    _options : FetchOptions,
-  ) -> HttpResponse raise HttpError {
+    _options : @http.FetchOptions,
+  ) -> @http.HttpResponse raise @http.HttpError {
     fetcher_called[0] = true
     { status: 304, headers: {}, body: "" }
   }
   let _ = cached_fetch(
     url="https://sensitive.test/inbox",
-    options=FetchOptions::default(),
+    options=@http.FetchOptions::default(),
     cache~,
     fetcher~,
   )
@@ -928,8 +937,8 @@ test "response splitting: ETag with CRLF does not corrupt conditional request" {
   let captured_headers = [("", "")]
   let fetcher = fn(
     _url : String,
-    options : FetchOptions,
-  ) -> HttpResponse raise HttpError {
+    options : @http.FetchOptions,
+  ) -> @http.HttpResponse raise @http.HttpError {
     // Capture what If-None-Match was sent
     match options.headers.get("If-None-Match") {
       Some(v) => captured_headers[0] = ("If-None-Match", v)
@@ -939,7 +948,7 @@ test "response splitting: ETag with CRLF does not corrupt conditional request" {
   }
   let _ = cached_fetch(
     url="https://example.com/resource",
-    options=FetchOptions::default(),
+    options=@http.FetchOptions::default(),
     cache~,
     fetcher~,
   )
@@ -959,10 +968,10 @@ test "prototype pollution: __proto__ header key is harmless" {
   headers["access-control-allow-origin"] = "*"
   headers["__proto__"] = "{\"polluted\":true}"
   headers["constructor"] = "Object"
-  let result = enforce_cors_response(
+  let result = @http.enforce_cors_response(
     "https://other.test/api",
     {
-      ..FetchOptions::default(),
+      ..@http.FetchOptions::default(),
       mode: Cors,
       origin: "https://victim.test",
       sandbox: Open,
@@ -983,8 +992,8 @@ test "cache key: backslash vs forward slash are distinct" {
   let call_count = [0]
   let fetcher = fn(
     _url : String,
-    _options : FetchOptions,
-  ) -> HttpResponse raise HttpError {
+    _options : @http.FetchOptions,
+  ) -> @http.HttpResponse raise @http.HttpError {
     call_count[0] = call_count[0] + 1
     {
       status: 200,
@@ -992,7 +1001,7 @@ test "cache key: backslash vs forward slash are distinct" {
       body: "r" + call_count[0].to_string(),
     }
   }
-  let opts = FetchOptions::default()
+  let opts = @http.FetchOptions::default()
   let _ = cached_fetch(
     url="https://example.com/path/resource",
     options=opts,
@@ -1017,8 +1026,8 @@ test "cache key: path is case-sensitive" {
   let call_count = [0]
   let fetcher = fn(
     _url : String,
-    _options : FetchOptions,
-  ) -> HttpResponse raise HttpError {
+    _options : @http.FetchOptions,
+  ) -> @http.HttpResponse raise @http.HttpError {
     call_count[0] = call_count[0] + 1
     {
       status: 200,
@@ -1026,7 +1035,7 @@ test "cache key: path is case-sensitive" {
       body: "r" + call_count[0].to_string(),
     }
   }
-  let opts = FetchOptions::default()
+  let opts = @http.FetchOptions::default()
   let _ = cached_fetch(
     url="https://example.com/Page",
     options=opts,
@@ -1051,8 +1060,8 @@ test "supply chain: must-revalidate entry serves fresh within max-age" {
   // Server initially serves compromised script with long max-age + must-revalidate
   let fetcher = fn(
     _url : String,
-    _options : FetchOptions,
-  ) -> HttpResponse raise HttpError {
+    _options : @http.FetchOptions,
+  ) -> @http.HttpResponse raise @http.HttpError {
     {
       status: 200,
       headers: { "cache-control": "max-age=86400, must-revalidate" },
@@ -1061,20 +1070,20 @@ test "supply chain: must-revalidate entry serves fresh within max-age" {
   }
   let _ = cached_fetch(
     url="https://cdn.test/lib.js",
-    options=FetchOptions::default(),
+    options=@http.FetchOptions::default(),
     cache~,
     fetcher~,
   )
   // Within max-age: still served from cache (must-revalidate doesn't prevent this)
   let hit_fetcher = fn(
     _url : String,
-    _options : FetchOptions,
-  ) -> HttpResponse raise HttpError {
+    _options : @http.FetchOptions,
+  ) -> @http.HttpResponse raise @http.HttpError {
     { status: 200, headers: {}, body: "fixed();" }
   }
   let r = cached_fetch(
     url="https://cdn.test/lib.js",
-    options=FetchOptions::default(),
+    options=@http.FetchOptions::default(),
     cache~,
     fetcher=hit_fetcher,
   )
@@ -1091,8 +1100,8 @@ test "race: sequential fetches use cache correctly" {
   let call_count = [0]
   let fetcher = fn(
     _url : String,
-    _options : FetchOptions,
-  ) -> HttpResponse raise HttpError {
+    _options : @http.FetchOptions,
+  ) -> @http.HttpResponse raise @http.HttpError {
     call_count[0] = call_count[0] + 1
     {
       status: 200,
@@ -1100,7 +1109,7 @@ test "race: sequential fetches use cache correctly" {
       body: "v" + call_count[0].to_string(),
     }
   }
-  let opts = FetchOptions::default()
+  let opts = @http.FetchOptions::default()
   // Simulate 5 sequential requests
   let mut last_body = ""
   for i = 0; i < 5; i = i + 1 {
@@ -1345,7 +1354,7 @@ test "boundary: URL with unicode in path" {
 test "boundary: headers_to_json preserves values" {
   let headers : Map[String, String] = {}
   headers["x-test"] = "value with spaces"
-  let json = headers_to_json(headers)
+  let json = @http.headers_to_json(headers)
   inspect(json.contains("value with spaces"), content="true")
 }
 
@@ -1381,14 +1390,14 @@ test "boundary: fetcher error propagates through cached_fetch" {
   let cache = MemoryCacheBackend::new(max_entries=10)
   let fetcher = fn(
     _url : String,
-    _options : FetchOptions,
-  ) -> HttpResponse raise HttpError {
-    raise NetworkError("connection refused")
+    _options : @http.FetchOptions,
+  ) -> @http.HttpResponse raise @http.HttpError {
+    raise @http.NetworkError("connection refused")
   }
   let err = try {
     let _ = cached_fetch(
       url="https://down.test/api",
-      options=FetchOptions::default(),
+      options=@http.FetchOptions::default(),
       cache~,
       fetcher~,
     )
@@ -1397,7 +1406,7 @@ test "boundary: fetcher error propagates through cached_fetch" {
     e => Some(e)
   }
   match err {
-    Some(NetworkError(_)) => ()
+    Some(@http.NetworkError(_)) => ()
     _ => assert_true(false)
   }
   // Error should NOT be cached
@@ -1421,14 +1430,14 @@ test "boundary: revalidation error preserves stale cache" {
   cache.store(stale_entry)
   let fetcher = fn(
     _url : String,
-    _options : FetchOptions,
-  ) -> HttpResponse raise HttpError {
-    raise NetworkError("timeout")
+    _options : @http.FetchOptions,
+  ) -> @http.HttpResponse raise @http.HttpError {
+    raise @http.NetworkError("timeout")
   }
   let err = try {
     let _ = cached_fetch(
       url="https://example.com/stale",
-      options=FetchOptions::default(),
+      options=@http.FetchOptions::default(),
       cache~,
       fetcher~,
     )
@@ -1438,7 +1447,7 @@ test "boundary: revalidation error preserves stale cache" {
   }
   // Error propagated
   match err {
-    Some(NetworkError(_)) => ()
+    Some(@http.NetworkError(_)) => ()
     _ => assert_true(false)
   }
   // But stale entry is still in cache (not removed by failed revalidation)
@@ -1470,8 +1479,8 @@ test "cache key: double encoding %252F is distinct from %2F" {
   let call_count = [0]
   let fetcher = fn(
     _url : String,
-    _options : FetchOptions,
-  ) -> HttpResponse raise HttpError {
+    _options : @http.FetchOptions,
+  ) -> @http.HttpResponse raise @http.HttpError {
     call_count[0] = call_count[0] + 1
     {
       status: 200,
@@ -1479,7 +1488,7 @@ test "cache key: double encoding %252F is distinct from %2F" {
       body: "r" + call_count[0].to_string(),
     }
   }
-  let opts = FetchOptions::default()
+  let opts = @http.FetchOptions::default()
   let _ = cached_fetch(
     url="https://example.com/a%2Fb",
     options=opts,
@@ -1502,8 +1511,8 @@ test "cache key: trailing slash is distinct" {
   let call_count = [0]
   let fetcher = fn(
     _url : String,
-    _options : FetchOptions,
-  ) -> HttpResponse raise HttpError {
+    _options : @http.FetchOptions,
+  ) -> @http.HttpResponse raise @http.HttpError {
     call_count[0] = call_count[0] + 1
     {
       status: 200,
@@ -1511,7 +1520,7 @@ test "cache key: trailing slash is distinct" {
       body: "r" + call_count[0].to_string(),
     }
   }
-  let opts = FetchOptions::default()
+  let opts = @http.FetchOptions::default()
   let _ = cached_fetch(
     url="https://example.com/dir",
     options=opts,
@@ -1545,13 +1554,13 @@ test "304 revalidation: original body preserved after 304" {
   cache.store(entry)
   let fetcher = fn(
     _url : String,
-    _options : FetchOptions,
-  ) -> HttpResponse raise HttpError {
+    _options : @http.FetchOptions,
+  ) -> @http.HttpResponse raise @http.HttpError {
     { status: 304, headers: {}, body: "" }
   }
   let r = cached_fetch(
     url="https://example.com/r",
-    options=FetchOptions::default(),
+    options=@http.FetchOptions::default(),
     cache~,
     fetcher~,
   )
