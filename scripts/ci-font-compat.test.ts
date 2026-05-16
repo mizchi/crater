@@ -27,19 +27,30 @@ describe("CI compatible font setup", () => {
 
   test("restores rusty_v8 source binding cache in all native or BiDi jobs", () => {
     const workflow = readRepoFile(".github/workflows/ci.yml");
-    const matches = workflow.match(/Restore rusty_v8 source binding cache/g) ?? [];
-    expect(matches).toHaveLength(6);
-    expect(workflow).toContain("path: ~/.cargo/.rusty_v8");
-    const prefetchMatches =
-      workflow.match(/node scripts\/prefetch-rusty-v8-source-binding\.mjs --release v146\.8\.0/g) ?? [];
-    expect(prefetchMatches).toHaveLength(6);
+    const action = readRepoFile(".github/actions/rusty-v8-prefetch/action.yml");
+
+    // The composite action owns the cache restore + prefetch
+    expect(action).toContain("Restore rusty_v8 source binding cache");
+    expect(action).toContain("path: ~/.cargo/.rusty_v8");
+    expect(action).toContain("prefetch-rusty-v8-source-binding.mjs --release ${{ inputs.release }}");
+    expect(action).toContain("default: v146.8.0");
+
+    // The workflow opts into rusty_v8 prefetch in every native / BiDi-backed job
+    const usages = workflow.match(/uses: \.\/\.github\/actions\/rusty-v8-prefetch/g) ?? [];
+    expect(usages).toHaveLength(6);
   });
 
   test("uses Deno 2 in BiDi and VRT workflows for lockfile v5 compatibility", () => {
     const workflow = readRepoFile(".github/workflows/ci.yml");
-    const matches = workflow.match(/deno-version: v2\.x/g) ?? [];
-    expect(matches).toHaveLength(4);
-    expect(workflow).not.toContain("deno-version: v1.46.3");
+    const action = readRepoFile(".github/actions/setup-crater/action.yml");
+
+    // Deno is pinned to v2.x inside the setup composite action
+    expect(action).toContain("deno-version: v2.x");
+    expect(action).not.toContain("deno-version: v1.46.3");
+
+    // BiDi + VRT jobs opt in via the `deno: "true"` input
+    const usages = workflow.match(/deno: "true"/g) ?? [];
+    expect(usages).toHaveLength(4);
   });
 
   test("font install script retries flaky msttcorefonts extraction", () => {
