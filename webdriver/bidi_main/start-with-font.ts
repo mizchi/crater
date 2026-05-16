@@ -11,7 +11,11 @@ import {
   DEFAULT_TEXT_FONT_FAMILY,
   resolveEffectiveFontFamily,
 } from "../../scripts/font-family-defaults.ts";
-import { pickNearestFontWeight } from "../../scripts/font-weight-resolve.ts";
+import {
+  declaredWeightsForEntry,
+  pickNearestFontWeight,
+  selectWeightCandidates,
+} from "../../scripts/font-weight-resolve.ts";
 import {
   listBundledWptFonts,
   resolveBundledWptFontUrl,
@@ -39,7 +43,18 @@ const LINUX_FONT_DIRS = [
 ];
 const FONT_DIRS = Deno.build.os === "darwin" ? MAC_FONT_DIRS : LINUX_FONT_DIRS;
 
-const FONT_FILE_MAP: Record<string, { regular: string[]; bold: string[] }> = {
+type FontFileMapEntry = {
+  regular: string[];
+  bold: string[];
+  // Optional non-400 / non-700 weight candidates. Looked up by
+  // getFontInstanceByWeight via FontEntry.byWeight when a request for e.g.
+  // font-weight: 500 lands. Empty / missing on systems where no Medium /
+  // SemiBold / Light variant is installed; the CSS Fonts L4 nearest-weight
+  // resolver picks regular or bold in that case.
+  byWeight?: Record<number, string[]>;
+};
+
+const FONT_FILE_MAP: Record<string, FontFileMapEntry> = {
   arial: {
     regular: ["Arial.ttf", "LiberationSans-Regular.ttf", "DejaVuSans.ttf"],
     bold: ["Arial Bold.ttf", "Arial_Bold.ttf", "arialbd.ttf", "LiberationSans-Bold.ttf", "DejaVuSans-Bold.ttf"],
@@ -61,8 +76,33 @@ const FONT_FILE_MAP: Record<string, { regular: string[]; bold: string[] }> = {
     bold: ["Courier New Bold.ttf", "Courier_New_Bold.ttf", "courbd.ttf", "LiberationMono-Bold.ttf", "DejaVuSansMono-Bold.ttf"],
   },
   "sans-serif": {
-    regular: ["Arial.ttf", "LiberationSans-Regular.ttf", "DejaVuSans.ttf", "FreeSans.ttf"],
-    bold: ["Arial Bold.ttf", "LiberationSans-Bold.ttf", "DejaVuSans-Bold.ttf", "FreeSansBold.ttf"],
+    regular: ["Arial.ttf", "LiberationSans-Regular.ttf", "DejaVuSans.ttf", "FreeSans.ttf", "NotoSans-Regular.ttf", "Roboto-Regular.ttf"],
+    bold: ["Arial Bold.ttf", "LiberationSans-Bold.ttf", "DejaVuSans-Bold.ttf", "FreeSansBold.ttf", "NotoSans-Bold.ttf", "Roboto-Bold.ttf"],
+    byWeight: {
+      300: ["NotoSans-Light.ttf", "Roboto-Light.ttf"],
+      500: ["NotoSans-Medium.ttf", "Roboto-Medium.ttf"],
+      600: ["NotoSans-SemiBold.ttf", "Roboto-SemiBold.ttf"],
+    },
+  },
+  roboto: {
+    regular: ["Roboto-Regular.ttf", "Arial.ttf", "LiberationSans-Regular.ttf"],
+    bold: ["Roboto-Bold.ttf", "Arial Bold.ttf", "LiberationSans-Bold.ttf"],
+    byWeight: {
+      300: ["Roboto-Light.ttf"],
+      500: ["Roboto-Medium.ttf"],
+      600: ["Roboto-SemiBold.ttf"],
+      900: ["Roboto-Black.ttf"],
+    },
+  },
+  "noto sans": {
+    regular: ["NotoSans-Regular.ttf", "Arial.ttf", "LiberationSans-Regular.ttf"],
+    bold: ["NotoSans-Bold.ttf", "Arial Bold.ttf", "LiberationSans-Bold.ttf"],
+    byWeight: {
+      300: ["NotoSans-Light.ttf"],
+      500: ["NotoSans-Medium.ttf"],
+      600: ["NotoSans-SemiBold.ttf"],
+      900: ["NotoSans-Black.ttf"],
+    },
   },
 };
 const ALIASES: Record<string, string> = {
@@ -115,6 +155,20 @@ function resolveFont(family: string, weight: "regular" | "bold"): string | null 
   return null;
 }
 
+function resolveFontByDeclaredWeight(
+  family: string,
+  weight: number,
+): string | null {
+  const norm = ALIASES[family] || family;
+  const map = FONT_FILE_MAP[norm];
+  if (!map) return null;
+  for (const fileName of selectWeightCandidates(map, weight)) {
+    const found = findFont(fileName);
+    if (found) return found;
+  }
+  return null;
+}
+
 // ============================================================
 // Font module loading with multi-font support
 // ============================================================
@@ -127,8 +181,17 @@ interface FontInstance {
   ascentRatio: number;
 }
 
-// Cache of loaded font instances: family -> { regular, bold }
-const fontCache = new Map<string, { regular?: FontInstance; bold?: FontInstance }>();
+// Cache of loaded font instances. `byWeight` always contains 400 (= regular)
+// and 700 (= bold) when those are loaded, plus any extras declared in
+// FONT_FILE_MAP.byWeight that resolved to a file on disk. The dedicated
+// `regular` / `bold` slots stay populated for backward compatibility with the
+// boolean-isBold dispatch path.
+interface FontEntry {
+  regular?: FontInstance;
+  bold?: FontInstance;
+  byWeight: Map<number, FontInstance>;
+}
+const fontCache = new Map<string, FontEntry>();
 
 function fontPathLabel(fontPath: string | URL): string {
   return fontPath instanceof URL ? fontPath.pathname : fontPath;
@@ -172,8 +235,38 @@ async function loadFontInstance(fontPath: string | URL): Promise<FontInstance | 
   }
 }
 
-// Pre-load common fonts
-const PRELOAD_FAMILIES = ["arial", "verdana", "georgia", "times new roman", "courier new"];
+// Pre-load common fonts. "sans-serif" is its own entry so any installed
+// Noto / Roboto Medium / SemiBold files declared in FONT_FILE_MAP.sans-serif
+// reach FontEntry.byWeight without being shadowed by the arial alias below.
+const PRELOAD_FAMILIES = [
+  "arial",
+  "verdana",
+  "georgia",
+  "times new roman",
+  "courier new",
+  "sans-serif",
+  "roboto",
+  "noto sans",
+];
+
+async function loadDeclaredExtraWeights(
+  family: string,
+): Promise<Map<number, FontInstance>> {
+  const extras = new Map<number, FontInstance>();
+  const norm = ALIASES[family] || family;
+  const map = FONT_FILE_MAP[norm];
+  if (!map) return extras;
+  for (const weight of declaredWeightsForEntry(map)) {
+    if (weight === 400 || weight === 700) continue;
+    const path = resolveFontByDeclaredWeight(norm, weight);
+    if (!path) continue;
+    const instance = await loadFontInstance(path);
+    if (!instance) continue;
+    extras.set(weight, instance);
+    console.error(`[font] ${family} weight ${weight}: ${path}`);
+  }
+  return extras;
+}
 
 async function preloadFonts() {
   for (const family of PRELOAD_FAMILIES) {
@@ -191,17 +284,33 @@ async function preloadFonts() {
       if (bold) console.error(`[font] ${family} bold: ${boldPath}`);
     }
 
-    fontCache.set(family, { regular: regular || undefined, bold: bold || undefined });
+    const byWeight = new Map<number, FontInstance>();
+    if (regular) byWeight.set(400, regular);
+    if (bold) byWeight.set(700, bold);
+    for (const [weight, instance] of await loadDeclaredExtraWeights(family)) {
+      byWeight.set(weight, instance);
+    }
+
+    fontCache.set(family, {
+      regular: regular || undefined,
+      bold: bold || undefined,
+      byWeight,
+    });
   }
-  // Set sans-serif = arial
-  if (fontCache.has("arial")) {
+  // Fallback aliases: only set when the alias target hasn't loaded its own
+  // entry. This preserves sans-serif's independent byWeight set when its own
+  // preload succeeded, but still gives "sans-serif" -> arial coverage if
+  // FONT_FILE_MAP["sans-serif"] failed to resolve.
+  if (!fontCache.has("sans-serif") && fontCache.has("arial")) {
     fontCache.set("sans-serif", fontCache.get("arial")!);
+  }
+  if (!fontCache.has("helvetica") && fontCache.has("arial")) {
     fontCache.set("helvetica", fontCache.get("arial")!);
   }
-  if (fontCache.has("times new roman")) {
+  if (!fontCache.has("serif") && fontCache.has("times new roman")) {
     fontCache.set("serif", fontCache.get("times new roman")!);
   }
-  if (fontCache.has("courier new")) {
+  if (!fontCache.has("monospace") && fontCache.has("courier new")) {
     fontCache.set("monospace", fontCache.get("courier new")!);
   }
 }
@@ -218,7 +327,9 @@ async function preloadBundledWptFonts() {
     const regular = await loadFontInstance(fontUrl);
     if (!regular) continue;
 
-    const entry = { regular };
+    const byWeight = new Map<number, FontInstance>();
+    byWeight.set(400, regular);
+    const entry: FontEntry = { regular, byWeight };
     fontCache.set(font.family, entry);
     for (const alias of font.aliases ?? []) {
       fontCache.set(alias.toLowerCase(), entry);
@@ -245,9 +356,11 @@ function getFontInstance(fontFamily: string, isBold: boolean): FontInstance | nu
   return isBold && fallback.bold ? fallback.bold : fallback.regular || null;
 }
 
-function entryFacesByWeight(
-  entry: { regular?: FontInstance; bold?: FontInstance },
-): Map<number, FontInstance> {
+function entryFacesByWeight(entry: FontEntry): Map<number, FontInstance> {
+  // entry.byWeight already includes 400 (regular) and 700 (bold) when those
+  // were loaded, plus any extras populated by loadDeclaredExtraWeights.
+  // Fall back to a minimal map for older entry shapes (defensive).
+  if (entry.byWeight && entry.byWeight.size > 0) return entry.byWeight;
   const faces = new Map<number, FontInstance>();
   if (entry.regular) faces.set(400, entry.regular);
   if (entry.bold) faces.set(700, entry.bold);
