@@ -3,7 +3,7 @@ import {
   "mizchi/crater-browser/tui/paint/export" @tui_paint_export,
   "mizchi/crater-core/node" @node,
   "mizchi/crater-core" @types,
-  "mizchi/crater-painter/svg" @svg,
+  "mizchi/svg" @svg,
   "mizchi/crater-renderer/vrt" @vrt,
   "moonbitlang/core/json",
   "moonbitlang/core/string",

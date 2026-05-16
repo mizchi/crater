@@ -36,7 +36,6 @@ describe("MoonBit renderer core contract boundaries", () => {
       { file: "webdriver/webdriver/bidi_protocol.mbt", maxLines: 8000 },
       { file: "webdriver/webdriver/bidi_server.mbt", maxLines: 400 },
       { file: "renderer/renderer/renderer.mbt", maxLines: 30 },
-      { file: "painter/svg/types.mbt", maxLines: 30 },
       { file: "renderer/renderer/render_test.mbt", maxLines: 20 },
       { file: "renderer/renderer/renderer_test.mbt", maxLines: 20 },
       { file: "renderer/renderer/table_render_test.mbt", maxLines: 20 },

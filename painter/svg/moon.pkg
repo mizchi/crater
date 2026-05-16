@@ -1,8 +1,0 @@
-import {
-  "moonbitlang/core/double",
-  "moonbitlang/core/math",
-  "mizchi/svg" @msvg,
-}
-
-import {
-} for "wbtest"

@@ -237,7 +237,10 @@ pub fn render_svg_text_to_kitty_cells(
   let fb = @raster.Framebuffer::new(render_width, render_height)
   let palette = @raster.DynamicPalette::new()
   fb.fill_rect(0, 0, render_width, render_height, 0)
-  let viewbox = @svg.extract_root_view_box(svg_text)
+  let viewbox = match @svg.parse_svg_document(svg_text) {
+    Some(doc) => doc.root.view_box
+    None => None
+  }
   let (vx, vy, vw, vh) = match viewbox {
     Some(v) => (v.min_x, v.min_y, v.width, v.height)
     None => {

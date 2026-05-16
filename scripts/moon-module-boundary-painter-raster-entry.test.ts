@@ -11,7 +11,6 @@ const EXPECTED_RASTER_LEAVES = [
   "painter/paint/raster/paint_raster.mbt",
   "painter/paint/raster/glyph_blit.mbt",
   "painter/paint/raster/glyph_render.mbt",
-  "painter/paint/raster/glyph_compat.mbt",
   "painter/paint/raster/framebuffer.mbt",
   "painter/paint/raster/framebuffer_encode.mbt",
   "painter/paint/raster/bitmap_text.mbt",
@@ -49,12 +48,6 @@ describe("MoonBit painter raster entry boundaries", () => {
 
     // The entry should stay small: just the public render_* funcs and one private dispatcher.
     expect(countLines("painter/paint/raster/paint_raster.mbt")).toBeLessThanOrEqual(150);
-
-    // glyph_compat.mbt must remain a thin facade over @glyph.
-    const glyphCompat = read("painter/paint/raster/glyph_compat.mbt");
-    expect(glyphCompat).toContain("pub using @glyph {type GlyphProvider}");
-    expect(glyphCompat).toContain("@glyph.set_glyph_provider(provider)");
-    expect(countLines("painter/paint/raster/glyph_compat.mbt")).toBeLessThanOrEqual(60);
 
     // glyph_blit.mbt must hold only the bitmap compositing helpers.
     const glyphBlit = read("painter/paint/raster/glyph_blit.mbt");

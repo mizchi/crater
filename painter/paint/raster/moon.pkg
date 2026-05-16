@@ -5,7 +5,7 @@ import {
   "mizchi/crater-painter/paint/traversal" @paint_traversal,
   "mizchi/crater-painter/paint/glyph",
   "mizchi/crater-core" @types,
-  "mizchi/crater-painter/svg",
+  "mizchi/svg" @svg,
 }
 
 import {
