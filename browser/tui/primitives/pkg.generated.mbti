@@ -2,7 +2,7 @@
 package "mizchi/crater-browser/tui/primitives"
 
 import {
-  "mizchi/crater-core/values",
+  "mizchi/css/values",
 }
 
 // Values

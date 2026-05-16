@@ -1,6 +1,6 @@
 import {
   "mizchi/crater-renderer/renderer",
-  "mizchi/crater-css" @css,
+  "mizchi/css" @css,
   "mizchi/crater-dom/aom",
   "mizchi/crater-aomx/arc90",
   "mizchi/crater-aomx/grounding",

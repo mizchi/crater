@@ -2,7 +2,7 @@
 package "mizchi/crater-core"
 
 import {
-  "mizchi/crater-core/values",
+  "mizchi/css/values",
   "moonbitlang/core/debug",
 }
 

@@ -4,7 +4,7 @@ package "mizchi/crater-layout/core_subset"
 import {
   "mizchi/crater-core",
   "mizchi/crater-core/node",
-  "mizchi/crater-core/values",
+  "mizchi/css/values",
 }
 
 // Values

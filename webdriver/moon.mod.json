@@ -2,6 +2,7 @@
   "name": "mizchi/crater-webdriver-bidi",
   "version": "0.17.1",
   "deps": {
+    "mizchi/css": "0.1.0",
     "mizchi/crater-core": {
       "path": "../core",
       "version": "0.17.1"

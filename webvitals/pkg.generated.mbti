@@ -3,7 +3,7 @@ package "mizchi/crater-webvitals"
 
 import {
   "mizchi/crater-core/layout_view",
-  "mizchi/crater-core/values",
+  "mizchi/css/values",
   "moonbitlang/core/debug",
 }
 

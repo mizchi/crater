@@ -5,8 +5,8 @@ import {
   "mizchi/crater-browser/tui/primitives",
   "mizchi/crater-core",
   "mizchi/crater-core/node",
-  "mizchi/crater-core/values",
   "mizchi/crater-painter/paint/scroll",
+  "mizchi/css/values",
   "moonbitlang/core/debug",
 }
 

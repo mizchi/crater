@@ -4,7 +4,7 @@ import {
   "mizchi/crater-painter/paint/model" @paint_model,
   "mizchi/crater-painter/paint/traversal" @paint_traversal,
   "mizchi/crater-painter/paint/glyph",
-  "mizchi/crater-core/values" @types,
+  "mizchi/css/values" @types,
   "mizchi/svg" @svg,
 }
 
@@ -13,5 +13,5 @@ import {
 } for "wbtest"
 
 import {
-  "mizchi/crater-core/style",
+  "mizchi/css/style",
 } for "test"

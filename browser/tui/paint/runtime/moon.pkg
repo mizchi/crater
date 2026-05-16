@@ -8,6 +8,6 @@ import {
 }
 
 import {
-  "mizchi/crater-core/style",
-  "mizchi/crater-core/values" @types,
+  "mizchi/css/style",
+  "mizchi/css/values" @types,
 } for "test"

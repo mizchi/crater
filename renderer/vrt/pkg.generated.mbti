@@ -2,11 +2,11 @@
 package "mizchi/crater-renderer/vrt"
 
 import {
-  "mizchi/crater-core/values",
   "mizchi/crater-dom/html",
   "mizchi/crater-painter/paint/diff",
   "mizchi/crater-painter/paint/model",
   "mizchi/crater-renderer/renderer",
+  "mizchi/css/values",
   "moonbitlang/core/debug",
 }
 

@@ -3,7 +3,7 @@ import {
   "mizchi/crater-renderer/renderer",
   "mizchi/crater-core/node" @node,
   "mizchi/crater-core" @layout_types,
-  "mizchi/crater-css" @css,
+  "mizchi/css" @css,
   "mizchi/crater-dom/aom",
   "mizchi/crater-browser/tui/paint/png" @tui_paint_png,
   "mizchi/crater-browser/tui/paint/plain" @tui_paint_plain,
