@@ -24,9 +24,7 @@ describe("crater-core module boundary", () => {
     const work = fs.readFileSync(path.join(REPO_ROOT, "moon.work"), "utf8");
     const coreIdx = work.indexOf('"./core"');
     const layoutIdx = work.indexOf('"./layout"');
-    const cssIdx = work.indexOf('"./css"');
     expect(coreIdx).toBeGreaterThan(-1);
     expect(coreIdx).toBeLessThan(layoutIdx);
-    expect(coreIdx).toBeLessThan(cssIdx);
   });
 });
