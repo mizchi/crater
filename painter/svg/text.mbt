@@ -126,7 +126,7 @@ pub(all) struct TextDecorationFull {
 
 ///|
 pub fn TextDecorationFull::default() -> TextDecorationFull {
-  text_decoration_full_from_msvg(@msvg.TextDecorationFull::default())
+  TextDecorationFull::from_msvg(@msvg.TextDecorationFull::default())
 }
 
 ///|
@@ -222,7 +222,7 @@ pub(all) struct TextStyle {
 
 ///|
 pub fn TextStyle::default() -> TextStyle {
-  text_style_from_msvg(@msvg.TextStyle::default())
+  TextStyle::from_msvg(@msvg.TextStyle::default())
 }
 
 ///|
@@ -238,7 +238,7 @@ pub(all) struct TextSpan {
 
 ///|
 pub fn TextSpan::new(text : String) -> TextSpan {
-  text_span_from_msvg(@msvg.TextSpan::new(text))
+  TextSpan::from_msvg(@msvg.TextSpan::new(text))
 }
 
 ///|
@@ -247,7 +247,7 @@ pub fn TextSpan::with_offset(
   dx : Double,
   dy : Double,
 ) -> TextSpan {
-  text_span_from_msvg(@msvg.TextSpan::with_offset(text, dx, dy))
+  TextSpan::from_msvg(@msvg.TextSpan::with_offset(text, dx, dy))
 }
 
 ///|
@@ -264,7 +264,7 @@ pub(all) struct TextBlock {
 
 ///|
 pub fn TextBlock::new(x : Double, y : Double, text : String) -> TextBlock {
-  text_block_from_msvg(@msvg.TextBlock::new(x, y, text))
+  TextBlock::from_msvg(@msvg.TextBlock::new(x, y, text))
 }
 
 ///|
@@ -274,8 +274,8 @@ pub fn TextBlock::with_style(
   text : String,
   style : TextStyle,
 ) -> TextBlock {
-  text_block_from_msvg(
-    @msvg.TextBlock::with_style(x, y, text, text_style_to_msvg(style)),
+  TextBlock::from_msvg(
+    @msvg.TextBlock::with_style(x, y, text, style.to_msvg()),
   )
 }
 
@@ -287,7 +287,7 @@ pub fn TextBlock::with_wrap(
   text : String,
   inline_size : Double,
 ) -> TextBlock {
-  text_block_from_msvg(@msvg.TextBlock::with_wrap(x, y, text, inline_size))
+  TextBlock::from_msvg(@msvg.TextBlock::with_wrap(x, y, text, inline_size))
 }
 
 ///|
@@ -298,55 +298,55 @@ pub fn TextBlock::add_span(self : TextBlock, span : TextSpan) -> Unit {
 ///|
 /// Calculate text width (simplified - assumes monospace)
 pub fn TextBlock::get_width(self : TextBlock) -> Double {
-  text_block_to_msvg(self).get_width()
+  self.to_msvg().get_width()
 }
 
 ///|
 /// Get text height
 pub fn TextBlock::get_height(self : TextBlock) -> Double {
-  text_block_to_msvg(self).get_height()
+  self.to_msvg().get_height()
 }
 
 ///|
 /// Get adjusted x position based on text-anchor
 pub fn TextBlock::get_anchor_x(self : TextBlock) -> Double {
-  text_block_to_msvg(self).get_anchor_x()
+  self.to_msvg().get_anchor_x()
 }
 
 ///|
 /// Get adjusted y position based on dominant-baseline
 pub fn TextBlock::get_baseline_y(self : TextBlock) -> Double {
-  text_block_to_msvg(self).get_baseline_y()
+  self.to_msvg().get_baseline_y()
 }
 
 ///|
 /// Wrap text to fit within inline_size, returns lines
 pub fn TextBlock::wrap_text(self : TextBlock) -> Array[String] {
-  text_block_to_msvg(self).wrap_text()
+  self.to_msvg().wrap_text()
 }
 
 ///|
 /// Get the number of lines when text is wrapped
 pub fn TextBlock::get_line_count(self : TextBlock) -> Int {
-  text_block_to_msvg(self).get_line_count()
+  self.to_msvg().get_line_count()
 }
 
 ///|
 /// Get total height including all wrapped lines
 pub fn TextBlock::get_total_height(self : TextBlock) -> Double {
-  text_block_to_msvg(self).get_total_height()
+  self.to_msvg().get_total_height()
 }
 
 ///|
 /// Check if text is vertical (for writing-mode)
 pub fn TextBlock::is_vertical(self : TextBlock) -> Bool {
-  text_block_to_msvg(self).is_vertical()
+  self.to_msvg().is_vertical()
 }
 
 ///|
 /// Process white-space according to mode
 pub fn process_white_space(text : String, mode : WhiteSpace) -> String {
-  @msvg.process_white_space(text, white_space_to_msvg(mode))
+  @msvg.process_white_space(text, mode.to_msvg())
 }
 
 ///|
@@ -361,6 +361,354 @@ pub fn apply_text_overflow(
     line,
     max_width,
     char_width,
-    text_overflow_to_msvg(overflow),
+    overflow.to_msvg(),
   )
+}
+
+///|
+fn TextAnchor::from_msvg(anchor : @msvg.TextAnchor) -> TextAnchor {
+  match anchor {
+    Start => Start
+    Middle => Middle
+    End => End
+  }
+}
+
+///|
+fn TextAnchor::to_msvg(self : TextAnchor) -> @msvg.TextAnchor {
+  match self {
+    Start => @msvg.TextAnchor::Start
+    Middle => @msvg.TextAnchor::Middle
+    End => @msvg.TextAnchor::End
+  }
+}
+
+///|
+fn WritingMode::from_msvg(mode : @msvg.WritingMode) -> WritingMode {
+  match mode {
+    HorizontalTB => HorizontalTB
+    VerticalRL => VerticalRL
+    VerticalLR => VerticalLR
+  }
+}
+
+///|
+fn WritingMode::to_msvg(self : WritingMode) -> @msvg.WritingMode {
+  match self {
+    HorizontalTB => @msvg.WritingMode::HorizontalTB
+    VerticalRL => @msvg.WritingMode::VerticalRL
+    VerticalLR => @msvg.WritingMode::VerticalLR
+  }
+}
+
+///|
+fn TextOrientation::from_msvg(
+  orientation : @msvg.TextOrientation,
+) -> TextOrientation {
+  match orientation {
+    Mixed => Mixed
+    Upright => Upright
+    Sideways => Sideways
+  }
+}
+
+///|
+fn TextOrientation::to_msvg(self : TextOrientation) -> @msvg.TextOrientation {
+  match self {
+    Mixed => @msvg.TextOrientation::Mixed
+    Upright => @msvg.TextOrientation::Upright
+    Sideways => @msvg.TextOrientation::Sideways
+  }
+}
+
+///|
+fn WhiteSpace::from_msvg(mode : @msvg.WhiteSpace) -> WhiteSpace {
+  match mode {
+    Normal => Normal
+    Pre => Pre
+    NoWrap => NoWrap
+    PreWrap => PreWrap
+    PreLine => PreLine
+    BreakSpaces => BreakSpaces
+  }
+}
+
+///|
+fn WhiteSpace::to_msvg(self : WhiteSpace) -> @msvg.WhiteSpace {
+  match self {
+    Normal => @msvg.WhiteSpace::Normal
+    Pre => @msvg.WhiteSpace::Pre
+    NoWrap => @msvg.WhiteSpace::NoWrap
+    PreWrap => @msvg.WhiteSpace::PreWrap
+    PreLine => @msvg.WhiteSpace::PreLine
+    BreakSpaces => @msvg.WhiteSpace::BreakSpaces
+  }
+}
+
+///|
+fn TextOverflow::from_msvg(overflow : @msvg.TextOverflow) -> TextOverflow {
+  match overflow {
+    Clip => Clip
+    Ellipsis => Ellipsis
+    Custom(indicator) => Custom(indicator)
+  }
+}
+
+///|
+fn TextOverflow::to_msvg(self : TextOverflow) -> @msvg.TextOverflow {
+  match self {
+    Clip => @msvg.TextOverflow::Clip
+    Ellipsis => @msvg.TextOverflow::Ellipsis
+    Custom(indicator) => @msvg.TextOverflow::Custom(indicator)
+  }
+}
+
+///|
+fn TextDecorationStyle::from_msvg(
+  style : @msvg.TextDecorationStyle,
+) -> TextDecorationStyle {
+  match style {
+    Solid => Solid
+    Double => Double
+    Dotted => Dotted
+    Dashed => Dashed
+    Wavy => Wavy
+  }
+}
+
+///|
+fn TextDecoration::from_msvg(
+  decoration : @msvg.TextDecoration,
+) -> TextDecoration {
+  match decoration {
+    NoDecoration => NoDecoration
+    Underline => Underline
+    Overline => Overline
+    LineThrough => LineThrough
+  }
+}
+
+///|
+fn TextDecoration::to_msvg(self : TextDecoration) -> @msvg.TextDecoration {
+  match self {
+    NoDecoration => @msvg.TextDecoration::NoDecoration
+    Underline => @msvg.TextDecoration::Underline
+    Overline => @msvg.TextDecoration::Overline
+    LineThrough => @msvg.TextDecoration::LineThrough
+  }
+}
+
+///|
+fn FontWeight::from_msvg(weight : @msvg.FontWeight) -> FontWeight {
+  match weight {
+    Normal => Normal
+    Bold => Bold
+    Lighter => Lighter
+    Bolder => Bolder
+    Weight(value) => Weight(value)
+  }
+}
+
+///|
+fn FontWeight::to_msvg(self : FontWeight) -> @msvg.FontWeight {
+  match self {
+    Normal => @msvg.FontWeight::Normal
+    Bold => @msvg.FontWeight::Bold
+    Lighter => @msvg.FontWeight::Lighter
+    Bolder => @msvg.FontWeight::Bolder
+    Weight(value) => @msvg.FontWeight::Weight(value)
+  }
+}
+
+///|
+fn FontStyle::from_msvg(style : @msvg.FontStyle) -> FontStyle {
+  match style {
+    NormalStyle => NormalStyle
+    Italic => Italic
+    Oblique => Oblique
+  }
+}
+
+///|
+fn FontStyle::to_msvg(self : FontStyle) -> @msvg.FontStyle {
+  match self {
+    NormalStyle => @msvg.FontStyle::NormalStyle
+    Italic => @msvg.FontStyle::Italic
+    Oblique => @msvg.FontStyle::Oblique
+  }
+}
+
+///|
+fn DominantBaseline::from_msvg(
+  baseline : @msvg.DominantBaseline,
+) -> DominantBaseline {
+  match baseline {
+    Auto => Auto
+    TextTop => TextTop
+    Hanging => Hanging
+    Middle => Middle
+    Central => Central
+    TextBottom => TextBottom
+    Alphabetic => Alphabetic
+    Ideographic => Ideographic
+  }
+}
+
+///|
+fn DominantBaseline::to_msvg(self : DominantBaseline) -> @msvg.DominantBaseline {
+  match self {
+    Auto => @msvg.DominantBaseline::Auto
+    TextTop => @msvg.DominantBaseline::TextTop
+    Hanging => @msvg.DominantBaseline::Hanging
+    Middle => @msvg.DominantBaseline::Middle
+    Central => @msvg.DominantBaseline::Central
+    TextBottom => @msvg.DominantBaseline::TextBottom
+    Alphabetic => @msvg.DominantBaseline::Alphabetic
+    Ideographic => @msvg.DominantBaseline::Ideographic
+  }
+}
+
+///|
+fn PaintOrder::from_msvg(order : @msvg.PaintOrder) -> PaintOrder {
+  if order.order.length() == 1 {
+    match order.order[0] {
+      Fill => FillOnly
+      Stroke => StrokeOnly
+      Markers => Normal
+    }
+  } else if order.order.length() >= 2 {
+    match (order.order[0], order.order[1]) {
+      (Stroke, Fill) => StrokeFirst
+      _ => Normal
+    }
+  } else {
+    Normal
+  }
+}
+
+///|
+fn PaintOrder::to_msvg(self : PaintOrder) -> @msvg.PaintOrder {
+  let items = match self {
+    Normal =>
+      [
+        @msvg.PaintOrderItem::Fill,
+        @msvg.PaintOrderItem::Stroke,
+        @msvg.PaintOrderItem::Markers,
+      ]
+    StrokeFirst =>
+      [
+        @msvg.PaintOrderItem::Stroke,
+        @msvg.PaintOrderItem::Fill,
+        @msvg.PaintOrderItem::Markers,
+      ]
+    FillOnly => [@msvg.PaintOrderItem::Fill]
+    StrokeOnly => [@msvg.PaintOrderItem::Stroke]
+  }
+  @msvg.PaintOrder::{ order: items }
+}
+
+///|
+fn TextDecorationFull::from_msvg(
+  decoration : @msvg.TextDecorationFull,
+) -> TextDecorationFull {
+  {
+    line: TextDecoration::from_msvg(decoration.line),
+    style: TextDecorationStyle::from_msvg(decoration.style),
+    color: Color::from_msvg_option(decoration.color),
+    thickness: decoration.thickness,
+  }
+}
+
+///|
+fn TextStyle::from_msvg(style : @msvg.TextStyle) -> TextStyle {
+  {
+    font_family: style.font_family,
+    font_size: style.font_size,
+    font_weight: FontWeight::from_msvg(style.font_weight),
+    font_style: FontStyle::from_msvg(style.font_style),
+    text_anchor: TextAnchor::from_msvg(style.text_anchor),
+    dominant_baseline: DominantBaseline::from_msvg(style.dominant_baseline),
+    text_decoration: TextDecoration::from_msvg(style.text_decoration),
+    letter_spacing: style.letter_spacing,
+    word_spacing: style.word_spacing,
+    line_height: style.line_height,
+    writing_mode: WritingMode::from_msvg(style.writing_mode),
+    text_orientation: TextOrientation::from_msvg(style.text_orientation),
+    white_space: WhiteSpace::from_msvg(style.white_space),
+    paint_order: PaintOrder::from_msvg(style.paint_order),
+  }
+}
+
+///|
+fn TextStyle::to_msvg(self : TextStyle) -> @msvg.TextStyle {
+  @msvg.TextStyle::{
+    font_family: self.font_family,
+    font_size: self.font_size,
+    font_weight: self.font_weight.to_msvg(),
+    font_style: self.font_style.to_msvg(),
+    text_anchor: self.text_anchor.to_msvg(),
+    dominant_baseline: self.dominant_baseline.to_msvg(),
+    text_decoration: self.text_decoration.to_msvg(),
+    letter_spacing: self.letter_spacing,
+    word_spacing: self.word_spacing,
+    line_height: self.line_height,
+    writing_mode: self.writing_mode.to_msvg(),
+    text_orientation: self.text_orientation.to_msvg(),
+    white_space: self.white_space.to_msvg(),
+    paint_order: self.paint_order.to_msvg(),
+  }
+}
+
+///|
+fn TextSpan::from_msvg(span : @msvg.TextSpan) -> TextSpan {
+  {
+    text: span.text,
+    x: span.x,
+    y: span.y,
+    dx: span.dx,
+    dy: span.dy,
+    style: match span.style {
+      Some(style) => Some(TextStyle::from_msvg(style))
+      None => None
+    },
+  }
+}
+
+///|
+fn TextSpan::to_msvg(self : TextSpan) -> @msvg.TextSpan {
+  @msvg.TextSpan::{
+    text: self.text,
+    x: self.x,
+    y: self.y,
+    dx: self.dx,
+    dy: self.dy,
+    style: match self.style {
+      Some(style) => Some(style.to_msvg())
+      None => None
+    },
+  }
+}
+
+///|
+fn TextBlock::from_msvg(block : @msvg.TextBlock) -> TextBlock {
+  {
+    spans: block.spans.map(TextSpan::from_msvg),
+    x: block.x,
+    y: block.y,
+    style: TextStyle::from_msvg(block.style),
+    inline_size: block.inline_size,
+    text_overflow: TextOverflow::from_msvg(block.text_overflow),
+  }
+}
+
+///|
+fn TextBlock::to_msvg(self : TextBlock) -> @msvg.TextBlock {
+  @msvg.TextBlock::{
+    spans: self.spans.map(fn(s) { s.to_msvg() }),
+    x: self.x,
+    y: self.y,
+    style: self.style.to_msvg(),
+    inline_size: self.inline_size,
+    text_overflow: self.text_overflow.to_msvg(),
+  }
 }
