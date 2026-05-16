@@ -1,5 +1,5 @@
 import {
-  "mizchi/crater-layout" @node,
+  "mizchi/crater-core/node" @node,
   "mizchi/crater-painter/paint/model" @paint_model,
   "mizchi/crater-painter/paint/node_bridge" @paint_node,
   "mizchi/crater-core" @types,
