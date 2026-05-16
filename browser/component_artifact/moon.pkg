@@ -1,7 +1,7 @@
 import {
   "mizchi/crater-dom/html",
   "mizchi/crater-renderer/renderer",
-  "mizchi/crater-layout" @node,
+  "mizchi/crater-core/node" @node,
   "mizchi/crater-core" @types,
   "mizchi/crater-css" @css,
   "mizchi/crater-dom/aom",
