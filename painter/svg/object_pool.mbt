@@ -16,23 +16,37 @@ pub fn[T] ObjectPool::new(
   reset : (T) -> Unit,
   initial_size : Int,
 ) -> ObjectPool[T] {
-  object_pool_from_msvg(@msvg.ObjectPool::new(factory, reset, initial_size))
+  ObjectPool::from_msvg(@msvg.ObjectPool::new(factory, reset, initial_size))
 }
 
 ///|
 /// Acquire an object from the pool
 pub fn[T] ObjectPool::acquire(self : ObjectPool[T]) -> T {
-  object_pool_to_msvg(self).acquire()
+  self.to_msvg().acquire()
 }
 
 ///|
 /// Release an object back to the pool
 pub fn[T] ObjectPool::release(self : ObjectPool[T], obj : T) -> Unit {
-  object_pool_to_msvg(self).release(obj)
+  self.to_msvg().release(obj)
 }
 
 ///|
 /// Get the number of available objects
 pub fn[T] ObjectPool::available_count(self : ObjectPool[T]) -> Int {
-  object_pool_to_msvg(self).available_count()
+  self.to_msvg().available_count()
+}
+
+///|
+fn[T] ObjectPool::from_msvg(pool : @msvg.ObjectPool[T]) -> ObjectPool[T] {
+  { available: pool.available, factory: pool.factory, reset: pool.reset }
+}
+
+///|
+fn[T] ObjectPool::to_msvg(self : ObjectPool[T]) -> @msvg.ObjectPool[T] {
+  @msvg.ObjectPool::{
+    available: self.available,
+    factory: self.factory,
+    reset: self.reset,
+  }
 }

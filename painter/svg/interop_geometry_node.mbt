@@ -176,7 +176,7 @@ fn clip_path_from_msvg(clip : @msvg.ClipPath) -> ClipPath {
   {
     id: clip.id,
     shape: shape_from_msvg(clip.shape),
-    transform: transform_from_msvg(clip.transform),
+    transform: Transform::from_msvg(clip.transform),
     clip_rule: fill_rule_from_msvg(clip.clip_rule),
   }
 }
@@ -220,10 +220,10 @@ fn svg_node_to_msvg(source : SVGNode) -> @msvg.SVGNode {
 
 ///|
 fn svg_node_from_msvg(source : @msvg.SVGNode) -> SVGNode {
-  let current_color = color_from_msvg_option(source.color)
+  let current_color = Color::from_msvg_option(source.color)
   let node = SVGNode::new(shape_from_msvg(source.shape))
   node.id = source.id
-  node.transform = transform_from_msvg(source.transform)
+  node.transform = Transform::from_msvg(source.transform)
   node.fill = paint_from_msvg(source.fill, current_color)
   node.fill_rule = fill_rule_from_msvg(source.fill_rule)
   node.fill_opacity = source.fill_opacity
@@ -256,7 +256,7 @@ fn pattern_from_msvg(
     pattern_content_units: pattern_units_from_msvg(
       pattern.pattern_content_units,
     ),
-    transform: transform_from_msvg(pattern.transform),
+    transform: Transform::from_msvg(pattern.transform),
   }
 }
 
@@ -320,7 +320,7 @@ fn marker_from_msvg(marker : @msvg.Marker) -> Marker {
     marker_height: marker.marker_height,
     orient: marker_orient_from_msvg(marker.orient),
     marker_units: marker_units_from_msvg(marker.marker_units),
-    view_box: view_box_from_msvg_option(marker.view_box),
+    view_box: ViewBox::from_msvg_option(marker.view_box),
   }
 }
 
@@ -335,7 +335,7 @@ fn marker_to_msvg(marker : Marker) -> @msvg.Marker {
     marker_height: marker.marker_height,
     orient: marker_orient_to_msvg(marker.orient),
     marker_units: marker_units_to_msvg(marker.marker_units),
-    view_box: view_box_to_msvg_option(marker.view_box),
+    view_box: ViewBox::to_msvg_option(marker.view_box),
     preserve_aspect_ratio: @msvg.PreserveAspectRatio::default(),
     clip_overflow: true,
   }

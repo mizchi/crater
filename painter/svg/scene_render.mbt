@@ -29,7 +29,7 @@ pub fn Scene::render_with_viewbox(
   let scene = scene_to_msvg(self)
   scene.render_with_viewbox(
     render_context_to_msvg(ctx),
-    view_box_to_msvg(viewbox),
+    viewbox.to_msvg(),
     preserve_aspect_ratio.to_msvg(),
   )
   self.clear_dirty()
@@ -47,7 +47,7 @@ pub fn Scene::render_with_viewbox_and_camera(
   let scene = scene_to_msvg(self)
   scene.render_with_viewbox_and_camera(
     render_context_to_msvg(ctx),
-    view_box_to_msvg(viewbox),
+    viewbox.to_msvg(),
     preserve_aspect_ratio.to_msvg(),
     camera_to_msvg(camera),
   )

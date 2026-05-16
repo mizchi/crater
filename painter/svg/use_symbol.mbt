@@ -26,7 +26,7 @@ pub fn Symbol::with_viewbox(
     @msvg.Symbol::with_viewbox(
       id,
       svg_node_to_msvg(content),
-      view_box_to_msvg(view_box),
+      view_box.to_msvg(),
     ),
   )
 }

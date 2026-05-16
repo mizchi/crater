@@ -19,20 +19,20 @@ pub fn Image::new(width : Int, height : Int) -> Image {
 ///|
 /// Create an image filled with a color
 pub fn Image::filled(width : Int, height : Int, color : Color) -> Image {
-  image_from_msvg(@msvg.Image::filled(width, height, color_to_msvg(color)))
+  image_from_msvg(@msvg.Image::filled(width, height, color.to_msvg()))
 }
 
 ///|
 /// Get pixel at coordinates
 pub fn Image::get_pixel(self : Image, x : Int, y : Int) -> Color {
-  color_from_msvg(image_to_msvg(self).get_pixel(x, y))
+  Color::from_msvg(image_to_msvg(self).get_pixel(x, y))
 }
 
 ///|
 /// Set pixel at coordinates
 pub fn Image::set_pixel(self : Image, x : Int, y : Int, color : Color) -> Unit {
   let image = image_to_msvg(self)
-  image.set_pixel(x, y, color_to_msvg(color))
+  image.set_pixel(x, y, color.to_msvg())
   copy_image_pixels_from_msvg(self, image)
 }
 
@@ -47,7 +47,7 @@ pub fn Image::fill_rect(
   color : Color,
 ) -> Unit {
   let image = image_to_msvg(self)
-  image.fill_rect(x, y, w, h, color_to_msvg(color))
+  image.fill_rect(x, y, w, h, color.to_msvg())
   copy_image_pixels_from_msvg(self, image)
 }
 
@@ -180,7 +180,7 @@ pub fn Sprite::from_image(image : Image) -> Sprite {
 ///|
 /// Get pixel from sprite (local coordinates)
 pub fn Sprite::get_pixel(self : Sprite, x : Int, y : Int) -> Color {
-  color_from_msvg(sprite_to_msvg(self).get_pixel(x, y))
+  Color::from_msvg(sprite_to_msvg(self).get_pixel(x, y))
 }
 
 ///|

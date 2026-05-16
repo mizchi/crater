@@ -9,30 +9,48 @@ pub(all) struct Color {
 
 ///|
 pub fn Color::rgb(r : Int, g : Int, b : Int) -> Color {
-  color_from_msvg(@msvg.Color::rgb(r, g, b))
+  Color::from_msvg(@msvg.Color::rgb(r, g, b))
 }
 
 ///|
 pub fn Color::rgba(r : Int, g : Int, b : Int, a : Int) -> Color {
-  color_from_msvg(@msvg.Color::rgba(r, g, b, a))
+  Color::from_msvg(@msvg.Color::rgba(r, g, b, a))
 }
 
 ///|
 pub fn Color::transparent() -> Color {
-  color_from_msvg(@msvg.Color::transparent())
+  Color::from_msvg(@msvg.Color::transparent())
 }
 
 ///|
 pub fn Color::black() -> Color {
-  color_from_msvg(@msvg.Color::black())
+  Color::from_msvg(@msvg.Color::black())
 }
 
 ///|
 pub fn Color::white() -> Color {
-  color_from_msvg(@msvg.Color::white())
+  Color::from_msvg(@msvg.Color::white())
 }
 
 ///|
 pub fn Color::is_transparent(self : Color) -> Bool {
-  color_to_msvg(self).is_transparent()
+  self.to_msvg().is_transparent()
+}
+
+///|
+fn Color::from_msvg(color : @msvg.Color) -> Color {
+  { r: color.r, g: color.g, b: color.b, a: color.a }
+}
+
+///|
+fn Color::to_msvg(self : Color) -> @msvg.Color {
+  @msvg.Color::{ r: self.r, g: self.g, b: self.b, a: self.a }
+}
+
+///|
+fn Color::from_msvg_option(color : @msvg.Color?) -> Color? {
+  match color {
+    Some(c) => Some(Color::from_msvg(c))
+    None => None
+  }
 }

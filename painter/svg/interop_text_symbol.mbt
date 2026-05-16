@@ -251,7 +251,7 @@ fn text_decoration_full_from_msvg(
   {
     line: text_decoration_from_msvg(decoration.line),
     style: text_decoration_style_from_msvg(decoration.style),
-    color: color_from_msvg_option(decoration.color),
+    color: Color::from_msvg_option(decoration.color),
     thickness: decoration.thickness,
   }
 }
@@ -358,7 +358,7 @@ fn use_element_from_msvg(use_element : @msvg.UseElement) -> UseElement {
     y: use_element.y,
     width: use_element.width,
     height: use_element.height,
-    transform: transform_from_msvg(use_element.transform),
+    transform: Transform::from_msvg(use_element.transform),
   }
 }
 
@@ -379,7 +379,7 @@ fn symbol_from_msvg(symbol : @msvg.Symbol) -> Symbol {
   {
     id: symbol.id,
     content: svg_node_from_msvg(symbol.content),
-    view_box: view_box_from_msvg_option(symbol.view_box),
+    view_box: ViewBox::from_msvg_option(symbol.view_box),
     preserve_aspect_ratio: PreserveAspectRatio::default(),
   }
 }
@@ -389,7 +389,7 @@ fn symbol_to_msvg(symbol : Symbol) -> @msvg.Symbol {
   @msvg.Symbol::{
     id: symbol.id,
     content: svg_node_to_msvg(symbol.content),
-    view_box: view_box_to_msvg_option(symbol.view_box),
+    view_box: ViewBox::to_msvg_option(symbol.view_box),
     width: None,
     height: None,
     preserve_aspect_ratio: symbol.preserve_aspect_ratio.to_msvg(),

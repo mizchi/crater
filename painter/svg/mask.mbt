@@ -68,13 +68,13 @@ pub fn Mask::with_bounds(
 ///|
 /// Compute mask value (0.0-1.0) at a point using luminance
 pub fn compute_luminance(color : Color) -> Double {
-  @msvg.compute_luminance(color_to_msvg(color))
+  @msvg.compute_luminance(color.to_msvg())
 }
 
 ///|
 /// Compute mask value using alpha channel
 pub fn compute_alpha_mask(color : Color) -> Double {
-  @msvg.compute_alpha_mask(color_to_msvg(color))
+  @msvg.compute_alpha_mask(color.to_msvg())
 }
 
 ///|

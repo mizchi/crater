@@ -19,7 +19,7 @@ pub(all) struct Transform {
 ///|
 /// Identity transform (no transformation)
 pub fn Transform::identity() -> Transform {
-  transform_from_msvg(@msvg.Transform::identity())
+  Transform::from_msvg(@msvg.Transform::identity())
 }
 
 ///|
@@ -31,25 +31,25 @@ pub fn Transform::is_identity(self : Transform) -> Bool {
 ///|
 /// Create a translation transform
 pub fn Transform::translate(tx : Double, ty : Double) -> Transform {
-  transform_from_msvg(@msvg.Transform::translate(tx, ty))
+  Transform::from_msvg(@msvg.Transform::translate(tx, ty))
 }
 
 ///|
 /// Create a scaling transform
 pub fn Transform::scale(sx : Double, sy : Double) -> Transform {
-  transform_from_msvg(@msvg.Transform::scale(sx, sy))
+  Transform::from_msvg(@msvg.Transform::scale(sx, sy))
 }
 
 ///|
 /// Create a uniform scaling transform
 pub fn Transform::scale_uniform(s : Double) -> Transform {
-  transform_from_msvg(@msvg.Transform::scale_uniform(s))
+  Transform::from_msvg(@msvg.Transform::scale_uniform(s))
 }
 
 ///|
 /// Create a rotation transform (angle in radians)
 pub fn Transform::rotate(angle : Double) -> Transform {
-  transform_from_msvg(@msvg.Transform::rotate(angle))
+  Transform::from_msvg(@msvg.Transform::rotate(angle))
 }
 
 ///|
@@ -59,19 +59,19 @@ pub fn Transform::rotate_around(
   cx : Double,
   cy : Double,
 ) -> Transform {
-  transform_from_msvg(@msvg.Transform::rotate_around(angle, cx, cy))
+  Transform::from_msvg(@msvg.Transform::rotate_around(angle, cx, cy))
 }
 
 ///|
 /// Create a skewX transform (angle in radians)
 pub fn Transform::skew_x(angle : Double) -> Transform {
-  transform_from_msvg(@msvg.Transform::skew_x(angle))
+  Transform::from_msvg(@msvg.Transform::skew_x(angle))
 }
 
 ///|
 /// Create a skewY transform (angle in radians)
 pub fn Transform::skew_y(angle : Double) -> Transform {
-  transform_from_msvg(@msvg.Transform::skew_y(angle))
+  Transform::from_msvg(@msvg.Transform::skew_y(angle))
 }
 
 ///|
@@ -84,14 +84,14 @@ pub fn Transform::matrix(
   e : Double,
   f : Double,
 ) -> Transform {
-  transform_from_msvg(@msvg.Transform::matrix(a, b, c, d, e, f))
+  Transform::from_msvg(@msvg.Transform::matrix(a, b, c, d, e, f))
 }
 
 ///|
 /// Multiply two transforms (self * other)
 /// Result: first apply `other`, then apply `self`
 pub fn Transform::multiply(self : Transform, other : Transform) -> Transform {
-  transform_from_msvg(self.to_msvg().multiply(other.to_msvg()))
+  Transform::from_msvg(self.to_msvg().multiply(other.to_msvg()))
 }
 
 ///|
@@ -129,7 +129,7 @@ pub fn Transform::is_invertible(self : Transform) -> Bool {
 /// Compute the inverse transform
 /// Returns identity if not invertible
 pub fn Transform::inverse(self : Transform) -> Transform {
-  transform_from_msvg(self.to_msvg().inverse())
+  Transform::from_msvg(self.to_msvg().inverse())
 }
 
 ///|
@@ -182,6 +182,11 @@ pub fn degrees_to_radians(degrees : Double) -> Double {
 /// Convert radians to degrees
 pub fn radians_to_degrees(radians : Double) -> Double {
   @msvg.radians_to_degrees(radians)
+}
+
+///|
+fn Transform::from_msvg(t : @msvg.Transform) -> Transform {
+  { a: t.a, b: t.b, c: t.c, d: t.d, e: t.e, f: t.f }
 }
 
 ///|

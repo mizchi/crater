@@ -38,7 +38,7 @@ pub fn Pattern::get_color_at(
   y : Double,
   bbox : BoundingBox,
 ) -> Color? {
-  color_from_msvg_option(
+  Color::from_msvg_option(
     pattern_to_msvg(self).get_color_at(x, y, bounding_box_to_msvg(bbox)),
   )
 }

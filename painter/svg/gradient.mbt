@@ -37,8 +37,8 @@ pub fn LinearGradient::horizontal(
 ) -> LinearGradient {
   linear_gradient_from_msvg(
     @msvg.LinearGradient::horizontal(
-      color_to_msvg(start_color),
-      color_to_msvg(end_color),
+      start_color.to_msvg(),
+      end_color.to_msvg(),
     ),
   )
 }
@@ -51,8 +51,8 @@ pub fn LinearGradient::vertical(
 ) -> LinearGradient {
   linear_gradient_from_msvg(
     @msvg.LinearGradient::vertical(
-      color_to_msvg(start_color),
-      color_to_msvg(end_color),
+      start_color.to_msvg(),
+      end_color.to_msvg(),
     ),
   )
 }
@@ -60,7 +60,7 @@ pub fn LinearGradient::vertical(
 ///|
 /// Interpolate color at position t (0.0-1.0)
 pub fn LinearGradient::color_at(self : LinearGradient, t : Double) -> Color {
-  color_from_msvg(linear_gradient_to_msvg(self).color_at(t))
+  Color::from_msvg(linear_gradient_to_msvg(self).color_at(t))
 }
 
 ///|
@@ -114,5 +114,5 @@ pub fn RadialGradient::color_at(
   width : Double,
   height : Double,
 ) -> Color {
-  color_from_msvg(radial_gradient_to_msvg(self).color_at(px, py, width, height))
+  Color::from_msvg(radial_gradient_to_msvg(self).color_at(px, py, width, height))
 }
