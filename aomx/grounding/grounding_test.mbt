@@ -110,34 +110,6 @@ test "spatial_region_to_string" {
   inspect(SpatialRegion::BottomRight.to_string(), content="bottom-right")
 }
 
-///|
-test "grounding with html integration" {
-  @layout.setup()
-  // Simple HTML with buttons at different positions
-  let html =
-    #|<div id="container" style="width:800px;height:600px">
-    #|  <button id="btn-top-left" style="position:absolute;left:50px;top:50px;width:100px;height:40px">Top Left</button>
-    #|  <button id="btn-center" style="position:absolute;left:350px;top:280px;width:100px;height:40px">Center</button>
-    #|  <button id="btn-bottom-right" style="position:absolute;left:650px;top:510px;width:100px;height:40px">Bottom Right</button>
-    #|</div>
-  // Parse and assign synthetic IDs
-  let doc = @html.assign_synthetic_ids(@html.parse_document(html))
-  // Build layout tree
-  let layout_tree = @layout_html_tree.layout_tree_from_html_document(
-    doc, 800.0, 600.0,
-  )
-  let _ = layout_tree.calculate_layout(800.0, 600.0)
-  // Build AOM with bounds
-  let tree = @aom.build_accessibility_tree_with_layout(doc, layout_tree)
-  // Check that buttons have bounds attached
-  let interactive = @aom.find_interactive(tree)
-  inspect(interactive.length(), content="3")
-  // All buttons should have bounds
-  let mut buttons_with_bounds = 0
-  for node in interactive {
-    if node.bounds is Some(_) {
-      buttons_with_bounds += 1
-    }
-  }
-  inspect(buttons_with_bounds, content="3")
-}
+// The HTML → layout → AOM-with-bounds integration test lives in
+// `testing/e2e/aom_grounding/` so that `crater-aomx` itself does not
+// require a `crater-layout` dep.
