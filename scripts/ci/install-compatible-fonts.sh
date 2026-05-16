@@ -39,6 +39,8 @@ sudo apt-get update
 sudo apt-get install -y --no-install-recommends \
   fontconfig \
   fonts-liberation2 \
+  fonts-roboto \
+  fonts-noto-core \
   cabextract \
   xfonts-utils
 
@@ -54,6 +56,18 @@ required_files=(
   "Georgia.ttf"
   "Times_New_Roman.ttf"
   "Courier_New.ttf"
+)
+
+# Medium / non-default weight files supplied by fonts-roboto and
+# fonts-noto-core. paint.font-weight-numeric (GitHub issue #48) needs at
+# least one of these on disk so FONT_FILE_MAP.byWeight in
+# webdriver/bidi_main/start-with-font.ts can populate FontEntry.byWeight
+# with a real medium face. Required at least one in the list, not all.
+medium_weight_files=(
+  "Roboto-Medium.ttf"
+  "Roboto-Light.ttf"
+  "NotoSans-Medium.ttf"
+  "NotoSans-SemiBold.ttf"
 )
 
 for attempt in 1 2 3; do
@@ -79,3 +93,16 @@ done
 for family in "Arial" "Verdana" "Georgia" "Times New Roman" "Courier New"; do
   echo "[font-ci] ${family} => $(fc-match -f '%{file}\n' "${family}" || true)"
 done
+
+# Verify at least one medium-weight face landed so paint.font-weight-numeric
+# Layer B has something to dispatch to.
+found_medium=0
+for file_name in "${medium_weight_files[@]}"; do
+  if has_font_file "${file_name}"; then
+    echo "[font-ci] medium-weight font available: ${file_name}"
+    found_medium=1
+  fi
+done
+if [ "${found_medium}" -eq 0 ]; then
+  echo "::warning title=No medium-weight font found::None of ${medium_weight_files[*]} are installed; font-weight: 500 will fall back to regular"
+fi

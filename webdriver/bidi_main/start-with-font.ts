@@ -120,22 +120,30 @@ const ALIASES: Record<string, string> = {
   "book antiqua": "georgia",
 };
 
+function findFontIn(root: string, fileName: string, depth: number): string | null {
+  try {
+    const direct = `${root}/${fileName}`;
+    Deno.statSync(direct);
+    return direct;
+  } catch {}
+  if (depth <= 0) return null;
+  try {
+    for (const entry of Deno.readDirSync(root)) {
+      if (!entry.isDirectory) continue;
+      const found = findFontIn(`${root}/${entry.name}`, fileName, depth - 1);
+      if (found) return found;
+    }
+  } catch {}
+  return null;
+}
+
 function findFont(fileName: string): string | null {
+  // depth = 4 catches packages like fonts-roboto-unhinted that nest files at
+  // <font_dir>/roboto/unhinted/RobotoTTF/Roboto-Medium.ttf — too deep for the
+  // original one-level scan.
   for (const dir of FONT_DIRS) {
-    try {
-      const p = `${dir}/${fileName}`;
-      Deno.statSync(p);
-      return p;
-    } catch {}
-    // One level deep
-    try {
-      for (const entry of Deno.readDirSync(dir)) {
-        if (entry.isDirectory) {
-          const p = `${dir}/${entry.name}/${fileName}`;
-          try { Deno.statSync(p); return p; } catch {}
-        }
-      }
-    } catch {}
+    const found = findFontIn(dir, fileName, 4);
+    if (found) return found;
   }
   return null;
 }
