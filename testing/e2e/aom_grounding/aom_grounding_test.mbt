@@ -21,7 +21,7 @@ test "grounding pipeline: layout produces AOM with bounds" {
     doc, 800.0, 600.0,
   )
   let _ = layout_tree.calculate_layout(800.0, 600.0)
-  let tree = @aom.build_accessibility_tree_with_layout(doc, layout_tree)
+  let tree = @aom_bridge.build_accessibility_tree_with_layout(doc, layout_tree)
   let interactive = @aom.find_interactive(tree)
   inspect(interactive.length(), content="3")
   let mut buttons_with_bounds = 0

@@ -2,14 +2,8 @@ import {
   "moonbitlang/core/string",
   "mizchi/crater-dom/html",
   "mizchi/crater-css" @css,
-  "mizchi/crater-layout" @layout,
   "mizchi/crater-core" @types,
 }
-
-import {
-  "mizchi/crater-dom/layout/html_tree" @layout_html_tree,
-  "mizchi/crater-core/style",
-} for "test"
 
 import {
 } for "wbtest"
