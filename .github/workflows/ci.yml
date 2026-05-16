@@ -19,6 +19,12 @@ jobs:
     env:
       PKFIRE_CACHE_DIR: ${{ github.workspace }}/.cache/pkfire
       GITHUB_EVENT_BEFORE: ${{ github.event.before }}
+    outputs:
+      wpt_css: ${{ steps.gates.outputs.wpt_css }}
+      wpt_dom: ${{ steps.gates.outputs.wpt_dom }}
+      wpt_webdriver: ${{ steps.gates.outputs.wpt_webdriver }}
+      paint_vrt: ${{ steps.gates.outputs.paint_vrt }}
+      wpt_vrt: ${{ steps.gates.outputs.wpt_vrt }}
 
     steps:
       - name: Checkout code
@@ -109,6 +115,11 @@ jobs:
             --keep-going \
             --timing \
             check test test-taffy test-wasm test-native-smoke
+
+      - name: Decide which heavy gates to run
+        id: gates
+        if: always()
+        run: bash scripts/ci/affected-gates.sh --base "${{ steps.affected_base.outputs.base }}"
 
   test:
     runs-on: ubuntu-latest
@@ -238,7 +249,13 @@ jobs:
   wpt-css-tests:
     name: wpt-css (${{ matrix.name }})
     runs-on: ubuntu-latest
-    needs: wasm-component
+    needs: [wasm-component, affected]
+    if: >-
+      always()
+      && needs.wasm-component.result == 'success'
+      && (github.event_name == 'schedule'
+        || github.event_name == 'push'
+        || needs.affected.outputs.wpt_css == 'true')
     strategy:
       fail-fast: false
       max-parallel: 4
@@ -306,6 +323,12 @@ jobs:
   wpt-dom-tests:
     name: wpt-dom
     runs-on: ubuntu-latest
+    needs: [affected]
+    if: >-
+      always()
+      && (github.event_name == 'schedule'
+        || github.event_name == 'push'
+        || needs.affected.outputs.wpt_dom == 'true')
 
     steps:
       - name: Checkout code
@@ -340,9 +363,16 @@ jobs:
           if-no-files-found: warn
 
   wpt-compat-summary:
-    if: always()
+    if: >-
+      always()
+      && (github.event_name == 'schedule'
+        || github.event_name == 'push'
+        || needs.affected.outputs.wpt_css == 'true'
+        || needs.affected.outputs.wpt_dom == 'true'
+        || needs.affected.outputs.wpt_webdriver == 'true')
     runs-on: ubuntu-latest
     needs:
+      - affected
       - wpt-css-tests
       - wpt-dom-tests
       - wpt-webdriver-tests
@@ -392,6 +422,12 @@ jobs:
   wpt-webdriver-tests:
     name: wpt-webdriver
     runs-on: ubuntu-latest
+    needs: [affected]
+    if: >-
+      always()
+      && (github.event_name == 'schedule'
+        || github.event_name == 'push'
+        || needs.affected.outputs.wpt_webdriver == 'true')
 
     steps:
       - name: Checkout code
@@ -652,6 +688,12 @@ jobs:
   playwright-paint-vrt:
     name: paint-vrt (${{ matrix.name }})
     runs-on: ubuntu-latest
+    needs: [affected]
+    if: >-
+      always()
+      && (github.event_name == 'schedule'
+        || github.event_name == 'push'
+        || needs.affected.outputs.paint_vrt == 'true')
     env:
       METRIC_CI_ROOT: ${{ github.workspace }}/metric-ci
     strategy:
@@ -856,9 +898,14 @@ jobs:
         run: exit 1
 
   paint-vrt-summary:
-    if: always()
+    if: >-
+      always()
+      && (github.event_name == 'schedule'
+        || github.event_name == 'push'
+        || needs.affected.outputs.paint_vrt == 'true')
     runs-on: ubuntu-latest
     needs:
+      - affected
       - playwright-paint-vrt
 
     steps:
@@ -906,6 +953,12 @@ jobs:
 
   wpt-vrt-matrix:
     runs-on: ubuntu-latest
+    needs: [affected]
+    if: >-
+      always()
+      && (github.event_name == 'schedule'
+        || github.event_name == 'push'
+        || needs.affected.outputs.wpt_vrt == 'true')
     outputs:
       matrix: ${{ steps.build.outputs.matrix }}
 
@@ -1023,9 +1076,14 @@ jobs:
           if-no-files-found: warn
 
   wpt-vrt-summary:
-    if: always()
+    if: >-
+      always()
+      && (github.event_name == 'schedule'
+        || github.event_name == 'push'
+        || needs.affected.outputs.wpt_vrt == 'true')
     runs-on: ubuntu-latest
     needs:
+      - affected
       - playwright-wpt-vrt
 
     steps:
