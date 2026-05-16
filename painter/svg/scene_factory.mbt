@@ -7,13 +7,13 @@ pub fn rect(
   width : Double,
   height : Double,
 ) -> SVGNode {
-  svg_node_from_msvg(@msvg.rect(id, x, y, width, height))
+  SVGNode::from_msvg(@msvg.rect(id, x, y, width, height))
 }
 
 ///|
 /// Helper: Create a circle node
 pub fn circle(id : String, cx : Double, cy : Double, r : Double) -> SVGNode {
-  svg_node_from_msvg(@msvg.circle(id, cx, cy, r))
+  SVGNode::from_msvg(@msvg.circle(id, cx, cy, r))
 }
 
 ///|
@@ -25,13 +25,13 @@ pub fn line(
   x2 : Double,
   y2 : Double,
 ) -> SVGNode {
-  svg_node_from_msvg(@msvg.line(id, x1, y1, x2, y2))
+  SVGNode::from_msvg(@msvg.line(id, x1, y1, x2, y2))
 }
 
 ///|
 /// Helper: Create a path node from path data string
 pub fn path(id : String, d : String) -> SVGNode {
-  svg_node_from_msvg(@msvg.path(id, d))
+  SVGNode::from_msvg(@msvg.path(id, d))
 }
 
 ///|
@@ -43,7 +43,7 @@ pub fn text(
   content : String,
   font_size : Double,
 ) -> SVGNode {
-  svg_node_from_msvg(@msvg.text(id, x, y, content, font_size))
+  SVGNode::from_msvg(@msvg.text(id, x, y, content, font_size))
 }
 
 ///|

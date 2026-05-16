@@ -28,7 +28,7 @@ pub fn PixelSetter::with_clip(
   clip : ClipRect,
 ) -> PixelSetter {
   pixel_setter_from_msvg(
-    pixel_setter_to_msvg(self).with_clip(clip_rect_to_msvg(clip)),
+    pixel_setter_to_msvg(self).with_clip(clip.to_msvg()),
   )
 }
 
@@ -42,7 +42,7 @@ pub fn PixelSetter::with_clip_and_offset(
 ) -> PixelSetter {
   pixel_setter_from_msvg(
     pixel_setter_to_msvg(self).with_clip_and_offset(
-      clip_rect_to_msvg(clip),
+      clip.to_msvg(),
       offset_x,
       offset_y,
     ),

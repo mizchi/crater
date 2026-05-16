@@ -5,7 +5,7 @@
 ///|
 /// Parse a path data string into an array of path commands
 pub fn parse_path(data : String) -> Array[PathCommand] {
-  @msvg.parse_path(data).map(path_command_from_msvg)
+  @msvg.parse_path(data).map(PathCommand::from_msvg)
 }
 
 ///|
@@ -15,7 +15,7 @@ pub fn path_to_polylines(
   commands : Array[PathCommand],
   flatness : Double,
 ) -> Array[Array[(Double, Double)]] {
-  @msvg.path_to_polylines(path_commands_to_msvg(commands), flatness)
+  @msvg.path_to_polylines(commands.map(fn(c) { c.to_msvg() }), flatness)
 }
 
 ///|
@@ -28,7 +28,7 @@ pub fn raster_path(
   setter : PixelSetter,
 ) -> Unit {
   @msvg.raster_path(
-    path_commands_to_msvg(commands),
+    commands.map(fn(c) { c.to_msvg() }),
     match fill_color {
       Some(color) => Some(color.to_msvg())
       None => None
@@ -45,5 +45,5 @@ pub fn raster_path(
 ///|
 /// Compute bounding box of path commands
 pub fn path_bbox(commands : Array[PathCommand]) -> BoundingBox {
-  bounding_box_from_msvg(@msvg.path_bbox(path_commands_to_msvg(commands)))
+  BoundingBox::from_msvg(@msvg.path_bbox(commands.map(fn(c) { c.to_msvg() })))
 }

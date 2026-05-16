@@ -5,14 +5,14 @@
 ///|
 /// Hit test a shape (without transform)
 pub fn hit_test_shape(px : Double, py : Double, shape : Shape) -> Bool {
-  @msvg.hit_test_shape(px, py, shape_to_msvg(shape))
+  @msvg.hit_test_shape(px, py, shape.to_msvg())
 }
 
 ///|
 /// Hit test an SVGNode at a point (in world coordinates)
 /// Returns true if the point is inside the node's shape
 pub fn SVGNode::hit_test(self : SVGNode, px : Double, py : Double) -> Bool {
-  svg_node_to_msvg(self).hit_test(px, py)
+  self.to_msvg().hit_test(px, py)
 }
 
 ///|

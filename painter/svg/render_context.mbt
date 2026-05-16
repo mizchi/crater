@@ -33,7 +33,7 @@ pub fn RenderContext::with_clip(
       pixel_setter_to_msvg(setter),
       width,
       height,
-      clip_rect_to_msvg(clip),
+      clip.to_msvg(),
     ),
   )
 }
@@ -47,7 +47,7 @@ pub fn RenderContext::for_camera(
   render_context_from_msvg(
     @msvg.RenderContext::for_camera(
       pixel_setter_to_msvg(setter),
-      camera_to_msvg(camera),
+      camera.to_msvg(),
     ),
   )
 }

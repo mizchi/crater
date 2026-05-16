@@ -155,7 +155,7 @@ fn pixel_setter_from_msvg(setter : @msvg.PixelSetter) -> PixelSetter {
 ///|
 fn render_context_to_msvg(ctx : RenderContext) -> @msvg.RenderContext {
   let clip = match ctx.clip {
-    Some(clip) => Some(clip_rect_to_msvg(clip))
+    Some(clip) => Some(clip.to_msvg())
     None => None
   }
   @msvg.RenderContext::{
@@ -171,7 +171,7 @@ fn render_context_to_msvg(ctx : RenderContext) -> @msvg.RenderContext {
 ///|
 fn render_context_from_msvg(ctx : @msvg.RenderContext) -> RenderContext {
   let clip = match ctx.clip {
-    Some(clip) => Some(clip_rect_from_msvg(clip))
+    Some(clip) => Some(ClipRect::from_msvg(clip))
     None => None
   }
   {
@@ -185,12 +185,12 @@ fn render_context_from_msvg(ctx : @msvg.RenderContext) -> RenderContext {
 
 ///|
 fn scene_to_msvg(scene : Scene) -> @msvg.Scene {
-  @msvg.Scene::{ root: svg_node_to_msvg(scene.root), dirty: scene.dirty }
+  @msvg.Scene::{ root: scene.root.to_msvg(), dirty: scene.dirty }
 }
 
 ///|
 fn svg_scene_from_msvg(scene : @msvg.Scene) -> Scene {
-  { root: svg_node_from_msvg(scene.root), dirty: scene.dirty }
+  { root: SVGNode::from_msvg(scene.root), dirty: scene.dirty }
 }
 
 ///|
@@ -208,7 +208,7 @@ fn copy_svg_node_dirty_state_from_msvg(
   source : @msvg.SVGNode,
 ) -> Unit {
   target.node_dirty = source.node_dirty
-  target.prev_bounds = bounding_box_from_msvg_option(source.prev_bounds)
+  target.prev_bounds = BoundingBox::from_msvg_option(source.prev_bounds)
   let len = if target.children.length() < source.children.length() {
     target.children.length()
   } else {

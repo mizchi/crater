@@ -27,7 +27,7 @@ pub fn Pattern::new(
   height : Double,
   content : Array[SVGNode],
 ) -> Pattern {
-  pattern_from_msvg(@msvg.Pattern::new(id, width, height, []), content)
+  Pattern::from_msvg(@msvg.Pattern::new(id, width, height, []), content)
 }
 
 ///|
@@ -39,7 +39,7 @@ pub fn Pattern::get_color_at(
   bbox : BoundingBox,
 ) -> Color? {
   Color::from_msvg_option(
-    pattern_to_msvg(self).get_color_at(x, y, bounding_box_to_msvg(bbox)),
+    self.to_msvg().get_color_at(x, y, bbox.to_msvg()),
   )
 }
 
@@ -62,4 +62,37 @@ pub fn PatternRegistry::add(self : PatternRegistry, pattern : Pattern) -> Unit {
 ///|
 pub fn PatternRegistry::get(self : PatternRegistry, id : String) -> Pattern? {
   self.patterns.get(id)
+}
+
+///|
+fn Pattern::from_msvg(
+  pattern : @msvg.Pattern,
+  content : Array[SVGNode],
+) -> Pattern {
+  {
+    id: pattern.id,
+    width: pattern.width,
+    height: pattern.height,
+    content,
+    pattern_units: pattern_units_from_msvg(pattern.pattern_units),
+    pattern_content_units: pattern_units_from_msvg(
+      pattern.pattern_content_units,
+    ),
+    transform: Transform::from_msvg(pattern.transform),
+  }
+}
+
+///|
+fn Pattern::to_msvg(self : Pattern) -> @msvg.Pattern {
+  @msvg.Pattern::{
+    id: self.id,
+    width: self.width,
+    height: self.height,
+    content: self.content.map(fn(n) { n.to_msvg() }),
+    pattern_units: pattern_units_to_msvg(self.pattern_units),
+    pattern_content_units: pattern_units_to_msvg(self.pattern_content_units),
+    transform: self.transform.to_msvg(),
+    view_box: None,
+    preserve_aspect_ratio: @msvg.PreserveAspectRatio::default(),
+  }
 }

@@ -40,7 +40,7 @@ pub fn PathFollower::update(
 ///|
 fn PathFollower::from_msvg(follower : @msvg.PathFollower) -> PathFollower {
   {
-    path: follower.path.map(path_command_from_msvg),
+    path: follower.path.map(PathCommand::from_msvg),
     polyline: follower.polyline,
     lengths: follower.lengths,
     total_length: follower.total_length,
@@ -52,7 +52,7 @@ fn PathFollower::from_msvg(follower : @msvg.PathFollower) -> PathFollower {
 ///|
 fn PathFollower::to_msvg(self : PathFollower) -> @msvg.PathFollower {
   @msvg.PathFollower::{
-    path: self.path.map(path_command_to_msvg),
+    path: self.path.map(fn(c) { c.to_msvg() }),
     polyline: self.polyline,
     lengths: self.lengths,
     total_length: self.total_length,

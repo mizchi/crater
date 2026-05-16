@@ -378,7 +378,7 @@ fn use_element_to_msvg(use_element : UseElement) -> @msvg.UseElement {
 fn symbol_from_msvg(symbol : @msvg.Symbol) -> Symbol {
   {
     id: symbol.id,
-    content: svg_node_from_msvg(symbol.content),
+    content: SVGNode::from_msvg(symbol.content),
     view_box: ViewBox::from_msvg_option(symbol.view_box),
     preserve_aspect_ratio: PreserveAspectRatio::default(),
   }
@@ -388,7 +388,7 @@ fn symbol_from_msvg(symbol : @msvg.Symbol) -> Symbol {
 fn symbol_to_msvg(symbol : Symbol) -> @msvg.Symbol {
   @msvg.Symbol::{
     id: symbol.id,
-    content: svg_node_to_msvg(symbol.content),
+    content: symbol.content.to_msvg(),
     view_box: ViewBox::to_msvg_option(symbol.view_box),
     width: None,
     height: None,

@@ -2,7 +2,7 @@
 /// Parse SVG markup string into SVGNode via the shared mizchi/svg parser.
 pub fn parse_svg(svg_str : String) -> SVGNode? {
   match @msvg.parse_svg_document(svg_str) {
-    Some(doc) => Some(svg_node_from_msvg(doc.root))
+    Some(doc) => Some(SVGNode::from_msvg(doc.root))
     None => None
   }
 }

@@ -82,8 +82,6 @@ pub fn path(String, String) -> SVGNode
 
 pub fn path_bbox(Array[PathCommand]) -> BoundingBox
 
-pub fn path_command_from_msvg(@mizchi/svg.PathCommand) -> PathCommand
-
 pub fn path_to_polylines(Array[PathCommand], Double) -> Array[Array[(Double, Double)]]
 
 pub fn process_white_space(String, WhiteSpace) -> String
@@ -623,6 +621,7 @@ pub(all) enum PathCommand {
   SmoothQuadraticCurveToRel(Double, Double)
   ArcToRel(Double, Double, Double, Bool, Bool, Double, Double)
 } derive(@debug.Debug)
+pub fn PathCommand::from_msvg(@mizchi/svg.PathCommand) -> Self
 pub impl Show for PathCommand
 
 pub(all) struct PathFollower {

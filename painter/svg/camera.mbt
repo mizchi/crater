@@ -11,45 +11,45 @@ pub(all) struct Camera {
 
 ///|
 pub fn Camera::new(viewport_width : Int, viewport_height : Int) -> Camera {
-  camera_from_msvg(@msvg.Camera::new(viewport_width, viewport_height))
+  Camera::from_msvg(@msvg.Camera::new(viewport_width, viewport_height))
 }
 
 ///|
 /// Move camera by delta
 pub fn Camera::pan(self : Camera, dx : Double, dy : Double) -> Unit {
-  let camera = camera_to_msvg(self)
+  let camera = self.to_msvg()
   camera.pan(dx, dy)
-  copy_camera_from_msvg(self, camera)
+  self.sync_from_msvg(camera)
 }
 
 ///|
 /// Set camera position
 pub fn Camera::set_position(self : Camera, x : Double, y : Double) -> Unit {
-  let camera = camera_to_msvg(self)
+  let camera = self.to_msvg()
   camera.set_position(x, y)
-  copy_camera_from_msvg(self, camera)
+  self.sync_from_msvg(camera)
 }
 
 ///|
 /// Set zoom level
 pub fn Camera::set_zoom(self : Camera, zoom : Double) -> Unit {
-  let camera = camera_to_msvg(self)
+  let camera = self.to_msvg()
   camera.set_zoom(zoom)
-  copy_camera_from_msvg(self, camera)
+  self.sync_from_msvg(camera)
 }
 
 ///|
 /// Zoom by factor (multiply current zoom)
 pub fn Camera::zoom_by(self : Camera, factor : Double) -> Unit {
-  let camera = camera_to_msvg(self)
+  let camera = self.to_msvg()
   camera.zoom_by(factor)
-  copy_camera_from_msvg(self, camera)
+  self.sync_from_msvg(camera)
 }
 
 ///|
 /// Get the world-space bounding box visible through this camera
 pub fn Camera::get_visible_bounds(self : Camera) -> BoundingBox {
-  bounding_box_from_msvg(camera_to_msvg(self).get_visible_bounds())
+  BoundingBox::from_msvg(self.to_msvg().get_visible_bounds())
 }
 
 ///|
@@ -59,7 +59,7 @@ pub fn Camera::world_to_screen(
   wx : Double,
   wy : Double,
 ) -> (Int, Int) {
-  camera_to_msvg(self).world_to_screen(wx, wy)
+  self.to_msvg().world_to_screen(wx, wy)
 }
 
 ///|
@@ -69,11 +69,40 @@ pub fn Camera::screen_to_world(
   sx : Int,
   sy : Int,
 ) -> (Double, Double) {
-  camera_to_msvg(self).screen_to_world(sx, sy)
+  self.to_msvg().screen_to_world(sx, sy)
 }
 
 ///|
 /// Get transform matrix for this camera
 pub fn Camera::get_transform(self : Camera) -> Transform {
-  Transform::from_msvg(camera_to_msvg(self).get_transform())
+  Transform::from_msvg(self.to_msvg().get_transform())
+}
+
+///|
+fn Camera::from_msvg(camera : @msvg.Camera) -> Camera {
+  {
+    x: camera.x,
+    y: camera.y,
+    zoom: camera.zoom,
+    viewport_width: camera.viewport_width,
+    viewport_height: camera.viewport_height,
+  }
+}
+
+///|
+fn Camera::to_msvg(self : Camera) -> @msvg.Camera {
+  @msvg.Camera::{
+    x: self.x,
+    y: self.y,
+    zoom: self.zoom,
+    viewport_width: self.viewport_width,
+    viewport_height: self.viewport_height,
+  }
+}
+
+///|
+fn Camera::sync_from_msvg(self : Camera, source : @msvg.Camera) -> Unit {
+  self.x = source.x
+  self.y = source.y
+  self.zoom = source.zoom
 }

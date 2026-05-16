@@ -1,20 +1,20 @@
 ///|
 /// Compute the bounding box of the entire scene
 pub fn Scene::get_bounds(self : Scene) -> BoundingBox {
-  bounding_box_from_msvg(scene_to_msvg(self).get_bounds())
+  BoundingBox::from_msvg(scene_to_msvg(self).get_bounds())
 }
 
 ///|
 /// Compute the dirty region (union of all dirty node bounds)
 pub fn Scene::get_dirty_region(self : Scene) -> BoundingBox {
-  bounding_box_from_msvg(scene_to_msvg(self).get_dirty_region())
+  BoundingBox::from_msvg(scene_to_msvg(self).get_dirty_region())
 }
 
 ///|
 /// Render only nodes that intersect with the dirty region
 pub fn Scene::render_dirty(self : Scene, ctx : RenderContext) -> BoundingBox {
   let scene = scene_to_msvg(self)
-  let dirty_region = bounding_box_from_msvg(
+  let dirty_region = BoundingBox::from_msvg(
     scene.render_dirty(render_context_to_msvg(ctx)),
   )
   copy_svg_scene_dirty_state_from_msvg(self, scene)
