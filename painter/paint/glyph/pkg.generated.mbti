@@ -2,9 +2,9 @@
 package "mizchi/crater-painter/paint/glyph"
 
 import {
-  "mizchi/crater-painter/svg",
   "mizchi/font",
   "mizchi/font/glyph_provider",
+  "mizchi/svg",
 }
 
 // Values

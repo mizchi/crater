@@ -92,11 +92,7 @@ describe("MoonBit painter glyph boundaries", () => {
     expect(fs.existsSync(path.join(REPO_ROOT, "painter/paint/raster/glyph_cache.mbt"))).toBe(false);
     expect(fs.existsSync(path.join(REPO_ROOT, "painter/paint/raster/glyph_layout.mbt"))).toBe(false);
     expect(fs.existsSync(path.join(REPO_ROOT, "painter/paint/raster/glyph_rasterizer.mbt"))).toBe(false);
-
-    const compatSource = fs.readFileSync(path.join(REPO_ROOT, "painter/paint/raster/glyph_compat.mbt"), "utf8");
-    expect(compatSource.includes("pub using @glyph {type GlyphProvider}")).toBe(true);
-    expect(compatSource.includes("@glyph.set_glyph_provider(provider)")).toBe(true);
-    expect(compatSource.includes("@glyph.pre_rasterize_glyphs(")).toBe(true);
+    expect(fs.existsSync(path.join(REPO_ROOT, "painter/paint/raster/glyph_compat.mbt"))).toBe(false);
   });
 
   it("splits glyph bitmap blitting helpers out of glyph_render", () => {

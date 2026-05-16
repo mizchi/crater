@@ -18,7 +18,7 @@ import {
   "mizchi/crater-browser/tui/paint/viewport" @tui_paint_viewport,
   "mizchi/crater-dom/dom",
   "mizchi/crater-renderer/renderer",
-  "mizchi/crater-painter/svg",
+  "mizchi/svg" @svg,
   "mizchi/crater-painter/paint/raster",
   "mizchi/crater-painter/paint/glyph" @glyph,
   "mizchi/js/core",

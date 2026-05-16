@@ -4,7 +4,7 @@ package "mizchi/crater-painter/terminal/kitty"
 import {
   "mizchi/crater-painter/paint/model",
   "mizchi/crater-painter/paint/raster",
-  "mizchi/crater-painter/svg",
+  "mizchi/svg",
   "moonbitlang/async/io",
 }
 

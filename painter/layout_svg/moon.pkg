@@ -1,6 +1,6 @@
 import {
   "mizchi/crater-core" @types,
-  "mizchi/crater-painter/svg" @svgcore,
+  "mizchi/svg" @svgcore,
 }
 
 import {

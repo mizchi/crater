@@ -16,7 +16,7 @@ import {
   "mizchi/crater-painter/paint/raster",
   "mizchi/crater-painter/paint/glyph" @glyph,
   "mizchi/crater-painter/terminal/sixel",
-  "mizchi/crater-painter/svg",
+  "mizchi/svg" @svg,
 }
 
 import {

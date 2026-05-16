@@ -3,7 +3,7 @@ package "mizchi/crater-painter/layout_svg"
 
 import {
   "mizchi/crater-core",
-  "mizchi/crater-painter/svg",
+  "mizchi/svg",
 }
 
 // Values

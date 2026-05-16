@@ -66,7 +66,7 @@ pub fn glyph_provider_from_delegate(
       let (commands, advance) = (delegate.get_glyph)(
         codepoint, font_size, is_bold,
       )
-      (commands.map(@svg.PathCommand::from_msvg), advance)
+      (commands, advance)
     },
     get_kern: fn(cp1, cp2, font_size, is_bold) {
       (delegate.get_kern)(cp1, cp2, font_size, is_bold)
@@ -77,7 +77,7 @@ pub fn glyph_provider_from_delegate(
           let (commands, advance) = glyph_by_weight(
             codepoint, font_size, font_weight,
           )
-          (commands.map(@svg.PathCommand::from_msvg), advance)
+          (commands, advance)
         })
       None => None
     },

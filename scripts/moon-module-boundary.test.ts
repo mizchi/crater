@@ -11,7 +11,6 @@ describe("MoonBit module boundary test organization", () => {
       "scripts/moon-module-boundary-painter.test.ts",
       "scripts/moon-module-boundary-package.test.ts",
       "scripts/moon-module-boundary-renderer.test.ts",
-      "scripts/moon-module-boundary-svg.test.ts",
       "scripts/moon-module-boundary-webdriver.test.ts",
     ] as const;
 

@@ -3,7 +3,7 @@ package "mizchi/crater-painter/paint/raster"
 
 import {
   "mizchi/crater-painter/paint/model",
-  "mizchi/crater-painter/svg",
+  "mizchi/svg",
 }
 
 // Values

@@ -11,6 +11,7 @@
       "version": "0.17.1"
     },
     "mizchi/font": "0.7.3",
+    "mizchi/svg": "0.2.1",
     "mizchi/crater-dom": {
       "path": "../dom",
       "version": "0.17.1"

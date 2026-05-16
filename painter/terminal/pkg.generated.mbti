@@ -5,7 +5,7 @@ import {
   "mizchi/crater-painter/paint/glyph",
   "mizchi/crater-painter/paint/model",
   "mizchi/crater-painter/paint/raster",
-  "mizchi/crater-painter/svg",
+  "mizchi/svg",
   "moonbitlang/async/io",
 }
 
