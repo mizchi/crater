@@ -363,9 +363,16 @@ jobs:
           if-no-files-found: warn
 
   wpt-compat-summary:
-    if: always()
+    if: >-
+      always()
+      && (github.event_name == 'schedule'
+        || github.event_name == 'push'
+        || needs.affected.outputs.wpt_css == 'true'
+        || needs.affected.outputs.wpt_dom == 'true'
+        || needs.affected.outputs.wpt_webdriver == 'true')
     runs-on: ubuntu-latest
     needs:
+      - affected
       - wpt-css-tests
       - wpt-dom-tests
       - wpt-webdriver-tests
@@ -891,9 +898,14 @@ jobs:
         run: exit 1
 
   paint-vrt-summary:
-    if: always()
+    if: >-
+      always()
+      && (github.event_name == 'schedule'
+        || github.event_name == 'push'
+        || needs.affected.outputs.paint_vrt == 'true')
     runs-on: ubuntu-latest
     needs:
+      - affected
       - playwright-paint-vrt
 
     steps:
@@ -1064,9 +1076,14 @@ jobs:
           if-no-files-found: warn
 
   wpt-vrt-summary:
-    if: always()
+    if: >-
+      always()
+      && (github.event_name == 'schedule'
+        || github.event_name == 'push'
+        || needs.affected.outputs.wpt_vrt == 'true')
     runs-on: ubuntu-latest
     needs:
+      - affected
       - playwright-wpt-vrt
 
     steps:
