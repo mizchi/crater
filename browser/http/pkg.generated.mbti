@@ -3,12 +3,14 @@ package "mizchi/crater-browser/http"
 
 import {
   "mizchi/crater-browser-http",
+  "mizchi/crater-browser-http/cache",
+  "mizchi/crater-browser-http/cookie_jar",
 }
 
 // Values
-pub fn[CacheBackend : @crater-browser-http.HttpCacheBackend] cached_fetch(url~ : String, options~ : @crater-browser-http.FetchOptions, cache~ : CacheBackend, fetcher~ : (String, @crater-browser-http.FetchOptions) -> @crater-browser-http.HttpResponse raise @crater-browser-http.HttpError) -> @crater-browser-http.HttpResponse raise @crater-browser-http.HttpError
+pub fn[CacheBackend : @cache.HttpCacheBackend] cached_fetch(url~ : String, options~ : @crater-browser-http.FetchOptions, cache~ : CacheBackend, fetcher~ : (String, @crater-browser-http.FetchOptions) -> @crater-browser-http.HttpResponse raise @crater-browser-http.HttpError) -> @crater-browser-http.HttpResponse raise @crater-browser-http.HttpError
 
-pub async fn[CacheBackend : @crater-browser-http.HttpCacheBackend] cached_fetch_async(url~ : String, options~ : @crater-browser-http.FetchOptions, cache~ : CacheBackend, fetcher~ : async (String, @crater-browser-http.FetchOptions) -> @crater-browser-http.HttpResponse raise @crater-browser-http.HttpError) -> @crater-browser-http.HttpResponse raise @crater-browser-http.HttpError
+pub async fn[CacheBackend : @cache.HttpCacheBackend] cached_fetch_async(url~ : String, options~ : @crater-browser-http.FetchOptions, cache~ : CacheBackend, fetcher~ : async (String, @crater-browser-http.FetchOptions) -> @crater-browser-http.HttpResponse raise @crater-browser-http.HttpError) -> @crater-browser-http.HttpResponse raise @crater-browser-http.HttpError
 
 pub async fn fetch(String, options? : @crater-browser-http.FetchOptions) -> @crater-browser-http.HttpResponse raise @crater-browser-http.HttpError
 
@@ -16,24 +18,24 @@ pub fn headers_to_json(Map[String, String]) -> String
 
 pub fn is_cacheable_status(Int) -> Bool
 
-pub fn is_fresh(@crater-browser-http.CacheEntry, Double) -> Bool
+pub fn is_fresh(@cache.CacheEntry, Double) -> Bool
 
 pub fn now_seconds() -> Double
 
-pub fn parse_cache_control(String) -> @crater-browser-http.CacheDirectives
+pub fn parse_cache_control(String) -> @cache.CacheDirectives
 
-pub fn parse_set_cookie(String, String, String) -> @crater-browser-http.ParsedCookie?
+pub fn parse_set_cookie(String, String, String) -> @cookie_jar.ParsedCookie?
 
 // Errors
 
 // Types and methods
 
 // Type aliases
-pub using @crater-browser-http {type CacheDirectives}
+pub using @cache {type CacheDirectives}
 
-pub using @crater-browser-http {type CacheEntry}
+pub using @cache {type CacheEntry}
 
-pub using @crater-browser-http {type CookieJar}
+pub using @cookie_jar {type CookieJar}
 
 pub using @crater-browser-http {type CredentialsMode}
 
@@ -43,15 +45,15 @@ pub using @crater-browser-http {type HttpError}
 
 pub using @crater-browser-http {type HttpResponse}
 
-pub using @crater-browser-http {type MemoryCacheBackend}
+pub using @cache {type MemoryCacheBackend}
 
-pub using @crater-browser-http {type ParsedCookie}
+pub using @cookie_jar {type ParsedCookie}
 
 pub using @crater-browser-http {type RequestMode}
 
 pub using @crater-browser-http {type RequestSandbox}
 
-pub using @crater-browser-http {trait HttpCacheBackend}
+pub using @cache {trait HttpCacheBackend}
 
 // Traits
 

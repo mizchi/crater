@@ -1,18 +1,23 @@
 ///|
 pub using @http_impl {
-  trait HttpCacheBackend,
-  type CacheDirectives,
-  type CacheEntry,
-  type CookieJar,
   type CredentialsMode,
   type FetchOptions,
   type HttpError,
   type HttpResponse,
-  type MemoryCacheBackend,
-  type ParsedCookie,
   type RequestMode,
   type RequestSandbox,
 }
+
+///|
+pub using @cache {
+  trait HttpCacheBackend,
+  type CacheDirectives,
+  type CacheEntry,
+  type MemoryCacheBackend,
+}
+
+///|
+pub using @cookie_jar {type CookieJar, type ParsedCookie}
 
 ///|
 pub fn[CacheBackend : HttpCacheBackend] cached_fetch(
@@ -21,7 +26,7 @@ pub fn[CacheBackend : HttpCacheBackend] cached_fetch(
   cache~ : CacheBackend,
   fetcher~ : (String, FetchOptions) -> HttpResponse raise HttpError,
 ) -> HttpResponse raise HttpError {
-  @http_impl.cached_fetch(url~, options~, cache~, fetcher~)
+  @cache.cached_fetch(url~, options~, cache~, fetcher~)
 }
 
 ///|
@@ -31,7 +36,7 @@ pub async fn[CacheBackend : HttpCacheBackend] cached_fetch_async(
   cache~ : CacheBackend,
   fetcher~ : async (String, FetchOptions) -> HttpResponse raise HttpError,
 ) -> HttpResponse raise HttpError {
-  @http_impl.cached_fetch_async(url~, options~, cache~, fetcher~)
+  @cache.cached_fetch_async(url~, options~, cache~, fetcher~)
 }
 
 ///|
@@ -52,22 +57,22 @@ pub fn headers_to_json(headers : Map[String, String]) -> String {
 
 ///|
 pub fn is_cacheable_status(status : Int) -> Bool {
-  @http_impl.is_cacheable_status(status)
+  @cache.is_cacheable_status(status)
 }
 
 ///|
 pub fn is_fresh(entry : CacheEntry, now : Double) -> Bool {
-  @http_impl.is_fresh(entry, now)
+  @cache.is_fresh(entry, now)
 }
 
 ///|
 pub fn now_seconds() -> Double {
-  @http_impl.now_seconds()
+  @cache.now_seconds()
 }
 
 ///|
 pub fn parse_cache_control(header : String) -> CacheDirectives {
-  @http_impl.parse_cache_control(header)
+  @cache.parse_cache_control(header)
 }
 
 ///|
@@ -76,5 +81,5 @@ pub fn parse_set_cookie(
   request_host : String,
   request_path : String,
 ) -> ParsedCookie? {
-  @http_impl.parse_set_cookie(header, request_host, request_path)
+  @cookie_jar.parse_set_cookie(header, request_host, request_path)
 }

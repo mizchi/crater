@@ -1,7 +1,7 @@
 ///|
 test "shell package can use MemoryCacheBackend with cached_fetch" {
-  let cache = @http.MemoryCacheBackend::new(max_entries=4)
-  let response = @http.cached_fetch(
+  let cache = @http_cache.MemoryCacheBackend::new(max_entries=4)
+  let response = @http_cache.cached_fetch(
     url="https://example.test/app.css",
     options=@http.FetchOptions::default(),
     cache~,

@@ -1,13 +1,13 @@
 ///|
-/// Build a CacheEntry from a URL and HttpResponse.
-fn build_cache_entry(url : String, response : HttpResponse) -> CacheEntry {
-  let cache_control_header = get_header(response.headers, "cache-control")
+/// Build a CacheEntry from a URL and @http.HttpResponse.
+fn build_cache_entry(url : String, response : @http.HttpResponse) -> CacheEntry {
+  let cache_control_header = @http.get_header(response.headers, "cache-control")
   let directives = match cache_control_header {
     Some(h) => parse_cache_control(h)
     None => CacheDirectives::default()
   }
-  let etag = get_header(response.headers, "etag")
-  let last_modified = get_header(response.headers, "last-modified")
+  let etag = @http.get_header(response.headers, "etag")
+  let last_modified = @http.get_header(response.headers, "last-modified")
   {
     url,
     status: response.status,
@@ -21,8 +21,8 @@ fn build_cache_entry(url : String, response : HttpResponse) -> CacheEntry {
 }
 
 ///|
-/// Convert a CacheEntry back to an HttpResponse.
-fn entry_to_response(entry : CacheEntry) -> HttpResponse {
+/// Convert a CacheEntry back to an @http.HttpResponse.
+fn entry_to_response(entry : CacheEntry) -> @http.HttpResponse {
   { status: entry.status, headers: entry.headers, body: entry.body }
 }
 
@@ -32,10 +32,10 @@ fn entry_to_response(entry : CacheEntry) -> HttpResponse {
 /// Only GET requests are cached.
 pub async fn[CacheBackend : HttpCacheBackend] cached_fetch_async(
   url~ : String,
-  options~ : FetchOptions,
+  options~ : @http.FetchOptions,
   cache~ : CacheBackend,
-  fetcher~ : async (String, FetchOptions) -> HttpResponse raise HttpError,
-) -> HttpResponse raise HttpError {
+  fetcher~ : async (String, @http.FetchOptions) -> @http.HttpResponse raise @http.HttpError,
+) -> @http.HttpResponse raise @http.HttpError {
   if options.http_method != "GET" {
     return fetcher(url, options)
   }
@@ -59,7 +59,7 @@ pub async fn[CacheBackend : HttpCacheBackend] cached_fetch_async(
           Some(lm) => modified_headers["If-Modified-Since"] = lm
           None => ()
         }
-        let modified_options : FetchOptions = {
+        let modified_options : @http.FetchOptions = {
           ..options,
           headers: modified_headers,
         }
@@ -95,10 +95,10 @@ pub async fn[CacheBackend : HttpCacheBackend] cached_fetch_async(
 /// inject any transport function.
 pub fn[CacheBackend : HttpCacheBackend] cached_fetch(
   url~ : String,
-  options~ : FetchOptions,
+  options~ : @http.FetchOptions,
   cache~ : CacheBackend,
-  fetcher~ : (String, FetchOptions) -> HttpResponse raise HttpError,
-) -> HttpResponse raise HttpError {
+  fetcher~ : (String, @http.FetchOptions) -> @http.HttpResponse raise @http.HttpError,
+) -> @http.HttpResponse raise @http.HttpError {
   // Only cache GET
   if options.http_method != "GET" {
     return fetcher(url, options)
@@ -122,7 +122,7 @@ pub fn[CacheBackend : HttpCacheBackend] cached_fetch(
           Some(lm) => modified_headers["If-Modified-Since"] = lm
           None => ()
         }
-        let modified_options : FetchOptions = {
+        let modified_options : @http.FetchOptions = {
           ..options,
           headers: modified_headers,
         }

@@ -152,7 +152,7 @@ async fn Browser::prefetch_images(self : Browser) -> Unit {
         ..@http.FetchOptions::default(),
         sandbox: self.request_sandbox,
       }
-      let response = @http.cached_fetch_async(
+      let response = @http_cache.cached_fetch_async(
         url=abs_url,
         options~,
         cache=self.http_cache,

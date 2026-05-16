@@ -1,0 +1,7 @@
+import {
+  "moonbitlang/core/string",
+}
+
+warnings = "-unused_package-unused_error_type"
+
+supported_targets = "js+native+wasm+wasm-gc"

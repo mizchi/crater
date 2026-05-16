@@ -10,7 +10,7 @@ pub fn Browser::set_enable_js(self : Browser, enable : Bool) -> Unit {
 /// Enable or disable cookie jar.
 /// Cookies are disabled by default for security.
 pub fn Browser::set_enable_cookies(self : Browser, enable : Bool) -> Unit {
-  self.cookie_jar = @http.CookieJar::new(enabled=enable)
+  self.cookie_jar = @http_cookie_jar.CookieJar::new(enabled=enable)
 }
 
 ///|
