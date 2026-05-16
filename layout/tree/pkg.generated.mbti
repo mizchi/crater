@@ -3,6 +3,7 @@ package "mizchi/crater-layout/tree"
 
 import {
   "mizchi/crater-core",
+  "mizchi/crater-core/layout_view",
   "mizchi/crater-core/node",
   "mizchi/crater-core/style",
   "moonbitlang/core/debug",
@@ -172,6 +173,7 @@ pub fn LayoutNode::set_width_auto(Self) -> Self
 pub fn LayoutNode::set_width_percent(Self, Double) -> Self
 pub fn LayoutNode::to_node(Self) -> @node.Node
 pub fn LayoutNode::with_measure(String, @style.Style, @crater-core.MeasureFunc) -> Self
+pub impl @layout_view.LayoutView for LayoutNode
 
 pub struct LayoutTree {
   root : LayoutNode

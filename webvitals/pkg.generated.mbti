@@ -3,7 +3,7 @@ package "mizchi/crater-webvitals"
 
 import {
   "mizchi/crater-core",
-  "mizchi/crater-layout/tree",
+  "mizchi/crater-core/layout_view",
   "moonbitlang/core/debug",
 }
 
@@ -12,7 +12,7 @@ pub fn compute_element_shift(@crater-core.BoundingRect, @crater-core.BoundingRec
 
 pub fn compute_total(Array[@crater-core.BoundingRect], Array[@crater-core.BoundingRect], @crater-core.Size[Double]) -> Double
 
-pub fn extract_lcp_candidates(@tree.LayoutTree, Double, Double) -> Array[LCPCandidate]
+pub fn[T : @layout_view.LayoutView] extract_lcp_candidates(T, Double, Double) -> Array[LCPCandidate]
 
 // Errors
 
