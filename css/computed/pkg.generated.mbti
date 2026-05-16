@@ -2,8 +2,8 @@
 package "mizchi/crater-css/computed"
 
 import {
-  "mizchi/crater-core",
   "mizchi/crater-core/style",
+  "mizchi/crater-core/values",
   "mizchi/crater-css/cascade",
 }
 
@@ -18,11 +18,11 @@ pub fn compute_inline_raw(String, ComputeContext) -> @style.Style
 
 pub fn compute_with_vars(@cascade.CascadedValues, ComputeContext) -> (@style.Style, Map[String, String])
 
-pub fn default_background_color() -> @crater-core.Color
+pub fn default_background_color() -> @values.Color
 
-pub fn default_color() -> @crater-core.Color
+pub fn default_color() -> @values.Color
 
-pub fn extract_border_width(String) -> @crater-core.Dimension
+pub fn extract_border_width(String) -> @values.Dimension
 
 pub fn initial_value(String) -> String
 
@@ -30,19 +30,19 @@ pub fn is_grid_area_name(String) -> Bool
 
 pub fn is_inherited(String) -> Bool
 
-pub fn parse_align_self(String) -> @crater-core.AlignSelf
+pub fn parse_align_self(String) -> @values.AlignSelf
 
-pub fn parse_alignment(String) -> @crater-core.Alignment
+pub fn parse_alignment(String) -> @values.Alignment
 
-pub fn parse_alignment_with_overflow(String) -> (@crater-core.Alignment, Bool)
+pub fn parse_alignment_with_overflow(String) -> (@values.Alignment, Bool)
 
 pub fn parse_aspect_ratio(String) -> Double?
 
-pub fn parse_clear(String) -> @crater-core.Clear
+pub fn parse_clear(String) -> @values.Clear
 
-pub fn parse_clear_with_direction(String, @style.Direction) -> @crater-core.Clear
+pub fn parse_clear_with_direction(String, @style.Direction) -> @values.Clear
 
-pub fn parse_clip(String) -> @crater-core.ClipRect
+pub fn parse_clip(String) -> @values.ClipRect
 
 pub fn parse_clip_path(String) -> @style.ClipPath
 
@@ -50,47 +50,47 @@ pub fn parse_color(String) -> CssColorValue
 
 pub fn parse_color_with_ctx(String, ComputeContext) -> CssColorValue
 
-pub fn parse_dimension(String) -> @crater-core.Dimension
+pub fn parse_dimension(String) -> @values.Dimension
 
 pub fn parse_direction(String) -> @style.Direction
 
-pub fn parse_display(String) -> @crater-core.Display
+pub fn parse_display(String) -> @values.Display
 
-pub fn parse_flex_direction(String) -> @crater-core.FlexDirection
+pub fn parse_flex_direction(String) -> @values.FlexDirection
 
-pub fn parse_flex_wrap(String) -> @crater-core.FlexWrap
+pub fn parse_flex_wrap(String) -> @values.FlexWrap
 
-pub fn parse_float(String) -> @crater-core.Float
+pub fn parse_float(String) -> @values.Float
 
-pub fn parse_float_with_direction(String, @style.Direction) -> @crater-core.Float
+pub fn parse_float_with_direction(String, @style.Direction) -> @values.Float
 
-pub fn parse_grid_area_shorthand(String) -> (@crater-core.GridPlacement, @crater-core.GridPlacement, @crater-core.GridPlacement, @crater-core.GridPlacement)
+pub fn parse_grid_area_shorthand(String) -> (@values.GridPlacement, @values.GridPlacement, @values.GridPlacement, @values.GridPlacement)
 
-pub fn parse_grid_auto_flow(String) -> @crater-core.GridAutoFlow
+pub fn parse_grid_auto_flow(String) -> @values.GridAutoFlow
 
-pub fn parse_grid_line_shorthand(String) -> (@crater-core.GridPlacement, @crater-core.GridPlacement)
+pub fn parse_grid_line_shorthand(String) -> (@values.GridPlacement, @values.GridPlacement)
 
-pub fn parse_grid_placement(String) -> @crater-core.GridPlacement
+pub fn parse_grid_placement(String) -> @values.GridPlacement
 
 pub fn parse_grid_template_areas_value(String) -> Array[String]
 
-pub fn parse_grid_template_shorthand(String) -> (Array[@crater-core.TrackSizingFunction], Array[@crater-core.TrackSizingFunction])?
+pub fn parse_grid_template_shorthand(String) -> (Array[@values.TrackSizingFunction], Array[@values.TrackSizingFunction])?
 
-pub fn parse_grid_template_tracks(String) -> Array[@crater-core.TrackSizingFunction]
+pub fn parse_grid_template_tracks(String) -> Array[@values.TrackSizingFunction]
 
 pub fn parse_integer(String) -> Int
 
-pub fn parse_linear_gradient(String) -> @crater-core.BackgroundImage
+pub fn parse_linear_gradient(String) -> @values.BackgroundImage
 
 pub fn parse_number(String) -> Double
 
-pub fn parse_overflow(String) -> @crater-core.Overflow
+pub fn parse_overflow(String) -> @values.Overflow
 
-pub fn parse_place_content(String) -> (@crater-core.Alignment, @crater-core.Alignment)?
+pub fn parse_place_content(String) -> (@values.Alignment, @values.Alignment)?
 
-pub fn parse_place_content_with_overflow(String) -> ((@crater-core.Alignment, Bool), (@crater-core.Alignment, Bool))?
+pub fn parse_place_content_with_overflow(String) -> ((@values.Alignment, Bool), (@values.Alignment, Bool))?
 
-pub fn parse_position(String) -> @crater-core.Position
+pub fn parse_position(String) -> @values.Position
 
 pub fn parse_scroll_snap_align(String) -> (@style.ScrollSnapAlign, @style.ScrollSnapAlign)
 
@@ -102,7 +102,7 @@ pub fn parse_white_space(String) -> @style.WhiteSpace
 
 pub fn parse_writing_mode(String) -> @style.WritingMode
 
-pub fn resolve_current_color(CssColorValue, @crater-core.Color) -> @crater-core.Color
+pub fn resolve_current_color(CssColorValue, @values.Color) -> @values.Color
 
 // Errors
 
@@ -121,13 +121,13 @@ pub fn ComputeContext::with_parent_and_vars(@style.Style, Map[String, String]) -
 pub fn ComputeContext::with_viewport(Double, Double) -> Self
 
 pub(all) enum CssColorValue {
-  Resolved(@crater-core.Color)
+  Resolved(@values.Color)
   CurrentColor
   Inherit
 }
-pub fn CssColorValue::get_color(Self) -> @crater-core.Color?
+pub fn CssColorValue::get_color(Self) -> @values.Color?
 pub fn CssColorValue::is_resolved(Self) -> Bool
-pub fn CssColorValue::or_default(Self, @crater-core.Color) -> @crater-core.Color
+pub fn CssColorValue::or_default(Self, @values.Color) -> @values.Color
 pub impl Show for CssColorValue
 
 // Type aliases

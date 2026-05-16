@@ -5,6 +5,7 @@ import {
   "mizchi/crater-browser/tui/primitives",
   "mizchi/crater-core",
   "mizchi/crater-core/node",
+  "mizchi/crater-core/values",
   "mizchi/crater-painter/paint/scroll",
   "moonbitlang/core/debug",
 }
@@ -12,13 +13,13 @@ import {
 // Values
 pub fn ansi_bg_256(Int) -> String
 
-pub fn ansi_bg_color(@crater-core.Color) -> String
+pub fn ansi_bg_color(@values.Color) -> String
 
 pub fn ansi_bold() -> String
 
 pub fn ansi_fg_256(Int) -> String
 
-pub fn ansi_fg_color(@crater-core.Color) -> String
+pub fn ansi_fg_color(@values.Color) -> String
 
 pub fn ansi_hyperlink_end() -> String
 
@@ -48,19 +49,19 @@ pub fn cleanup_stdin() -> Unit
 
 pub fn clear_screen() -> String
 
-pub fn color_to_256(@crater-core.Color) -> Int
+pub fn color_to_256(@values.Color) -> Int
 
-pub fn dirty_rects_to_cells(Array[@crater-core.BoundingRect], Int, Int, Int, Int) -> Array[@primitives.DirtyRect]
+pub fn dirty_rects_to_cells(Array[@values.BoundingRect], Int, Int, Int, Int) -> Array[@primitives.DirtyRect]
 
 pub fn disable_mouse() -> String
 
-pub fn draw_box(@primitives.CharBuffer, Int, Int, Int, Int, @primitives.BoxStyle, @crater-core.Color, @crater-core.Color) -> Unit
+pub fn draw_box(@primitives.CharBuffer, Int, Int, Int, Int, @primitives.BoxStyle, @values.Color, @values.Color) -> Unit
 
-pub fn draw_filled_box(@primitives.CharBuffer, Int, Int, Int, Int, @primitives.BoxStyle, @crater-core.Color, @crater-core.Color) -> Unit
+pub fn draw_filled_box(@primitives.CharBuffer, Int, Int, Int, Int, @primitives.BoxStyle, @values.Color, @values.Color) -> Unit
 
 pub fn draw_heading(@primitives.CharBuffer, Int, Int, String, Int, Int) -> Int
 
-pub fn draw_hline(@primitives.CharBuffer, Int, Int, Int, @primitives.BoxStyle, @crater-core.Color) -> Unit
+pub fn draw_hline(@primitives.CharBuffer, Int, Int, Int, @primitives.BoxStyle, @values.Color) -> Unit
 
 pub fn draw_link(@primitives.CharBuffer, Int, Int, String, Int, Bool) -> Int
 
@@ -68,7 +69,7 @@ pub fn draw_scrollbar(@primitives.CharBuffer, Int, Int, Int, Int, Int, Int) -> U
 
 pub fn draw_status_bar(@primitives.CharBuffer, Int, String, Int, Int, focused_link_url? : String?, selection_mode? : Bool, dark_mode? : Bool) -> Unit
 
-pub fn draw_vline(@primitives.CharBuffer, Int, Int, Int, @primitives.BoxStyle, @crater-core.Color) -> Unit
+pub fn draw_vline(@primitives.CharBuffer, Int, Int, Int, @primitives.BoxStyle, @values.Color) -> Unit
 
 pub fn enable_mouse() -> String
 

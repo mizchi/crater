@@ -221,8 +221,8 @@ test "tui/grid_named_areas" {
 test "tui/measure_func" {
   let text = "Hello, World!"
   let text_width = text.length().to_double()
-  let measure = @types.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let measure = @layout_types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       {
         min_width: 1.0,
         max_width: text_width,

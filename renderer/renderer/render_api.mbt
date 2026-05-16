@@ -3,7 +3,7 @@
 
 ///|
 /// Render HTML string to Layout
-pub fn render(html : String, ctx : RenderContext) -> @types.Layout {
+pub fn render(html : String, ctx : RenderContext) -> @layout_types.Layout {
   render_with_external_css(html, ctx, [])
 }
 
@@ -13,7 +13,7 @@ pub fn render_with_external_css(
   html : String,
   ctx : RenderContext,
   external_css : Array[String],
-) -> @types.Layout {
+) -> @layout_types.Layout {
   let doc = @html.parse_document(html)
   render_document_with_external_css(doc, ctx, external_css)
 }
@@ -25,7 +25,7 @@ pub fn render_document_with_external_css(
   doc : @html.Document,
   ctx : RenderContext,
   external_css : Array[String],
-) -> @types.Layout {
+) -> @layout_types.Layout {
   let prepared = prepare_render_document(doc, ctx, external_css)
   let root = build_render_root_node(doc, ctx, prepared)
   compute_layout_from_render_root(root, prepared, ctx)
@@ -37,7 +37,7 @@ pub fn render_document_with_prepared_external_css(
   doc : @html.Document,
   ctx : RenderContext,
   external_css : PreparedExternalCss,
-) -> @types.Layout {
+) -> @layout_types.Layout {
   let prepared = prepare_render_document_with_prepared_external_css(
     doc, ctx, external_css,
   )
@@ -67,7 +67,7 @@ pub fn render_to_node_with_external_css(
 pub fn render_to_node_and_layout(
   html : String,
   ctx : RenderContext,
-) -> (@node.Node, @types.Layout) {
+) -> (@node.Node, @layout_types.Layout) {
   render_to_node_and_layout_with_external_css(html, ctx, [])
 }
 
@@ -76,7 +76,7 @@ pub fn render_to_node_and_layout(
 pub fn render_to_node_and_layout_full_document(
   html : String,
   ctx : RenderContext,
-) -> (@node.Node, @types.Layout) {
+) -> (@node.Node, @layout_types.Layout) {
   let previous = viewport_skeleton_enabled.val
   viewport_skeleton_enabled.val = false
   let result = render_to_node_and_layout(html, ctx)
@@ -90,7 +90,7 @@ pub fn render_to_node_and_layout_with_external_css(
   html : String,
   ctx : RenderContext,
   external_css : Array[String],
-) -> (@node.Node, @types.Layout) {
+) -> (@node.Node, @layout_types.Layout) {
   let doc = @html.parse_document(html)
   render_to_node_and_layout_with_document(doc, ctx, external_css)
 }
@@ -127,7 +127,7 @@ pub fn render_to_node_and_layout_with_document(
   doc : @html.Document,
   ctx : RenderContext,
   external_css : Array[String],
-) -> (@node.Node, @types.Layout) {
+) -> (@node.Node, @layout_types.Layout) {
   let prepared = prepare_render_document(doc, ctx, external_css)
   let root = build_render_root_node(doc, ctx, prepared)
   let layout = compute_layout_from_render_root(root, prepared, ctx)
@@ -140,7 +140,7 @@ pub fn render_to_node_and_layout_with_prepared_external_css(
   doc : @html.Document,
   ctx : RenderContext,
   external_css : PreparedExternalCss,
-) -> (@node.Node, @types.Layout) {
+) -> (@node.Node, @layout_types.Layout) {
   let prepared = prepare_render_document_with_prepared_external_css(
     doc, ctx, external_css,
   )

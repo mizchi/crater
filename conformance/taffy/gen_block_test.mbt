@@ -68,10 +68,10 @@ test "taffy/absolute_correct_cross_child_size_with_percentage" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -127,10 +127,10 @@ test "taffy/block_absolute_aspect_ratio_aspect_ratio_overrides_height_of_full_in
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -171,10 +171,10 @@ test "taffy/block_absolute_aspect_ratio_fill_height" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -214,10 +214,10 @@ test "taffy/block_absolute_aspect_ratio_fill_height_from_inset" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -249,8 +249,8 @@ test "taffy/block_absolute_aspect_ratio_fill_max_height" {
     max_width: @types.Length(50.0),
     aspect_ratio: Some(3.0000),
   }
-  let root_child0_measure = @types.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let root_child0_measure = @layout_types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       {
         min_width: 40.0,
         max_width: 360.0,
@@ -264,10 +264,10 @@ test "taffy/block_absolute_aspect_ratio_fill_max_height" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -299,8 +299,8 @@ test "taffy/block_absolute_aspect_ratio_fill_max_width" {
     max_height: @types.Length(50.0),
     aspect_ratio: Some(0.5000),
   }
-  let root_child0_measure = @types.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let root_child0_measure = @layout_types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       {
         min_width: 40.0,
         max_width: 360.0,
@@ -314,10 +314,10 @@ test "taffy/block_absolute_aspect_ratio_fill_max_width" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -352,10 +352,10 @@ test "taffy/block_absolute_aspect_ratio_fill_min_height" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -390,10 +390,10 @@ test "taffy/block_absolute_aspect_ratio_fill_min_width" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -434,10 +434,10 @@ test "taffy/block_absolute_aspect_ratio_fill_width" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -477,10 +477,10 @@ test "taffy/block_absolute_aspect_ratio_fill_width_from_inset" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -521,10 +521,10 @@ test "taffy/block_absolute_aspect_ratio_height_overrides_inset" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -565,10 +565,10 @@ test "taffy/block_absolute_aspect_ratio_width_overrides_inset" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -637,10 +637,10 @@ test "taffy/block_absolute_child_with_margin_x" {
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -717,10 +717,10 @@ test "taffy/block_absolute_child_with_margin_y" {
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -779,10 +779,10 @@ test "taffy/block_absolute_child_with_max_height" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -839,10 +839,10 @@ test "taffy/block_absolute_layout_child_order" {
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -883,10 +883,10 @@ test "taffy/block_absolute_layout_no_size" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -954,10 +954,10 @@ test "taffy/block_absolute_layout_percentage_bottom_based_on_parent_height" {
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -1006,10 +1006,10 @@ test "taffy/block_absolute_layout_percentage_height" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -1050,10 +1050,10 @@ test "taffy/block_absolute_layout_row_width_height_end_bottom" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -1092,10 +1092,10 @@ test "taffy/block_absolute_layout_start_top_end_bottom" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -1136,10 +1136,10 @@ test "taffy/block_absolute_layout_width_height_end_bottom" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -1180,10 +1180,10 @@ test "taffy/block_absolute_layout_width_height_start_top" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -1224,10 +1224,10 @@ test "taffy/block_absolute_layout_width_height_start_top_end_bottom" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -1334,10 +1334,10 @@ test "taffy/block_absolute_layout_within_border" {
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -1396,10 +1396,10 @@ test "taffy/block_absolute_margin_auto_bottom_and_top_with_inset" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -1440,10 +1440,10 @@ test "taffy/block_absolute_margin_auto_bottom_and_top_without_inset" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -1491,10 +1491,10 @@ test "taffy/block_absolute_margin_auto_bottom_with_inset" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -1536,10 +1536,10 @@ test "taffy/block_absolute_margin_auto_bottom_without_inset" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -1586,10 +1586,10 @@ test "taffy/block_absolute_margin_auto_left_and_right_with_inset" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -1630,10 +1630,10 @@ test "taffy/block_absolute_margin_auto_left_and_right_without_inset" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -1680,10 +1680,10 @@ test "taffy/block_absolute_margin_auto_left_child_bigger_than_parent_with_inset"
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -1724,10 +1724,10 @@ test "taffy/block_absolute_margin_auto_left_child_bigger_than_parent_without_ins
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -1774,10 +1774,10 @@ test "taffy/block_absolute_margin_auto_left_fix_right_child_bigger_than_parent_w
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -1818,10 +1818,10 @@ test "taffy/block_absolute_margin_auto_left_fix_right_child_bigger_than_parent_w
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -1868,10 +1868,10 @@ test "taffy/block_absolute_margin_auto_left_right_child_bigger_than_parent_with_
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -1912,10 +1912,10 @@ test "taffy/block_absolute_margin_auto_left_right_child_bigger_than_parent_witho
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -1962,10 +1962,10 @@ test "taffy/block_absolute_margin_auto_left_with_inset" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -2006,10 +2006,10 @@ test "taffy/block_absolute_margin_auto_left_without_inset" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -2078,10 +2078,10 @@ test "taffy/block_absolute_margin_auto_multiple_children_with_inset" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -2142,10 +2142,10 @@ test "taffy/block_absolute_margin_auto_multiple_children_without_inset" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -2197,10 +2197,10 @@ test "taffy/block_absolute_margin_auto_right_with_inset" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -2242,10 +2242,10 @@ test "taffy/block_absolute_margin_auto_right_without_inset" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -2293,10 +2293,10 @@ test "taffy/block_absolute_margin_auto_top_with_inset" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -2338,10 +2338,10 @@ test "taffy/block_absolute_margin_auto_top_without_inset" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -2388,10 +2388,10 @@ test "taffy/block_absolute_margin_bottom_left_with_inset" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -2432,10 +2432,10 @@ test "taffy/block_absolute_margin_bottom_left_without_inset" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -2478,10 +2478,10 @@ test "taffy/block_absolute_minmax_bottom_right_max" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -2524,10 +2524,10 @@ test "taffy/block_absolute_minmax_bottom_right_min_max" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -2572,10 +2572,10 @@ test "taffy/block_absolute_minmax_bottom_right_min_max_preferred" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -2616,10 +2616,10 @@ test "taffy/block_absolute_minmax_top_left_bottom_right_max" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -2662,10 +2662,10 @@ test "taffy/block_absolute_minmax_top_left_bottom_right_min_max" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -2704,10 +2704,10 @@ test "taffy/block_absolute_no_styles" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -2756,10 +2756,10 @@ test "taffy/block_absolute_padding_border_overrides_max_size" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -2804,10 +2804,10 @@ test "taffy/block_absolute_padding_border_overrides_size" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -3072,10 +3072,10 @@ test "taffy/block_absolute_resolved_insets" {
   )
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -3197,10 +3197,10 @@ test "taffy/block_align_baseline_child" {
   )
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -3278,10 +3278,10 @@ test "taffy/block_align_baseline_child_margin" {
   )
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -3359,10 +3359,10 @@ test "taffy/block_align_baseline_child_margin_percent" {
   )
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -3440,10 +3440,10 @@ test "taffy/block_align_baseline_child_padding" {
   )
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -3515,10 +3515,10 @@ test "taffy/block_align_baseline_child_top" {
   )
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -3590,10 +3590,10 @@ test "taffy/block_align_baseline_child_top2" {
   )
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -3670,10 +3670,10 @@ test "taffy/block_align_baseline_double_nested_child" {
   )
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -3720,10 +3720,10 @@ test "taffy/block_aspect_ratio_fill_height" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -3755,8 +3755,8 @@ test "taffy/block_aspect_ratio_fill_max_height" {
     max_width: @types.Length(40.0),
     aspect_ratio: Some(2.0000),
   }
-  let root_child0_measure = @types.MeasureFunc::{
-    func: fn(w : Double, _h : Double) -> @types.IntrinsicSize {
+  let root_child0_measure = @layout_types.MeasureFunc::{
+    func: fn(w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       let measured_max_height = if (w - 40.0).abs() < 0.1 {
         60.0
       } else {
@@ -3775,10 +3775,10 @@ test "taffy/block_aspect_ratio_fill_max_height" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -3810,8 +3810,8 @@ test "taffy/block_aspect_ratio_fill_max_width" {
     max_height: @types.Length(20.0),
     aspect_ratio: Some(2.0000),
   }
-  let root_child0_measure = @types.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let root_child0_measure = @layout_types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       { min_width: 20.0, max_width: 80.0, min_height: 40.0, max_height: 40.0 }
     },
   }
@@ -3820,10 +3820,10 @@ test "taffy/block_aspect_ratio_fill_max_width" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -3858,10 +3858,10 @@ test "taffy/block_aspect_ratio_fill_min_height" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -3896,10 +3896,10 @@ test "taffy/block_aspect_ratio_fill_min_width" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -3934,10 +3934,10 @@ test "taffy/block_aspect_ratio_fill_width" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -3977,10 +3977,10 @@ test "taffy/block_basic" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -4031,10 +4031,10 @@ test "taffy/block_border_fixed_size" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -4084,10 +4084,10 @@ test "taffy/block_border_intrinsic_size" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -4134,10 +4134,10 @@ test "taffy/block_border_percentage_fixed_size" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -4182,10 +4182,10 @@ test "taffy/block_border_percentage_intrinsic_size" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -4237,10 +4237,10 @@ test "taffy/block_display_none" {
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -4307,10 +4307,10 @@ test "taffy/block_display_none_with_child" {
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -4370,10 +4370,10 @@ test "taffy/block_display_none_with_inset" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -4426,10 +4426,10 @@ test "taffy/block_display_none_with_margin" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -4469,10 +4469,10 @@ test "taffy/block_display_none_with_position_absolute" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -4537,10 +4537,10 @@ test "taffy/block_inset_fixed" {
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -4613,10 +4613,10 @@ test "taffy/block_inset_percentage" {
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -4664,10 +4664,10 @@ test "taffy/block_intrinsic_width" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -4714,10 +4714,10 @@ test "taffy/block_item_max_width" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -4757,10 +4757,10 @@ test "taffy/block_item_min_width_overrides_max_width" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -4804,10 +4804,10 @@ test "taffy/block_item_text_align_center" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -4854,10 +4854,10 @@ test "taffy/block_item_text_align_left" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -4905,10 +4905,10 @@ test "taffy/block_item_text_align_right" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -4962,10 +4962,10 @@ test "taffy/block_margin_auto_bottom" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -5018,10 +5018,10 @@ test "taffy/block_margin_auto_bottom_and_top" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -5074,10 +5074,10 @@ test "taffy/block_margin_auto_left" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -5130,10 +5130,10 @@ test "taffy/block_margin_auto_left_and_right" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -5179,10 +5179,10 @@ test "taffy/block_margin_auto_left_and_right_with_auto_width" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -5223,10 +5223,10 @@ test "taffy/block_margin_auto_left_child_bigger_than_parent" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -5267,10 +5267,10 @@ test "taffy/block_margin_auto_left_fix_right_child_bigger_than_parent" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -5311,10 +5311,10 @@ test "taffy/block_margin_auto_left_right_child_bigger_than_parent" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -5379,10 +5379,10 @@ test "taffy/block_margin_auto_multiple_children" {
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -5440,10 +5440,10 @@ test "taffy/block_margin_auto_right" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -5497,10 +5497,10 @@ test "taffy/block_margin_auto_top" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -5551,10 +5551,10 @@ test "taffy/block_margin_x_fixed_auto_bottom" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -5605,10 +5605,10 @@ test "taffy/block_margin_x_fixed_auto_left" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -5659,10 +5659,10 @@ test "taffy/block_margin_x_fixed_auto_left_and_right" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -5713,10 +5713,10 @@ test "taffy/block_margin_x_fixed_auto_right" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -5767,10 +5767,10 @@ test "taffy/block_margin_x_fixed_auto_top" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -5820,10 +5820,10 @@ test "taffy/block_margin_x_fixed_size_negative" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -5873,10 +5873,10 @@ test "taffy/block_margin_x_fixed_size_positive" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -5925,10 +5925,10 @@ test "taffy/block_margin_x_intrinsic_size_negative" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -5977,10 +5977,10 @@ test "taffy/block_margin_x_intrinsic_size_positive" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -6030,10 +6030,10 @@ test "taffy/block_margin_x_percentage_fixed_size_negative" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -6083,10 +6083,10 @@ test "taffy/block_margin_x_percentage_fixed_size_positive" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -6136,10 +6136,10 @@ test "taffy/block_margin_x_percentage_intrinsic_size_other_negative" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -6189,10 +6189,10 @@ test "taffy/block_margin_x_percentage_intrinsic_size_other_positive" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -6235,10 +6235,10 @@ test "taffy/block_margin_x_percentage_intrinsic_size_self_negative" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -6277,10 +6277,10 @@ test "taffy/block_margin_x_percentage_intrinsic_size_self_positive" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -6401,10 +6401,10 @@ test "taffy/block_margin_y_collapse_complex" {
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -6493,10 +6493,10 @@ test "taffy/block_margin_y_collapse_through_blocked_by_aspect_ratio" {
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -6568,10 +6568,10 @@ test "taffy/block_margin_y_collapse_through_blocked_by_border_bottom" {
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -6643,10 +6643,10 @@ test "taffy/block_margin_y_collapse_through_blocked_by_border_top" {
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -6719,10 +6719,10 @@ test "taffy/block_margin_y_collapse_through_blocked_by_height" {
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -6778,8 +6778,8 @@ test "taffy/block_margin_y_collapse_through_blocked_by_line_box" {
       bottom: @types.Length(10.0),
     },
   }
-  let root_child1_measure = @types.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let root_child1_measure = @layout_types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -6801,10 +6801,10 @@ test "taffy/block_margin_y_collapse_through_blocked_by_line_box" {
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -6861,8 +6861,8 @@ test "taffy/block_margin_y_collapse_through_blocked_by_line_box_with_height_zero
       bottom: @types.Length(10.0),
     },
   }
-  let root_child1_measure = @types.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let root_child1_measure = @layout_types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -6884,10 +6884,10 @@ test "taffy/block_margin_y_collapse_through_blocked_by_line_box_with_height_zero
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -6944,8 +6944,8 @@ test "taffy/block_margin_y_collapse_through_blocked_by_line_box_with_max_height_
       bottom: @types.Length(10.0),
     },
   }
-  let root_child1_measure = @types.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let root_child1_measure = @layout_types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -6967,10 +6967,10 @@ test "taffy/block_margin_y_collapse_through_blocked_by_line_box_with_max_height_
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -7043,10 +7043,10 @@ test "taffy/block_margin_y_collapse_through_blocked_by_min_height" {
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -7119,10 +7119,10 @@ test "taffy/block_margin_y_collapse_through_blocked_by_overflow_x_hidden" {
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -7195,10 +7195,10 @@ test "taffy/block_margin_y_collapse_through_blocked_by_overflow_x_scroll" {
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -7271,10 +7271,10 @@ test "taffy/block_margin_y_collapse_through_blocked_by_overflow_y_hidden" {
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -7347,10 +7347,10 @@ test "taffy/block_margin_y_collapse_through_blocked_by_overflow_y_scroll" {
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -7428,10 +7428,10 @@ test "taffy/block_margin_y_collapse_through_blocked_by_padding_bottom" {
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -7509,10 +7509,10 @@ test "taffy/block_margin_y_collapse_through_blocked_by_padding_top" {
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -7584,10 +7584,10 @@ test "taffy/block_margin_y_collapse_through_negative" {
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -7659,10 +7659,10 @@ test "taffy/block_margin_y_collapse_through_positive" {
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -7734,10 +7734,10 @@ test "taffy/block_margin_y_collapse_through_positive_and_negative" {
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -7798,8 +7798,8 @@ test "taffy/block_margin_y_collapse_through_with_absolute_child" {
     ..@style.Style::default(),
     position: @types.Position::Absolute,
   }
-  let root_child1_child0_measure = @types.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let root_child1_child0_measure = @layout_types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -7825,10 +7825,10 @@ test "taffy/block_margin_y_collapse_through_with_absolute_child" {
   let root_child2 = @node.Node::leaf("node", root_child2_style)
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -7905,10 +7905,10 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_border_top" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -7982,10 +7982,10 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_overflow_x_hidden" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -8059,10 +8059,10 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_overflow_x_scroll" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -8136,10 +8136,10 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_overflow_y_hidden" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -8213,10 +8213,10 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_overflow_y_scroll" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -8295,10 +8295,10 @@ test "taffy/block_margin_y_first_child_collapse_blocked_by_padding_top" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -8371,10 +8371,10 @@ test "taffy/block_margin_y_first_child_collapse_negative_equal" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -8447,10 +8447,10 @@ test "taffy/block_margin_y_first_child_collapse_negative_parent_larger" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -8523,10 +8523,10 @@ test "taffy/block_margin_y_first_child_collapse_negative_parent_smaller" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -8599,10 +8599,10 @@ test "taffy/block_margin_y_first_child_collapse_not_blocked_by_border_bottom" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -8681,10 +8681,10 @@ test "taffy/block_margin_y_first_child_collapse_not_blocked_by_padding_bottom" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -8835,10 +8835,10 @@ test "taffy/block_margin_y_first_child_collapse_positive_and_negative" {
   )
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -8935,10 +8935,10 @@ test "taffy/block_margin_y_first_child_collapse_positive_equal" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -9011,10 +9011,10 @@ test "taffy/block_margin_y_first_child_collapse_positive_parent_larger" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -9087,10 +9087,10 @@ test "taffy/block_margin_y_first_child_collapse_positive_parent_smaller" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -9286,10 +9286,10 @@ test "taffy/block_margin_y_first_granchild_collapse_positive_and_negative" {
   )
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -9431,10 +9431,10 @@ test "taffy/block_margin_y_first_granchild_collapse_positive_equal" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -9517,10 +9517,10 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_border_bottom" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -9594,10 +9594,10 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_overflow_x_hidden" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -9671,10 +9671,10 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_overflow_x_scroll" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -9748,10 +9748,10 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_overflow_y_hidden" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -9825,10 +9825,10 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_overflow_y_scroll" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -9907,10 +9907,10 @@ test "taffy/block_margin_y_last_child_collapse_blocked_by_padding_bottom" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -9983,10 +9983,10 @@ test "taffy/block_margin_y_last_child_collapse_negative_equal" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -10059,10 +10059,10 @@ test "taffy/block_margin_y_last_child_collapse_negative_parent_larger" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -10135,10 +10135,10 @@ test "taffy/block_margin_y_last_child_collapse_negative_parent_smaller" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -10211,10 +10211,10 @@ test "taffy/block_margin_y_last_child_collapse_not_blocked_by_border_top" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -10293,10 +10293,10 @@ test "taffy/block_margin_y_last_child_collapse_not_blocked_by_padding_top" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -10447,10 +10447,10 @@ test "taffy/block_margin_y_last_child_collapse_positive_and_negative" {
   )
   root_children.push(root_child2)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -10547,10 +10547,10 @@ test "taffy/block_margin_y_last_child_collapse_positive_equal" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -10623,10 +10623,10 @@ test "taffy/block_margin_y_last_child_collapse_positive_parent_larger" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -10699,10 +10699,10 @@ test "taffy/block_margin_y_last_child_collapse_positive_parent_smaller" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -10790,10 +10790,10 @@ test "taffy/block_margin_y_last_granchild_collapse_positive_equal" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -10890,10 +10890,10 @@ test "taffy/block_margin_y_sibling_collapse_negative" {
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -10984,10 +10984,10 @@ test "taffy/block_margin_y_sibling_collapse_negative_percentage" {
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -11077,10 +11077,10 @@ test "taffy/block_margin_y_sibling_collapse_positive" {
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -11209,10 +11209,10 @@ test "taffy/block_margin_y_sibling_collapse_positive_and_negative" {
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -11353,10 +11353,10 @@ test "taffy/block_margin_y_sibling_collapse_positive_and_negative_percentage" {
   let root_child6 = @node.Node::leaf("node", root_child6_style)
   root_children.push(root_child6)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -11458,10 +11458,10 @@ test "taffy/block_margin_y_sibling_collapse_positive_percentage" {
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -11519,10 +11519,10 @@ test "taffy/block_margin_y_simple_negative" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -11573,10 +11573,10 @@ test "taffy/block_margin_y_simple_negative_percentage_other" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -11627,10 +11627,10 @@ test "taffy/block_margin_y_simple_negative_percentage_self" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -11680,10 +11680,10 @@ test "taffy/block_margin_y_simple_positive" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -11733,10 +11733,10 @@ test "taffy/block_margin_y_simple_positive_percentage_other" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -11786,10 +11786,10 @@ test "taffy/block_margin_y_simple_positive_percentage_self" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -11873,10 +11873,10 @@ test "taffy/block_margin_y_total_collapse" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -12009,10 +12009,10 @@ test "taffy/block_margin_y_total_collapse_complex" {
   let root_child3 = @node.Node::leaf("node", root_child3_style)
   root_children.push(root_child3)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -12086,10 +12086,10 @@ test "taffy/block_overflow_scrollbars_overridden_by_available_space" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -12134,10 +12134,10 @@ test "taffy/block_overflow_scrollbars_overridden_by_max_size" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -12178,10 +12178,10 @@ test "taffy/block_overflow_scrollbars_overridden_by_size" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -12222,10 +12222,10 @@ test "taffy/block_overflow_scrollbars_take_up_space_both_axis" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -12265,10 +12265,10 @@ test "taffy/block_overflow_scrollbars_take_up_space_cross_axis" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -12308,10 +12308,10 @@ test "taffy/block_overflow_scrollbars_take_up_space_main_axis" {
   let root_child0 = @node.Node::leaf("node", root_child0_style)
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -12364,10 +12364,10 @@ test "taffy/block_padding_border_fixed_size" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -12423,10 +12423,10 @@ test "taffy/block_padding_border_intrinsic_size" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -12484,10 +12484,10 @@ test "taffy/block_padding_border_overrides_max_size" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -12545,10 +12545,10 @@ test "taffy/block_padding_border_overrides_min_size" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -12606,10 +12606,10 @@ test "taffy/block_padding_border_overrides_size" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -12662,10 +12662,10 @@ test "taffy/block_padding_border_percentage_fixed_size" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -12716,10 +12716,10 @@ test "taffy/block_padding_border_percentage_intrinsic_size" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -12770,10 +12770,10 @@ test "taffy/block_padding_fixed_size" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -12823,10 +12823,10 @@ test "taffy/block_padding_intrinsic_size" {
   let root_child1 = @node.Node::leaf("node", root_child1_style)
   root_children.push(root_child1)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -12879,10 +12879,10 @@ test "taffy/block_padding_percentage_fixed_size" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -12933,10 +12933,10 @@ test "taffy/block_padding_percentage_intrinsic_size" {
   )
   root_children.push(root_child0)
   let root = @node.Node::new("test-root", root_style, root_children)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,

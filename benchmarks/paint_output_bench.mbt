@@ -62,7 +62,7 @@ fn glyph_wrapped_text_paint_node() -> @paint_model.PaintNode {
 }
 
 ///|
-fn scrollable_500_node_and_layout() -> (@tree.Node, @types.Layout) {
+fn scrollable_500_node_and_layout() -> (@tree.Node, @layout_types.Layout) {
   let html = scrollable_list(500, 64)
   let ctx = default_ctx()
   @renderer.render_to_node_and_layout(html, ctx)

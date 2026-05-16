@@ -74,7 +74,7 @@ fn Browser::render_node_and_layout_from_document(
   doc : @html.Document,
   ctx : @renderer.RenderContext,
   dark : Bool,
-) -> (@layout.Node, @types.Layout) {
+) -> (@layout.Node, @layout_types.Layout) {
   let prepared = self.prepare_render_document_for_context(doc, ctx, dark)
   let node = @renderer.build_render_root_node(doc, ctx, prepared)
   let layout = @renderer.compute_layout_from_render_root(node, prepared, ctx)
@@ -86,7 +86,7 @@ fn Browser::render_graphics_node_and_layout(
   self : Browser,
   ctx : @renderer.RenderContext,
   dark : Bool,
-) -> (@layout.Node, @types.Layout) {
+) -> (@layout.Node, @layout_types.Layout) {
   match (self.graphics_render_node, self.graphics_layout) {
     (Some(node), Some(layout)) if self.graphics_render_dark == dark =>
       (node, layout)

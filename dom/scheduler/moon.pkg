@@ -5,7 +5,8 @@ import {
   "mizchi/crater-layout" @layout,
   "mizchi/crater-dom/layout/html_tree" @layout_html_tree,
   "mizchi/crater-dom/layout/style_bridge" @layout_style,
-  "mizchi/crater-core" @types,
+  "mizchi/crater-core/values" @types,
+  "mizchi/crater-core" @layout_types,
 }
 
 import {

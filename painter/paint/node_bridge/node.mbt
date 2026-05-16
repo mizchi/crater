@@ -67,7 +67,7 @@ fn generate_list_marker(parent_tag : String, child_index : Int) -> String? {
 ///|
 fn should_apply_text_overflow_ellipsis(
   style : @style.Style,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
 ) -> Bool {
   style.text_overflow == @style.TextOverflow::Ellipsis &&
   style.white_space == @style.WhiteSpace::Nowrap &&
@@ -167,7 +167,7 @@ fn apply_text_overflow_ellipsis_to_subtree(
 ///|
 pub fn from_node_and_layout(
   node : @layout.Node,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
 ) -> @model.PaintNode {
   let mut paint = @model.PaintProperties::from_style(node.style)
   paint = {

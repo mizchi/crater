@@ -203,7 +203,7 @@ test "whitespace_between_css_inline_blocks_is_preserved" {
     #|</div>
   let layout = @renderer.render(html_str, @renderer.RenderContext::default())
   let wrapper = layout.children[0]
-  let inline_blocks : Array[@types.Layout] = []
+  let inline_blocks : Array[@layout_types.Layout] = []
   for child in wrapper.children {
     if !child.id.has_prefix("#text") {
       inline_blocks.push(child)

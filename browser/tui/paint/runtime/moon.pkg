@@ -2,11 +2,12 @@ import {
   "mizchi/crater-core/node" @node,
   "mizchi/crater-painter/paint/scroll" @paint_scroll,
   "mizchi/crater-painter/paint/traversal" @paint_traversal,
-  "mizchi/crater-core" @types,
+  "mizchi/crater-core" @layout_types,
   "mizchi/crater-browser/tui/paint/plain" @paint_plain,
   "mizchi/crater-browser/tui/paint/viewport" @paint_viewport,
 }
 
 import {
   "mizchi/crater-core/style",
+  "mizchi/crater-core/values" @types,
 } for "test"

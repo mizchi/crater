@@ -1,9 +1,13 @@
 import {
   "mizchi/crater-core/node" @node,
-  "mizchi/crater-core" @types,
+  "mizchi/crater-core" @layout_types,
   "mizchi/crater-painter/paint/model" @paint_model,
   "mizchi/crater-painter/paint/node_bridge" @paint_node,
   "mizchi/svg" @svg,
   "mizchi/crater-painter/paint/raster",
   "mizchi/crater-terminal-protocol/sixel" @sixel_protocol,
 }
+
+import {
+  "mizchi/crater-core/values" @types,
+} for "test"

@@ -185,7 +185,7 @@ fn compute_abspos_non_auto_inset_alignment_offset(
 /// getBoundingClientRect() calculations, parent transform affects children's
 /// visual bounding boxes. So we pass both zoom and parent_scale to children.
 fn apply_zoom_and_scale(
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   node : @node.Node,
   parent_zoom : Double,
   parent_scale_x : Double,
@@ -197,7 +197,7 @@ fn apply_zoom_and_scale(
   abs_containing_block_global_y : Double,
   abs_containing_block_width : Double,
   abs_containing_block_height : Double,
-) -> @types.Layout {
+) -> @layout_types.Layout {
   // Calculate effective zoom (parent zoom * node zoom)
   let effective_zoom = parent_zoom * node.style.zoom
 
@@ -269,7 +269,7 @@ fn apply_zoom_and_scale(
   }
 
   // Process children with updated parent zoom and scale
-  let scaled_children : Array[@types.Layout] = []
+  let scaled_children : Array[@layout_types.Layout] = []
   let mut child_node_cursor = 0
   for i = 0; i < layout.children.length(); i = i + 1 {
     let child_layout = layout.children[i]

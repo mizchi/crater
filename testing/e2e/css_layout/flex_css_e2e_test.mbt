@@ -26,7 +26,7 @@ fn node_from_css_with_children(
 }
 
 ///|
-fn make_ctx(width : Double, height : Double) -> @types.LayoutContext {
+fn make_ctx(width : Double, height : Double) -> @layout_types.LayoutContext {
   {
     available_width: width,
     available_height: Some(height),

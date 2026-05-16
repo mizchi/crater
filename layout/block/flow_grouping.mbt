@@ -185,9 +185,9 @@ fn compute_mixed_content_layout(
   available_height : Double?,
   padding : @types.Rect[Double],
   border : @types.Rect[Double],
-  ctx : @types.LayoutContext,
-  warnings : Array[@types.LayoutWarning],
-  layout_map : Map[Int, @types.Layout],
+  ctx : @layout_types.LayoutContext,
+  warnings : Array[@layout_types.LayoutWarning],
+  layout_map : Map[Int, @layout_types.Layout],
   dispatch : @node.DispatchFn,
   writing_mode? : @style.WritingMode = @style.WritingMode::HorizontalTb,
   direction? : @style.Direction = @style.Direction::Ltr,
@@ -260,14 +260,14 @@ fn compute_mixed_content_layout(
         let use_inline_fallback = ifc_result.layouts.length() == 0 &&
           nodes.length() > 0
         if use_inline_fallback {
-          let fallback_layouts : Array[@types.Layout] = []
+          let fallback_layouts : Array[@layout_types.Layout] = []
           let mut fallback_cursor = 0.0
           let mut fallback_line_height = 0.0
           for inline_node in nodes {
-            let inline_ctx : @types.LayoutContext = {
+            let inline_ctx : @layout_types.LayoutContext = {
               available_width,
               available_height,
-              sizing_mode: @types.Definite,
+              sizing_mode: @layout_types.Definite,
               viewport_width: ctx.viewport_width,
               viewport_height: ctx.viewport_height,
               stretch_width: false,
@@ -417,10 +417,10 @@ fn compute_mixed_content_layout(
             }
           _ => available_height
         }
-        let child_ctx : @types.LayoutContext = {
+        let child_ctx : @layout_types.LayoutContext = {
           available_width,
           available_height: child_height_for_ctx,
-          sizing_mode: @types.Definite,
+          sizing_mode: @layout_types.Definite,
           viewport_width: ctx.viewport_width,
           viewport_height: ctx.viewport_height,
           stretch_width: false,
@@ -526,7 +526,7 @@ fn compute_mixed_content_layout(
             }
           }
           if has_visible_child {
-            let shifted_children : Array[@types.Layout] = []
+            let shifted_children : Array[@layout_types.Layout] = []
             for grand_layout in child_layout.children {
               shifted_children.push({
                 ..grand_layout,
@@ -540,7 +540,7 @@ fn compute_mixed_content_layout(
         } else {
           (base_x, child_layout.width, child_layout.children)
         }
-        let positioned_layout : @types.Layout = {
+        let positioned_layout : @layout_types.Layout = {
           id: child_layout.id,
           x: layout_x,
           y: base_y,

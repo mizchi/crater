@@ -5,7 +5,7 @@
 /// Render a Node + Layout tree with status bar at top.
 pub fn render_to_ansi_with_status(
   node : @node.Node,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   width : Int,
   height : Int,
   scroll_y : Int,
@@ -38,7 +38,7 @@ pub fn render_to_ansi_with_status(
 /// Render a Node + Layout tree with status bar to a CharBuffer.
 pub fn render_to_buffer_with_status(
   node : @node.Node,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   width : Int,
   height : Int,
   scroll_y : Int,

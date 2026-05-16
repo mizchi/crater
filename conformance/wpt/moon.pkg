@@ -1,6 +1,7 @@
 import {
   "moonbitlang/core/string",
-  "mizchi/crater-core" @types,
+  "mizchi/crater-core/values" @types,
+  "mizchi/crater-core" @layout_types,
   "mizchi/crater-renderer/renderer",
   "mizchi/crater-css" @css,
 }

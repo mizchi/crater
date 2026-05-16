@@ -11,7 +11,7 @@ pub using @paint_runtime {type ScrollableElement, type PreparedPaint}
 ///|
 pub fn from_node_and_layout(
   node : @node.Node,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
 ) -> PaintNode {
   @paint_plain.from_node_and_layout(node, layout)
 }
@@ -19,7 +19,7 @@ pub fn from_node_and_layout(
 ///|
 pub fn from_node_and_layout_with_viewport(
   node : @node.Node,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   viewport_top : Double,
   viewport_bottom : Double,
   parent_y : Double,
@@ -32,7 +32,7 @@ pub fn from_node_and_layout_with_viewport(
 ///|
 pub fn from_node_and_layout_with_viewport_rect(
   node : @node.Node,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   viewport_left : Double,
   viewport_top : Double,
   viewport_right : Double,
@@ -49,7 +49,7 @@ pub fn from_node_and_layout_with_viewport_rect(
 ///|
 pub fn prepare_viewport_paint(
   node : @node.Node,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   viewport_top : Double,
   viewport_bottom : Double,
   parent_y : Double,

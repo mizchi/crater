@@ -687,7 +687,7 @@ test "LayoutStats fields" {
 
 ///|
 test "LayoutComputeResult fields" {
-  let layout : @types.Layout = {
+  let layout : @layout_types.Layout = {
     id: "test",
     x: 10.0,
     y: 20.0,

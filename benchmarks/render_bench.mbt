@@ -14,11 +14,13 @@ fn default_ctx() -> @renderer.RenderContext {
 }
 
 ///|
-fn default_layout_ctx(ctx : @renderer.RenderContext) -> @types.LayoutContext {
+fn default_layout_ctx(
+  ctx : @renderer.RenderContext,
+) -> @layout_types.LayoutContext {
   {
     available_width: ctx.viewport_width,
     available_height: Some(ctx.viewport_height),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
     stretch_width: false,
@@ -661,10 +663,10 @@ test "bench_layout_only_flex_d5" (b : @bench.T) {
   let html = flex_nested(5, 3)
   let ctx = default_ctx()
   let node = @renderer.render_to_node(html, ctx)
-  let layout_ctx : @types.LayoutContext = {
+  let layout_ctx : @layout_types.LayoutContext = {
     available_width: ctx.viewport_width,
     available_height: Some(ctx.viewport_height),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
     stretch_width: false,
@@ -681,10 +683,10 @@ test "bench_layout_only_grid_10x10" (b : @bench.T) {
   let html = grid_simple(10, 10)
   let ctx = default_ctx()
   let node = @renderer.render_to_node(html, ctx)
-  let layout_ctx : @types.LayoutContext = {
+  let layout_ctx : @layout_types.LayoutContext = {
     available_width: ctx.viewport_width,
     available_height: Some(ctx.viewport_height),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
     stretch_width: false,
@@ -701,10 +703,10 @@ test "bench_layout_only_dashboard" (b : @bench.T) {
   let html = dashboard(15, 12)
   let ctx = default_ctx()
   let node = @renderer.render_to_node(html, ctx)
-  let layout_ctx : @types.LayoutContext = {
+  let layout_ctx : @layout_types.LayoutContext = {
     available_width: ctx.viewport_width,
     available_height: Some(ctx.viewport_height),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
     stretch_width: false,

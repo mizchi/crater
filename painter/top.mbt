@@ -24,14 +24,14 @@ pub using @svg {
 }
 
 ///|
-pub fn from_layout(layout : @types.Layout) -> PaintNode {
+pub fn from_layout(layout : @layout_types.Layout) -> PaintNode {
   @paint.from_layout(layout)
 }
 
 ///|
 pub fn from_node_and_layout(
   node : @node.Node,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
 ) -> PaintNode {
   @paint.from_node_and_layout(node, layout)
 }
@@ -70,7 +70,7 @@ pub fn create_svg_layout(
   attributes : Array[(String, String)],
   width : Double,
   available_height? : Double,
-) -> @types.Layout {
+) -> @layout_types.Layout {
   @layout_svg.create_svg_layout(tag, attributes, width, available_height)
 }
 

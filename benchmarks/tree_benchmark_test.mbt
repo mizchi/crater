@@ -1,6 +1,6 @@
 ///|
 /// Helper function to compare layouts for equality
-fn layouts_equal(a : @types.Layout, b : @types.Layout) -> Bool {
+fn layouts_equal(a : @layout_types.Layout, b : @layout_types.Layout) -> Bool {
   if a.x != b.x ||
     a.y != b.y ||
     a.width != b.width ||

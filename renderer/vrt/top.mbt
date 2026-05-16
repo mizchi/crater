@@ -12,7 +12,7 @@ fn make_render_context(
 ///|
 fn paint_tree_from_node_layout(
   node : @layout.Node,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   viewport : @types.Size[Double],
 ) -> @paint_model.PaintNode {
   match

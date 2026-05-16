@@ -4,7 +4,7 @@
 ///|
 fn prepare_viewport_paint(
   node : @node.Node,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   viewport_top : Double,
   viewport_bottom : Double,
 ) -> @tui_paint_runtime.PreparedPaint? {
@@ -17,7 +17,7 @@ fn prepare_viewport_paint(
 /// Render a Node + Layout tree to ANSI string.
 pub fn render_to_ansi(
   node : @node.Node,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   width : Int,
   height : Int,
   scroll_y : Int,
@@ -38,7 +38,7 @@ pub fn render_to_ansi(
 /// Render a Node + Layout tree to a CharBuffer.
 pub fn render_to_buffer(
   node : @node.Node,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   width : Int,
   height : Int,
   scroll_y : Int,
@@ -82,13 +82,13 @@ pub fn render_to_buffer(
 
 ///|
 /// Get total content height in character rows.
-pub fn get_content_height_chars(layout : @types.Layout) -> Int {
+pub fn get_content_height_chars(layout : @layout_types.Layout) -> Int {
   px_to_row(layout.height)
 }
 
 ///|
 /// Calculate content extent from layout tree (max y + height of descendants).
-pub fn get_content_extent(layout : @types.Layout) -> Double {
+pub fn get_content_extent(layout : @layout_types.Layout) -> Double {
   let mut max_extent = layout.y + layout.height
   for child in layout.children {
     let child_extent = get_content_extent(child)

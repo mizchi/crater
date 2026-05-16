@@ -13,8 +13,8 @@ test "taffy/leaf_overflow_scrollbars_affect_available_space_x_axis" {
     width: @types.Length(45.0),
     height: @types.Length(45.0),
   }
-  let root_measure = @types.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let root_measure = @layout_types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       { min_width: 210.0, max_width: 210.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -37,8 +37,8 @@ test "taffy/leaf_overflow_scrollbars_affect_available_space_y_axis" {
     width: @types.Length(45.0),
     height: @types.Length(45.0),
   }
-  let root_measure = @types.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let root_measure = @layout_types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       { min_width: 210.0, max_width: 210.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -134,8 +134,8 @@ test "taffy/leaf_overflow_scrollbars_take_up_space_both_axis" {
     overflow_x: @types.Overflow::Scroll,
     overflow_y: @types.Overflow::Scroll,
   }
-  let root_measure = @types.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let root_measure = @layout_types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -156,8 +156,8 @@ test "taffy/leaf_overflow_scrollbars_take_up_space_x_axis" {
     justify_content: @types.FlexStart,
     overflow_x: @types.Overflow::Scroll,
   }
-  let root_measure = @types.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let root_measure = @layout_types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -178,8 +178,8 @@ test "taffy/leaf_overflow_scrollbars_take_up_space_y_axis" {
     justify_content: @types.FlexStart,
     overflow_y: @types.Overflow::Scroll,
   }
-  let root_measure = @types.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let root_measure = @layout_types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -295,8 +295,8 @@ test "taffy/leaf_with_content_and_border" {
       bottom: @types.Length(6.0),
     },
   }
-  let root_measure = @types.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let root_measure = @layout_types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       { min_width: 40.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -322,8 +322,8 @@ test "taffy/leaf_with_content_and_padding" {
       bottom: @types.Length(6.0),
     },
   }
-  let root_measure = @types.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let root_measure = @layout_types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       { min_width: 40.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -355,8 +355,8 @@ test "taffy/leaf_with_content_and_padding_border" {
       bottom: @types.Length(5.0),
     },
   }
-  let root_measure = @types.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let root_measure = @layout_types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       { min_width: 40.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
     },
   }

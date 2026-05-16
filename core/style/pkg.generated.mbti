@@ -2,7 +2,7 @@
 package "mizchi/crater-core/style"
 
 import {
-  "mizchi/crater-core",
+  "mizchi/crater-core/values",
   "moonbitlang/core/debug",
 }
 
@@ -38,9 +38,9 @@ pub struct BoxShadow {
   offset_y : Double
   blur_radius : Double
   spread_radius : Double
-  color : @crater-core.Color
+  color : @values.Color
 }
-pub fn BoxShadow::new(Bool, Double, Double, Double, Double, @crater-core.Color) -> Self
+pub fn BoxShadow::new(Bool, Double, Double, Double, Double, @values.Color) -> Self
 
 pub(all) enum BreakBefore {
   Auto
@@ -157,59 +157,59 @@ pub fn ScrollSnapType::snaps_y(Self) -> Bool
 pub impl Show for ScrollSnapType
 
 pub(all) struct Style {
-  mut display : @crater-core.Display
-  mut position : @crater-core.Position
-  mut float : @crater-core.Float
-  mut clear : @crater-core.Clear
-  mut box_sizing : @crater-core.BoxSizing
-  mut overflow_x : @crater-core.Overflow
-  mut overflow_y : @crater-core.Overflow
+  mut display : @values.Display
+  mut position : @values.Position
+  mut float : @values.Float
+  mut clear : @values.Clear
+  mut box_sizing : @values.BoxSizing
+  mut overflow_x : @values.Overflow
+  mut overflow_y : @values.Overflow
   mut scroll_snap_type : ScrollSnapType
   mut scroll_snap_align_x : ScrollSnapAlign
   mut scroll_snap_align_y : ScrollSnapAlign
-  mut width : @crater-core.Dimension
-  mut height : @crater-core.Dimension
-  mut min_width : @crater-core.Dimension
-  mut min_height : @crater-core.Dimension
-  mut max_width : @crater-core.Dimension
-  mut max_height : @crater-core.Dimension
-  mut margin : @crater-core.Rect[@crater-core.Dimension]
-  mut padding : @crater-core.Rect[@crater-core.Dimension]
-  mut border : @crater-core.Rect[@crater-core.Dimension]
-  mut border_style : @crater-core.Rect[BorderStyle]
-  mut border_color : @crater-core.Rect[@crater-core.Color]
+  mut width : @values.Dimension
+  mut height : @values.Dimension
+  mut min_width : @values.Dimension
+  mut min_height : @values.Dimension
+  mut max_width : @values.Dimension
+  mut max_height : @values.Dimension
+  mut margin : @values.Rect[@values.Dimension]
+  mut padding : @values.Rect[@values.Dimension]
+  mut border : @values.Rect[@values.Dimension]
+  mut border_style : @values.Rect[BorderStyle]
+  mut border_color : @values.Rect[@values.Color]
   mut margin_trim : MarginTrim
-  mut flex_direction : @crater-core.FlexDirection
-  mut flex_wrap : @crater-core.FlexWrap
-  mut justify_content : @crater-core.Alignment
-  mut align_items : @crater-core.Alignment
-  mut align_content : @crater-core.Alignment
+  mut flex_direction : @values.FlexDirection
+  mut flex_wrap : @values.FlexWrap
+  mut justify_content : @values.Alignment
+  mut align_items : @values.Alignment
+  mut align_content : @values.Alignment
   mut justify_content_unsafe : Bool
   mut align_content_unsafe : Bool
-  mut align_self : @crater-core.AlignSelf
+  mut align_self : @values.AlignSelf
   mut flex_grow : Double
   mut flex_shrink : Double
-  mut flex_basis : @crater-core.Dimension
+  mut flex_basis : @values.Dimension
   mut order : Int
-  mut row_gap : @crater-core.Dimension
-  mut column_gap : @crater-core.Dimension
+  mut row_gap : @values.Dimension
+  mut column_gap : @values.Dimension
   mut column_gap_is_normal : Bool
   mut column_count : Int?
-  mut column_width : @crater-core.Dimension
+  mut column_width : @values.Dimension
   mut column_fill : ColumnFill
   mut aspect_ratio : Double?
-  mut inset : @crater-core.Rect[@crater-core.Dimension]
-  mut grid_template_rows : Array[@crater-core.TrackSizingFunction]
-  mut grid_template_columns : Array[@crater-core.TrackSizingFunction]
-  mut grid_auto_rows : Array[@crater-core.TrackSizingFunction]
-  mut grid_auto_columns : Array[@crater-core.TrackSizingFunction]
-  mut grid_auto_flow : @crater-core.GridAutoFlow
+  mut inset : @values.Rect[@values.Dimension]
+  mut grid_template_rows : Array[@values.TrackSizingFunction]
+  mut grid_template_columns : Array[@values.TrackSizingFunction]
+  mut grid_auto_rows : Array[@values.TrackSizingFunction]
+  mut grid_auto_columns : Array[@values.TrackSizingFunction]
+  mut grid_auto_flow : @values.GridAutoFlow
   mut grid_template_areas : Array[String]
-  mut grid_row : @crater-core.GridLine
-  mut grid_column : @crater-core.GridLine
+  mut grid_row : @values.GridLine
+  mut grid_column : @values.GridLine
   mut grid_area : String?
-  mut justify_items : @crater-core.Alignment
-  mut justify_self : @crater-core.AlignSelf
+  mut justify_items : @values.Alignment
+  mut justify_self : @values.AlignSelf
   mut font_size : Double
   mut font_weight : Double
   mut font_family : String
@@ -220,15 +220,15 @@ pub(all) struct Style {
   mut writing_mode : WritingMode
   mut direction : Direction
   mut vertical_align : VerticalAlign
-  mut clip : @crater-core.ClipRect
+  mut clip : @values.ClipRect
   mut clip_path : ClipPath
   mut visibility : Visibility
   mut pointer_events : PointerEvents
   mut z_index : ZIndex
   mut opacity : Double
-  mut color : @crater-core.Color
-  mut background_color : @crater-core.Color
-  mut background_image : @crater-core.BackgroundImage
+  mut color : @values.Color
+  mut background_color : @values.Color
+  mut background_image : @values.BackgroundImage
   mut box_shadows : Array[BoxShadow]
   mut contain : Contain
   mut break_before : BreakBefore

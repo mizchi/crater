@@ -107,11 +107,11 @@ pub fn clear_intrinsic_cache_for_node(uid : Int) -> Unit {
 pub fn compute_layout(
   node : @node.Node,
   viewport : @types.Size[Double],
-) -> @types.Layout {
-  let ctx : @types.LayoutContext = {
+) -> @layout_types.Layout {
+  let ctx : @layout_types.LayoutContext = {
     available_width: viewport.width,
     available_height: Some(viewport.height),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: viewport.width,
     viewport_height: viewport.height,
     stretch_width: false,
@@ -125,11 +125,11 @@ pub fn compute_layout(
 pub fn compute_layout_with_warnings(
   node : @node.Node,
   viewport : @types.Size[Double],
-) -> @types.LayoutResult {
-  let ctx : @types.LayoutContext = {
+) -> @layout_types.LayoutResult {
+  let ctx : @layout_types.LayoutContext = {
     available_width: viewport.width,
     available_height: Some(viewport.height),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: viewport.width,
     viewport_height: viewport.height,
     stretch_width: false,
@@ -141,8 +141,8 @@ pub fn compute_layout_with_warnings(
 ///|
 fn dispatch_compute(
   node : @node.Node,
-  ctx : @types.LayoutContext,
-) -> @types.Layout {
+  ctx : @layout_types.LayoutContext,
+) -> @layout_types.Layout {
   let dispatch = default_dispatch()
   match node.style.display {
     @types.Flex | @types.InlineFlex => @flex.compute(node, ctx, dispatch)
@@ -155,8 +155,8 @@ fn dispatch_compute(
 ///|
 fn dispatch_compute_with_warnings(
   node : @node.Node,
-  ctx : @types.LayoutContext,
-) -> @types.LayoutResult {
+  ctx : @layout_types.LayoutContext,
+) -> @layout_types.LayoutResult {
   let dispatch = default_dispatch()
   match node.style.display {
     @types.Flex | @types.InlineFlex =>
@@ -174,51 +174,51 @@ fn dispatch_compute_with_warnings(
 /// Compute layout with an explicit LayoutContext.
 pub fn compute_layout_in_context(
   node : @node.Node,
-  ctx : @types.LayoutContext,
-) -> @types.Layout {
+  ctx : @layout_types.LayoutContext,
+) -> @layout_types.Layout {
   @dispatch.compute_layout(node, ctx)
 }
 
 ///|
 pub fn compute_block_layout(
   node : @node.Node,
-  ctx : @types.LayoutContext,
-) -> @types.Layout {
+  ctx : @layout_types.LayoutContext,
+) -> @layout_types.Layout {
   @block.compute(node, ctx, default_dispatch())
 }
 
 ///|
 pub fn compute_block_layout_with_dispatch(
   node : @node.Node,
-  ctx : @types.LayoutContext,
+  ctx : @layout_types.LayoutContext,
   dispatch : @node.DispatchFn,
-) -> @types.Layout {
+) -> @layout_types.Layout {
   @block.compute(node, ctx, dispatch)
 }
 
 ///|
 pub fn compute_flex_layout(
   node : @node.Node,
-  ctx : @types.LayoutContext,
-) -> @types.Layout {
+  ctx : @layout_types.LayoutContext,
+) -> @layout_types.Layout {
   @flex.compute(node, ctx, default_dispatch())
 }
 
 ///|
 pub fn compute_flex_layout_with_dispatch(
   node : @node.Node,
-  ctx : @types.LayoutContext,
+  ctx : @layout_types.LayoutContext,
   dispatch : @node.DispatchFn,
-) -> @types.Layout {
+) -> @layout_types.Layout {
   @flex.compute(node, ctx, dispatch)
 }
 
 ///|
 pub fn compute_grid_layout_in_context(
   node : @node.Node,
-  ctx : @types.LayoutContext,
+  ctx : @layout_types.LayoutContext,
   dispatch : @node.DispatchFn,
-) -> @types.Layout {
+) -> @layout_types.Layout {
   @grid.compute(node, ctx, dispatch)
 }
 
@@ -227,6 +227,6 @@ pub fn compute_grid_layout(
   node : @node.Node,
   available_width : Double,
   available_height : Double,
-) -> @types.Layout {
+) -> @layout_types.Layout {
   @grid.compute_layout(node, available_width, available_height)
 }

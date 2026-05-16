@@ -1,5 +1,5 @@
 ///|
-fn get_effective_layout_height(layout : @types.Layout) -> Double {
+fn get_effective_layout_height(layout : @layout_types.Layout) -> Double {
   if layout.height > 0.0 || layout.children.length() == 0 {
     return layout.height
   }
@@ -14,7 +14,7 @@ fn get_effective_layout_height(layout : @types.Layout) -> Double {
 /// Calculate total height contribution from children layouts
 /// Used for display: contents elements where the parent needs children's height
 /// Note: margins are handled through margin collapsing, not added to height
-fn get_children_total_height(children : Array[@types.Layout]) -> Double {
+fn get_children_total_height(children : Array[@layout_types.Layout]) -> Double {
   let mut total_height = 0.0
   for child in children {
     total_height = total_height + get_effective_layout_height(child)
@@ -27,7 +27,7 @@ fn get_children_total_height(children : Array[@types.Layout]) -> Double {
 /// units for multicol overflow-avoid placement.
 fn is_unbreakable_fragment_unit(
   source_node : @node.Node,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
 ) -> Bool {
   if source_node.style.break_inside == @style.BreakInside::Avoid {
     return true
@@ -57,7 +57,9 @@ fn is_unbreakable_fragment_unit(
 
 ///|
 /// Compute occupied height extent from positioned children in local coordinates.
-fn get_children_flow_extent_height(children : Array[@types.Layout]) -> Double {
+fn get_children_flow_extent_height(
+  children : Array[@layout_types.Layout],
+) -> Double {
   if children.length() == 0 {
     return 0.0
   }
@@ -92,7 +94,9 @@ fn get_children_flow_extent_height(children : Array[@types.Layout]) -> Double {
 
 ///|
 /// Compute occupied width extent from positioned children in local coordinates.
-fn get_children_flow_extent_width(children : Array[@types.Layout]) -> Double {
+fn get_children_flow_extent_width(
+  children : Array[@layout_types.Layout],
+) -> Double {
   if children.length() == 0 {
     return 0.0
   }
@@ -143,7 +147,7 @@ fn is_fragmentation_block_flow_box(
 /// child's local x offset while allowing column-break carry-over from a parent
 /// fragment offset.
 fn reflow_fragmented_children_with_offset(
-  child_layouts : Array[@types.Layout],
+  child_layouts : Array[@layout_types.Layout],
   source_children : Array[@node.Node],
   limit : Double,
   fragment_offset : Double,
@@ -154,11 +158,11 @@ fn reflow_fragmented_children_with_offset(
   multicol_column_count : Int,
   multicol_column_width : Double,
   multicol_column_gap : Double,
-) -> Array[@types.Layout] {
+) -> Array[@layout_types.Layout] {
   if child_layouts.length() == 0 || limit <= 0.0 {
     return child_layouts
   }
-  let positioned : Array[@types.Layout] = []
+  let positioned : Array[@layout_types.Layout] = []
   let mut pos = 0.0
   for j = 0; j < child_layouts.length(); j = j + 1 {
     let child_layout = child_layouts[j]
@@ -443,7 +447,7 @@ fn reflow_fragmented_children_with_offset(
     let adjusted_positioned_children = if prefer_next_column_for_block_children &&
       !child_has_direct_inflow_float &&
       positioned_children.length() > 1 {
-      let shifted_children : Array[@types.Layout] = []
+      let shifted_children : Array[@layout_types.Layout] = []
       let mut shifted_any = false
       let column_shift = multicol_column_width + multicol_column_gap
       for idx = 0; idx < positioned_children.length(); idx = idx + 1 {
@@ -650,10 +654,10 @@ fn source_children_only_contribute_floats(children : Array[@node.Node]) -> Bool 
 /// Browser-compat quirk for inline wrappers that only contain floated content.
 /// Browsers report zero-sized inline box shifted after its float contribution.
 fn adjust_inline_span_float_quirk(
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   source_node : @node.Node,
   is_vertical_writing : Bool,
-) -> @types.Layout {
+) -> @layout_types.Layout {
   if !id_matches_tag(layout.id, "span") ||
     !id_matches_tag(source_node.id, "span") ||
     is_vertical_writing ||
@@ -682,7 +686,7 @@ fn adjust_inline_span_float_quirk(
     return layout
   }
 
-  let shifted_children : Array[@types.Layout] = []
+  let shifted_children : Array[@layout_types.Layout] = []
   for child in layout.children {
     shifted_children.push({ ..child, x: child.x - layout.width })
   }

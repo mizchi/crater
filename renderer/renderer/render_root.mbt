@@ -191,11 +191,11 @@ fn should_clamp_body_to_viewport(root : @node.Node) -> Bool {
 
 ///|
 fn adjust_root_height_for_viewport(
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   root : @node.Node,
   render_root_tag : String,
   viewport_height : Double,
-) -> @types.Layout {
+) -> @layout_types.Layout {
   let content_extent = calculate_content_extent(layout)
   if should_clamp_body_to_viewport(root) {
     let min_viewport_height = if layout.height < viewport_height {
@@ -226,8 +226,8 @@ fn adjust_root_height_for_viewport(
 
 ///|
 fn stretch_single_frameset_child_to_root(
-  layout : @types.Layout,
-) -> @types.Layout {
+  layout : @layout_types.Layout,
+) -> @layout_types.Layout {
   if layout.children.length() != 1 {
     return layout
   }
@@ -238,7 +238,7 @@ fn stretch_single_frameset_child_to_root(
   if !is_frameset || child.height > 0.0 {
     return layout
   }
-  let adjusted_children : Array[@types.Layout] = []
+  let adjusted_children : Array[@layout_types.Layout] = []
   adjusted_children.push({
     ..child,
     width: if child.width > 0.0 {
@@ -254,8 +254,8 @@ fn stretch_single_frameset_child_to_root(
 ///|
 /// Create a recursive zero-sized layout for nodes that don't generate a box
 /// (e.g. display:none on root/body).
-fn create_zero_layout_from_node(node : @node.Node) -> @types.Layout {
-  let children : Array[@types.Layout] = []
+fn create_zero_layout_from_node(node : @node.Node) -> @layout_types.Layout {
+  let children : Array[@layout_types.Layout] = []
   for i = 0; i < node.children.length(); i = i + 1 {
     children.push(create_zero_layout_from_node(node.children[i]))
   }
@@ -384,7 +384,7 @@ pub fn compute_layout_from_render_root(
   root : @node.Node,
   prepared : PreparedRenderDocument,
   ctx : RenderContext,
-) -> @types.Layout {
+) -> @layout_types.Layout {
   if prepared.doc_root_style.display == @types.Display::None ||
     root.style.display == @types.Display::None {
     return create_zero_layout_from_node(root)
@@ -420,10 +420,10 @@ pub fn compute_layout_from_render_root(
       _ => None
     }
   }
-  let layout_ctx : @types.LayoutContext = {
+  let layout_ctx : @layout_types.LayoutContext = {
     available_width,
     available_height: root_available_height,
-    sizing_mode: @types.SizingMode::Definite,
+    sizing_mode: @layout_types.SizingMode::Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
     stretch_width: false,

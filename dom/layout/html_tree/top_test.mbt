@@ -37,11 +37,14 @@ test "layout html tree preserves tag based ids and inline styles" {
 }
 
 ///|
-fn find_layout_by_id(layout : @types.Layout, id : String) -> @types.Layout? {
+fn find_layout_by_id(
+  layout : @layout_types.Layout,
+  id : String,
+) -> @layout_types.Layout? {
   if layout.id == id {
     Some(layout)
   } else {
-    let mut result : @types.Layout? = None
+    let mut result : @layout_types.Layout? = None
     for child in layout.children {
       match find_layout_by_id(child, id) {
         Some(found) => {
@@ -65,7 +68,7 @@ test "layout html tree transfers canvas intrinsic ratio from percent height in f
   let target = match find_layout_by_id(layout, "div#target") {
     Some(node) => node
     None =>
-      @types.Layout::{
+      @layout_types.Layout::{
         id: "",
         x: 0.0,
         y: 0.0,

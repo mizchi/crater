@@ -1,5 +1,7 @@
 ///|
-pub fn actual_paint_layout_content_right(layout : @types.Layout) -> Double {
+pub fn actual_paint_layout_content_right(
+  layout : @layout_types.Layout,
+) -> Double {
   let mut right = layout.x + layout.width
   match layout.overflow_x {
     @types.Visible => {
@@ -20,7 +22,9 @@ pub fn actual_paint_layout_content_right(layout : @types.Layout) -> Double {
 }
 
 ///|
-pub fn actual_paint_layout_content_bottom(layout : @types.Layout) -> Double {
+pub fn actual_paint_layout_content_bottom(
+  layout : @layout_types.Layout,
+) -> Double {
   let mut bottom = layout.y + layout.height
   match layout.overflow_y {
     @types.Visible => {
@@ -43,7 +47,7 @@ pub fn actual_paint_layout_content_bottom(layout : @types.Layout) -> Double {
 ///|
 pub fn actual_paint_document_dimensions_from_node_and_layout(
   node : @node.Node,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   viewport_width : Int,
   viewport_height : Int,
 ) -> (Int, Int) {
@@ -88,7 +92,7 @@ pub fn resolve_text_intrinsic_size_from_provider_payload(
   text : String,
   font_size : Double,
   line_height : Double,
-) -> @types.IntrinsicSize {
+) -> @layout_types.IntrinsicSize {
   match parse_text_metrics_quad(payload) {
     Some((min_width, max_width, min_height, max_height)) =>
       { min_width, max_width, min_height, max_height }
@@ -101,7 +105,7 @@ fn fallback_text_intrinsic_size(
   text : String,
   font_size : Double,
   line_height : Double,
-) -> @types.IntrinsicSize {
+) -> @layout_types.IntrinsicSize {
   let mut columns = 0
   for _ in text.iter() {
     columns = columns + 1
@@ -290,7 +294,7 @@ fn actual_paint_node_layout_child(
 ///|
 fn actual_paint_node_layout_content_right(
   node : @node.Node,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
 ) -> Double {
   if !actual_paint_node_contributes_document_overflow(node) {
     return 0.0
@@ -323,7 +327,7 @@ fn actual_paint_node_layout_content_right(
 ///|
 fn actual_paint_node_layout_content_bottom(
   node : @node.Node,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
 ) -> Double {
   if !actual_paint_node_contributes_document_overflow(node) {
     return 0.0

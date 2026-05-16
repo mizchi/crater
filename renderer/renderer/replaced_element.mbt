@@ -28,12 +28,12 @@ fn is_replaced_element(tag : String) -> Bool {
 fn create_image_measure(
   intrinsic_width : Double,
   intrinsic_height : Double,
-) -> @types.MeasureFunc {
+) -> @layout_types.MeasureFunc {
   {
     func: fn(
       _available_width : Double,
       _available_height : Double,
-    ) -> @types.IntrinsicSize {
+    ) -> @layout_types.IntrinsicSize {
       // If intrinsic size is specified, use it
       // Otherwise default to 0
       let width = if intrinsic_width > 0.0 { intrinsic_width } else { 0.0 }
@@ -60,12 +60,12 @@ fn broken_img_alt_uses_non_replaced_overflow_box(style : @style.Style) -> Bool {
 fn create_input_measure(
   intrinsic_width : Double,
   intrinsic_height : Double,
-) -> @types.MeasureFunc {
+) -> @layout_types.MeasureFunc {
   {
     func: fn(
       _available_width : Double,
       _available_height : Double,
-    ) -> @types.IntrinsicSize {
+    ) -> @layout_types.IntrinsicSize {
       // Input elements have fixed intrinsic dimensions based on type
       {
         min_width: intrinsic_width,
@@ -223,7 +223,7 @@ fn create_br_measure(
   line_height : Double,
   font_size : Double,
   writing_mode : @style.WritingMode,
-) -> @types.MeasureFunc {
+) -> @layout_types.MeasureFunc {
   let is_vertical = writing_mode.is_vertical()
   let leading = if line_height > font_size {
     line_height - font_size
@@ -240,7 +240,7 @@ fn create_br_measure(
     func: fn(
       _available_width : Double,
       _available_height : Double,
-    ) -> @types.IntrinsicSize {
+    ) -> @layout_types.IntrinsicSize {
       if is_vertical {
         // Vertical flow: br occupies one column advance.
         {

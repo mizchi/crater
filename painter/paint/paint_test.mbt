@@ -140,7 +140,7 @@ test "viewport_culling_basic" {
     top: 0.0,
     bottom: 0.0,
   }
-  let child1_layout : @types.Layout = {
+  let child1_layout : @layout_types.Layout = {
     id: "child1",
     x: 0.0,
     y: 0.0,
@@ -156,7 +156,7 @@ test "viewport_culling_basic" {
     children: [],
     text: None,
   }
-  let child2_layout : @types.Layout = {
+  let child2_layout : @layout_types.Layout = {
     id: "child2",
     x: 0.0,
     y: 100.0,
@@ -172,7 +172,7 @@ test "viewport_culling_basic" {
     children: [],
     text: None,
   }
-  let child3_layout : @types.Layout = {
+  let child3_layout : @layout_types.Layout = {
     id: "child3",
     x: 0.0,
     y: 200.0,
@@ -188,7 +188,7 @@ test "viewport_culling_basic" {
     children: [],
     text: None,
   }
-  let root_layout : @types.Layout = {
+  let root_layout : @layout_types.Layout = {
     id: "root",
     x: 0.0,
     y: 0.0,
@@ -244,8 +244,8 @@ test "viewport_culling_basic" {
 ///|
 test "from_node_and_layout skips ignorable whitespace text nodes when aligning children" {
   let style = @style.Style::default()
-  let whitespace_measure : @types.MeasureFunc = {
-    func: fn(_width, _height) { @types.IntrinsicSize::default() },
+  let whitespace_measure : @layout_types.MeasureFunc = {
+    func: fn(_width, _height) { @layout_types.IntrinsicSize::default() },
   }
   let zero_rect : @types.Rect[Double] = {
     left: 0.0,
@@ -261,7 +261,7 @@ test "from_node_and_layout skips ignorable whitespace text nodes when aligning c
   let root = @node.Node::new("label#root", style, [
     input, ws1, control, ws2, label,
   ])
-  let input_layout : @types.Layout = {
+  let input_layout : @layout_types.Layout = {
     id: "input#check",
     x: 0.0,
     y: 0.0,
@@ -277,7 +277,7 @@ test "from_node_and_layout skips ignorable whitespace text nodes when aligning c
     children: [],
     text: None,
   }
-  let control_layout : @types.Layout = {
+  let control_layout : @layout_types.Layout = {
     id: "span#control",
     x: 8.0,
     y: 0.0,
@@ -293,7 +293,7 @@ test "from_node_and_layout skips ignorable whitespace text nodes when aligning c
     children: [],
     text: None,
   }
-  let label_layout : @types.Layout = {
+  let label_layout : @layout_types.Layout = {
     id: "span#label",
     x: 36.0,
     y: 0.0,
@@ -309,7 +309,7 @@ test "from_node_and_layout skips ignorable whitespace text nodes when aligning c
     children: [],
     text: None,
   }
-  let root_layout : @types.Layout = {
+  let root_layout : @layout_types.Layout = {
     id: "label#root",
     x: 0.0,
     y: 0.0,
@@ -348,7 +348,7 @@ test "list_marker_disc_for_ul" {
     top: 0.0,
     bottom: 0.0,
   }
-  let text_layout : @types.Layout = {
+  let text_layout : @layout_types.Layout = {
     id: "#text",
     x: 0.0,
     y: 0.0,
@@ -364,7 +364,7 @@ test "list_marker_disc_for_ul" {
     children: [],
     text: Some("Item text"),
   }
-  let li1_layout : @types.Layout = {
+  let li1_layout : @layout_types.Layout = {
     id: "li",
     x: 40.0,
     y: 0.0,
@@ -380,7 +380,7 @@ test "list_marker_disc_for_ul" {
     children: [text_layout],
     text: None,
   }
-  let li2_layout : @types.Layout = {
+  let li2_layout : @layout_types.Layout = {
     id: "li",
     x: 40.0,
     y: 19.2,
@@ -396,7 +396,7 @@ test "list_marker_disc_for_ul" {
     children: [text_layout],
     text: None,
   }
-  let ul_layout : @types.Layout = {
+  let ul_layout : @layout_types.Layout = {
     id: "ul",
     x: 0.0,
     y: 0.0,
@@ -454,7 +454,7 @@ test "list_marker_decimal_for_ol" {
     top: 0.0,
     bottom: 0.0,
   }
-  let text_layout : @types.Layout = {
+  let text_layout : @layout_types.Layout = {
     id: "#text",
     x: 0.0,
     y: 0.0,
@@ -470,7 +470,7 @@ test "list_marker_decimal_for_ol" {
     children: [],
     text: Some("text"),
   }
-  let li_layouts : Array[@types.Layout] = []
+  let li_layouts : Array[@layout_types.Layout] = []
   for i = 0; i < 3; i = i + 1 {
     li_layouts.push({
       id: "li",
@@ -489,7 +489,7 @@ test "list_marker_decimal_for_ol" {
       text: None,
     })
   }
-  let ol_layout : @types.Layout = {
+  let ol_layout : @layout_types.Layout = {
     id: "ol",
     x: 0.0,
     y: 0.0,
@@ -542,7 +542,7 @@ test "no_marker_for_div" {
     top: 0.0,
     bottom: 0.0,
   }
-  let child_layout : @types.Layout = {
+  let child_layout : @layout_types.Layout = {
     id: "span",
     x: 0.0,
     y: 0.0,
@@ -558,7 +558,7 @@ test "no_marker_for_div" {
     children: [],
     text: None,
   }
-  let div_layout : @types.Layout = {
+  let div_layout : @layout_types.Layout = {
     id: "div",
     x: 0.0,
     y: 0.0,
@@ -595,7 +595,7 @@ test "viewport_culling_zero_height_container" {
     bottom: 0.0,
   }
   // Child has actual height (e.g., 1000px of content)
-  let child_layout : @types.Layout = {
+  let child_layout : @layout_types.Layout = {
     id: "child",
     x: 0.0,
     y: 0.0,
@@ -612,7 +612,7 @@ test "viewport_culling_zero_height_container" {
     text: None,
   }
   // Container (body) has height=0 due to CSS height: 100%
-  let container_layout : @types.Layout = {
+  let container_layout : @layout_types.Layout = {
     id: "body",
     x: 0.0,
     y: 0.0,
@@ -674,7 +674,7 @@ test "viewport_culling_scroll_simulation" {
     top: 0.0,
     bottom: 0.0,
   }
-  let root_layout : @types.Layout = {
+  let root_layout : @layout_types.Layout = {
     id: "root",
     x: 0.0,
     y: 0.0,
@@ -747,8 +747,8 @@ test "viewport_culling_scroll_simulation" {
 ///|
 test "PaintNode src propagation from Node" {
   let style = @style.Style::default()
-  let measure : @types.MeasureFunc = {
-    func: fn(_w, _h) { @types.IntrinsicSize::default() },
+  let measure : @layout_types.MeasureFunc = {
+    func: fn(_w, _h) { @layout_types.IntrinsicSize::default() },
   }
   let node = @node.Node::with_measure(
     "img#test",
@@ -764,7 +764,7 @@ test "PaintNode src propagation from Node" {
     bottom: 0.0,
     left: 0.0,
   }
-  let layout : @types.Layout = {
+  let layout : @layout_types.Layout = {
     id: "img#test",
     x: 0.0,
     y: 0.0,

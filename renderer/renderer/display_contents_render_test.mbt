@@ -312,9 +312,9 @@ test "display_contents keeps inline parent shrink-to-fit and preserves child spa
   inspect(inline_parent.width < 200.0, content="true")
 
   fn find_child(
-    children : Array[@types.Layout],
+    children : Array[@layout_types.Layout],
     id : String,
-  ) -> @types.Layout? {
+  ) -> @layout_types.Layout? {
     for child in children {
       if child.id == id {
         return Some(child)

@@ -71,7 +71,7 @@ fn calculate_alignment_content_bounds(
   container_width : Double,
   container_height : Double,
   padding : @types.Rect[Double],
-  children : Array[@types.Layout],
+  children : Array[@layout_types.Layout],
 ) -> AlignmentContentBounds {
   let mut min_left = 0.0
   let mut min_top = 0.0
@@ -125,8 +125,8 @@ fn apply_initial_overflow_content_alignment(
   container_width : Double,
   container_height : Double,
   padding : @types.Rect[Double],
-  children : Array[@types.Layout],
-) -> Array[@types.Layout] {
+  children : Array[@layout_types.Layout],
+) -> Array[@layout_types.Layout] {
   if children.is_empty() {
     return children
   }

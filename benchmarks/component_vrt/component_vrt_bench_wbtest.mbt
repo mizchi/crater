@@ -755,9 +755,9 @@ fn render_component_landmark_artifact(fixture : ComponentFixture) -> String {
 ///|
 fn find_component_subtree(
   node : @layout.Node,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   target_id : String,
-) -> (@layout.Node, @types.Layout)? {
+) -> (@layout.Node, @layout_types.Layout)? {
   if node.id == target_id && layout.id == target_id {
     return Some((node, layout))
   }
@@ -777,7 +777,9 @@ fn find_component_subtree(
 }
 
 ///|
-fn normalize_component_layout(layout : @types.Layout) -> @types.Layout {
+fn normalize_component_layout(
+  layout : @layout_types.Layout,
+) -> @layout_types.Layout {
   { ..layout, x: 0.0, y: 0.0 }
 }
 
@@ -794,7 +796,7 @@ fn pixel_span(value : Double) -> Int {
 ///|
 fn render_fixture_node_and_layout(
   fixture : ComponentFixture,
-) -> (@layout.Node, @types.Layout) {
+) -> (@layout.Node, @layout_types.Layout) {
   @renderer.render_to_node_and_layout_with_external_css(
     fixture.html,
     fixture.render_ctx(),
@@ -807,7 +809,7 @@ fn render_prepared_fixture_node_and_layout(
   doc : @html.Document,
   ctx : @renderer.RenderContext,
   prepared : @renderer.PreparedRenderDocument,
-) -> (@layout.Node, @types.Layout) {
+) -> (@layout.Node, @layout_types.Layout) {
   let node = @renderer.build_render_root_node(doc, ctx, prepared)
   let layout = @renderer.compute_layout_from_render_root(node, prepared, ctx)
   (node, layout)
@@ -816,7 +818,7 @@ fn render_prepared_fixture_node_and_layout(
 ///|
 fn render_component_subtree(
   fixture : ComponentFixture,
-) -> (@layout.Node, @types.Layout) {
+) -> (@layout.Node, @layout_types.Layout) {
   let (node, layout) = render_fixture_node_and_layout(fixture)
   match find_component_subtree(node, layout, fixture.target_node_id()) {
     Some(found) => found

@@ -5,7 +5,7 @@ fn calculate_scroll_dimensions(
   container_width : Double,
   container_height : Double,
   padding : @types.Rect[Double],
-  children : Array[@types.Layout],
+  children : Array[@layout_types.Layout],
 ) -> (Double, Double) {
   // Start with content box dimensions (container minus padding is content area)
   let mut max_right = container_width - padding.left - padding.right
@@ -59,7 +59,7 @@ fn calculate_alignment_content_bounds(
   container_width : Double,
   container_height : Double,
   padding : @types.Rect[Double],
-  children : Array[@types.Layout],
+  children : Array[@layout_types.Layout],
 ) -> AlignmentContentBounds {
   let mut min_left = 0.0
   let mut min_top = 0.0
@@ -175,8 +175,8 @@ fn compute_overflow_alignment_offset(
 ///|
 fn apply_initial_overflow_content_alignment(
   node : @node.Node,
-  layout : @types.Layout,
-) -> @types.Layout {
+  layout : @layout_types.Layout,
+) -> @layout_types.Layout {
   if layout.children.is_empty() {
     return layout
   }
@@ -304,8 +304,8 @@ fn apply_initial_overflow_content_alignment(
 /// Apply initial scroll-snap offset for mandatory center snapping.
 fn apply_initial_scroll_snap(
   node : @node.Node,
-  layout : @types.Layout,
-) -> @types.Layout {
+  layout : @layout_types.Layout,
+) -> @layout_types.Layout {
   let layout = apply_initial_overflow_content_alignment(node, layout)
   if layout.children.is_empty() {
     return layout
@@ -365,7 +365,7 @@ fn overflow_creates_scroll_container(overflow : @types.Overflow) -> Bool {
 ///|
 fn find_initial_snap_offset_x(
   node : @node.Node,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   max_scroll : Double,
 ) -> Double? {
   let count = if node.children.length() < layout.children.length() {
@@ -390,7 +390,7 @@ fn find_initial_snap_offset_x(
 ///|
 fn find_initial_snap_offset_y(
   node : @node.Node,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   max_scroll : Double,
 ) -> Double? {
   let count = if node.children.length() < layout.children.length() {

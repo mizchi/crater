@@ -45,7 +45,7 @@ test "wpt_visibility_collapse_border_spacing_002_layout" {
   inspect(collapsed_row.style.visibility, content="Collapse")
 
   let layout_root = @renderer.render(html_str, ctx)
-  let mut table_layout : @types.Layout? = None
+  let mut table_layout : @layout_types.Layout? = None
   for child in layout_root.children {
     if child.id == "table#t" {
       table_layout = Some(child)

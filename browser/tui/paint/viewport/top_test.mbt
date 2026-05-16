@@ -9,7 +9,7 @@ test "tui viewport paint keeps viewport conversion" {
     top: 0.0,
     bottom: 0.0,
   }
-  let child_layout : @types.Layout = {
+  let child_layout : @layout_types.Layout = {
     id: "child",
     x: 0.0,
     y: 0.0,
@@ -25,7 +25,7 @@ test "tui viewport paint keeps viewport conversion" {
     children: [],
     text: None,
   }
-  let root_layout : @types.Layout = {
+  let root_layout : @layout_types.Layout = {
     id: "root",
     x: 0.0,
     y: 0.0,

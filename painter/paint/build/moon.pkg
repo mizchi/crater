@@ -5,7 +5,7 @@ import {
 }
 
 import {
-  "mizchi/crater-core" @types,
+  "mizchi/crater-core/values" @types,
 } for "test"
 
 import {

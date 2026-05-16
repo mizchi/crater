@@ -2,15 +2,15 @@
 package "mizchi/crater-webvitals"
 
 import {
-  "mizchi/crater-core",
   "mizchi/crater-core/layout_view",
+  "mizchi/crater-core/values",
   "moonbitlang/core/debug",
 }
 
 // Values
-pub fn compute_element_shift(@crater-core.BoundingRect, @crater-core.BoundingRect, @crater-core.Size[Double]) -> LayoutShift
+pub fn compute_element_shift(@values.BoundingRect, @values.BoundingRect, @values.Size[Double]) -> LayoutShift
 
-pub fn compute_total(Array[@crater-core.BoundingRect], Array[@crater-core.BoundingRect], @crater-core.Size[Double]) -> Double
+pub fn compute_total(Array[@values.BoundingRect], Array[@values.BoundingRect], @values.Size[Double]) -> Double
 
 pub fn[T : @layout_view.LayoutView] extract_lcp_candidates(T, Double, Double) -> Array[LCPCandidate]
 

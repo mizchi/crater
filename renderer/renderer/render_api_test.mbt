@@ -3,7 +3,7 @@
 
 ///|
 test "layout_to_json serializes box model fields without changing schema" {
-  let child : @types.Layout = {
+  let child : @layout_types.Layout = {
     id: "child",
     x: 5.0,
     y: 6.0,
@@ -19,7 +19,7 @@ test "layout_to_json serializes box model fields without changing schema" {
     children: [],
     text: None,
   }
-  let layout : @types.Layout = {
+  let layout : @layout_types.Layout = {
     id: "root",
     x: 1.0,
     y: 2.0,

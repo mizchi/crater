@@ -372,7 +372,7 @@ pub fn compute_position_with_margin_auto(
 
 ///|
 /// Create a zero-sized layout for display:none elements
-pub fn create_zero_layout(id : String) -> @types.Layout {
+pub fn create_zero_layout(id : String) -> @layout_types.Layout {
   let zero_rect : @types.Rect[Double] = {
     left: 0.0,
     right: 0.0,

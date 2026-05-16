@@ -33,7 +33,7 @@ test "to_sixel_dynamic compresses repeated columns with repeat introducer" {
 
 ///|
 test "render_layout simple" {
-  let layout : @types.Layout = {
+  let layout : @layout_types.Layout = {
     id: "root",
     x: 0.0,
     y: 0.0,

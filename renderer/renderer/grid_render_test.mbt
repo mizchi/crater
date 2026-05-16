@@ -63,10 +63,10 @@ test "renderer_grid_column" {
 
   // Now compute layout
   @node.setup()
-  let layout_ctx : @types.LayoutContext = {
+  let layout_ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -104,10 +104,10 @@ test "orthogonal_child_within_flex_grid_wpt_like" {
   inspect(ortho.style.writing_mode, content="VerticalRl")
 
   @node.setup()
-  let layout_ctx : @types.LayoutContext = {
+  let layout_ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,

@@ -10,7 +10,7 @@ test "tui runtime paint prepares sorted viewport paint" {
     top: 0.0,
     bottom: 0.0,
   }
-  let child1_layout : @types.Layout = {
+  let child1_layout : @layout_types.Layout = {
     id: "child1",
     x: 0.0,
     y: 0.0,
@@ -26,7 +26,7 @@ test "tui runtime paint prepares sorted viewport paint" {
     children: [],
     text: None,
   }
-  let child2_layout : @types.Layout = {
+  let child2_layout : @layout_types.Layout = {
     id: "child2",
     x: 0.0,
     y: 200.0,
@@ -42,7 +42,7 @@ test "tui runtime paint prepares sorted viewport paint" {
     children: [],
     text: None,
   }
-  let root_layout : @types.Layout = {
+  let root_layout : @layout_types.Layout = {
     id: "root",
     x: 0.0,
     y: 0.0,

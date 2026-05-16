@@ -1,5 +1,5 @@
 import {
-  "mizchi/crater-core" @types,
+  "mizchi/crater-core/values" @types,
   "mizchi/crater-painter/paint/diff" @paint_diff,
   "mizchi/crater-painter/paint/model" @paint_model,
   "mizchi/crater-renderer/renderer" @renderer_core,

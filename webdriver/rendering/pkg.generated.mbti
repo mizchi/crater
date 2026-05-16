@@ -5,6 +5,7 @@ import {
   "mizchi/crater-browser/tui/paint/export",
   "mizchi/crater-core",
   "mizchi/crater-core/node",
+  "mizchi/crater-core/values",
   "mizchi/crater-renderer/vrt",
   "mizchi/svg",
 }
@@ -57,7 +58,7 @@ pub fn should_use_font_aware_text_provider(String) -> Bool
 // Types and methods
 pub(all) struct BatchRenderOptions {
   base_html : String
-  viewport : @crater-core.Size[Double]
+  viewport : @values.Size[Double]
   variants : Array[@vrt.RenderVariant]
 }
 

@@ -4,11 +4,12 @@ import {
   "mizchi/crater-painter/paint/model" @model,
   "mizchi/crater-painter/paint/node_bridge" @node_bridge,
   "mizchi/crater-painter/paint/viewport_bridge" @viewport,
-  "mizchi/crater-core" @types,
+  "mizchi/crater-core" @layout_types,
 }
 
 import {
   "mizchi/crater-core/style",
+  "mizchi/crater-core/values" @types,
 } for "test"
 
 import {

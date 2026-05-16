@@ -480,7 +480,7 @@ fn resolve_multicol_flow_child_outer_height(
 
 ///|
 fn resolve_multicol_layout_outer_height(
-  child_layout : @types.Layout,
+  child_layout : @layout_types.Layout,
   child_style : @style.Style,
 ) -> Double {
   let child_flow_height = if child_style.display == @types.Contents {
@@ -551,7 +551,7 @@ fn has_prior_multicol_column_content(
 
 ///|
 fn resolve_multicol_leading_keep_height(
-  child_layout : @types.Layout,
+  child_layout : @layout_types.Layout,
   child_style : @style.Style,
   child_node : @node.Node,
 ) -> Double {
@@ -653,7 +653,7 @@ fn resolve_multicol_following_reserved_height(
 ///|
 fn resolve_multicol_nested_following_reserved_height(
   start_index : Int,
-  child_layouts : Array[@types.Layout],
+  child_layouts : Array[@layout_types.Layout],
   source_children : Array[@node.Node],
 ) -> Double {
   if start_index < 0 ||
@@ -825,7 +825,7 @@ fn resolve_multicol_nested_fragment_offset(
 
 ///|
 fn resolve_nested_fragment_flow_height(
-  nested_layout : @types.Layout,
+  nested_layout : @layout_types.Layout,
   nested_style : @style.Style,
 ) -> Double {
   if nested_style.display == @types.Contents {
@@ -839,7 +839,7 @@ fn resolve_nested_fragment_flow_height(
 
 ///|
 fn resolve_multicol_positioned_flow_extent(
-  children : Array[@types.Layout],
+  children : Array[@layout_types.Layout],
   limit : Double,
   multicol_column_width : Double,
   multicol_column_gap : Double,
@@ -880,7 +880,7 @@ fn resolve_multicol_positioned_flow_extent(
 
 ///|
 fn get_children_immediate_extent_width(
-  children : Array[@types.Layout],
+  children : Array[@layout_types.Layout],
 ) -> Double {
   if children.length() == 0 {
     return 0.0
@@ -914,8 +914,8 @@ fn get_children_immediate_extent_width(
 
 ///|
 fn shrink_span_to_positive_children_extent(
-  layout : @types.Layout,
-) -> @types.Layout {
+  layout : @layout_types.Layout,
+) -> @layout_types.Layout {
   if layout.id != "span" || layout.children.length() == 0 {
     return layout
   }
@@ -968,13 +968,13 @@ fn shrink_span_to_positive_children_extent(
 
 ///|
 fn normalize_fragment_start_margin_boxes(
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   limit : Double,
-) -> @types.Layout {
+) -> @layout_types.Layout {
   if limit <= 0.0 {
     return layout
   }
-  let normalized_children : Array[@types.Layout] = []
+  let normalized_children : Array[@layout_types.Layout] = []
   for child in layout.children {
     normalized_children.push(
       normalize_fragment_start_margin_boxes(child, limit),
@@ -1003,10 +1003,10 @@ fn normalize_fragment_start_margin_boxes(
 
 ///|
 fn normalize_display_contents_children_to_column_start(
-  children : Array[@types.Layout],
+  children : Array[@layout_types.Layout],
   multicol_column_width : Double,
   multicol_column_gap : Double,
-) -> Array[@types.Layout] {
+) -> Array[@layout_types.Layout] {
   let column_step = multicol_column_width + multicol_column_gap
   fn resolve_column_index(x : Double, column_step : Double) -> Int {
     if x <= 0.0 || column_step <= 0.0 {
@@ -1032,7 +1032,7 @@ fn normalize_display_contents_children_to_column_start(
       None => min_y_by_column[column_index] = child.y
     }
   }
-  let normalized : Array[@types.Layout] = []
+  let normalized : Array[@layout_types.Layout] = []
   for child in children {
     let column_index = resolve_column_index(child.x, column_step)
     let shifted = if column_index > 0 {
@@ -1050,7 +1050,7 @@ fn normalize_display_contents_children_to_column_start(
 
 ///|
 fn resolve_multicol_positioned_column_span_with_offset(
-  children : Array[@types.Layout],
+  children : Array[@layout_types.Layout],
   column_step : Double,
   offset_x : Double,
 ) -> Int {
@@ -1083,7 +1083,7 @@ fn resolve_multicol_positioned_column_span_with_offset(
 
 ///|
 fn resolve_multicol_positioned_column_span(
-  children : Array[@types.Layout],
+  children : Array[@layout_types.Layout],
   multicol_column_width : Double,
   multicol_column_gap : Double,
 ) -> Int {
@@ -1254,7 +1254,7 @@ fn has_break_inside_avoid_descendant(children : Array[@node.Node]) -> Bool {
 ///|
 fn is_multicol_nested_reflow_candidate(
   multicol_participates_in_inline_run : Bool,
-  child_layout : @types.Layout,
+  child_layout : @layout_types.Layout,
   multicol_column_width : Double,
 ) -> Bool {
   !multicol_participates_in_inline_run ||
@@ -1266,7 +1266,7 @@ fn is_multicol_nested_reflow_candidate(
 
 ///|
 fn has_single_child_block_wrapper_for_multicol_reflow(
-  child_layout : @types.Layout,
+  child_layout : @layout_types.Layout,
   child_style : @style.Style,
 ) -> Bool {
   child_layout.children.length() == 1 &&
@@ -1277,7 +1277,7 @@ fn has_single_child_block_wrapper_for_multicol_reflow(
 
 ///|
 fn should_reflow_multicol_nested_children(
-  child_layout : @types.Layout,
+  child_layout : @layout_types.Layout,
   child_style : @style.Style,
   has_nested_forced_column_break : Bool,
   fragmented_columns : Int,
@@ -1343,7 +1343,7 @@ fn process_multicol_flow_child(
   multicol_height_limit : Double?,
   multicol_fragment_contained : Bool,
   default_text_align : Bool,
-  layout_map : Map[Int, @types.Layout],
+  layout_map : Map[Int, @layout_types.Layout],
   flow_y_positions : Array[Double],
 ) -> (Double, Double, Bool, Double, Double, Double) {
   let mut current_pos = current_pos
@@ -1802,8 +1802,8 @@ fn process_multicol_flow_child(
           child_layout, child_style, has_nested_forced_column_break, fragmented_columns,
           multicol_nested_reflow_candidate, local_y, following_reserved_height,
         )
-        let positioned_children : Array[@types.Layout] = if should_reflow_nested_children {
-          let nested_layouts : Array[@types.Layout] = []
+        let positioned_children : Array[@layout_types.Layout] = if should_reflow_nested_children {
+          let nested_layouts : Array[@layout_types.Layout] = []
           let nested_source_children = collect_preserved_flow_source_children(
             child_node.children,
           )
@@ -2076,7 +2076,7 @@ fn process_multicol_flow_child(
               let adjusted_nested_positioned_children = if nested_height_zero &&
                 nested_local_y > 0.0 &&
                 nested_positioned_children.length() > 1 {
-                let shifted_children : Array[@types.Layout] = []
+                let shifted_children : Array[@layout_types.Layout] = []
                 let mut shifted_any = false
                 let column_shift = multicol_column_width + multicol_column_gap
                 for idx = 0
@@ -2119,7 +2119,7 @@ fn process_multicol_flow_child(
                 }
                 if min_nested_child_y < 0.0 {
                   nested_child_y_offset = min_nested_child_y
-                  let shifted_nested_children : Array[@types.Layout] = []
+                  let shifted_nested_children : Array[@layout_types.Layout] = []
                   for nested_child in adjusted_nested_positioned_children {
                     shifted_nested_children.push(
                       shift_layout_subtree(
@@ -2305,7 +2305,7 @@ fn process_multicol_flow_child(
               } else {
                 raw_nested_y
               }
-              let raw_nested_layout : @types.Layout = {
+              let raw_nested_layout : @layout_types.Layout = {
                 ..nested_layout,
                 x: if preserve_zero_height_nested_wrapper_origin {
                   nested_layout.x
@@ -2446,7 +2446,7 @@ fn process_multicol_flow_child(
               } else {
                 nested_layout.height
               }
-              let raw_nested_layout : @types.Layout = {
+              let raw_nested_layout : @layout_types.Layout = {
                 ..nested_layout,
                 x: nested_col_index.to_double() *
                 (multicol_column_width + multicol_column_gap) +
@@ -2545,7 +2545,7 @@ fn process_multicol_flow_child(
         } else {
           positioned_children
         }
-        let positioned_layout : @types.Layout = {
+        let positioned_layout : @layout_types.Layout = {
           id: child_layout.id,
           x: padding.left +
           border.left +
@@ -2640,7 +2640,7 @@ fn process_multicol_flow_child(
   } else {
     0.0
   }
-  let positioned_layout : @types.Layout = {
+  let positioned_layout : @layout_types.Layout = {
     id: child_layout.id,
     x: padding.left +
     border.left +

@@ -7,7 +7,7 @@
 /// Layout with DOM index for sorting
 priv struct IndexedLayout {
   dom_index : Int
-  layout : @types.Layout
+  layout : @layout_types.Layout
 }
 
 ///|

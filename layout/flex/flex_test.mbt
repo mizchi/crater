@@ -10,8 +10,11 @@ fn default_dispatch() -> @node.DispatchFn {
 test "flex_item_height_recalculated_on_shrink" {
   let default_style = @style.Style::default()
   // Create a text measure function that returns different heights at different widths
-  let text_measure : @types.MeasureFunc = {
-    func: fn(available_width, _available_height) -> @types.IntrinsicSize {
+  let text_measure : @layout_types.MeasureFunc = {
+    func: fn(
+      available_width,
+      _available_height,
+    ) -> @layout_types.IntrinsicSize {
       let max_width = 180.0 // Natural width
       let actual_width = if available_width.is_inf() ||
         available_width.is_nan() ||
@@ -47,10 +50,10 @@ test "flex_item_height_recalculated_on_shrink" {
     align_items: @types.FlexStart,
   }
   let root = @node.Node::new("root", root_style, [child1, child2])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 200.0,
     available_height: Some(400.0),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 200.0,
     viewport_height: 400.0,
     stretch_width: false,
@@ -90,10 +93,10 @@ test "flex_row_basic" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child1, child2])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -131,10 +134,10 @@ test "flex_column_basic" {
     width: @types.Length(200.0),
   }
   let root = @node.Node::new("root", root_style, [child1, child2])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -172,10 +175,10 @@ test "flex_grow" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child1, child2])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -206,10 +209,10 @@ test "flex_justify_center" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -248,10 +251,10 @@ test "flex_justify_space_between" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child1, child2, child3])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -286,10 +289,10 @@ test "flex_row_space_between_fixed_leaf_children_fast_path_shape" {
     width: @types.Length(216.0),
   }
   let root = @node.Node::new("root", root_style, [child1, child2])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 216.0,
     available_height: Some(100.0),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 216.0,
     viewport_height: 100.0,
     stretch_width: false,
@@ -322,10 +325,10 @@ test "flex_align_center" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -354,10 +357,10 @@ test "flex_align_stretch" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -390,10 +393,10 @@ test "flex_row_reverse" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child1, child2])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -427,10 +430,10 @@ test "flex_row_reverse_start_is_logical_not_flex_relative" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -457,10 +460,10 @@ test "flex_row_reverse_flex_start_is_flex_relative" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -493,10 +496,10 @@ test "justify_content_stretch_falls_back_to_flex_start_in_rtl_overflow" {
     overflow_y: @types.Hidden,
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -529,10 +532,10 @@ test "justify_content_left_is_physical_in_rtl_row_overflow" {
     overflow_y: @types.Hidden,
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -565,10 +568,10 @@ test "justify_content_space_around_overflow_uses_logical_start" {
     overflow_y: @types.Hidden,
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -603,10 +606,10 @@ test "row_wrap_start_respects_vertical_rl_block_start" {
     overflow_y: @types.Hidden,
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -642,10 +645,10 @@ test "row_wrap_end_respects_vertical_rl_block_end" {
     overflow_y: @types.Hidden,
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -720,10 +723,10 @@ test "flex_item_block_child_negative_margin_keeps_offsets_in_vertical_rl" {
     overflow_y: @types.Hidden,
   }
   let root = @node.Node::new("root", root_style, [container])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -799,10 +802,10 @@ test "flex_item_block_child_negative_margin_keeps_offsets_in_vertical_lr" {
     overflow_y: @types.Hidden,
   }
   let root = @node.Node::new("root", root_style, [container])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -839,10 +842,10 @@ test "column_wrap_start_respects_vertical_rl_block_start" {
     overflow_y: @types.Hidden,
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -878,10 +881,10 @@ test "column_wrap_start_respects_rtl_inline_start" {
     overflow_y: @types.Hidden,
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -917,10 +920,10 @@ test "column_wrap_right_falls_back_to_start_on_vertical_block_axis" {
     overflow_y: @types.Hidden,
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -953,10 +956,10 @@ test "flex_with_padding" {
     },
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -1001,10 +1004,10 @@ test "flex_shrink_to_zero" {
     width: @types.Length(75.0),
   }
   let root = @node.Node::new("root", root_style, [child1, child2, child3])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -1047,10 +1050,10 @@ test "flex_justify_space_around" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child1, child2, child3])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -1104,10 +1107,10 @@ test "flex_justify_space_evenly" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child1, child2, child3])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -1141,10 +1144,10 @@ test "flex_align_items_center" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -1174,10 +1177,10 @@ test "flex_align_items_end" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -1211,10 +1214,10 @@ test "flex_justify_end" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child1, child2])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -1248,10 +1251,10 @@ test "flex_column_reverse" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child1, child2])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -1306,10 +1309,10 @@ test "flex_nested" {
     width: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [inner_flex, leaf])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -1350,10 +1353,10 @@ test "flex_with_margin" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -1385,10 +1388,10 @@ test "flex_stretch_respects_explicit_height" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -1417,10 +1420,10 @@ test "flex_min_width_constraint" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -1449,10 +1452,10 @@ test "flex_max_width_constraint" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -1482,10 +1485,10 @@ test "flex_display_none" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child1, child2])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -1520,10 +1523,10 @@ test "flex_grow_within_constrained_min_column" {
     min_height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child1, child2])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 100.0,
     available_height: Some(200.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -1568,10 +1571,10 @@ test "flex_percentage_max_width_with_grow" {
     height: @types.Length(400.0),
   }
   let root = @node.Node::new("root", root_style, [child1, child2])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(500.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -1610,10 +1613,10 @@ test "flex_grow_child_distribution" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child1, child2])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -1652,10 +1655,10 @@ test "flex_shrink_child_distribution" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child1, child2])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -1687,10 +1690,10 @@ test "flex_align_items_start" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -1732,10 +1735,10 @@ test "flex_container_with_border_and_padding" {
     },
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -1774,10 +1777,10 @@ test "flex_grow_within_max_width" {
     // width is auto, but max-width constrains it
   }
   let root = @node.Node::new("root", root_style, [child1, child2])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 200.0, // More than max-width
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -1816,10 +1819,10 @@ test "flex_shrink_with_margin" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -1866,10 +1869,10 @@ test "flex_grow_less_than_factor_one" {
     height: @types.Length(200.0),
   }
   let root = @node.Node::new("root", root_style, [child1, child2, child3])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 600.0,
     available_height: Some(400.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -1914,10 +1917,10 @@ test "flex_basis_behavior" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child1, child2])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -1948,10 +1951,10 @@ test "flex_column_align_stretch" {
     height: @types.Length(200.0),
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -1982,10 +1985,10 @@ test "flex_row_stretch_uses_constrained_min_height" {
     min_height: @types.Length(200.0),
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 300.0,
     available_height: None,
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 300.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -2014,10 +2017,10 @@ test "flex_single_item_center" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -2059,10 +2062,10 @@ test "flex_shrink_all_equally" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child1, child2, child3])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -2120,10 +2123,10 @@ test "flex_nested_mixed_directions" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [inner_flex, sibling])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(300.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -2156,10 +2159,10 @@ test "align_items_center" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 200.0,
     available_height: Some(200.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -2194,10 +2197,10 @@ test "align_items_flex_end" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 200.0,
     available_height: Some(200.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -2237,10 +2240,10 @@ test "justify_content_space_between" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child1, child2, child3])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 200.0,
     available_height: Some(200.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -2281,10 +2284,10 @@ test "justify_content_space_around" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child1, child2, child3])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 200.0,
     available_height: Some(200.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -2329,10 +2332,10 @@ test "justify_content_center" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child1, child2, child3])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 200.0,
     available_height: Some(200.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -2381,10 +2384,10 @@ test "flex_shrink_middle_to_zero" {
     width: @types.Length(75.0),
   }
   let root = @node.Node::new("root", root_style, [child0, child1, child2])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 200.0,
     available_height: Some(200.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -2424,10 +2427,10 @@ test "align_self_center" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 200.0,
     available_height: Some(200.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -2463,10 +2466,10 @@ test "flex_basis_flex_grow_column" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child1, child2])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 200.0,
     available_height: Some(200.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -2508,10 +2511,10 @@ test "flex_wrap_fits_one_row" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child1, child2])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 200.0,
     available_height: Some(200.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -2559,10 +2562,10 @@ test "nested_overflowing_child" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 200.0,
     available_height: Some(200.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -2610,10 +2613,10 @@ test "gap_column_gap_flexible" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child1, child2, child3])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 200.0,
     available_height: Some(200.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -2658,10 +2661,10 @@ test "gap_column_gap_inflexible" {
     height: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child1, child2, child3])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 200.0,
     available_height: Some(200.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -2704,10 +2707,10 @@ test "gap_row_gap_column" {
     width: @types.Length(100.0),
   }
   let root = @node.Node::new("root", root_style, [child1, child2, child3])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 200.0,
     available_height: Some(200.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -2763,10 +2766,10 @@ test "wrap_row" {
   let root = @node.Node::new("root", root_style, [
     child1, child2, child3, child4,
   ])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 200.0,
     available_height: Some(200.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -2829,10 +2832,10 @@ test "wrap_column" {
   let root = @node.Node::new("root", root_style, [
     child1, child2, child3, child4,
   ])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 200.0,
     available_height: Some(200.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -2894,10 +2897,10 @@ test "margin_auto_left_and_right" {
     },
     [child0, child1],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 200.0,
     available_height: Some(200.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -2950,10 +2953,10 @@ test "margin_auto_left" {
     },
     [child0, child1],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 200.0,
     available_height: Some(200.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -3006,10 +3009,10 @@ test "margin_auto_top" {
     },
     [child0, child1],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 200.0,
     available_height: Some(200.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -3053,10 +3056,10 @@ test "aspect_ratio_flex_row_fill_width" {
     },
     [child0],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 100.0,
     available_height: Some(100.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -3092,10 +3095,10 @@ test "aspect_ratio_flex_row_fill_height" {
     },
     [child0],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 100.0,
     available_height: Some(100.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -3134,10 +3137,10 @@ test "aspect_ratio_flex_row_stretch_fill_height" {
     },
     [child0],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 100.0,
     available_height: Some(100.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -3171,10 +3174,10 @@ test "aspect_ratio_transferred_max_height_from_flex_grow_width" {
     { ..default_style, display: @types.Flex, width: @types.Length(100.0) },
     [child0],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 100.0,
     available_height: None,
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -3214,10 +3217,10 @@ test "min_content_block_width_uses_stretched_aspect_ratio_flex_child" {
     },
     [flex_child],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: None,
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -3250,10 +3253,10 @@ test "column_percent_height_with_indefinite_parent_uses_content_height" {
     },
     [child],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: None,
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -3289,10 +3292,10 @@ test "column_percent_height_with_indefinite_parent_and_clip_includes_content" {
     },
     [child],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 1440.0,
     available_height: None,
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 1440.0,
     viewport_height: 900.0,
     stretch_width: false,
@@ -3341,10 +3344,10 @@ test "row_flex_min_height_parent_percent_cross_child_uses_content_height" {
     },
     [root],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 1440.0,
     available_height: None,
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 1440.0,
     viewport_height: 900.0,
     stretch_width: false,
@@ -3365,8 +3368,8 @@ test "inline_flex_intrinsic_width_uses_stretched_canvas_percent_height" {
   // and a replaced child with height:100% transfers intrinsic aspect-ratio
   // into the flex container's intrinsic width.
   let default_style = @style.Style::default()
-  let canvas_measure : @types.MeasureFunc = {
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let canvas_measure : @layout_types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       { min_width: 10.0, max_width: 10.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -3390,10 +3393,10 @@ test "inline_flex_intrinsic_width_uses_stretched_canvas_percent_height" {
     },
     [item],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -3442,10 +3445,10 @@ test "inline_flex_min_content_includes_child_border_box" {
     },
     [child],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: None,
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -3498,10 +3501,10 @@ test "wrap_reverse_row" {
     },
     [child0, child1, child2, child3],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 100.0,
     available_height: Some(200.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -3559,10 +3562,10 @@ test "wrap_reverse_column" {
     },
     [child0, child1, child2, child3],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 100.0,
     available_height: Some(100.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -3615,10 +3618,10 @@ test "absolute_layout_width_height_start_top" {
     },
     [child0],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 100.0,
     available_height: Some(100.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -3659,10 +3662,10 @@ test "absolute_layout_start_top_end_bottom" {
     },
     [child0],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 100.0,
     available_height: Some(100.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -3708,10 +3711,10 @@ test "absolute_does_not_affect_flex_layout" {
     },
     [abs_child, flex_child],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 100.0,
     available_height: Some(100.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -3775,10 +3778,10 @@ test "nested_flex_explicit_sizes" {
     },
     [middle],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 100.0,
     available_height: Some(100.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -3844,10 +3847,10 @@ test "nested_flex_with_padding_margin" {
     },
     [parent],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 100.0,
     available_height: Some(100.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -3910,10 +3913,10 @@ test "nested_row_in_column" {
     },
     [row],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 100.0,
     available_height: Some(100.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -3967,10 +3970,10 @@ test "nested_overflowing_child_unconstrained" {
     },
     [node0],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 100.0,
     available_height: Some(100.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -4040,10 +4043,10 @@ test "min_height_with_nested_fixed_height" {
     },
     [node0],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 320.0,
     available_height: None,
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -4111,10 +4114,10 @@ test "align_baseline_nested_child" {
     },
     [node0, node1],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 100.0,
     available_height: Some(100.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -4166,10 +4169,10 @@ test "align_baseline" {
     },
     [child0, child1],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 100.0,
     available_height: Some(100.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -4223,10 +4226,10 @@ test "debug_intrinsic_cross_sizing" {
     // height: Auto (default)
     [parent],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 100.0,
     available_height: None,
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -4249,11 +4252,11 @@ test "flex_text_wrapping_in_fixed_width_container" {
 
   // Create a text node that simulates long text (max-content width 200px)
   // When constrained to 100px, it should wrap to 2 lines
-  let text_measure : @types.MeasureFunc = {
+  let text_measure : @layout_types.MeasureFunc = {
     func: fn(
       available_width : Double,
       _available_height : Double,
-    ) -> @types.IntrinsicSize {
+    ) -> @layout_types.IntrinsicSize {
       let max_width = 200.0 // Single line width
       let line_height = 20.0
       // Calculate wrapped height based on available_width
@@ -4292,10 +4295,10 @@ test "flex_text_wrapping_in_fixed_width_container" {
     },
     [flex_item],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: None, // Auto height - let content determine height
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -4320,11 +4323,11 @@ test "flex_text_wrapping_in_fixed_width_container" {
 ///|
 test "row_flex_direct_text_leaf_keeps_single_line_cross_size_at_intrinsic_width" {
   let default_style = { ..@style.Style::default(), display: @types.Inline }
-  let text_measure : @types.MeasureFunc = {
+  let text_measure : @layout_types.MeasureFunc = {
     func: fn(
       available_width : Double,
       _available_height : Double,
-    ) -> @types.IntrinsicSize {
+    ) -> @layout_types.IntrinsicSize {
       let max_width = 160.0
       let line_height = 19.2
       let lines = if available_width > 0.0 && available_width < max_width {
@@ -4354,10 +4357,10 @@ test "row_flex_direct_text_leaf_keeps_single_line_cross_size_at_intrinsic_width"
     },
     [text_node],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: None,
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 400.0,
     viewport_height: 300.0,
     stretch_width: false,
@@ -4378,8 +4381,11 @@ test "row_flex_direct_text_leaf_keeps_single_line_cross_size_at_intrinsic_width"
 test "row_column_div_with_cache_reset" {
   reset_intrinsic_cache() // Clear any stale cache
   let default_style = @style.Style::default()
-  let text_measure : @types.MeasureFunc = {
-    func: fn(_available_width, _available_height) -> @types.IntrinsicSize {
+  let text_measure : @layout_types.MeasureFunc = {
+    func: fn(
+      _available_width,
+      _available_height,
+    ) -> @layout_types.IntrinsicSize {
       { min_width: 8.0, max_width: 8.0, min_height: 16.0, max_height: 16.0 }
     },
   }
@@ -4399,10 +4405,10 @@ test "row_column_div_with_cache_reset" {
     { ..default_style, display: @types.Flex, flex_direction: @types.Row },
     [column],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: None,
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -4416,8 +4422,11 @@ test "row_column_div_with_cache_reset" {
 // Test Column > Div without Row
 test "column_div_nested" {
   let default_style = @style.Style::default()
-  let text_measure : @types.MeasureFunc = {
-    func: fn(_available_width, _available_height) -> @types.IntrinsicSize {
+  let text_measure : @layout_types.MeasureFunc = {
+    func: fn(
+      _available_width,
+      _available_height,
+    ) -> @layout_types.IntrinsicSize {
       { min_width: 8.0, max_width: 8.0, min_height: 16.0, max_height: 16.0 }
     },
   }
@@ -4432,10 +4441,10 @@ test "column_div_nested" {
     { ..default_style, display: @types.Flex, flex_direction: @types.Column },
     [inner_div],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: None,
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -4452,8 +4461,11 @@ test "column_div_nested" {
 test "row_column_nested_flex_with_text" {
   let default_style = @style.Style::default()
   // Text measure function
-  let text_measure : @types.MeasureFunc = {
-    func: fn(_available_width, _available_height) -> @types.IntrinsicSize {
+  let text_measure : @layout_types.MeasureFunc = {
+    func: fn(
+      _available_width,
+      _available_height,
+    ) -> @layout_types.IntrinsicSize {
       { min_width: 8.0, max_width: 8.0, min_height: 16.0, max_height: 16.0 }
     },
   }
@@ -4477,10 +4489,10 @@ test "row_column_nested_flex_with_text" {
     { ..default_style, display: @types.Flex, flex_direction: @types.Row },
     [column],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: None, // Auto height
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -4523,10 +4535,10 @@ test "flex_column_single_margin" {
     },
     [box1],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 200.0,
     available_height: Some(300.0),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -4570,10 +4582,10 @@ test "flex_column_two_items_second_margin" {
     },
     [box1, box2],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 200.0,
     available_height: Some(300.0),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -4626,10 +4638,10 @@ test "flex_margin_no_collapse_no_shrink" {
     },
     [box1, box2],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 200.0,
     available_height: Some(300.0),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -4687,10 +4699,10 @@ test "flex_margin_no_collapse_absolute_container" {
     },
     [box1, box2],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -4740,10 +4752,10 @@ test "flex_column_first_all_margins" {
     },
     [box1, box2],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 200.0,
     available_height: Some(500.0),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -4793,10 +4805,10 @@ test "flex_column_adjacent_margins" {
     },
     [box1, box2],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 200.0,
     available_height: Some(300.0),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -4847,10 +4859,10 @@ test "flex_column_two_items_both_margin_top" {
     },
     [box1, box2],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 200.0,
     available_height: Some(300.0),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -4895,10 +4907,10 @@ test "flex_column_two_items_first_margin_bottom" {
     },
     [box1, box2],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 200.0,
     available_height: Some(300.0),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -4956,10 +4968,10 @@ test "flex_margin_no_collapse" {
     },
     [box1, box2],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 200.0,
     available_height: Some(300.0),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -5000,10 +5012,10 @@ test "min_width_with_justify_content_center" {
     justify_content: @types.Center,
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 200.0,
     available_height: Some(100.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -5038,10 +5050,10 @@ test "min_height_with_align_content_center_column" {
     justify_content: @types.Center,
   }
   let root = @node.Node::new("root", root_style, [child])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 200.0,
     available_height: Some(200.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -5079,10 +5091,10 @@ test "flex_contain_size_auto_height_ignores_child_content" {
     },
     [child],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -5095,7 +5107,7 @@ test "flex_contain_size_auto_height_ignores_child_content" {
 ///|
 test "inline_flex_contain_size_uses_definite_zero_main_size_for_shrink" {
   let default_style = @style.Style::default()
-  let measure : @types.MeasureFunc = {
+  let measure : @layout_types.MeasureFunc = {
     func: fn(_w, _h) {
       { min_width: 40.0, max_width: 100.0, min_height: 10.0, max_height: 10.0 }
     },
@@ -5125,10 +5137,10 @@ test "inline_flex_contain_size_uses_definite_zero_main_size_for_shrink" {
     },
     [item],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -5218,10 +5230,10 @@ test "row_flex_scroll_list_item_keeps_expected_track_sizes" {
     },
     [avatar, content, actions],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(200.0),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 400.0,
     viewport_height: 200.0,
     stretch_width: false,

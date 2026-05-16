@@ -4,7 +4,7 @@ fn make_deep_layout(
   depth : Int,
   breadth : Int,
   y_offset : Double,
-) -> @types.Layout {
+) -> @layout_types.Layout {
   if depth <= 0 {
     return {
       id: "#text",
@@ -23,7 +23,7 @@ fn make_deep_layout(
       text: Some("text"),
     }
   }
-  let children : Array[@types.Layout] = []
+  let children : Array[@layout_types.Layout] = []
   for i = 0; i < breadth; i = i + 1 {
     children.push(make_deep_layout(depth - 1, breadth, i.to_double() * 50.0))
   }
@@ -60,7 +60,7 @@ fn make_deep_node(depth : Int, breadth : Int) -> @node.Node {
 
 ///|
 /// Count nodes in a Layout tree
-fn count_layout_nodes(layout : @types.Layout) -> Int {
+fn count_layout_nodes(layout : @layout_types.Layout) -> Int {
   let mut count = 1
   for child in layout.children {
     count = count + count_layout_nodes(child)

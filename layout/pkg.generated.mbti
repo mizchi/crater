@@ -5,6 +5,7 @@ import {
   "mizchi/crater-core",
   "mizchi/crater-core/node",
   "mizchi/crater-core/style",
+  "mizchi/crater-core/values",
   "mizchi/crater-layout/tree",
 }
 
@@ -23,11 +24,11 @@ pub fn compute_grid_layout(@node.Node, Double, Double) -> @crater-core.Layout
 
 pub fn compute_grid_layout_in_context(@node.Node, @crater-core.LayoutContext, @node.DispatchFn) -> @crater-core.Layout
 
-pub fn compute_layout(@node.Node, @crater-core.Size[Double]) -> @crater-core.Layout
+pub fn compute_layout(@node.Node, @values.Size[Double]) -> @crater-core.Layout
 
 pub fn compute_layout_in_context(@node.Node, @crater-core.LayoutContext) -> @crater-core.Layout
 
-pub fn compute_layout_with_warnings(@node.Node, @crater-core.Size[Double]) -> @crater-core.LayoutResult
+pub fn compute_layout_with_warnings(@node.Node, @values.Size[Double]) -> @crater-core.LayoutResult
 
 pub fn layout_node_create(String) -> @tree.LayoutNode
 
@@ -39,7 +40,7 @@ pub fn reset_intrinsic_cache() -> Unit
 
 pub fn setup() -> Unit
 
-pub fn size(Double, Double) -> @crater-core.Size[Double]
+pub fn size(Double, Double) -> @values.Size[Double]
 
 // Errors
 

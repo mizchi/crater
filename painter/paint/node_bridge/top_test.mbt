@@ -8,7 +8,7 @@ test "paint node bridge owns from_node_and_layout" {
     top: 0.0,
     bottom: 0.0,
   }
-  let layout : @types.Layout = {
+  let layout : @layout_types.Layout = {
     id: "root",
     x: 0.0,
     y: 0.0,
@@ -47,7 +47,7 @@ test "paint node bridge does not apply translated layout twice" {
     top: 0.0,
     bottom: 0.0,
   }
-  let child_layout : @types.Layout = {
+  let child_layout : @layout_types.Layout = {
     id: "span.thumb",
     x: 26.0,
     y: 3.0,
@@ -63,7 +63,7 @@ test "paint node bridge does not apply translated layout twice" {
     children: [],
     text: None,
   }
-  let layout : @types.Layout = {
+  let layout : @layout_types.Layout = {
     id: "div.track",
     x: 0.0,
     y: 0.0,

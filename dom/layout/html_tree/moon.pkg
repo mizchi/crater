@@ -1,6 +1,6 @@
 import {
   "moonbitlang/core/string",
-  "mizchi/crater-core" @types,
+  "mizchi/crater-core/values" @types,
   "mizchi/crater-layout/tree",
   "mizchi/crater-dom/layout/style_bridge",
   "mizchi/crater-dom/html",
@@ -9,3 +9,7 @@ import {
 
 import {
 } for "wbtest"
+
+import {
+  "mizchi/crater-core" @layout_types,
+} for "test"

@@ -6,6 +6,7 @@ import {
   "mizchi/crater-core/layout_view",
   "mizchi/crater-core/node",
   "mizchi/crater-core/style",
+  "mizchi/crater-core/values",
   "moonbitlang/core/debug",
   "moonbitlang/core/hashset",
 }
@@ -122,36 +123,36 @@ pub fn LayoutNode::needs_layout(Self) -> Bool
 pub fn LayoutNode::new(String, @style.Style, Array[Self]) -> Self
 pub fn LayoutNode::remove_all_children(Self) -> Unit
 pub fn LayoutNode::remove_child_at(Self, Int) -> Self?
-pub fn LayoutNode::set_align_content(Self, @crater-core.Alignment) -> Self
-pub fn LayoutNode::set_align_items(Self, @crater-core.Alignment) -> Self
-pub fn LayoutNode::set_align_self(Self, @crater-core.AlignSelf) -> Self
+pub fn LayoutNode::set_align_content(Self, @values.Alignment) -> Self
+pub fn LayoutNode::set_align_items(Self, @values.Alignment) -> Self
+pub fn LayoutNode::set_align_self(Self, @values.AlignSelf) -> Self
 pub fn LayoutNode::set_border(Self, Double) -> Self
 pub fn LayoutNode::set_column_gap(Self, Double) -> Self
-pub fn LayoutNode::set_display(Self, @crater-core.Display) -> Self
+pub fn LayoutNode::set_display(Self, @values.Display) -> Self
 pub fn LayoutNode::set_flex_basis(Self, Double) -> Self
 pub fn LayoutNode::set_flex_basis_auto(Self) -> Self
-pub fn LayoutNode::set_flex_direction(Self, @crater-core.FlexDirection) -> Self
+pub fn LayoutNode::set_flex_direction(Self, @values.FlexDirection) -> Self
 pub fn LayoutNode::set_flex_grow(Self, Double) -> Self
 pub fn LayoutNode::set_flex_shrink(Self, Double) -> Self
-pub fn LayoutNode::set_flex_wrap(Self, @crater-core.FlexWrap) -> Self
+pub fn LayoutNode::set_flex_wrap(Self, @values.FlexWrap) -> Self
 pub fn LayoutNode::set_gap(Self, Double) -> Self
 pub fn LayoutNode::set_grid_area(Self, String?) -> Self
-pub fn LayoutNode::set_grid_auto_columns(Self, Array[@crater-core.TrackSizingFunction]) -> Self
-pub fn LayoutNode::set_grid_auto_flow(Self, @crater-core.GridAutoFlow) -> Self
-pub fn LayoutNode::set_grid_auto_rows(Self, Array[@crater-core.TrackSizingFunction]) -> Self
-pub fn LayoutNode::set_grid_column(Self, @crater-core.GridPlacement, @crater-core.GridPlacement) -> Self
-pub fn LayoutNode::set_grid_row(Self, @crater-core.GridPlacement, @crater-core.GridPlacement) -> Self
+pub fn LayoutNode::set_grid_auto_columns(Self, Array[@values.TrackSizingFunction]) -> Self
+pub fn LayoutNode::set_grid_auto_flow(Self, @values.GridAutoFlow) -> Self
+pub fn LayoutNode::set_grid_auto_rows(Self, Array[@values.TrackSizingFunction]) -> Self
+pub fn LayoutNode::set_grid_column(Self, @values.GridPlacement, @values.GridPlacement) -> Self
+pub fn LayoutNode::set_grid_row(Self, @values.GridPlacement, @values.GridPlacement) -> Self
 pub fn LayoutNode::set_grid_template_areas(Self, Array[String]) -> Self
-pub fn LayoutNode::set_grid_template_columns(Self, Array[@crater-core.TrackSizingFunction]) -> Self
-pub fn LayoutNode::set_grid_template_rows(Self, Array[@crater-core.TrackSizingFunction]) -> Self
+pub fn LayoutNode::set_grid_template_columns(Self, Array[@values.TrackSizingFunction]) -> Self
+pub fn LayoutNode::set_grid_template_rows(Self, Array[@values.TrackSizingFunction]) -> Self
 pub fn LayoutNode::set_height(Self, Double) -> Self
 pub fn LayoutNode::set_height_auto(Self) -> Self
 pub fn LayoutNode::set_height_percent(Self, Double) -> Self
 pub fn LayoutNode::set_intrinsic_pending(Self, Double, Double) -> Unit
 pub fn LayoutNode::set_intrinsic_resolved(Self, Double, Double) -> Unit
-pub fn LayoutNode::set_justify_content(Self, @crater-core.Alignment) -> Self
-pub fn LayoutNode::set_justify_items(Self, @crater-core.Alignment) -> Self
-pub fn LayoutNode::set_justify_self(Self, @crater-core.AlignSelf) -> Self
+pub fn LayoutNode::set_justify_content(Self, @values.Alignment) -> Self
+pub fn LayoutNode::set_justify_items(Self, @values.Alignment) -> Self
+pub fn LayoutNode::set_justify_self(Self, @values.AlignSelf) -> Self
 pub fn LayoutNode::set_margin(Self, Double) -> Self
 pub fn LayoutNode::set_margin_bottom(Self, Double) -> Self
 pub fn LayoutNode::set_margin_left(Self, Double) -> Self
@@ -166,7 +167,7 @@ pub fn LayoutNode::set_padding_bottom(Self, Double) -> Self
 pub fn LayoutNode::set_padding_left(Self, Double) -> Self
 pub fn LayoutNode::set_padding_right(Self, Double) -> Self
 pub fn LayoutNode::set_padding_top(Self, Double) -> Self
-pub fn LayoutNode::set_position_type(Self, @crater-core.Position) -> Self
+pub fn LayoutNode::set_position_type(Self, @values.Position) -> Self
 pub fn LayoutNode::set_row_gap(Self, Double) -> Self
 pub fn LayoutNode::set_width(Self, Double) -> Self
 pub fn LayoutNode::set_width_auto(Self) -> Self
@@ -185,8 +186,8 @@ pub struct LayoutTree {
 }
 pub fn LayoutTree::attach_resource(Self, ResourceId, Int, placeholder_width? : Double, placeholder_height? : Double) -> Unit
 pub fn LayoutTree::calculate_layout(Self, Double, Double) -> @crater-core.Layout
-pub fn LayoutTree::collect_dirty_rects(Self) -> Array[@crater-core.BoundingRect]
-pub fn LayoutTree::collect_dirty_union(Self) -> @crater-core.BoundingRect?
+pub fn LayoutTree::collect_dirty_rects(Self) -> Array[@values.BoundingRect]
+pub fn LayoutTree::collect_dirty_union(Self) -> @values.BoundingRect?
 pub fn LayoutTree::compute_full(Self) -> @crater-core.Layout
 pub fn LayoutTree::compute_incremental(Self) -> @crater-core.Layout
 pub fn LayoutTree::compute_with_stats(Self, CacheStats) -> @crater-core.Layout

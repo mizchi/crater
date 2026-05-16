@@ -106,7 +106,7 @@ struct Browser {
   /// Cached render node for graphics output modes
   mut graphics_render_node : @layout.Node?
   /// Cached layout for graphics output modes
-  mut graphics_layout : @types.Layout?
+  mut graphics_layout : @layout_types.Layout?
   /// Color-scheme flag used by graphics render cache
   mut graphics_render_dark : Bool
   /// Links found in current page

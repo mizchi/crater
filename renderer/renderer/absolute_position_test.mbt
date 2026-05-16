@@ -239,7 +239,7 @@ test "wpt_inline_abspos_003_block_child_forces_new_line_static_y" {
       #|40
     ),
   )
-  let text_children : Array[@types.Layout] = []
+  let text_children : Array[@layout_types.Layout] = []
   for child in span.children {
     match child.text {
       Some(text) => if !text.trim().is_empty() { text_children.push(child) }
@@ -260,7 +260,7 @@ test "wpt_inline_abspos_003_block_child_forces_new_line_static_y" {
     Some(text) => inspect(text == "AA", content="true")
     None => fail("text fragment should keep content")
   }
-  let non_text_children : Array[@types.Layout] = []
+  let non_text_children : Array[@layout_types.Layout] = []
   for child in span.children {
     if !child.id.has_prefix("#text") {
       non_text_children.push(child)
@@ -313,7 +313,7 @@ test "wpt_inline_abspos_004_relative_inline_keeps_carry_for_abs_insets" {
       #|80
     ),
   )
-  let abs_children : Array[@types.Layout] = []
+  let abs_children : Array[@layout_types.Layout] = []
   for child in span.children {
     if child.id.has_prefix("div.abs") {
       abs_children.push(child)
