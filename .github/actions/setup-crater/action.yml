@@ -1,0 +1,94 @@
+name: Setup Crater
+description: >-
+  Install just, MoonBit, Node.js (+ pnpm), and optional tooling
+  (wasm-tools, Deno, uv, native apt deps) for Crater CI jobs.
+
+inputs:
+  node-version:
+    description: Node.js version
+    required: false
+    default: "24"
+  just-version:
+    description: just version
+    required: false
+    default: "1.50.0"
+  wasm-tools:
+    description: Install wasm-tools (true/false)
+    required: false
+    default: "false"
+  wasm-tools-version:
+    description: wasm-tools release version (without leading v)
+    required: false
+    default: "1.219.1"
+  deno:
+    description: Install Deno (true/false)
+    required: false
+    default: "false"
+  uv:
+    description: Install Astral uv (true/false)
+    required: false
+    default: "false"
+  native-deps:
+    description: Install native apt deps (libsqlite3-dev) (true/false)
+    required: false
+    default: "false"
+  pnpm-install:
+    description: Run pnpm install (true/false)
+    required: false
+    default: "true"
+
+runs:
+  using: composite
+  steps:
+    - name: Install just
+      uses: extractions/setup-just@v4
+      with:
+        just-version: ${{ inputs.just-version }}
+
+    - name: Install native system dependencies
+      if: inputs.native-deps == 'true'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libsqlite3-dev
+
+    - name: Set up MoonBit
+      shell: bash
+      run: |
+        curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+        echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+
+    - name: Install wasm-tools
+      if: inputs.wasm-tools == 'true'
+      shell: bash
+      run: |
+        version="${{ inputs.wasm-tools-version }}"
+        curl -LO "https://github.com/bytecodealliance/wasm-tools/releases/download/v${version}/wasm-tools-${version}-x86_64-linux.tar.gz"
+        tar xzf "wasm-tools-${version}-x86_64-linux.tar.gz"
+        sudo mv "wasm-tools-${version}-x86_64-linux/wasm-tools" /usr/local/bin/
+        wasm-tools --version
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v6
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Install pnpm
+      uses: pnpm/action-setup@v5
+
+    - name: Install Node dependencies
+      if: inputs.pnpm-install == 'true'
+      shell: bash
+      run: pnpm install
+
+    - name: Install Deno
+      if: inputs.deno == 'true'
+      uses: denoland/setup-deno@v2
+      with:
+        deno-version: v2.x
+
+    - name: Install uv
+      if: inputs.uv == 'true'
+      uses: astral-sh/setup-uv@v5
+      with:
+        version: latest

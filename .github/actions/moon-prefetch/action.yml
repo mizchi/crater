@@ -1,0 +1,36 @@
+name: Prefetch MoonBit Dependencies
+description: >-
+  Run `moon update` and `scripts/ci/prefetch-moon-deps.sh` for each manifest.
+  The root manifest is always processed; additional manifests are taken
+  from the `manifests` input (newline-separated).
+
+inputs:
+  manifests:
+    description: Newline-separated extra manifest paths (relative to repo root). Root is always included.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Update and prefetch root manifest
+      shell: bash
+      run: |
+        moon update
+        bash scripts/ci/prefetch-moon-deps.sh
+
+    - name: Update and prefetch extra manifests
+      if: inputs.manifests != ''
+      shell: bash
+      env:
+        EXTRA_MANIFESTS: ${{ inputs.manifests }}
+      run: |
+        while IFS= read -r manifest; do
+          manifest="${manifest## }"
+          manifest="${manifest%% }"
+          if [ -z "$manifest" ]; then continue; fi
+          echo "::group::Update + prefetch ${manifest}"
+          moon update --manifest-path "$manifest"
+          bash scripts/ci/prefetch-moon-deps.sh --manifest-path "$manifest"
+          echo "::endgroup::"
+        done <<<"$EXTRA_MANIFESTS"
