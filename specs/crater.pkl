@@ -405,10 +405,10 @@ scenarios {
     id = "paint.font-weight-numeric"
     name = "numeric font-weight survives paint"
     description =
-      "Preserve the resolved numeric font-weight (e.g. 500) through the painter instead of collapsing to is_bold. Required for Luna VRT parity on medium UI labels. See GitHub issue #48."
+      "Preserve the resolved numeric font-weight (e.g. 500) through the painter instead of collapsing to is_bold. The MoonBit glyph provider keeps a by_weight slot, the JS FFI bridge passes the numeric weight (not a boolean), the JS side installs __craterGlyph*ByWeight hooks, and per-family face selection uses the CSS Fonts L4 §5.2 nearest-weight algorithm. Layer A: contract end-to-end. Layer B (separate PR): load medium / semibold faces so Luna VRT visibly improves. See GitHub issue #48."
     tags { "paint"; "font"; "issue:48"; "todo:now" }
     severity = "major"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.paint-accuracy" }
   }
   new {

@@ -266,6 +266,16 @@ tests {
     }
   }
   new {
+    name = "paint_preserves_numeric_font_weight"
+    description =
+      "The paint contract preserves numeric font-weight end-to-end. The MoonBit glyph provider has a by_weight slot, the JS FFI bridge passes the numeric weight (not a boolean) into JS, the JS side installs __craterGlyph*ByWeight hooks, and the per-family lookup uses the CSS Fonts L4 §5.2 nearest-weight resolver."
+    tags { "paint"; "font"; "issue:48" }
+    specRef { "paint.font-weight-numeric" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; test -f painter/paint/glyph/provider_wbtest.mbt; grep -Fq -- \"glyph_from_provider forwards numeric font_weight 500\" painter/paint/glyph/provider_wbtest.mbt; grep -Fq -- \"js_glyph_outline_commands_by_weight\" webdriver/webdriver/bidi_browsing_context_actual_paint.mbt; grep -Fq -- \"resolve_js_glyph_commands_by_weight\" webdriver/webdriver/bidi_browsing_context_actual_paint.mbt; grep -Fq -- \"__craterGlyphOutlineCommandsByWeight\" webdriver/bidi_main/start-with-font.ts; grep -Fq -- \"pickNearestFontWeight\" scripts/font-weight-resolve.ts'"
+  }
+  new {
     name = "ci_wires_pkfire_affected_with_cache"
     description =
       "The GitHub Actions CI should restore pkfire/Pkl caches and execute affected core gates against the resolved base."

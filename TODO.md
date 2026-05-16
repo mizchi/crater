@@ -30,7 +30,6 @@ pkf run spec-check                                          # contract が壊れ
 | `compat.css-inline-baseline` | css-inline WPT baseline 有効化 | #65, #66 |
 | `compat.css-filter-effects` | filter-effects 残 failure 潰し | #64 |
 | `paint.text-wrap-layout-parity` | painter / layout の text wrap 一致 | — |
-| `paint.font-weight-numeric` | numeric font-weight 保持 | #48 |
 | `paint.text-glyph-metrics` | glyph metrics / AA Chromium parity | #47 |
 
 ## Next (P1) — pkspec scenarios
