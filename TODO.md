@@ -53,9 +53,6 @@ Last organized: 2026-05-15
 
 ### Refactor residuals (module boundary 大物は本リリースサイクルで完了済)
 
-- [ ] `painter/svg` facade の直接 re-export 候補を棚卸しする
-  - `interop_*.mbt` の adapter 群から direct alias 可能な primitive を分ける
-  - public `.mbti` を維持したまま `mizchi/svg` の公開型へ寄せる
 - [ ] `painter/paint/raster/paint_raster.mbt` / glyph 周辺の責務整理を閉じる
   - bitmap font fallback と glyph path render の境界を見直す
   - `mizchi/font` / `mizchi/svg` へ委譲できる処理は crater 側を adapter にする
