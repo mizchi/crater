@@ -21,7 +21,7 @@ fn extract_tag_from_id(id : String) -> String {
 }
 
 ///|
-pub fn from_layout(layout : @types.Layout) -> @model.PaintNode {
+pub fn from_layout(layout : @layout_types.Layout) -> @model.PaintNode {
   let default_style = @style.Style::default()
   let paint = @model.PaintProperties::from_style(default_style)
   let children : Array[@model.PaintNode] = []

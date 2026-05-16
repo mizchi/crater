@@ -5,7 +5,7 @@
 /// Render with hints overlay.
 pub fn render_to_ansi_with_hints(
   node : @node.Node,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   width : Int,
   height : Int,
   scroll_y : Int,
@@ -30,7 +30,7 @@ pub fn render_to_ansi_with_hints(
 /// Render with hints overlay to a CharBuffer.
 pub fn render_to_buffer_with_hints(
   node : @node.Node,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   width : Int,
   height : Int,
   scroll_y : Int,

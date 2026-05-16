@@ -31,8 +31,8 @@ pub fn exact_display_dispatch() -> @node.DispatchFn {
 /// Compute the root and descendants with their explicit display kind.
 pub fn compute_root_layout(
   root : @node.Node,
-  ctx : @types.LayoutContext,
-) -> @types.Layout {
+  ctx : @layout_types.LayoutContext,
+) -> @layout_types.Layout {
   let dispatch = exact_display_dispatch()
   match root.style.display {
     @types.Flex | @types.InlineFlex =>
@@ -48,11 +48,11 @@ pub fn compute_root_layout_size(
   root : @node.Node,
   width : Double,
   height : Double,
-) -> @types.Layout {
-  let ctx : @types.LayoutContext = {
+) -> @layout_types.Layout {
+  let ctx : @layout_types.LayoutContext = {
     available_width: width,
     available_height: Some(height),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: width,
     viewport_height: height,
     stretch_width: false,

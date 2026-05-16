@@ -43,7 +43,7 @@ test "custom text metrics provider overrides text measurement" {
   inspect(default_text.id, content="#text")
   let default_intrinsic = match default_text.measure {
     Some(measure) => (measure.func)(9999.0, 9999.0)
-    None => @types.IntrinsicSize::default()
+    None => @layout_types.IntrinsicSize::default()
   }
   inspect(
     default_intrinsic.max_width == 24.0,
@@ -60,12 +60,12 @@ test "custom text metrics provider overrides text measurement" {
     _writing_mode : @style.WritingMode,
     _font_weight : Double,
     _font_family : String,
-  ) -> @types.MeasureFunc {
+  ) -> @layout_types.MeasureFunc {
     {
       func: fn(
         _available_width : Double,
         _available_height : Double,
-      ) -> @types.IntrinsicSize {
+      ) -> @layout_types.IntrinsicSize {
         {
           min_width: 123.0,
           max_width: 123.0,
@@ -81,7 +81,7 @@ test "custom text metrics provider overrides text measurement" {
   let overridden_text = overridden_node.children[0].children[0]
   let overridden_intrinsic = match overridden_text.measure {
     Some(measure) => (measure.func)(9999.0, 9999.0)
-    None => @types.IntrinsicSize::default()
+    None => @layout_types.IntrinsicSize::default()
   }
   inspect(overridden_intrinsic.max_width, content="123")
   inspect(overridden_intrinsic.max_height, content="45")
@@ -106,12 +106,12 @@ test "clear text metrics provider restores default text measurement" {
     _writing_mode : @style.WritingMode,
     _font_weight : Double,
     _font_family : String,
-  ) -> @types.MeasureFunc {
+  ) -> @layout_types.MeasureFunc {
     {
       func: fn(
         _available_width : Double,
         _available_height : Double,
-      ) -> @types.IntrinsicSize {
+      ) -> @layout_types.IntrinsicSize {
         {
           min_width: 321.0,
           max_width: 321.0,
@@ -128,7 +128,7 @@ test "clear text metrics provider restores default text measurement" {
   let restored_text = restored_node.children[0].children[0]
   let restored_intrinsic = match restored_text.measure {
     Some(measure) => (measure.func)(9999.0, 9999.0)
-    None => @types.IntrinsicSize::default()
+    None => @layout_types.IntrinsicSize::default()
   }
   inspect(
     restored_intrinsic.max_width == 24.0,
@@ -152,7 +152,7 @@ test "text metrics provider affects default text input intrinsic width" {
   inspect(default_input.id, content="input#target")
   let default_intrinsic = match default_input.measure {
     Some(measure) => (measure.func)(9999.0, 9999.0)
-    None => @types.IntrinsicSize::default()
+    None => @layout_types.IntrinsicSize::default()
   }
   inspect(
     default_intrinsic.max_width,
@@ -169,12 +169,12 @@ test "text metrics provider affects default text input intrinsic width" {
     _writing_mode : @style.WritingMode,
     _font_weight : Double,
     _font_family : String,
-  ) -> @types.MeasureFunc {
+  ) -> @layout_types.MeasureFunc {
     {
       func: fn(
         _available_width : Double,
         _available_height : Double,
-      ) -> @types.IntrinsicSize {
+      ) -> @layout_types.IntrinsicSize {
         { min_width: 6.0, max_width: 6.0, min_height: 16.0, max_height: 16.0 }
       },
     }
@@ -185,7 +185,7 @@ test "text metrics provider affects default text input intrinsic width" {
   let overridden_input = overridden_node.children[0]
   let overridden_intrinsic = match overridden_input.measure {
     Some(measure) => (measure.func)(9999.0, 9999.0)
-    None => @types.IntrinsicSize::default()
+    None => @layout_types.IntrinsicSize::default()
   }
   inspect(overridden_intrinsic.max_width, content="133")
   @renderer.clear_text_metrics_provider()
@@ -206,7 +206,7 @@ test "builtin text advance ratio override affects boundary whitespace text width
   fn find_text_measure_with_phrase(
     node : @node.Node,
     phrase : String,
-  ) -> @types.MeasureFunc? {
+  ) -> @layout_types.MeasureFunc? {
     match node.text {
       Some(text) => if text.contains(phrase) { return node.measure }
       None => ()
@@ -260,7 +260,7 @@ test "custom image intrinsic size provider overrides unresolved src size" {
   inspect(default_img.id, content="img#target")
   let default_intrinsic = match default_img.measure {
     Some(measure) => (measure.func)(9999.0, 9999.0)
-    None => @types.IntrinsicSize::default()
+    None => @layout_types.IntrinsicSize::default()
   }
   inspect(default_intrinsic.max_width == 0.0, content="true")
   inspect(default_intrinsic.max_height == 0.0, content="true")
@@ -280,7 +280,7 @@ test "custom image intrinsic size provider overrides unresolved src size" {
   let overridden_img = overridden_node.children[0]
   let overridden_intrinsic = match overridden_img.measure {
     Some(measure) => (measure.func)(9999.0, 9999.0)
-    None => @types.IntrinsicSize::default()
+    None => @layout_types.IntrinsicSize::default()
   }
   inspect(overridden_intrinsic.max_width, content="77")
   inspect(overridden_intrinsic.max_height, content="33")
@@ -309,7 +309,7 @@ test "clear image intrinsic size provider restores default unresolved src size" 
   let restored_img = restored_node.children[0]
   let restored_intrinsic = match restored_img.measure {
     Some(measure) => (measure.func)(9999.0, 9999.0)
-    None => @types.IntrinsicSize::default()
+    None => @layout_types.IntrinsicSize::default()
   }
   inspect(restored_intrinsic.max_width == 0.0, content="true")
   inspect(restored_intrinsic.max_height == 0.0, content="true")

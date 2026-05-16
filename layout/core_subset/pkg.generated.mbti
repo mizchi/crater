@@ -4,10 +4,11 @@ package "mizchi/crater-layout/core_subset"
 import {
   "mizchi/crater-core",
   "mizchi/crater-core/node",
+  "mizchi/crater-core/values",
 }
 
 // Values
-pub fn compute_core_layout(@node.Node, @crater-core.Size[Double]) -> CoreComputeResult
+pub fn compute_core_layout(@node.Node, @values.Size[Double]) -> CoreComputeResult
 
 pub fn validate_core_subset(@node.Node) -> Array[CoreIssue]
 

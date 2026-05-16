@@ -42,9 +42,12 @@ pub let error_placeholder_height : Double = 24.0
 pub fn create_fixed_measure(
   width : Double,
   height : Double,
-) -> @types.MeasureFunc {
+) -> @layout_types.MeasureFunc {
   {
-    func: fn(_available_width, _available_height) -> @types.IntrinsicSize {
+    func: fn(
+      _available_width,
+      _available_height,
+    ) -> @layout_types.IntrinsicSize {
       {
         min_width: width,
         max_width: width,

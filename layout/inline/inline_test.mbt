@@ -13,9 +13,9 @@ fn default_dispatch() -> @node.DispatchFn {
 /// Helper to compute inline node with dispatch
 fn compute_ifc_node(
   node : @node.Node,
-  _ctx : @types.LayoutContext,
+  _ctx : @layout_types.LayoutContext,
   _dispatch : @node.DispatchFn,
-) -> @types.Layout {
+) -> @layout_types.Layout {
   // Simple leaf layout
   let width = match node.style.width {
     @types.Length(w) => w
@@ -212,8 +212,8 @@ test "ifc_zero_advance_items_stay_on_oversized_line" {
       bottom: @types.Length(0.0),
     },
   }
-  let gap_measure : @types.MeasureFunc = {
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let gap_measure : @layout_types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       { min_width: 0.0, max_width: 0.0, min_height: 0.0, max_height: 0.0 }
     },
   }
@@ -424,8 +424,8 @@ test "ifc_replaced_only_line_includes_strut_descent" {
     font_size: 16.0,
     line_height: 19.2,
   }
-  let replaced_measure : @types.MeasureFunc = {
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let replaced_measure : @layout_types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       {
         min_width: 300.0,
         max_width: 300.0,
@@ -463,8 +463,8 @@ test "ifc_contain_size_replaced_auto_size_uses_border_box_only" {
       left: @types.Length(3.0),
     },
   }
-  let replaced_measure : @types.MeasureFunc = {
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let replaced_measure : @layout_types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       {
         min_width: 300.0,
         max_width: 300.0,
@@ -497,8 +497,8 @@ test "ifc_contain_size_replaced_uses_explicit_aspect_ratio_for_auto_height" {
     height: @types.Auto,
     aspect_ratio: Some(1.0),
   }
-  let replaced_measure : @types.MeasureFunc = {
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let replaced_measure : @layout_types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       { min_width: 60.0, max_width: 60.0, min_height: 60.0, max_height: 60.0 }
     },
   }
@@ -534,8 +534,8 @@ test "ifc_contain_size_img_with_alt_keeps_taller_mixed_inline_line" {
       left: @types.Length(50.0),
     },
   }
-  let image_measure : @types.MeasureFunc = {
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let image_measure : @layout_types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       {
         min_width: 100.0,
         max_width: 100.0,
@@ -544,8 +544,8 @@ test "ifc_contain_size_img_with_alt_keeps_taller_mixed_inline_line" {
       }
     },
   }
-  let space_measure : @types.MeasureFunc = {
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let space_measure : @layout_types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       { min_width: 8.0, max_width: 8.0, min_height: 19.2, max_height: 19.2 }
     },
   }
@@ -689,11 +689,11 @@ test "text_width_constrained_by_available_width" {
   let inline_style = { ..default_style, display: @types.Inline }
 
   // MeasureFunc that returns wide text (max_width=200) that wraps to 4 lines at width=50
-  let measure : @types.MeasureFunc = {
+  let measure : @layout_types.MeasureFunc = {
     func: fn(
       available_width : Double,
       _available_height : Double,
-    ) -> @types.IntrinsicSize {
+    ) -> @layout_types.IntrinsicSize {
       let max_width = 200.0 // Single line width
       let line_height = 16.0
       // Calculate wrapped height based on available_width
@@ -735,11 +735,11 @@ test "text_width_unconstrained_when_smaller" {
   let inline_style = { ..default_style, display: @types.Inline }
 
   // MeasureFunc for short text (max_width=50)
-  let measure : @types.MeasureFunc = {
+  let measure : @layout_types.MeasureFunc = {
     func: fn(
       _available_width : Double,
       _available_height : Double,
-    ) -> @types.IntrinsicSize {
+    ) -> @layout_types.IntrinsicSize {
       { min_width: 20.0, max_width: 50.0, min_height: 16.0, max_height: 16.0 }
     }, // Single line
   }
@@ -768,11 +768,11 @@ test "text_min_content_width" {
     display: @types.Inline,
     width: @types.MinContent,
   }
-  let measure : @types.MeasureFunc = {
+  let measure : @layout_types.MeasureFunc = {
     func: fn(
       available_width : Double,
       _available_height : Double,
-    ) -> @types.IntrinsicSize {
+    ) -> @layout_types.IntrinsicSize {
       let max_width = 200.0
       let min_width = 40.0 // Longest word
       let line_height = 16.0
@@ -815,8 +815,8 @@ test "inline_element_with_child_has_size" {
   let inline_style = { ..default_style, display: @types.Inline }
 
   // Create a text child with MeasureFunc (simulating text content)
-  let child_measure : @types.MeasureFunc = {
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let child_measure : @layout_types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       { min_width: 80.0, max_width: 80.0, min_height: 16.0, max_height: 16.0 }
     },
   }
@@ -854,8 +854,8 @@ test "inline_element_with_padding_and_child" {
   }
 
   // Create a text child with MeasureFunc
-  let child_measure : @types.MeasureFunc = {
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let child_measure : @layout_types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       { min_width: 100.0, max_width: 100.0, min_height: 20.0, max_height: 20.0 }
     },
   }
@@ -890,11 +890,11 @@ test "br_after_wrapped_text_uses_last_visual_line_position" {
   }
   let text = "Expected: A green box, overlapping red box, and a small, inset cyan box. The"
   // Intrinsic width 624px at 16px monospace-like metrics, wraps into two lines at 600px.
-  let text_measure : @types.MeasureFunc = {
+  let text_measure : @layout_types.MeasureFunc = {
     func: fn(
       available_width : Double,
       _available_height : Double,
-    ) -> @types.IntrinsicSize {
+    ) -> @layout_types.IntrinsicSize {
       let line_height = 19.2
       let max_width = 624.0
       let wrapped_height = if available_width >= max_width {
@@ -918,11 +918,11 @@ test "br_after_wrapped_text_uses_last_visual_line_position" {
     font_size: 16.0,
     line_height: 19.2,
   }
-  let br_measure : @types.MeasureFunc = {
+  let br_measure : @layout_types.MeasureFunc = {
     func: fn(
       _available_width : Double,
       _available_height : Double,
-    ) -> @types.IntrinsicSize {
+    ) -> @layout_types.IntrinsicSize {
       { min_width: 0.0, max_width: 0.0, min_height: 19.2, max_height: 19.2 }
     },
   }
@@ -961,11 +961,11 @@ test "br_after_vertical_align_top_tall_inline_block_stays_near_line_top" {
     font_size: 14.0,
     line_height: 16.1,
   }
-  let br_measure : @types.MeasureFunc = {
+  let br_measure : @layout_types.MeasureFunc = {
     func: fn(
       _available_width : Double,
       _available_height : Double,
-    ) -> @types.IntrinsicSize {
+    ) -> @layout_types.IntrinsicSize {
       { min_width: 0.0, max_width: 0.0, min_height: 16.1, max_height: 16.1 }
     },
   }

@@ -709,7 +709,7 @@ pub fn LayoutTree::calculate_layout(
   self : LayoutTree,
   width : Double,
   height : Double,
-) -> @types.Layout {
+) -> @layout_types.Layout {
   // Update viewport if changed
   if (self.viewport_width - width).abs() > 0.001 ||
     (self.viewport_height - height).abs() > 0.001 {
@@ -725,7 +725,10 @@ pub fn LayoutTree::calculate_layout(
 ///|
 /// Store computed layout results on nodes recursively
 /// Only sets has_new_layout = true if the layout actually changed
-fn store_computed_layouts(node : LayoutNode, layout : @types.Layout) -> Unit {
+fn store_computed_layouts(
+  node : LayoutNode,
+  layout : @layout_types.Layout,
+) -> Unit {
   // Check if layout changed (with tolerance for floating point comparison)
   let changed = (node.computed_x - layout.x).abs() > 0.001 ||
     (node.computed_y - layout.y).abs() > 0.001 ||

@@ -67,7 +67,7 @@ fn generate_list_marker(parent_tag : String, child_index : Int) -> String? {
 ///|
 fn should_apply_text_overflow_ellipsis(
   style : @style.Style,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
 ) -> Bool {
   style.text_overflow == @style.TextOverflow::Ellipsis &&
   style.white_space == @style.WhiteSpace::Nowrap &&
@@ -174,7 +174,7 @@ priv struct ExtentNode {
 }
 
 ///|
-fn precompute_extent_tree(layout : @types.Layout) -> ExtentNode {
+fn precompute_extent_tree(layout : @layout_types.Layout) -> ExtentNode {
   let children : Array[ExtentNode] = Array::new(
     capacity=layout.children.length(),
   )
@@ -238,7 +238,7 @@ fn cull_rect_intersection(a : CullRect, b : CullRect) -> CullRect? {
 }
 
 ///|
-fn layout_overflow_clips(layout : @types.Layout) -> Bool {
+fn layout_overflow_clips(layout : @layout_types.Layout) -> Bool {
   match (layout.overflow_x, layout.overflow_y) {
     (@types.Visible, @types.Visible) => false
     _ => true
@@ -249,7 +249,7 @@ fn layout_overflow_clips(layout : @types.Layout) -> Bool {
 fn node_clip_rect(
   abs_x : Double,
   abs_y : Double,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   clip : @types.ClipRect,
 ) -> CullRect? {
   let overflow_clip = if layout_overflow_clips(layout) {
@@ -282,7 +282,7 @@ fn node_clip_rect(
 
 ///|
 fn subtree_rect(
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   extent : ExtentNode,
   parent_x : Double,
   parent_y : Double,
@@ -408,7 +408,7 @@ fn prune_fully_covered_children(
 ///|
 pub fn from_node_and_layout_with_viewport(
   node : @layout.Node,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   viewport_top : Double,
   viewport_bottom : Double,
   parent_y : Double,
@@ -429,7 +429,7 @@ pub fn from_node_and_layout_with_viewport(
 ///|
 pub fn from_node_and_layout_with_viewport_rect(
   node : @layout.Node,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   viewport_left : Double,
   viewport_top : Double,
   viewport_right : Double,
@@ -452,7 +452,7 @@ pub fn from_node_and_layout_with_viewport_rect(
 ///|
 fn from_node_and_layout_with_viewport_inner(
   node : @layout.Node,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   extent : ExtentNode,
   clip_rect : CullRect,
   parent_x : Double,

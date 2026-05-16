@@ -1,4 +1,4 @@
 import {
   "mizchi/crater-layout/core",
-  "mizchi/crater-core" @types,
+  "mizchi/crater-core/values" @types,
 }

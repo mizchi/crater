@@ -2,25 +2,25 @@
 package "mizchi/crater-layout/core"
 
 import {
-  "mizchi/crater-core",
+  "mizchi/crater-core/values",
 }
 
 // Values
-pub fn align_content_tracks(Array[ContentTrack], Double, @crater-core.Alignment) -> Array[ContentTrack]
+pub fn align_content_tracks(Array[ContentTrack], Double, @values.Alignment) -> Array[ContentTrack]
 
 pub fn apply_aspect_ratio_after_constraints(Double, Double, Double?, Bool, Bool) -> (Double, Double)
 
-pub fn axis_cross_end(Bool, @crater-core.Rect[Double]) -> Double
+pub fn axis_cross_end(Bool, @values.Rect[Double]) -> Double
 
-pub fn axis_cross_start(Bool, @crater-core.Rect[Double]) -> Double
+pub fn axis_cross_start(Bool, @values.Rect[Double]) -> Double
 
-pub fn axis_cross_sum(Bool, @crater-core.Rect[Double]) -> Double
+pub fn axis_cross_sum(Bool, @values.Rect[Double]) -> Double
 
-pub fn axis_main_end(Bool, @crater-core.Rect[Double]) -> Double
+pub fn axis_main_end(Bool, @values.Rect[Double]) -> Double
 
-pub fn axis_main_start(Bool, @crater-core.Rect[Double]) -> Double
+pub fn axis_main_start(Bool, @values.Rect[Double]) -> Double
 
-pub fn axis_main_sum(Bool, @crater-core.Rect[Double]) -> Double
+pub fn axis_main_sum(Bool, @values.Rect[Double]) -> Double
 
 pub fn clamp_size(Double, Double, Double, Double, Double, Double) -> (Double, Double)
 
@@ -28,27 +28,27 @@ pub fn clamp_size_with_box_min(Double, Double, Double, Double, Double, Double, D
 
 pub fn clamp_value(Double, Double, Double) -> Double
 
-pub fn compute_align_offset(@crater-core.Alignment, Double) -> Double
+pub fn compute_align_offset(@values.Alignment, Double) -> Double
 
-pub fn compute_align_self_offset(@crater-core.AlignSelf, @crater-core.Alignment, Double) -> Double
+pub fn compute_align_self_offset(@values.AlignSelf, @values.Alignment, Double) -> Double
 
-pub fn compute_grid_absolute_self_position(@crater-core.AlignSelf, Double, Double, Double, Double, Double, Bool, Bool) -> Double
+pub fn compute_grid_absolute_self_position(@values.AlignSelf, Double, Double, Double, Double, Double, Bool, Bool) -> Double
 
-pub fn compute_grid_self_alignment_offset(@crater-core.Alignment, Double, Double, Bool, Bool) -> Double
+pub fn compute_grid_self_alignment_offset(@values.Alignment, Double, Double, Bool, Bool) -> Double
 
 pub fn compute_inset_axis_position_with_auto_margin(Double?, Double?, Double, Double, Bool, Bool, Double, Double, Double, Double) -> Double
 
-pub fn compute_justify(@crater-core.Alignment, Double, Int) -> (Double, Double)
+pub fn compute_justify(@values.Alignment, Double, Int) -> (Double, Double)
 
-pub fn resolve_align_self(@crater-core.AlignSelf, @crater-core.Alignment) -> @crater-core.Alignment
+pub fn resolve_align_self(@values.AlignSelf, @values.Alignment) -> @values.Alignment
 
 pub fn resolve_auto_margin_pair(Bool, Bool, Double, Double, Double) -> (Double, Double)
 
-pub fn resolve_flex_axis(@crater-core.FlexDirection, Bool, Bool) -> FlexAxis
+pub fn resolve_flex_axis(@values.FlexDirection, Bool, Bool) -> FlexAxis
 
-pub fn resolve_relative_inset_axis_offset(@crater-core.Dimension, @crater-core.Dimension, Double?) -> Double
+pub fn resolve_relative_inset_axis_offset(@values.Dimension, @values.Dimension, Double?) -> Double
 
-pub fn resolve_relative_inset_offsets(@crater-core.Rect[@crater-core.Dimension], Double, Double?) -> (Double, Double)
+pub fn resolve_relative_inset_offsets(@values.Rect[@values.Dimension], Double, Double?) -> (Double, Double)
 
 // Errors
 

@@ -49,7 +49,7 @@ fn vrt_diff_rendered_paint_trees(
 ///|
 fn build_vrt_paint_tree(
   node : @tree.Node,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   viewport : @types.Size[Double],
 ) -> @paint_model.PaintNode {
   match
@@ -211,7 +211,7 @@ fn capture_screenshot_viewport() -> @types.Size[Double] {
 fn capture_screenshot_node_layout(
   html : String,
   viewport : @types.Size[Double],
-) -> (@tree.Node, @types.Layout) {
+) -> (@tree.Node, @layout_types.Layout) {
   @renderer.render_to_node_and_layout_with_external_css(
     html,
     vrt_render_context(viewport),

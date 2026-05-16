@@ -15,7 +15,7 @@ priv struct LineBox {
 /// An item positioned within a line box
 priv struct LineItem {
   index : Int // Original child index
-  layout : @types.Layout // Computed layout
+  layout : @layout_types.Layout // Computed layout
   baseline : Double // Distance from top of item to its baseline
 }
 
@@ -491,7 +491,7 @@ fn estimate_inline_wrap_carry_width(
 fn LineBox::add_item(
   self : LineBox,
   index : Int,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   baseline : Double,
   line_height : Double,
   margin_top : Double,
@@ -624,11 +624,11 @@ fn has_inflow_block_descendant(node : @node.Node) -> Bool {
 
 ///|
 fn shift_layout_subtree(
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   dx : Double,
   dy : Double,
-) -> @types.Layout {
-  let shifted_children : Array[@types.Layout] = []
+) -> @layout_types.Layout {
+  let shifted_children : Array[@layout_types.Layout] = []
   for child in layout.children {
     shifted_children.push(shift_layout_subtree(child, dx, dy))
   }
@@ -637,15 +637,15 @@ fn shift_layout_subtree(
 
 ///|
 fn shift_inline_out_of_flow_descendants(
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   node : @node.Node,
   dx : Double,
   dy : Double,
-) -> @types.Layout {
+) -> @layout_types.Layout {
   if layout.children.length() == 0 || node.children.length() == 0 {
     return layout
   }
-  let shifted_children : Array[@types.Layout] = []
+  let shifted_children : Array[@layout_types.Layout] = []
   let min_len = if layout.children.length() < node.children.length() {
     layout.children.length()
   } else {
@@ -771,7 +771,7 @@ fn is_ruby_annotation_child(parent : @node.Node, child : @node.Node) -> Bool {
 }
 
 ///|
-fn ruby_annotation_band_height(layout : @types.Layout) -> Double {
+fn ruby_annotation_band_height(layout : @layout_types.Layout) -> Double {
   let mut max_height = 0.0
   for child in layout.children {
     if id_matches_tag(child.id, "rt") || id_matches_tag(child.id, "rtc") {
@@ -882,10 +882,10 @@ fn inline_source_children_only_contribute_floats(
 
 ///|
 fn adjust_inline_float_only_wrapper(
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   source_node : @node.Node,
   writing_mode : @style.WritingMode,
-) -> @types.Layout {
+) -> @layout_types.Layout {
   if !id_matches_tag(layout.id, "span") ||
     !id_matches_tag(source_node.id, "span") ||
     writing_mode.is_vertical() ||
@@ -897,7 +897,7 @@ fn adjust_inline_float_only_wrapper(
   if !inline_source_children_only_contribute_floats(source_node.children) {
     return layout
   }
-  let shifted_children : Array[@types.Layout] = []
+  let shifted_children : Array[@layout_types.Layout] = []
   let mut has_visible_child = false
   for child in layout.children {
     if child.width > 0.0 || child.height > 0.0 {
@@ -1121,7 +1121,7 @@ fn resolve_text_align_offset(
 ///|
 /// Result of IFC computation
 pub struct InlineLayoutResult {
-  layouts : Array[@types.Layout] // Positioned child layouts
+  layouts : Array[@layout_types.Layout] // Positioned child layouts
   total_height : Double // Total height of all line boxes
 }
 
@@ -1155,8 +1155,8 @@ pub fn compute_ifc(
     let columns : Array[Array[Int]] = []
     let column_widths : Array[Double] = []
     let column_heights : Array[Double] = []
-    let layout_map : Map[Int, @types.Layout] = {}
-    let child_layout_cache : Map[Int, @types.Layout] = {}
+    let layout_map : Map[Int, @layout_types.Layout] = {}
+    let child_layout_cache : Map[Int, @layout_types.Layout] = {}
     let child_margin_cache : Map[Int, @types.Rect[Double]] = {}
 
     let mut current_column : Array[Int] = []
@@ -1277,7 +1277,7 @@ pub fn compute_ifc(
           Some(item_layout) =>
             match child_margin_cache.get(item_index) {
               Some(child_margin) => {
-                let positioned : @types.Layout = {
+                let positioned : @layout_types.Layout = {
                   id: item_layout.id,
                   x: col_x + child_margin.left,
                   y: y_cursor + child_margin.top,
@@ -1305,7 +1305,7 @@ pub fn compute_ifc(
       }
     }
 
-    let layouts : Array[@types.Layout] = []
+    let layouts : Array[@layout_types.Layout] = []
     for i = 0; i < children.length(); i = i + 1 {
       match layout_map.get(i) {
         Some(layout) => layouts.push(layout)
@@ -1318,7 +1318,7 @@ pub fn compute_ifc(
   // Collect inline-level children and compute their layouts
   let line_boxes : Array[LineBox] = []
   let mut current_line = LineBox::new()
-  let layout_map : Map[Int, @types.Layout] = {}
+  let layout_map : Map[Int, @layout_types.Layout] = {}
   let child_has_abs_desc_cache : Map[Int, Bool] = {}
   let child_has_inflow_block_desc_flag : Array[Bool] = []
   for child in children {
@@ -1781,7 +1781,7 @@ pub fn compute_ifc(
         positioned_y = positioned_y + y_offset
       }
       let is_contents_child = child.style.display == @types.Contents
-      let positioned : @types.Layout = {
+      let positioned : @layout_types.Layout = {
         id: effective_layout.id,
         x: positioned_x,
         y: positioned_y,
@@ -1827,7 +1827,7 @@ pub fn compute_ifc(
   }
 
   // Assemble layouts in original order
-  let layouts : Array[@types.Layout] = []
+  let layouts : Array[@layout_types.Layout] = []
   for i = 0; i < children.length(); i = i + 1 {
     match layout_map.get(i) {
       Some(layout) => layouts.push(layout)
@@ -1845,7 +1845,7 @@ fn compute_inline_child(
   available_height : Double?,
   dispatch : @node.DispatchFn,
   inline_carry_offset? : Double = 0.0,
-) -> @types.Layout {
+) -> @layout_types.Layout {
   let style = node.style
   let is_contents_display = style.display == @types.Contents
   let padding = if is_contents_display {
@@ -2140,12 +2140,12 @@ fn compute_inline_child(
     let sizing_mode = if style.display == @types.InlineBlock {
       // Inline-block width:auto shrink-to-fit is handled in block layout even in Definite mode.
       // Keep Definite here so percentage padding/height resolve against containing block.
-      @types.Definite
+      @layout_types.Definite
     } else {
-      @types.MaxContent
+      @layout_types.MaxContent
     }
     // Use the dispatch function to get proper block/flex/grid layout
-    let ctx : @types.LayoutContext = {
+    let ctx : @layout_types.LayoutContext = {
       available_width,
       available_height,
       sizing_mode,
@@ -2161,7 +2161,7 @@ fn compute_inline_child(
 
   // For plain inline elements (no MeasureFunc), calculate size based on children
   // and handle absolute positioned children
-  let children : Array[@types.Layout] = []
+  let children : Array[@layout_types.Layout] = []
   let mut content_width = 0.0
   let mut content_height = 0.0
   let mut inline_cursor_x = 0.0
@@ -2179,10 +2179,10 @@ fn compute_inline_child(
       child.style.position == @types.Fixed {
       // Absolute/fixed children need to be laid out
       // Use dispatch to get proper sizing
-      let child_ctx : @types.LayoutContext = {
+      let child_ctx : @layout_types.LayoutContext = {
         available_width,
         available_height,
-        sizing_mode: @types.MaxContent,
+        sizing_mode: @layout_types.MaxContent,
         viewport_width: available_width,
         viewport_height: available_height.unwrap_or(0.0),
         stretch_width: false,
@@ -2211,7 +2211,7 @@ fn compute_inline_child(
         child.style.margin,
         available_width,
       )
-      let contents_children : Array[@types.Layout] = []
+      let contents_children : Array[@layout_types.Layout] = []
       let mut contents_cursor_x = 0.0
       let mut contents_height = 0.0
       for grand_child in child.children {
@@ -2219,10 +2219,10 @@ fn compute_inline_child(
           contents_children.push(create_zero_layout(grand_child))
         } else if grand_child.style.position == @types.Absolute ||
           grand_child.style.position == @types.Fixed {
-          let child_ctx : @types.LayoutContext = {
+          let child_ctx : @layout_types.LayoutContext = {
             available_width,
             available_height,
-            sizing_mode: @types.MaxContent,
+            sizing_mode: @layout_types.MaxContent,
             viewport_width: available_width,
             viewport_height: available_height.unwrap_or(0.0),
             stretch_width: false,
@@ -2255,7 +2255,7 @@ fn compute_inline_child(
           } else {
             raw_grand_layout
           }
-          let positioned_grand : @types.Layout = {
+          let positioned_grand : @layout_types.Layout = {
             ..grand_layout,
             x: contents_cursor_x + grand_margin.left,
             y: 0.0,
@@ -2272,7 +2272,7 @@ fn compute_inline_child(
           }
         }
       }
-      let positioned_contents : @types.Layout = {
+      let positioned_contents : @layout_types.Layout = {
         id: child.id,
         x: inline_cursor_x + child_margin.left,
         y: 0.0,
@@ -2352,7 +2352,7 @@ fn compute_inline_child(
         child_x = child_x + x_offset
         child_y = child_y + y_offset
       }
-      let positioned_child : @types.Layout = {
+      let positioned_child : @layout_types.Layout = {
         ..child_layout,
         x: child_x,
         y: child_y,
@@ -2407,10 +2407,10 @@ fn compute_inline_child(
     } else if is_ruby_internal_container(node.id) {
       // Ruby internal boxes can contain non-inline descendants in WPT fixtures.
       // Keep them in-flow as inline contributions instead of dropping them.
-      let child_ctx : @types.LayoutContext = {
+      let child_ctx : @layout_types.LayoutContext = {
         available_width,
         available_height,
-        sizing_mode: @types.MaxContent,
+        sizing_mode: @layout_types.MaxContent,
         viewport_width: available_width,
         viewport_height: available_height.unwrap_or(0.0),
         stretch_width: false,
@@ -2456,7 +2456,7 @@ fn compute_inline_child(
         child_x = child_x + x_offset
         child_y = child_y + y_offset
       }
-      let positioned_child : @types.Layout = {
+      let positioned_child : @layout_types.Layout = {
         ..child_layout,
         x: child_x,
         y: child_y,
@@ -2475,10 +2475,10 @@ fn compute_inline_child(
       saw_out_of_flow_child = false
     } else {
       // Block-level children inside inline formatting context split line boxes.
-      let child_ctx : @types.LayoutContext = {
+      let child_ctx : @layout_types.LayoutContext = {
         available_width,
         available_height,
-        sizing_mode: @types.MaxContent,
+        sizing_mode: @layout_types.MaxContent,
         viewport_width: available_width,
         viewport_height: available_height.unwrap_or(0.0),
         stretch_width: false,
@@ -2546,7 +2546,7 @@ fn compute_inline_child(
         child_x = child_x + x_offset
         child_y = child_y + y_offset
       }
-      let positioned_child : @types.Layout = {
+      let positioned_child : @layout_types.Layout = {
         ..child_layout,
         x: child_x,
         y: child_y,
@@ -2809,14 +2809,14 @@ fn compute_inline_child(
 
 ///|
 /// Create a zero-sized layout for display:none nodes
-fn create_zero_layout(node : @node.Node) -> @types.Layout {
+fn create_zero_layout(node : @node.Node) -> @layout_types.Layout {
   let zero_rect : @types.Rect[Double] = {
     left: 0.0,
     right: 0.0,
     top: 0.0,
     bottom: 0.0,
   }
-  let children : Array[@types.Layout] = []
+  let children : Array[@layout_types.Layout] = []
   for i = 0; i < node.children.length(); i = i + 1 {
     children.push(create_zero_layout(node.children[i]))
   }

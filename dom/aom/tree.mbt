@@ -1178,10 +1178,10 @@ fn find_headings_recursive(
 // `build_accessibility_tree_with_node_layout` below.
 
 ///|
-/// Extract bounds from @types.Layout (renderer's layout result)
+/// Extract bounds from @layout_types.Layout (renderer's layout result)
 /// This extracts proper bounds after CSS has been applied
 pub fn extract_bounds_from_node_layout(
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
 ) -> Map[String, Bounds] {
   let bounds_map : Map[String, Bounds] = {}
   extract_node_layout_bounds_recursive(layout, bounds_map)
@@ -1190,7 +1190,7 @@ pub fn extract_bounds_from_node_layout(
 
 ///|
 fn extract_node_layout_bounds_recursive(
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   bounds_map : Map[String, Bounds],
 ) -> Unit {
   // Add bounds for this node if it has a non-empty id
@@ -1226,11 +1226,11 @@ fn extract_element_id(node_id : String) -> String {
 }
 
 ///|
-/// Build AccessibilityTree from HTML and attach layout bounds from @types.Layout
+/// Build AccessibilityTree from HTML and attach layout bounds from @layout_types.Layout
 /// This is the integration function for combining a11y with renderer's layout
 pub fn build_accessibility_tree_with_node_layout(
   doc : @html.Document,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
 ) -> AccessibilityTree {
   // Build accessibility tree
   let a11y_tree = build_accessibility_tree(doc)

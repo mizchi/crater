@@ -9,7 +9,7 @@ fn calculate_scroll_dimensions(
   container_width : Double,
   container_height : Double,
   padding : @types.Rect[Double],
-  children : Array[@types.Layout],
+  children : Array[@layout_types.Layout],
 ) -> (Double, Double) {
   // Start with content box dimensions
   let mut max_right = container_width - padding.left - padding.right
@@ -31,7 +31,7 @@ fn calculate_scroll_dimensions(
 
 ///|
 fn layout_subtree_max_right(
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   parent_content_x : Double,
 ) -> Double {
   let abs_x = parent_content_x + layout.x
@@ -677,8 +677,8 @@ fn flatten_children_recursive(
 /// Create a zero-size layout for a display: contents element
 fn create_contents_layout(
   node : @node.Node,
-  children_layouts : Array[@types.Layout],
-) -> @types.Layout {
+  children_layouts : Array[@layout_types.Layout],
+) -> @layout_types.Layout {
   {
     id: node.id,
     x: 0.0,
@@ -699,7 +699,7 @@ fn create_contents_layout(
 
 ///|
 priv enum ContentsTreeEntry {
-  Leaf(layout~ : @types.Layout)
+  Leaf(layout~ : @layout_types.Layout)
   Wrapper(ancestor~ : @node.Node, children~ : Array[ContentsTreeEntry])
 }
 
@@ -709,7 +709,7 @@ fn insert_contents_tree(
   ancestors : Array[@node.Node],
   depth : Int,
   start_index : Int,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
 ) -> Array[ContentsTreeEntry] {
   let path_index = start_index + depth
   let next_entries = entries.copy()
@@ -759,8 +759,8 @@ fn insert_contents_tree(
 ///|
 fn contents_tree_entries_to_layouts(
   entries : Array[ContentsTreeEntry],
-) -> Array[@types.Layout] {
-  let layouts : Array[@types.Layout] = []
+) -> Array[@layout_types.Layout] {
+  let layouts : Array[@layout_types.Layout] = []
   for entry in entries {
     match entry {
       ContentsTreeEntry::Leaf(layout~) => layouts.push(layout)
@@ -776,8 +776,8 @@ fn contents_tree_entries_to_layouts(
 ///|
 fn build_contents_tree_layout(
   root_contents_node : @node.Node,
-  layouts_with_ancestors : Array[(@types.Layout, Array[@node.Node])],
-) -> @types.Layout {
+  layouts_with_ancestors : Array[(@layout_types.Layout, Array[@node.Node])],
+) -> @layout_types.Layout {
   let mut tree_entries : Array[ContentsTreeEntry] = []
   for pair in layouts_with_ancestors {
     let (layout, ancestors) = pair
@@ -1221,7 +1221,7 @@ fn compute_inline_flow_height(
 ///   - constrained_main: The actual constrained main dimension
 ///   - is_row: true = main is width, cross is height
 fn compute_measured_cross_size(
-  intrinsic : @types.IntrinsicSize,
+  intrinsic : @layout_types.IntrinsicSize,
   constrained_main : Double,
   is_row : Bool,
   scale_fixed_intrinsic? : Bool = true,
@@ -2971,13 +2971,13 @@ fn compute_intrinsic_grid_main_size(
   // percentage inline sizes inside grid resolve against the final cross size.
   let use_definite_for_column_height = !parent_is_row &&
     available_cross is Some(_)
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width,
     available_height,
     sizing_mode: if use_definite_for_column_height {
-      @types.Definite
+      @layout_types.Definite
     } else {
-      @types.MaxContent
+      @layout_types.MaxContent
     },
     viewport_width: available_width,
     viewport_height: available_height.unwrap_or(0.0),
@@ -3334,8 +3334,8 @@ fn compute_intrinsic_block_main_size(
 ///|
 /// Create a zero-sized layout for display: none elements.
 /// Recursively creates zero-sized layouts for all children.
-fn create_hidden_layout(node : @node.Node) -> @types.Layout {
-  let children : Array[@types.Layout] = []
+fn create_hidden_layout(node : @node.Node) -> @layout_types.Layout {
+  let children : Array[@layout_types.Layout] = []
   for child in node.children {
     children.push(create_hidden_layout(child))
   }
@@ -3375,7 +3375,7 @@ fn try_layout_simple_row_space_between_fixed_leaves(
   padding : @types.Rect[Double],
   border : @types.Rect[Double],
   parent_width : Double,
-) -> @types.Layout? {
+) -> @layout_types.Layout? {
   fn is_zero_non_auto_dimension(dim : @types.Dimension) -> Bool {
     match dim {
       @types.Length(v) => v == 0.0
@@ -3452,7 +3452,7 @@ fn try_layout_simple_row_space_between_fixed_leaves(
   } else {
     0.0
   }
-  let child_layouts : Array[@types.Layout] = []
+  let child_layouts : Array[@layout_types.Layout] = []
   let mut main_pos = padding.left + border.left
   let cross_pos = padding.top + border.top
   for item in items {
@@ -3506,9 +3506,9 @@ fn try_layout_simple_row_space_between_fixed_leaves(
 /// Compute flex layout for a node and its children
 pub fn compute(
   node : @node.Node,
-  ctx : @types.LayoutContext,
+  ctx : @layout_types.LayoutContext,
   dispatch : @node.DispatchFn,
-) -> @types.Layout {
+) -> @layout_types.Layout {
   if node.style.display == @types.Display::None {
     return create_hidden_layout(node)
   }
@@ -3521,7 +3521,7 @@ pub fn compute(
       return dispatch_fn(node, ctx, dispatch)
     }
   }
-  let warnings : Array[@types.LayoutWarning] = []
+  let warnings : Array[@layout_types.LayoutWarning] = []
   let cache = IntrinsicCache::new()
   compute_internal(node, ctx, warnings, cache, dispatch)
 }
@@ -3531,9 +3531,9 @@ pub fn compute(
 /// Root flex containers with width:auto use content-based sizing (taffy behavior)
 pub fn compute_root(
   node : @node.Node,
-  ctx : @types.LayoutContext,
+  ctx : @layout_types.LayoutContext,
   dispatch : @node.DispatchFn,
-) -> @types.Layout {
+) -> @layout_types.Layout {
   if node.style.display == @types.Display::None {
     return create_hidden_layout(node)
   }
@@ -3545,7 +3545,7 @@ pub fn compute_root(
       return dispatch_fn(node, ctx, dispatch)
     }
   }
-  let warnings : Array[@types.LayoutWarning] = []
+  let warnings : Array[@layout_types.LayoutWarning] = []
   let cache = IntrinsicCache::new()
   compute_internal(node, ctx, warnings, cache, dispatch, is_root=true)
 }
@@ -3554,9 +3554,9 @@ pub fn compute_root(
 /// Compute flex layout with warnings
 pub fn compute_with_warnings(
   node : @node.Node,
-  ctx : @types.LayoutContext,
+  ctx : @layout_types.LayoutContext,
   dispatch : @node.DispatchFn,
-) -> @types.LayoutResult {
+) -> @layout_types.LayoutResult {
   if node.style.display == @types.Display::None {
     return { layout: create_hidden_layout(node), warnings: [] }
   }
@@ -3568,7 +3568,7 @@ pub fn compute_with_warnings(
       return { layout: dispatch_fn(node, ctx, dispatch), warnings: [] }
     }
   }
-  let warnings : Array[@types.LayoutWarning] = []
+  let warnings : Array[@layout_types.LayoutWarning] = []
   let cache = IntrinsicCache::new()
   let layout = compute_internal(node, ctx, warnings, cache, dispatch)
   { layout, warnings }
@@ -3577,8 +3577,8 @@ pub fn compute_with_warnings(
 ///|
 /// Result of traced layout computation
 pub(all) struct TracedLayoutResult {
-  layout : @types.Layout
-  warnings : Array[@types.LayoutWarning]
+  layout : @layout_types.Layout
+  warnings : Array[@layout_types.LayoutWarning]
   tracer : @trace.LayoutTracer
 }
 
@@ -3587,7 +3587,7 @@ pub(all) struct TracedLayoutResult {
 /// The tracer records input/output for each node, enabling future differential recalculation.
 pub fn compute_with_trace(
   node : @node.Node,
-  ctx : @types.LayoutContext,
+  ctx : @layout_types.LayoutContext,
   dispatch : @node.DispatchFn,
 ) -> TracedLayoutResult {
   if node.style.display == @types.Display::None {
@@ -3607,7 +3607,7 @@ pub fn compute_with_trace(
       return { layout, warnings: [], tracer }
     }
   }
-  let warnings : Array[@types.LayoutWarning] = []
+  let warnings : Array[@layout_types.LayoutWarning] = []
   let cache = IntrinsicCache::new()
   let tracer = @trace.LayoutTracer::new(true)
   // Perform layout computation
@@ -3620,14 +3620,14 @@ pub fn compute_with_trace(
 ///|
 fn compute_internal(
   node : @node.Node,
-  ctx : @types.LayoutContext,
-  warnings : Array[@types.LayoutWarning],
+  ctx : @layout_types.LayoutContext,
+  warnings : Array[@layout_types.LayoutWarning],
   cache : IntrinsicCache,
   dispatch : @node.DispatchFn,
   is_root? : Bool = false,
   percent_base_width? : Double = 0.0,
   use_available_width? : Bool = false,
-) -> @types.Layout {
+) -> @layout_types.Layout {
   let style = node.style
 
   // Handle display: none - return zero-sized layout with zero-sized children
@@ -3638,7 +3638,7 @@ fn compute_internal(
   // Check for unsupported features
   match style.float {
     @types.Float::Left | @types.Float::Right =>
-      warnings.push(@types.UnsupportedFloat(node.id))
+      warnings.push(@layout_types.UnsupportedFloat(node.id))
     @types.Float::None => ()
   }
   let available_width = ctx.available_width
@@ -3679,7 +3679,7 @@ fn compute_internal(
       node.measure,
       node.children.length(),
     ) {
-    (@types.MaxContent, true, Some(mf), 0) => {
+    (@layout_types.MaxContent, true, Some(mf), 0) => {
       // Leaf flex node with MeasureFunc - use intrinsic size
       let intrinsic = (mf.func)(available_width, parent_height)
       Some(
@@ -3707,7 +3707,7 @@ fn compute_internal(
             w
           }
           if use_available_width &&
-            ctx.sizing_mode == @types.Definite &&
+            ctx.sizing_mode == @layout_types.Definite &&
             available_width < outer_w {
             available_width
           } else {
@@ -3715,7 +3715,7 @@ fn compute_internal(
           }
         }
         @types.Percent(p) =>
-          if use_available_width && ctx.sizing_mode == @types.Definite {
+          if use_available_width && ctx.sizing_mode == @layout_types.Definite {
             available_width
           } else {
             parent_width * p
@@ -3725,7 +3725,7 @@ fn compute_internal(
             // Block-level flex containers with width:auto should fill available width minus margins
             // Inline-level flex (InlineFlex) should use content-based sizing
             // Root-level flex should use content-based sizing (taffy behavior)
-            @types.Definite =>
+            @layout_types.Definite =>
               if is_block_level && !is_root && !style.writing_mode.is_vertical() {
                 let fill_width = if use_available_width {
                   available_width
@@ -3762,7 +3762,7 @@ fn compute_internal(
               } else {
                 padding.horizontal_sum() + border.horizontal_sum()
               }
-            @types.MaxContent =>
+            @layout_types.MaxContent =>
               // For MaxContent, compute intrinsic width
               if node.children.length() > 0 {
                 // Use compute_intrinsic_main_size to get max-content width
@@ -3917,9 +3917,10 @@ fn compute_internal(
           // or a flex item used main-size. Respect it when the caller marks it
           // as a stretched/definite height.
           match (ctx.sizing_mode, ctx.available_height) {
-            (@types.Definite, Some(ah)) if ah < 1.0e9 && ctx.stretch_height =>
+            (@layout_types.Definite, Some(ah)) if ah < 1.0e9 &&
+              ctx.stretch_height => height = ah
+            (@layout_types.Definite, Some(ah)) if ah < 1.0e9 && ah < h =>
               height = ah
-            (@types.Definite, Some(ah)) if ah < 1.0e9 && ah < h => height = ah
             _ => ()
           }
           if wrap_explicit_size_is_content_box {
@@ -3931,7 +3932,8 @@ fn compute_internal(
         @types.Percent(p) =>
           match ctx.available_height {
             Some(ah) =>
-              if use_available_width && ctx.sizing_mode == @types.Definite {
+              if use_available_width &&
+                ctx.sizing_mode == @layout_types.Definite {
                 Some(ah - padding.vertical_sum() - border.vertical_sum())
               } else {
                 Some(
@@ -3948,7 +3950,7 @@ fn compute_internal(
           // Vertical writing-mode may need the containing inline-size here even
           // when the box is not a stretched flex item.
           match (ctx.sizing_mode, ctx.available_height) {
-            (@types.Definite, Some(ah)) if ah < 1.0e9 &&
+            (@layout_types.Definite, Some(ah)) if ah < 1.0e9 &&
               (ctx.stretch_height || style.writing_mode.is_vertical()) =>
               Some(ah - padding.vertical_sum() - border.vertical_sum())
             _ => None
@@ -3986,7 +3988,7 @@ fn compute_internal(
   // For MaxContent/MinContent sizing, main size is NOT defined for auto-sized containers
   // (flex-grow/shrink should not be applied during intrinsic sizing)
   let is_intrinsic_sizing = match ctx.sizing_mode {
-    @types.MaxContent => true
+    @layout_types.MaxContent => true
     _ => false
   }
   // For column flex wrap, we need to consider max-height even when height is auto
@@ -4120,7 +4122,7 @@ fn compute_internal(
           @types.Percent(p) => parent_height * p
           @types.Auto =>
             match (ctx.sizing_mode, ctx.available_height) {
-              (@types.Definite, Some(ah)) if ah < 1.0e9 =>
+              (@layout_types.Definite, Some(ah)) if ah < 1.0e9 =>
                 ah + padding.vertical_sum() + border.vertical_sum()
               _ => padding.vertical_sum() + border.vertical_sum()
             }
@@ -6378,7 +6380,10 @@ fn compute_internal(
 
   // Map to collect layouts for display: contents children
   // Key: original_child_index, Value: array of (layout, contents_ancestors)
-  let contents_layouts : Map[Int, Array[(@types.Layout, Array[@node.Node])]] = {}
+  let contents_layouts : Map[
+    Int,
+    Array[(@layout_types.Layout, Array[@node.Node])],
+  ] = {}
 
   // Calculate total cross size for all lines (for auto height)
   let mut total_lines_cross = 0.0
@@ -7178,7 +7183,7 @@ fn compute_internal(
       // Avoid an extra physical mirror here, otherwise vertical-rl row-wrap
       // placements flip Start/End twice.
       let (child_x, child_y) = (child_x, child_y)
-      let child_layout : @types.Layout = if child.children.length() == 0 {
+      let child_layout : @layout_types.Layout = if child.children.length() == 0 {
         let child_style = child.style
         let child_padding = @types.resolve_rect(
           child_style.padding,
@@ -7235,10 +7240,10 @@ fn compute_internal(
           Some(h) => h < 1.0e9
           None => false
         }
-        let child_ctx : @types.LayoutContext = {
+        let child_ctx : @layout_types.LayoutContext = {
           available_width: child_width,
           available_height: nested_available_height,
-          sizing_mode: @types.Definite,
+          sizing_mode: @layout_types.Definite,
           viewport_width: ctx.viewport_width,
           viewport_height: ctx.viewport_height,
           // Flex main-axis result is a definite used size for the item.
@@ -7352,7 +7357,8 @@ fn compute_internal(
         @types.Percent(p) =>
           match ctx.available_height {
             Some(ah) =>
-              if use_available_width && ctx.sizing_mode == @types.Definite {
+              if use_available_width &&
+                ctx.sizing_mode == @layout_types.Definite {
                 ah
               } else {
                 parent_height * p
@@ -7398,7 +7404,7 @@ fn compute_internal(
             // and should use the available inline extent when definite.
             if style.writing_mode.is_vertical() {
               match (ctx.sizing_mode, ctx.available_height) {
-                (@types.Definite, Some(ah)) if ah < 1.0e9 => ah
+                (@layout_types.Definite, Some(ah)) if ah < 1.0e9 => ah
                 _ =>
                   total_lines_cross +
                   padding.vertical_sum() +
@@ -7604,7 +7610,7 @@ fn compute_internal(
           {
             available_width: w,
             available_height: Some(h),
-            sizing_mode: @types.Definite,
+            sizing_mode: @layout_types.Definite,
             viewport_width: ctx.viewport_width,
             viewport_height: ctx.viewport_height,
             stretch_width: false,
@@ -7630,7 +7636,7 @@ fn compute_internal(
           {
             available_width: w,
             available_height: auto_height_probe,
-            sizing_mode: @types.Definite,
+            sizing_mode: @layout_types.Definite,
             viewport_width: ctx.viewport_width,
             viewport_height: ctx.viewport_height,
             stretch_width: false,
@@ -7681,7 +7687,7 @@ fn compute_internal(
           {
             available_width: shrink_to_fit_width,
             available_height: Some(h),
-            sizing_mode: @types.Definite,
+            sizing_mode: @layout_types.Definite,
             viewport_width: ctx.viewport_width,
             viewport_height: ctx.viewport_height,
             stretch_width: false,
@@ -7710,7 +7716,7 @@ fn compute_internal(
           {
             available_width: shrink_to_fit_width,
             available_height: auto_height_probe,
-            sizing_mode: @types.Definite,
+            sizing_mode: @layout_types.Definite,
             viewport_width: ctx.viewport_width,
             viewport_height: ctx.viewport_height,
             stretch_width: false,
@@ -7880,7 +7886,7 @@ fn compute_internal(
     let child_margin = child_resolved.margin
 
     // Build child layout
-    let child_layout : @types.Layout = {
+    let child_layout : @layout_types.Layout = {
       id: child.id,
       x: child_x,
       y: child_y,
@@ -7945,7 +7951,7 @@ fn compute_internal(
           {
             available_width: w,
             available_height: Some(h),
-            sizing_mode: @types.Definite,
+            sizing_mode: @layout_types.Definite,
             viewport_width: ctx.viewport_width,
             viewport_height: ctx.viewport_height,
             stretch_width: false,
@@ -7963,7 +7969,7 @@ fn compute_internal(
           {
             available_width: w,
             available_height: None,
-            sizing_mode: @types.Definite,
+            sizing_mode: @layout_types.Definite,
             viewport_width: ctx.viewport_width,
             viewport_height: ctx.viewport_height,
             stretch_width: false,
@@ -7994,7 +8000,7 @@ fn compute_internal(
           {
             available_width: shrink_to_fit_width,
             available_height: Some(h),
-            sizing_mode: @types.Definite,
+            sizing_mode: @layout_types.Definite,
             viewport_width: ctx.viewport_width,
             viewport_height: ctx.viewport_height,
             stretch_width: false,
@@ -8025,7 +8031,7 @@ fn compute_internal(
           {
             available_width: shrink_to_fit_width,
             available_height: None,
-            sizing_mode: @types.Definite,
+            sizing_mode: @layout_types.Definite,
             viewport_width: ctx.viewport_width,
             viewport_height: ctx.viewport_height,
             stretch_width: false,
@@ -8069,7 +8075,7 @@ fn compute_internal(
     )
 
     // Build child layout
-    let child_layout : @types.Layout = {
+    let child_layout : @layout_types.Layout = {
       id: child.id,
       x: child_x,
       y: child_y,
@@ -8127,7 +8133,7 @@ fn compute_internal(
   indexed_layouts.sort_by(fn(a, b) { a.dom_index - b.dom_index })
 
   // Extract layouts from indexed_layouts
-  let child_layouts : Array[@types.Layout] = Array::new(
+  let child_layouts : Array[@layout_types.Layout] = Array::new(
     capacity=indexed_layouts.length(),
   )
   for il in indexed_layouts {
@@ -8143,10 +8149,10 @@ fn compute_internal(
     child_layouts.length() > 0 &&
     !suppress_auto_inline_size {
     match ctx.sizing_mode {
-      @types.Definite =>
+      @layout_types.Definite =>
         // Block-level flex container: use container_width (already includes margin subtraction)
         container_width
-      @types.MaxContent => {
+      @layout_types.MaxContent => {
         // Avoid cyclic percentage gaps inflating intrinsic size
         let percent_gap = if is_row {
           match style.column_gap {
@@ -8267,12 +8273,12 @@ fn compute_internal(
 /// Compute nested children for a flex item
 fn compute_nested(
   node : @node.Node,
-  ctx : @types.LayoutContext,
-  _warnings : Array[@types.LayoutWarning],
+  ctx : @layout_types.LayoutContext,
+  _warnings : Array[@layout_types.LayoutWarning],
   _cache : IntrinsicCache,
   dispatch : @node.DispatchFn,
   percent_base_width? : Double = 0.0,
-) -> @types.Layout {
+) -> @layout_types.Layout {
   let style = node.style
   let base_width = if percent_base_width > 0.0 {
     percent_base_width

@@ -193,8 +193,8 @@ fn actual_paint_test_layout(
   overflow_y? : @types.Overflow = @types.Visible,
   scroll_width? : Double = 0.0,
   scroll_height? : Double = 0.0,
-  children? : Array[@types.Layout] = [],
-) -> @types.Layout {
+  children? : Array[@layout_types.Layout] = [],
+) -> @layout_types.Layout {
   {
     id,
     x,
@@ -215,7 +215,7 @@ fn actual_paint_test_layout(
 
 ///|
 fn actual_paint_test_document_dimensions_from_layout(
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   viewport_width : Int,
   viewport_height : Int,
 ) -> (Int, Int) {

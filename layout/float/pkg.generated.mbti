@@ -2,7 +2,7 @@
 package "mizchi/crater-layout/float"
 
 import {
-  "mizchi/crater-core",
+  "mizchi/crater-core/values",
 }
 
 // Values
@@ -15,7 +15,7 @@ pub(all) struct FloatBox {
   y : Double
   width : Double
   height : Double
-  float_type : @crater-core.Float
+  float_type : @values.Float
 }
 pub fn FloatBox::bottom(Self) -> Double
 pub fn FloatBox::right(Self) -> Double
@@ -33,12 +33,12 @@ pub(all) struct FloatContext {
 }
 pub fn FloatContext::find_y_with_space(Self, Double, Double, Double) -> Double
 pub fn FloatContext::get_available_space(Self, Double, Double) -> (Double, Double)
-pub fn FloatContext::get_clear_y(Self, @crater-core.Clear, Double) -> Double
+pub fn FloatContext::get_clear_y(Self, @values.Clear, Double) -> Double
 pub fn FloatContext::get_float_height(Self) -> Double
 pub fn FloatContext::has_floats(Self) -> Bool
 pub fn FloatContext::new(Double, Double) -> Self
 pub fn FloatContext::new_vertical(Double, Double, Double, Double, Bool, Bool) -> Self
-pub fn FloatContext::place_float(Self, @crater-core.Float, Double, Double, Double, Double, Double, Double, Double) -> (Double, Double)
+pub fn FloatContext::place_float(Self, @values.Float, Double, Double, Double, Double, Double, Double, Double) -> (Double, Double)
 pub fn FloatContext::prune_floats_above(Self, Double) -> Unit
 
 // Type aliases

@@ -32,10 +32,10 @@ test "intrinsic_percent_replaced_wpt_style" {
 
   // Compute layout
   @node.setup()
-  let layout_ctx : @types.LayoutContext = {
+  let layout_ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: None,
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -320,7 +320,7 @@ test "whitespace_between_inline_replaced_media_nodes_is_preserved" {
     #|</style>
     #|<video></video> <video></video>
   let layout = @renderer.render(html_str, @renderer.RenderContext::default())
-  let videos : Array[@types.Layout] = []
+  let videos : Array[@layout_types.Layout] = []
   for child in layout.children {
     if child.id == "video" {
       videos.push(child)
@@ -777,10 +777,10 @@ test "wpt_aspect_ratio_intrinsic_size_005_like" {
   debug_inspect(ratio_item.style.aspect_ratio, content="Some(1)")
 
   @node.setup()
-  let layout_ctx : @types.LayoutContext = {
+  let layout_ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -812,10 +812,10 @@ test "svg_default_intrinsic_size_wpt_like" {
   let root = @renderer.render_to_node(html_str, ctx)
 
   @node.setup()
-  let layout_ctx : @types.LayoutContext = {
+  let layout_ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -1109,7 +1109,7 @@ test "img_alt_text_propagation" {
     None
   }
 
-  fn find_img_layout(l : @types.Layout) -> @types.Layout? {
+  fn find_img_layout(l : @layout_types.Layout) -> @layout_types.Layout? {
     if l.id.has_prefix("img") {
       return Some(l)
     }

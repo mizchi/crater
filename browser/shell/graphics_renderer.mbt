@@ -87,7 +87,7 @@ async fn[T : @io.Writer] Browser::write_kitty_output(
 fn Browser::collect_graphics_image_regions_from_node_layout(
   self : Browser,
   render_node : @layout.Node,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
 ) -> Unit {
   let char_width = self.viewport_width / 8
   let char_height = self.viewport_height / 16

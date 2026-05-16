@@ -1,5 +1,6 @@
 import {
-  "mizchi/crater-core" @types,
+  "mizchi/crater-core/values" @types,
+  "mizchi/crater-core" @layout_types,
   "mizchi/crater-core/node" @node,
   "mizchi/crater-browser/tui/primitives" @tui_primitives,
   "mizchi/crater-browser/tui/paint/plain" @tui_paint_plain,

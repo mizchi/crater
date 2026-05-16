@@ -338,9 +338,9 @@ fn node_id_matches_target(node_id : String, target_id : String) -> Bool {
 ///|
 fn find_component_subtree(
   node : @node.Node,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   target_id : String,
-) -> (@node.Node, @types.Layout)? {
+) -> (@node.Node, @layout_types.Layout)? {
   if node_id_matches_target(node.id, target_id) &&
     node_id_matches_target(layout.id, target_id) {
     return Some((node, layout))
@@ -361,7 +361,9 @@ fn find_component_subtree(
 }
 
 ///|
-fn normalize_component_layout(layout : @types.Layout) -> @types.Layout {
+fn normalize_component_layout(
+  layout : @layout_types.Layout,
+) -> @layout_types.Layout {
   { ..layout, x: 0.0, y: 0.0 }
 }
 
@@ -378,7 +380,7 @@ fn pixel_span(value : Double) -> Int {
 ///|
 fn render_request_node_and_layout(
   request : RenderRequest,
-) -> (@node.Node, @types.Layout) {
+) -> (@node.Node, @layout_types.Layout) {
   @renderer.render_to_node_and_layout_with_external_css(
     request.html,
     request.render_ctx(),
@@ -389,7 +391,7 @@ fn render_request_node_and_layout(
 ///|
 fn render_component_subtree(
   request : RenderRequest,
-) -> Result[(@node.Node, @types.Layout, String), String] {
+) -> Result[(@node.Node, @layout_types.Layout, String), String] {
   match resolve_target(request) {
     Ok(target) => {
       let (node, layout) = render_request_node_and_layout(request)

@@ -23,10 +23,10 @@ test "bench_viewport_culling_500_top" (b : @bench.T) {
   let html = scrollable_list(500, 64)
   let ctx = scroll_ctx()
   let node = @renderer.render_to_node(html, ctx)
-  let layout_ctx : @types.LayoutContext = {
+  let layout_ctx : @layout_types.LayoutContext = {
     available_width: ctx.viewport_width,
     available_height: Some(ctx.viewport_height),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
     stretch_width: false,
@@ -49,10 +49,10 @@ test "bench_viewport_culling_500_middle" (b : @bench.T) {
   let html = scrollable_list(500, 64)
   let ctx = scroll_ctx()
   let node = @renderer.render_to_node(html, ctx)
-  let layout_ctx : @types.LayoutContext = {
+  let layout_ctx : @layout_types.LayoutContext = {
     available_width: ctx.viewport_width,
     available_height: Some(ctx.viewport_height),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
     stretch_width: false,
@@ -75,10 +75,10 @@ test "bench_viewport_culling_500_bottom" (b : @bench.T) {
   let html = scrollable_list(500, 64)
   let ctx = scroll_ctx()
   let node = @renderer.render_to_node(html, ctx)
-  let layout_ctx : @types.LayoutContext = {
+  let layout_ctx : @layout_types.LayoutContext = {
     available_width: ctx.viewport_width,
     available_height: Some(ctx.viewport_height),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
     stretch_width: false,
@@ -101,10 +101,10 @@ test "bench_viewport_culling_1000_middle" (b : @bench.T) {
   let html = scrollable_list(1000, 64)
   let ctx = scroll_ctx()
   let node = @renderer.render_to_node(html, ctx)
-  let layout_ctx : @types.LayoutContext = {
+  let layout_ctx : @layout_types.LayoutContext = {
     available_width: ctx.viewport_width,
     available_height: Some(ctx.viewport_height),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
     stretch_width: false,
@@ -131,10 +131,10 @@ test "bench_paint_tree_flat_100" (b : @bench.T) {
   let html = simple_flat(100)
   let ctx = scroll_ctx()
   let node = @renderer.render_to_node(html, ctx)
-  let layout_ctx : @types.LayoutContext = {
+  let layout_ctx : @layout_types.LayoutContext = {
     available_width: ctx.viewport_width,
     available_height: Some(ctx.viewport_height),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
     stretch_width: false,
@@ -152,10 +152,10 @@ test "bench_paint_tree_dashboard" (b : @bench.T) {
   let html = dashboard(15, 12)
   let ctx = scroll_ctx()
   let node = @renderer.render_to_node(html, ctx)
-  let layout_ctx : @types.LayoutContext = {
+  let layout_ctx : @layout_types.LayoutContext = {
     available_width: ctx.viewport_width,
     available_height: Some(ctx.viewport_height),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
     stretch_width: false,
@@ -173,10 +173,10 @@ test "bench_paint_tree_large_2k5" (b : @bench.T) {
   let html = large_website(15, 10, 8)
   let ctx = scroll_ctx()
   let node = @renderer.render_to_node(html, ctx)
-  let layout_ctx : @types.LayoutContext = {
+  let layout_ctx : @layout_types.LayoutContext = {
     available_width: ctx.viewport_width,
     available_height: Some(ctx.viewport_height),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
     stretch_width: false,
@@ -198,10 +198,10 @@ test "bench_flatten_flat_100" (b : @bench.T) {
   let html = simple_flat(100)
   let ctx = scroll_ctx()
   let node = @renderer.render_to_node(html, ctx)
-  let layout_ctx : @types.LayoutContext = {
+  let layout_ctx : @layout_types.LayoutContext = {
     available_width: ctx.viewport_width,
     available_height: Some(ctx.viewport_height),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
     stretch_width: false,
@@ -220,10 +220,10 @@ test "bench_flatten_dashboard" (b : @bench.T) {
   let html = dashboard(15, 12)
   let ctx = scroll_ctx()
   let node = @renderer.render_to_node(html, ctx)
-  let layout_ctx : @types.LayoutContext = {
+  let layout_ctx : @layout_types.LayoutContext = {
     available_width: ctx.viewport_width,
     available_height: Some(ctx.viewport_height),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
     stretch_width: false,
@@ -242,10 +242,10 @@ test "bench_flatten_large_2k5" (b : @bench.T) {
   let html = large_website(15, 10, 8)
   let ctx = scroll_ctx()
   let node = @renderer.render_to_node(html, ctx)
-  let layout_ctx : @types.LayoutContext = {
+  let layout_ctx : @layout_types.LayoutContext = {
     available_width: ctx.viewport_width,
     available_height: Some(ctx.viewport_height),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
     stretch_width: false,
@@ -269,10 +269,10 @@ test "bench_scroll_simulation_10_steps" (b : @bench.T) {
   let html = scrollable_list(500, 64)
   let ctx = scroll_ctx()
   let node = @renderer.render_to_node(html, ctx)
-  let layout_ctx : @types.LayoutContext = {
+  let layout_ctx : @layout_types.LayoutContext = {
     available_width: ctx.viewport_width,
     available_height: Some(ctx.viewport_height),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
     stretch_width: false,
@@ -305,10 +305,10 @@ test "bench_scroll_simulation_100_steps" (b : @bench.T) {
   let html = scrollable_list(500, 64)
   let ctx = scroll_ctx()
   let node = @renderer.render_to_node(html, ctx)
-  let layout_ctx : @types.LayoutContext = {
+  let layout_ctx : @layout_types.LayoutContext = {
     available_width: ctx.viewport_width,
     available_height: Some(ctx.viewport_height),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
     stretch_width: false,

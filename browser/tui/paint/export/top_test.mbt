@@ -8,7 +8,7 @@ test "tui paint export exports json and rgba" {
     top: 0.0,
     bottom: 0.0,
   }
-  let layout : @types.Layout = {
+  let layout : @layout_types.Layout = {
     id: "root",
     x: 0.0,
     y: 0.0,
@@ -41,7 +41,7 @@ test "tui paint export visual stats detect non-white pixels" {
     top: 0.0,
     bottom: 0.0,
   }
-  let layout : @types.Layout = {
+  let layout : @layout_types.Layout = {
     id: "root",
     x: 0.0,
     y: 0.0,

@@ -2,7 +2,7 @@
 /// Demo: Sixel layout visualization
 test "sixel demo layout" {
   // Create a sample layout tree (flex container with 3 children)
-  let layout : @types.Layout = {
+  let layout : @layout_types.Layout = {
     id: "root",
     x: 0.0,
     y: 0.0,

@@ -15,7 +15,7 @@ let global_cache_stats : Ref[CacheStats?] = { val: None }
 pub struct ConstraintSpace {
   available_width : Double
   available_height : Double?
-  sizing_mode : @types.SizingMode
+  sizing_mode : @layout_types.SizingMode
   // For percentage resolution
   parent_width : Double
   parent_height : Double?
@@ -28,7 +28,7 @@ pub struct ConstraintSpace {
 pub fn ConstraintSpace::new(
   available_width : Double,
   available_height : Double?,
-  sizing_mode : @types.SizingMode,
+  sizing_mode : @layout_types.SizingMode,
   parent_width : Double,
   parent_height : Double?,
   viewport_width? : Double = 0.0,
@@ -49,7 +49,7 @@ pub fn ConstraintSpace::new(
 /// Convert to LayoutContext for existing compute functions
 pub fn ConstraintSpace::to_context(
   self : ConstraintSpace,
-) -> @types.LayoutContext {
+) -> @layout_types.LayoutContext {
   {
     available_width: self.available_width,
     available_height: self.available_height,
@@ -175,7 +175,7 @@ pub fn compute_node(
   node : LayoutNode,
   constraint : ConstraintSpace,
   stats : CacheStats,
-) -> @types.Layout {
+) -> @layout_types.Layout {
   stats.nodes_computed = stats.nodes_computed + 1
 
   // Fast path: no dirty flags and constraint matches cache
@@ -244,7 +244,10 @@ pub fn compute_node(
 
 ///|
 /// Check if we can use cache for a node based on uid lookup
-fn try_cache_by_uid(uid : Int, ctx : @types.LayoutContext) -> @types.Layout? {
+fn try_cache_by_uid(
+  uid : Int,
+  ctx : @layout_types.LayoutContext,
+) -> @layout_types.Layout? {
   let map = layout_node_cache_map.val
   match map.get(uid) {
     Some(layout_node) => {
@@ -277,8 +280,8 @@ fn try_cache_by_uid(uid : Int, ctx : @types.LayoutContext) -> @types.Layout? {
 /// Update cache for a node after computation
 fn update_cache_by_uid(
   uid : Int,
-  ctx : @types.LayoutContext,
-  result : @types.Layout,
+  ctx : @layout_types.LayoutContext,
+  result : @layout_types.Layout,
 ) -> Unit {
   let map = layout_node_cache_map.val
   match map.get(uid) {
@@ -300,8 +303,8 @@ fn update_cache_by_uid(
 fn cached_dispatch(
   original : @node.LayoutDispatchFunc,
   node : @node.Node,
-  ctx : @types.LayoutContext,
-) -> @types.Layout {
+  ctx : @layout_types.LayoutContext,
+) -> @layout_types.Layout {
   // Try cache first
   match try_cache_by_uid(node.uid, ctx) {
     Some(cached) => cached
@@ -324,7 +327,10 @@ fn cached_dispatch(
 /// Check if all children's cached sizes match the given layout's children sizes
 /// Returns true if sizes match AND no children are dirty
 /// (dirty children might compute to different sizes)
-fn children_sizes_match(node : LayoutNode, layout : @types.Layout) -> Bool {
+fn children_sizes_match(
+  node : LayoutNode,
+  layout : @layout_types.Layout,
+) -> Bool {
   if node.children.length() != layout.children.length() {
     return false
   }
@@ -353,7 +359,7 @@ fn children_sizes_match(node : LayoutNode, layout : @types.Layout) -> Bool {
 ///|
 /// Sync computed layout results back to LayoutNode child caches
 /// This enables cache hits on subsequent computations
-fn sync_child_caches(node : LayoutNode, layout : @types.Layout) -> Unit {
+fn sync_child_caches(node : LayoutNode, layout : @layout_types.Layout) -> Unit {
   // Match children by index
   let len = if node.children.length() < layout.children.length() {
     node.children.length()
@@ -368,7 +374,7 @@ fn sync_child_caches(node : LayoutNode, layout : @types.Layout) -> Unit {
     let child_key = ConstraintKey::new(
       child_layout.width,
       Some(child_layout.height),
-      @types.Definite,
+      @layout_types.Definite,
     )
 
     // Update child cache
@@ -389,7 +395,7 @@ fn sync_child_caches(node : LayoutNode, layout : @types.Layout) -> Unit {
 pub fn compute_tree_incremental(
   tree : LayoutTree,
   stats : CacheStats,
-) -> @types.Layout {
+) -> @layout_types.Layout {
   // 1. Use tree's node_map directly instead of rebuilding
   // This is a major optimization: O(1) instead of O(n) tree traversal
   layout_node_cache_map.val = tree.node_map
@@ -413,7 +419,7 @@ pub fn compute_tree_incremental(
   let constraint = ConstraintSpace::new(
     tree.viewport_width,
     Some(tree.viewport_height),
-    @types.Definite,
+    @layout_types.Definite,
     tree.viewport_width,
     Some(tree.viewport_height),
   )
@@ -434,6 +440,6 @@ pub fn compute_tree_incremental(
 pub fn LayoutTree::compute_with_stats(
   self : LayoutTree,
   stats : CacheStats,
-) -> @types.Layout {
+) -> @layout_types.Layout {
   compute_tree_incremental(self, stats)
 }

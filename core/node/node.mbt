@@ -17,7 +17,7 @@ pub struct Node {
   uid : Int // Unique identifier for caching
   style : @style.Style
   children : Array[Node]
-  measure : @types.MeasureFunc?
+  measure : @layout_types.MeasureFunc?
   text : String? // Text content for text nodes
   src : String? // Image src attribute for <img> elements
 }
@@ -49,7 +49,7 @@ pub fn Node::with_uid_and_measure(
   uid : Int,
   style : @style.Style,
   children : Array[Node],
-  measure : @types.MeasureFunc?,
+  measure : @layout_types.MeasureFunc?,
   text : String?,
   src? : String? = None,
 ) -> Node {
@@ -75,7 +75,7 @@ pub fn Node::leaf(id : String, style : @style.Style) -> Node {
 pub fn Node::with_measure(
   id : String,
   style : @style.Style,
-  measure : @types.MeasureFunc,
+  measure : @layout_types.MeasureFunc,
   text? : String,
   src? : String? = None,
 ) -> Node {
@@ -95,7 +95,7 @@ pub fn Node::with_measure(
 pub fn Node::text(
   id : String,
   style : @style.Style,
-  measure : @types.MeasureFunc,
+  measure : @layout_types.MeasureFunc,
   content : String,
 ) -> Node {
   {
@@ -114,14 +114,14 @@ pub fn Node::text(
 /// cross-layout-type dispatch without global state.
 /// The function takes (node, context, dispatch) and returns Layout.
 pub(all) struct DispatchFn(
-  (Node, @types.LayoutContext, DispatchFn) -> @types.Layout
+  (Node, @layout_types.LayoutContext, DispatchFn) -> @layout_types.Layout
 )
 
 ///|
 /// @deprecated Use DispatchFn instead
 /// Layout dispatch function type (kept for backward compatibility with incremental compute)
 pub(all) struct LayoutDispatchFunc(
-  (Node, @types.LayoutContext) -> @types.Layout
+  (Node, @layout_types.LayoutContext) -> @layout_types.Layout
 )
 
 ///|
@@ -144,8 +144,8 @@ pub fn get_layout_dispatcher() -> LayoutDispatchFunc? {
 /// Create a minimal fallback layout for a node (used when dispatch is unavailable)
 pub fn fallback_layout(
   node : Node,
-  ctx : @types.LayoutContext,
-) -> @types.Layout {
+  ctx : @layout_types.LayoutContext,
+) -> @layout_types.Layout {
   let width = match node.style.width {
     @types.Dimension::Length(w) => w
     @types.Dimension::Percent(p) => ctx.available_width * p

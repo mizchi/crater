@@ -92,7 +92,7 @@ pub fn to_sixel_dynamic(fb : Framebuffer, palette : DynamicPalette) -> String {
 
 ///|
 pub fn render_layout(
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   width : Int,
   height : Int,
 ) -> String {
@@ -101,7 +101,7 @@ pub fn render_layout(
 
 ///|
 pub fn render_layout_with_options(
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   width : Int,
   height : Int,
   show_box_model : Bool,
@@ -125,7 +125,7 @@ fn is_text_node(id : String) -> Bool {
 ///|
 fn render_node_simple(
   fb : Framebuffer,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   parent_x : Double,
   parent_y : Double,
   depth : Int,
@@ -167,7 +167,7 @@ fn render_node_simple(
 ///|
 fn render_node_with_box_model(
   fb : Framebuffer,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   parent_x : Double,
   parent_y : Double,
   depth : Int,
@@ -288,7 +288,11 @@ fn render_node_with_box_model(
 }
 
 ///|
-pub fn print_layout(layout : @types.Layout, width : Int, height : Int) -> Unit {
+pub fn print_layout(
+  layout : @layout_types.Layout,
+  width : Int,
+  height : Int,
+) -> Unit {
   let _ = render_layout(layout, width, height)
 }
 
@@ -308,7 +312,7 @@ pub fn render_paint_node_to_sixel(
 ///|
 pub fn render_with_styles(
   node : @node.Node,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   width : Int,
   height : Int,
 ) -> String {
@@ -332,7 +336,7 @@ pub fn render_paint_node_to_sixel_scrolled(
 ///|
 pub fn render_with_styles_scrolled(
   node : @node.Node,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   width : Int,
   height : Int,
   scroll_y : Int,

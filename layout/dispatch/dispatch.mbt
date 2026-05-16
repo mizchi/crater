@@ -7,9 +7,9 @@
 /// based on the node's display property.
 pub fn compute(
   node : @node.Node,
-  ctx : @types.LayoutContext,
+  ctx : @layout_types.LayoutContext,
   dispatch : @node.DispatchFn,
-) -> @types.Layout {
+) -> @layout_types.Layout {
   match node.style.display {
     @types.Flex | @types.InlineFlex =>
       apply_initial_scroll_snap(node, @flex.compute(node, ctx, dispatch))
@@ -33,8 +33,8 @@ pub fn compute(
 ///|
 fn apply_initial_scroll_snap(
   node : @node.Node,
-  layout : @types.Layout,
-) -> @types.Layout {
+  layout : @layout_types.Layout,
+) -> @layout_types.Layout {
   if layout.children.is_empty() {
     return layout
   }
@@ -93,7 +93,7 @@ fn overflow_creates_scroll_container(overflow : @types.Overflow) -> Bool {
 ///|
 fn find_initial_snap_offset_x(
   node : @node.Node,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   max_scroll : Double,
 ) -> Double? {
   let count = if node.children.length() < layout.children.length() {
@@ -118,7 +118,7 @@ fn find_initial_snap_offset_x(
 ///|
 fn find_initial_snap_offset_y(
   node : @node.Node,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   max_scroll : Double,
 ) -> Double? {
   let count = if node.children.length() < layout.children.length() {
@@ -174,8 +174,8 @@ pub fn default_dispatch() -> @node.DispatchFn {
 /// Compute layout with the default dispatcher (convenience function)
 pub fn compute_layout(
   node : @node.Node,
-  ctx : @types.LayoutContext,
-) -> @types.Layout {
+  ctx : @layout_types.LayoutContext,
+) -> @layout_types.Layout {
   let dispatch = default_dispatch()
   compute(node, ctx, dispatch)
 }

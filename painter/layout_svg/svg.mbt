@@ -34,7 +34,7 @@ pub fn create_svg_layout(
   attributes : Array[(String, String)],
   available_width : Double,
   available_height : Double?,
-) -> @types.Layout {
+) -> @layout_types.Layout {
   // Parse width/height from attributes
   let mut width = available_width
   let mut height = match available_height {

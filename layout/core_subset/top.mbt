@@ -9,7 +9,7 @@ pub(all) struct CoreIssue {
 ///|
 /// Result for checked core layout computation.
 pub(all) struct CoreComputeResult {
-  layout : @types.Layout?
+  layout : @layout_types.Layout?
   issues : Array[CoreIssue]
 }
 
@@ -32,10 +32,10 @@ pub fn compute_core_layout(
   if issues.length() > 0 {
     return { layout: None, issues }
   }
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: viewport.width,
     available_height: Some(viewport.height),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: viewport.width,
     viewport_height: viewport.height,
     stretch_width: false,

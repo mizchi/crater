@@ -70,7 +70,7 @@ test "inline_block_layout" {
     color_scheme: @css.ColorScheme::Light,
   }
   let layout = render_with_external_css(html, ctx, [css])
-  fn show_layout(l : @types.Layout, depth : Int) -> Unit {
+  fn show_layout(l : @layout_types.Layout, depth : Int) -> Unit {
     let _ = String::make(depth * 2, ' ')
     for child in l.children {
       show_layout(child, depth + 1)

@@ -19,7 +19,7 @@ pub fn renderHtml(html : String, width : Int, height : Int) -> String {
 
 ///|
 fn format_layout(
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   buf : StringBuilder,
   indent : Int,
 ) -> Unit {
@@ -1001,7 +1001,7 @@ pub(all) struct FlatLayoutResult {
 
 ///|
 /// Flatten a hierarchical Layout tree to FlatLayoutResult
-pub fn flatten_layout(layout : @types.Layout) -> FlatLayoutResult {
+pub fn flatten_layout(layout : @layout_types.Layout) -> FlatLayoutResult {
   let nodes : Array[FlatLayoutNode] = []
   flatten_layout_rec(layout, "", 0, nodes)
   { nodes, root_id: layout.id }
@@ -1009,7 +1009,7 @@ pub fn flatten_layout(layout : @types.Layout) -> FlatLayoutResult {
 
 ///|
 fn flatten_layout_rec(
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   parent_id : String,
   index : Int,
   nodes : Array[FlatLayoutNode],

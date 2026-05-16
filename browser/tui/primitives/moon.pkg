@@ -1,6 +1,6 @@
 import {
   "mizchi/crater-terminal-protocol/ansi" @tui_ansi,
-  "mizchi/crater-core" @types,
+  "mizchi/crater-core/values" @types,
   "mizchi/tui-terminal-buffer/buffer" @tui_buffer,
   "moonbitlang/core/string",
 }

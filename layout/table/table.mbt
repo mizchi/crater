@@ -6,14 +6,14 @@
 
 ///|
 /// Create a zero-sized layout for a node
-fn create_zero_layout(node : @node.Node) -> @types.Layout {
+fn create_zero_layout(node : @node.Node) -> @layout_types.Layout {
   let zero_rect : @types.Rect[Double] = {
     left: 0.0,
     right: 0.0,
     top: 0.0,
     bottom: 0.0,
   }
-  let children : Array[@types.Layout] = []
+  let children : Array[@layout_types.Layout] = []
   for child in node.children {
     children.push(create_zero_layout(child))
   }
@@ -275,13 +275,13 @@ fn zero_layout_rect() -> @types.Rect[Double] {
 ///|
 /// Wrap a computed layout with display:contents wrapper nodes.
 fn wrap_layout_with_contents_wrappers(
-  child_layout : @types.Layout,
+  child_layout : @layout_types.Layout,
   wrappers : Array[@node.Node],
-) -> @types.Layout {
+) -> @layout_types.Layout {
   let mut wrapped = child_layout
   for i = wrappers.length(); i > 0; i = i - 1 {
     let wrapper = wrappers[i - 1]
-    let children : Array[@types.Layout] = []
+    let children : Array[@layout_types.Layout] = []
     children.push(wrapped)
     wrapped = {
       id: wrapper.id,
@@ -1522,7 +1522,7 @@ fn should_use_child_extent_for_cell_content(cell : @node.Node) -> Bool {
 
 ///|
 fn child_layout_extent_bounds(
-  children : Array[@types.Layout],
+  children : Array[@layout_types.Layout],
   table_layouts_only? : Bool = false,
 ) -> (Double, Double, Bool) {
   let mut top = 0.0
@@ -1607,10 +1607,10 @@ fn table_cell_content_children_for_layout(
 fn layout_cell(
   cell : @node.Node,
   cell_width : Double,
-  ctx : @types.LayoutContext,
+  ctx : @layout_types.LayoutContext,
   border_collapse : Bool,
   dispatch : @node.DispatchFn,
-) -> @types.Layout {
+) -> @layout_types.Layout {
   let style = cell.style
   let parent_width = ctx.available_width
   let margin = @types.resolve_rect(style.margin, parent_width)
@@ -1650,7 +1650,7 @@ fn layout_cell(
   }
 
   // Layout children with available width
-  let child_ctx : @types.LayoutContext = {
+  let child_ctx : @layout_types.LayoutContext = {
     available_width: content_width,
     available_height: content_height_for_percent,
     sizing_mode: ctx.sizing_mode,
@@ -1712,7 +1712,7 @@ fn layout_cell(
   } else {
     content_layout.height
   }
-  let child_layouts : Array[@types.Layout] = []
+  let child_layouts : Array[@layout_types.Layout] = []
   for child_layout in content_layout.children {
     if table_only_content && !is_table_container_layout_id(child_layout.id) {
       continue
@@ -1758,7 +1758,7 @@ fn layout_cell(
     }
     _ => total_height
   }
-  let normalized_child_layouts : Array[@types.Layout] = []
+  let normalized_child_layouts : Array[@layout_types.Layout] = []
   for child_layout in child_layouts {
     let normalized_y = if child_layout.y < border.top &&
       child_layout.height >= final_height - 0.5 {
@@ -1796,11 +1796,11 @@ fn layout_row(
   row_index : Int,
   column_widths : Array[Double],
   border_spacing : Double,
-  ctx : @types.LayoutContext,
+  ctx : @layout_types.LayoutContext,
   border_collapse : Bool,
   grid : Map[String, CellOccupancy],
   dispatch : @node.DispatchFn,
-) -> @types.Layout {
+) -> @layout_types.Layout {
   let style = row.style
   let parent_width = ctx.available_width
   let margin = @types.resolve_rect(style.margin, parent_width)
@@ -1823,7 +1823,7 @@ fn layout_row(
   )
 
   // Create cell context with row height for percentage height resolution
-  let cell_ctx : @types.LayoutContext = {
+  let cell_ctx : @layout_types.LayoutContext = {
     available_width: ctx.available_width,
     available_height: explicit_row_height,
     sizing_mode: ctx.sizing_mode,
@@ -1832,7 +1832,7 @@ fn layout_row(
     stretch_width: false,
     stretch_height: false,
   }
-  let cell_layouts : Array[@types.Layout] = []
+  let cell_layouts : Array[@layout_types.Layout] = []
   let cell_vertical_aligns : Array[@style.VerticalAlign] = []
   let cell_content_heights : Array[Double] = []
   let mut x_offset = padding.left + border.left
@@ -1980,7 +1980,7 @@ fn layout_row(
   }
 
   // Update cell heights to match row height and apply vertical alignment
-  let final_cell_layouts : Array[@types.Layout] = []
+  let final_cell_layouts : Array[@layout_types.Layout] = []
   for i, layout in cell_layouts {
     // Calculate vertical alignment offset for cell content
     let content_h = if i < cell_content_heights.length() {
@@ -2005,7 +2005,7 @@ fn layout_row(
       0.0
     }
     // Shift children down by valign_offset
-    let shifted_children : Array[@types.Layout] = []
+    let shifted_children : Array[@layout_types.Layout] = []
     for child_layout in layout.children {
       shifted_children.push({
         ..child_layout,
@@ -2018,7 +2018,7 @@ fn layout_row(
       children: shifted_children,
     })
   }
-  let row_children : Array[@types.Layout] = []
+  let row_children : Array[@layout_types.Layout] = []
   for layout in final_cell_layouts {
     if layout.id.has_prefix("__anon-table-cell-") {
       for anon_child in layout.children {
@@ -2647,9 +2647,9 @@ fn measure_node_intrinsic_height(node : @node.Node) -> Double {
 /// Main table layout computation
 pub fn compute(
   node : @node.Node,
-  ctx : @types.LayoutContext,
+  ctx : @layout_types.LayoutContext,
   dispatch : @node.DispatchFn,
-) -> @types.Layout {
+) -> @layout_types.Layout {
   let style = node.style
 
   // Handle display:none
@@ -2732,10 +2732,10 @@ pub fn compute(
     }
   }
   let @node.DispatchFn(dispatch_fn) = dispatch
-  let caption_intrinsic_width_ctx : @types.LayoutContext = {
+  let caption_intrinsic_width_ctx : @layout_types.LayoutContext = {
     available_width: 0.0,
     available_height: None,
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: ctx.viewport_width,
     viewport_height: ctx.viewport_height,
     stretch_width: false,
@@ -2886,7 +2886,7 @@ pub fn compute(
     )
   }
 
-  let caption_measure_ctx : @types.LayoutContext = {
+  let caption_measure_ctx : @layout_types.LayoutContext = {
     available_width: table_width,
     available_height: None,
     sizing_mode: ctx.sizing_mode,
@@ -3030,7 +3030,7 @@ pub fn compute(
   }
 
   // Create base child context (use row_content_width for row layout)
-  let base_child_ctx : @types.LayoutContext = {
+  let base_child_ctx : @layout_types.LayoutContext = {
     available_width: row_content_width,
     available_height: None,
     sizing_mode: ctx.sizing_mode,
@@ -3039,7 +3039,7 @@ pub fn compute(
     stretch_width: false,
     stretch_height: false,
   }
-  let caption_child_ctx : @types.LayoutContext = {
+  let caption_child_ctx : @layout_types.LayoutContext = {
     ..base_child_ctx,
     available_width: table_width,
   }
@@ -3084,7 +3084,7 @@ pub fn compute(
   }
 
   // Create a map to store layouts by original index
-  let layout_map : Map[Int, @types.Layout] = {}
+  let layout_map : Map[Int, @layout_types.Layout] = {}
 
   // Layout all children (including row groups)
   // y_offset includes top edge spacing
@@ -3103,10 +3103,10 @@ pub fn compute(
     }
     if child.style.position == @types.Absolute ||
       child.style.position == @types.Fixed {
-      let out_of_flow_caption_ctx : @types.LayoutContext = {
+      let out_of_flow_caption_ctx : @layout_types.LayoutContext = {
         ..caption_child_ctx,
         available_width: 0.0,
-        sizing_mode: @types.MaxContent,
+        sizing_mode: @layout_types.MaxContent,
       }
       let caption_layout = dispatch_fn(child, out_of_flow_caption_ctx, dispatch)
       layout_map[idx] = wrap_layout_with_contents_wrappers(
@@ -3188,10 +3188,10 @@ pub fn compute(
       let anon_node = @node.Node::new(
         "__anon-table-flow", anon_style, anon_children,
       )
-      let anon_ctx : @types.LayoutContext = {
+      let anon_ctx : @layout_types.LayoutContext = {
         available_width: row_content_width,
         available_height: None,
-        sizing_mode: @types.Definite,
+        sizing_mode: @layout_types.Definite,
         viewport_width: ctx.viewport_width,
         viewport_height: ctx.viewport_height,
         stretch_width: false,
@@ -3248,7 +3248,7 @@ pub fn compute(
       } else {
         None
       }
-      let row_ctx : @types.LayoutContext = {
+      let row_ctx : @layout_types.LayoutContext = {
         ..base_child_ctx,
         available_height: row_height,
       }
@@ -3322,7 +3322,7 @@ pub fn compute(
         } else {
           None
         }
-        let row_ctx : @types.LayoutContext = {
+        let row_ctx : @layout_types.LayoutContext = {
           ..base_child_ctx,
           available_height: row_height,
         }
@@ -3358,7 +3358,7 @@ pub fn compute(
         flush_pending_direct_cells()
         let base_y = y_offset
         // Row group (thead, tbody, tfoot)
-        let group_layouts : Array[@types.Layout] = []
+        let group_layouts : Array[@layout_types.Layout] = []
         let mut group_y = 0.0
         let mut max_row_width = 0.0
         let group_style = child.style
@@ -3380,7 +3380,7 @@ pub fn compute(
           } else {
             None
           }
-          let row_ctx : @types.LayoutContext = {
+          let row_ctx : @layout_types.LayoutContext = {
             ..base_child_ctx,
             available_height: row_height,
           }
@@ -3450,7 +3450,7 @@ pub fn compute(
         let (rel_x, rel_y) = calculate_relative_offset(
           group_style, row_content_width, table_relative_height_context,
         )
-        let group_layout : @types.Layout = {
+        let group_layout : @layout_types.Layout = {
           id: child.id,
           x: row_x_offset + rel_x,
           y: y_offset + rel_y,
@@ -3489,7 +3489,7 @@ pub fn compute(
         flush_pending_direct_cells()
         // Colgroup: layout with column widths, positioned later
         // These are placeholder layouts that will be updated after we know table height
-        let col_layouts : Array[@types.Layout] = []
+        let col_layouts : Array[@layout_types.Layout] = []
         let mut col_x = 0.0
         for col in collect_table_effective_children(child) {
           if is_table_column(col.style.display) {
@@ -3504,7 +3504,7 @@ pub fn compute(
               top: 0.0,
               bottom: 0.0,
             }
-            let col_layout : @types.Layout = {
+            let col_layout : @layout_types.Layout = {
               id: col.id,
               x: col_x,
               y: 0.0,
@@ -3539,7 +3539,7 @@ pub fn compute(
           top: 0.0,
           bottom: 0.0,
         }
-        let colgroup_layout : @types.Layout = {
+        let colgroup_layout : @layout_types.Layout = {
           id: child.id,
           x: row_x_offset,
           y: y_offset,
@@ -3659,10 +3659,10 @@ pub fn compute(
     }
     if child.style.position == @types.Absolute ||
       child.style.position == @types.Fixed {
-      let out_of_flow_caption_ctx : @types.LayoutContext = {
+      let out_of_flow_caption_ctx : @layout_types.LayoutContext = {
         ..caption_child_ctx,
         available_width: 0.0,
-        sizing_mode: @types.MaxContent,
+        sizing_mode: @layout_types.MaxContent,
       }
       let caption_layout = dispatch_fn(child, out_of_flow_caption_ctx, dispatch)
       layout_map[idx] = wrap_layout_with_contents_wrappers(
@@ -3737,7 +3737,7 @@ pub fn compute(
 
   // Assemble child_layouts in original order from layout_map
   // Also update colgroup/col heights now that we know the table content height
-  let final_child_layouts : Array[@types.Layout] = []
+  let final_child_layouts : Array[@layout_types.Layout] = []
   for i = 0; i < node.children.length(); i = i + 1 {
     let effective_child = match effective_child_by_index.get(i) {
       Some(child) => child
@@ -3747,7 +3747,7 @@ pub fn compute(
       Some(layout) =>
         if is_table_column_group(effective_child.style.display) {
           // This might be a colgroup - update its height and children's heights
-          let updated_col_children : Array[@types.Layout] = []
+          let updated_col_children : Array[@layout_types.Layout] = []
           for col_layout in layout.children {
             updated_col_children.push({
               ..col_layout,
@@ -3775,9 +3775,9 @@ pub fn compute(
     }
   }
   fn normalize_cell_descendant_offsets(
-    layout : @types.Layout,
+    layout : @layout_types.Layout,
     inside_cell : Bool,
-  ) -> @types.Layout {
+  ) -> @layout_types.Layout {
     let is_cell_box = inside_cell ||
       layout.id == "td" ||
       layout.id == "th" ||
@@ -3788,7 +3788,7 @@ pub fn compute(
       overflow_creates_scroll_container(layout.overflow_y)
     let propagate_inside_cell = is_cell_box &&
       !keeps_descendant_negative_offsets
-    let normalized_children : Array[@types.Layout] = []
+    let normalized_children : Array[@layout_types.Layout] = []
     for child in layout.children {
       let normalized_child = normalize_cell_descendant_offsets(
         child, propagate_inside_cell,
@@ -3802,7 +3802,7 @@ pub fn compute(
     }
     { ..layout, children: normalized_children }
   }
-  let normalized_child_layouts : Array[@types.Layout] = []
+  let normalized_child_layouts : Array[@layout_types.Layout] = []
   for child_layout in final_child_layouts {
     normalized_child_layouts.push(
       normalize_cell_descendant_offsets(child_layout, false),

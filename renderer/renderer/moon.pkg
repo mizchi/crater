@@ -5,7 +5,8 @@ import {
   "mizchi/crater-layout" @node,
   "mizchi/crater-renderer/inline_style_cache" @inline_style_cache,
   "mizchi/crater-core/style",
-  "mizchi/crater-core" @types,
+  "mizchi/crater-core/values" @types,
+  "mizchi/crater-core" @layout_types,
 }
 
 import {

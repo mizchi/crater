@@ -70,7 +70,7 @@ test "font shorthand inherits line-height to descendant text nodes" {
   inspect(text.style.line_height, content="10")
   let intrinsic = match text.measure {
     Some(measure) => (measure.func)(9999.0, 9999.0)
-    None => @types.IntrinsicSize::default()
+    None => @layout_types.IntrinsicSize::default()
   }
   inspect(
     intrinsic.max_width,
@@ -146,7 +146,7 @@ test "implicit body font shorthand reaches descendant text measure" {
   inspect(text.style.line_height, content="10")
   let intrinsic = match text.measure {
     Some(measure) => (measure.func)(9999.0, 9999.0)
-    None => @types.IntrinsicSize::default()
+    None => @layout_types.IntrinsicSize::default()
   }
   inspect(
     intrinsic.max_width,
@@ -181,7 +181,7 @@ test "body font shorthand survives preceding grid declarations" {
   let text = outer.children[0]
   let intrinsic = match text.measure {
     Some(measure) => (measure.func)(9999.0, 9999.0)
-    None => @types.IntrinsicSize::default()
+    None => @layout_types.IntrinsicSize::default()
   }
   inspect(
     intrinsic.max_width,
@@ -210,7 +210,7 @@ test "body font shorthand survives string @import prelude" {
   let text = outer.children[0]
   let intrinsic = match text.measure {
     Some(measure) => (measure.func)(9999.0, 9999.0)
-    None => @types.IntrinsicSize::default()
+    None => @layout_types.IntrinsicSize::default()
   }
   inspect(
     intrinsic.max_width,
@@ -265,7 +265,7 @@ test "later body font style overrides earlier reset style" {
   let text = outer.children[0]
   let intrinsic = match text.measure {
     Some(measure) => (measure.func)(9999.0, 9999.0)
-    None => @types.IntrinsicSize::default()
+    None => @layout_types.IntrinsicSize::default()
   }
   inspect(
     intrinsic.max_width,

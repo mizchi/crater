@@ -246,14 +246,14 @@ fn clear_all_dirty(node : LayoutNode) -> Unit {
 
 ///|
 /// Compute layout using existing layout system (full recomputation)
-pub fn LayoutTree::compute_full(self : LayoutTree) -> @types.Layout {
+pub fn LayoutTree::compute_full(self : LayoutTree) -> @layout_types.Layout {
   // Reset intrinsic cache for full recomputation
   @dispatch.reset_intrinsic_cache()
   let node = self.root.to_node()
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: self.viewport_width,
     available_height: Some(self.viewport_height),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: self.viewport_width,
     viewport_height: self.viewport_height,
     stretch_width: false,
@@ -267,7 +267,9 @@ pub fn LayoutTree::compute_full(self : LayoutTree) -> @types.Layout {
 ///|
 /// Compute layout with incremental optimization
 /// Uses per-node caching for better performance
-pub fn LayoutTree::compute_incremental(self : LayoutTree) -> @types.Layout {
+pub fn LayoutTree::compute_incremental(
+  self : LayoutTree,
+) -> @layout_types.Layout {
   let stats = CacheStats::new()
   compute_tree_incremental(self, stats)
 }

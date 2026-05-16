@@ -123,11 +123,11 @@ test "grid_with_gap" {
 ///|
 test "grid_item_flex_column_reflows_nested_grid_height_at_final_width" {
   let default_style = @style.Style::default()
-  let text_measure : @types.MeasureFunc = {
+  let text_measure : @layout_types.MeasureFunc = {
     func: fn(
       available_width : Double,
       _available_height : Double,
-    ) -> @types.IntrinsicSize {
+    ) -> @layout_types.IntrinsicSize {
       let max_width = 200.0
       let line_height = 50.0
       let effective_width = if available_width > 0.0 {
@@ -185,10 +185,10 @@ test "grid_item_flex_column_reflows_nested_grid_height_at_final_width" {
     { ..default_style, display: @types.Grid },
     [outer_flex],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: None,
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -234,10 +234,10 @@ test "grid_item_percent_height_chain_with_max_height_clamps_to_100" {
     { ..default_style, display: @types.Grid, width: @types.Length(100.0) },
     [grid_item],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: None,
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -254,11 +254,11 @@ test "grid_item_percent_height_chain_with_max_height_clamps_to_100" {
 test "grid_auto_height_does_not_fill_available_height" {
   let default_style = @style.Style::default()
   let img_style = { ..default_style, min_height: @types.Percent(1.0) }
-  let img_measure : @types.MeasureFunc = {
+  let img_measure : @layout_types.MeasureFunc = {
     func: fn(
       _available_width : Double,
       _available_height : Double,
-    ) -> @types.IntrinsicSize {
+    ) -> @layout_types.IntrinsicSize {
       { min_width: 0.0, max_width: 0.0, min_height: 0.0, max_height: 0.0 }
     },
   }
@@ -273,10 +273,10 @@ test "grid_auto_height_does_not_fill_available_height" {
     { ..default_style, display: @types.Grid, width: @types.Length(800.0) },
     [grid_item],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(800.0),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 800.0,
     viewport_height: 800.0,
     stretch_width: false,
@@ -1220,8 +1220,8 @@ test "taffy/grid_minmax_column_fixed_width_below_range" {
 ///|
 test "grid_minmax_min_content_auto_track" {
   let default_style = @style.Style::default()
-  let text_measure : @types.MeasureFunc = {
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let text_measure : @layout_types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       { min_width: 72.0, max_width: 216.0, min_height: 16.0, max_height: 16.0 }
     },
   }
@@ -1579,8 +1579,8 @@ test "grid_contain_size_inline_grid_auto_size_uses_border_only" {
 ///|
 test "grid_contain_size_preserves_explicit_tracks_and_gaps" {
   let default_style = @style.Style::default()
-  let huge_measure : @types.MeasureFunc = {
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let huge_measure : @layout_types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       {
         min_width: 500.0,
         max_width: 500.0,
@@ -1672,8 +1672,8 @@ test "grid_abspos_auto_self_alignment_uses_container_items_alignment" {
 ///|
 test "grid_inline_baseline_with_definite_height_replaced_item_keeps_auto_row_content_height" {
   let default_style = @style.Style::default()
-  let canvas_measure : @types.MeasureFunc = {
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let canvas_measure : @layout_types.MeasureFunc = {
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       {
         min_width: 300.0,
         max_width: 300.0,
@@ -1707,10 +1707,10 @@ test "grid_inline_baseline_with_definite_height_replaced_item_keeps_auto_row_con
     },
     [canvas, item],
   )
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: 800.0,
     viewport_height: 600.0,
     stretch_width: false,
@@ -2092,7 +2092,7 @@ test "grid_measure_function_basic" {
   let default_style = @style.Style::default()
 
   // Create a measure function that returns custom sizes
-  let custom_measure : @types.MeasureFunc = {
+  let custom_measure : @layout_types.MeasureFunc = {
     func: fn(_available_width, _available_height) {
       { min_width: 50.0, max_width: 100.0, min_height: 25.0, max_height: 50.0 }
     },
@@ -2124,7 +2124,7 @@ test "grid_measure_function_basic" {
 test "grid_measure_function_min_content" {
   // Test that min-content uses min_width from measure function
   let default_style = @style.Style::default()
-  let custom_measure : @types.MeasureFunc = {
+  let custom_measure : @layout_types.MeasureFunc = {
     func: fn(_available_width, _available_height) {
       { min_width: 30.0, max_width: 80.0, min_height: 15.0, max_height: 40.0 }
     },
@@ -2222,10 +2222,10 @@ test "grid_fr_sum_less_than_one" {
   let item3 = @node.Node::leaf("item3", default_style)
   let item4 = @node.Node::leaf("item4", default_style)
   let root = @node.Node::new("root", root_style, [item1, item2, item3, item4])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 200.0,
     available_height: Some(300.0),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 400.0,
     viewport_height: 400.0,
     stretch_width: false,
@@ -2264,10 +2264,10 @@ test "grid_overflow_alignment_center_offsets_single_item" {
     align_content: @types.Center,
   }
   let root = @node.Node::new("root", root_style, [indicator])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 300.0,
     available_height: Some(200.0),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 300.0,
     viewport_height: 200.0,
     stretch_width: false,
@@ -2299,10 +2299,10 @@ test "grid_overflow_alignment_start_vertical_rl_rtl_offsets_both_axes" {
     direction: @style.Direction::Rtl,
   }
   let root = @node.Node::new("root", root_style, [indicator])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 300.0,
     available_height: Some(200.0),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 300.0,
     viewport_height: 200.0,
     stretch_width: false,
@@ -2350,10 +2350,10 @@ test "grid_table_item_stretch" {
     // justify_items defaults to Stretch
   }
   let grid = @node.Node::new("grid", grid_style, [table])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(400.0),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 400.0,
     viewport_height: 400.0,
     stretch_width: false,
@@ -2401,10 +2401,10 @@ test "grid_table_item_center" {
     justify_items: @types.Center,
   } // Not Stretch
   let grid = @node.Node::new("grid", grid_style, [table])
-  let ctx : @types.LayoutContext = {
+  let ctx : @layout_types.LayoutContext = {
     available_width: 400.0,
     available_height: Some(400.0),
-    sizing_mode: @types.Definite,
+    sizing_mode: @layout_types.Definite,
     viewport_width: 400.0,
     viewport_height: 400.0,
     stretch_width: false,

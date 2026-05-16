@@ -10,7 +10,7 @@ test "paint viewport bridge owns viewport culling" {
     top: 0.0,
     bottom: 0.0,
   }
-  let child1_layout : @types.Layout = {
+  let child1_layout : @layout_types.Layout = {
     id: "child1",
     x: 0.0,
     y: 0.0,
@@ -26,7 +26,7 @@ test "paint viewport bridge owns viewport culling" {
     children: [],
     text: None,
   }
-  let child2_layout : @types.Layout = {
+  let child2_layout : @layout_types.Layout = {
     id: "child2",
     x: 0.0,
     y: 200.0,
@@ -42,7 +42,7 @@ test "paint viewport bridge owns viewport culling" {
     children: [],
     text: None,
   }
-  let root_layout : @types.Layout = {
+  let root_layout : @layout_types.Layout = {
     id: "root",
     x: 0.0,
     y: 0.0,
@@ -84,7 +84,7 @@ test "paint viewport bridge prunes horizontally outside viewport rect" {
     top: 0.0,
     bottom: 0.0,
   }
-  let visible_layout : @types.Layout = {
+  let visible_layout : @layout_types.Layout = {
     id: "visible",
     x: 0.0,
     y: 0.0,
@@ -100,12 +100,12 @@ test "paint viewport bridge prunes horizontally outside viewport rect" {
     children: [],
     text: None,
   }
-  let offscreen_layout : @types.Layout = {
+  let offscreen_layout : @layout_types.Layout = {
     ..visible_layout,
     id: "offscreen",
     x: 200.0,
   }
-  let root_layout : @types.Layout = {
+  let root_layout : @layout_types.Layout = {
     ..visible_layout,
     id: "root",
     width: 260.0,
@@ -138,7 +138,7 @@ test "paint viewport bridge prunes children outside overflow clip" {
     top: 0.0,
     bottom: 0.0,
   }
-  let hidden_layout : @types.Layout = {
+  let hidden_layout : @layout_types.Layout = {
     id: "hidden",
     x: 0.0,
     y: 150.0,
@@ -154,7 +154,7 @@ test "paint viewport bridge prunes children outside overflow clip" {
     children: [],
     text: None,
   }
-  let clipper_layout : @types.Layout = {
+  let clipper_layout : @layout_types.Layout = {
     ..hidden_layout,
     id: "clipper",
     y: 0.0,
@@ -164,7 +164,7 @@ test "paint viewport bridge prunes children outside overflow clip" {
     overflow_y: @types.Hidden,
     children: [hidden_layout],
   }
-  let root_layout : @types.Layout = {
+  let root_layout : @layout_types.Layout = {
     ..clipper_layout,
     id: "root",
     width: 200.0,
@@ -200,7 +200,7 @@ test "paint viewport bridge prunes fully covered earlier opaque siblings" {
     top: 0.0,
     bottom: 0.0,
   }
-  let red_layout : @types.Layout = {
+  let red_layout : @layout_types.Layout = {
     id: "red",
     x: 0.0,
     y: 0.0,
@@ -216,8 +216,8 @@ test "paint viewport bridge prunes fully covered earlier opaque siblings" {
     children: [],
     text: None,
   }
-  let green_layout : @types.Layout = { ..red_layout, id: "green" }
-  let root_layout : @types.Layout = {
+  let green_layout : @layout_types.Layout = { ..red_layout, id: "green" }
+  let root_layout : @layout_types.Layout = {
     ..red_layout,
     id: "root",
     children: [red_layout, green_layout],

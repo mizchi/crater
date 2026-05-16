@@ -43,14 +43,14 @@ fn write_rect_json(buf : StringBuilder, rect : @types.Rect[Double]) -> Unit {
 
 ///|
 /// Convert layout to JSON string (with Box Model)
-pub fn layout_to_json(layout : @types.Layout) -> String {
+pub fn layout_to_json(layout : @layout_types.Layout) -> String {
   let buf = StringBuilder::new(size_hint=estimate_layout_json_size(layout))
   layout_to_json_impl(layout, buf)
   buf.to_string()
 }
 
 ///|
-fn estimate_layout_json_size(layout : @types.Layout) -> Int {
+fn estimate_layout_json_size(layout : @layout_types.Layout) -> Int {
   let mut estimated = 120 + layout.id.length() * 2
   for child in layout.children {
     estimated = estimated + estimate_layout_json_size(child) + 2
@@ -59,7 +59,10 @@ fn estimate_layout_json_size(layout : @types.Layout) -> Int {
 }
 
 ///|
-fn layout_to_json_impl(layout : @types.Layout, buf : StringBuilder) -> Unit {
+fn layout_to_json_impl(
+  layout : @layout_types.Layout,
+  buf : StringBuilder,
+) -> Unit {
   buf.write_string("{\"id\":\"")
   buf.write_string(escape_json_string(layout.id))
   buf.write_string("\",\"x\":")

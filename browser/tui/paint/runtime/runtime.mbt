@@ -13,7 +13,7 @@ pub struct PreparedPaint {
 ///|
 pub fn prepare_viewport_paint(
   node : @node.Node,
-  layout : @types.Layout,
+  layout : @layout_types.Layout,
   viewport_top : Double,
   viewport_bottom : Double,
   parent_y : Double,

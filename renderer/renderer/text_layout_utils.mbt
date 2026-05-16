@@ -200,7 +200,7 @@ pub struct TextMetricsProvider {
     @style.WritingMode,
     Double,
     String,
-  ) -> @types.MeasureFunc
+  ) -> @layout_types.MeasureFunc
 }
 
 ///|
@@ -213,7 +213,7 @@ pub fn TextMetricsProvider::new(
     @style.WritingMode,
     Double,
     String,
-  ) -> @types.MeasureFunc,
+  ) -> @layout_types.MeasureFunc,
 ) -> TextMetricsProvider {
   { func, }
 }
@@ -364,7 +364,7 @@ fn create_text_measure_with_provider(
   font_family? : String = "",
   letter_spacing? : Double = 0.0,
   word_spacing? : Double = 0.0,
-) -> @types.MeasureFunc {
+) -> @layout_types.MeasureFunc {
   fn white_space_collapses_edges(white_space : @style.WhiteSpace) -> Bool {
     match white_space {
       @style.WhiteSpace::Normal
@@ -510,7 +510,7 @@ fn create_text_measure(
   white_space : @style.WhiteSpace,
   writing_mode : @style.WritingMode,
   font_family? : String = "",
-) -> @types.MeasureFunc {
+) -> @layout_types.MeasureFunc {
   let raw_trimmed = trim_collapsible_whitespace_edges(text)
   let mut trimmed = if raw_trimmed.is_empty() && !text.is_empty() {
     " "
@@ -631,7 +631,7 @@ fn create_text_measure(
     func: fn(
       available_width : Double,
       available_height : Double,
-    ) -> @types.IntrinsicSize {
+    ) -> @layout_types.IntrinsicSize {
       // For white-space: nowrap, don't wrap text
       let no_wrap = match white_space {
         @style.WhiteSpace::Nowrap => true

@@ -35,7 +35,7 @@ pub fn get_content_height(html : String, width : Int, height : Int) -> Int {
 ///|
 /// Calculate the actual content extent (maximum y + height of all elements)
 /// This handles cases where parent has height: 100% but children extend beyond
-fn calculate_content_extent(layout : @types.Layout) -> Double {
+fn calculate_content_extent(layout : @layout_types.Layout) -> Double {
   // Start with this element's bottom edge
   let mut max_extent = layout.y + layout.height
   // Check all children recursively

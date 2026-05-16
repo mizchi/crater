@@ -32,8 +32,8 @@ test "taffy/gridflex_column_integration" {
     display: @types.Flex,
     justify_content: @types.FlexStart,
   }
-  let root_child0_child0_measure = @types.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let root_child0_child0_measure = @layout_types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -47,8 +47,8 @@ test "taffy/gridflex_column_integration" {
     display: @types.Flex,
     justify_content: @types.FlexStart,
   }
-  let root_child0_child1_measure = @types.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let root_child0_child1_measure = @layout_types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -62,8 +62,8 @@ test "taffy/gridflex_column_integration" {
     display: @types.Flex,
     justify_content: @types.FlexStart,
   }
-  let root_child0_child2_measure = @types.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let root_child0_child2_measure = @layout_types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -77,8 +77,8 @@ test "taffy/gridflex_column_integration" {
     display: @types.Flex,
     justify_content: @types.FlexStart,
   }
-  let root_child0_child3_measure = @types.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let root_child0_child3_measure = @layout_types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -246,8 +246,8 @@ test "taffy/gridflex_kitchen_sink" {
     display: @types.Flex,
     justify_content: @types.FlexStart,
   }
-  let root_child0_child1_measure = @types.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let root_child0_child1_measure = @layout_types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -261,8 +261,8 @@ test "taffy/gridflex_kitchen_sink" {
     display: @types.Flex,
     justify_content: @types.FlexStart,
   }
-  let root_child0_child2_measure = @types.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let root_child0_child2_measure = @layout_types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -276,8 +276,8 @@ test "taffy/gridflex_kitchen_sink" {
     display: @types.Flex,
     justify_content: @types.FlexStart,
   }
-  let root_child0_child3_measure = @types.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let root_child0_child3_measure = @layout_types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -628,8 +628,8 @@ test "taffy/gridflex_row_integration" {
     display: @types.Flex,
     justify_content: @types.FlexStart,
   }
-  let root_child0_child0_measure = @types.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let root_child0_child0_measure = @layout_types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -643,8 +643,8 @@ test "taffy/gridflex_row_integration" {
     display: @types.Flex,
     justify_content: @types.FlexStart,
   }
-  let root_child0_child1_measure = @types.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let root_child0_child1_measure = @layout_types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -658,8 +658,8 @@ test "taffy/gridflex_row_integration" {
     display: @types.Flex,
     justify_content: @types.FlexStart,
   }
-  let root_child0_child2_measure = @types.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let root_child0_child2_measure = @layout_types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0 }
     },
   }
@@ -673,8 +673,8 @@ test "taffy/gridflex_row_integration" {
     display: @types.Flex,
     justify_content: @types.FlexStart,
   }
-  let root_child0_child3_measure = @types.MeasureFunc::{
-    func: fn(_w : Double, _h : Double) -> @types.IntrinsicSize {
+  let root_child0_child3_measure = @layout_types.MeasureFunc::{
+    func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
       { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0 }
     },
   }

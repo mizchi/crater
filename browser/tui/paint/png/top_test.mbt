@@ -19,7 +19,7 @@ test "tui paint png export exports png" {
     top: 0.0,
     bottom: 0.0,
   }
-  let layout : @types.Layout = {
+  let layout : @layout_types.Layout = {
     id: "root",
     x: 0.0,
     y: 0.0,

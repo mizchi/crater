@@ -7,11 +7,11 @@
 fn compute_layout(
   node : @tree.Node,
   viewport : @types.Size[Double],
-) -> @types.Layout {
-  let ctx : @types.LayoutContext = {
+) -> @layout_types.Layout {
+  let ctx : @layout_types.LayoutContext = {
     available_width: viewport.width,
     available_height: Some(viewport.height),
-    sizing_mode: @types.MaxContent,
+    sizing_mode: @layout_types.MaxContent,
     viewport_width: viewport.width,
     viewport_height: viewport.height,
     stretch_width: false,

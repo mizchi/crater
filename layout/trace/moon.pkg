@@ -1,11 +1,12 @@
 import {
   "mizchi/crater-core/node",
-  "mizchi/crater-core" @types,
+  "mizchi/crater-core" @layout_types,
 }
 
 import {
   "mizchi/crater-core/style",
   "mizchi/crater-layout/flex",
+  "mizchi/crater-core/values" @types,
 } for "test"
 
 import {
