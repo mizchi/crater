@@ -18,7 +18,7 @@ pub fn Scene::new(root : SVGNode) -> Scene {
 ///|
 /// Create an empty scene with a group root
 pub fn Scene::empty() -> Scene {
-  svg_scene_from_msvg(@msvg.Scene::empty())
+  Scene::from_msvg(@msvg.Scene::empty())
 }
 
 ///|
@@ -52,4 +52,32 @@ fn Scene::sync_animation_state_from_msvg(
 ) -> Unit {
   self.dirty = source.dirty
   self.root.sync_animation_tree_state_from_msvg(source.root)
+}
+
+///|
+fn Scene::to_msvg(self : Scene) -> @msvg.Scene {
+  @msvg.Scene::{ root: self.root.to_msvg(), dirty: self.dirty }
+}
+
+///|
+fn Scene::from_msvg(scene : @msvg.Scene) -> Scene {
+  { root: SVGNode::from_msvg(scene.root), dirty: scene.dirty }
+}
+
+///|
+fn Scene::sync_dirty_state_from_msvg(
+  self : Scene,
+  source : @msvg.Scene,
+) -> Unit {
+  self.dirty = source.dirty
+  self.root.sync_dirty_state_from_msvg(source.root)
+}
+
+///|
+fn Scene::sync_z_order_state_from_msvg(
+  self : Scene,
+  source : @msvg.Scene,
+) -> Unit {
+  self.dirty = source.dirty
+  self.root.sync_z_order_state_from_msvg(source.root)
 }

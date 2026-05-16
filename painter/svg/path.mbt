@@ -38,7 +38,7 @@ pub fn raster_path(
       None => None
     },
     flatness,
-    pixel_setter_to_msvg(setter),
+    setter.to_msvg(),
   )
 }
 

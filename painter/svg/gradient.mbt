@@ -24,8 +24,8 @@ pub fn LinearGradient::new(
   y2 : Double,
   stops : Array[GradientStop],
 ) -> LinearGradient {
-  linear_gradient_from_msvg(
-    @msvg.LinearGradient::new(x1, y1, x2, y2, stops.map(gradient_stop_to_msvg)),
+  LinearGradient::from_msvg(
+    @msvg.LinearGradient::new(x1, y1, x2, y2, stops.map(fn(s) { s.to_msvg() })),
   )
 }
 
@@ -35,7 +35,7 @@ pub fn LinearGradient::horizontal(
   start_color : Color,
   end_color : Color,
 ) -> LinearGradient {
-  linear_gradient_from_msvg(
+  LinearGradient::from_msvg(
     @msvg.LinearGradient::horizontal(
       start_color.to_msvg(),
       end_color.to_msvg(),
@@ -49,7 +49,7 @@ pub fn LinearGradient::vertical(
   start_color : Color,
   end_color : Color,
 ) -> LinearGradient {
-  linear_gradient_from_msvg(
+  LinearGradient::from_msvg(
     @msvg.LinearGradient::vertical(
       start_color.to_msvg(),
       end_color.to_msvg(),
@@ -60,7 +60,7 @@ pub fn LinearGradient::vertical(
 ///|
 /// Interpolate color at position t (0.0-1.0)
 pub fn LinearGradient::color_at(self : LinearGradient, t : Double) -> Color {
-  Color::from_msvg(linear_gradient_to_msvg(self).color_at(t))
+  Color::from_msvg(self.to_msvg().color_at(t))
 }
 
 ///|
@@ -100,8 +100,8 @@ pub fn RadialGradient::new(
   r : Double,
   stops : Array[GradientStop],
 ) -> RadialGradient {
-  radial_gradient_from_msvg(
-    @msvg.RadialGradient::new(cx, cy, r, stops.map(gradient_stop_to_msvg)),
+  RadialGradient::from_msvg(
+    @msvg.RadialGradient::new(cx, cy, r, stops.map(fn(s) { s.to_msvg() })),
   )
 }
 
@@ -114,5 +114,87 @@ pub fn RadialGradient::color_at(
   width : Double,
   height : Double,
 ) -> Color {
-  Color::from_msvg(radial_gradient_to_msvg(self).color_at(px, py, width, height))
+  Color::from_msvg(self.to_msvg().color_at(px, py, width, height))
+}
+
+///|
+fn SpreadMethod::from_msvg(spread : @msvg.SpreadMethod) -> SpreadMethod {
+  match spread {
+    Pad => Pad
+    Repeat => Repeat
+    Reflect => Reflect
+  }
+}
+
+///|
+fn SpreadMethod::to_msvg(self : SpreadMethod) -> @msvg.SpreadMethod {
+  match self {
+    Pad => @msvg.SpreadMethod::Pad
+    Repeat => @msvg.SpreadMethod::Repeat
+    Reflect => @msvg.SpreadMethod::Reflect
+  }
+}
+
+///|
+fn GradientStop::from_msvg(stop : @msvg.GradientStop) -> GradientStop {
+  { offset: stop.offset, color: Color::from_msvg(stop.color) }
+}
+
+///|
+fn GradientStop::to_msvg(self : GradientStop) -> @msvg.GradientStop {
+  @msvg.GradientStop::{ offset: self.offset, color: self.color.to_msvg() }
+}
+
+///|
+fn LinearGradient::from_msvg(grad : @msvg.LinearGradient) -> LinearGradient {
+  {
+    x1: grad.x1,
+    y1: grad.y1,
+    x2: grad.x2,
+    y2: grad.y2,
+    stops: grad.stops.map(GradientStop::from_msvg),
+    spread_method: SpreadMethod::from_msvg(grad.spread_method),
+  }
+}
+
+///|
+fn LinearGradient::to_msvg(self : LinearGradient) -> @msvg.LinearGradient {
+  @msvg.LinearGradient::{
+    x1: self.x1,
+    y1: self.y1,
+    x2: self.x2,
+    y2: self.y2,
+    stops: self.stops.map(fn(s) { s.to_msvg() }),
+    spread_method: self.spread_method.to_msvg(),
+    units: @msvg.GradientUnits::ObjectBoundingBox,
+    transform: @msvg.Transform::identity(),
+  }
+}
+
+///|
+fn RadialGradient::from_msvg(grad : @msvg.RadialGradient) -> RadialGradient {
+  {
+    cx: grad.cx,
+    cy: grad.cy,
+    fx: grad.fx,
+    fy: grad.fy,
+    r: grad.r,
+    stops: grad.stops.map(GradientStop::from_msvg),
+    spread_method: SpreadMethod::from_msvg(grad.spread_method),
+  }
+}
+
+///|
+fn RadialGradient::to_msvg(self : RadialGradient) -> @msvg.RadialGradient {
+  @msvg.RadialGradient::{
+    cx: self.cx,
+    cy: self.cy,
+    fx: self.fx,
+    fy: self.fy,
+    r: self.r,
+    stops: self.stops.map(fn(s) { s.to_msvg() }),
+    spread_method: self.spread_method.to_msvg(),
+    units: @msvg.GradientUnits::ObjectBoundingBox,
+    transform: @msvg.Transform::identity(),
+  }
 }

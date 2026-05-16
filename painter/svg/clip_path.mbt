@@ -64,7 +64,7 @@ fn ClipPath::from_msvg(clip : @msvg.ClipPath) -> ClipPath {
     id: clip.id,
     shape: Shape::from_msvg(clip.shape),
     transform: Transform::from_msvg(clip.transform),
-    clip_rule: fill_rule_from_msvg(clip.clip_rule),
+    clip_rule: FillRule::from_msvg(clip.clip_rule),
   }
 }
 
@@ -74,7 +74,7 @@ fn ClipPath::to_msvg(self : ClipPath) -> @msvg.ClipPath {
     id: self.id,
     shape: self.shape.to_msvg(),
     transform: self.transform.to_msvg(),
-    clip_rule: fill_rule_to_msvg(self.clip_rule),
+    clip_rule: self.clip_rule.to_msvg(),
     units: @msvg.ClipPathUnits::UserSpaceOnUse,
   }
 }
