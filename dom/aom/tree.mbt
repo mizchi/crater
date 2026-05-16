@@ -1170,57 +1170,12 @@ fn find_headings_recursive(
 // =============================================================================
 // LayoutTree Integration
 // =============================================================================
-
-///|
-/// Extract bounds from LayoutTree node map into a Map[String, Bounds]
-/// Uses the layout node's id as key (which corresponds to HTML element id)
-pub fn extract_bounds_from_layout(
-  layout_tree : @layout.LayoutTree,
-) -> Map[String, Bounds] {
-  let bounds_map : Map[String, Bounds] = {}
-  extract_bounds_recursive(layout_tree.root, bounds_map)
-  bounds_map
-}
-
-///|
-fn extract_bounds_recursive(
-  node : @layout.LayoutNode,
-  bounds_map : Map[String, Bounds],
-) -> Unit {
-  // Add bounds for this node if it has a non-empty id
-  if !node.id.is_empty() {
-    let bounds = Bounds::new(
-      node.computed_x,
-      node.computed_y,
-      node.computed_width,
-      node.computed_height,
-    )
-    bounds_map[node.id] = bounds
-    let source_id = extract_element_id(node.id)
-    if !source_id.is_empty() {
-      bounds_map[source_id] = bounds
-    }
-  }
-  // Recurse into children
-  for child in node.children {
-    extract_bounds_recursive(child, bounds_map)
-  }
-}
-
-///|
-/// Build AccessibilityTree from HTML and attach layout bounds from LayoutTree
-/// This is the main integration function for combining a11y and layout
-pub fn build_accessibility_tree_with_layout(
-  doc : @html.Document,
-  layout_tree : @layout.LayoutTree,
-) -> AccessibilityTree {
-  // Build accessibility tree
-  let a11y_tree = build_accessibility_tree(doc)
-  // Extract bounds from layout tree
-  let bounds_map = extract_bounds_from_layout(layout_tree)
-  // Attach bounds to accessibility nodes
-  attach_bounds(a11y_tree, bounds_map)
-}
+//
+// The `LayoutTree`-flavored helpers (extract_bounds_from_layout,
+// build_accessibility_tree_with_layout) live in
+// `dom/layout/aom_bridge/` so this package does not need a layout dep.
+// Consumers using the renderer's `@core.Layout` output should call
+// `build_accessibility_tree_with_node_layout` below.
 
 ///|
 /// Extract bounds from @types.Layout (renderer's layout result)

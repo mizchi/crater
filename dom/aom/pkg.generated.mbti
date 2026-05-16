@@ -4,7 +4,6 @@ package "mizchi/crater-dom/aom"
 import {
   "mizchi/crater-core",
   "mizchi/crater-dom/html",
-  "mizchi/crater-layout/tree",
   "moonbitlang/core/debug",
 }
 
@@ -16,8 +15,6 @@ pub fn build_accessibility_tree(@html.Document) -> AccessibilityTree
 pub fn build_accessibility_tree_from_element(@html.Element) -> AccessibilityTree
 
 pub fn build_accessibility_tree_lightweight(@html.Document) -> AccessibilityTree
-
-pub fn build_accessibility_tree_with_layout(@html.Document, @tree.LayoutTree) -> AccessibilityTree
 
 pub fn build_accessibility_tree_with_node_layout(@html.Document, @crater-core.Layout) -> AccessibilityTree
 
@@ -34,8 +31,6 @@ pub fn compute_accessible_name_with_label(@html.Element, (String) -> @html.Eleme
 pub fn compute_role(@html.Element, RoleMappingContext) -> Role
 
 pub fn compute_tab_order(AccessibilityTree) -> Array[FocusableItem]
-
-pub fn extract_bounds_from_layout(@tree.LayoutTree) -> Map[String, Bounds]
 
 pub fn extract_bounds_from_node_layout(@crater-core.Layout) -> Map[String, Bounds]
 

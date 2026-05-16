@@ -2,8 +2,10 @@ import {
   "mizchi/crater-dom/aom" @aom,
   "mizchi/crater-dom/html" @html,
   "mizchi/crater-layout" @layout,
-  "mizchi/crater-dom/layout/html_tree" @layout_html_tree,
-  "mizchi/crater-dom/layout/aom_bridge" @aom_bridge,
-} for "test"
+}
 
-supported_targets = "js+native"
+import {
+  "mizchi/crater-core" @types,
+  "mizchi/crater-core/style" @style,
+  "mizchi/crater-dom/layout/html_tree" @layout_html_tree,
+} for "test"
