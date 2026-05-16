@@ -11,6 +11,7 @@ import {
   DEFAULT_TEXT_FONT_FAMILY,
   resolveEffectiveFontFamily,
 } from "../../scripts/font-family-defaults.ts";
+import { pickNearestFontWeight } from "../../scripts/font-weight-resolve.ts";
 import {
   listBundledWptFonts,
   resolveBundledWptFontUrl,
@@ -244,6 +245,39 @@ function getFontInstance(fontFamily: string, isBold: boolean): FontInstance | nu
   return isBold && fallback.bold ? fallback.bold : fallback.regular || null;
 }
 
+function entryFacesByWeight(
+  entry: { regular?: FontInstance; bold?: FontInstance },
+): Map<number, FontInstance> {
+  const faces = new Map<number, FontInstance>();
+  if (entry.regular) faces.set(400, entry.regular);
+  if (entry.bold) faces.set(700, entry.bold);
+  return faces;
+}
+
+function getFontInstanceByWeight(
+  fontFamily: string,
+  weight: number,
+): FontInstance | null {
+  const families = resolveEffectiveFontFamily(fontFamily)
+    .split(",")
+    .map((f) => f.trim().replace(/['"]/g, "").toLowerCase());
+  for (const f of families) {
+    const norm = ALIASES[f] || f;
+    const entry = fontCache.get(norm);
+    if (!entry) continue;
+    const faces = entryFacesByWeight(entry);
+    if (faces.size === 0) continue;
+    const picked = pickNearestFontWeight([...faces.keys()], weight);
+    if (picked !== null) return faces.get(picked) ?? null;
+  }
+  const fallback = fontCache.get("arial") || fontCache.values().next().value;
+  if (!fallback) return null;
+  const faces = entryFacesByWeight(fallback);
+  if (faces.size === 0) return null;
+  const picked = pickNearestFontWeight([...faces.keys()], weight);
+  return picked !== null ? faces.get(picked) ?? null : null;
+}
+
 // ============================================================
 // Install global providers
 // ============================================================
@@ -368,6 +402,89 @@ if (!defaultFont) {
   (globalThis as any).__craterAscentForFamily = (ff: string) => {
     const font = getFontInstance(ff, false);
     return font ? font.ascentRatio : 0.8;
+  };
+
+  // Numeric-weight-aware providers. Crater's paint pipeline preserves the
+  // resolved numeric font-weight; these hooks route it through the CSS Fonts
+  // L4 §5.2 nearest-weight algorithm so adding a medium / semibold face later
+  // is a font-loading change, not a code change. See GitHub issue #48.
+  (globalThis as any).__craterGlyphOutlineCommandsByWeight = (
+    cp: number,
+    fs: number,
+    weight: number,
+  ) => {
+    const font = getFontInstanceByWeight(DEFAULT_TEXT_FONT_FAMILY, weight);
+    if (!font || !font.glyphOutlineCommands) return "";
+    return font.glyphOutlineCommands(cp, fs);
+  };
+  (globalThis as any).__craterGlyphToSvgPathByWeight = (
+    cp: number,
+    fs: number,
+    weight: number,
+  ) => {
+    const font = getFontInstanceByWeight(DEFAULT_TEXT_FONT_FAMILY, weight);
+    if (!font || !font.glyphToSvgPath) return "";
+    return font.glyphToSvgPath(cp, fs);
+  };
+  (globalThis as any).__craterGlyphAdvanceByWeight = (
+    cp: number,
+    fs: number,
+    weight: number,
+  ) => {
+    const font = getFontInstanceByWeight(DEFAULT_TEXT_FONT_FAMILY, weight);
+    if (!font || !font.glyphAdvance) return fs * 0.5;
+    return font.glyphAdvance(cp, fs);
+  };
+  (globalThis as any).__craterKernAdvanceByWeight = (
+    cp1: number,
+    cp2: number,
+    fs: number,
+    weight: number,
+  ) => {
+    const font = getFontInstanceByWeight(DEFAULT_TEXT_FONT_FAMILY, weight);
+    if (!font || !font.kernAdvance) return 0;
+    return font.kernAdvance(cp1, cp2, fs);
+  };
+  (globalThis as any).__craterOutlineCommandsForFamilyByWeight = (
+    cp: number,
+    fs: number,
+    weight: number,
+    ff: string,
+  ) => {
+    const font = getFontInstanceByWeight(ff, weight);
+    if (!font || !font.glyphOutlineCommands) return "";
+    return font.glyphOutlineCommands(cp, fs);
+  };
+  (globalThis as any).__craterGlyphForFamilyByWeight = (
+    cp: number,
+    fs: number,
+    weight: number,
+    ff: string,
+  ) => {
+    const font = getFontInstanceByWeight(ff, weight);
+    if (!font || !font.glyphToSvgPath) return "";
+    return font.glyphToSvgPath(cp, fs);
+  };
+  (globalThis as any).__craterAdvanceForFamilyByWeight = (
+    cp: number,
+    fs: number,
+    weight: number,
+    ff: string,
+  ) => {
+    const font = getFontInstanceByWeight(ff, weight);
+    if (!font || !font.glyphAdvance) return fs * 0.5;
+    return font.glyphAdvance(cp, fs);
+  };
+  (globalThis as any).__craterKernForFamilyByWeight = (
+    cp1: number,
+    cp2: number,
+    fs: number,
+    weight: number,
+    ff: string,
+  ) => {
+    const font = getFontInstanceByWeight(ff, weight);
+    if (!font || !font.kernAdvance) return 0;
+    return font.kernAdvance(cp1, cp2, fs);
   };
 }
 

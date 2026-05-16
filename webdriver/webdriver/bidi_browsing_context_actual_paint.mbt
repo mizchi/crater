@@ -216,6 +216,147 @@ extern "js" fn js_ascent_for_family(font_family : String) -> Double =
   #|}
 
 ///|
+/// Numeric-weight-aware glyph outline JSON. Falls back to the boolean-bold
+/// dispatch when no by-weight hook is installed, so legacy JS providers keep
+/// working.
+extern "js" fn js_glyph_outline_commands_by_weight(
+  codepoint : Int,
+  font_size : Double,
+  font_weight : Double,
+) -> String =
+  #|(cp, fs, weight) => {
+  #|  const byWeight = globalThis.__craterGlyphOutlineCommandsByWeight;
+  #|  if (typeof byWeight === "function") {
+  #|    try { return String(byWeight(cp, fs, weight) || ""); } catch { return ""; }
+  #|  }
+  #|  const bold = weight >= 600;
+  #|  const fn = bold ? (globalThis.__craterGlyphOutlineCommandsBold || globalThis.__craterGlyphOutlineCommands) : globalThis.__craterGlyphOutlineCommands;
+  #|  if (typeof fn !== "function") return "";
+  #|  try { return String(fn(cp, fs) || ""); } catch { return ""; }
+  #|}
+
+///|
+extern "js" fn js_glyph_to_svg_path_by_weight(
+  codepoint : Int,
+  font_size : Double,
+  font_weight : Double,
+) -> String =
+  #|(cp, fs, weight) => {
+  #|  const byWeight = globalThis.__craterGlyphToSvgPathByWeight;
+  #|  if (typeof byWeight === "function") {
+  #|    try { return String(byWeight(cp, fs, weight) || ""); } catch { return ""; }
+  #|  }
+  #|  const bold = weight >= 600;
+  #|  const fn = bold ? (globalThis.__craterGlyphToSvgPathBold || globalThis.__craterGlyphToSvgPath) : globalThis.__craterGlyphToSvgPath;
+  #|  if (typeof fn !== "function") return "";
+  #|  try { return String(fn(cp, fs) || ""); } catch { return ""; }
+  #|}
+
+///|
+extern "js" fn js_glyph_advance_by_weight(
+  codepoint : Int,
+  font_size : Double,
+  font_weight : Double,
+) -> Double =
+  #|(cp, fs, weight) => {
+  #|  const byWeight = globalThis.__craterGlyphAdvanceByWeight;
+  #|  if (typeof byWeight === "function") {
+  #|    try { const v = Number(byWeight(cp, fs, weight)); return Number.isFinite(v) ? v : fs * 0.5; } catch { return fs * 0.5; }
+  #|  }
+  #|  const bold = weight >= 600;
+  #|  const fn = bold ? (globalThis.__craterGlyphAdvanceBold || globalThis.__craterGlyphAdvance) : globalThis.__craterGlyphAdvance;
+  #|  if (typeof fn !== "function") return fs * 0.5;
+  #|  try { const v = Number(fn(cp, fs)); return Number.isFinite(v) ? v : fs * 0.5; } catch { return fs * 0.5; }
+  #|}
+
+///|
+extern "js" fn js_kern_advance_by_weight(
+  cp1 : Int,
+  cp2 : Int,
+  font_size : Double,
+  font_weight : Double,
+) -> Double =
+  #|(cp1, cp2, fs, weight) => {
+  #|  const byWeight = globalThis.__craterKernAdvanceByWeight;
+  #|  if (typeof byWeight === "function") {
+  #|    try { const v = Number(byWeight(cp1, cp2, fs, weight)); return Number.isFinite(v) ? v : 0; } catch { return 0; }
+  #|  }
+  #|  const bold = weight >= 600;
+  #|  const fn = bold ? (globalThis.__craterKernAdvanceBold || globalThis.__craterKernAdvance) : globalThis.__craterKernAdvance;
+  #|  if (typeof fn !== "function") return 0;
+  #|  try { const v = Number(fn(cp1, cp2, fs)); return Number.isFinite(v) ? v : 0; } catch { return 0; }
+  #|}
+
+///|
+extern "js" fn js_outline_commands_for_family_by_weight(
+  codepoint : Int,
+  font_size : Double,
+  font_weight : Double,
+  font_family : String,
+) -> String =
+  #|(cp, fs, weight, ff) => {
+  #|  const byWeight = globalThis.__craterOutlineCommandsForFamilyByWeight;
+  #|  if (typeof byWeight === "function") {
+  #|    try { return String(byWeight(cp, fs, weight, ff) || ""); } catch { return ""; }
+  #|  }
+  #|  const fn = globalThis.__craterOutlineCommandsForFamily;
+  #|  if (typeof fn !== "function") return "";
+  #|  try { return String(fn(cp, fs, weight >= 600, ff) || ""); } catch { return ""; }
+  #|}
+
+///|
+extern "js" fn js_glyph_for_family_by_weight(
+  codepoint : Int,
+  font_size : Double,
+  font_weight : Double,
+  font_family : String,
+) -> String =
+  #|(cp, fs, weight, ff) => {
+  #|  const byWeight = globalThis.__craterGlyphForFamilyByWeight;
+  #|  if (typeof byWeight === "function") {
+  #|    try { return String(byWeight(cp, fs, weight, ff) || ""); } catch { return ""; }
+  #|  }
+  #|  const fn = globalThis.__craterGlyphForFamily;
+  #|  if (typeof fn !== "function") return "";
+  #|  try { return String(fn(cp, fs, weight >= 600, ff) || ""); } catch { return ""; }
+  #|}
+
+///|
+extern "js" fn js_advance_for_family_by_weight(
+  codepoint : Int,
+  font_size : Double,
+  font_weight : Double,
+  font_family : String,
+) -> Double =
+  #|(cp, fs, weight, ff) => {
+  #|  const byWeight = globalThis.__craterAdvanceForFamilyByWeight;
+  #|  if (typeof byWeight === "function") {
+  #|    try { const v = Number(byWeight(cp, fs, weight, ff)); return Number.isFinite(v) ? v : fs * 0.5; } catch { return fs * 0.5; }
+  #|  }
+  #|  const fn = globalThis.__craterAdvanceForFamily;
+  #|  if (typeof fn !== "function") return fs * 0.5;
+  #|  try { const v = Number(fn(cp, fs, weight >= 600, ff)); return Number.isFinite(v) ? v : fs * 0.5; } catch { return fs * 0.5; }
+  #|}
+
+///|
+extern "js" fn js_kern_for_family_by_weight(
+  cp1 : Int,
+  cp2 : Int,
+  font_size : Double,
+  font_weight : Double,
+  font_family : String,
+) -> Double =
+  #|(cp1, cp2, fs, weight, ff) => {
+  #|  const byWeight = globalThis.__craterKernForFamilyByWeight;
+  #|  if (typeof byWeight === "function") {
+  #|    try { const v = Number(byWeight(cp1, cp2, fs, weight, ff)); return Number.isFinite(v) ? v : 0; } catch { return 0; }
+  #|  }
+  #|  const fn = globalThis.__craterKernForFamily;
+  #|  if (typeof fn !== "function") return 0;
+  #|  try { const v = Number(fn(cp1, cp2, fs, weight >= 600, ff)); return Number.isFinite(v) ? v : 0; } catch { return 0; }
+  #|}
+
+///|
 extern "js" fn has_bold_text_provider() -> Bool =
   #|() => typeof globalThis.__craterMeasureTextIntrinsicBold === "function"
 
@@ -364,13 +505,12 @@ fn ensure_paint_provider_initialized() -> Unit {
         )
       },
       get_glyph_by_weight: Some(fn(codepoint, font_size, font_weight) {
-        let is_bold = font_weight >= 600.0
-        resolve_js_glyph_commands(
-          use_outline_commands, codepoint, font_size, is_bold,
+        resolve_js_glyph_commands_by_weight(
+          use_outline_commands, codepoint, font_size, font_weight,
         )
       }),
       get_kern_by_weight: Some(fn(cp1, cp2, font_size, font_weight) {
-        js_kern_advance(cp1, cp2, font_size, font_weight >= 600.0)
+        js_kern_advance_by_weight(cp1, cp2, font_size, font_weight)
       }),
       get_glyph_for_family: Some(fn(
         codepoint,
@@ -391,9 +531,8 @@ fn ensure_paint_provider_initialized() -> Unit {
         font_weight,
         font_family,
       ) {
-        let is_bold = font_weight >= 600.0
-        resolve_js_family_glyph_commands(
-          use_outline_commands, codepoint, font_size, is_bold, font_family,
+        resolve_js_family_glyph_commands_by_weight(
+          use_outline_commands, codepoint, font_size, font_weight, font_family,
         )
       }),
       get_kern_for_family_by_weight: Some(fn(
@@ -403,11 +542,11 @@ fn ensure_paint_provider_initialized() -> Unit {
         font_weight,
         font_family,
       ) {
-        js_kern_for_family(
+        js_kern_for_family_by_weight(
           cp1,
           cp2,
           font_size,
-          font_weight >= 600.0,
+          font_weight,
           font_family,
         )
       }),
@@ -441,6 +580,67 @@ fn resolve_js_glyph_commands(
     }
     let commands = @svg.parse_path(svg_path)
     (commands, advance)
+  }
+}
+
+///|
+fn resolve_js_glyph_commands_by_weight(
+  use_outline_commands : Bool,
+  codepoint : Int,
+  font_size : Double,
+  font_weight : Double,
+) -> (Array[@svg.PathCommand], Double) {
+  let advance = js_glyph_advance_by_weight(codepoint, font_size, font_weight)
+  if use_outline_commands {
+    let json = js_glyph_outline_commands_by_weight(
+      codepoint, font_size, font_weight,
+    )
+    if json.length() == 0 || json == "[]" {
+      return ([], advance)
+    }
+    let commands = @rendering.parse_glyph_outline_commands_json(json)
+    (commands, advance)
+  } else {
+    let svg_path = js_glyph_to_svg_path_by_weight(
+      codepoint, font_size, font_weight,
+    )
+    if svg_path.length() == 0 {
+      return ([], advance)
+    }
+    let commands = @svg.parse_path(svg_path)
+    (commands, advance)
+  }
+}
+
+///|
+fn resolve_js_family_glyph_commands_by_weight(
+  use_outline_commands : Bool,
+  codepoint : Int,
+  font_size : Double,
+  font_weight : Double,
+  font_family : String,
+) -> (Array[@svg.PathCommand], Double)? {
+  let advance = js_advance_for_family_by_weight(
+    codepoint, font_size, font_weight, font_family,
+  )
+  if use_outline_commands {
+    let json = js_outline_commands_for_family_by_weight(
+      codepoint, font_size, font_weight, font_family,
+    )
+    if json.length() == 0 || json == "[]" {
+      return None
+    }
+    let commands = @rendering.parse_glyph_outline_commands_json(json)
+    Some((commands, advance))
+  } else {
+    let svg_path = js_glyph_for_family_by_weight(
+      codepoint, font_size, font_weight, font_family,
+    )
+    if svg_path.length() == 0 {
+      return None
+    }
+    let commands = @svg.parse_path(svg_path)
+    Some((commands, advance))
   }
 }
 
