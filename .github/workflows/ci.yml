@@ -55,63 +55,23 @@ jobs:
       - name: Warm Pkl package cache
         run: pkf pkl-cache warm
 
-      - name: Install just
-        uses: extractions/setup-just@v4
+      - name: Setup Crater toolchain
+        uses: ./.github/actions/setup-crater
         with:
-          just-version: '1.50.0'
-
-      - name: Install native system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libsqlite3-dev
-
-      - name: Set up MoonBit
-        run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
-          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
-
-      - name: Install wasm-tools
-        run: |
-          curl -LO https://github.com/bytecodealliance/wasm-tools/releases/download/v1.219.1/wasm-tools-1.219.1-x86_64-linux.tar.gz
-          tar xzf wasm-tools-1.219.1-x86_64-linux.tar.gz
-          sudo mv wasm-tools-1.219.1-x86_64-linux/wasm-tools /usr/local/bin/
-          wasm-tools --version
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '24'
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v5
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Update MoonBit dependencies
-        run: |
-          moon update
-          moon update --manifest-path js/moon.mod.json
-          moon update --manifest-path browser/moon.mod.json
-          moon -C browser/native update
-          moon -C wasm update
+          wasm-tools: "true"
+          native-deps: "true"
 
       - name: Prefetch MoonBit dependencies
-        run: |
-          bash scripts/ci/prefetch-moon-deps.sh
-          bash scripts/ci/prefetch-moon-deps.sh --manifest-path js/moon.mod.json
-          bash scripts/ci/prefetch-moon-deps.sh --manifest-path browser/moon.mod.json
-          bash scripts/ci/prefetch-moon-deps.sh --manifest-path browser/native/moon.mod.json
-          bash scripts/ci/prefetch-moon-deps.sh --manifest-path wasm/moon.mod.json
-
-      - name: Restore rusty_v8 source binding cache
-        uses: actions/cache@v4
+        uses: ./.github/actions/moon-prefetch
         with:
-          path: ~/.cargo/.rusty_v8
-          key: rusty-v8-source-binding-v146.8.0-${{ runner.os }}
+          manifests: |
+            js/moon.mod.json
+            browser/moon.mod.json
+            browser/native/moon.mod.json
+            wasm/moon.mod.json
 
       - name: Prefetch rusty_v8 source binding
-        run: node scripts/prefetch-rusty-v8-source-binding.mjs --release v146.8.0
+        uses: ./.github/actions/rusty-v8-prefetch
 
       - name: Resolve affected base
         id: affected_base
@@ -159,62 +119,28 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install just
-        uses: extractions/setup-just@v4
+      - name: Setup Crater toolchain
+        uses: ./.github/actions/setup-crater
         with:
-          just-version: '1.50.0'
-
-      - name: Install native system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libsqlite3-dev
-
-      - name: Set up MoonBit
-        run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
-          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+          native-deps: "true"
+          pnpm-install: "false"
 
       - name: Show MoonBit version
         run: moon version --all
 
-      - name: Update dependencies
-        run: moon update
-
-      - name: Prefetch root dependencies
-        run: bash scripts/ci/prefetch-moon-deps.sh
-
-      - name: Update js dependencies
-        run: moon update --manifest-path js/moon.mod.json
-
-      - name: Prefetch js dependencies
-        run: bash scripts/ci/prefetch-moon-deps.sh --manifest-path js/moon.mod.json
-
-      - name: Update browser dependencies
-        run: moon update --manifest-path browser/moon.mod.json
-
-      - name: Prefetch browser dependencies
-        run: bash scripts/ci/prefetch-moon-deps.sh --manifest-path browser/moon.mod.json
-
-      - name: Update browser/native dependencies
-        run: moon -C browser/native update
-
-      - name: Prefetch browser/native dependencies
-        run: bash scripts/ci/prefetch-moon-deps.sh --manifest-path browser/native/moon.mod.json
-
-      - name: Restore rusty_v8 source binding cache
-        uses: actions/cache@v4
+      - name: Prefetch MoonBit dependencies
+        uses: ./.github/actions/moon-prefetch
         with:
-          path: ~/.cargo/.rusty_v8
-          key: rusty-v8-source-binding-${{ runner.os }}-${{ hashFiles('browser/native/moon.mod.json', 'webdriver/moon.mod.json') }}
-
-      - name: Update wasm dependencies
-        run: moon -C wasm update
-
-      - name: Prefetch wasm dependencies
-        run: bash scripts/ci/prefetch-moon-deps.sh --manifest-path wasm/moon.mod.json
+          manifests: |
+            js/moon.mod.json
+            browser/moon.mod.json
+            browser/native/moon.mod.json
+            wasm/moon.mod.json
 
       - name: Prefetch rusty_v8 source binding
-        run: node scripts/prefetch-rusty-v8-source-binding.mjs --release v146.8.0
+        uses: ./.github/actions/rusty-v8-prefetch
+        with:
+          cache-extra-key: ${{ hashFiles('browser/native/moon.mod.json', 'webdriver/moon.mod.json') }}
 
       - name: Check code
         run: just check
@@ -263,26 +189,14 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Set up MoonBit
-        run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
-          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+      - name: Setup Crater toolchain
+        uses: ./.github/actions/setup-crater
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
+      - name: Prefetch MoonBit dependencies
+        uses: ./.github/actions/moon-prefetch
         with:
-          node-version: '24'
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v5
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Update MoonBit dependencies
-        run: |
-          moon update
-          moon update --manifest-path js/moon.mod.json
+          manifests: |
+            js/moon.mod.json
 
       - name: Build js package
         run: pnpm run build
@@ -305,39 +219,16 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install just
-        uses: extractions/setup-just@v4
+      - name: Setup Crater toolchain
+        uses: ./.github/actions/setup-crater
         with:
-          just-version: '1.50.0'
+          wasm-tools: "true"
 
-      - name: Set up MoonBit
-        run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
-          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
-
-      - name: Install wasm-tools
-        run: |
-          curl -LO https://github.com/bytecodealliance/wasm-tools/releases/download/v1.219.1/wasm-tools-1.219.1-x86_64-linux.tar.gz
-          tar xzf wasm-tools-1.219.1-x86_64-linux.tar.gz
-          sudo mv wasm-tools-1.219.1-x86_64-linux/wasm-tools /usr/local/bin/
-          wasm-tools --version
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
+      - name: Prefetch MoonBit dependencies
+        uses: ./.github/actions/moon-prefetch
         with:
-          node-version: '24'
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v5
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Update MoonBit dependencies
-        run: moon update
-
-      - name: Update wasm module dependencies
-        run: moon -C wasm update
+          manifests: |
+            wasm/moon.mod.json
 
       - name: Build and test WASM
         run: |
@@ -383,39 +274,16 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install just
-        uses: extractions/setup-just@v4
+      - name: Setup Crater toolchain
+        uses: ./.github/actions/setup-crater
         with:
-          just-version: '1.50.0'
+          wasm-tools: "true"
 
-      - name: Set up MoonBit
-        run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
-          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
-
-      - name: Install wasm-tools
-        run: |
-          curl -LO https://github.com/bytecodealliance/wasm-tools/releases/download/v1.219.1/wasm-tools-1.219.1-x86_64-linux.tar.gz
-          tar xzf wasm-tools-1.219.1-x86_64-linux.tar.gz
-          sudo mv wasm-tools-1.219.1-x86_64-linux/wasm-tools /usr/local/bin/
-          wasm-tools --version
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
+      - name: Prefetch MoonBit dependencies
+        uses: ./.github/actions/moon-prefetch
         with:
-          node-version: '24'
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v5
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Update MoonBit dependencies
-        run: moon update
-
-      - name: Update wasm module dependencies
-        run: moon -C wasm update
+          manifests: |
+            wasm/moon.mod.json
 
       - name: Build WASM
         run: just build-wasm && just transpile-wasm
@@ -445,31 +313,14 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install just
-        uses: extractions/setup-just@v4
+      - name: Setup Crater toolchain
+        uses: ./.github/actions/setup-crater
+
+      - name: Prefetch MoonBit dependencies
+        uses: ./.github/actions/moon-prefetch
         with:
-          just-version: '1.50.0'
-
-      - name: Set up MoonBit
-        run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
-          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '24'
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v5
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Update MoonBit dependencies
-        run: |
-          moon update
-          moon update --manifest-path browser/moon.mod.json
+          manifests: |
+            browser/moon.mod.json
 
       - name: Run WPT DOM shard
         run: |
@@ -548,57 +399,24 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install just
-        uses: extractions/setup-just@v4
+      - name: Setup Crater toolchain
+        uses: ./.github/actions/setup-crater
         with:
-          just-version: '1.50.0'
+          deno: "true"
+          uv: "true"
 
-      - name: Set up MoonBit
-        run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
-          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
+      - name: Prefetch MoonBit dependencies
+        uses: ./.github/actions/moon-prefetch
         with:
-          node-version: '24'
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v5
-
-      - name: Install Deno
-        uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          version: "latest"
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Update MoonBit dependencies
-        run: |
-          moon update
-          moon update --manifest-path browser/moon.mod.json
-          moon update --manifest-path webdriver/moon.mod.json
-          moon update --manifest-path testing/moon.mod.json
-
-      - name: Prefetch BiDi dependencies
-        run: |
-          bash scripts/ci/prefetch-moon-deps.sh --manifest-path webdriver/moon.mod.json
-          bash scripts/ci/prefetch-moon-deps.sh --manifest-path testing/moon.mod.json
-
-      - name: Restore rusty_v8 source binding cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cargo/.rusty_v8
-          key: rusty-v8-source-binding-${{ runner.os }}-${{ hashFiles('browser/native/moon.mod.json', 'webdriver/moon.mod.json') }}
+          manifests: |
+            browser/moon.mod.json
+            webdriver/moon.mod.json
+            testing/moon.mod.json
 
       - name: Prefetch rusty_v8 source binding
-        run: node scripts/prefetch-rusty-v8-source-binding.mjs --release v146.8.0
+        uses: ./.github/actions/rusty-v8-prefetch
+        with:
+          cache-extra-key: ${{ hashFiles('browser/native/moon.mod.json', 'webdriver/moon.mod.json') }}
 
       - name: Build BiDi server
         run: |
@@ -656,31 +474,10 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install just
-        uses: extractions/setup-just@v4
+      - name: Setup Crater toolchain
+        uses: ./.github/actions/setup-crater
         with:
-          just-version: '1.50.0'
-
-      - name: Set up MoonBit
-        run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
-          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '24'
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v5
-
-      - name: Install Deno
-        uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
-
-      - name: Install dependencies
-        run: pnpm install
+          deno: "true"
 
       - name: Typecheck Playwright adapter TypeScript
         run: pnpm typecheck
@@ -696,23 +493,17 @@ jobs:
         if: steps.playwright_bidi_playwright_cache.outputs.cache-hit != 'true'
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Update MoonBit dependencies
-        run: |
-          moon update
-          moon update --manifest-path browser/moon.mod.json
-          moon update --manifest-path webdriver/moon.mod.json
-
-      - name: Prefetch BiDi dependencies
-        run: bash scripts/ci/prefetch-moon-deps.sh --manifest-path webdriver/moon.mod.json
-
-      - name: Restore rusty_v8 source binding cache
-        uses: actions/cache@v4
+      - name: Prefetch MoonBit dependencies
+        uses: ./.github/actions/moon-prefetch
         with:
-          path: ~/.cargo/.rusty_v8
-          key: rusty-v8-source-binding-${{ runner.os }}-${{ hashFiles('browser/native/moon.mod.json', 'webdriver/moon.mod.json') }}
+          manifests: |
+            browser/moon.mod.json
+            webdriver/moon.mod.json
 
       - name: Prefetch rusty_v8 source binding
-        run: node scripts/prefetch-rusty-v8-source-binding.mjs --release v146.8.0
+        uses: ./.github/actions/rusty-v8-prefetch
+        with:
+          cache-extra-key: ${{ hashFiles('browser/native/moon.mod.json', 'webdriver/moon.mod.json') }}
 
       - name: Build BiDi server
         run: bash scripts/ci/run-moon-step.sh bidi-build moon -C webdriver build bidi_main --target js --release -j 1
@@ -785,21 +576,8 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install just
-        uses: extractions/setup-just@v4
-        with:
-          just-version: '1.50.0'
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '24'
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v5
-
-      - name: Install dependencies
-        run: pnpm install
+      - name: Setup Crater toolchain
+        uses: ./.github/actions/setup-crater
 
       - name: Validate flaker/report tool tests
         run: pnpm exec vitest run scripts/flaker-cli-path.test.ts scripts/flaker-collected-summary-paths.test.ts scripts/flaker-config.test.ts scripts/flaker-quarantine.test.ts scripts/flaker-task-config.test.ts scripts/flaker-task-run.test.ts scripts/flaker-task-record.test.ts scripts/flaker-task-record-artifacts.test.ts scripts/flaker-task-summary.test.ts scripts/flaker-batch-summary-core.test.ts scripts/flaker-batch-summary-loader.test.ts scripts/flaker-batch-summary.test.ts scripts/playwright-adapter-support.test.ts scripts/playwright-report-summary.test.ts scripts/script-boundary.test.ts scripts/vrt-report-contract.test.ts scripts/vrt-report-loader.test.ts scripts/vrt-report-summary.test.ts scripts/vrt-report-summary-cli.test.ts tests/helpers/crater-vrt.test.ts
@@ -841,29 +619,11 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install just
-        uses: extractions/setup-just@v4
-        with:
-          just-version: '1.50.0'
+      - name: Setup Crater toolchain
+        uses: ./.github/actions/setup-crater
 
-      - name: Set up MoonBit
-        run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
-          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '24'
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v5
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Update MoonBit dependencies
-        run: moon update
+      - name: Prefetch MoonBit dependencies
+        uses: ./.github/actions/moon-prefetch
 
       - name: Validate VRT bench parser tests
         run: pnpm exec vitest run scripts/vrt-bench.test.ts
@@ -916,31 +676,10 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install just
-        uses: extractions/setup-just@v4
+      - name: Setup Crater toolchain
+        uses: ./.github/actions/setup-crater
         with:
-          just-version: '1.50.0'
-
-      - name: Set up MoonBit
-        run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
-          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '24'
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v5
-
-      - name: Install Deno
-        uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
-
-      - name: Install dependencies
-        run: pnpm install
+          deno: "true"
 
       - name: Restore paint VRT reference fixtures
         id: paint_vrt_reference_cache
@@ -989,23 +728,17 @@ jobs:
       - name: Install compatible fonts for VRT
         run: bash scripts/ci/install-compatible-fonts.sh
 
-      - name: Update MoonBit dependencies
-        run: |
-          moon update
-          moon update --manifest-path browser/moon.mod.json
-          moon update --manifest-path webdriver/moon.mod.json
-
-      - name: Prefetch BiDi dependencies
-        run: bash scripts/ci/prefetch-moon-deps.sh --manifest-path webdriver/moon.mod.json
-
-      - name: Restore rusty_v8 source binding cache
-        uses: actions/cache@v4
+      - name: Prefetch MoonBit dependencies
+        uses: ./.github/actions/moon-prefetch
         with:
-          path: ~/.cargo/.rusty_v8
-          key: rusty-v8-source-binding-${{ runner.os }}-${{ hashFiles('browser/native/moon.mod.json', 'webdriver/moon.mod.json') }}
+          manifests: |
+            browser/moon.mod.json
+            webdriver/moon.mod.json
 
       - name: Prefetch rusty_v8 source binding
-        run: node scripts/prefetch-rusty-v8-source-binding.mjs --release v146.8.0
+        uses: ./.github/actions/rusty-v8-prefetch
+        with:
+          cache-extra-key: ${{ hashFiles('browser/native/moon.mod.json', 'webdriver/moon.mod.json') }}
 
       - name: Build BiDi server
         run: bash scripts/ci/run-moon-step.sh bidi-build moon -C webdriver build bidi_main --target js --release -j 1
@@ -1210,31 +943,10 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install just
-        uses: extractions/setup-just@v4
+      - name: Setup Crater toolchain
+        uses: ./.github/actions/setup-crater
         with:
-          just-version: '1.50.0'
-
-      - name: Set up MoonBit
-        run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
-          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '24'
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v5
-
-      - name: Install Deno
-        uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
-
-      - name: Install dependencies
-        run: pnpm install
+          deno: "true"
 
       - name: Restore WPT VRT reference fixtures
         id: wpt_vrt_reference_cache
@@ -1257,23 +969,17 @@ jobs:
       - name: Install compatible fonts for VRT
         run: bash scripts/ci/install-compatible-fonts.sh
 
-      - name: Update MoonBit dependencies
-        run: |
-          moon update
-          moon update --manifest-path browser/moon.mod.json
-          moon update --manifest-path webdriver/moon.mod.json
-
-      - name: Prefetch BiDi dependencies
-        run: bash scripts/ci/prefetch-moon-deps.sh --manifest-path webdriver/moon.mod.json
-
-      - name: Restore rusty_v8 source binding cache
-        uses: actions/cache@v4
+      - name: Prefetch MoonBit dependencies
+        uses: ./.github/actions/moon-prefetch
         with:
-          path: ~/.cargo/.rusty_v8
-          key: rusty-v8-source-binding-${{ runner.os }}-${{ hashFiles('browser/native/moon.mod.json', 'webdriver/moon.mod.json') }}
+          manifests: |
+            browser/moon.mod.json
+            webdriver/moon.mod.json
 
       - name: Prefetch rusty_v8 source binding
-        run: node scripts/prefetch-rusty-v8-source-binding.mjs --release v146.8.0
+        uses: ./.github/actions/rusty-v8-prefetch
+        with:
+          cache-extra-key: ${{ hashFiles('browser/native/moon.mod.json', 'webdriver/moon.mod.json') }}
 
       - name: Build BiDi server
         run: bash scripts/ci/run-moon-step.sh bidi-build moon -C webdriver build bidi_main --target js --release -j 1

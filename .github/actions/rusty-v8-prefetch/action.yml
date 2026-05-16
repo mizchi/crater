@@ -1,0 +1,31 @@
+name: Prefetch rusty_v8 source binding
+description: >-
+  Restore the rusty_v8 source binding cache (keyed by release tag so the
+  key stays in sync with the prefetched version) and run the prefetch
+  script. Optional `cache-extra-key` can be used to scope the cache to
+  callers with different manifest fingerprints.
+
+inputs:
+  release:
+    description: rusty_v8 release tag (e.g. v146.8.0)
+    required: false
+    default: v146.8.0
+  cache-extra-key:
+    description: Extra cache key component (e.g. hashFiles output) to scope the cache
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Restore rusty_v8 source binding cache
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/.rusty_v8
+        key: rusty-v8-source-binding-${{ inputs.release }}-${{ runner.os }}-${{ inputs.cache-extra-key }}
+        restore-keys: |
+          rusty-v8-source-binding-${{ inputs.release }}-${{ runner.os }}-
+
+    - name: Prefetch rusty_v8 source binding
+      shell: bash
+      run: node scripts/prefetch-rusty-v8-source-binding.mjs --release ${{ inputs.release }}
