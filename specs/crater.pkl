@@ -405,7 +405,7 @@ scenarios {
     id = "paint.font-weight-numeric"
     name = "numeric font-weight survives paint"
     description =
-      "Preserve the resolved numeric font-weight (e.g. 500) through the painter instead of collapsing to is_bold. The MoonBit glyph provider keeps a by_weight slot, the JS FFI bridge passes the numeric weight (not a boolean), the JS side installs __craterGlyph*ByWeight hooks, and per-family face selection uses the CSS Fonts L4 §5.2 nearest-weight algorithm. Layer A: contract end-to-end. Layer B (separate PR): load medium / semibold faces so Luna VRT visibly improves. See GitHub issue #48."
+      "Preserve the resolved numeric font-weight (e.g. 500) through the painter instead of collapsing to is_bold. Layer A: contract end-to-end - the MoonBit glyph provider keeps a by_weight slot, the JS FFI bridge passes the numeric weight (not a boolean), the JS side installs __craterGlyph*ByWeight hooks, and per-family face selection uses the CSS Fonts L4 §5.2 nearest-weight algorithm. Layer B: the BiDi font loader populates FontEntry.byWeight from declared medium / semibold / light candidates in FONT_FILE_MAP, so installing fonts-noto-core or similar lets sans-serif font-weight: 500 render with NotoSans-Medium instead of falling back to regular. See GitHub issue #48."
     tags { "paint"; "font"; "issue:48"; "todo:now" }
     severity = "major"
     reviewStatus = "approved"
