@@ -5,7 +5,7 @@
 
 ///|
 fn set_square_glyph_provider_for_bench(advance_ratio : Double) -> Unit {
-  @raster.set_glyph_provider({
+  @glyph.set_glyph_provider({
     get_glyph: fn(_codepoint, font_size, _is_bold) {
       let advance = font_size * advance_ratio
       let commands : Array[@svg.PathCommand] = [
@@ -136,5 +136,5 @@ test "bench_glyph_wrapped_text_framebuffer" (b : @bench.T) {
     @raster.render_paint_node_to_framebuffer(paint_node, fb, palette)
     b.keep(fb)
   })
-  @raster.clear_glyph_provider()
+  @glyph.clear_glyph_provider()
 }

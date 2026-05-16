@@ -1,8 +1,8 @@
 ///|
 /// Render the scene to a pixel setter
 pub fn Scene::render(self : Scene, ctx : RenderContext) -> Unit {
-  let scene = scene_to_msvg(self)
-  scene.render(render_context_to_msvg(ctx))
+  let scene = self.to_msvg()
+  scene.render(ctx.to_msvg())
   self.clear_dirty()
 }
 
@@ -13,8 +13,8 @@ pub fn Scene::render_with_camera(
   ctx : RenderContext,
   camera : Camera,
 ) -> Unit {
-  let scene = scene_to_msvg(self)
-  scene.render_with_camera(render_context_to_msvg(ctx), camera_to_msvg(camera))
+  let scene = self.to_msvg()
+  scene.render_with_camera(ctx.to_msvg(), camera.to_msvg())
   self.clear_dirty()
 }
 
@@ -26,9 +26,9 @@ pub fn Scene::render_with_viewbox(
   viewbox : ViewBox,
   preserve_aspect_ratio : PreserveAspectRatio,
 ) -> Unit {
-  let scene = scene_to_msvg(self)
+  let scene = self.to_msvg()
   scene.render_with_viewbox(
-    render_context_to_msvg(ctx),
+    ctx.to_msvg(),
     viewbox.to_msvg(),
     preserve_aspect_ratio.to_msvg(),
   )
@@ -44,12 +44,12 @@ pub fn Scene::render_with_viewbox_and_camera(
   preserve_aspect_ratio : PreserveAspectRatio,
   camera : Camera,
 ) -> Unit {
-  let scene = scene_to_msvg(self)
+  let scene = self.to_msvg()
   scene.render_with_viewbox_and_camera(
-    render_context_to_msvg(ctx),
+    ctx.to_msvg(),
     viewbox.to_msvg(),
     preserve_aspect_ratio.to_msvg(),
-    camera_to_msvg(camera),
+    camera.to_msvg(),
   )
   self.clear_dirty()
 }

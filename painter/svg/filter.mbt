@@ -23,7 +23,11 @@ pub fn apply_blur(
   pixels : Array[Array[Color]],
   radius : Int,
 ) -> Array[Array[Color]] {
-  image_rows_from_msvg(@msvg.apply_blur(image_rows_to_msvg(pixels), radius))
+  @msvg.apply_blur(
+      pixels.map(fn(row) { row.map(fn(c) { c.to_msvg() }) }),
+      radius,
+    )
+    .map(fn(row) { row.map(Color::from_msvg) })
 }
 
 ///|
@@ -113,9 +117,9 @@ pub fn apply_drop_shadow(
   blur_radius : Int,
   shadow_color : Color,
 ) -> Image {
-  image_from_msvg(
+  Image::from_msvg(
     @msvg.apply_drop_shadow(
-      image_to_msvg(image),
+      image.to_msvg(),
       offset_x,
       offset_y,
       blur_radius,
@@ -127,7 +131,41 @@ pub fn apply_drop_shadow(
 ///|
 /// Apply a filter to an image (returns new image)
 pub fn apply_filter(image : Image, filter : Filter) -> Image {
-  image_from_msvg(
-    @msvg.apply_filter(image_to_msvg(image), filter_to_msvg(filter)),
+  Image::from_msvg(
+    @msvg.apply_filter(image.to_msvg(), filter.to_msvg()),
   )
+}
+
+///|
+fn Filter::from_msvg(filter : @msvg.Filter) -> Filter {
+  match filter {
+    Blur(value) => Blur(value)
+    DropShadow(dx, dy, blur, color) =>
+      DropShadow(dx, dy, blur, Color::from_msvg(color))
+    Brightness(value) => Brightness(value)
+    Contrast(value) => Contrast(value)
+    Grayscale(value) => Grayscale(value)
+    Sepia(value) => Sepia(value)
+    HueRotate(value) => HueRotate(value)
+    Invert(value) => Invert(value)
+    Saturate(value) => Saturate(value)
+    ColorMatrix(values) => ColorMatrix(values)
+  }
+}
+
+///|
+fn Filter::to_msvg(self : Filter) -> @msvg.Filter {
+  match self {
+    Blur(value) => @msvg.Filter::Blur(value)
+    DropShadow(dx, dy, blur, color) =>
+      @msvg.Filter::DropShadow(dx, dy, blur, color.to_msvg())
+    Brightness(value) => @msvg.Filter::Brightness(value)
+    Contrast(value) => @msvg.Filter::Contrast(value)
+    Grayscale(value) => @msvg.Filter::Grayscale(value)
+    Sepia(value) => @msvg.Filter::Sepia(value)
+    HueRotate(value) => @msvg.Filter::HueRotate(value)
+    Invert(value) => @msvg.Filter::Invert(value)
+    Saturate(value) => @msvg.Filter::Saturate(value)
+    ColorMatrix(values) => @msvg.Filter::ColorMatrix(values)
+  }
 }

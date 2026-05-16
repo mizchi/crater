@@ -73,7 +73,7 @@ pub fn blend_with_mode(
     @msvg.blend_with_mode(
       backdrop.to_msvg(),
       source.to_msvg(),
-      blend_mode_to_msvg(mode),
+      mode.to_msvg(),
     ),
   )
 }
@@ -85,11 +85,33 @@ pub fn blend_images(
   source : Image,
   mode : BlendMode,
 ) -> Image {
-  image_from_msvg(
+  Image::from_msvg(
     @msvg.blend_images(
-      image_to_msvg(backdrop),
-      image_to_msvg(source),
-      blend_mode_to_msvg(mode),
+      backdrop.to_msvg(),
+      source.to_msvg(),
+      mode.to_msvg(),
     ),
   )
+}
+
+///|
+fn BlendMode::to_msvg(self : BlendMode) -> @msvg.BlendMode {
+  match self {
+    Normal => @msvg.BlendMode::Normal
+    Multiply => @msvg.BlendMode::Multiply
+    Screen => @msvg.BlendMode::Screen
+    Overlay => @msvg.BlendMode::Overlay
+    Darken => @msvg.BlendMode::Darken
+    Lighten => @msvg.BlendMode::Lighten
+    ColorDodge => @msvg.BlendMode::ColorDodge
+    ColorBurn => @msvg.BlendMode::ColorBurn
+    HardLight => @msvg.BlendMode::HardLight
+    SoftLight => @msvg.BlendMode::SoftLight
+    Difference => @msvg.BlendMode::Difference
+    Exclusion => @msvg.BlendMode::Exclusion
+    Hue => @msvg.BlendMode::Hue
+    Saturation => @msvg.BlendMode::Saturation
+    ColorMode => @msvg.BlendMode::ColorMode
+    Luminosity => @msvg.BlendMode::Luminosity
+  }
 }

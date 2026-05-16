@@ -27,8 +27,8 @@ pub fn PixelSetter::with_clip(
   self : PixelSetter,
   clip : ClipRect,
 ) -> PixelSetter {
-  pixel_setter_from_msvg(
-    pixel_setter_to_msvg(self).with_clip(clip_rect_to_msvg(clip)),
+  PixelSetter::from_msvg(
+    self.to_msvg().with_clip(clip.to_msvg()),
   )
 }
 
@@ -40,9 +40,9 @@ pub fn PixelSetter::with_clip_and_offset(
   offset_x : Int,
   offset_y : Int,
 ) -> PixelSetter {
-  pixel_setter_from_msvg(
-    pixel_setter_to_msvg(self).with_clip_and_offset(
-      clip_rect_to_msvg(clip),
+  PixelSetter::from_msvg(
+    self.to_msvg().with_clip_and_offset(
+      clip.to_msvg(),
       offset_x,
       offset_y,
     ),
@@ -64,7 +64,7 @@ pub fn raster_line(
     x1,
     y1,
     color.to_msvg(),
-    pixel_setter_to_msvg(setter),
+    setter.to_msvg(),
   )
 }
 
@@ -87,7 +87,7 @@ pub fn raster_line_dashed(
     color.to_msvg(),
     dasharray,
     dashoffset,
-    pixel_setter_to_msvg(setter),
+    setter.to_msvg(),
   )
 }
 
@@ -104,7 +104,7 @@ pub fn raster_polyline_dashed(
     color.to_msvg(),
     dasharray,
     dashoffset,
-    pixel_setter_to_msvg(setter),
+    setter.to_msvg(),
   )
 }
 
@@ -123,7 +123,7 @@ pub fn raster_rect_stroke(
     w,
     h,
     color.to_msvg(),
-    pixel_setter_to_msvg(setter),
+    setter.to_msvg(),
   )
 }
 
@@ -142,7 +142,7 @@ pub fn raster_rect_fill(
     w,
     h,
     color.to_msvg(),
-    pixel_setter_to_msvg(setter),
+    setter.to_msvg(),
   )
 }
 
@@ -161,9 +161,9 @@ pub fn raster_rect_gradient(
     y,
     w,
     h,
-    linear_gradient_to_msvg(grad),
+    grad.to_msvg(),
     opacity,
-    pixel_setter_to_msvg(setter),
+    setter.to_msvg(),
   )
 }
 
@@ -182,9 +182,9 @@ pub fn raster_rect_radial_gradient(
     y,
     w,
     h,
-    radial_gradient_to_msvg(grad),
+    grad.to_msvg(),
     opacity,
-    pixel_setter_to_msvg(setter),
+    setter.to_msvg(),
   )
 }
 
@@ -201,9 +201,9 @@ pub fn raster_circle_radial_gradient(
     cx,
     cy,
     r,
-    radial_gradient_to_msvg(grad),
+    grad.to_msvg(),
     opacity,
-    pixel_setter_to_msvg(setter),
+    setter.to_msvg(),
   )
 }
 
@@ -222,9 +222,9 @@ pub fn raster_ellipse_radial_gradient(
     cy,
     rx,
     ry,
-    radial_gradient_to_msvg(grad),
+    grad.to_msvg(),
     opacity,
-    pixel_setter_to_msvg(setter),
+    setter.to_msvg(),
   )
 }
 
@@ -247,7 +247,7 @@ pub fn raster_rounded_rect_stroke(
     rx,
     ry,
     color.to_msvg(),
-    pixel_setter_to_msvg(setter),
+    setter.to_msvg(),
   )
 }
 
@@ -264,7 +264,7 @@ pub fn raster_circle_stroke(
     cy,
     r,
     color.to_msvg(),
-    pixel_setter_to_msvg(setter),
+    setter.to_msvg(),
   )
 }
 
@@ -281,7 +281,7 @@ pub fn raster_circle_fill(
     cy,
     r,
     color.to_msvg(),
-    pixel_setter_to_msvg(setter),
+    setter.to_msvg(),
   )
 }
 
@@ -300,7 +300,7 @@ pub fn raster_ellipse_stroke(
     rx,
     ry,
     color.to_msvg(),
-    pixel_setter_to_msvg(setter),
+    setter.to_msvg(),
   )
 }
 
@@ -319,7 +319,7 @@ pub fn raster_ellipse_fill(
     rx,
     ry,
     color.to_msvg(),
-    pixel_setter_to_msvg(setter),
+    setter.to_msvg(),
   )
 }
 
@@ -332,7 +332,7 @@ pub fn raster_polygon_fill(
   @msvg.raster_polygon_fill(
     points,
     color.to_msvg(),
-    pixel_setter_to_msvg(setter),
+    setter.to_msvg(),
   )
 }
 
@@ -345,7 +345,7 @@ pub fn raster_polygon_stroke(
   @msvg.raster_polygon_stroke(
     points,
     color.to_msvg(),
-    pixel_setter_to_msvg(setter),
+    setter.to_msvg(),
   )
 }
 
@@ -358,7 +358,7 @@ pub fn raster_polyline(
   @msvg.raster_polyline(
     points,
     color.to_msvg(),
-    pixel_setter_to_msvg(setter),
+    setter.to_msvg(),
   )
 }
 
@@ -379,7 +379,7 @@ pub fn raster_thick_line(
     y1,
     thickness,
     color.to_msvg(),
-    pixel_setter_to_msvg(setter),
+    setter.to_msvg(),
   )
 }
 
@@ -398,6 +398,18 @@ pub fn raster_text(
     text,
     size,
     color.to_msvg(),
-    pixel_setter_to_msvg(setter),
+    setter.to_msvg(),
   )
+}
+
+///|
+fn PixelSetter::to_msvg(self : PixelSetter) -> @msvg.PixelSetter {
+  @msvg.PixelSetter::{
+    set: fn(x, y, color) { self.pixel(x, y, Color::from_msvg(color)) },
+  }
+}
+
+///|
+fn PixelSetter::from_msvg(setter : @msvg.PixelSetter) -> PixelSetter {
+  { set: fn(x, y, color) { (setter.set)(x, y, color.to_msvg()) } }
 }

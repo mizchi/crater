@@ -50,7 +50,7 @@ pub(all) struct Mask {
 
 ///|
 pub fn Mask::new(id : String, content : Array[SVGNode]) -> Mask {
-  mask_from_msvg(@msvg.Mask::new(id, []), content)
+  Mask::from_msvg(@msvg.Mask::new(id, []), content)
 }
 
 ///|
@@ -62,7 +62,7 @@ pub fn Mask::with_bounds(
   width : Double,
   height : Double,
 ) -> Mask {
-  mask_from_msvg(@msvg.Mask::with_bounds(id, [], x, y, width, height), content)
+  Mask::from_msvg(@msvg.Mask::with_bounds(id, [], x, y, width, height), content)
 }
 
 ///|
@@ -101,8 +101,8 @@ pub fn MaskRegistry::get(self : MaskRegistry, id : String) -> Mask? {
 ///|
 /// Get the mask region bounds for a given target bounds
 pub fn Mask::get_mask_bounds(self : Mask, target : BoundingBox) -> BoundingBox {
-  bounding_box_from_msvg(
-    mask_to_msvg(self).get_mask_bounds(bounding_box_to_msvg(target)),
+  BoundingBox::from_msvg(
+    self.to_msvg().get_mask_bounds(target.to_msvg()),
   )
 }
 
@@ -113,11 +113,77 @@ pub fn apply_mask_to_image(
   mask_buffer : Image,
   mask_type : MaskType,
 ) -> Image {
-  image_from_msvg(
+  Image::from_msvg(
     @msvg.apply_mask_to_image(
-      image_to_msvg(image),
-      image_to_msvg(mask_buffer),
-      mask_type_to_msvg(mask_type),
+      image.to_msvg(),
+      mask_buffer.to_msvg(),
+      mask_type.to_msvg(),
     ),
   )
+}
+
+///|
+fn MaskUnits::from_msvg(units : @msvg.MaskUnits) -> MaskUnits {
+  match units {
+    UserSpaceOnUse => UserSpaceOnUse
+    ObjectBoundingBox => ObjectBoundingBox
+  }
+}
+
+///|
+fn MaskUnits::to_msvg(self : MaskUnits) -> @msvg.MaskUnits {
+  match self {
+    UserSpaceOnUse => @msvg.MaskUnits::UserSpaceOnUse
+    ObjectBoundingBox => @msvg.MaskUnits::ObjectBoundingBox
+  }
+}
+
+///|
+fn MaskType::from_msvg(mask_type : @msvg.MaskType) -> MaskType {
+  match mask_type {
+    Luminance => Luminance
+    Alpha => Alpha
+  }
+}
+
+///|
+fn MaskType::to_msvg(self : MaskType) -> @msvg.MaskType {
+  match self {
+    Luminance => @msvg.MaskType::Luminance
+    Alpha => @msvg.MaskType::Alpha
+  }
+}
+
+///|
+fn Mask::from_msvg(mask : @msvg.Mask, content : Array[SVGNode]) -> Mask {
+  {
+    id: mask.id,
+    content,
+    x: mask.x,
+    y: mask.y,
+    width: mask.width,
+    height: mask.height,
+    mask_units: MaskUnits::from_msvg(mask.mask_units),
+    mask_content_units: MaskUnits::from_msvg(mask.mask_content_units),
+    mask_type: MaskType::from_msvg(mask.mask_type),
+  }
+}
+
+///|
+fn Mask::to_msvg(self : Mask) -> @msvg.Mask {
+  @msvg.Mask::{
+    id: self.id,
+    content: [],
+    x: self.x,
+    y: self.y,
+    width: self.width,
+    height: self.height,
+    x_is_percent: false,
+    y_is_percent: false,
+    width_is_percent: false,
+    height_is_percent: false,
+    mask_units: self.mask_units.to_msvg(),
+    mask_content_units: self.mask_content_units.to_msvg(),
+    mask_type: self.mask_type.to_msvg(),
+  }
 }

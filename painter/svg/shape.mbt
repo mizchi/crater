@@ -124,3 +124,102 @@ pub impl Show for Shape with output(self, logger) {
     Group => logger.write_string("Group")
   }
 }
+
+///|
+pub fn PathCommand::from_msvg(cmd : @msvg.PathCommand) -> PathCommand {
+  match cmd {
+    MoveTo(x, y) => MoveTo(x, y)
+    LineTo(x, y) => LineTo(x, y)
+    HorizontalLineTo(x) => HorizontalLineTo(x)
+    VerticalLineTo(y) => VerticalLineTo(y)
+    CurveTo(x1, y1, x2, y2, x, y) => CurveTo(x1, y1, x2, y2, x, y)
+    SmoothCurveTo(x2, y2, x, y) => SmoothCurveTo(x2, y2, x, y)
+    QuadraticCurveTo(x1, y1, x, y) => QuadraticCurveTo(x1, y1, x, y)
+    SmoothQuadraticCurveTo(x, y) => SmoothQuadraticCurveTo(x, y)
+    ArcTo(rx, ry, rotation, large_arc, sweep, x, y) =>
+      ArcTo(rx, ry, rotation, large_arc, sweep, x, y)
+    ClosePath => ClosePath
+    MoveToRel(dx, dy) => MoveToRel(dx, dy)
+    LineToRel(dx, dy) => LineToRel(dx, dy)
+    HorizontalLineToRel(dx) => HorizontalLineToRel(dx)
+    VerticalLineToRel(dy) => VerticalLineToRel(dy)
+    CurveToRel(dx1, dy1, dx2, dy2, dx, dy) =>
+      CurveToRel(dx1, dy1, dx2, dy2, dx, dy)
+    SmoothCurveToRel(dx2, dy2, dx, dy) => SmoothCurveToRel(dx2, dy2, dx, dy)
+    QuadraticCurveToRel(dx1, dy1, dx, dy) =>
+      QuadraticCurveToRel(dx1, dy1, dx, dy)
+    SmoothQuadraticCurveToRel(dx, dy) => SmoothQuadraticCurveToRel(dx, dy)
+    ArcToRel(rx, ry, rotation, large_arc, sweep, dx, dy) =>
+      ArcToRel(rx, ry, rotation, large_arc, sweep, dx, dy)
+  }
+}
+
+///|
+fn PathCommand::to_msvg(self : PathCommand) -> @msvg.PathCommand {
+  match self {
+    MoveTo(x, y) => @msvg.PathCommand::MoveTo(x, y)
+    LineTo(x, y) => @msvg.PathCommand::LineTo(x, y)
+    HorizontalLineTo(x) => @msvg.PathCommand::HorizontalLineTo(x)
+    VerticalLineTo(y) => @msvg.PathCommand::VerticalLineTo(y)
+    CurveTo(x1, y1, x2, y2, x, y) =>
+      @msvg.PathCommand::CurveTo(x1, y1, x2, y2, x, y)
+    SmoothCurveTo(x2, y2, x, y) =>
+      @msvg.PathCommand::SmoothCurveTo(x2, y2, x, y)
+    QuadraticCurveTo(x1, y1, x, y) =>
+      @msvg.PathCommand::QuadraticCurveTo(x1, y1, x, y)
+    SmoothQuadraticCurveTo(x, y) =>
+      @msvg.PathCommand::SmoothQuadraticCurveTo(x, y)
+    ArcTo(rx, ry, rotation, large_arc, sweep, x, y) =>
+      @msvg.PathCommand::ArcTo(rx, ry, rotation, large_arc, sweep, x, y)
+    ClosePath => @msvg.PathCommand::ClosePath
+    MoveToRel(dx, dy) => @msvg.PathCommand::MoveToRel(dx, dy)
+    LineToRel(dx, dy) => @msvg.PathCommand::LineToRel(dx, dy)
+    HorizontalLineToRel(dx) => @msvg.PathCommand::HorizontalLineToRel(dx)
+    VerticalLineToRel(dy) => @msvg.PathCommand::VerticalLineToRel(dy)
+    CurveToRel(dx1, dy1, dx2, dy2, dx, dy) =>
+      @msvg.PathCommand::CurveToRel(dx1, dy1, dx2, dy2, dx, dy)
+    SmoothCurveToRel(dx2, dy2, dx, dy) =>
+      @msvg.PathCommand::SmoothCurveToRel(dx2, dy2, dx, dy)
+    QuadraticCurveToRel(dx1, dy1, dx, dy) =>
+      @msvg.PathCommand::QuadraticCurveToRel(dx1, dy1, dx, dy)
+    SmoothQuadraticCurveToRel(dx, dy) =>
+      @msvg.PathCommand::SmoothQuadraticCurveToRel(dx, dy)
+    ArcToRel(rx, ry, rotation, large_arc, sweep, dx, dy) =>
+      @msvg.PathCommand::ArcToRel(rx, ry, rotation, large_arc, sweep, dx, dy)
+  }
+}
+
+///|
+fn Shape::from_msvg(shape : @msvg.Shape) -> Shape {
+  match shape {
+    Rect(x~, y~, width~, height~, rx~, ry~) =>
+      Rect(x~, y~, width~, height~, rx~, ry~)
+    Circle(cx~, cy~, r~) => Circle(cx~, cy~, r~)
+    Ellipse(cx~, cy~, rx~, ry~) => Ellipse(cx~, cy~, rx~, ry~)
+    Line(x1~, y1~, x2~, y2~) => Line(x1~, y1~, x2~, y2~)
+    Polyline(points~) => Polyline(points~)
+    Polygon(points~) => Polygon(points~)
+    Path(commands~) => Path(commands=commands.map(PathCommand::from_msvg))
+    Text(x~, y~, text~, font_size~) => Text(x~, y~, text~, font_size~)
+    Image(..) => Group
+    Group => Group
+  }
+}
+
+///|
+fn Shape::to_msvg(self : Shape) -> @msvg.Shape {
+  match self {
+    Rect(x~, y~, width~, height~, rx~, ry~) =>
+      @msvg.Shape::Rect(x~, y~, width~, height~, rx~, ry~)
+    Circle(cx~, cy~, r~) => @msvg.Shape::Circle(cx~, cy~, r~)
+    Ellipse(cx~, cy~, rx~, ry~) => @msvg.Shape::Ellipse(cx~, cy~, rx~, ry~)
+    Line(x1~, y1~, x2~, y2~) => @msvg.Shape::Line(x1~, y1~, x2~, y2~)
+    Polyline(points~) => @msvg.Shape::Polyline(points~)
+    Polygon(points~) => @msvg.Shape::Polygon(points~)
+    Path(commands~) =>
+      @msvg.Shape::Path(commands=commands.map(fn(c) { c.to_msvg() }))
+    Text(x~, y~, text~, font_size~) =>
+      @msvg.Shape::Text(x~, y~, text~, font_size~)
+    Group => @msvg.Shape::Group
+  }
+}

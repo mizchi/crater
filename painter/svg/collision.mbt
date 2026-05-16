@@ -47,11 +47,11 @@ pub fn collide_circle_rect(
 ///|
 /// Check collision between two shapes
 pub fn collide_shapes(shape1 : Shape, shape2 : Shape) -> Bool {
-  @msvg.collide_shapes(shape_to_msvg(shape1), shape_to_msvg(shape2))
+  @msvg.collide_shapes(shape1.to_msvg(), shape2.to_msvg())
 }
 
 ///|
 /// Check collision between two SVGNodes (considering transforms)
 pub fn SVGNode::collides_with(self : SVGNode, other : SVGNode) -> Bool {
-  svg_node_to_msvg(self).collides_with(svg_node_to_msvg(other))
+  self.to_msvg().collides_with(other.to_msvg())
 }

@@ -6,15 +6,15 @@ pub(all) struct AnimationManager {
 
 ///|
 pub fn AnimationManager::new() -> AnimationManager {
-  animation_manager_from_msvg(@msvg.AnimationManager::new())
+  AnimationManager::from_msvg(@msvg.AnimationManager::new())
 }
 
 ///|
 /// Add a new tween animation
 pub fn AnimationManager::add(self : AnimationManager, tween : Tween) -> Unit {
-  let manager = animation_manager_to_msvg(self)
-  manager.add(tween_to_msvg(tween))
-  copy_animation_manager_state_from_msvg(self, manager)
+  let manager = self.to_msvg()
+  manager.add(tween.to_msvg())
+  self.sync_state_from_msvg(manager)
 }
 
 ///|
@@ -27,9 +27,9 @@ pub fn AnimationManager::animate_translate(
   duration : Double,
   easing : Easing,
 ) -> Unit {
-  let manager = animation_manager_to_msvg(self)
-  manager.animate_translate(target_id, x, y, duration, easing_to_msvg(easing))
-  copy_animation_manager_state_from_msvg(self, manager)
+  let manager = self.to_msvg()
+  manager.animate_translate(target_id, x, y, duration, easing.to_msvg())
+  self.sync_state_from_msvg(manager)
 }
 
 ///|
@@ -41,9 +41,9 @@ pub fn AnimationManager::animate_opacity(
   duration : Double,
   easing : Easing,
 ) -> Unit {
-  let manager = animation_manager_to_msvg(self)
-  manager.animate_opacity(target_id, opacity, duration, easing_to_msvg(easing))
-  copy_animation_manager_state_from_msvg(self, manager)
+  let manager = self.to_msvg()
+  manager.animate_opacity(target_id, opacity, duration, easing.to_msvg())
+  self.sync_state_from_msvg(manager)
 }
 
 ///|
@@ -55,9 +55,9 @@ pub fn AnimationManager::animate_scale(
   duration : Double,
   easing : Easing,
 ) -> Unit {
-  let manager = animation_manager_to_msvg(self)
-  manager.animate_scale(target_id, scale, duration, easing_to_msvg(easing))
-  copy_animation_manager_state_from_msvg(self, manager)
+  let manager = self.to_msvg()
+  manager.animate_scale(target_id, scale, duration, easing.to_msvg())
+  self.sync_state_from_msvg(manager)
 }
 
 ///|
@@ -68,32 +68,57 @@ pub fn AnimationManager::update(
   dt : Double,
   scene : Scene,
 ) -> Bool {
-  let manager = animation_manager_to_msvg(self)
-  let msvg_scene = scene_to_msvg(scene)
+  let manager = self.to_msvg()
+  let msvg_scene = scene.to_msvg()
   let any_running = manager.update(dt, msvg_scene)
-  copy_animation_manager_state_from_msvg(self, manager)
-  copy_svg_scene_animation_state_from_msvg(scene, msvg_scene)
+  self.sync_state_from_msvg(manager)
+  scene.sync_animation_state_from_msvg(msvg_scene)
   any_running
 }
 
 ///|
 /// Remove completed animations
 pub fn AnimationManager::cleanup(self : AnimationManager) -> Unit {
-  let manager = animation_manager_to_msvg(self)
+  let manager = self.to_msvg()
   manager.cleanup()
-  copy_animation_manager_state_from_msvg(self, manager)
+  self.sync_state_from_msvg(manager)
 }
 
 ///|
 /// Check if any animations are running
 pub fn AnimationManager::is_animating(self : AnimationManager) -> Bool {
-  animation_manager_to_msvg(self).is_animating()
+  self.to_msvg().is_animating()
 }
 
 ///|
 /// Clear all animations
 pub fn AnimationManager::clear(self : AnimationManager) -> Unit {
-  let manager = animation_manager_to_msvg(self)
+  let manager = self.to_msvg()
   manager.clear()
-  copy_animation_manager_state_from_msvg(self, manager)
+  self.sync_state_from_msvg(manager)
+}
+
+///|
+fn AnimationManager::from_msvg(
+  manager : @msvg.AnimationManager,
+) -> AnimationManager {
+  { tweens: manager.tweens.map(Tween::from_msvg) }
+}
+
+///|
+fn AnimationManager::to_msvg(
+  self : AnimationManager,
+) -> @msvg.AnimationManager {
+  @msvg.AnimationManager::{ tweens: self.tweens.map(fn(t) { t.to_msvg() }) }
+}
+
+///|
+fn AnimationManager::sync_state_from_msvg(
+  self : AnimationManager,
+  source : @msvg.AnimationManager,
+) -> Unit {
+  self.tweens.clear()
+  for tween in source.tweens {
+    self.tweens.push(Tween::from_msvg(tween))
+  }
 }

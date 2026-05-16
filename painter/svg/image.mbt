@@ -13,27 +13,27 @@ pub(all) struct Image {
 ///|
 /// Create a new image with specified dimensions
 pub fn Image::new(width : Int, height : Int) -> Image {
-  image_from_msvg(@msvg.Image::new(width, height))
+  Image::from_msvg(@msvg.Image::new(width, height))
 }
 
 ///|
 /// Create an image filled with a color
 pub fn Image::filled(width : Int, height : Int, color : Color) -> Image {
-  image_from_msvg(@msvg.Image::filled(width, height, color.to_msvg()))
+  Image::from_msvg(@msvg.Image::filled(width, height, color.to_msvg()))
 }
 
 ///|
 /// Get pixel at coordinates
 pub fn Image::get_pixel(self : Image, x : Int, y : Int) -> Color {
-  Color::from_msvg(image_to_msvg(self).get_pixel(x, y))
+  Color::from_msvg(self.to_msvg().get_pixel(x, y))
 }
 
 ///|
 /// Set pixel at coordinates
 pub fn Image::set_pixel(self : Image, x : Int, y : Int, color : Color) -> Unit {
-  let image = image_to_msvg(self)
+  let image = self.to_msvg()
   image.set_pixel(x, y, color.to_msvg())
-  copy_image_pixels_from_msvg(self, image)
+  self.sync_pixels_from_msvg(image)
 }
 
 ///|
@@ -46,63 +46,63 @@ pub fn Image::fill_rect(
   h : Int,
   color : Color,
 ) -> Unit {
-  let image = image_to_msvg(self)
+  let image = self.to_msvg()
   image.fill_rect(x, y, w, h, color.to_msvg())
-  copy_image_pixels_from_msvg(self, image)
+  self.sync_pixels_from_msvg(image)
 }
 
 ///|
 /// Clear image to transparent
 pub fn Image::clear(self : Image) -> Unit {
-  let image = image_to_msvg(self)
+  let image = self.to_msvg()
   image.clear()
-  copy_image_pixels_from_msvg(self, image)
+  self.sync_pixels_from_msvg(image)
 }
 
 ///|
 /// Clone the image
 pub fn Image::clone(self : Image) -> Image {
-  image_from_msvg(image_to_msvg(self).clone())
+  Image::from_msvg(self.to_msvg().clone())
 }
 
 ///|
 /// Apply blur filter in place
 pub fn Image::apply_blur_in_place(self : Image, radius : Int) -> Unit {
-  let image = image_to_msvg(self)
+  let image = self.to_msvg()
   image.apply_blur_in_place(radius)
-  copy_image_pixels_from_msvg(self, image)
+  self.sync_pixels_from_msvg(image)
 }
 
 ///|
 /// Apply brightness filter in place
 pub fn Image::apply_brightness_in_place(self : Image, factor : Double) -> Unit {
-  let image = image_to_msvg(self)
+  let image = self.to_msvg()
   image.apply_brightness_in_place(factor)
-  copy_image_pixels_from_msvg(self, image)
+  self.sync_pixels_from_msvg(image)
 }
 
 ///|
 /// Apply contrast filter in place
 pub fn Image::apply_contrast_in_place(self : Image, factor : Double) -> Unit {
-  let image = image_to_msvg(self)
+  let image = self.to_msvg()
   image.apply_contrast_in_place(factor)
-  copy_image_pixels_from_msvg(self, image)
+  self.sync_pixels_from_msvg(image)
 }
 
 ///|
 /// Apply grayscale filter in place
 pub fn Image::apply_grayscale_in_place(self : Image, amount : Double) -> Unit {
-  let image = image_to_msvg(self)
+  let image = self.to_msvg()
   image.apply_grayscale_in_place(amount)
-  copy_image_pixels_from_msvg(self, image)
+  self.sync_pixels_from_msvg(image)
 }
 
 ///|
 /// Apply sepia filter in place
 pub fn Image::apply_sepia_in_place(self : Image, amount : Double) -> Unit {
-  let image = image_to_msvg(self)
+  let image = self.to_msvg()
   image.apply_sepia_in_place(amount)
-  copy_image_pixels_from_msvg(self, image)
+  self.sync_pixels_from_msvg(image)
 }
 
 ///|
@@ -111,25 +111,25 @@ pub fn Image::apply_hue_rotate_in_place(
   self : Image,
   angle_degrees : Double,
 ) -> Unit {
-  let image = image_to_msvg(self)
+  let image = self.to_msvg()
   image.apply_hue_rotate_in_place(angle_degrees)
-  copy_image_pixels_from_msvg(self, image)
+  self.sync_pixels_from_msvg(image)
 }
 
 ///|
 /// Apply invert filter in place
 pub fn Image::apply_invert_in_place(self : Image, amount : Double) -> Unit {
-  let image = image_to_msvg(self)
+  let image = self.to_msvg()
   image.apply_invert_in_place(amount)
-  copy_image_pixels_from_msvg(self, image)
+  self.sync_pixels_from_msvg(image)
 }
 
 ///|
 /// Apply saturate filter in place
 pub fn Image::apply_saturate_in_place(self : Image, factor : Double) -> Unit {
-  let image = image_to_msvg(self)
+  let image = self.to_msvg()
   image.apply_saturate_in_place(factor)
-  copy_image_pixels_from_msvg(self, image)
+  self.sync_pixels_from_msvg(image)
 }
 
 ///|
@@ -138,9 +138,9 @@ pub fn Image::apply_color_matrix_in_place(
   self : Image,
   matrix : FixedArray[Double],
 ) -> Unit {
-  let image = image_to_msvg(self)
+  let image = self.to_msvg()
   image.apply_color_matrix_in_place(matrix)
-  copy_image_pixels_from_msvg(self, image)
+  self.sync_pixels_from_msvg(image)
 }
 
 ///|
@@ -168,19 +168,19 @@ pub fn Sprite::new(
   width : Int,
   height : Int,
 ) -> Sprite {
-  sprite_from_msvg(@msvg.Sprite::new(image_to_msvg(image), x, y, width, height))
+  Sprite::from_msvg(@msvg.Sprite::new(image.to_msvg(), x, y, width, height))
 }
 
 ///|
 /// Create a sprite from the entire image
 pub fn Sprite::from_image(image : Image) -> Sprite {
-  sprite_from_msvg(@msvg.Sprite::from_image(image_to_msvg(image)))
+  Sprite::from_msvg(@msvg.Sprite::from_image(image.to_msvg()))
 }
 
 ///|
 /// Get pixel from sprite (local coordinates)
 pub fn Sprite::get_pixel(self : Sprite, x : Int, y : Int) -> Color {
-  Color::from_msvg(sprite_to_msvg(self).get_pixel(x, y))
+  Color::from_msvg(self.to_msvg().get_pixel(x, y))
 }
 
 ///|
@@ -200,8 +200,8 @@ pub fn SpriteSheet::new(
   tile_width : Int,
   tile_height : Int,
 ) -> SpriteSheet {
-  sprite_sheet_from_msvg(
-    @msvg.SpriteSheet::new(image_to_msvg(image), tile_width, tile_height),
+  SpriteSheet::from_msvg(
+    @msvg.SpriteSheet::new(image.to_msvg(), tile_width, tile_height),
   )
 }
 
@@ -212,7 +212,7 @@ pub fn SpriteSheet::get_sprite(
   col : Int,
   row : Int,
 ) -> Sprite {
-  sprite_from_msvg(sprite_sheet_to_msvg(self).get_sprite(col, row))
+  Sprite::from_msvg(self.to_msvg().get_sprite(col, row))
 }
 
 ///|
@@ -221,21 +221,21 @@ pub fn SpriteSheet::get_sprite_by_index(
   self : SpriteSheet,
   index : Int,
 ) -> Sprite {
-  sprite_from_msvg(sprite_sheet_to_msvg(self).get_sprite_by_index(index))
+  Sprite::from_msvg(self.to_msvg().get_sprite_by_index(index))
 }
 
 ///|
 /// Total number of sprites in the sheet
 pub fn SpriteSheet::sprite_count(self : SpriteSheet) -> Int {
-  sprite_sheet_to_msvg(self).sprite_count()
+  self.to_msvg().sprite_count()
 }
 
 ///|
 /// Blit (copy) source image onto destination at position
 pub fn blit(dest : Image, src : Image, dest_x : Int, dest_y : Int) -> Unit {
-  let output = image_to_msvg(dest)
-  @msvg.blit(output, image_to_msvg(src), dest_x, dest_y)
-  copy_image_pixels_from_msvg(dest, output)
+  let output = dest.to_msvg()
+  @msvg.blit(output, src.to_msvg(), dest_x, dest_y)
+  dest.sync_pixels_from_msvg(output)
 }
 
 ///|
@@ -246,9 +246,9 @@ pub fn blit_sprite(
   dest_x : Int,
   dest_y : Int,
 ) -> Unit {
-  let output = image_to_msvg(dest)
-  @msvg.blit_sprite(output, sprite_to_msvg(sprite), dest_x, dest_y)
-  copy_image_pixels_from_msvg(dest, output)
+  let output = dest.to_msvg()
+  @msvg.blit_sprite(output, sprite.to_msvg(), dest_x, dest_y)
+  dest.sync_pixels_from_msvg(output)
 }
 
 ///|
@@ -261,33 +261,33 @@ pub fn blit_scaled(
   dest_w : Int,
   dest_h : Int,
 ) -> Unit {
-  let output = image_to_msvg(dest)
-  @msvg.blit_scaled(output, image_to_msvg(src), dest_x, dest_y, dest_w, dest_h)
-  copy_image_pixels_from_msvg(dest, output)
+  let output = dest.to_msvg()
+  @msvg.blit_scaled(output, src.to_msvg(), dest_x, dest_y, dest_w, dest_h)
+  dest.sync_pixels_from_msvg(output)
 }
 
 ///|
 /// Flip image horizontally
 pub fn Image::flip_horizontal(self : Image) -> Image {
-  image_from_msvg(image_to_msvg(self).flip_horizontal())
+  Image::from_msvg(self.to_msvg().flip_horizontal())
 }
 
 ///|
 /// Flip image vertically
 pub fn Image::flip_vertical(self : Image) -> Image {
-  image_from_msvg(image_to_msvg(self).flip_vertical())
+  Image::from_msvg(self.to_msvg().flip_vertical())
 }
 
 ///|
 /// Rotate image 90 degrees clockwise
 pub fn Image::rotate_90_cw(self : Image) -> Image {
-  image_from_msvg(image_to_msvg(self).rotate_90_cw())
+  Image::from_msvg(self.to_msvg().rotate_90_cw())
 }
 
 ///|
 /// Rotate image 90 degrees counter-clockwise
 pub fn Image::rotate_90_ccw(self : Image) -> Image {
-  image_from_msvg(image_to_msvg(self).rotate_90_ccw())
+  Image::from_msvg(self.to_msvg().rotate_90_ccw())
 }
 
 ///|
@@ -299,7 +299,7 @@ pub fn Image::sub_image(
   w : Int,
   h : Int,
 ) -> Image {
-  image_from_msvg(image_to_msvg(self).sub_image(x, y, w, h))
+  Image::from_msvg(self.to_msvg().sub_image(x, y, w, h))
 }
 
 ///|
@@ -321,9 +321,9 @@ pub fn AnimatedSprite::new(
   frames : Array[Int],
   frame_duration : Double,
 ) -> AnimatedSprite {
-  animated_sprite_from_msvg(
+  AnimatedSprite::from_msvg(
     @msvg.AnimatedSprite::new(
-      sprite_sheet_to_msvg(sheet),
+      sheet.to_msvg(),
       frames,
       frame_duration,
     ),
@@ -338,9 +338,9 @@ pub fn AnimatedSprite::from_range(
   end : Int,
   frame_duration : Double,
 ) -> AnimatedSprite {
-  animated_sprite_from_msvg(
+  AnimatedSprite::from_msvg(
     @msvg.AnimatedSprite::from_range(
-      sprite_sheet_to_msvg(sheet),
+      sheet.to_msvg(),
       start,
       end,
       frame_duration,
@@ -351,47 +351,47 @@ pub fn AnimatedSprite::from_range(
 ///|
 /// Update animation with delta time
 pub fn AnimatedSprite::update(self : AnimatedSprite, dt : Double) -> Unit {
-  let sprite = animated_sprite_to_msvg(self)
+  let sprite = self.to_msvg()
   sprite.update(dt)
-  copy_animated_sprite_state_from_msvg(self, sprite)
+  self.sync_state_from_msvg(sprite)
 }
 
 ///|
 /// Get current sprite
 pub fn AnimatedSprite::get_current_sprite(self : AnimatedSprite) -> Sprite {
-  sprite_from_msvg(animated_sprite_to_msvg(self).get_current_sprite())
+  Sprite::from_msvg(self.to_msvg().get_current_sprite())
 }
 
 ///|
 /// Play animation from beginning
 pub fn AnimatedSprite::play(self : AnimatedSprite) -> Unit {
-  let sprite = animated_sprite_to_msvg(self)
+  let sprite = self.to_msvg()
   sprite.play()
-  copy_animated_sprite_state_from_msvg(self, sprite)
+  self.sync_state_from_msvg(sprite)
 }
 
 ///|
 /// Stop animation
 pub fn AnimatedSprite::stop(self : AnimatedSprite) -> Unit {
-  let sprite = animated_sprite_to_msvg(self)
+  let sprite = self.to_msvg()
   sprite.stop()
-  copy_animated_sprite_state_from_msvg(self, sprite)
+  self.sync_state_from_msvg(sprite)
 }
 
 ///|
 /// Pause animation
 pub fn AnimatedSprite::pause(self : AnimatedSprite) -> Unit {
-  let sprite = animated_sprite_to_msvg(self)
+  let sprite = self.to_msvg()
   sprite.pause()
-  copy_animated_sprite_state_from_msvg(self, sprite)
+  self.sync_state_from_msvg(sprite)
 }
 
 ///|
 /// Continue animation
 pub fn AnimatedSprite::continue_playing(self : AnimatedSprite) -> Unit {
-  let sprite = animated_sprite_to_msvg(self)
+  let sprite = self.to_msvg()
   sprite.continue_playing()
-  copy_animated_sprite_state_from_msvg(self, sprite)
+  self.sync_state_from_msvg(sprite)
 }
 
 ///|
@@ -400,7 +400,118 @@ pub fn AnimatedSprite::set_looping(
   self : AnimatedSprite,
   looping : Bool,
 ) -> Unit {
-  let sprite = animated_sprite_to_msvg(self)
+  let sprite = self.to_msvg()
   sprite.set_looping(looping)
-  copy_animated_sprite_state_from_msvg(self, sprite)
+  self.sync_state_from_msvg(sprite)
+}
+
+///|
+fn Image::from_msvg(image : @msvg.Image) -> Image {
+  {
+    width: image.width,
+    height: image.height,
+    pixels: image.pixels.map(Color::from_msvg),
+  }
+}
+
+///|
+fn Image::to_msvg(self : Image) -> @msvg.Image {
+  @msvg.Image::{
+    width: self.width,
+    height: self.height,
+    pixels: self.pixels.map(fn(c) { c.to_msvg() }),
+  }
+}
+
+///|
+fn Image::sync_pixels_from_msvg(self : Image, source : @msvg.Image) -> Unit {
+  let len = if self.pixels.length() < source.pixels.length() {
+    self.pixels.length()
+  } else {
+    source.pixels.length()
+  }
+  for i in 0..<len {
+    self.pixels[i] = Color::from_msvg(source.pixels[i])
+  }
+}
+
+///|
+fn Sprite::from_msvg(sprite : @msvg.Sprite) -> Sprite {
+  {
+    image: Image::from_msvg(sprite.image),
+    x: sprite.x,
+    y: sprite.y,
+    width: sprite.width,
+    height: sprite.height,
+  }
+}
+
+///|
+fn Sprite::to_msvg(self : Sprite) -> @msvg.Sprite {
+  @msvg.Sprite::{
+    image: self.image.to_msvg(),
+    x: self.x,
+    y: self.y,
+    width: self.width,
+    height: self.height,
+  }
+}
+
+///|
+fn SpriteSheet::from_msvg(sheet : @msvg.SpriteSheet) -> SpriteSheet {
+  {
+    image: Image::from_msvg(sheet.image),
+    tile_width: sheet.tile_width,
+    tile_height: sheet.tile_height,
+    columns: sheet.columns,
+    rows: sheet.rows,
+  }
+}
+
+///|
+fn SpriteSheet::to_msvg(self : SpriteSheet) -> @msvg.SpriteSheet {
+  @msvg.SpriteSheet::{
+    image: self.image.to_msvg(),
+    tile_width: self.tile_width,
+    tile_height: self.tile_height,
+    columns: self.columns,
+    rows: self.rows,
+  }
+}
+
+///|
+fn AnimatedSprite::from_msvg(sprite : @msvg.AnimatedSprite) -> AnimatedSprite {
+  {
+    sheet: SpriteSheet::from_msvg(sprite.sheet),
+    frames: sprite.frames,
+    current_frame: sprite.current_frame,
+    frame_duration: sprite.frame_duration,
+    elapsed: sprite.elapsed,
+    looping: sprite.looping,
+    playing: sprite.playing,
+  }
+}
+
+///|
+fn AnimatedSprite::to_msvg(self : AnimatedSprite) -> @msvg.AnimatedSprite {
+  @msvg.AnimatedSprite::{
+    sheet: self.sheet.to_msvg(),
+    frames: self.frames,
+    current_frame: self.current_frame,
+    frame_duration: self.frame_duration,
+    elapsed: self.elapsed,
+    looping: self.looping,
+    playing: self.playing,
+  }
+}
+
+///|
+fn AnimatedSprite::sync_state_from_msvg(
+  self : AnimatedSprite,
+  source : @msvg.AnimatedSprite,
+) -> Unit {
+  self.current_frame = source.current_frame
+  self.elapsed = source.elapsed
+  self.looping = source.looping
+  self.playing = source.playing
 }

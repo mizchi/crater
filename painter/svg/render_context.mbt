@@ -15,8 +15,8 @@ pub fn RenderContext::new(
   width : Int,
   height : Int,
 ) -> RenderContext {
-  render_context_from_msvg(
-    @msvg.RenderContext::new(pixel_setter_to_msvg(setter), width, height),
+  RenderContext::from_msvg(
+    @msvg.RenderContext::new(setter.to_msvg(), width, height),
   )
 }
 
@@ -28,12 +28,12 @@ pub fn RenderContext::with_clip(
   height : Int,
   clip : ClipRect,
 ) -> RenderContext {
-  render_context_from_msvg(
+  RenderContext::from_msvg(
     @msvg.RenderContext::with_clip(
-      pixel_setter_to_msvg(setter),
+      setter.to_msvg(),
       width,
       height,
-      clip_rect_to_msvg(clip),
+      clip.to_msvg(),
     ),
   )
 }
@@ -44,10 +44,41 @@ pub fn RenderContext::for_camera(
   setter : PixelSetter,
   camera : Camera,
 ) -> RenderContext {
-  render_context_from_msvg(
+  RenderContext::from_msvg(
     @msvg.RenderContext::for_camera(
-      pixel_setter_to_msvg(setter),
-      camera_to_msvg(camera),
+      setter.to_msvg(),
+      camera.to_msvg(),
     ),
   )
+}
+
+///|
+fn RenderContext::from_msvg(ctx : @msvg.RenderContext) -> RenderContext {
+  let clip = match ctx.clip {
+    Some(c) => Some(ClipRect::from_msvg(c))
+    None => None
+  }
+  {
+    setter: PixelSetter::from_msvg(ctx.setter),
+    width: ctx.width,
+    height: ctx.height,
+    flatness: ctx.flatness,
+    clip,
+  }
+}
+
+///|
+fn RenderContext::to_msvg(self : RenderContext) -> @msvg.RenderContext {
+  let clip = match self.clip {
+    Some(c) => Some(c.to_msvg())
+    None => None
+  }
+  @msvg.RenderContext::{
+    setter: self.setter.to_msvg(),
+    width: self.width,
+    height: self.height,
+    flatness: self.flatness,
+    clip,
+    text_to_paths: None,
+  }
 }

@@ -20,6 +20,7 @@ import {
   "mizchi/crater-renderer/renderer",
   "mizchi/crater-painter/svg",
   "mizchi/crater-painter/paint/raster",
+  "mizchi/crater-painter/paint/glyph" @glyph,
   "mizchi/js/core",
   "mizchi/js/deno",
   "moonbitlang/core/json",
