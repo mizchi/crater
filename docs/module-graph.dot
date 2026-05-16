@@ -51,7 +51,6 @@ digraph crater_modules {
     mizchi_crater_tools [label="crater-tools"];
   }
   mizchi_crater_aomx -> mizchi_crater_dom;
-  mizchi_crater_aomx -> mizchi_crater_layout;
   mizchi_crater_benchmarks -> mizchi_crater_core;
   mizchi_crater_benchmarks -> mizchi_crater_browser;
   mizchi_crater_benchmarks -> mizchi_crater_css;

@@ -51,7 +51,6 @@ graph LR
   end
 
   mizchi_crater_aomx --> mizchi_crater_dom
-  mizchi_crater_aomx --> mizchi_crater_layout
   mizchi_crater_benchmarks --> mizchi_crater_core
   mizchi_crater_benchmarks --> mizchi_crater_browser
   mizchi_crater_benchmarks --> mizchi_crater_css
@@ -136,7 +135,7 @@ graph LR
 | Foundation | `crater-css` | `css` | 9 | crater-core |
 | Foundation | `crater-dom` | `dom` | 11 | crater-core, crater-css, crater-layout |
 | Foundation | `crater-html-assets` | `html_assets` | 1 | — |
-| Foundation | `crater-layout` | `layout` | 10 | crater-core |
+| Foundation | `crater-layout` | `layout` | 9 | crater-core |
 | Foundation | `crater-network` | `network` | 1 | — |
 | Render | `crater-painter` | `painter` | 6 | crater-core, crater-terminal-protocol |
 | Render | `crater-renderer` | `renderer` | 7 | crater-core, crater-css, crater-dom, crater-layout, crater-painter |
@@ -152,7 +151,7 @@ graph LR
 | Distribution | `crater (umbrella)` | `.` | 0 | crater-css, crater-dom, crater-layout, crater-painter, crater-renderer, crater-webvitals |
 | Distribution | `crater-js` | `js` | 1 | crater-aomx, crater-core, crater-css, crater-dom, crater-layout, crater-painter, crater-renderer |
 | Distribution | `crater-wasm` | `wasm` | 0 | crater-js |
-| Test / Dev | `crater-aomx` | `aomx` | 3 | crater-dom, crater-layout |
+| Test / Dev | `crater-aomx` | `aomx` | 3 | crater-dom |
 | Test / Dev | `crater-benchmarks` | `benchmarks` | 0 | crater-browser, crater-core, crater-css, crater-dom, crater-layout, crater-painter, crater-renderer |
 | Test / Dev | `crater-conformance` | `conformance` | 0 | crater-core, crater-css, crater-layout, crater-renderer |
 | Test / Dev | `crater-testing` | `testing` | 0 | crater-browser, crater-browser-native, crater-browser-runtime, crater-core, crater-css, crater-dom, crater-layout |
