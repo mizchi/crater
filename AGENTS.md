@@ -113,6 +113,50 @@ WebDriver BiDi protocol compliance tests for Playwright integration.
 - Test files: `wpt/webdriver/tests/bidi/` (planned)
 - Runner: `scripts/wpt-webdriver-runner.ts` (planned)
 
+## Quality Contracts (pkspec)
+
+`specs/crater.pkl` is the **master quality contract** for Crater. `TODO.md` is a navigation index into it. Open GitHub issues are the bug / fix tracker, and link back to a scenario.
+
+### Workflow when you add work
+
+1. **Survey current state** — `pkspec spec --goals specs/crater.pkl specs/tasks.Test.pkl` lists per-goal coverage; `pkspec spec --next` ranks unimplemented scenarios by priority.
+2. **Add a new scenario** — append to `specs/crater.pkl` with `reviewStatus = "draft"` and link the source in `description` (`See GitHub issue #N` / `Source: TODO Now (P0)`). Draft scenarios don't require an implementing test, so `spec-check` stays green.
+3. **Approve a scenario** — when an implementing test lands, add `specRef { "scenario.id" }` to a test in `specs/tasks.Test.pkl`, then flip `reviewStatus = "approved"`. `pkf run spec-check` validates the link.
+4. **Sync `TODO.md`** — when a scenario is reified or approved, remove or move the matching row. Don't let `TODO.md` and the scenarios drift.
+
+### Goals (priority order)
+
+- `goal.local-gates` (90) — pkfire task discoverability
+- `goal.spec-contracts` (80) — pkspec coverage is mechanically checked
+- `goal.css-compat` (75) — per-module WPT CSS baselines
+- `goal.dom-compat` (70) — DOM / Shadow DOM / Web Components surface
+- `goal.protocol-compat` (65) — WebDriver BiDi / Playwright / CDP
+- `goal.paint-accuracy` (60) — Luna VRT / WPT VRT / paint fixtures
+- `goal.diagnostic-api` (55, draft) — paint tree diff / computed style / selector-scoped rendering
+- `goal.ci-efficiency` (50) — affected gating / cache hit / shard wall time
+- `goal.release-safety` (40) — workspace publish order
+
+### Commands
+
+```bash
+pkf run spec-check                                             # approved scenarios are linked
+pkf run spec-lint                                              # Goal / Scenario references
+pkf run spec-test                                              # executable wiring smoke tests
+pkspec spec --goals specs/crater.pkl specs/tasks.Test.pkl      # per-goal coverage summary
+pkspec spec --next  specs/crater.pkl specs/tasks.Test.pkl      # next-action ranking
+```
+
+### Reify rule of thumb
+
+- **Module-level WPT residual** → reuse the existing `compat.css-*-baseline` scenario. File a separate `bug.*` scenario only when the residual outlasts the baseline rollout.
+- **New API surface** (BiDi commands, CLI flags, JS exports) → `diagnostic.*` or `protocol.*` scenario.
+- **Multi-PR workstream** → file a scenario from day one so each PR has a backlink in its description.
+- **One-shot operational tweak** (refactor, changelog template, dep bump) → leave in the "Not reified" section of `TODO.md`. Don't pollute pkspec with single-touch chores.
+
+### Scenario name constraint
+
+Scenario `name` must match `^[a-zA-Z0-9_][a-zA-Z0-9_:.\-/ ]*$` — no `+`, `(`, `)`, etc. Use plain prose (`flexbox min_width with justify-content centers correctly`).
+
 ## Project Goals
 
 ### Milestone 1: Preact Compatibility
