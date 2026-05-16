@@ -108,11 +108,10 @@ check:
     moon -C wasm info --target wasm
     moon check --manifest-path aomx/moon.mod.json --target js -j 1
     moon check --manifest-path benchmarks/moon.mod.json --target js -j 1
-    moon check --manifest-path contract/moon.mod.json --target js -j 1
+    moon check --manifest-path browser_helpers/moon.mod.json --target js -j 1
     moon check --manifest-path testing/moon.mod.json --target js -j 1
     moon check --manifest-path webvitals/moon.mod.json --target js -j 1
     moon check --manifest-path http/moon.mod.json --target js -j 1
-    moon check --manifest-path http_sqlite/moon.mod.json --target js -j 1
     moon check --manifest-path css/moon.mod.json --target js -j 1
     moon check --manifest-path dom/moon.mod.json --target js -j 1
     moon check --manifest-path layout/moon.mod.json --target js -j 1
@@ -129,11 +128,10 @@ fmt:
     moon fmt
     moon fmt --manifest-path aomx/moon.mod.json
     moon fmt --manifest-path benchmarks/moon.mod.json
-    moon fmt --manifest-path contract/moon.mod.json
+    moon fmt --manifest-path browser_helpers/moon.mod.json
     moon fmt --manifest-path testing/moon.mod.json
     moon fmt --manifest-path webvitals/moon.mod.json
     moon fmt --manifest-path http/moon.mod.json
-    moon fmt --manifest-path http_sqlite/moon.mod.json
     moon fmt --manifest-path css/moon.mod.json
     moon fmt --manifest-path dom/moon.mod.json
     moon fmt --manifest-path layout/moon.mod.json

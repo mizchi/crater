@@ -25,7 +25,6 @@ There are now two explicit native test layers:
   - lives in the internal `testing` module, not the published native adapter
   - transitively reaches `mizchi/crater-browser/shell` and `mizchi/crater-browser-http`
   - no longer requires sqlite headers by default
-  - optional sqlite-backed cache persistence now lives in `mizchi/crater-browser-http-sqlite`
 
 ## CI Policy
 
@@ -46,8 +45,6 @@ The current split is:
   - bundled Preact/React sources and lightweight helper functions
 - `mizchi/crater-browser-runtime`
   - shared JS runtime contract / DOM serializer used by shell and native V8
-- `mizchi/crater-browser-http-sqlite`
-  - optional JS-only sqlite cache backend for `mizchi/crater-browser-http`
 - `mizchi/crater-browser-native/js_v8`
   - native V8 host runtime over the shared `mizchi/crater-browser-runtime` contract
 - `mizchi/crater-testing/e2e/native_v8`

@@ -47,7 +47,6 @@ const LAYERS = [
     "mizchi/crater-browser-runtime",
     "mizchi/crater-browser-helpers",
     "mizchi/crater-browser-http",
-    "mizchi/crater-browser-http-sqlite",
     "mizchi/crater-browser-native",
   ])],
   ["Driver", new Set([
