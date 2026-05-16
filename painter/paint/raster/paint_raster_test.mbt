@@ -393,7 +393,7 @@ test "render_paint_node_to_framebuffer draws overline and line_through beyond gl
 
 ///|
 test "render_paint_node_to_framebuffer blends glyph text opacity from parent" {
-  @raster.set_glyph_provider({
+  @glyph.set_glyph_provider({
     get_glyph: fn(_codepoint, font_size, _is_bold) {
       let commands : Array[@svg.PathCommand] = [
         MoveTo(0.0, -font_size),
@@ -448,7 +448,7 @@ test "render_paint_node_to_framebuffer blends glyph text opacity from parent" {
   inspect(color.r > 100 && color.r < 200, content="true")
   inspect(color.g > 100 && color.g < 200, content="true")
   inspect(color.b > 100 && color.b < 200, content="true")
-  @raster.clear_glyph_provider()
+  @glyph.clear_glyph_provider()
 }
 
 ///|
@@ -505,7 +505,7 @@ test "render_paint_node_to_framebuffer applies parent opacity as a group" {
 
 ///|
 test "render_paint_node_to_framebuffer insets input text inside control" {
-  @raster.set_glyph_provider({
+  @glyph.set_glyph_provider({
     get_glyph: fn(_codepoint, font_size, _is_bold) {
       let commands : Array[@svg.PathCommand] = [
         MoveTo(0.0, -font_size),
@@ -547,7 +547,7 @@ test "render_paint_node_to_framebuffer insets input text inside control" {
 
   inspect(fb.get_pixel(1, 5), content="0")
   inspect(fb.get_pixel(9, 8) > 0, content="true")
-  @raster.clear_glyph_provider()
+  @glyph.clear_glyph_provider()
 }
 
 ///|

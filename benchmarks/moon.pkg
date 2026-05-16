@@ -14,6 +14,7 @@ import {
   "mizchi/crater-browser/tui/paint/export" @tui_paint_export,
   "mizchi/crater-browser/tui/paint/png" @tui_paint_png,
   "mizchi/crater-painter/paint/raster",
+  "mizchi/crater-painter/paint/glyph" @glyph,
   "mizchi/crater-painter/terminal/sixel",
   "mizchi/crater-painter/svg",
 }

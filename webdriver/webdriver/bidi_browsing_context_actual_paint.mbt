@@ -307,7 +307,7 @@ let paint_provider_initialized : Ref[Bool] = { val: false }
 /// Must be called when JS runtime is reset to avoid stale glyph provider.
 pub fn reset_paint_provider() -> Unit {
   paint_provider_initialized.val = false
-  @raster.clear_glyph_provider()
+  @glyph.clear_glyph_provider()
   @renderer.clear_text_metrics_provider()
 }
 
@@ -353,7 +353,7 @@ fn ensure_paint_provider_initialized() -> Unit {
     }
     let ascent_ratio = js_font_ascent_ratio()
     js_log_stderr("ascent_ratio=" + ascent_ratio.to_string())
-    let glyph_provider : @raster.GlyphProvider = {
+    let glyph_provider : @glyph.GlyphProvider = {
       ascent_ratio,
       get_kern: fn(cp1, cp2, font_size, is_bold) {
         js_kern_advance(cp1, cp2, font_size, is_bold)
@@ -415,7 +415,7 @@ fn ensure_paint_provider_initialized() -> Unit {
         js_ascent_for_family(font_family)
       }),
     }
-    @raster.set_glyph_provider(glyph_provider)
+    @glyph.set_glyph_provider(glyph_provider)
   }
 }
 
@@ -580,7 +580,7 @@ pub fn warmup_glyph_cache() -> Unit {
     13.33, // 10pt (most common body text)
      16.0, // 16px (browser default)
   ]
-  let n = @raster.pre_rasterize_glyphs(common_sizes)
+  let n = @glyph.pre_rasterize_glyphs(common_sizes)
   let t_pre_done = js_now_ms()
   js_log_stderr(
     "Pre-rasterized " +
