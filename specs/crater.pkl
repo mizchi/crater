@@ -751,22 +751,22 @@ scenarios {
   // -- Auth / CORS / runtime gaps discovered during Phase 5 e2e (PR #132) ----
   new {
     id = "bug.dom.html-form-element-submit-missing"
-    name = "HTMLFormElement.submit and requestSubmit are not exposed"
+    name = "HTMLFormElement.submit and requestSubmit are exposed in the BiDi runtime"
     description =
-      "Crater's DOM JS bindings do not expose HTMLFormElement.prototype.submit() or .requestSubmit(). This blocks form-based login flows driven via BiDi (script.evaluate calling form.submit()) and forces tests to fall back to manual fetch() + window.location reassign. Source: PR #132 Phase 5 e2e attempt."
+      "createMockElement('form') in webdriver/webdriver/bidi_runtime_eval.mbt installs submit(), requestSubmit(submitter?), and reset() on form elements. form.submit() bypasses the submit event (per WHATWG), serializes controls into application/x-www-form-urlencoded, resolves the action relative to globalThis.location, and routes through __loadPageWithScripts / __loadPage (GET) or fetch() with redirect handling (POST). form.requestSubmit dispatches a cancelable 'submit' event with .submitter and honors preventDefault before invoking the submission helper. Covered by webdriver/webdriver/bidi_runtime_form_wbtest.mbt."
     tags { "dom"; "forms"; "bidi"; "bug"; "phase5" }
     severity = "major"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.dom-compat" }
   }
   new {
     id = "bug.dom.document-forms-missing"
-    name = "document.forms HTMLCollection is not exposed"
+    name = "document.forms returns FORM elements in document order via tree walk"
     description =
-      "document.forms (HTMLCollection of all <form> elements in document order) is not exposed on the JS document binding, so scripted form discovery from BiDi cannot work without querySelectorAll. Source: PR #132 Phase 5 e2e attempt."
+      "globalThis.document in webdriver/webdriver/bidi_runtime_eval.mbt exposes a `forms` getter that walks the documentElement subtree iteratively and returns every Element whose tagName is FORM in document order. Scripts driven via BiDi script.evaluate can discover forms without falling back to querySelectorAll('form'). Covered by webdriver/webdriver/bidi_runtime_form_wbtest.mbt."
     tags { "dom"; "forms"; "bug"; "phase5" }
     severity = "major"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.dom-compat" }
   }
   new {
