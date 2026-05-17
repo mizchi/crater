@@ -7,6 +7,14 @@ type StartResult = {
   stop: () => Promise<void>;
   apiUrl: string;
   apiStop: () => Promise<void>;
+  /**
+   * Seed the in-memory session table directly. Used by BiDi flow tests that
+   * inject a cookie via `storage.setCookie` rather than driving the login form
+   * (Crater currently lacks `HTMLFormElement.submit` / `document.forms`).
+   */
+  recordSession: (sid: string, user: string) => void;
+  /** Drop a previously-seeded session id. */
+  forgetSession: (sid: string) => void;
 };
 
 const SESSIONS = new Map<string, string>();   // session-id → username
@@ -132,5 +140,11 @@ export async function startAuthServer(opts: StartOptions = {}): Promise<StartRes
     apiUrl,
     stop: () => new Promise(r => appServer.close(() => r())),
     apiStop: () => new Promise(r => apiServer.close(() => r())),
+    recordSession: (sid: string, user: string) => {
+      SESSIONS.set(sid, user);
+    },
+    forgetSession: (sid: string) => {
+      SESSIONS.delete(sid);
+    },
   };
 }

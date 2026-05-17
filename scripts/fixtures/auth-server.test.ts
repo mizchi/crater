@@ -27,6 +27,22 @@ test("login + dashboard round-trip", async () => {
   }
 });
 
+test("recordSession seeds a session id that /dashboard accepts", async () => {
+  const { url, stop, recordSession, forgetSession } = await startAuthServer({ port: 0 });
+  try {
+    recordSession("s_seeded", "alice");
+    const ok = await fetch(`${url}/dashboard`, { headers: { cookie: "session=s_seeded" } });
+    expect(ok.status).toBe(200);
+    expect(await ok.text()).toContain("welcome alice");
+
+    forgetSession("s_seeded");
+    const gone = await fetch(`${url}/dashboard`, { headers: { cookie: "session=s_seeded" } });
+    expect(gone.status).toBe(401);
+  } finally {
+    await stop();
+  }
+});
+
 test("cross-origin /api/me requires ACA-Origin and ACA-Credentials", async () => {
   const { url, stop, apiUrl, apiStop } = await startAuthServer({ port: 0, apiPort: 0 });
   try {
