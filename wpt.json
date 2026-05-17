@@ -32,11 +32,15 @@
     // Logical-flow module. The wpt.json includePrefixes filter exposes
     // about 27 fixtures that the layout-tree compare runner can grade.
     // See pkspec compat.css-writing-modes-baseline.
-    "css-writing-modes"
+    "css-writing-modes",
+
+    // Pseudo-elements; only 1 fixture matches the current
+    // includePrefixes filter. Widening the filter requires the broader
+    // inline-model pass. See pkspec compat.css-pseudo-baseline.
+    "css-pseudo"
 
     // Later: meaningful, but deferred for now.
     // "css-ruby",           // No fixtures match includePrefixes; needs filter widening.
-    // "css-pseudo",         // first-line / first-letter need a wider inline model pass.
     // "css-text",           // No fixtures match includePrefixes; needs filter widening.
   ],
   "recursiveModules": [

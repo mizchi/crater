@@ -19,7 +19,6 @@ pkf run spec-check                                          # contract が壊れ
 | scenario id | 概要 | link |
 |---|---|---|
 | `compat.css-text-baseline` | css-text WPT baseline | — |
-| `compat.css-pseudo-baseline` | css-pseudo WPT baseline | — |
 | `compat.css-ruby-baseline` | css-ruby WPT baseline | — |
 | `compat.css-images-baseline` | css-images WPT baseline 有効化 | #65, #68 |
 | `compat.css-values-baseline` | css-values WPT baseline 有効化 | #65, #67 |
