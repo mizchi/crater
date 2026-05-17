@@ -27,13 +27,17 @@
     // and compat.css-transforms-baseline.
     "css-color",
     "css-backgrounds",
-    "css-transforms"
+    "css-transforms",
+
+    // Logical-flow module. The wpt.json includePrefixes filter exposes
+    // about 27 fixtures that the layout-tree compare runner can grade.
+    // See pkspec compat.css-writing-modes-baseline.
+    "css-writing-modes"
 
     // Later: meaningful, but deferred for now.
-    // "css-ruby",           // JP-oriented value is high, but general UI/layout wins come first.
-    // "css-writing-modes",  // Broader orthogonal flow matrix after logical properties settle.
+    // "css-ruby",           // No fixtures match includePrefixes; needs filter widening.
     // "css-pseudo",         // first-line / first-letter need a wider inline model pass.
-    // "css-text",           // broad text shaping / wrapping surface; current text model is still approximate.
+    // "css-text",           // No fixtures match includePrefixes; needs filter widening.
   ],
   "recursiveModules": [
     "css-align",
