@@ -23,16 +23,17 @@
     // Paint-leaning modules enabled as per-module baseline anchors. The
     // layout-tree compare runner mostly ignores color / paint properties,
     // so the pass rate measures layout robustness on these suites.
-    // See pkspec compat.css-color-baseline and compat.css-backgrounds-baseline.
+    // See pkspec compat.css-color-baseline, compat.css-backgrounds-baseline,
+    // and compat.css-transforms-baseline.
     "css-color",
-    "css-backgrounds"
+    "css-backgrounds",
+    "css-transforms"
 
     // Later: meaningful, but deferred for now.
     // "css-ruby",           // JP-oriented value is high, but general UI/layout wins come first.
     // "css-writing-modes",  // Broader orthogonal flow matrix after logical properties settle.
     // "css-pseudo",         // first-line / first-letter need a wider inline model pass.
     // "css-text",           // broad text shaping / wrapping surface; current text model is still approximate.
-    // "css-transforms",     // current support is translate-only.
   ],
   "recursiveModules": [
     "css-align",
