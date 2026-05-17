@@ -4,6 +4,7 @@ package "mizchi/crater-browser-http/profile"
 import {
   "mizchi/crater-browser-http/cache",
   "mizchi/crater-browser-http/cookie_jar",
+  "mizchi/crater-browser-http/cors",
   "moonbitlang/core/debug",
 }
 
@@ -22,6 +23,7 @@ pub(all) struct Profile {
   mut cookie_jar : @cookie_jar.CookieJar
   http_cache : @cache.MemoryCacheBackend
   auth_state : AuthState
+  preflight_cache : @cors.PreflightCache
 }
 pub fn Profile::default() -> Self
 pub fn Profile::effective_user_agent(Self) -> String?

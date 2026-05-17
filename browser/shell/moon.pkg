@@ -13,6 +13,7 @@ import {
   "mizchi/crater-browser-http" @http,
   "mizchi/crater-browser-http/cache" @http_cache,
   "mizchi/crater-browser-http/cookie_jar" @http_cookie_jar,
+  "mizchi/crater-browser-http/cors" @http_cors,
   "mizchi/crater-browser-http/profile" @http_profile,
   "mizchi/crater-html-assets" @html_assets,
   "mizchi/crater-browser/interaction_policy",

@@ -9,6 +9,7 @@ pub(all) struct Profile {
   mut cookie_jar : @cookie_jar.CookieJar
   http_cache : @cache.MemoryCacheBackend
   auth_state : AuthState
+  preflight_cache : @cors.PreflightCache
 }
 
 ///|
@@ -19,6 +20,7 @@ pub fn Profile::default() -> Profile {
     cookie_jar: @cookie_jar.CookieJar::new(enabled=true),
     http_cache: @cache.MemoryCacheBackend::new(max_entries=1000),
     auth_state: AuthState::default(),
+    preflight_cache: @cors.PreflightCache::new(),
   }
 }
 
@@ -35,6 +37,7 @@ pub fn Profile::new(
     cookie_jar: @cookie_jar.CookieJar::new(enabled=jar_enabled),
     http_cache: @cache.MemoryCacheBackend::new(max_entries=1000),
     auth_state: AuthState::default(),
+    preflight_cache: @cors.PreflightCache::new(),
   }
 }
 
