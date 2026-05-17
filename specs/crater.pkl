@@ -705,6 +705,16 @@ scenarios {
     reviewStatus = "draft"
     contributes { "goal.css-compat"; "goal.paint-accuracy" }
   }
+  new {
+    id = "bug.samesite.psl-required"
+    name = "SameSite site classification needs Public Suffix List"
+    description =
+      "http/samesite/classify_site_context and http/cookie_jar/cookie_registrable_domain both reduce hosts to their last two labels. PSL is not consulted, so eTLD+1 detection over-collapses for multi-level public suffixes (example.co.uk and other.co.uk classify as same-site). Today this only affects Crater test fixtures, but any rollout that drives real cross-site auth traffic must upgrade to a PSL-aware classifier. See PR #131 / #132 security review item I3."
+    tags { "cookies"; "samesite"; "security"; "psl" }
+    severity = "minor"
+    reviewStatus = "draft"
+    contributes { "goal.dom-compat" }
+  }
 
   // -- Diagnostic / Tools (issue-driven) -------------------------------------
   new {

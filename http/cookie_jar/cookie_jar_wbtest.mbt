@@ -1234,3 +1234,78 @@ test "cookie_registrable_domain: three labels" {
 test "cookie_registrable_domain: single label" {
   inspect(cookie_registrable_domain("localhost"), content="localhost")
 }
+
+// ============================================================
+// FU2: TRAILING-DOT FQDN NORMALIZATION (security follow-up I4)
+// ============================================================
+
+///|
+/// Regression: trailing-dot FQDN in request URL must match cookie stored
+/// without the trailing dot (and vice-versa).
+test "cookie_jar: trailing-dot FQDN matches non-dotted form" {
+  let jar = CookieJar::new(enabled=true)
+  // Store cookie via normal URL
+  jar.store_from_header(
+    "session=v; Path=/; SameSite=Lax; Secure", "https://example.com/", true,
+  )
+  // Request to trailing-dot FQDN form should attach the cookie
+  let cookies = jar.get_cookie_header(
+    "https://example.com./",
+    true,
+    true,
+    site_origin="https://example.com.",
+    is_top_level_navigation=true,
+  )
+  debug_inspect(cookies, content="Some(\"session=v\")")
+}
+
+///|
+/// Regression: cookie stored via trailing-dot FQDN URL matches non-dotted request.
+test "cookie_jar: cookie stored with trailing-dot FQDN retrieved by non-dotted host" {
+  let jar = CookieJar::new(enabled=true)
+  // Store cookie via trailing-dot URL
+  jar.store_from_header(
+    "session=v; Path=/; SameSite=Lax; Secure", "https://example.com./", true,
+  )
+  // Retrieve via normal URL — should still find it
+  let cookies = jar.get_cookie_header("https://example.com/", true, true)
+  debug_inspect(cookies, content="Some(\"session=v\")")
+}
+
+///|
+/// Regression: cross-site check with trailing-dot FQDN site_origin must be
+/// same-site with the trailing-dot request URL (no spurious cross-site block).
+test "cookie_jar: trailing-dot same-site not misclassified as cross-site" {
+  let jar = CookieJar::new(enabled=true)
+  jar.store_from_header(
+    "csrf=tok; Path=/; SameSite=Strict; Secure", "https://example.com/", true,
+  )
+  // Both request and site_origin use trailing-dot form — must be same-site
+  let cookies = jar.get_cookie_header(
+    "https://example.com./api",
+    true,
+    true,
+    site_origin="https://example.com.",
+  )
+  debug_inspect(cookies, content="Some(\"csrf=tok\")")
+}
+
+///|
+test "cookie_registrable_domain: trailing-dot stripped before extraction" {
+  inspect(cookie_registrable_domain("example.com."), content="example.com")
+}
+
+///|
+test "cookie_registrable_domain: sub trailing-dot stripped" {
+  inspect(cookie_registrable_domain("sub.example.com."), content="example.com")
+}
+
+///|
+test "cookie_same_site: trailing-dot form is same-site as non-dotted" {
+  inspect(cookie_same_site("example.com.", "example.com"), content="true")
+}
+
+///|
+test "cookie_same_site: both trailing-dot are same-site" {
+  inspect(cookie_same_site("example.com.", "example.com."), content="true")
+}

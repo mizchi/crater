@@ -15,31 +15,6 @@ type ResponseFetcher = async (String, @http.FetchOptions) -> @http.HttpResponse 
 type PreflightFetcher = (@http_cors.PreflightRequest) -> @http.HttpResponse
 
 ///|
-/// Read-only peek into a PreflightCache: returns `true` when an entry
-/// exists for `req` and `now < expires_at_seconds`. Mirrors the cache's
-/// own `cache_key` formula (`origin|url|method|headers.join(",")`)
-/// which is documented + tested in http/cors/. We keep the formula
-/// local rather than exporting `cache_key` to avoid leaking an
-/// implementation detail.
-fn preflight_cache_has_fresh(
-  cache : @http_cors.PreflightCache,
-  req : @http_cors.PreflightRequest,
-  now : Double,
-) -> Bool {
-  let key = req.origin +
-    "|" +
-    req.url +
-    "|" +
-    req.method +
-    "|" +
-    req.request_headers.join(",")
-  match cache.entries.get(key) {
-    Some(entry) => entry.expires_at_seconds > now
-    None => false
-  }
-}
-
-///|
 /// Run a subresource fetch through the CORS gate:
 ///
 /// 1. `@http_cors.classify_request` → Allow / PreflightRequired / Blocked.
@@ -168,11 +143,7 @@ async fn Browser::fetch_external_script_source(
   )
   match pre_decision {
     PreflightRequired(preflight_req) =>
-      if !preflight_cache_has_fresh(
-          preflight_cache,
-          preflight_req,
-          @http_cache.now_seconds(),
-        ) {
+      if !preflight_cache.contains_fresh(preflight_req, @http_cache.now_seconds) {
         let headers : Map[String, String] = {
           "Access-Control-Request-Method": preflight_req.method,
         }

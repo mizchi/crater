@@ -266,6 +266,140 @@ test "HttpError carries PreflightFailed variant" {
 }
 
 ///|
+test "PreflightCache::get_or_validate: max_entries cap evicts oldest in FIFO order" {
+  // max_entries=2 lets us add 3 distinct preflights and confirm the
+  // first one was evicted (must re-fetch on lookup) while the second
+  // and third remain cached (no re-fetch).
+  let cache = PreflightCache::new(max_entries=2)
+  let calls : Array[Int] = [0]
+  let fetcher = fn(r : PreflightRequest) -> @http_impl.HttpResponse {
+    calls[0] = calls[0] + 1
+    test_preflight_response(
+      status=204,
+      aca_origin=r.origin,
+      aca_methods=r.method,
+      aca_headers=r.request_headers.join(", "),
+      aca_max_age="600",
+    )
+  }
+  let now = fn() -> Double { 1000.0 }
+  let req_a = PreflightRequest::{
+    url: "https://api.other.com/a",
+    origin: "https://example.com",
+    method: "PUT",
+    request_headers: ["x-a"],
+  }
+  let req_b = PreflightRequest::{
+    url: "https://api.other.com/b",
+    origin: "https://example.com",
+    method: "PUT",
+    request_headers: ["x-b"],
+  }
+  let req_c = PreflightRequest::{
+    url: "https://api.other.com/c",
+    origin: "https://example.com",
+    method: "PUT",
+    request_headers: ["x-c"],
+  }
+  let _ = cache.get_or_validate(req_a, now, fetcher)
+  let _ = cache.get_or_validate(req_b, now, fetcher)
+  let _ = cache.get_or_validate(req_c, now, fetcher)
+  // 3 distinct preflights → 3 fetches so far.
+  inspect(calls[0], content="3")
+  // Cache must hold exactly max_entries=2 entries.
+  inspect(cache.entries.length(), content="2")
+  // b and c are still cached → no extra fetch.
+  let _ = cache.get_or_validate(req_b, now, fetcher)
+  let _ = cache.get_or_validate(req_c, now, fetcher)
+  inspect(calls[0], content="3")
+  // a was evicted (oldest) → re-fetch on lookup.
+  let _ = cache.get_or_validate(req_a, now, fetcher)
+  inspect(calls[0], content="4")
+}
+
+///|
+test "PreflightCache::get_or_validate: Access-Control-Max-Age is clamped to 7200s" {
+  // Server claims Max-Age=86400 (Firefox cap, 24h). The clamp pulls
+  // it back to 7200 (Chromium cap, 2h) so a malicious origin cannot
+  // pin a permissive policy beyond 2 hours.
+  let cache = PreflightCache::new()
+  let req = PreflightRequest::{
+    url: "https://api.other.com/clamp",
+    origin: "https://example.com",
+    method: "PUT",
+    request_headers: ["x-token"],
+  }
+  let fetcher = fn(_r : PreflightRequest) -> @http_impl.HttpResponse {
+    test_preflight_response(
+      status=204,
+      aca_origin="https://example.com",
+      aca_methods="PUT",
+      aca_headers="x-token",
+      aca_max_age="86400",
+    )
+  }
+  let now = fn() -> Double { 1000.0 }
+  match cache.get_or_validate(req, now, fetcher) {
+    Ok(_) => inspect(true, content="true")
+    Err(e) => fail("expected Ok, got Err: " + e)
+  }
+  // expires_at_seconds = now (1000) + clamped Max-Age (7200) = 8200,
+  // not 1000 + 86400 = 87400.
+  let key = req.origin +
+    "|" +
+    req.url +
+    "|" +
+    req.method +
+    "|" +
+    req.request_headers.join(",")
+  match cache.entries.get(key) {
+    Some(entry) => inspect(entry.expires_at_seconds, content="8200")
+    None => fail("expected cache entry to exist")
+  }
+}
+
+///|
+test "PreflightCache::contains_fresh agrees with get_or_validate (hit, miss-by-expiry, miss-by-allowlist)" {
+  let cache = PreflightCache::new()
+  let req = PreflightRequest::{
+    url: "https://api.example.com/x",
+    origin: "https://example.com",
+    method: "POST",
+    request_headers: ["x-csrf"],
+  }
+  let now = fn() -> Double { 1000.0 }
+  // Before any roundtrip: cache is empty, peek must be false.
+  inspect(cache.contains_fresh(req, now), content="false")
+  // Populate via get_or_validate (Max-Age=600 → clamped to 600).
+  let fetcher = fn(_r : PreflightRequest) -> @http_impl.HttpResponse {
+    test_preflight_response(
+      status=204,
+      aca_origin="https://example.com",
+      aca_methods="POST",
+      aca_headers="x-csrf",
+      aca_max_age="600",
+    )
+  }
+  match cache.get_or_validate(req, now, fetcher) {
+    Ok(_) => inspect(true, content="true")
+    Err(e) => fail("expected Ok, got Err: " + e)
+  }
+  // Cached → peek is true.
+  inspect(cache.contains_fresh(req, now), content="true")
+  // Past Max-Age → peek is false (expires_at = 1000 + 600 = 1600).
+  inspect(cache.contains_fresh(req, fn() -> Double { 2000.0 }), content="false")
+  // Same key but with a request_headers value the cached entry didn't
+  // allow → peek is false (allow-list mismatch, same expiry).
+  let mismatch = PreflightRequest::{
+    url: "https://api.example.com/x",
+    origin: "https://example.com",
+    method: "POST",
+    request_headers: ["x-csrf", "x-not-allowed"],
+  }
+  inspect(cache.contains_fresh(mismatch, now), content="false")
+}
+
+///|
 test "PreflightCache::get_or_validate: cache miss past Max-Age (fetcher called twice)" {
   let cache = PreflightCache::new()
   let req = PreflightRequest::{

@@ -1,3 +1,12 @@
+/**
+ * TEST FIXTURE ONLY — do not import from production code.
+ *
+ * - Uses `Math.random()` for session ids (non-cryptographic).
+ * - Hardcoded credentials `alice / wonderland`.
+ * - Mismatched-origin /me handler intentionally returns 200 to
+ *   exercise Crater's CORS gate (M5 in PR #131 security review).
+ */
+
 import http, { IncomingMessage, ServerResponse } from "node:http";
 import { AddressInfo } from "node:net";
 
@@ -16,8 +25,6 @@ type StartResult = {
   /** Drop a previously-seeded session id. */
   forgetSession: (sid: string) => void;
 };
-
-const SESSIONS = new Map<string, string>();   // session-id → username
 
 function readBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -47,7 +54,11 @@ function loginPageHtml(): string {
 </form></body></html>`;
 }
 
-function handleApp(req: IncomingMessage, res: ServerResponse): Promise<void> {
+function handleApp(
+  req: IncomingMessage,
+  res: ServerResponse,
+  sessions: Map<string, string>,
+): Promise<void> {
   return (async () => {
     const url = new URL(req.url ?? "/", `http://${req.headers.host}`);
     if (url.pathname === "/login" && req.method === "GET") {
@@ -61,7 +72,7 @@ function handleApp(req: IncomingMessage, res: ServerResponse): Promise<void> {
       // secretlint-disable-next-line no-credentials
       if (params.get("user") === "alice" && params.get("pass") === "wonderland") {
         const id = `s_${Math.random().toString(36).slice(2)}`;
-        SESSIONS.set(id, "alice");
+        sessions.set(id, "alice");
         res.writeHead(302, {
           "set-cookie": `session=${id}; Path=/; HttpOnly; SameSite=Lax`,
           location: "/dashboard",
@@ -76,7 +87,7 @@ function handleApp(req: IncomingMessage, res: ServerResponse): Promise<void> {
     if (url.pathname === "/dashboard") {
       const cookies = parseCookies(req.headers.cookie);
       const sid = cookies.get("session");
-      const who = sid ? SESSIONS.get(sid) : undefined;
+      const who = sid ? sessions.get(sid) : undefined;
       if (who) {
         res.writeHead(200, { "content-type": "text/html" });
         res.end(`<html><body>welcome ${who}</body></html>`);
@@ -91,7 +102,12 @@ function handleApp(req: IncomingMessage, res: ServerResponse): Promise<void> {
   })();
 }
 
-function handleApi(req: IncomingMessage, res: ServerResponse, appOrigin: string): void {
+function handleApi(
+  req: IncomingMessage,
+  res: ServerResponse,
+  appOrigin: string,
+  sessions: Map<string, string>,
+): void {
   const origin = req.headers.origin ?? "";
   const url = new URL(req.url ?? "/", `http://${req.headers.host}`);
   if (url.pathname === "/me") {
@@ -114,23 +130,34 @@ function handleApi(req: IncomingMessage, res: ServerResponse, appOrigin: string)
       });
       res.end(JSON.stringify({ user: "alice" }));
     } else {
-      // Deliberately omit ACA headers so Crater's CORS gate blocks.
+      // SECURITY: Mismatched-origin branch intentionally returns 200 with user
+      // data but omits ACA headers. This is a negative-path fixture so tests can
+      // verify that Crater's CORS gate blocks the response before JS reads it,
+      // even though the server itself responded successfully. Do not "fix" this.
+      // (M5 in PR #131 security review.)
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify({ user: "alice" }));
     }
     return;
   }
+  void sessions; // sessions available for future authenticated /api/* routes
   res.writeHead(404);
   res.end();
 }
 
 export async function startAuthServer(opts: StartOptions = {}): Promise<StartResult> {
-  const appServer = http.createServer((req, res) => { handleApp(req, res).catch(() => res.end()); });
+  // Scoped per startAuthServer call so vitest --pool=threads can't share state
+  // across parallel test files. (M6 in PR #131 security review.)
+  const sessions = new Map<string, string>();   // session-id → username
+
+  const appServer = http.createServer((req, res) => {
+    handleApp(req, res, sessions).catch(() => res.end());
+  });
   await new Promise<void>(r => appServer.listen(opts.port ?? 0, "127.0.0.1", r));
   const appPort = (appServer.address() as AddressInfo).port;
   const appUrl = `http://127.0.0.1:${appPort}`;
 
-  const apiServer = http.createServer((req, res) => handleApi(req, res, appUrl));
+  const apiServer = http.createServer((req, res) => handleApi(req, res, appUrl, sessions));
   await new Promise<void>(r => apiServer.listen(opts.apiPort ?? 0, "127.0.0.1", r));
   const apiPort = (apiServer.address() as AddressInfo).port;
   const apiUrl = `http://127.0.0.1:${apiPort}`;
@@ -141,10 +168,11 @@ export async function startAuthServer(opts: StartOptions = {}): Promise<StartRes
     stop: () => new Promise(r => appServer.close(() => r())),
     apiStop: () => new Promise(r => apiServer.close(() => r())),
     recordSession: (sid: string, user: string) => {
-      SESSIONS.set(sid, user);
+      if (!sid) throw new Error("sid required");
+      sessions.set(sid, user);
     },
     forgetSession: (sid: string) => {
-      SESSIONS.delete(sid);
+      sessions.delete(sid);
     },
   };
 }
