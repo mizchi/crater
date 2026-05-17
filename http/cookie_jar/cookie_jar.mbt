@@ -358,6 +358,13 @@ fn cookie_same_site(domain_a : String, domain_b : String) -> Bool {
 /// Extract registrable domain (last 2 labels). Simplified, no PSL.
 /// "sub.example.com" → "example.com", "example.com" → "example.com"
 fn cookie_registrable_domain(domain : String) -> String {
+  // Strip a single trailing dot — FQDN forms like "example.com." are
+  // equivalent to "example.com" for site comparison.
+  let domain = if domain.has_suffix(".") && domain.length() > 1 {
+    domain.unsafe_substring(start=0, end=domain.length() - 1)
+  } else {
+    domain
+  }
   let mut last_dot = -1
   let mut second_last_dot = -1
   for i = 0; i < domain.length(); i = i + 1 {
@@ -446,7 +453,7 @@ fn cookie_path_matches(request_path : String, cookie_path : String) -> Bool {
 ///|
 /// Extract domain from URL
 fn cookie_extract_domain(url : String) -> String {
-  match url.find("://") {
+  let host = match url.find("://") {
     Some(i) => {
       let after = url[i + 3:].to_owned()
       let end = match after.find("/") {
@@ -461,6 +468,13 @@ fn cookie_extract_domain(url : String) -> String {
       }
     }
     None => url.to_lower()
+  }
+  // Strip a single trailing dot — FQDN forms like "example.com." are
+  // equivalent to "example.com" for site comparison.
+  if host.has_suffix(".") && host.length() > 1 {
+    host.unsafe_substring(start=0, end=host.length() - 1)
+  } else {
+    host
   }
 }
 
