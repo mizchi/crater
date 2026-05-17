@@ -22,6 +22,7 @@ describe("buildFlakerBatchPlan", () => {
       "paint-vrt",
       "paint-vrt-levels",
       "paint-vrt-responsive",
+      "paint-vrt-svg-intrinsic",
       "playwright-adapter",
       "playwright-adapter-chromium-parity",
       "playwright-adapter-user-scenarios",
