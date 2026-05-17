@@ -716,6 +716,90 @@ scenarios {
     contributes { "goal.dom-compat" }
   }
 
+  // -- Auth / CORS contracts (Phase 6 — approved) ----------------------------
+  new {
+    id = "compat.cookie-jar-default-on-webdriver"
+    name = "WebDriver sessions enable the cookie jar by default"
+    description =
+      "BrowserState.profile is constructed via @http_profile.Profile::default(), which builds a CookieJar with enabled=true. WebDriver-driven login flows therefore persist Set-Cookie across navigations without the operator opting in. http/profile/profile.mbt also exposes Profile::new(jar_enabled? : Bool = true) so any future per-session override keeps the default-on contract explicit. Covered by browser/shell/profile_state_wbtest.mbt and the auth-server fixture under scripts/fixtures/."
+    tags { "auth"; "cookies"; "browser"; "webdriver" }
+    severity = "major"
+    reviewStatus = "approved"
+    contributes { "goal.protocol-compat"; "goal.dom-compat" }
+  }
+  new {
+    id = "compat.cors-preflight-enforcement"
+    name = "script_fetch enforces CORS classify preflight and response validation"
+    description =
+      "browser/shell/script_fetch.mbt routes through http/cors/classify_request, runs an OPTIONS preflight via @http_cors.PreflightCache when classify_request returns PreflightRequired, and validates Access-Control-Allow-* on the actual response via @http_cors.validate_actual_response. Failures surface as @http.HttpError::CorsBlocked / PreflightFailed and through BiDi network errorText. Covered by http/cors/cors_wbtest.mbt and browser/shell/cors_enforcement_wbtest.mbt."
+    tags { "cors"; "fetch"; "browser" }
+    severity = "major"
+    reviewStatus = "approved"
+    contributes { "goal.dom-compat" }
+  }
+  new {
+    id = "compat.samesite-attach-policy"
+    name = "Outgoing cookie attach matches the WHATWG SameSite table"
+    description =
+      "http/samesite/samesite.mbt exposes classify_site_context (eTLD+1 heuristic) and should_attach_cookie, which together implement the WHATWG cookies-bis SameSite attach filter: Strict only attaches same-site, Lax attaches cross-site only on top-level navigations, None always attaches. browser/shell/navigation_fetch.mbt's navigation_cookie_header invokes CookieJar::get_cookie_header with is_top_level_navigation=true so the SameSite enforcement in http/cookie_jar/cookie_jar.mbt fires once per navigation. Covered by http/samesite/samesite_wbtest.mbt, browser/shell/navigation_samesite_wbtest.mbt, and the SameSite cases in http/cookie_jar/cookie_jar_wbtest.mbt."
+    tags { "cookies"; "samesite"; "browser" }
+    severity = "major"
+    reviewStatus = "approved"
+    contributes { "goal.dom-compat" }
+  }
+
+  // -- Auth / CORS / runtime gaps discovered during Phase 5 e2e (PR #132) ----
+  new {
+    id = "bug.dom.html-form-element-submit-missing"
+    name = "HTMLFormElement.submit and requestSubmit are not exposed"
+    description =
+      "Crater's DOM JS bindings do not expose HTMLFormElement.prototype.submit() or .requestSubmit(). This blocks form-based login flows driven via BiDi (script.evaluate calling form.submit()) and forces tests to fall back to manual fetch() + window.location reassign. Source: PR #132 Phase 5 e2e attempt."
+    tags { "dom"; "forms"; "bidi"; "bug"; "phase5" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.dom-compat" }
+  }
+  new {
+    id = "bug.dom.document-forms-missing"
+    name = "document.forms HTMLCollection is not exposed"
+    description =
+      "document.forms (HTMLCollection of all <form> elements in document order) is not exposed on the JS document binding, so scripted form discovery from BiDi cannot work without querySelectorAll. Source: PR #132 Phase 5 e2e attempt."
+    tags { "dom"; "forms"; "bug"; "phase5" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.dom-compat" }
+  }
+  new {
+    id = "bug.bidi.navigate-wait-complete-returns-early"
+    name = "browsingContext.navigate wait complete resolves before HTML fetch on JS target"
+    description =
+      "On the JS target, browsingContext.navigate { wait: \"complete\" } resolves before the HTML body is actually fetched and parsed, so downstream script.evaluate sees an empty document. The shell adapter currently works around this by issuing a manual fetch() and calling __loadHTML on the result. Source: PR #132 Phase 5 e2e attempt."
+    tags { "bidi"; "navigation"; "webdriver"; "bug"; "phase5" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.protocol-compat" }
+  }
+  new {
+    id = "bug.runtime.fetch-no-partition-cookies"
+    name = "Runtime fetch in script.evaluate does not attach partition cookies"
+    description =
+      "Runtime fetch() invoked from script.evaluate does not auto-attach cookies from the current storage partition. storage.setCookie + resolveRequestCookies correctly resolves the partition jar, but the actual fetch('/x') request goes out without a Cookie header unless the caller passes headers: { cookie: ... } explicitly. Blocks Tasks 22/23 charter (session-attached fetch from page script). Source: PR #132 Phase 5 e2e attempt; security review item adjacent to I3."
+    tags { "runtime"; "fetch"; "cookies"; "bidi"; "bug"; "phase5" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.dom-compat"; "goal.protocol-compat" }
+  }
+  new {
+    id = "bug.runtime.fetch-no-cors-gate"
+    name = "Runtime fetch in script.evaluate bypasses script_fetch_with_cors"
+    description =
+      "Runtime fetch() invoked from script.evaluate does not route through browser/shell/script_fetch.mbt's script_fetch_with_cors, so the Phase 1-4 CORS classify / preflight / validate gate only governs <script src> loading and not WebDriver-driven fetch(). Cross-origin CORS enforcement from script-level fetch is therefore unimplemented. Source: PR #132 Phase 5 e2e attempt."
+    tags { "runtime"; "fetch"; "cors"; "bidi"; "bug"; "phase5" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.dom-compat" }
+  }
+
   // -- Diagnostic / Tools (issue-driven) -------------------------------------
   new {
     id = "diagnostic.css-rule-usage-tracking"

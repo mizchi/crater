@@ -365,4 +365,34 @@ tests {
     cmd =
       "bash -lc 'set -e; for p in \"cachix/install-nix-action\" \"github:mizchi/pkfire/v0.10.0\" \"github:mizchi/pkspec/v0.1.8\" \"actions/cache@v4\" \"PKFIRE_CACHE_DIR\" \"~/.pkl/cache\" \"pkf pkl-cache warm\" \"scripts/ci/pkfire-affected-base.sh\" \"pkf affected\" \"-j 1\" \"--profile=ci\" \"check test test-taffy test-wasm test-native-smoke\"; do grep -Fq -- \"$p\" .github/workflows/ci.yml; done'"
   }
+  new {
+    name = "cookie_jar_default_on_webdriver_session"
+    description =
+      "WebDriver-driven sessions start with the cookie jar enabled by default. http/profile/profile.mbt's Profile::new defaults jar_enabled? to true and Profile::default constructs the CookieJar with enabled=true; browser/shell/state.mbt's Browser::new wires the profile via @http_profile.Profile::default()."
+    tags { "auth"; "cookies"; "browser" }
+    specRef { "compat.cookie-jar-default-on-webdriver" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; grep -Fq -- \"jar_enabled? : Bool = true\" http/profile/profile.mbt; grep -Fq -- \"CookieJar::new(enabled=true)\" http/profile/profile.mbt; grep -Fq -- \"@http_profile.Profile::default()\" browser/shell/state.mbt; test -f browser/shell/profile_state_wbtest.mbt; grep -Fq -- \"Browser.profile owns cookie_jar and http_cache\" browser/shell/profile_state_wbtest.mbt'"
+  }
+  new {
+    name = "cors_preflight_enforcement_wired"
+    description =
+      "script_fetch routes cross-origin requests through @http_cors.classify_request, runs OPTIONS preflight via PreflightCache when required, and validates the actual response via validate_actual_response. Failures surface as @http.HttpError::CorsBlocked / PreflightFailed and are mirrored as BiDi network errorText."
+    tags { "cors"; "fetch"; "browser" }
+    specRef { "compat.cors-preflight-enforcement" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; test -f http/cors/cors.mbt; grep -Fq -- \"pub fn classify_request\" http/cors/cors.mbt; grep -Fq -- \"pub fn validate_actual_response\" http/cors/cors.mbt; grep -Fq -- \"PreflightCache\" http/cors/cors.mbt; test -f browser/shell/script_fetch.mbt; grep -Fq -- \"script_fetch_with_cors\" browser/shell/script_fetch.mbt; grep -Fq -- \"@http_cors.classify_request\" browser/shell/script_fetch.mbt; grep -Fq -- \"@http_cors.validate_actual_response\" browser/shell/script_fetch.mbt; grep -Fq -- \"@http.HttpError::CorsBlocked\" browser/shell/script_fetch.mbt; grep -Fq -- \"@http.HttpError::PreflightFailed\" browser/shell/script_fetch.mbt; test -f http/cors/cors_wbtest.mbt; test -f browser/shell/cors_enforcement_wbtest.mbt'"
+  }
+  new {
+    name = "samesite_attach_policy_enforced"
+    description =
+      "Outgoing cookie attach matches the WHATWG SameSite table. http/samesite/samesite.mbt exposes classify_site_context and should_attach_cookie; browser/shell/navigation_fetch.mbt's navigation_cookie_header calls get_cookie_header with is_top_level_navigation=true so the SameSite enforcement in http/cookie_jar/cookie_jar.mbt fires on every top-level navigation."
+    tags { "cookies"; "samesite"; "browser" }
+    specRef { "compat.samesite-attach-policy" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; test -f http/samesite/samesite.mbt; grep -Fq -- \"pub fn classify_site_context\" http/samesite/samesite.mbt; grep -Fq -- \"pub fn should_attach_cookie\" http/samesite/samesite.mbt; test -f browser/shell/navigation_fetch.mbt; grep -Fq -- \"navigation_cookie_header\" browser/shell/navigation_fetch.mbt; grep -Fq -- \"is_top_level_navigation=true\" browser/shell/navigation_fetch.mbt; grep -Fq -- \"SameSite enforcement (RFC 6265bis)\" http/cookie_jar/cookie_jar.mbt; test -f http/samesite/samesite_wbtest.mbt; test -f browser/shell/navigation_samesite_wbtest.mbt; test -f http/cookie_jar/cookie_jar_wbtest.mbt; grep -Fq -- \"samesite: Strict cookie blocked on cross-site request\" http/cookie_jar/cookie_jar_wbtest.mbt'"
+  }
 }

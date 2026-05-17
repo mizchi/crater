@@ -56,6 +56,11 @@ pkf run spec-check                                          # contract が壊れ
 | `bug.border-radius-paint` | border-radius pixel diff | #19 |
 | `bug.flexbox-align-items` | align-items 反映 | #22 |
 | `bug.samesite.psl-required` | SameSite eTLD+1 は PSL が必要 (security review I3) | — |
+| `bug.dom.html-form-element-submit-missing` | `HTMLFormElement.submit` / `requestSubmit` 未公開 | PR #132 |
+| `bug.dom.document-forms-missing` | `document.forms` HTMLCollection 未公開 | PR #132 |
+| `bug.bidi.navigate-wait-complete-returns-early` | `browsingContext.navigate` wait=complete が JS target で HTML fetch より先に解決 | PR #132 |
+| `bug.runtime.fetch-no-partition-cookies` | runtime `fetch()` が partition cookie を自動付与しない | PR #132 |
+| `bug.runtime.fetch-no-cors-gate` | runtime `fetch()` が `script_fetch_with_cors` を通らない | PR #132 |
 | `diagnostic.css-rule-usage-tracking` | dead CSS rule tracking | #27 |
 | `tui.raster-image-display` | TUI JPEG / PNG / GIF | #16 |
 | `ci.dead-module-detection` | dead-module sweep 続き | #60 |
