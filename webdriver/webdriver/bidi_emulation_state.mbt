@@ -119,6 +119,10 @@ fn BidiProtocol::mirror_global_user_agent_to_session_profiles(
   self : BidiProtocol,
   user_agent : String?,
 ) -> Unit {
+  // TODO(review): skip this iteration entirely when user_agent is None and
+  // there are no existing session_profiles entries to clear, to avoid the
+  // lazy-alloc side-effect of profile_for_session on a no-op global None set.
+  // See code-review comment on commit 495dffe (Important #2).
   for ctx_id in self.manager.list_sessions() {
     match self.profile_for_session(ctx_id) {
       Some(profile) => profile.user_agent = user_agent

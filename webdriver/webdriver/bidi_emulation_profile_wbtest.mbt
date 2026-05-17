@@ -39,6 +39,32 @@ test "clearing global UA clears session profile.user_agent" {
 }
 
 ///|
+/// After browsingContext.close the session_profiles entry must be removed.
+/// Regression test for the lifecycle gap flagged after Task 5.
+test "session_profiles entry is removed on browsingContext.close" {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"emulation.setUserAgentOverride\",\"params\":{\"userAgent\":\"UA/test\"}}",
+  )
+  ignore(proto.take_messages())
+  // Confirm entry was created
+  assert_true(
+    proto.emulation_state.session_profiles.get("session-1") is Some(_),
+  )
+  // Close the context
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"browsingContext.close\",\"params\":{\"context\":\"session-1\"}}",
+  )
+  ignore(proto.take_messages())
+  // Entry must have been removed
+  assert_true(proto.emulation_state.session_profiles.get("session-1") is None)
+}
+
+///|
 /// `resolve_effective_user_agent` falls back to `profile.user_agent` when
 /// the standalone `emulation_user_agent_global` field is None. This
 /// exercises the fallback chain introduced in this task without going
