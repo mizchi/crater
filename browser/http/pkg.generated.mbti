@@ -6,12 +6,15 @@ import {
   "mizchi/crater-browser-http/cache",
   "mizchi/crater-browser-http/cookie_jar",
   "mizchi/crater-browser-http/profile",
+  "mizchi/crater-browser-http/samesite",
 }
 
 // Values
 pub fn[CacheBackend : @cache.HttpCacheBackend] cached_fetch(url~ : String, options~ : @crater-browser-http.FetchOptions, cache~ : CacheBackend, fetcher~ : (String, @crater-browser-http.FetchOptions) -> @crater-browser-http.HttpResponse raise @crater-browser-http.HttpError) -> @crater-browser-http.HttpResponse raise @crater-browser-http.HttpError
 
 pub async fn[CacheBackend : @cache.HttpCacheBackend] cached_fetch_async(url~ : String, options~ : @crater-browser-http.FetchOptions, cache~ : CacheBackend, fetcher~ : async (String, @crater-browser-http.FetchOptions) -> @crater-browser-http.HttpResponse raise @crater-browser-http.HttpError) -> @crater-browser-http.HttpResponse raise @crater-browser-http.HttpError
+
+pub fn classify_site_context(String, String) -> @samesite.SiteContext
 
 pub async fn fetch(String, options? : @crater-browser-http.FetchOptions) -> @crater-browser-http.HttpResponse raise @crater-browser-http.HttpError
 
@@ -26,6 +29,8 @@ pub fn now_seconds() -> Double
 pub fn parse_cache_control(String) -> @cache.CacheDirectives
 
 pub fn parse_set_cookie(String, String, String) -> @cookie_jar.ParsedCookie?
+
+pub fn should_attach_cookie(@cookie_jar.ParsedCookie, @samesite.SiteContext, Bool) -> Bool
 
 // Errors
 
@@ -57,6 +62,8 @@ pub using @profile {type Profile}
 pub using @crater-browser-http {type RequestMode}
 
 pub using @crater-browser-http {type RequestSandbox}
+
+pub using @samesite {type SiteContext}
 
 pub using @cache {trait HttpCacheBackend}
 

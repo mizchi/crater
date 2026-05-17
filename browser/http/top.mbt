@@ -23,6 +23,26 @@ pub using @cookie_jar {type CookieJar, type ParsedCookie}
 pub using @profile {type Profile, type AuthState}
 
 ///|
+pub using @samesite {type SiteContext}
+
+///|
+pub fn classify_site_context(
+  request_origin : String,
+  cookie_domain : String,
+) -> SiteContext {
+  @samesite.classify_site_context(request_origin, cookie_domain)
+}
+
+///|
+pub fn should_attach_cookie(
+  cookie : @cookie_jar.ParsedCookie,
+  site_context : SiteContext,
+  is_top_level_navigation : Bool,
+) -> Bool {
+  @samesite.should_attach_cookie(cookie, site_context, is_top_level_navigation)
+}
+
+///|
 pub fn[CacheBackend : HttpCacheBackend] cached_fetch(
   url~ : String,
   options~ : FetchOptions,
