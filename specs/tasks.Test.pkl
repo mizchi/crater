@@ -276,6 +276,16 @@ tests {
       "bash -lc 'set -e; test -f painter/paint/glyph/provider_wbtest.mbt; grep -Fq -- \"glyph_from_provider forwards numeric font_weight 500\" painter/paint/glyph/provider_wbtest.mbt; grep -Fq -- \"js_glyph_outline_commands_by_weight\" webdriver/webdriver/bidi_browsing_context_actual_paint.mbt; grep -Fq -- \"resolve_js_glyph_commands_by_weight\" webdriver/webdriver/bidi_browsing_context_actual_paint.mbt; grep -Fq -- \"__craterGlyphOutlineCommandsByWeight\" webdriver/bidi_main/start-with-font.ts; grep -Fq -- \"pickNearestFontWeight\" scripts/font-weight-resolve.ts; grep -Fq -- \"selectWeightCandidates\" scripts/font-weight-resolve.ts; grep -Fq -- \"declaredWeightsForEntry\" scripts/font-weight-resolve.ts; grep -Fq -- \"byWeight: Map<number, FontInstance>\" webdriver/bidi_main/start-with-font.ts; grep -Fq -- \"loadDeclaredExtraWeights\" webdriver/bidi_main/start-with-font.ts'"
   }
   new {
+    name = "wpt_css_pseudo_baseline_is_pinned"
+    description =
+      "css-pseudo is enabled in wpt.json and the per-module baseline file pins the expected pass / fail counts."
+    tags { "wpt"; "css"; "baseline" }
+    specRef { "compat.css-pseudo-baseline" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; grep -Fq -- \"\\\"css-pseudo\\\"\" wpt.json; test -f tests/wpt-baselines/css-pseudo.env; grep -Fq -- \"MODULE=css-pseudo\" tests/wpt-baselines/css-pseudo.env; grep -Fq -- \"BASELINE_PASSED=1\" tests/wpt-baselines/css-pseudo.env; grep -Fq -- \"BASELINE_FAILED=0\" tests/wpt-baselines/css-pseudo.env'"
+  }
+  new {
     name = "wpt_css_writing_modes_baseline_is_pinned"
     description =
       "css-writing-modes is enabled in wpt.json and the per-module baseline file pins the expected pass / fail counts."
