@@ -1,4 +1,31 @@
 ///|
+/// Compute the `Cookie` header for a top-level navigation request,
+/// filtering each candidate cookie through the SameSite policy
+/// (`is_top_level_navigation=true`, matching
+/// `@http.should_attach_cookie`'s top-level branch). `source_url` is the
+/// origin of the page initiating the navigation; an empty string means
+/// "same-site" and disables cross-site enforcement.
+///
+/// This is the single seam that the navigation path uses to decide
+/// cookie attach. Subresource fetches (script_fetch / external_css_fetch)
+/// have their own helper (TBD in later tasks) so the two contexts can
+/// differ in `is_top_level_navigation` independently.
+fn navigation_cookie_header(
+  jar : @http_cookie_jar.CookieJar,
+  source_url : String,
+  target_url : String,
+) -> String? {
+  let is_secure = target_url.has_prefix("https://")
+  jar.get_cookie_header(
+    target_url,
+    is_secure,
+    true,
+    site_origin=source_url,
+    is_top_level_navigation=true,
+  )
+}
+
+///|
 async fn Browser::fetch_navigation_document(
   self : Browser,
   source_url : String,
@@ -7,14 +34,7 @@ async fn Browser::fetch_navigation_document(
   let url = request.url
   let page_headers : Map[String, String] = {}
   let is_secure = url.has_prefix("https://")
-  match
-    self.profile.cookie_jar.get_cookie_header(
-      url,
-      is_secure,
-      true,
-      site_origin=source_url,
-      is_top_level_navigation=true,
-    ) {
+  match navigation_cookie_header(self.profile.cookie_jar, source_url, url) {
     Some(cookie_header) => page_headers["Cookie"] = cookie_header
     None => ()
   }
