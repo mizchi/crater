@@ -117,6 +117,52 @@ fn registrable_domain(host : String) -> String {
 }
 
 ///|
+/// Decide whether `cookie` should be attached to a request for
+/// `request_url`, given the precomputed `site_context` (cookie domain vs
+/// request origin) and whether the request is a top-level navigation.
+///
+/// Implements the WHATWG cookies-bis SameSite attach filter:
+///
+/// - `Strict`: attach only when same-site (regardless of navigation kind).
+/// - `Lax`: attach when same-site; for cross-site, attach only on a
+///   top-level navigation (e.g. clicking a link).
+/// - `None` / unspecified: always attach. (Note: SameSite=None requires
+///   the Secure attribute, but that's enforced at parse / store time, not
+///   here — by the time a cookie is in the jar, the Secure check has
+///   already passed.)
+///
+/// `request_url` is currently accepted for API symmetry with the call
+/// sites (navigation_fetch / script_fetch) and ignored — the site
+/// classification has already been folded into `site_context`. Kept in
+/// the signature so callers don't have to thread two related-but-not-
+/// quite-same values.
+pub fn should_attach_cookie(
+  cookie : @cookie_jar.ParsedCookie,
+  request_url : String,
+  site_context : SiteContext,
+  is_top_level_navigation : Bool,
+) -> Bool {
+  let _ = request_url
+  // ParsedCookie stores SameSite as a lowercased string ("strict" / "lax"
+  // / "none" / ""). Unknown / empty values are treated as Lax per
+  // RFC 6265bis "Lax by default".
+  match cookie.same_site {
+    "strict" =>
+      match site_context {
+        SameSite => true
+        CrossSite => false
+      }
+    "none" => true
+    // "lax" and the empty / unknown default
+    _ =>
+      match site_context {
+        SameSite => true
+        CrossSite => is_top_level_navigation
+      }
+  }
+}
+
+///|
 /// IPv4 dotted-quad heuristic plus IPv6 bracketed form. Conservative:
 /// any host that "looks like" an IP is treated as its own site.
 ///

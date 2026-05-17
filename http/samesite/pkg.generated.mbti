@@ -1,8 +1,14 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "mizchi/crater-browser-http/samesite"
 
+import {
+  "mizchi/crater-browser-http/cookie_jar",
+}
+
 // Values
 pub fn classify_site_context(String, String) -> SiteContext
+
+pub fn should_attach_cookie(@cookie_jar.ParsedCookie, String, SiteContext, Bool) -> Bool
 
 // Errors
 
