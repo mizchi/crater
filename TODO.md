@@ -55,6 +55,7 @@ pkf run spec-check                                          # contract が壊れ
 | `bug.inline-abspos-width-ahem` | inline abspos width Ahem | #17 |
 | `bug.border-radius-paint` | border-radius pixel diff | #19 |
 | `bug.flexbox-align-items` | align-items 反映 | #22 |
+| `bug.samesite.psl-required` | SameSite eTLD+1 は PSL が必要 (security review I3) | — |
 | `diagnostic.css-rule-usage-tracking` | dead CSS rule tracking | #27 |
 | `tui.raster-image-display` | TUI JPEG / PNG / GIF | #16 |
 | `ci.dead-module-detection` | dead-module sweep 続き | #60 |
