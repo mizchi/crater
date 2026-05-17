@@ -1,0 +1,8 @@
+import {
+  "mizchi/crater-browser-http/cookie_jar" @cookie_jar,
+  "mizchi/crater-browser-http/cache" @cache,
+}
+
+warnings = "-unused_package"
+
+supported_targets = "js+native+wasm+wasm-gc"
