@@ -179,6 +179,88 @@ pub fn origin_of(url : String) -> String {
 }
 
 ///|
+/// Validate the OPTIONS response that answered an earlier
+/// `PreflightRequest`. Returns `Ok(())` when every required
+/// Access-Control-Allow-* header is present and accepts the original
+/// request (origin / method / each custom header). Returns
+/// `Err(message)` describing the first failing check so the caller can
+/// surface a useful CORS error.
+///
+/// Rules (per Fetch spec, simplified):
+/// - response.status must be 2xx (200–299).
+/// - response.headers["access-control-allow-origin"] must equal
+///   `request.origin` exactly, or be `"*"`.
+/// - response.headers["access-control-allow-methods"] must contain
+///   `request.method` (case-sensitive) or `"*"`.
+/// - For each header name in `request.request_headers` (already
+///   lowercased by classify_request), the value of
+///   `access-control-allow-headers` parsed as a CSV must contain the
+///   header (lowercased) or `"*"`.
+pub fn validate_preflight_response(
+  request : PreflightRequest,
+  response : @http_impl.HttpResponse,
+) -> Result[Unit, String] {
+  if response.status < 200 || response.status >= 300 {
+    return Err("preflight non-2xx status: " + response.status.to_string())
+  }
+  let aco = header_or_empty(response.headers, "access-control-allow-origin")
+  if aco != request.origin && aco != "*" {
+    return Err(
+      "Access-Control-Allow-Origin missing or mismatched: \"" + aco + "\"",
+    )
+  }
+  let allowed_methods = parse_csv(
+    header_or_empty(response.headers, "access-control-allow-methods"),
+  )
+  if !allowed_methods.contains(request.method) && !allowed_methods.contains("*") {
+    return Err(
+      "Access-Control-Allow-Methods does not include " + request.method,
+    )
+  }
+  let allowed_headers : Array[String] = parse_csv(
+    header_or_empty(response.headers, "access-control-allow-headers"),
+  ).map(fn(s) { s.to_lower() })
+  for h in request.request_headers {
+    if !allowed_headers.contains(h) && !allowed_headers.contains("*") {
+      return Err("Access-Control-Allow-Headers does not include " + h)
+    }
+  }
+  Ok(())
+}
+
+///|
+/// Look up `key` in `headers` (case-insensitive: the response from a
+/// real fetch may use any casing). Returns the trimmed value, or `""`
+/// when absent. Treating "header missing" and "header empty" the same
+/// way is intentional — both leave validation with no positive
+/// information to act on, which is the failure case anyway.
+fn header_or_empty(headers : Map[String, String], key : String) -> String {
+  let lower_key = key.to_lower()
+  for k, v in headers {
+    if k.to_lower() == lower_key {
+      return v.trim().to_owned()
+    }
+  }
+  ""
+}
+
+///|
+/// Split a comma-separated header value into trimmed, non-empty tokens.
+/// E.g. `"GET, POST , "` → `["GET", "POST"]`. Caller is responsible
+/// for any case folding (preflight method names stay as-is; header
+/// names are lowercased upstream).
+pub fn parse_csv(value : String) -> Array[String] {
+  let out : Array[String] = []
+  for part in value.split(",") {
+    let token = part.trim(chars=" ").to_owned()
+    if token != "" {
+      out.push(token)
+    }
+  }
+  out
+}
+
+///|
 /// Return the prefix of `s` up to (but not including) the first
 /// character in `stops`. Returns `s` unchanged if no stop matches.
 fn truncate_at_any(s : String, stops : Array[Char]) -> String {

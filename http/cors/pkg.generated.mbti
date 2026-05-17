@@ -14,6 +14,10 @@ pub fn is_simple_method(String) -> Bool
 
 pub fn origin_of(String) -> String
 
+pub fn parse_csv(String) -> Array[String]
+
+pub fn validate_preflight_response(PreflightRequest, @crater-browser-http.HttpResponse) -> Result[Unit, String]
+
 // Errors
 
 // Types and methods
