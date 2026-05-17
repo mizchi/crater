@@ -33,6 +33,7 @@ pub impl Show for CorsDecision
 pub struct PreflightCache {
   entries : Map[String, PreflightEntry]
 }
+pub fn PreflightCache::get_or_validate(Self, PreflightRequest, () -> Double, (PreflightRequest) -> @crater-browser-http.HttpResponse) -> Result[Unit, String]
 pub fn PreflightCache::new() -> Self
 
 pub(all) struct PreflightEntry {

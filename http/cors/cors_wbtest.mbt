@@ -216,3 +216,73 @@ test "validate_actual_response: credentials=Include needs ACA-Credentials=true" 
     Ok(_) => fail("expected Err")
   }
 }
+
+///|
+test "PreflightCache::get_or_validate: cache hit within Max-Age (fetcher called once)" {
+  let cache = PreflightCache::new()
+  let req = PreflightRequest::{
+    url: "https://api.other.com/x",
+    origin: "https://example.com",
+    method: "POST",
+    request_headers: ["content-type", "x-csrf"],
+  }
+  // Mutable counter via 1-element array (Ref not assumed available).
+  let calls : Array[Int] = [0]
+  let fetcher = fn(_r : PreflightRequest) -> @http_impl.HttpResponse {
+    calls[0] = calls[0] + 1
+    test_preflight_response(
+      status=204,
+      aca_origin="https://example.com",
+      aca_methods="POST",
+      aca_headers="content-type, x-csrf",
+      aca_max_age="600",
+    )
+  }
+  // Frozen clock; both calls happen at t=1000.0, well under 600s Max-Age.
+  let now = fn() -> Double { 1000.0 }
+  match cache.get_or_validate(req, now, fetcher) {
+    Ok(_) => inspect(true, content="true")
+    Err(e) => fail("first call expected Ok, got Err: " + e)
+  }
+  match cache.get_or_validate(req, now, fetcher) {
+    Ok(_) => inspect(true, content="true")
+    Err(e) => fail("second call expected Ok, got Err: " + e)
+  }
+  inspect(calls[0], content="1")
+}
+
+///|
+test "PreflightCache::get_or_validate: cache miss past Max-Age (fetcher called twice)" {
+  let cache = PreflightCache::new()
+  let req = PreflightRequest::{
+    url: "https://api.other.com/y",
+    origin: "https://example.com",
+    method: "PUT",
+    request_headers: ["x-token"],
+  }
+  let calls : Array[Int] = [0]
+  let fetcher = fn(_r : PreflightRequest) -> @http_impl.HttpResponse {
+    calls[0] = calls[0] + 1
+    test_preflight_response(
+      status=204,
+      aca_origin="https://example.com",
+      aca_methods="PUT",
+      aca_headers="x-token",
+      aca_max_age="60",
+    )
+  }
+  // Advance the clock past Max-Age between the two calls.
+  let clock : Array[Double] = [1000.0]
+  let now = fn() -> Double { clock[0] }
+  match cache.get_or_validate(req, now, fetcher) {
+    Ok(_) => inspect(true, content="true")
+    Err(e) => fail("first call expected Ok, got Err: " + e)
+  }
+  // 60s after first call → entry expires_at = 1060, now = 1100 ⇒ expired.
+  clock[0] = 1100.0
+  match cache.get_or_validate(req, now, fetcher) {
+    Ok(_) => inspect(true, content="true")
+    Err(e) => fail("second call expected Ok, got Err: " + e)
+  }
+  inspect(calls[0], content="2")
+}

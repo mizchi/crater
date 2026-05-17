@@ -324,6 +324,145 @@ pub fn parse_csv(value : String) -> Array[String] {
 }
 
 ///|
+/// Memoized preflight: look up an entry for `request` in `self`, and
+/// either reuse it (when `expires_at_seconds` is still in the future
+/// relative to `now()`) or perform an OPTIONS roundtrip via `fetcher`
+/// and store a fresh entry.
+///
+/// On a cache hit we still re-check the cached entry against the
+/// current `request` (method + each request header must be in the
+/// allowed lists, accounting for `"*"`). A hit that fails this check
+/// is evicted and treated as a miss — that way a misconfigured server
+/// can recover after it updates its allow-lists without waiting for
+/// Max-Age to expire.
+///
+/// On a miss we delegate to `fetcher`, run the response through
+/// `validate_preflight_response`, and (on Ok) insert a new entry with
+/// `expires_at_seconds = now() + Access-Control-Max-Age`. Validation
+/// errors are propagated unchanged so the caller surfaces them.
+pub fn PreflightCache::get_or_validate(
+  self : PreflightCache,
+  request : PreflightRequest,
+  now : () -> Double,
+  fetcher : (PreflightRequest) -> @http_impl.HttpResponse,
+) -> Result[Unit, String] {
+  let key = cache_key(request)
+  let current = now()
+  if self.entries.get(key) is Some(entry) {
+    if entry.expires_at_seconds > current {
+      match validate_cached_entry(entry, request) {
+        Ok(_) => return Ok(())
+        Err(_) => self.entries.remove(key)
+      }
+    } else {
+      self.entries.remove(key)
+    }
+  }
+  let response = fetcher(request)
+  match validate_preflight_response(request, response) {
+    Err(e) => return Err(e)
+    Ok(_) => ()
+  }
+  let max_age = parse_double_default(
+    header_or_empty(response.headers, "access-control-max-age"),
+    0.0,
+  )
+  let allowed_methods = parse_csv(
+    header_or_empty(response.headers, "access-control-allow-methods"),
+  )
+  let allowed_headers = parse_csv(
+    header_or_empty(response.headers, "access-control-allow-headers"),
+  ).map(fn(s) { s.to_lower() })
+  let allow_credentials = header_or_empty(
+      response.headers,
+      "access-control-allow-credentials",
+    ) ==
+    "true"
+  self.entries[key] = PreflightEntry::{
+    allowed_methods,
+    allowed_headers,
+    allow_credentials,
+    expires_at_seconds: current + max_age,
+  }
+  Ok(())
+}
+
+///|
+/// Build a stable cache key for a preflight request.
+/// `request_headers` is already lowercased + sorted by
+/// `classify_request`, so the join is deterministic.
+fn cache_key(req : PreflightRequest) -> String {
+  req.origin +
+  "|" +
+  req.url +
+  "|" +
+  req.method +
+  "|" +
+  req.request_headers.join(",")
+}
+
+///|
+/// Re-check a cache hit against the current request. Mirrors the
+/// method / header subset of `validate_preflight_response`, but reads
+/// from the parsed `PreflightEntry` instead of HTTP headers.
+fn validate_cached_entry(
+  entry : PreflightEntry,
+  req : PreflightRequest,
+) -> Result[Unit, String] {
+  if !entry.allowed_methods.contains(req.method) &&
+    !entry.allowed_methods.contains("*") {
+    return Err("cached entry does not allow method " + req.method)
+  }
+  for h in req.request_headers {
+    if !entry.allowed_headers.contains(h) &&
+      !entry.allowed_headers.contains("*") {
+      return Err("cached entry does not allow header " + h)
+    }
+  }
+  Ok(())
+}
+
+///|
+/// Parse a numeric (integer or decimal) string to Double. Returns
+/// `default` on any malformed input — the spec treats unparseable
+/// Access-Control-Max-Age as if the header were absent, so callers
+/// pass `0.0` to force a fresh roundtrip on the next request.
+fn parse_double_default(s : String, default : Double) -> Double {
+  if s.length() == 0 {
+    return default
+  }
+  let mut int_part = 0.0
+  let mut frac_part = 0.0
+  let mut frac_div = 1.0
+  let mut seen_dot = false
+  let mut seen_digit = false
+  for i = 0; i < s.length(); i = i + 1 {
+    let c = s[i]
+    if c == '.' {
+      if seen_dot {
+        return default
+      }
+      seen_dot = true
+    } else if c >= '0' && c <= '9' {
+      let d = (c.to_int() - '0'.to_int()).to_double()
+      if seen_dot {
+        frac_div = frac_div * 10.0
+        frac_part = frac_part + d / frac_div
+      } else {
+        int_part = int_part * 10.0 + d
+      }
+      seen_digit = true
+    } else {
+      return default
+    }
+  }
+  if !seen_digit {
+    return default
+  }
+  int_part + frac_part
+}
+
+///|
 /// Return the prefix of `s` up to (but not including) the first
 /// character in `stops`. Returns `s` unchanged if no stop matches.
 fn truncate_at_any(s : String, stops : Array[Char]) -> String {
