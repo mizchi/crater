@@ -15,6 +15,8 @@ pub(all) suberror HttpError {
   TimeoutError
   CorsError(String)
   SandboxError(String)
+  CorsBlocked(String)
+  PreflightFailed(String)
 }
 
 ///|
@@ -25,6 +27,8 @@ pub impl Show for HttpError with output(self, logger) {
     TimeoutError => logger.write_string("TimeoutError")
     CorsError(msg) => logger.write_string("CorsError: " + msg)
     SandboxError(msg) => logger.write_string("SandboxError: " + msg)
+    CorsBlocked(msg) => logger.write_string("CorsBlocked(" + msg + ")")
+    PreflightFailed(msg) => logger.write_string("PreflightFailed(" + msg + ")")
   }
 }
 

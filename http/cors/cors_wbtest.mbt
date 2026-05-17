@@ -252,6 +252,20 @@ test "PreflightCache::get_or_validate: cache hit within Max-Age (fetcher called 
 }
 
 ///|
+test "HttpError carries CorsBlocked variant" {
+  let e : @http_impl.HttpError = @http_impl.HttpError::CorsBlocked("test")
+  inspect(e, content="CorsBlocked(test)")
+}
+
+///|
+test "HttpError carries PreflightFailed variant" {
+  let e : @http_impl.HttpError = @http_impl.HttpError::PreflightFailed(
+    "missing ACA-Origin",
+  )
+  inspect(e, content="PreflightFailed(missing ACA-Origin)")
+}
+
+///|
 test "PreflightCache::get_or_validate: cache miss past Max-Age (fetcher called twice)" {
   let cache = PreflightCache::new()
   let req = PreflightRequest::{
