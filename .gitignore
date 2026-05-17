@@ -35,6 +35,8 @@ fixtures/
 !benchmarks/fixtures/github_global.css
 !benchmarks/fixtures/github_main.css
 !benchmarks/fixtures/github_profile.css
+!scripts/fixtures/
+!scripts/fixtures/**
 
 # WPT support files (CSS/fonts, regenerated during fetch)
 wpt-tests/**/support/

@@ -105,6 +105,23 @@ task(
 
 # Browser protocol and adapter suites
 task(
+  id="auth-flow-via-bidi",
+  node="browser",
+  cmd=["pnpm", "exec", "playwright", "test", "tests/auth-flow-via-bidi.test.ts"],
+  srcs=[
+    "browser/shell/**",
+    "browser/http/**",
+    "http/**",
+    "webdriver/webdriver/**",
+    "scripts/fixtures/**",
+    "tests/auth-flow-via-bidi.test.ts",
+    "tests/helpers/crater-bidi.ts",
+  ],
+  needs=["playwright-adapter"],
+  trigger="auto",
+)
+
+task(
   id="playwright-adapter",
   node="browser",
   cmd=["pnpm", "exec", "playwright", "test", "tests/playwright-adapter.test.ts"],

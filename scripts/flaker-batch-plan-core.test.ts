@@ -16,6 +16,7 @@ describe("buildFlakerBatchPlan", () => {
 
     expect(plan.workflowName).toBe("crater-tests");
     expect(plan.tasks.map((task) => task.id)).toEqual([
+      "auth-flow-via-bidi",
       "bidi-e2e",
       "browser-user-scenarios",
       "crater-playwright-adapter",
