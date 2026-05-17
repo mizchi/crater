@@ -33,11 +33,26 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - name: Install pkfire
-        uses: mizchi/pkfire@v0.10.0
+      # The mizchi/pkfire / mizchi/pkspec actions curl the GitHub releases
+      # API unauthenticated, so concurrent runs hit the 60/hr per-IP limit
+      # and fail with curl 22 / HTTP 429. Install the binaries from their
+      # nix flakes instead — the access-tokens entry lets nix use the
+      # job's GITHUB_TOKEN for github.com fetches, giving us the
+      # 5000/hr authenticated quota and a deterministic install.
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install pkspec
-        uses: mizchi/pkspec@v0.1.8
+      - name: Install pkfire and pkspec via nix
+        run: |
+          nix profile install --no-write-lock-file \
+            github:mizchi/pkfire/v0.10.0 \
+            github:mizchi/pkspec/v0.1.8
+          pkf --version
+          pkspec --version
 
       - name: Restore Pkl package cache
         uses: actions/cache@v4

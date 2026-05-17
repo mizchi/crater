@@ -20,6 +20,7 @@ describe("buildFlakerBatchPlan", () => {
       "browser-user-scenarios",
       "crater-playwright-adapter",
       "paint-vrt",
+      "paint-vrt-gradients",
       "paint-vrt-levels",
       "paint-vrt-responsive",
       "paint-vrt-svg-intrinsic",

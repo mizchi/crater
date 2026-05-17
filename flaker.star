@@ -71,6 +71,22 @@ task(
 )
 
 task(
+  id="paint-vrt-gradients",
+  node="layout",
+  cmd=["pnpm", "exec", "playwright", "test", "tests/paint-vrt-gradients.test.ts"],
+  srcs=[
+    "layout/**",
+    "painter/**",
+    "renderer/**",
+    "css/**",
+    "dom/css/**",
+    "tests/helpers/**",
+  ],
+  needs=["paint-vrt"],
+  trigger="auto",
+)
+
+task(
   id="wpt-vrt",
   node="layout",
   cmd=["pnpm", "exec", "playwright", "test", "tests/wpt-vrt.test.ts"],

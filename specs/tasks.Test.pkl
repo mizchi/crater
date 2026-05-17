@@ -276,6 +276,16 @@ tests {
       "bash -lc 'set -e; test -f painter/paint/glyph/provider_wbtest.mbt; grep -Fq -- \"glyph_from_provider forwards numeric font_weight 500\" painter/paint/glyph/provider_wbtest.mbt; grep -Fq -- \"js_glyph_outline_commands_by_weight\" webdriver/webdriver/bidi_browsing_context_actual_paint.mbt; grep -Fq -- \"resolve_js_glyph_commands_by_weight\" webdriver/webdriver/bidi_browsing_context_actual_paint.mbt; grep -Fq -- \"__craterGlyphOutlineCommandsByWeight\" webdriver/bidi_main/start-with-font.ts; grep -Fq -- \"pickNearestFontWeight\" scripts/font-weight-resolve.ts; grep -Fq -- \"selectWeightCandidates\" scripts/font-weight-resolve.ts; grep -Fq -- \"declaredWeightsForEntry\" scripts/font-weight-resolve.ts; grep -Fq -- \"byWeight: Map<number, FontInstance>\" webdriver/bidi_main/start-with-font.ts; grep -Fq -- \"loadDeclaredExtraWeights\" webdriver/bidi_main/start-with-font.ts'"
   }
   new {
+    name = "paint_gradient_vrt_fixtures_exist"
+    description =
+      "tests/paint-vrt-gradients.test.ts exists and covers the five gradient cases (radial, conic, repeating-linear, repeating-radial, linear with explicit stops)."
+    tags { "paint"; "css"; "vrt"; "fixtures" }
+    specRef { "compat.css-background-gradient-vrt" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; test -f tests/paint-vrt-gradients.test.ts; for p in \"radial-gradient renders centred circle and offset ellipse\" \"conic-gradient renders rotation and from-angle variants\" \"repeating-linear-gradient renders evenly spaced stripes\" \"repeating-radial-gradient renders concentric rings\" \"linear-gradient respects explicit color-stop positions\"; do grep -Fq -- \"$p\" tests/paint-vrt-gradients.test.ts || { echo \"missing fixture case: $p\"; exit 1; }; done'"
+  }
+  new {
     name = "paint_svg_intrinsic_has_dedicated_fixtures"
     description =
       "tests/paint-vrt-svg-intrinsic.test.ts exists and covers the five SVG intrinsic sizing patterns (explicit dims, viewBox-only, flex container, inline-replaced, percent parent) that previously only ran as part of real-URL captures."
@@ -343,6 +353,6 @@ tests {
     specRef { "ci.affected" }
     workdir = ".."
     cmd =
-      "bash -lc 'set -e; for p in \"mizchi/pkfire@v0.10.0\" \"mizchi/pkspec@v0.1.8\" \"actions/cache@v4\" \"PKFIRE_CACHE_DIR\" \"~/.pkl/cache\" \"pkf pkl-cache warm\" \"scripts/ci/pkfire-affected-base.sh\" \"pkf affected\" \"-j 1\" \"--profile=ci\" \"check test test-taffy test-wasm test-native-smoke\"; do grep -Fq -- \"$p\" .github/workflows/ci.yml; done'"
+      "bash -lc 'set -e; for p in \"cachix/install-nix-action\" \"github:mizchi/pkfire/v0.10.0\" \"github:mizchi/pkspec/v0.1.8\" \"actions/cache@v4\" \"PKFIRE_CACHE_DIR\" \"~/.pkl/cache\" \"pkf pkl-cache warm\" \"scripts/ci/pkfire-affected-base.sh\" \"pkf affected\" \"-j 1\" \"--profile=ci\" \"check test test-taffy test-wasm test-native-smoke\"; do grep -Fq -- \"$p\" .github/workflows/ci.yml; done'"
   }
 }
