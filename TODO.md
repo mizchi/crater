@@ -39,7 +39,6 @@ pkf run spec-check                                          # contract が壊れ
 | `paint.real-world-snapshots` | built-in real-world snapshot 3-5 ページ | — |
 | `paint.github-residual-diff` | GitHub VRT 残差 (sticky nav / card border / list marker) | — |
 | `paint.browser-shell-fixture-expansion` | browser shell fixture を実ページ寄りに | — |
-| `compat.css-background-gradient-vrt` | CSS gradient VRT fixture 拡張 | — |
 | `diagnostic.paint-tree-diff` | paint tree diff API | #23 |
 | `diagnostic.css-property-mutation` | CSS property mutation API | #24 |
 | `diagnostic.selector-scoped-render` | selector-scoped rendering API | #25 |
