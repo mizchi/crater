@@ -6,7 +6,7 @@
 /// scenario.
 pub(all) struct Profile {
   mut user_agent : String?
-  cookie_jar : @cookie_jar.CookieJar
+  mut cookie_jar : @cookie_jar.CookieJar
   http_cache : @cache.MemoryCacheBackend
   auth_state : AuthState
 }
@@ -28,7 +28,7 @@ pub fn Profile::default() -> Profile {
 /// work without the operator having to opt in.
 pub fn Profile::new(
   user_agent? : String,
-  jar_enabled~ : Bool = true,
+  jar_enabled? : Bool = true,
 ) -> Profile {
   Profile::{
     user_agent,

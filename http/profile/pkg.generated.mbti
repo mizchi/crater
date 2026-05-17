@@ -19,7 +19,7 @@ pub impl Show for AuthState
 
 pub(all) struct Profile {
   mut user_agent : String?
-  cookie_jar : @cookie_jar.CookieJar
+  mut cookie_jar : @cookie_jar.CookieJar
   http_cache : @cache.MemoryCacheBackend
   auth_state : AuthState
 }

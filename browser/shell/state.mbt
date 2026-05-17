@@ -192,10 +192,9 @@ struct Browser {
   kitty_uploaded_image_ids : Map[Int, Bool]
   /// Visible kitty placements from the previous text render
   mut kitty_visible_placements : Map[String, KittyPlacement]
-  /// HTTP cache for static assets (CSS, images, scripts, fonts)
-  http_cache : @http_cache.MemoryCacheBackend
-  /// Cookie jar (disabled by default for security)
-  mut cookie_jar : @http_cookie_jar.CookieJar
+  /// Per-session profile bundling user-agent override, cookie jar,
+  /// HTTP cache, and auth state.
+  profile : @http_profile.Profile
 }
 
 ///|
@@ -264,7 +263,21 @@ pub fn Browser::new(
     image_cache: @terminal_image_cache.ImageCache::new(),
     kitty_uploaded_image_ids: {},
     kitty_visible_placements: {},
-    http_cache: @http_cache.MemoryCacheBackend::new(max_entries=1000),
-    cookie_jar: @http_cookie_jar.CookieJar::new(), // disabled by default
+    profile: @http_profile.Profile::default(),
   }
+}
+
+///|
+/// Backward-compatible accessor for the per-session cookie jar.
+/// Prefer reading `state.profile.cookie_jar` directly in new code;
+/// this method keeps existing call sites working through the migration.
+pub fn Browser::cookie_jar(self : Browser) -> @http_cookie_jar.CookieJar {
+  self.profile.cookie_jar
+}
+
+///|
+/// Backward-compatible accessor for the per-session HTTP cache.
+/// Prefer reading `state.profile.http_cache` directly in new code.
+pub fn Browser::http_cache(self : Browser) -> @http_cache.MemoryCacheBackend {
+  self.profile.http_cache
 }

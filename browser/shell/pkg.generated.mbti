@@ -3,6 +3,8 @@ package "mizchi/crater-browser/shell"
 
 import {
   "mizchi/crater-browser-http",
+  "mizchi/crater-browser-http/cache",
+  "mizchi/crater-browser-http/cookie_jar",
   "mizchi/crater-browser-runtime",
   "mizchi/crater-dom/dom",
   "moonbitlang/async/io",
@@ -17,6 +19,7 @@ type Browser
 pub async fn Browser::activate_at(Self, Int, Int) -> Bool raise @crater-browser-http.HttpError
 pub async fn Browser::activate_focused_link(Self) -> Bool raise @crater-browser-http.HttpError
 pub async fn Browser::activate_link_at(Self, Int, Int) -> Bool raise @crater-browser-http.HttpError
+pub fn Browser::cookie_jar(Self) -> @cookie_jar.CookieJar
 pub fn Browser::debug_layout(Self) -> Unit
 pub fn Browser::enter_hint_mode(Self) -> Unit
 pub async fn Browser::execute_inline_js_async(Self, String) -> String? raise @crater-browser-http.HttpError
@@ -34,6 +37,7 @@ pub async fn Browser::go_back(Self) -> String? raise @crater-browser-http.HttpEr
 pub async fn Browser::go_forward(Self) -> String? raise @crater-browser-http.HttpError
 pub async fn Browser::handle_focused_key(Self, String) -> Bool raise @crater-browser-http.HttpError
 pub fn Browser::hover_at(Self, Int, Int) -> Bool
+pub fn Browser::http_cache(Self) -> @cache.MemoryCacheBackend
 pub fn Browser::is_hint_mode(Self) -> Bool
 pub async fn Browser::navigate(Self, String) -> String raise @crater-browser-http.HttpError
 pub async fn Browser::navigate_lightweight(Self, String) -> String raise @crater-browser-http.HttpError

@@ -8,9 +8,10 @@ pub fn Browser::set_enable_js(self : Browser, enable : Bool) -> Unit {
 
 ///|
 /// Enable or disable cookie jar.
-/// Cookies are disabled by default for security.
+/// Swaps only the jar on the existing profile, preserving http_cache,
+/// user_agent, and auth_state.
 pub fn Browser::set_enable_cookies(self : Browser, enable : Bool) -> Unit {
-  self.cookie_jar = @http_cookie_jar.CookieJar::new(enabled=enable)
+  self.profile.cookie_jar = @http_cookie_jar.CookieJar::new(enabled=enable)
 }
 
 ///|

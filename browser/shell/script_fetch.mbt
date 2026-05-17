@@ -19,7 +19,7 @@ async fn Browser::fetch_external_script_source(
     let response = @http_cache.cached_fetch_async(
       url=script_url,
       options=script_options,
-      cache=self.http_cache,
+      cache=self.profile.http_cache,
       fetcher=http_fetch_adapter,
     )
     println("    -> OK (" + response.body.length().to_string() + " bytes)")
