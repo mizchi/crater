@@ -336,6 +336,16 @@ tests {
       "bash -lc 'set -e; grep -Fq -- \"\\\"css-backgrounds\\\"\" wpt.json; test -f tests/wpt-baselines/css-backgrounds.env; grep -Fq -- \"MODULE=css-backgrounds\" tests/wpt-baselines/css-backgrounds.env; grep -Fq -- \"BASELINE_PASSED=74\" tests/wpt-baselines/css-backgrounds.env; grep -Fq -- \"BASELINE_FAILED=6\" tests/wpt-baselines/css-backgrounds.env'"
   }
   new {
+    name = "wpt_css_borders_baseline_is_pinned"
+    description =
+      "css-borders is enabled in wpt.json and the per-module baseline file pins the expected pass / fail counts."
+    tags { "wpt"; "css"; "baseline" }
+    specRef { "compat.css-borders-baseline" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; grep -Fq -- \"\\\"css-borders\\\"\" wpt.json; test -f tests/wpt-baselines/css-borders.env; grep -Fq -- \"MODULE=css-borders\" tests/wpt-baselines/css-borders.env; grep -Fq -- \"BASELINE_PASSED=4\" tests/wpt-baselines/css-borders.env; grep -Fq -- \"BASELINE_FAILED=1\" tests/wpt-baselines/css-borders.env'"
+  }
+  new {
     name = "wpt_css_color_baseline_is_pinned"
     description =
       "css-color is enabled in wpt.json, the per-module baseline file exists with the expected fields, and scripts/test-wpt-module-baseline.sh is wired to enforce no-regression on it."

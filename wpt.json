@@ -37,7 +37,12 @@
     // Pseudo-elements; only 1 fixture matches the current
     // includePrefixes filter. Widening the filter requires the broader
     // inline-model pass. See pkspec compat.css-pseudo-baseline.
-    "css-pseudo"
+    "css-pseudo",
+
+    // Borders. The includePrefixes filter exposes a small set of
+    // border-radius / border-shape / border-image fixtures (5 layout
+    // comparable). See pkspec compat.css-borders-baseline.
+    "css-borders"
 
     // Later: meaningful, but deferred for now.
     // "css-ruby",           // No fixtures match includePrefixes; needs filter widening.
