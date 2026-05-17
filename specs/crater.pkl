@@ -343,10 +343,10 @@ scenarios {
     id = "compat.css-backgrounds-baseline"
     name = "css-backgrounds WPT module baseline is established"
     description =
-      "Measure and pin a per-module pass-rate baseline for the css-backgrounds WPT module. Source: TODO Now (P0)."
+      "Measure and pin a per-module pass-rate baseline for the css-backgrounds WPT module. css-backgrounds is enabled in wpt.json, the test count (80) and pass count (74) are pinned in tests/wpt-baselines/css-backgrounds.env, and scripts/test-wpt-module-baseline.sh fails CI when the count regresses. The 6 baseline failures are table-cell background-local positioning cases. Source: TODO Now (P0)."
     tags { "wpt"; "css"; "baseline"; "todo:now" }
     severity = "major"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.css-compat" }
   }
   new {
