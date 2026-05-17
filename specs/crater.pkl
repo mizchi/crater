@@ -560,10 +560,10 @@ scenarios {
     id = "compat.css-writing-modes-baseline"
     name = "css-writing-modes WPT module baseline is established"
     description =
-      "Measure and pin a per-module pass-rate baseline for the css-writing-modes WPT module. Source: TODO Now (P0)."
+      "Measure and pin a per-module pass-rate baseline for the css-writing-modes WPT module. css-writing-modes is enabled in wpt.json with the existing includePrefixes filter, the test count (27), pass count (17), and failure count (10) are pinned in tests/wpt-baselines/css-writing-modes.env, and scripts/test-wpt-module-baseline.sh enforces no regression. The 10 failures cluster on table-cell layout under vertical writing modes. Widening includePrefixes is a follow-up after logical-property support stabilises. Source: TODO Now (P0)."
     tags { "wpt"; "css"; "baseline"; "todo:now" }
     severity = "major"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.css-compat" }
   }
   new {
