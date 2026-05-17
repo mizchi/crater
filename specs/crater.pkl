@@ -350,6 +350,16 @@ scenarios {
     contributes { "goal.css-compat" }
   }
   new {
+    id = "compat.css-borders-baseline"
+    name = "css-borders WPT module baseline is established"
+    description =
+      "Measure and pin a per-module pass-rate baseline for the css-borders WPT module. css-borders is enabled in wpt.json, the test count (5) and pass count (4) are pinned in tests/wpt-baselines/css-borders.env, and scripts/test-wpt-module-baseline.sh fails CI when the count regresses. The single baseline failure is border-shape-absolute-coords-shape-ref.tentative.html, where the layout-tree compare runner cannot reconcile a top-level <polygon> SVG element against Crater's current SVG geometry output."
+    tags { "wpt"; "css"; "baseline" }
+    severity = "major"
+    reviewStatus = "approved"
+    contributes { "goal.css-compat" }
+  }
+  new {
     id = "compat.css-images-baseline"
     name = "css-images WPT module baseline is enabled"
     description =
