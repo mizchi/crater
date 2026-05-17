@@ -876,6 +876,38 @@ extern "js" fn js_evaluate_expression(
   #|       }
   #|       return out;
   #|     };
+  #|     const optionEffectiveValue = (option) => {
+  #|       const oAttrs = option._attrs || {};
+  #|       if (typeof oAttrs.value === 'string') return oAttrs.value;
+  #|       // Fall back to the option's text content (concatenated descendant text).
+  #|       const collectText = (node) => {
+  #|         if (!node) return '';
+  #|         if (node.nodeType === 3) {
+  #|           if (typeof node.data === 'string') return node.data;
+  #|           if (typeof node.nodeValue === 'string') return node.nodeValue;
+  #|           return '';
+  #|         }
+  #|         const kids = node._children || node.childNodes || [];
+  #|         let buf = '';
+  #|         for (let i = 0; i < kids.length; i++) buf += collectText(kids[i]);
+  #|         return buf;
+  #|       };
+  #|       return collectText(option);
+  #|     };
+  #|     const collectSelectOptions = (selectEl) => {
+  #|       const out = [];
+  #|       const stack = [selectEl];
+  #|       while (stack.length) {
+  #|         const node = stack.pop();
+  #|         if (!node) continue;
+  #|         const kids = node._children || node.childNodes || [];
+  #|         for (let i = kids.length - 1; i >= 0; i--) stack.push(kids[i]);
+  #|         if (node === selectEl) continue;
+  #|         if (node.nodeType !== 1) continue;
+  #|         if (String(node.tagName || '') === 'OPTION') out.push(node);
+  #|       }
+  #|       return out;
+  #|     };
   #|     const controlEffectiveValue = (control) => {
   #|       const attrs = control._attrs || {};
   #|       const tag = String(control.tagName || '');
@@ -883,6 +915,18 @@ extern "js" fn js_evaluate_expression(
   #|       if (tag === 'INPUT' && (type === 'checkbox' || type === 'radio')) {
   #|         if (typeof attrs.value === 'string' && attrs.value !== '') return attrs.value;
   #|         return 'on';
+  #|       }
+  #|       if (tag === 'SELECT') {
+  #|         if (typeof control.value === 'string' && control.value !== '') return control.value;
+  #|         if (typeof attrs.value === 'string' && attrs.value !== '') return attrs.value;
+  #|         const options = collectSelectOptions(control);
+  #|         if (options.length === 0) return '';
+  #|         for (const opt of options) {
+  #|           const oAttrs = opt._attrs || {};
+  #|           if (oAttrs.selected) return optionEffectiveValue(opt);
+  #|         }
+  #|         // HTML default: first option is selected if none marked.
+  #|         return optionEffectiveValue(options[0]);
   #|       }
   #|       if (typeof control.value === 'string' && control.value !== '') return control.value;
   #|       if (typeof attrs.value === 'string') return attrs.value;
@@ -948,12 +992,34 @@ extern "js" fn js_evaluate_expression(
   #|         return String(action || base);
   #|       }
   #|     };
+  #|     // WHATWG "Plan to navigate" filters unsafe URL schemes. We allow the
+  #|     // realistic safe set for a test runtime and explicitly drop anything else
+  #|     // (notably javascript: / vbscript: / other script-evaluating schemes) so a
+  #|     // scripted page cannot navigate via form.action="javascript:...".
+  #|     const isSubmissionSchemeAllowed = (url) => {
+  #|       let proto = '';
+  #|       try {
+  #|         proto = new URL(String(url || '')).protocol;
+  #|       } catch (_e) {
+  #|         return false;
+  #|       }
+  #|       const allowedSchemes = new Set(['http:', 'https:', 'about:', 'blob:', 'data:', 'file:']);
+  #|       return allowedSchemes.has(proto);
+  #|     };
   #|     const performSubmission = (formEl, submitter) => {
   #|       try {
   #|         const attrs = formEl._attrs || {};
   #|         const actionAttr = (typeof attrs.action === 'string' && attrs.action) ? attrs.action : '';
   #|         const method = String(attrs.method || 'GET').toUpperCase();
   #|         let action = resolveSubmissionUrl(actionAttr);
+  #|         if (!isSubmissionSchemeAllowed(action)) {
+  #|           let proto = '';
+  #|           try { proto = new URL(String(action || '')).protocol; } catch (_e) {}
+  #|           if (typeof console !== 'undefined' && console.error) {
+  #|             try { console.error('[bidi] form submission to unsafe scheme:', proto || action); } catch (_e) {}
+  #|           }
+  #|           return;
+  #|         }
   #|         const controls = collectFormControls(formEl);
   #|         const serialized = serializeFormDataUrlEncoded(controls, submitter);
   #|         if (method === 'POST') {
@@ -1054,7 +1120,7 @@ extern "js" fn js_evaluate_expression(
   #|       el.requestSubmit = function(submitter) {
   #|         let validatedSubmitter = null;
   #|         if (submitter !== undefined && submitter !== null) {
-  #|           if (!submitter._attrs || !(submitter._parent === this || descendsFrom(submitter, this))) {
+  #|           if (submitter.nodeType !== 1 || !(submitter._parent === this || descendsFrom(submitter, this))) {
   #|             throw new TypeError("requestSubmit: submitter is not a descendant of this form");
   #|           }
   #|           validatedSubmitter = submitter;
