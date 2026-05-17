@@ -39,6 +39,32 @@ test "legacy HttpError variants still map to readable errorText" {
 }
 
 ///|
+/// sanitize_for_log must strip raw CR and LF so a malicious server cannot
+/// inject fake log lines into the WebDriver client via CORS reason strings.
+test "sanitize_for_log strips CRLF" {
+  let e : @http.HttpError = @http.HttpError::CorsBlocked(
+    "origin\r\nAdmin-Spoof: true",
+  )
+  let txt = error_text_of(e)
+  inspect(txt.contains("\r"), content="false")
+  inspect(txt.contains("\n"), content="false")
+}
+
+///|
+/// sanitize_for_log must strip ANSI CSI escape sequences (ESC [ … letter) so
+/// terminal-rendered logs cannot be manipulated by malicious reason strings.
+test "sanitize_for_log strips ANSI CSI escape" {
+  let e : @http.HttpError = @http.HttpError::PreflightFailed(
+    "foo\u{1b}[31mred\u{1b}[0mbar",
+  )
+  let txt = error_text_of(e)
+  inspect(txt.contains("foo"), content="true")
+  inspect(txt.contains("red"), content="true")
+  inspect(txt.contains("bar"), content="true")
+  inspect(txt.contains("\u{1b}"), content="false")
+}
+
+///|
 /// The synthetic fetchError event builder must accept the mapped errorText so
 /// driver clients see `"CORS: <reason>"` in the BiDi payload. This exercises
 /// the end-to-end path: mapper output flows through
