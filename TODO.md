@@ -38,7 +38,6 @@ pkf run spec-check                                          # contract が壊れ
 | `protocol.playwright-shadow-aware` | Playwright / CDP / jsbidi shadow-aware | — |
 | `paint.real-world-snapshots` | built-in real-world snapshot 3-5 ページ | — |
 | `paint.github-residual-diff` | GitHub VRT 残差 (sticky nav / card border / list marker) | — |
-| `paint.svg-logo-intrinsic` | SVG / logo intrinsic を実 URL fixture から分離 | — |
 | `paint.browser-shell-fixture-expansion` | browser shell fixture を実ページ寄りに | — |
 | `compat.css-background-gradient-vrt` | CSS gradient VRT fixture 拡張 | — |
 | `diagnostic.paint-tree-diff` | paint tree diff API | #23 |
