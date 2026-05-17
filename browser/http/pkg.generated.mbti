@@ -5,6 +5,7 @@ import {
   "mizchi/crater-browser-http",
   "mizchi/crater-browser-http/cache",
   "mizchi/crater-browser-http/cookie_jar",
+  "mizchi/crater-browser-http/profile",
 }
 
 // Values
@@ -31,6 +32,8 @@ pub fn parse_set_cookie(String, String, String) -> @cookie_jar.ParsedCookie?
 // Types and methods
 
 // Type aliases
+pub using @profile {type AuthState}
+
 pub using @cache {type CacheDirectives}
 
 pub using @cache {type CacheEntry}
@@ -48,6 +51,8 @@ pub using @crater-browser-http {type HttpResponse}
 pub using @cache {type MemoryCacheBackend}
 
 pub using @cookie_jar {type ParsedCookie}
+
+pub using @profile {type Profile}
 
 pub using @crater-browser-http {type RequestMode}
 

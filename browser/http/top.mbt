@@ -20,6 +20,9 @@ pub using @cache {
 pub using @cookie_jar {type CookieJar, type ParsedCookie}
 
 ///|
+pub using @profile {type Profile, type AuthState}
+
+///|
 pub fn[CacheBackend : HttpCacheBackend] cached_fetch(
   url~ : String,
   options~ : FetchOptions,
