@@ -1,0 +1,19 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-browser-http/samesite"
+
+// Values
+pub fn classify_site_context(String, String) -> SiteContext
+
+// Errors
+
+// Types and methods
+pub(all) enum SiteContext {
+  SameSite
+  CrossSite
+} derive(Eq)
+pub impl Show for SiteContext
+
+// Type aliases
+
+// Traits
+
