@@ -66,12 +66,20 @@ jobs:
       - name: Restore pkfire task cache
         uses: actions/cache@v4
         with:
+          # NOTE: bumped to v2 to invalidate cache entries poisoned by
+          # the glob-outputs bug fixed in mizchi/pkfire#15. Entries
+          # written by pkfire <= v0.10.0 archive an empty payload for
+          # outputs declared with glob patterns (e.g. `js/dist/**`),
+          # which caused affected pkfire runs to hit cache, restore
+          # nothing, and fail downstream node:test imports with
+          # ERR_MODULE_NOT_FOUND. Drop the v2 suffix once the affected
+          # tasks have re-stored against a fixed pkfire build.
           path: .cache/pkfire
-          key: pkfire-task-${{ runner.os }}-${{ github.ref_name }}-${{ github.run_id }}
+          key: pkfire-task-v2-${{ runner.os }}-${{ github.ref_name }}-${{ github.run_id }}
           restore-keys: |
-            pkfire-task-${{ runner.os }}-${{ github.ref_name }}-
-            pkfire-task-${{ runner.os }}-main-
-            pkfire-task-${{ runner.os }}-
+            pkfire-task-v2-${{ runner.os }}-${{ github.ref_name }}-
+            pkfire-task-v2-${{ runner.os }}-main-
+            pkfire-task-v2-${{ runner.os }}-
 
       - name: Warm Pkl package cache
         run: pkf pkl-cache warm
