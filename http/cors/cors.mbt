@@ -74,13 +74,26 @@ pub(all) struct PreflightEntry {
 /// In-memory preflight cache. Key is built by the caller (typically
 /// `origin + "|" + url + "|" + method + "|" + headers.join(",")`); the
 /// CorsDecision module itself is intentionally key-agnostic for now.
+///
+/// `max_entries` caps the total number of distinct keys held; when the
+/// cap is hit on insert the oldest entry (FIFO insertion order) is
+/// evicted. This prevents unbounded growth per Profile lifetime — a
+/// permissive remote could otherwise stuff the cache with a unique
+/// preflight per request. `insertion_order` tracks keys in the order
+/// they were first inserted so eviction is O(1) amortized at the front.
 pub struct PreflightCache {
   entries : Map[String, PreflightEntry]
+  insertion_order : Array[String]
+  max_entries : Int
 }
 
 ///|
-pub fn PreflightCache::new() -> PreflightCache {
-  PreflightCache::{ entries: Map::new() }
+/// Construct a preflight cache with an optional `max_entries` cap
+/// (default 512). The cap is a self-DoS bound: same justification as
+/// MemoryCacheBackend's max_entries=1000. Hitting the cap evicts the
+/// oldest entry in FIFO insertion order.
+pub fn PreflightCache::new(max_entries? : Int = 512) -> PreflightCache {
+  PreflightCache::{ entries: Map::new(), insertion_order: [], max_entries }
 }
 
 ///|
@@ -352,10 +365,10 @@ pub fn PreflightCache::get_or_validate(
     if entry.expires_at_seconds > current {
       match validate_cached_entry(entry, request) {
         Ok(_) => return Ok(())
-        Err(_) => self.entries.remove(key)
+        Err(_) => self.remove_entry(key)
       }
     } else {
-      self.entries.remove(key)
+      self.remove_entry(key)
     }
   }
   let response = fetcher(request)
@@ -363,10 +376,21 @@ pub fn PreflightCache::get_or_validate(
     Err(e) => return Err(e)
     Ok(_) => ()
   }
-  let max_age = parse_double_default(
+  let raw_max_age = parse_double_default(
     header_or_empty(response.headers, "access-control-max-age"),
     0.0,
   )
+  // Clamp Access-Control-Max-Age to [0, 7200] seconds matching
+  // Chromium's browser policy. Without this clamp a malicious origin
+  // could serve Access-Control-Max-Age: 99999999999999 and pin a
+  // permissive preflight policy for the Profile's entire lifetime.
+  let max_age = if raw_max_age > 7200.0 {
+    7200.0
+  } else if raw_max_age < 0.0 {
+    0.0
+  } else {
+    raw_max_age
+  }
   let allowed_methods = parse_csv(
     header_or_empty(response.headers, "access-control-allow-methods"),
   )
@@ -378,13 +402,36 @@ pub fn PreflightCache::get_or_validate(
       "access-control-allow-credentials",
     ) ==
     "true"
+  // Evict oldest entry (FIFO) if we are at capacity. The cap is a
+  // self-DoS bound — see PreflightCache::new for justification.
+  if self.entries.length() >= self.max_entries {
+    if self.insertion_order.length() > 0 {
+      let oldest = self.insertion_order.remove(0)
+      self.entries.remove(oldest)
+    }
+  }
   self.entries[key] = PreflightEntry::{
     allowed_methods,
     allowed_headers,
     allow_credentials,
     expires_at_seconds: current + max_age,
   }
+  self.insertion_order.push(key)
   Ok(())
+}
+
+///|
+/// Remove an entry from both the map and the insertion-order tracker.
+/// Used internally when a cache entry is expired or fails the per-call
+/// allow-list re-check.
+fn PreflightCache::remove_entry(self : PreflightCache, key : String) -> Unit {
+  self.entries.remove(key)
+  for i = 0; i < self.insertion_order.length(); i = i + 1 {
+    if self.insertion_order[i] == key {
+      let _ = self.insertion_order.remove(i)
+      break
+    }
+  }
 }
 
 ///|

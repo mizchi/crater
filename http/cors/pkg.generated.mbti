@@ -32,9 +32,11 @@ pub impl Show for CorsDecision
 
 pub struct PreflightCache {
   entries : Map[String, PreflightEntry]
+  insertion_order : Array[String]
+  max_entries : Int
 }
 pub fn PreflightCache::get_or_validate(Self, PreflightRequest, () -> Double, (PreflightRequest) -> @crater-browser-http.HttpResponse) -> Result[Unit, String]
-pub fn PreflightCache::new() -> Self
+pub fn PreflightCache::new(max_entries? : Int) -> Self
 
 pub(all) struct PreflightEntry {
   allowed_methods : Array[String]
