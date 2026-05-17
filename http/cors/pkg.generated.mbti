@@ -1,0 +1,57 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-browser-http/cors"
+
+import {
+  "mizchi/crater-browser-http",
+}
+
+// Values
+pub fn classify_request(url~ : String, origin~ : String, mode~ : @crater-browser-http.RequestMode, method~ : String, headers~ : Map[String, String]) -> CorsDecision
+
+pub fn is_safelisted_header(String) -> Bool
+
+pub fn is_simple_method(String) -> Bool
+
+pub fn origin_of(String) -> String
+
+pub fn parse_csv(String) -> Array[String]
+
+pub fn validate_actual_response(request_url~ : String, origin~ : String, credentials~ : @crater-browser-http.CredentialsMode, response~ : @crater-browser-http.HttpResponse) -> Result[Unit, String]
+
+pub fn validate_preflight_response(PreflightRequest, @crater-browser-http.HttpResponse) -> Result[Unit, String]
+
+// Errors
+
+// Types and methods
+pub(all) enum CorsDecision {
+  Allow
+  PreflightRequired(PreflightRequest)
+  Blocked(String)
+}
+pub impl Show for CorsDecision
+
+pub struct PreflightCache {
+  entries : Map[String, PreflightEntry]
+}
+pub fn PreflightCache::get_or_validate(Self, PreflightRequest, () -> Double, (PreflightRequest) -> @crater-browser-http.HttpResponse) -> Result[Unit, String]
+pub fn PreflightCache::new() -> Self
+
+pub(all) struct PreflightEntry {
+  allowed_methods : Array[String]
+  allowed_headers : Array[String]
+  allow_credentials : Bool
+  expires_at_seconds : Double
+}
+
+pub(all) struct PreflightRequest {
+  url : String
+  origin : String
+  method : String
+  request_headers : Array[String]
+}
+pub impl Show for PreflightRequest
+
+// Type aliases
+
+// Traits
+

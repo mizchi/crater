@@ -1,0 +1,9 @@
+import {
+  "mizchi/crater-browser-http" @http_impl,
+  "moonbitlang/core/string",
+  "moonbitlang/core/double",
+}
+
+warnings = "-unused_package"
+
+supported_targets = "js+native+wasm+wasm-gc"

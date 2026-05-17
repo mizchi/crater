@@ -2,6 +2,7 @@
 package "mizchi/crater-webdriver-bidi/webdriver"
 
 import {
+  "mizchi/crater-browser-http",
   "mizchi/crater-browser/cdp",
   "mizchi/crater-webdriver-bidi/contract",
   "mizchi/crater-webdriver-bidi/rpc",
@@ -15,6 +16,8 @@ pub fn await_promise(@core.Any) -> String
 pub fn decode_base64(String) -> String
 
 pub fn delete_runtime_handle(String) -> Unit
+
+pub fn error_text_of(@crater-browser-http.HttpError) -> String
 
 pub fn eval_and_send_async(@core.Any, Int, String, String) -> Unit
 

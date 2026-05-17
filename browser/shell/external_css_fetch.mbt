@@ -9,6 +9,28 @@ async fn http_fetch_adapter(
 }
 
 ///|
+/// Build the FetchOptions for an external <link rel="stylesheet"> load.
+///
+/// Invariant: `mode == NoCors`. External stylesheets are loaded as
+/// no-cors subresources per the Fetch spec — the page can't read the
+/// rules cross-origin without an `<link crossorigin>` attribute, but
+/// the request itself must NOT trigger a CORS preflight. Flipping this
+/// to `Cors` would break the common pattern of pulling a stylesheet
+/// from a CDN that doesn't echo `Access-Control-Allow-Origin`.
+/// Locked by `external_css_fetch_mode_wbtest.mbt`.
+fn build_external_css_options(
+  base_url : String,
+  sandbox : @http.RequestSandbox,
+) -> @http.FetchOptions {
+  {
+    ..@http.FetchOptions::default(),
+    mode: @http.RequestMode::NoCors,
+    origin: base_url,
+    sandbox,
+  }
+}
+
+///|
 /// Fetch external stylesheets and return CSS array
 async fn fetch_external_css(
   html : String,
@@ -30,12 +52,7 @@ async fn fetch_external_css(
     println("Fetching CSS: " + css_url)
     // Try to fetch CSS with cache, ignore errors
     try {
-      let options = {
-        ..@http.FetchOptions::default(),
-        mode: @http.RequestMode::NoCors,
-        origin: base_url,
-        sandbox,
-      }
+      let options = build_external_css_options(base_url, sandbox)
       let response = @http_cache.cached_fetch_async(
         url=css_url,
         options~,

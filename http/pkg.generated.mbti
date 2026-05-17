@@ -21,6 +21,8 @@ pub(all) suberror HttpError {
   TimeoutError
   CorsError(String)
   SandboxError(String)
+  CorsBlocked(String)
+  PreflightFailed(String)
 }
 pub impl Show for HttpError
 

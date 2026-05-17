@@ -3,9 +3,7 @@
 /// Implements: paint.font-weight-numeric (GitHub issue #48).
 
 ///|
-fn recording_provider_by_weight(
-  recorded : Ref[Double],
-) -> GlyphProvider {
+fn recording_provider_by_weight(recorded : Ref[Double]) -> GlyphProvider {
   {
     get_glyph: fn(_codepoint, _font_size, _is_bold) {
       (([] : Array[@svg.PathCommand]), 4.0)
@@ -67,9 +65,7 @@ test "glyph_from_provider forwards numeric font_weight 400 distinctly from 700" 
 }
 
 ///|
-fn legacy_bold_provider(
-  recorded_bold : Ref[Bool],
-) -> GlyphProvider {
+fn legacy_bold_provider(recorded_bold : Ref[Bool]) -> GlyphProvider {
   {
     get_glyph: fn(_codepoint, _font_size, is_bold) {
       recorded_bold.val = is_bold

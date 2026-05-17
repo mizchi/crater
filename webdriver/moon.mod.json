@@ -33,6 +33,10 @@
       "path": "../browser",
       "version": "0.17.1"
     },
+    "mizchi/crater-browser-http": {
+      "path": "../http",
+      "version": "0.17.1"
+    },
     "mizchi/crater-browser-helpers": {
       "path": "../browser_helpers",
       "version": "0.17.1"

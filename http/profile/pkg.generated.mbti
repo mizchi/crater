@@ -1,0 +1,35 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-browser-http/profile"
+
+import {
+  "mizchi/crater-browser-http/cache",
+  "mizchi/crater-browser-http/cookie_jar",
+  "mizchi/crater-browser-http/cors",
+  "moonbitlang/core/debug",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub(all) struct AuthState {
+} derive(@debug.Debug)
+pub fn AuthState::default() -> Self
+pub impl Show for AuthState
+
+pub(all) struct Profile {
+  mut user_agent : String?
+  mut cookie_jar : @cookie_jar.CookieJar
+  http_cache : @cache.MemoryCacheBackend
+  auth_state : AuthState
+  preflight_cache : @cors.PreflightCache
+}
+pub fn Profile::default() -> Self
+pub fn Profile::effective_user_agent(Self) -> String?
+pub fn Profile::new(user_agent? : String, jar_enabled? : Bool) -> Self
+
+// Type aliases
+
+// Traits
+

@@ -1099,10 +1099,10 @@ test "samesite: default (no attribute) treated as Lax" {
 }
 
 ///|
-test "samesite: unknown value treated as Strict (safe default)" {
+test "samesite: unknown value treated as Lax (WHATWG default)" {
   let jar = CookieJar::new(enabled=true)
   jar.store_from_header("x=1; SameSite=bogus", "https://example.com/", true)
-  // Cross-site → blocked (unknown value → Strict)
+  // Cross-site subresource → blocked (unknown → Lax, non-top-level nav blocked)
   debug_inspect(
     jar.get_cookie_header(
       "https://example.com/",

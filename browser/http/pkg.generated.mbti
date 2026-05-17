@@ -5,12 +5,19 @@ import {
   "mizchi/crater-browser-http",
   "mizchi/crater-browser-http/cache",
   "mizchi/crater-browser-http/cookie_jar",
+  "mizchi/crater-browser-http/cors",
+  "mizchi/crater-browser-http/profile",
+  "mizchi/crater-browser-http/samesite",
 }
 
 // Values
 pub fn[CacheBackend : @cache.HttpCacheBackend] cached_fetch(url~ : String, options~ : @crater-browser-http.FetchOptions, cache~ : CacheBackend, fetcher~ : (String, @crater-browser-http.FetchOptions) -> @crater-browser-http.HttpResponse raise @crater-browser-http.HttpError) -> @crater-browser-http.HttpResponse raise @crater-browser-http.HttpError
 
 pub async fn[CacheBackend : @cache.HttpCacheBackend] cached_fetch_async(url~ : String, options~ : @crater-browser-http.FetchOptions, cache~ : CacheBackend, fetcher~ : async (String, @crater-browser-http.FetchOptions) -> @crater-browser-http.HttpResponse raise @crater-browser-http.HttpError) -> @crater-browser-http.HttpResponse raise @crater-browser-http.HttpError
+
+pub fn classify_request(url~ : String, origin~ : String, mode~ : @crater-browser-http.RequestMode, method~ : String, headers~ : Map[String, String]) -> @cors.CorsDecision
+
+pub fn classify_site_context(String, String) -> @samesite.SiteContext
 
 pub async fn fetch(String, options? : @crater-browser-http.FetchOptions) -> @crater-browser-http.HttpResponse raise @crater-browser-http.HttpError
 
@@ -26,16 +33,26 @@ pub fn parse_cache_control(String) -> @cache.CacheDirectives
 
 pub fn parse_set_cookie(String, String, String) -> @cookie_jar.ParsedCookie?
 
+pub fn should_attach_cookie(@cookie_jar.ParsedCookie, @samesite.SiteContext, Bool) -> Bool
+
+pub fn validate_actual_response(request_url~ : String, origin~ : String, credentials~ : @crater-browser-http.CredentialsMode, response~ : @crater-browser-http.HttpResponse) -> Result[Unit, String]
+
+pub fn validate_preflight_response(@cors.PreflightRequest, @crater-browser-http.HttpResponse) -> Result[Unit, String]
+
 // Errors
 
 // Types and methods
 
 // Type aliases
+pub using @profile {type AuthState}
+
 pub using @cache {type CacheDirectives}
 
 pub using @cache {type CacheEntry}
 
 pub using @cookie_jar {type CookieJar}
+
+pub using @cors {type CorsDecision}
 
 pub using @crater-browser-http {type CredentialsMode}
 
@@ -49,9 +66,19 @@ pub using @cache {type MemoryCacheBackend}
 
 pub using @cookie_jar {type ParsedCookie}
 
+pub using @cors {type PreflightCache}
+
+pub using @cors {type PreflightEntry}
+
+pub using @cors {type PreflightRequest}
+
+pub using @profile {type Profile}
+
 pub using @crater-browser-http {type RequestMode}
 
 pub using @crater-browser-http {type RequestSandbox}
+
+pub using @samesite {type SiteContext}
 
 pub using @cache {trait HttpCacheBackend}
 

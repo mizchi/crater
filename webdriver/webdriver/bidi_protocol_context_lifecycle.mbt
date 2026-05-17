@@ -413,6 +413,7 @@ fn BidiProtocol::close_context_and_cleanup(
   self.context_device_pixel_ratio.remove(ctx_id)
   self.subscription_state.remove_pending_log_entries(ctx_id)
   self.clear_input_state_for_context(ctx_id)
+  self.emulation_state.session_profiles.remove(ctx_id)
   match self.active_context_id {
     Some(active_ctx) =>
       if active_ctx == ctx_id {

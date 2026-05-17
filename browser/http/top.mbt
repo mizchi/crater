@@ -20,6 +20,66 @@ pub using @cache {
 pub using @cookie_jar {type CookieJar, type ParsedCookie}
 
 ///|
+pub using @profile {type Profile, type AuthState}
+
+///|
+pub using @samesite {type SiteContext}
+
+///|
+pub using @cors {
+  type CorsDecision,
+  type PreflightRequest,
+  type PreflightEntry,
+  type PreflightCache,
+}
+
+///|
+pub fn classify_request(
+  url~ : String,
+  origin~ : String,
+  mode~ : RequestMode,
+  method~ : String,
+  headers~ : Map[String, String],
+) -> CorsDecision {
+  @cors.classify_request(url~, origin~, mode~, method~, headers~)
+}
+
+///|
+pub fn validate_preflight_response(
+  request : PreflightRequest,
+  response : HttpResponse,
+) -> Result[Unit, String] {
+  @cors.validate_preflight_response(request, response)
+}
+
+///|
+pub fn validate_actual_response(
+  request_url~ : String,
+  origin~ : String,
+  credentials~ : CredentialsMode,
+  response~ : HttpResponse,
+) -> Result[Unit, String] {
+  @cors.validate_actual_response(request_url~, origin~, credentials~, response~)
+}
+
+///|
+pub fn classify_site_context(
+  request_origin : String,
+  cookie_domain : String,
+) -> SiteContext {
+  @samesite.classify_site_context(request_origin, cookie_domain)
+}
+
+///|
+pub fn should_attach_cookie(
+  cookie : @cookie_jar.ParsedCookie,
+  site_context : SiteContext,
+  is_top_level_navigation : Bool,
+) -> Bool {
+  @samesite.should_attach_cookie(cookie, site_context, is_top_level_navigation)
+}
+
+///|
 pub fn[CacheBackend : HttpCacheBackend] cached_fetch(
   url~ : String,
   options~ : FetchOptions,

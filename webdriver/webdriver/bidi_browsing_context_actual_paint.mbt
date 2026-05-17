@@ -543,11 +543,7 @@ fn ensure_paint_provider_initialized() -> Unit {
         font_family,
       ) {
         js_kern_for_family_by_weight(
-          cp1,
-          cp2,
-          font_size,
-          font_weight,
-          font_family,
+          cp1, cp2, font_size, font_weight, font_family,
         )
       }),
       get_ascent_for_family: Some(fn(font_family) {

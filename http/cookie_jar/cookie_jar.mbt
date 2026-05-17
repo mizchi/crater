@@ -316,7 +316,11 @@ pub fn CookieJar::get_cookie_header(
           if !cookie.secure {
             continue
           }
-        _ => continue // Unknown value → treat as Strict (safe default)
+        _ =>
+          // Unknown value → treat as Lax per WHATWG RFC 6265bis
+          if !is_top_level_navigation {
+            continue
+          }
       }
     }
     if !first {

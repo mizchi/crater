@@ -155,7 +155,7 @@ async fn Browser::prefetch_images(self : Browser) -> Unit {
       let response = @http_cache.cached_fetch_async(
         url=abs_url,
         options~,
-        cache=self.http_cache,
+        cache=self.profile.http_cache,
         fetcher=http_fetch_adapter,
       )
       response.body
