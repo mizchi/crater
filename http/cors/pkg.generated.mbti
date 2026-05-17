@@ -35,6 +35,7 @@ pub struct PreflightCache {
   insertion_order : Array[String]
   max_entries : Int
 }
+pub fn PreflightCache::contains_fresh(Self, PreflightRequest, () -> Double) -> Bool
 pub fn PreflightCache::get_or_validate(Self, PreflightRequest, () -> Double, (PreflightRequest) -> @crater-browser-http.HttpResponse) -> Result[Unit, String]
 pub fn PreflightCache::new(max_entries? : Int) -> Self
 

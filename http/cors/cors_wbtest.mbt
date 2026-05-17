@@ -359,6 +359,47 @@ test "PreflightCache::get_or_validate: Access-Control-Max-Age is clamped to 7200
 }
 
 ///|
+test "PreflightCache::contains_fresh agrees with get_or_validate (hit, miss-by-expiry, miss-by-allowlist)" {
+  let cache = PreflightCache::new()
+  let req = PreflightRequest::{
+    url: "https://api.example.com/x",
+    origin: "https://example.com",
+    method: "POST",
+    request_headers: ["x-csrf"],
+  }
+  let now = fn() -> Double { 1000.0 }
+  // Before any roundtrip: cache is empty, peek must be false.
+  inspect(cache.contains_fresh(req, now), content="false")
+  // Populate via get_or_validate (Max-Age=600 → clamped to 600).
+  let fetcher = fn(_r : PreflightRequest) -> @http_impl.HttpResponse {
+    test_preflight_response(
+      status=204,
+      aca_origin="https://example.com",
+      aca_methods="POST",
+      aca_headers="x-csrf",
+      aca_max_age="600",
+    )
+  }
+  match cache.get_or_validate(req, now, fetcher) {
+    Ok(_) => inspect(true, content="true")
+    Err(e) => fail("expected Ok, got Err: " + e)
+  }
+  // Cached → peek is true.
+  inspect(cache.contains_fresh(req, now), content="true")
+  // Past Max-Age → peek is false (expires_at = 1000 + 600 = 1600).
+  inspect(cache.contains_fresh(req, fn() -> Double { 2000.0 }), content="false")
+  // Same key but with a request_headers value the cached entry didn't
+  // allow → peek is false (allow-list mismatch, same expiry).
+  let mismatch = PreflightRequest::{
+    url: "https://api.example.com/x",
+    origin: "https://example.com",
+    method: "POST",
+    request_headers: ["x-csrf", "x-not-allowed"],
+  }
+  inspect(cache.contains_fresh(mismatch, now), content="false")
+}
+
+///|
 test "PreflightCache::get_or_validate: cache miss past Max-Age (fetcher called twice)" {
   let cache = PreflightCache::new()
   let req = PreflightRequest::{

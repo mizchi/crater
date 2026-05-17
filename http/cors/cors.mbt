@@ -421,6 +421,35 @@ pub fn PreflightCache::get_or_validate(
 }
 
 ///|
+/// Returns true when the cache holds an unexpired entry whose
+/// allow-lists cover this request. Used by callers that want to
+/// skip pre-dispatching the OPTIONS preflight on a cache hit.
+///
+/// This is the read-only peek companion to `get_or_validate` and shares
+/// the same `cache_key` formula, so callers do not need to mirror the
+/// key construction (which would silently drift if the formula ever
+/// adds a new axis like credentials).
+pub fn PreflightCache::contains_fresh(
+  self : PreflightCache,
+  request : PreflightRequest,
+  now : () -> Double,
+) -> Bool {
+  let key = cache_key(request)
+  match self.entries.get(key) {
+    Some(entry) =>
+      if entry.expires_at_seconds > now() {
+        match validate_cached_entry(entry, request) {
+          Ok(_) => true
+          Err(_) => false
+        }
+      } else {
+        false
+      }
+    None => false
+  }
+}
+
+///|
 /// Remove an entry from both the map and the insertion-order tracker.
 /// Used internally when a cache entry is expired or fails the per-call
 /// allow-list re-check.
