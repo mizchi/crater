@@ -1,0 +1,194 @@
+///|
+/// Outcome of CORS classification for an outgoing fetch.
+///
+/// - `Allow`: request can proceed; cross-origin responses still need
+///   header validation via http enforce_cors_response.
+/// - `PreflightRequired(req)`: an OPTIONS preflight must be sent and
+///   succeed before the actual request runs. `req` carries the URL,
+///   origin, method, and (lowercased, sorted) custom request headers
+///   that go on the Access-Control-Request-* lines.
+/// - `Blocked(reason)`: SOP itself refuses the request (currently
+///   NoCors with a non-simple method or a custom header).
+pub(all) enum CorsDecision {
+  Allow
+  PreflightRequired(PreflightRequest)
+  Blocked(String)
+}
+
+///|
+pub impl Show for CorsDecision with output(self, logger) {
+  match self {
+    Allow => logger.write_string("Allow")
+    PreflightRequired(req) => {
+      logger.write_string("PreflightRequired(")
+      req.output(logger)
+      logger.write_string(")")
+    }
+    Blocked(reason) => {
+      logger.write_string("Blocked(")
+      reason.output(logger)
+      logger.write_string(")")
+    }
+  }
+}
+
+///|
+/// Descriptor for the OPTIONS preflight that classify_request demands
+/// when the actual request is not a simple CORS request.
+///
+/// `request_headers` is lowercased and sorted so a downstream cache
+/// can use it as part of a stable key.
+pub(all) struct PreflightRequest {
+  url : String
+  origin : String
+  method : String
+  request_headers : Array[String]
+}
+
+///|
+pub impl Show for PreflightRequest with output(self, logger) {
+  logger.write_string("{url: ")
+  self.url.output(logger)
+  logger.write_string(", origin: ")
+  self.origin.output(logger)
+  logger.write_string(", method: ")
+  self.method.output(logger)
+  logger.write_string(", request_headers: ")
+  self.request_headers.output(logger)
+  logger.write_string("}")
+}
+
+///|
+/// Cached result of a successful preflight. `expires_at_seconds` is a
+/// monotonic clock value (Unix seconds as Double for sub-second
+/// granularity); when the cache asks "is this entry still valid?" it
+/// compares against the current clock.
+pub(all) struct PreflightEntry {
+  allowed_methods : Array[String]
+  allowed_headers : Array[String]
+  allow_credentials : Bool
+  expires_at_seconds : Double
+}
+
+///|
+/// In-memory preflight cache. Key is built by the caller (typically
+/// `origin + "|" + url + "|" + method + "|" + headers.join(",")`); the
+/// CorsDecision module itself is intentionally key-agnostic for now.
+pub struct PreflightCache {
+  entries : Map[String, PreflightEntry]
+}
+
+///|
+pub fn PreflightCache::new() -> PreflightCache {
+  PreflightCache::{ entries: Map::new() }
+}
+
+///|
+/// Classify a pending fetch into Allow / PreflightRequired / Blocked
+/// per the Fetch spec's CORS protocol. Does not perform any I/O;
+/// callers feed the result into the http fetch driver.
+///
+/// - Same-origin requests always pass (regardless of mode).
+/// - `NoCors` cross-origin: rejects non-simple methods or custom
+///   request headers up front (Blocked).
+/// - `Cors` / `SameOrigin` cross-origin: simple GET/HEAD/POST with
+///   only safelisted request headers → Allow. Anything else returns
+///   PreflightRequired with a descriptor for the OPTIONS request.
+pub fn classify_request(
+  url~ : String,
+  origin~ : String,
+  mode~ : @http_impl.RequestMode,
+  method~ : String,
+  headers~ : Map[String, String],
+) -> CorsDecision {
+  let target_origin = origin_of(url)
+  if target_origin == origin {
+    return Allow
+  }
+
+  // Build the lowercased custom-header list once; both NoCors and
+  // Cors branches consume it.
+  let custom : Array[String] = []
+  for k, _ in headers {
+    let lower = k.to_lower()
+    if !is_safelisted_header(lower) {
+      custom.push(lower)
+    }
+  }
+  custom.sort()
+
+  // SOP guard for NoCors: must stay simple.
+  if mode == @http_impl.RequestMode::NoCors {
+    if !is_simple_method(method) {
+      return Blocked("NoCors disallows non-simple method " + method)
+    }
+    if !custom.is_empty() {
+      return Blocked("NoCors disallows custom header(s): " + custom.join(", "))
+    }
+    return Allow
+  }
+
+  // Cors / SameOrigin / Navigate: preflight if non-simple.
+  if is_simple_method(method) && custom.is_empty() {
+    return Allow
+  }
+  PreflightRequired(PreflightRequest::{
+    url,
+    origin,
+    method,
+    request_headers: custom,
+  })
+}
+
+///|
+/// CORS "simple" method set: GET / HEAD / POST. Anything else
+/// (PUT/DELETE/PATCH/...) triggers a preflight in CORS mode and is
+/// blocked outright in NoCors mode.
+pub fn is_simple_method(method : String) -> Bool {
+  method == "GET" || method == "HEAD" || method == "POST"
+}
+
+///|
+/// CORS "safelisted" request-header set (lowercased name only —
+/// content-type value restrictions are not enforced here; the
+/// preflight will surface them at the OPTIONS roundtrip).
+pub fn is_safelisted_header(name : String) -> Bool {
+  let lower = name.to_lower()
+  lower == "accept" ||
+  lower == "accept-language" ||
+  lower == "content-language" ||
+  lower == "content-type"
+}
+
+///|
+/// Extract `scheme://host[:port]` from a URL. Falls back to returning
+/// the input unchanged when the input does not contain `://` — that
+/// way a malformed URL never accidentally compares equal to a
+/// well-formed origin.
+pub fn origin_of(url : String) -> String {
+  let scheme_end = match url.find("://") {
+    Some(i) => i
+    None => return url
+  }
+  let after_scheme = url.unsafe_substring(
+    start=scheme_end + 3,
+    end=url.length(),
+  )
+  let host_port = truncate_at_any(after_scheme, ['/', '?', '#'])
+  url.unsafe_substring(start=0, end=scheme_end) + "://" + host_port
+}
+
+///|
+/// Return the prefix of `s` up to (but not including) the first
+/// character in `stops`. Returns `s` unchanged if no stop matches.
+fn truncate_at_any(s : String, stops : Array[Char]) -> String {
+  let chars = s.to_array()
+  let mut end = chars.length()
+  for i = 0; i < chars.length(); i = i + 1 {
+    if stops.contains(chars[i]) {
+      end = i
+      break
+    }
+  }
+  s.unsafe_substring(start=0, end~)
+}
