@@ -117,9 +117,9 @@ fn registrable_domain(host : String) -> String {
 }
 
 ///|
-/// Decide whether `cookie` should be attached to a request for
-/// `request_url`, given the precomputed `site_context` (cookie domain vs
-/// request origin) and whether the request is a top-level navigation.
+/// Decide whether `cookie` should be attached to a request, given the
+/// precomputed `site_context` (cookie domain vs request origin) and
+/// whether the request is a top-level navigation.
 ///
 /// Implements the WHATWG cookies-bis SameSite attach filter:
 ///
@@ -130,19 +130,12 @@ fn registrable_domain(host : String) -> String {
 ///   the Secure attribute, but that's enforced at parse / store time, not
 ///   here — by the time a cookie is in the jar, the Secure check has
 ///   already passed.)
-///
-/// `request_url` is currently accepted for API symmetry with the call
-/// sites (navigation_fetch / script_fetch) and ignored — the site
-/// classification has already been folded into `site_context`. Kept in
-/// the signature so callers don't have to thread two related-but-not-
-/// quite-same values.
+/// - Unknown values default to Lax per RFC 6265bis.
 pub fn should_attach_cookie(
   cookie : @cookie_jar.ParsedCookie,
-  request_url : String,
   site_context : SiteContext,
   is_top_level_navigation : Bool,
 ) -> Bool {
-  let _ = request_url
   // ParsedCookie stores SameSite as a lowercased string ("strict" / "lax"
   // / "none" / ""). Unknown / empty values are treated as Lax per
   // RFC 6265bis "Lax by default".

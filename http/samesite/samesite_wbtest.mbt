@@ -70,73 +70,37 @@ fn test_cookie(
 test "should_attach_cookie: Strict only attaches when same-site" {
   let cookie = test_cookie("s", "Strict", false)
   // same-site, top-level nav
-  inspect(
-    should_attach_cookie(cookie, "https://example.com/x", SameSite, true),
-    content="true",
-  )
+  inspect(should_attach_cookie(cookie, SameSite, true), content="true")
   // same-site, subresource
-  inspect(
-    should_attach_cookie(cookie, "https://example.com/x", SameSite, false),
-    content="true",
-  )
+  inspect(should_attach_cookie(cookie, SameSite, false), content="true")
   // cross-site, top-level nav
-  inspect(
-    should_attach_cookie(cookie, "https://evil.com/x", CrossSite, true),
-    content="false",
-  )
+  inspect(should_attach_cookie(cookie, CrossSite, true), content="false")
   // cross-site, subresource
-  inspect(
-    should_attach_cookie(cookie, "https://evil.com/x", CrossSite, false),
-    content="false",
-  )
+  inspect(should_attach_cookie(cookie, CrossSite, false), content="false")
 }
 
 ///|
 test "should_attach_cookie: Lax attaches on cross-site top-level nav" {
   let cookie = test_cookie("l", "Lax", false)
   // same-site, top-level nav
-  inspect(
-    should_attach_cookie(cookie, "https://example.com/x", SameSite, true),
-    content="true",
-  )
+  inspect(should_attach_cookie(cookie, SameSite, true), content="true")
   // same-site, subresource
-  inspect(
-    should_attach_cookie(cookie, "https://example.com/x", SameSite, false),
-    content="true",
-  )
+  inspect(should_attach_cookie(cookie, SameSite, false), content="true")
   // cross-site, top-level nav
-  inspect(
-    should_attach_cookie(cookie, "https://evil.com/x", CrossSite, true),
-    content="true",
-  )
+  inspect(should_attach_cookie(cookie, CrossSite, true), content="true")
   // cross-site, subresource
-  inspect(
-    should_attach_cookie(cookie, "https://evil.com/x", CrossSite, false),
-    content="false",
-  )
+  inspect(should_attach_cookie(cookie, CrossSite, false), content="false")
 }
 
 ///|
 test "should_attach_cookie: None always attaches" {
   let cookie = test_cookie("n", "None", true)
   // same-site, top-level nav
-  inspect(
-    should_attach_cookie(cookie, "https://example.com/x", SameSite, true),
-    content="true",
-  )
+  inspect(should_attach_cookie(cookie, SameSite, true), content="true")
   // same-site, subresource
-  inspect(
-    should_attach_cookie(cookie, "https://example.com/x", SameSite, false),
-    content="true",
-  )
+  inspect(should_attach_cookie(cookie, SameSite, false), content="true")
   // cross-site, top-level nav
-  inspect(
-    should_attach_cookie(cookie, "https://evil.com/x", CrossSite, true),
-    content="true",
-  )
+  inspect(should_attach_cookie(cookie, CrossSite, true), content="true")
   // cross-site, subresource
-  inspect(
-    should_attach_cookie(cookie, "https://evil.com/x", CrossSite, false),
-    content="true",
-  )
+  inspect(should_attach_cookie(cookie, CrossSite, false), content="true")
 }

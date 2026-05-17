@@ -8,7 +8,7 @@ import {
 // Values
 pub fn classify_site_context(String, String) -> SiteContext
 
-pub fn should_attach_cookie(@cookie_jar.ParsedCookie, String, SiteContext, Bool) -> Bool
+pub fn should_attach_cookie(@cookie_jar.ParsedCookie, SiteContext, Bool) -> Bool
 
 // Errors
 
