@@ -146,3 +146,73 @@ test "validate_preflight_response: required method not listed → Err" {
     Ok(_) => fail("expected Err")
   }
 }
+
+///|
+test "validate_actual_response: same-origin always Ok regardless of headers" {
+  let resp = test_preflight_response(status=200)
+  match
+    validate_actual_response(
+      request_url="https://example.com/api/x",
+      origin="https://example.com",
+      credentials=@http_impl.CredentialsMode::Include,
+      response=resp,
+    ) {
+    Ok(_) => inspect(true, content="true")
+    Err(e) => fail("expected Ok, got Err: " + e)
+  }
+}
+
+///|
+test "validate_actual_response: cross-origin + ACA-Origin echo → Ok" {
+  let resp = test_preflight_response(
+    status=200,
+    aca_origin="https://example.com",
+  )
+  match
+    validate_actual_response(
+      request_url="https://api.other.com/x",
+      origin="https://example.com",
+      credentials=@http_impl.CredentialsMode::Omit,
+      response=resp,
+    ) {
+    Ok(_) => inspect(true, content="true")
+    Err(e) => fail("expected Ok, got Err: " + e)
+  }
+}
+
+///|
+test "validate_actual_response: credentials=Include with wildcard → Err" {
+  let resp = test_preflight_response(
+    status=200,
+    aca_origin="*",
+    aca_credentials="true",
+  )
+  match
+    validate_actual_response(
+      request_url="https://api.other.com/x",
+      origin="https://example.com",
+      credentials=@http_impl.CredentialsMode::Include,
+      response=resp,
+    ) {
+    Err(_) => inspect(true, content="true")
+    Ok(_) => fail("expected Err")
+  }
+}
+
+///|
+test "validate_actual_response: credentials=Include needs ACA-Credentials=true" {
+  let resp = test_preflight_response(
+    status=200,
+    aca_origin="https://example.com",
+  )
+  match
+    validate_actual_response(
+      request_url="https://api.other.com/x",
+      origin="https://example.com",
+      credentials=@http_impl.CredentialsMode::Include,
+      response=resp,
+    ) {
+    Err(_) => inspect(true, content="true")
+    Ok(_) => fail("expected Err")
+  }
+}

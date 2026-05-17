@@ -229,6 +229,69 @@ pub fn validate_preflight_response(
 }
 
 ///|
+/// Validate the actual (non-OPTIONS) response from a cross-origin
+/// fetch against the CORS resource-sharing rules. Same-origin
+/// responses are always Ok; cross-origin responses must satisfy:
+///
+/// - `Access-Control-Allow-Origin` echoes `origin` exactly, or is
+///   `"*"` (only acceptable when credentials != Include).
+/// - When `credentials == Include`:
+///   - ACA-Origin must NOT be `"*"` (per Fetch spec: wildcard +
+///     credentials is a developer error and the response is blocked
+///     even if the browser already received it).
+///   - ACA-Origin must equal `origin` exactly.
+///   - `Access-Control-Allow-Credentials` must be the literal `"true"`
+///     (case-sensitive per spec).
+///
+/// Returns `Err(message)` describing the first failing check so the
+/// caller can surface a useful CORS error.
+pub fn validate_actual_response(
+  request_url~ : String,
+  origin~ : String,
+  credentials~ : @http_impl.CredentialsMode,
+  response~ : @http_impl.HttpResponse,
+) -> Result[Unit, String] {
+  if origin_of(request_url) == origin {
+    return Ok(())
+  }
+  let aco = header_or_empty(response.headers, "access-control-allow-origin")
+  match credentials {
+    Include => {
+      if aco == "*" {
+        return Err(
+          "Access-Control-Allow-Origin \"*\" is not allowed with credentials=Include",
+        )
+      }
+      if aco != origin {
+        return Err(
+          "Access-Control-Allow-Origin missing or mismatched: \"" + aco + "\"",
+        )
+      }
+      let acc = header_or_empty(
+        response.headers,
+        "access-control-allow-credentials",
+      )
+      if acc != "true" {
+        return Err(
+          "Access-Control-Allow-Credentials must be \"true\" with credentials=Include, got \"" +
+          acc +
+          "\"",
+        )
+      }
+      Ok(())
+    }
+    Omit | SameOrigin => {
+      if aco != origin && aco != "*" {
+        return Err(
+          "Access-Control-Allow-Origin missing or mismatched: \"" + aco + "\"",
+        )
+      }
+      Ok(())
+    }
+  }
+}
+
+///|
 /// Look up `key` in `headers` (case-insensitive: the response from a
 /// real fetch may use any casing). Returns the trimmed value, or `""`
 /// when absent. Treating "header missing" and "header empty" the same
