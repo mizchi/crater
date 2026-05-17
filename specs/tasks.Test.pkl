@@ -276,6 +276,16 @@ tests {
       "bash -lc 'set -e; test -f painter/paint/glyph/provider_wbtest.mbt; grep -Fq -- \"glyph_from_provider forwards numeric font_weight 500\" painter/paint/glyph/provider_wbtest.mbt; grep -Fq -- \"js_glyph_outline_commands_by_weight\" webdriver/webdriver/bidi_browsing_context_actual_paint.mbt; grep -Fq -- \"resolve_js_glyph_commands_by_weight\" webdriver/webdriver/bidi_browsing_context_actual_paint.mbt; grep -Fq -- \"__craterGlyphOutlineCommandsByWeight\" webdriver/bidi_main/start-with-font.ts; grep -Fq -- \"pickNearestFontWeight\" scripts/font-weight-resolve.ts; grep -Fq -- \"selectWeightCandidates\" scripts/font-weight-resolve.ts; grep -Fq -- \"declaredWeightsForEntry\" scripts/font-weight-resolve.ts; grep -Fq -- \"byWeight: Map<number, FontInstance>\" webdriver/bidi_main/start-with-font.ts; grep -Fq -- \"loadDeclaredExtraWeights\" webdriver/bidi_main/start-with-font.ts'"
   }
   new {
+    name = "wpt_css_backgrounds_baseline_is_pinned"
+    description =
+      "css-backgrounds is enabled in wpt.json and the per-module baseline file pins the expected pass / fail counts."
+    tags { "wpt"; "css"; "baseline" }
+    specRef { "compat.css-backgrounds-baseline" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; grep -Fq -- \"\\\"css-backgrounds\\\"\" wpt.json; test -f tests/wpt-baselines/css-backgrounds.env; grep -Fq -- \"MODULE=css-backgrounds\" tests/wpt-baselines/css-backgrounds.env; grep -Fq -- \"BASELINE_PASSED=74\" tests/wpt-baselines/css-backgrounds.env; grep -Fq -- \"BASELINE_FAILED=6\" tests/wpt-baselines/css-backgrounds.env'"
+  }
+  new {
     name = "wpt_css_color_baseline_is_pinned"
     description =
       "css-color is enabled in wpt.json, the per-module baseline file exists with the expected fields, and scripts/test-wpt-module-baseline.sh is wired to enforce no-regression on it."
