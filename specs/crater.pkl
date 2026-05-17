@@ -637,10 +637,10 @@ scenarios {
     id = "paint.svg-logo-intrinsic"
     name = "SVG logo intrinsic sizing has dedicated fixtures"
     description =
-      "Separate SVG / logo intrinsic size and paint path from real-URL fixtures into dedicated reproducible fixtures. Source: TODO Next (P1)."
+      "Separate SVG / logo intrinsic size and paint path from real-URL fixtures into dedicated reproducible fixtures. tests/paint-vrt-svg-intrinsic.test.ts holds five focused cases (explicit width/height attrs, viewBox-only, flex container icon, inline-replaced baseline, percent width inside a sized parent) so regressions in SVG intrinsic sizing surface independently of the real-world page captures that previously exercised the same code paths incidentally. Source: TODO Next (P1)."
     tags { "paint"; "svg"; "fixtures"; "todo:next" }
     severity = "major"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.paint-accuracy" }
   }
   new {
