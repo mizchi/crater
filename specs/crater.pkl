@@ -540,10 +540,10 @@ scenarios {
     id = "compat.css-transforms-baseline"
     name = "css-transforms WPT module baseline is established"
     description =
-      "Measure and pin a per-module pass-rate baseline for the css-transforms WPT module. Source: TODO Now (P0)."
+      "Measure and pin a per-module pass-rate baseline for the css-transforms WPT module. css-transforms is enabled in wpt.json with the existing includePrefixes filter, the test count (2) and pass count (2) are pinned in tests/wpt-baselines/css-transforms.env, and scripts/test-wpt-module-baseline.sh enforces no regression. The filter currently exposes only the scrollable-* fixtures because Crater supports translate transforms but not the broader matrix / 3D suite; widening includePrefixes to cover more transform fixtures would be a follow-up after matrix / 3D support lands. Source: TODO Now (P0)."
     tags { "wpt"; "css"; "baseline"; "todo:now" }
     severity = "major"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.css-compat" }
   }
   new {
