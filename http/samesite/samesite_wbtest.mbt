@@ -37,3 +37,15 @@ test "classify_site_context: malformed origin falls back to CrossSite" {
     content="CrossSite",
   )
 }
+
+///|
+test "classify_site_context: trailing-dot FQDN matches non-dotted form" {
+  inspect(
+    classify_site_context("https://app.example.com.", "example.com"),
+    content="SameSite",
+  )
+  inspect(
+    classify_site_context("https://app.example.com", "example.com."),
+    content="SameSite",
+  )
+}

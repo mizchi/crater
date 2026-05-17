@@ -65,6 +65,13 @@ fn parse_host(origin : String) -> String? {
   if host == "" {
     return None
   }
+  // Strip a single trailing dot — FQDN forms like "example.com." are
+  // equivalent to "example.com" for site comparison.
+  let host = if host.has_suffix(".") && host.length() > 1 {
+    host.unsafe_substring(start=0, end=host.length() - 1)
+  } else {
+    host
+  }
   Some(host)
 }
 
@@ -89,6 +96,13 @@ fn truncate_at_any(s : String, stops : Array[Char]) -> String {
 /// "last two labels" heuristic. localhost and IP literals are returned
 /// as-is so they only match themselves.
 fn registrable_domain(host : String) -> String {
+  // Strip a single trailing dot — FQDN forms like "example.com." are
+  // equivalent to "example.com" for site comparison.
+  let host = if host.has_suffix(".") && host.length() > 1 {
+    host.unsafe_substring(start=0, end=host.length() - 1)
+  } else {
+    host
+  }
   if host == "localhost" || is_ip_literal(host) {
     return host
   }
@@ -105,6 +119,11 @@ fn registrable_domain(host : String) -> String {
 ///|
 /// IPv4 dotted-quad heuristic plus IPv6 bracketed form. Conservative:
 /// any host that "looks like" an IP is treated as its own site.
+///
+/// Note: octet-range validation (0–255) is deliberately skipped.
+/// Because IP-ish strings only ever match themselves, false positives
+/// (e.g. "999.999.999.999") are safe — they simply won't match any
+/// other host.
 fn is_ip_literal(host : String) -> Bool {
   if host.has_prefix("[") && host.has_suffix("]") {
     return true
