@@ -1792,3 +1792,11 @@ extern "js" fn js_runtime_href_at_point(x : Double, y : Double) -> String? =
 pub fn get_runtime_href_at_point(x : Double, y : Double) -> String? {
   js_runtime_href_at_point(x, y)
 }
+
+///|
+/// Temporary stub; real extern js install lands in Task 4 of the
+/// origin-Authorization plan. Keeps the snapshot push call site
+/// compilable while the BiDi handlers ship in isolation.
+fn set_runtime_context_authorization(_ctx_id : String, _json : String) -> Unit {
+  ()
+}
