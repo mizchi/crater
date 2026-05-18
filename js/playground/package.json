@@ -7,6 +7,9 @@
     "preview": "vite preview",
     "build:moonbit": "cd .. && moon build --target js"
   },
+  "dependencies": {
+    "@mizchi/utels": "^0.1.0"
+  },
   "devDependencies": {
     "vite": "^5.0.0"
   }
