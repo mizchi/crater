@@ -3512,6 +3512,19 @@ extern "js" fn js_evaluate_expression(
   #|             }
   #|           } catch (_e) { /* swallow — no cookies attached */ }
   #|         }
+  #|         // Attach partition Authorization header if registered for
+  #|         // this origin and caller has not already supplied one.
+  #|         if (
+  #|           typeof globalThis.__bidiResolveAuth === 'function' &&
+  #|           !headers.has('Authorization')
+  #|         ) {
+  #|           try {
+  #|             const authValue = globalThis.__bidiResolveAuth(resolvedUrl);
+  #|             if (authValue) {
+  #|               headers.set('Authorization', authValue);
+  #|             }
+  #|           } catch (_e) { /* swallow — fail open with no header */ }
+  #|         }
   #|         reqOptions = { ...reqOptions, headers };
   #|         if (!isNavigation && enforceCors && (mode === 'cors' || mode === 'same-origin') && sourceOrigin && targetOrigin && sourceOrigin !== targetOrigin) {
   #|           if (!headers.has('Origin')) headers.set('Origin', sourceOrigin);
