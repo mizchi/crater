@@ -106,9 +106,18 @@ function handleApp(
       return;
     }
     if (url.pathname === "/app-echo-auth") {
+      // App-side echo: only reachable via same-origin redirect from
+      // /redirect-same-origin, but emit ACA headers anyway so the response
+      // posture matches the api-side /api/echo-auth (its sibling diagnostic
+      // endpoint). Test-fixture endpoints that reflect Authorization/Cookie
+      // must NOT have permissive CORS — they're high-value for a malicious
+      // page to coerce.
+      const reqOrigin = req.headers.origin ?? "";
+      const selfOrigin = `http://${req.headers.host}`;
+      const corsHeaders = corsHeadersForOrigin(reqOrigin, selfOrigin);
       const auth = req.headers["authorization"] ?? "";
       const cookie = req.headers["cookie"] ?? "";
-      res.writeHead(200, { "content-type": "application/json" });
+      res.writeHead(200, { "content-type": "application/json", ...corsHeaders });
       res.end(JSON.stringify({ authorization: String(auth), cookie: String(cookie) }));
       return;
     }
@@ -192,7 +201,10 @@ function parseDigestAuthorization(header: string): Map<string, string> | null {
         if (params[i] === "\\" && i + 1 < params.length) i += 2;
         else i++;
       }
-      value = params.slice(valStart, i);
+      // RFC 7230 §3.2.6 quoted-pair: a backslash escapes the following
+      // octet inside a quoted-string. Strip the escape so the consumer
+      // sees the literal value rather than the on-the-wire form.
+      value = params.slice(valStart, i).replace(/\\(.)/g, "$1");
       if (i < params.length) i++; // consume closing quote
     } else {
       const valStart = i;
@@ -204,13 +216,30 @@ function parseDigestAuthorization(header: string): Map<string, string> | null {
   return out;
 }
 
-function digestHash(algorithm: string, input: string): string {
+// Allowlist of Digest algorithms this fixture supports — clients MUST pick
+// one of these. A real RFC 7616 server pins the algorithm at challenge time
+// and rejects any other value on the response; this fixture is stateless and
+// accepts either of the two advertised algorithms but nothing else (no
+// arbitrary client-supplied algorithm string).
+const DIGEST_SUPPORTED_ALGORITHMS = new Set(["MD5", "SHA-256"]);
+
+function normalizeDigestAlgorithm(raw: string): string | null {
   // RFC 7616 §3.3: hash function H() depends on the algorithm directive.
-  // We support MD5 (mandatory baseline) and SHA-256. The "-sess" variants
-  // alter how HA1 is computed but use the same underlying digest, so the
-  // base hash function is the same.
-  const algo = algorithm.toLowerCase().replace(/-sess$/, "");
-  const nodeAlgo = algo === "sha-256" || algo === "sha256" ? "sha256" : "md5";
+  // The "-sess" variants alter how HA1 is computed but use the same base
+  // digest, so the underlying hash selection is the same. We canonicalize
+  // the algorithm string to its uppercase form for the allowlist check.
+  const stripped = raw.replace(/-sess$/i, "");
+  const upper = stripped.toUpperCase();
+  return DIGEST_SUPPORTED_ALGORITHMS.has(upper) ? upper : null;
+}
+
+function digestHash(algorithm: string, input: string): string {
+  const normalized = normalizeDigestAlgorithm(algorithm);
+  // The caller is expected to have validated `algorithm` against the
+  // supported set before calling. Fall back to MD5 only as a defensive
+  // default — production code paths route through `normalizeDigestAlgorithm`
+  // first and surface a 401 on unsupported algorithms.
+  const nodeAlgo = normalized === "SHA-256" ? "sha256" : "md5";
   return createHash(nodeAlgo).update(input).digest("hex");
 }
 
@@ -228,9 +257,18 @@ function verifyDigestAuthorization(
   const qop = parsed.get("qop");
   const nc = parsed.get("nc");
   const cnonce = parsed.get("cnonce");
-  const algorithm = parsed.get("algorithm") ?? "MD5";
+  const rawAlgorithm = parsed.get("algorithm") ?? "MD5";
   if (!username || !realm || !nonce || !uri || !response) return null;
   if (username !== DIGEST_USERNAME || realm !== DIGEST_REALM) return null;
+
+  // Reject any algorithm string outside the supported allowlist. A real RFC
+  // 7616 server compares against the algorithm IT advertised on the
+  // challenge; this stateless fixture instead accepts either of the two
+  // algorithms it would advertise (MD5 / SHA-256) and rejects anything
+  // else, which is sufficient to prevent a "unknown algo silently downgrades
+  // to MD5" footgun.
+  const algorithm = normalizeDigestAlgorithm(rawAlgorithm);
+  if (!algorithm) return null;
 
   const ha1 = digestHash(
     algorithm,
@@ -252,6 +290,14 @@ function verifyDigestAuthorization(
  * Used by the fixture vitest and by Playwright e2e to drive the round-trip
  * without depending on a userland Digest client library.
  */
+// RFC 7230 §3.2.6 quoted-pair escape for an `auth-param` value. Backslash
+// and double-quote must be \-escaped inside a quoted-string. Used by
+// `computeDigestAuthorization` so values containing those characters don't
+// produce a header the server's `parseDigestAuthorization` can't recover.
+function escapeDigestQuotedValue(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
 export function computeDigestAuthorization(opts: {
   username: string;
   password: string;
@@ -277,20 +323,21 @@ export function computeDigestAuthorization(opts: {
         `${ha1}:${opts.nonce}:${opts.nc}:${opts.cnonce}:${opts.qop}:${ha2}`,
       )
     : digestHash(algorithm, `${ha1}:${opts.nonce}:${ha2}`);
+  const q = escapeDigestQuotedValue;
   const parts = [
-    `username="${opts.username}"`,
-    `realm="${opts.realm}"`,
-    `nonce="${opts.nonce}"`,
-    `uri="${opts.uri}"`,
+    `username="${q(opts.username)}"`,
+    `realm="${q(opts.realm)}"`,
+    `nonce="${q(opts.nonce)}"`,
+    `uri="${q(opts.uri)}"`,
     `response="${response}"`,
     `algorithm=${algorithm}`,
   ];
   if (opts.qop) {
     parts.push(`qop=${opts.qop}`);
     if (opts.nc) parts.push(`nc=${opts.nc}`);
-    if (opts.cnonce) parts.push(`cnonce="${opts.cnonce}"`);
+    if (opts.cnonce) parts.push(`cnonce="${q(opts.cnonce)}"`);
   }
-  if (opts.opaque) parts.push(`opaque="${opts.opaque}"`);
+  if (opts.opaque) parts.push(`opaque="${q(opts.opaque)}"`);
   return `Digest ${parts.join(", ")}`;
 }
 
@@ -503,12 +550,24 @@ function handleApi(
   // With a valid Authorization: Digest header (correct response per
   // RFC 7616 §3.4.1) returns 200 + JSON.
   //
-  // Both MD5 (RFC 7616's mandatory baseline, kept for client compatibility)
-  // and SHA-256 are accepted. The fixture stores no nonce state — it
-  // verifies the response by recomputing it with the supplied nonce; that's
-  // permissive enough for round-trip testing without exposing replay
-  // protection complexity. Real servers cycle nonces and remember nc/cnonce
-  // pairs to defeat replay; that's out of scope for a fixture.
+  // !! NOT A REFERENCE IMPLEMENTATION FOR DIGEST !!
+  //
+  // This fixture deliberately omits replay protection so tests can recompute
+  // a response with whatever nonce/nc/cnonce values they want. Specifically:
+  //   - The server does not remember the nonces it has issued, so any
+  //     well-formed Authorization that hashes correctly against ITS OWN
+  //     supplied nonce is accepted. A response computed against an old
+  //     captured nonce is indistinguishable from a fresh one.
+  //   - `nc` (nonce-count) is read but not enforced for monotonic increase.
+  //   - `opaque` is issued but ignored on the response.
+  //   - `cnonce` is read but not constrained for uniqueness.
+  // A production server MUST cycle nonces with a server-managed validity
+  // window, remember the (nonce, nc) pairs it has seen, and require the
+  // client to echo back the exact `opaque` it issued — none of which this
+  // fixture does. Do NOT model production Digest code after this endpoint.
+  //
+  // Algorithms: both MD5 (RFC 7616 baseline) and SHA-256 are accepted.
+  // Unknown algorithm strings are rejected (see `normalizeDigestAlgorithm`).
   if (url.pathname === "/digest/protected") {
     const corsHeaders = corsHeadersForOrigin(origin, appOrigin);
     const auth = req.headers["authorization"];

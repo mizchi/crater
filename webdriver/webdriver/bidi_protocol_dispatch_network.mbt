@@ -145,6 +145,15 @@ fn BidiProtocol::dispatch_network(
     // Routes to the same handler as the internal alias `continueBlockedRequest`.
     // Per spec, params may include `headers`, `method`, `url`, `body`, `cookies`
     // overrides for an intercepted request paused at `beforeRequestSent`.
+    //
+    // CAVEAT: supplying `headers` without `cookies` clears the request's
+    // cookies entirely (see `handle_network_continue_blocked_request` —
+    // `has_headers && !has_cookies` resets `request_cookies` to `[]` with
+    // `request_cookies_override: true`). If a caller only intends to swap a
+    // single header (e.g. rotate Authorization for an OAuth refresh) and
+    // wants the existing Cookie attached to the outbound request to remain,
+    // they must explicitly echo the original cookies in the `cookies`
+    // override array. This matches the BiDi spec but is easy to miss.
     "continueRequest" => {
       self.handle_network_continue_blocked_request(request.id, request.params)
       Ok(())
