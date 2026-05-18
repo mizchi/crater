@@ -7,6 +7,7 @@
  *   exercise Crater's CORS gate (M5 in PR #131 security review).
  */
 
+import { createHash, randomBytes } from "node:crypto";
 import http, { IncomingMessage, ServerResponse } from "node:http";
 import { AddressInfo } from "node:net";
 
@@ -158,6 +159,149 @@ const PROTECTED_BEARER_TOKEN = "Bearer test-jwt-token"; // test fixture only
 export const REFRESH_TOKEN = "rt-test-refresh"; // test fixture only
 // secretlint-disable-next-line @secretlint/secretlint-rule-pattern
 export const REFRESHED_ACCESS_TOKEN = "Bearer test-jwt-token-refreshed"; // test fixture only
+
+// HTTP Digest fixture credentials. Both algorithms (MD5 and SHA-256) accept
+// the same username/password pair — the algorithm only changes which hash
+// function is used to compute HA1, HA2 and the response per RFC 7616.
+export const DIGEST_REALM = "crater-digest-fixture";
+export const DIGEST_USERNAME = "alice";
+// secretlint-disable-next-line @secretlint/secretlint-rule-pattern
+export const DIGEST_PASSWORD = "wonderland"; // test fixture only
+
+function parseDigestAuthorization(header: string): Map<string, string> | null {
+  // Strip leading "Digest " scheme token.
+  if (!header.startsWith("Digest ")) return null;
+  const params = header.slice("Digest ".length).trim();
+  const out = new Map<string, string>();
+  // RFC 7616 §3.4: parameters are auth-param "name=value" pairs separated
+  // by commas; values may be quoted-strings or tokens. We scan
+  // character-by-character to handle commas inside quoted values.
+  let i = 0;
+  while (i < params.length) {
+    while (i < params.length && /[\s,]/.test(params[i])) i++;
+    const nameStart = i;
+    while (i < params.length && params[i] !== "=") i++;
+    if (i >= params.length) break;
+    const name = params.slice(nameStart, i).trim();
+    i++; // consume '='
+    let value: string;
+    if (params[i] === '"') {
+      i++; // consume opening quote
+      const valStart = i;
+      while (i < params.length && params[i] !== '"') {
+        if (params[i] === "\\" && i + 1 < params.length) i += 2;
+        else i++;
+      }
+      value = params.slice(valStart, i);
+      if (i < params.length) i++; // consume closing quote
+    } else {
+      const valStart = i;
+      while (i < params.length && params[i] !== ",") i++;
+      value = params.slice(valStart, i).trim();
+    }
+    out.set(name.toLowerCase(), value);
+  }
+  return out;
+}
+
+function digestHash(algorithm: string, input: string): string {
+  // RFC 7616 §3.3: hash function H() depends on the algorithm directive.
+  // We support MD5 (mandatory baseline) and SHA-256. The "-sess" variants
+  // alter how HA1 is computed but use the same underlying digest, so the
+  // base hash function is the same.
+  const algo = algorithm.toLowerCase().replace(/-sess$/, "");
+  const nodeAlgo = algo === "sha-256" || algo === "sha256" ? "sha256" : "md5";
+  return createHash(nodeAlgo).update(input).digest("hex");
+}
+
+function verifyDigestAuthorization(
+  header: string,
+  method: string,
+): { username: string } | null {
+  const parsed = parseDigestAuthorization(header);
+  if (!parsed) return null;
+  const username = parsed.get("username");
+  const realm = parsed.get("realm");
+  const nonce = parsed.get("nonce");
+  const uri = parsed.get("uri");
+  const response = parsed.get("response");
+  const qop = parsed.get("qop");
+  const nc = parsed.get("nc");
+  const cnonce = parsed.get("cnonce");
+  const algorithm = parsed.get("algorithm") ?? "MD5";
+  if (!username || !realm || !nonce || !uri || !response) return null;
+  if (username !== DIGEST_USERNAME || realm !== DIGEST_REALM) return null;
+
+  const ha1 = digestHash(
+    algorithm,
+    `${DIGEST_USERNAME}:${DIGEST_REALM}:${DIGEST_PASSWORD}`,
+  );
+  const ha2 = digestHash(algorithm, `${method}:${uri}`);
+  // qop=auth uses the extended response: HASH(HA1:nonce:nc:cnonce:qop:HA2).
+  // Without qop, the bare RFC 2069 form HASH(HA1:nonce:HA2) is used.
+  const expected = qop
+    ? digestHash(algorithm, `${ha1}:${nonce}:${nc}:${cnonce}:${qop}:${ha2}`)
+    : digestHash(algorithm, `${ha1}:${nonce}:${ha2}`);
+  if (expected !== response) return null;
+  return { username };
+}
+
+/**
+ * RFC 7616 client-side response computation. Builds the Authorization header
+ * value a real Digest client would send after receiving a 401 challenge.
+ * Used by the fixture vitest and by Playwright e2e to drive the round-trip
+ * without depending on a userland Digest client library.
+ */
+export function computeDigestAuthorization(opts: {
+  username: string;
+  password: string;
+  realm: string;
+  nonce: string;
+  uri: string;
+  method: string;
+  qop?: string;
+  nc?: string;
+  cnonce?: string;
+  algorithm?: string;
+  opaque?: string;
+}): string {
+  const algorithm = opts.algorithm ?? "MD5";
+  const ha1 = digestHash(
+    algorithm,
+    `${opts.username}:${opts.realm}:${opts.password}`,
+  );
+  const ha2 = digestHash(algorithm, `${opts.method}:${opts.uri}`);
+  const response = opts.qop
+    ? digestHash(
+        algorithm,
+        `${ha1}:${opts.nonce}:${opts.nc}:${opts.cnonce}:${opts.qop}:${ha2}`,
+      )
+    : digestHash(algorithm, `${ha1}:${opts.nonce}:${ha2}`);
+  const parts = [
+    `username="${opts.username}"`,
+    `realm="${opts.realm}"`,
+    `nonce="${opts.nonce}"`,
+    `uri="${opts.uri}"`,
+    `response="${response}"`,
+    `algorithm=${algorithm}`,
+  ];
+  if (opts.qop) {
+    parts.push(`qop=${opts.qop}`);
+    if (opts.nc) parts.push(`nc=${opts.nc}`);
+    if (opts.cnonce) parts.push(`cnonce="${opts.cnonce}"`);
+  }
+  if (opts.opaque) parts.push(`opaque="${opts.opaque}"`);
+  return `Digest ${parts.join(", ")}`;
+}
+
+/**
+ * Parses a Digest challenge from the server's WWW-Authenticate header.
+ * Returns the directive map (realm/nonce/qop/etc.) for a client to feed
+ * into `computeDigestAuthorization`.
+ */
+export function parseDigestChallenge(header: string): Map<string, string> | null {
+  return parseDigestAuthorization(header);
+}
 
 function corsHeadersForOrigin(
   origin: string,
@@ -347,6 +491,49 @@ function handleApi(
         }),
       );
     });
+    return;
+  }
+  // RFC 7616 §3 HTTP Digest Access Authentication.
+  //
+  // Endpoint: GET /digest/protected
+  //
+  // Without a matching Authorization header, returns:
+  //   401 + WWW-Authenticate: Digest realm="...", qop="auth",
+  //                                  nonce="<server nonce>", algorithm=MD5
+  // With a valid Authorization: Digest header (correct response per
+  // RFC 7616 §3.4.1) returns 200 + JSON.
+  //
+  // Both MD5 (RFC 7616's mandatory baseline, kept for client compatibility)
+  // and SHA-256 are accepted. The fixture stores no nonce state — it
+  // verifies the response by recomputing it with the supplied nonce; that's
+  // permissive enough for round-trip testing without exposing replay
+  // protection complexity. Real servers cycle nonces and remember nc/cnonce
+  // pairs to defeat replay; that's out of scope for a fixture.
+  if (url.pathname === "/digest/protected") {
+    const corsHeaders = corsHeadersForOrigin(origin, appOrigin);
+    const auth = req.headers["authorization"];
+    if (typeof auth === "string" && auth.startsWith("Digest ")) {
+      const verified = verifyDigestAuthorization(auth, req.method ?? "GET");
+      if (verified) {
+        res.writeHead(200, {
+          "content-type": "application/json",
+          ...corsHeaders,
+        });
+        res.end(JSON.stringify({ user: verified.username, digest: true }));
+        return;
+      }
+    }
+    // No Authorization or verification failed: issue a fresh challenge.
+    const nonce = randomBytes(16).toString("hex");
+    const opaque = randomBytes(8).toString("hex");
+    res.writeHead(401, {
+      "content-type": "text/plain",
+      "www-authenticate":
+        `Digest realm="${DIGEST_REALM}", qop="auth", nonce="${nonce}", ` +
+        `opaque="${opaque}", algorithm=MD5`,
+      ...corsHeaders,
+    });
+    res.end("digest authentication required");
     return;
   }
   void sessions; // sessions available for future authenticated /api/* routes
