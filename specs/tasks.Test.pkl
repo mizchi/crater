@@ -465,4 +465,34 @@ tests {
     cmd =
       "bash -lc 'set -e; test -f webdriver/webdriver/bidi_storage.mbt; grep -Fq -- \"fn BidiProtocol::persist_cookies_from_response\" webdriver/webdriver/bidi_storage.mbt; grep -Fq -- \"fn BidiProtocol::flush_pending_cookie_ingest\" webdriver/webdriver/bidi_storage.mbt; grep -Fq -- \"synthetic_network_parse_set_cookie_header_value\" webdriver/webdriver/bidi_storage.mbt; test -f webdriver/webdriver/bidi_runtime_context.mbt; grep -Fq -- \"js_drain_pending_cookie_ingest\" webdriver/webdriver/bidi_runtime_context.mbt; grep -Fq -- \"__bidiPendingCookieIngest\" webdriver/webdriver/bidi_runtime_context.mbt; test -f webdriver/webdriver/bidi_runtime_eval.mbt; grep -Fq -- \"captureInboundSetCookies\" webdriver/webdriver/bidi_runtime_eval.mbt; grep -Fq -- \"__bidiPendingCookieIngest\" webdriver/webdriver/bidi_runtime_eval.mbt; test -f webdriver/webdriver/bidi_protocol_context_lifecycle.mbt; grep -Fq -- \"flush_pending_cookie_ingest\" webdriver/webdriver/bidi_protocol_context_lifecycle.mbt; test -f webdriver/webdriver/bidi_runtime_set_cookie_ingest_wbtest.mbt; grep -Fq -- \"persist_cookies_from_response persists Set-Cookie into storage jar\" webdriver/webdriver/bidi_runtime_set_cookie_ingest_wbtest.mbt; grep -Fq -- \"fetch shim ingest buffer drain persists Set-Cookie into partition jar\" webdriver/webdriver/bidi_runtime_set_cookie_ingest_wbtest.mbt; grep -Fq -- \"fetch shim ingested cookie rides the outbound bridge on the next request\" webdriver/webdriver/bidi_runtime_set_cookie_ingest_wbtest.mbt'"
   }
+  new {
+    name = "bidi_runtime_fetch_preflight_cache_wired"
+    description =
+      "The BiDi runtime fetch shim memoizes validated OPTIONS responses in a per-realm preflightCache map keyed by `${origin}|${url}|${method}|${sortedHeaders}` (same cache_key formula as http/cors/cors.mbt PreflightCache) with the same [0, 7200]s Max-Age clamp. Repeat non-simple cross-origin requests within Max-Age skip the OPTIONS roundtrip. Cache entries whose allow-lists no longer cover the current request are evicted on hit and refetched. Covered by webdriver/webdriver/bidi_runtime_fetch_wbtest.mbt."
+    tags { "bidi"; "runtime"; "fetch"; "cors"; "preflight"; "performance" }
+    specRef { "bug.runtime.fetch-preflight-cache-not-shared" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; test -f webdriver/webdriver/bidi_runtime_eval.mbt; grep -Fq -- \"__bidiPreflightCache\" webdriver/webdriver/bidi_runtime_eval.mbt; grep -Fq -- \"preflightCacheKey\" webdriver/webdriver/bidi_runtime_eval.mbt; grep -Fq -- \"preflightEntryCovers\" webdriver/webdriver/bidi_runtime_eval.mbt; grep -Fq -- \"expires_at_seconds\" webdriver/webdriver/bidi_runtime_eval.mbt; grep -Fq -- \"if (maxAge > 7200)\" webdriver/webdriver/bidi_runtime_eval.mbt; test -f webdriver/webdriver/bidi_runtime_fetch_wbtest.mbt; grep -Fq -- \"fetch shim caches preflight result and skips second OPTIONS within Max-Age\" webdriver/webdriver/bidi_runtime_fetch_wbtest.mbt; grep -Fq -- \"fetch shim preflight cache evicts entry when new header is not covered\" webdriver/webdriver/bidi_runtime_fetch_wbtest.mbt'"
+  }
+  new {
+    name = "bidi_runtime_fetch_install_once_realm_reset"
+    description =
+      "reset_runtime_js_state in webdriver/webdriver/bidi_runtime_context.mbt drops __bidiFetchShimInstalled, __rawFetch, and __bidiPreflightCache so the next js_evaluate_expression bootstrap re-derives them from the current realm's globals. Without this drop, a browsingContext.create / destroy cycle that reuses the same JS realm would inherit the install-once flag and leave __rawFetch pointing at the previous session's stale stub. Covered by webdriver/webdriver/bidi_runtime_fetch_wbtest.mbt."
+    tags { "bidi"; "runtime"; "fetch"; "lifecycle" }
+    specRef { "bug.runtime.fetch-install-once-realm-bound" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; test -f webdriver/webdriver/bidi_runtime_context.mbt; grep -Fq -- \"delete globalThis.__bidiFetchShimInstalled\" webdriver/webdriver/bidi_runtime_context.mbt; grep -Fq -- \"delete globalThis.__rawFetch\" webdriver/webdriver/bidi_runtime_context.mbt; grep -Fq -- \"delete globalThis.__bidiPreflightCache\" webdriver/webdriver/bidi_runtime_context.mbt; test -f webdriver/webdriver/bidi_runtime_fetch_wbtest.mbt; grep -Fq -- \"reset_runtime_js_state lets next bootstrap rebind __rawFetch to the realm fetch\" webdriver/webdriver/bidi_runtime_fetch_wbtest.mbt'"
+  }
+  new {
+    name = "bidi_runtime_cookie_url_filter_parity_guarded"
+    description =
+      "webdriver/webdriver/bidi_runtime_cookie_parity_wbtest.mbt runs 10 representative cookie + request URL inputs through BOTH __bidiResolveCookies (JS, bidi_runtime_context.mbt) and storage_cookie_matches_request_url (MoonBit, bidi_storage.mbt) and asserts they agree. Coverage: domain + path agreement (exact host, cross-site, subdomain matching dot-prefixed domain, path prefix, path mismatch, trailing-slash path, name-prefix boundary, sibling subdomain). Scheme-vs-Secure filtering is intentionally out of scope per the catch-drift-don't-unify plan."
+    tags { "bidi"; "runtime"; "cookies"; "parity" }
+    specRef { "bug.runtime.cookie-url-filter-parity" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; test -f webdriver/webdriver/bidi_runtime_cookie_parity_wbtest.mbt; grep -Fq -- \"cookie URL filter parity: 10 representative cases\" webdriver/webdriver/bidi_runtime_cookie_parity_wbtest.mbt; grep -Fq -- \"storage_cookie_matches_request_url\" webdriver/webdriver/bidi_runtime_cookie_parity_wbtest.mbt; grep -Fq -- \"__bidiResolveCookies\" webdriver/webdriver/bidi_runtime_cookie_parity_wbtest.mbt; test -f webdriver/webdriver/bidi_storage.mbt; grep -Fq -- \"fn storage_cookie_matches_request_url\" webdriver/webdriver/bidi_storage.mbt; test -f webdriver/webdriver/bidi_runtime_context.mbt; grep -Fq -- \"globalThis.__bidiResolveCookies\" webdriver/webdriver/bidi_runtime_context.mbt'"
+  }
 }

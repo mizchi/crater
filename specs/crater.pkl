@@ -927,30 +927,30 @@ scenarios {
     id = "bug.runtime.fetch-preflight-cache-not-shared"
     name = "BiDi runtime preflight is not cached"
     description =
-      "The BiDi runtime fetch shim sends OPTIONS preflight for every non-simple cross-origin request and never reuses the result. Phase 1-4's PreflightCache (http/cors/cors.mbt PreflightCache::get_or_validate with Max-Age clamp) is MoonBit-side and not bridged to the JS runtime. Repeat POSTs to the same endpoint pay the RTT every time. Follow-up from PR #135 / #136 review."
+      "The BiDi runtime fetch shim sends OPTIONS preflight for every non-simple cross-origin request and never reuses the result. Closed by PR #143: maybeSendPreflight in bidi_runtime_eval.mbt now memoizes validated OPTIONS responses in a per-realm Map keyed by `${origin}|${url}|${method}|${sortedHeaders}` (same cache_key formula as http/cors/cors.mbt PreflightCache::cache_key), with the same [0, 7200]s Max-Age clamp. Repeat non-simple cross-origin requests within Max-Age skip the OPTIONS roundtrip. Cache entries whose allow-lists no longer cover the current request are evicted on hit and refetched. The cache is JS-realm-local (not bridged to the MoonBit PreflightCache); the goal is avoiding redundant OPTIONS within the runtime. Covered by webdriver/webdriver/bidi_runtime_fetch_wbtest.mbt."
     tags { "runtime"; "cors"; "preflight"; "performance" }
     severity = "minor"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.dom-compat"; "goal.ci-efficiency" }
   }
   new {
     id = "bug.runtime.fetch-install-once-realm-bound"
     name = "Runtime fetch install-once guard is not realm-bound"
     description =
-      "globalThis.__bidiFetchShimInstalled prevents double-wrapping the fetch shim but is keyed at the realm scope. If a browsingContext.create / destroy cycle ever reuses the same JS realm, the second session would inherit the flag without re-wrapping. Today the guard pairs with __rawFetch reassignment so behavior is fine, but the invariant is unwritten. Follow-up from PR review of commits a2959be / 3fc3b96."
+      "globalThis.__bidiFetchShimInstalled prevents double-wrapping the fetch shim but is keyed at the realm scope. Closed by PR #143: reset_runtime_js_state in bidi_runtime_context.mbt now deletes __bidiFetchShimInstalled, __rawFetch, and __bidiPreflightCache so the next js_evaluate_expression bootstrap re-derives them from the current realm's globals. Without this drop, a browsingContext.create / destroy cycle that reuses the same JS realm would inherit the flag without re-wrapping and leave __rawFetch pointing at the previous session's stale stub. Covered by webdriver/webdriver/bidi_runtime_fetch_wbtest.mbt."
     tags { "runtime"; "lifecycle" }
     severity = "minor"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.protocol-compat" }
   }
   new {
     id = "bug.runtime.cookie-url-filter-parity"
     name = "JS-side cookie URL filter mirrors MoonBit without static guard"
     description =
-      "__bidiResolveCookies in bidi_runtime_context.mbt re-implements the domain/path/secure filtering that storage_cookie_matches_request_url already does on the MoonBit side. Functionally equivalent today, but no test guards the two implementations from diverging. Generate the JS filter from a single source, or add a parity wbtest pair. Follow-up from PR review."
+      "__bidiResolveCookies in bidi_runtime_context.mbt re-implements the domain/path filtering that storage_cookie_matches_request_url already does on the MoonBit side. Closed by PR #143: webdriver/webdriver/bidi_runtime_cookie_parity_wbtest.mbt runs 10 representative cookie + request URL inputs through BOTH implementations and asserts they agree. Coverage: domain + path agreement (exact host, cross-site, subdomain matching dot-prefixed domain, path prefix, path mismatch, trailing-slash path, name-prefix boundary, sibling subdomain). Scheme-vs-Secure filtering is JS-only today; that divergence is intentionally not unified per the 'catch drift, don't unify' plan. The parity wbtest will fail the next time someone changes one side without the other."
     tags { "runtime"; "cookies"; "parity" }
     severity = "minor"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.dom-compat" }
   }
 }
