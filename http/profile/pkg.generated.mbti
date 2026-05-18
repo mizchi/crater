@@ -14,8 +14,13 @@ import {
 
 // Types and methods
 pub(all) struct AuthState {
+  mut origin_headers : Map[String, String]
 } derive(@debug.Debug)
+pub fn AuthState::clear_origin_header(Self, String) -> Unit
 pub fn AuthState::default() -> Self
+pub fn AuthState::header_for_origin(Self, String) -> String?
+pub fn AuthState::list_origins(Self) -> Array[String]
+pub fn AuthState::set_origin_header(Self, String, String) -> Unit
 pub impl Show for AuthState
 
 pub(all) struct Profile {
