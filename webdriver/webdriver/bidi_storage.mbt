@@ -1398,6 +1398,43 @@ fn BidiProtocol::resolve_storage_request_cookies(
 }
 
 ///|
+/// Return the full cookie attribute set for every cookie reachable from the
+/// supplied browsing context (ancestry-aware). Used by the BiDi runtime fetch
+/// shim to inject Cookie headers — see `set_runtime_context_cookies` and the
+/// JS-side `__bidiResolveCookies` bridge.
+fn BidiProtocol::cookies_for_context_full_json(
+  self : BidiProtocol,
+  ctx_id : String,
+) -> Array[Json] {
+  self.prune_expired_storage_cookies()
+  let merged : Map[String, StoredCookie] = {}
+  for scope_id in self.storage_context_ancestry(ctx_id) {
+    match self.storage_cookies_by_scope.get(scope_id) {
+      Some(jar) =>
+        for cookie_id, cookie in jar {
+          merged[cookie_id] = cookie
+        }
+      None => ()
+    }
+  }
+  let cookies : Array[Json] = []
+  for _, cookie in merged {
+    cookies.push(
+      make_object({
+        "name": Json::string(cookie.name),
+        "value": Json::string(cookie.value_text),
+        "domain": Json::string(cookie.domain),
+        "path": Json::string(cookie.path),
+        "secure": Json::boolean(cookie.secure),
+        "httpOnly": Json::boolean(cookie.http_only),
+        "sameSite": Json::string(cookie.same_site),
+      }),
+    )
+  }
+  cookies
+}
+
+///|
 fn BidiProtocol::prune_expired_storage_cookies(self : BidiProtocol) -> Unit {
   let now = storage_now_seconds()
   let scope_ids : Array[String] = []

@@ -115,6 +115,8 @@ pub fn runtime_write_text_file(String, String) -> Unit
 
 pub fn set_runtime_context(String) -> Unit
 
+pub fn set_runtime_context_cookies(String, String) -> Unit
+
 pub fn set_runtime_context_frames(String, Array[String]) -> Unit
 
 pub fn set_runtime_context_locale(String, String) -> Unit
