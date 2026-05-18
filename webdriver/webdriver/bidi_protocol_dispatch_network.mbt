@@ -6,10 +6,15 @@ fn BidiProtocol::dispatch_network(
   action : String,
 ) -> Result[Unit, String] {
   match action {
+    // Spec-conformant name from WebDriver BiDi specification.
+    // Returns `{ intercept: "<id>" }` as required by the spec.
     "addIntercept" => {
       self.handle_network_add_intercept(request.id, request.params)
       Ok(())
     }
+    // Internal alias returning the raw id string (no wrapping object).
+    // Kept for backwards-compat with existing wbtests; may be retired once
+    // all callers migrate to the spec name `addIntercept`.
     "addInterceptId" => {
       self.handle_network_add_intercept_id(request.id, request.params)
       Ok(())
@@ -109,6 +114,16 @@ fn BidiProtocol::dispatch_network(
       self.handle_network_fail_blocked_request(request.id, request.params)
       Ok(())
     }
+    // Spec-conformant name from WebDriver BiDi specification.
+    // Routes to the same handler as the internal alias `continueAuthRequest`.
+    "continueWithAuth" => {
+      self.handle_network_continue_auth_request(request.id, request.params)
+      Ok(())
+    }
+    // Internal alias kept for backwards-compat with the WPT shim
+    // (`scripts/crater_bidi_modules.py::NetworkModule.continue_with_auth`)
+    // and existing wbtests. Retire once the shim drops its rename and
+    // dependent wbtests migrate to the spec name.
     "continueAuthRequest" => {
       self.handle_network_continue_auth_request(request.id, request.params)
       Ok(())
