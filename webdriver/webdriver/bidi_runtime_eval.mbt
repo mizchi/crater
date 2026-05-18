@@ -3349,6 +3349,39 @@ extern "js" fn js_evaluate_expression(
   #|         };
   #|         globalThis.__activeNetworkRequests++;
   #|         notifyNetworkChange();
+  #|         const captureInboundSetCookies = (response) => {
+  #|           try {
+  #|             if (!response || !response.headers) return;
+  #|             let values = [];
+  #|             const headers = response.headers;
+  #|             if (typeof headers.getSetCookie === 'function') {
+  #|               const v = headers.getSetCookie();
+  #|               if (Array.isArray(v)) values = v.slice();
+  #|             }
+  #|             if (values.length === 0 && typeof headers.raw === 'function') {
+  #|               try {
+  #|                 const raw = headers.raw();
+  #|                 const sc = raw && (raw['set-cookie'] || raw['Set-Cookie']);
+  #|                 if (Array.isArray(sc)) values = sc.slice();
+  #|               } catch (_e) {}
+  #|             }
+  #|             if (values.length === 0 && typeof headers.get === 'function') {
+  #|               try {
+  #|                 const single = headers.get('set-cookie') || headers.get('Set-Cookie');
+  #|                 if (single) values = [String(single)];
+  #|               } catch (_e) {}
+  #|             }
+  #|             if (values.length === 0) return;
+  #|             if (!Array.isArray(globalThis.__bidiPendingCookieIngest)) {
+  #|               globalThis.__bidiPendingCookieIngest = [];
+  #|             }
+  #|             globalThis.__bidiPendingCookieIngest.push({
+  #|               url: String(resolvedUrl),
+  #|               cookies: values.map((v) => String(v)),
+  #|               ctx: String(globalThis.__bidiCurrentContext || 'default-context'),
+  #|             });
+  #|           } catch (_e) { /* swallow — never fail a fetch on ingest */ }
+  #|         };
   #|         const sendActual = () => dispatchRaw(resolvedUrl, reqOptions)
   #|           .then(response => {
   #|             if (!isNavigation && enforceCors && mode === 'cors' && sourceOrigin && targetOrigin && sourceOrigin !== targetOrigin) {
@@ -3365,6 +3398,7 @@ extern "js" fn js_evaluate_expression(
   #|                 }
   #|               }
   #|             }
+  #|             captureInboundSetCookies(response);
   #|             finish();
   #|             return response;
   #|           })
