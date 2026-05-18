@@ -1166,7 +1166,7 @@ extern "js" fn js_set_runtime_context_cookies(
 
 ///|
 /// Push the partition cookie snapshot for `ctx_id` into the JS realm.
-pub fn set_runtime_context_cookies(
+fn set_runtime_context_cookies(
   ctx_id : String,
   cookies_json : String,
 ) -> Unit {

@@ -893,4 +893,34 @@ scenarios {
     reviewStatus = "draft"
     contributes { "goal.ci-efficiency"; "goal.paint-accuracy" }
   }
+  new {
+    id = "bug.runtime.fetch-preflight-cache-not-shared"
+    name = "BiDi runtime preflight is not cached"
+    description =
+      "The BiDi runtime fetch shim sends OPTIONS preflight for every non-simple cross-origin request and never reuses the result. Phase 1-4's PreflightCache (http/cors/cors.mbt PreflightCache::get_or_validate with Max-Age clamp) is MoonBit-side and not bridged to the JS runtime. Repeat POSTs to the same endpoint pay the RTT every time. Follow-up from PR #135 / #136 review."
+    tags { "runtime"; "cors"; "preflight"; "performance" }
+    severity = "minor"
+    reviewStatus = "draft"
+    contributes { "goal.dom-compat"; "goal.ci-efficiency" }
+  }
+  new {
+    id = "bug.runtime.fetch-install-once-realm-bound"
+    name = "Runtime fetch install-once guard is not realm-bound"
+    description =
+      "globalThis.__bidiFetchShimInstalled prevents double-wrapping the fetch shim but is keyed at the realm scope. If a browsingContext.create / destroy cycle ever reuses the same JS realm, the second session would inherit the flag without re-wrapping. Today the guard pairs with __rawFetch reassignment so behavior is fine, but the invariant is unwritten. Follow-up from PR review of commits a2959be / 3fc3b96."
+    tags { "runtime"; "lifecycle" }
+    severity = "minor"
+    reviewStatus = "draft"
+    contributes { "goal.protocol-compat" }
+  }
+  new {
+    id = "bug.runtime.cookie-url-filter-parity"
+    name = "JS-side cookie URL filter mirrors MoonBit without static guard"
+    description =
+      "__bidiResolveCookies in bidi_runtime_context.mbt re-implements the domain/path/secure filtering that storage_cookie_matches_request_url already does on the MoonBit side. Functionally equivalent today, but no test guards the two implementations from diverging. Generate the JS filter from a single source, or add a parity wbtest pair. Follow-up from PR review."
+    tags { "runtime"; "cookies"; "parity" }
+    severity = "minor"
+    reviewStatus = "draft"
+    contributes { "goal.dom-compat" }
+  }
 }
