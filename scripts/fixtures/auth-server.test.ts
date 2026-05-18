@@ -1,7 +1,13 @@
+import { randomBytes } from "node:crypto";
 import { test, expect } from "vitest";
 import {
+  DIGEST_PASSWORD,
+  DIGEST_REALM,
+  DIGEST_USERNAME,
   REFRESHED_ACCESS_TOKEN,
   REFRESH_TOKEN,
+  computeDigestAuthorization,
+  parseDigestChallenge,
   startAuthServer,
 } from "./auth-server.ts";
 
@@ -343,6 +349,152 @@ test("same-origin redirect preserves Authorization", async () => {
     expect(response.status).toBe(200);
     const echoed = (await response.json()) as { authorization: string | null };
     expect(echoed.authorization).toBe("Bearer survives-same-origin");
+  } finally {
+    await stop();
+    await apiStop();
+  }
+});
+
+test("/digest/protected issues a Digest challenge without Authorization", async () => {
+  const { stop, apiUrl, apiStop } = await startAuthServer({ port: 0, apiPort: 0 });
+  try {
+    const res = await fetch(`${apiUrl}/digest/protected`);
+    expect(res.status).toBe(401);
+    const www = res.headers.get("www-authenticate");
+    expect(www).not.toBeNull();
+    expect(www).toContain("Digest ");
+    expect(www).toContain(`realm="${DIGEST_REALM}"`);
+    expect(www).toContain('qop="auth"');
+    expect(www).toMatch(/nonce="[a-f0-9]+"/);
+    expect(www).toMatch(/algorithm=MD5/);
+  } finally {
+    await stop();
+    await apiStop();
+  }
+});
+
+test("/digest/protected accepts a correctly computed MD5 Digest response", async () => {
+  const { stop, apiUrl, apiStop } = await startAuthServer({ port: 0, apiPort: 0 });
+  try {
+    // First request: trigger the challenge so we get a fresh nonce.
+    const challengeRes = await fetch(`${apiUrl}/digest/protected`);
+    expect(challengeRes.status).toBe(401);
+    const www = challengeRes.headers.get("www-authenticate")!;
+    const challenge = parseDigestChallenge(www)!;
+    expect(challenge.get("realm")).toBe(DIGEST_REALM);
+
+    const uri = "/digest/protected";
+    const authHeader = computeDigestAuthorization({
+      username: DIGEST_USERNAME,
+      password: DIGEST_PASSWORD,
+      realm: challenge.get("realm")!,
+      nonce: challenge.get("nonce")!,
+      uri,
+      method: "GET",
+      qop: challenge.get("qop"),
+      nc: "00000001",
+      cnonce: randomBytes(8).toString("hex"),
+      algorithm: challenge.get("algorithm") ?? "MD5",
+      opaque: challenge.get("opaque"),
+    });
+
+    const ok = await fetch(`${apiUrl}${uri}`, {
+      headers: { authorization: authHeader },
+    });
+    expect(ok.status).toBe(200);
+    expect(ok.headers.get("content-type")).toContain("application/json");
+    const body = (await ok.json()) as { user: string; digest: boolean };
+    expect(body).toEqual({ user: DIGEST_USERNAME, digest: true });
+  } finally {
+    await stop();
+    await apiStop();
+  }
+});
+
+test("/digest/protected accepts SHA-256 algorithm", async () => {
+  const { stop, apiUrl, apiStop } = await startAuthServer({ port: 0, apiPort: 0 });
+  try {
+    const challengeRes = await fetch(`${apiUrl}/digest/protected`);
+    const www = challengeRes.headers.get("www-authenticate")!;
+    const challenge = parseDigestChallenge(www)!;
+    const uri = "/digest/protected";
+    const authHeader = computeDigestAuthorization({
+      username: DIGEST_USERNAME,
+      password: DIGEST_PASSWORD,
+      realm: challenge.get("realm")!,
+      nonce: challenge.get("nonce")!,
+      uri,
+      method: "GET",
+      qop: challenge.get("qop"),
+      nc: "00000001",
+      cnonce: randomBytes(8).toString("hex"),
+      algorithm: "SHA-256", // override the server-advertised MD5
+    });
+
+    const ok = await fetch(`${apiUrl}${uri}`, {
+      headers: { authorization: authHeader },
+    });
+    expect(ok.status).toBe(200);
+  } finally {
+    await stop();
+    await apiStop();
+  }
+});
+
+test("/digest/protected rejects a Digest response with wrong password", async () => {
+  const { stop, apiUrl, apiStop } = await startAuthServer({ port: 0, apiPort: 0 });
+  try {
+    const challengeRes = await fetch(`${apiUrl}/digest/protected`);
+    const www = challengeRes.headers.get("www-authenticate")!;
+    const challenge = parseDigestChallenge(www)!;
+    const uri = "/digest/protected";
+    const authHeader = computeDigestAuthorization({
+      username: DIGEST_USERNAME,
+      password: "wrong-password",
+      realm: challenge.get("realm")!,
+      nonce: challenge.get("nonce")!,
+      uri,
+      method: "GET",
+      qop: challenge.get("qop"),
+      nc: "00000001",
+      cnonce: randomBytes(8).toString("hex"),
+      algorithm: "MD5",
+    });
+
+    const denied = await fetch(`${apiUrl}${uri}`, {
+      headers: { authorization: authHeader },
+    });
+    expect(denied.status).toBe(401);
+    // Server should re-issue a fresh challenge so the client knows to retry
+    // with corrected credentials. (Real servers might emit `stale=true` to
+    // distinguish nonce-stale vs credential-wrong; the fixture doesn't.)
+    expect(denied.headers.get("www-authenticate")).toContain("Digest ");
+  } finally {
+    await stop();
+    await apiStop();
+  }
+});
+
+test("/digest/protected rejects RFC 2069 (no-qop) form with wrong response", async () => {
+  // RFC 2069 backward-compat shape: HASH(HA1:nonce:HA2) without qop/nc/cnonce.
+  // The server accepts the no-qop response form when qop is omitted by the
+  // client; this case proves the verification still rejects a bogus response
+  // string, not just qop-mode requests.
+  const { stop, apiUrl, apiStop } = await startAuthServer({ port: 0, apiPort: 0 });
+  try {
+    const challengeRes = await fetch(`${apiUrl}/digest/protected`);
+    const challenge = parseDigestChallenge(challengeRes.headers.get("www-authenticate")!)!;
+    const uri = "/digest/protected";
+    // Craft a header that LOOKS valid but with a hand-rolled (wrong) response.
+    const bogus =
+      `Digest username="${DIGEST_USERNAME}", realm="${challenge.get("realm")}", ` +
+      `nonce="${challenge.get("nonce")}", uri="${uri}", ` +
+      `response="0000000000000000000000000000000000000000000000000000000000000000", ` +
+      `algorithm=MD5`;
+    const denied = await fetch(`${apiUrl}${uri}`, {
+      headers: { authorization: bogus },
+    });
+    expect(denied.status).toBe(401);
   } finally {
     await stop();
     await apiStop();
