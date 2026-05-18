@@ -583,15 +583,69 @@ extern "js" fn js_set_runtime_context(ctx_id : String) -> Unit =
   #|     if (!contextWindow.sessionStorage) contextWindow.sessionStorage = ensureStorage("sessionStorage");
   #|     globalThis.localStorage = contextWindow.localStorage;
   #|     globalThis.sessionStorage = contextWindow.sessionStorage;
+  #|     // alert / confirm / prompt — wire to the BiDi user-prompt bridge.
+  #|     // A page-side call queues a userPromptOpened observation and returns
+  #|     // the resolved value per the context's unhandledPromptBehavior (snapshot
+  #|     // pushed via __bidiPromptHandlers). The MoonBit drain runs at every
+  #|     // script.evaluate boundary and emits the deferred BiDi event so
+  #|     // Playwright's `page.on('dialog')` consumers observe the dialog.
+  #|     //
+  #|     // Limitation: real browsers BLOCK the page on alert/confirm/prompt
+  #|     // until the user (or driver) answers. Crater's headless realm can't
+  #|     // synchronously park JS waiting for an out-of-realm decision, so the
+  #|     // resolution is taken from the snapshot at call time — accept ⇒ true /
+  #|     // default-value, dismiss ⇒ false / null. Drivers that need control
+  #|     // over the response set the behavior via session.new
+  #|     // `unhandledPromptBehavior` BEFORE the page calls alert/confirm/prompt.
+  #|     const resolvePromptHandler = (promptType) => {
+  #|       const handlers = globalThis.__bidiPromptHandlers;
+  #|       if (handlers && typeof handlers === "object") {
+  #|         const direct = handlers[promptType];
+  #|         if (typeof direct === "string") return direct;
+  #|         const fallback = handlers.default;
+  #|         if (typeof fallback === "string") return fallback;
+  #|       }
+  #|       return "dismiss";
+  #|     };
+  #|     const enqueueUserPrompt = (promptType, message, defaultValue) => {
+  #|       if (!Array.isArray(globalThis.__bidiPendingUserPrompts)) {
+  #|         globalThis.__bidiPendingUserPrompts = [];
+  #|       }
+  #|       const handler = resolvePromptHandler(promptType);
+  #|       const ctx = String(globalThis.__bidiCurrentContext || "default-context");
+  #|       globalThis.__bidiPendingUserPrompts.push({
+  #|         ctx,
+  #|         type: promptType,
+  #|         message: message === undefined || message === null ? "" : String(message),
+  #|         defaultValue: defaultValue === undefined || defaultValue === null ? null : String(defaultValue),
+  #|         handler,
+  #|       });
+  #|       return handler;
+  #|     };
   #|     if (typeof contextWindow.alert !== "function") {
-  #|       contextWindow.alert = function(_message) { return undefined; };
+  #|       contextWindow.alert = function(message) {
+  #|         enqueueUserPrompt("alert", message, null);
+  #|         // alert returns undefined regardless of handler — accepting vs
+  #|         // dismissing only changes whether the page knew the user saw it.
+  #|         return undefined;
+  #|       };
   #|     }
   #|     if (typeof contextWindow.confirm !== "function") {
-  #|       contextWindow.confirm = function(_message) { return false; };
+  #|       contextWindow.confirm = function(message) {
+  #|         const handler = enqueueUserPrompt("confirm", message, null);
+  #|         return handler === "accept" || handler === "accept and notify";
+  #|       };
   #|     }
   #|     if (typeof contextWindow.prompt !== "function") {
-  #|       contextWindow.prompt = function(_message, defaultValue) {
-  #|         return defaultValue === undefined ? "" : String(defaultValue);
+  #|       contextWindow.prompt = function(message, defaultValue) {
+  #|         const handler = enqueueUserPrompt("prompt", message, defaultValue);
+  #|         if (handler === "accept" || handler === "accept and notify") {
+  #|           return defaultValue === undefined || defaultValue === null
+  #|             ? ""
+  #|             : String(defaultValue);
+  #|         }
+  #|         // dismiss / dismiss and notify / ignore → null per HTML spec
+  #|         return null;
   #|       };
   #|     }
   #|     globalThis.alert = contextWindow.alert.bind(contextWindow);
@@ -1206,6 +1260,52 @@ extern "js" fn js_drain_pending_cookie_ingest() -> String =
 /// `{url, cookies: [setCookieHeaderValue, ...], ctx}`.
 fn drain_pending_cookie_ingest() -> String {
   js_drain_pending_cookie_ingest()
+}
+
+///|
+/// Push the per-context unhandledPromptBehavior snapshot into the JS realm.
+/// Read by `resolvePromptHandler` inside alert/confirm/prompt to decide
+/// the synchronous return value. Snapshot shape mirrors the spec
+/// dictionary: `{ alert: "dismiss", confirm: "accept", prompt: "dismiss",
+/// default: "dismiss" }`. Missing entries default to "dismiss".
+pub extern "js" fn js_set_runtime_prompt_handlers(
+  handlers_json : String,
+) -> Unit =
+  #| (handlersJson) => {
+  #|   try {
+  #|     const parsed = JSON.parse(handlersJson);
+  #|     if (parsed && typeof parsed === "object") {
+  #|       globalThis.__bidiPromptHandlers = parsed;
+  #|       return;
+  #|     }
+  #|   } catch (_e) {}
+  #|   globalThis.__bidiPromptHandlers = {};
+  #| }
+
+///|
+fn set_runtime_prompt_handlers(handlers_json : String) -> Unit {
+  js_set_runtime_prompt_handlers(handlers_json)
+}
+
+///|
+/// Drain the pending user-prompt buffer. Each entry is
+/// `{ctx, type, message, defaultValue, handler}` where `type` is one of
+/// "alert" | "confirm" | "prompt" and `handler` is the resolved
+/// unhandledPromptBehavior at the time alert/confirm/prompt was called.
+/// MoonBit converts each entry to a `browsingContext.userPromptOpened`
+/// event at the next script.evaluate boundary.
+extern "js" fn js_drain_pending_user_prompts() -> String =
+  #| () => {
+  #|   const buf = globalThis.__bidiPendingUserPrompts;
+  #|   if (!Array.isArray(buf) || buf.length === 0) return "[]";
+  #|   const out = JSON.stringify(buf);
+  #|   globalThis.__bidiPendingUserPrompts = [];
+  #|   return out;
+  #| }
+
+///|
+fn drain_pending_user_prompts() -> String {
+  js_drain_pending_user_prompts()
 }
 
 ///|
