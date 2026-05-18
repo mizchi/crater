@@ -803,10 +803,10 @@ scenarios {
     id = "bug.bidi.navigate-wait-complete-returns-early"
     name = "browsingContext.navigate wait complete resolves before HTML fetch on JS target"
     description =
-      "On the JS target, browsingContext.navigate { wait: \"complete\" } resolves before the HTML body is actually fetched and parsed, so downstream script.evaluate sees an empty document. The shell adapter currently works around this by issuing a manual fetch() and calling __loadHTML on the result. Source: PR #132 Phase 5 e2e attempt."
+      "On the JS target, browsingContext.navigate { wait: \"complete\" } resolves before the HTML body is actually fetched and parsed, so downstream script.evaluate sees an empty document. Fixed by routing http(s) wait=complete through js_navigate_and_send_async, a JS-side async bridge that awaits __loadPageWithScripts before sending the BiDi success response over the socket. Data URL / about:blank / trickle-marker paths keep the existing sync sync_runtime_page path. Source: PR #132 Phase 5 e2e attempt; fix in PR for dom/navigate-wait-complete."
     tags { "bidi"; "navigation"; "webdriver"; "bug"; "phase5" }
     severity = "major"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.protocol-compat" }
   }
   new {
