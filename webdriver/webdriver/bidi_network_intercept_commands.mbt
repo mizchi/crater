@@ -113,6 +113,64 @@ fn BidiProtocol::prepare_navigation_request_internal(
 }
 
 ///|
+/// Phase 2 PR B: spec-conformant `network.continueResponse`.
+/// Injects `mode: "continueResponse"` into the caller params and delegates
+/// to the shared `handle_network_continue_blocked_response` handler so the
+/// spec name and the internal alias share a single implementation.
+fn BidiProtocol::handle_network_continue_response(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  let forwarded = match params {
+    Some(Object(map)) => {
+      let copy : Map[String, Json] = {}
+      for key, value in map {
+        copy[key] = value
+      }
+      copy["mode"] = Json::string("continueResponse")
+      Some(Json::object(copy))
+    }
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return
+    }
+  }
+  self.handle_network_continue_blocked_response(request_id, forwarded)
+}
+
+///|
+/// Phase 2 PR B: spec-conformant `network.provideResponse`.
+/// Injects `mode: "provideResponse"` into the caller params and delegates
+/// to the shared `handle_network_continue_blocked_response` handler so the
+/// spec name and the internal alias share a single implementation.
+fn BidiProtocol::handle_network_provide_response(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  let forwarded = match params {
+    Some(Object(map)) => {
+      let copy : Map[String, Json] = {}
+      for key, value in map {
+        copy[key] = value
+      }
+      copy["mode"] = Json::string("provideResponse")
+      Some(Json::object(copy))
+    }
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return
+    }
+  }
+  self.handle_network_continue_blocked_response(request_id, forwarded)
+}
+
+///|
 fn BidiProtocol::handle_network_fail_blocked_request(
   self : BidiProtocol,
   request_id : Int,

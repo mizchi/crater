@@ -110,6 +110,19 @@ fn BidiProtocol::dispatch_network(
       self.handle_network_build_headers_echo_payload(request.id, request.params)
       Ok(())
     }
+    // Spec-conformant name from WebDriver BiDi specification.
+    // Routes to the same handler as the internal alias `failBlockedRequest`.
+    // The handler defaults `errorText` to `"Request failed"` when omitted,
+    // matching the spec's behaviour for native callers that supply only
+    // `{ request }`.
+    "failRequest" => {
+      self.handle_network_fail_blocked_request(request.id, request.params)
+      Ok(())
+    }
+    // Internal alias kept for backwards-compat with the WPT shim
+    // (`scripts/crater_bidi_modules.py::NetworkModule.fail_request`) and
+    // existing wbtests. Retire once the shim drops its rename and
+    // dependent wbtests migrate to the spec name.
     "failBlockedRequest" => {
       self.handle_network_fail_blocked_request(request.id, request.params)
       Ok(())
@@ -132,6 +145,25 @@ fn BidiProtocol::dispatch_network(
       self.handle_network_continue_blocked_request(request.id, request.params)
       Ok(())
     }
+    // Spec-conformant name from WebDriver BiDi specification.
+    // Injects `mode: "continueResponse"` and delegates to the shared
+    // `handle_network_continue_blocked_response` handler.
+    "continueResponse" => {
+      self.handle_network_continue_response(request.id, request.params)
+      Ok(())
+    }
+    // Spec-conformant name from WebDriver BiDi specification.
+    // Injects `mode: "provideResponse"` and delegates to the shared
+    // `handle_network_continue_blocked_response` handler.
+    "provideResponse" => {
+      self.handle_network_provide_response(request.id, request.params)
+      Ok(())
+    }
+    // Internal alias kept for backwards-compat with the WPT shim
+    // (`scripts/crater_bidi_modules.py::NetworkModule.continue_response` /
+    // `provide_response`) and existing wbtests. The shim folds both spec
+    // commands into this single mode-tagged route; retire once the shim
+    // drops its rename and dependent wbtests migrate to the spec names.
     "continueBlockedResponse" => {
       self.handle_network_continue_blocked_response(request.id, request.params)
       Ok(())
