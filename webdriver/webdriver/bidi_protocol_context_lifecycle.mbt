@@ -49,6 +49,12 @@ fn BidiProtocol::apply_effective_viewport_to_runtime_context(
   // fetches. Resolves bug.runtime.fetch-no-partition-cookies.
   let cookies = self.cookies_for_context_full_json(logical_ctx_id)
   set_runtime_context_cookies(runtime_ctx_id, Json::array(cookies).stringify())
+  // Push the partition Authorization snapshot so the runtime fetch
+  // shim's __bidiResolveAuth bridge can attach Authorization headers
+  // to outbound requests for registered origins. Resolves
+  // protocol.bidi-origin-authorization-injection.
+  let auth_json = self.serialize_auth_snapshot_for_runtime(logical_ctx_id)
+  set_runtime_context_authorization(runtime_ctx_id, auth_json)
 }
 
 ///|
