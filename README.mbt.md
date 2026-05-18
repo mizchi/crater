@@ -1,42 +1,101 @@
 # Crater
 
-A CSS layout engine written in [MoonBit](https://www.moonbitlang.com/), ported from [Taffy](https://github.com/DioxusLabs/taffy).
+A headless browser environment for [MoonBit](https://www.moonbitlang.com/), driven by [Playwright](https://playwright.dev/) over [WebDriver BiDi](https://w3c.github.io/webdriver-bidi/).
 
-## Overview
+> **Use Playwright tests on a small, predictable target instead of spinning up a full Chromium.** Crater speaks the WebDriver BiDi protocol natively, so existing Playwright suites can connect to it for layout-and-DOM-level testing without the weight of a real browser.
 
-Crater aims to provide layout computation similar to [Yoga](https://yogalayout.dev/) - calculating positions and dimensions of elements based on CSS properties like Flexbox and Grid, without requiring a full browser environment.
+## Why
 
-This library focuses purely on **layout calculation** - it computes the `x`, `y`, `width`, and `height` of each element in your tree. It does not handle:
+- Playwright + BiDi is becoming the standard surface for web automation. Crater treats that surface as a first-class contract instead of an afterthought.
+- The runtime is small enough to embed in tests, CI pipelines, and design tools where Chromium is overkill.
+- A predictable layout / paint pipeline (Taffy-derived) makes regressions easier to bisect than against a moving Chromium release train.
+- Built in MoonBit, so the codebase compiles to JS / native / wasm targets out of the same source.
 
-- Font loading or text shaping
-- Text rendering or measurement (uses approximate character-based sizing)
-- Painting or drawing
-- DOM manipulation
+## Quick start
 
-## Test Status
+```bash
+pnpm install
+pnpm exec playwright install chromium  # only needed for VRT reference captures
+pkf run prepare
+```
 
-### Taffy Compatibility Tests
+Run a Playwright test against Crater (Crater starts on demand via the project's `playwright.config.ts` webServer):
 
-Layout algorithm tests ported from [Taffy](https://github.com/DioxusLabs/taffy):
+```typescript
+import { test, expect } from "@playwright/test";
 
-| Module | Passed | Total | Rate |
-|--------|--------|-------|------|
-| Flexbox | 543 | 609 | 89.2% |
-| Block | 204 | 226 | 90.3% |
-| Grid | 268 | 331 | 81.0% |
-| **Total** | **1015** | **1166** | **87.0%** |
+test("Crater serves a static page over BiDi", async ({ page }) => {
+  await page.goto("data:text/html,<h1>hello</h1>");
+  await expect(page.locator("h1")).toHaveText("hello");
+});
+```
 
-### Parser Tests
+Or drive it raw from the WebDriver BiDi protocol:
 
-| Module | Passed | Total | Rate |
-|--------|--------|-------|------|
-| CSS Parser | 332 | 332 | 100% |
-| CSS Selector | 62 | 62 | 100% |
-| CSS Media Query | 41 | 41 | 100% |
+```typescript
+import { connectCraterBidi } from "./tests/helpers/crater-bidi";
 
-### Web Platform Tests (WPT)
+const session = await connectCraterBidi();
+await session.browsingContext.navigate({
+  url: "data:text/html,<form id=login>...</form>",
+  wait: "complete",
+});
+const count = await session.script.evaluate({
+  expression: "document.forms.length",
+});
+```
 
-CSS tests from [web-platform-tests](https://github.com/web-platform-tests/wpt):
+## Supported surface
+
+| Area | Status |
+|---|---|
+| WebDriver BiDi `session` / `browsingContext` / `script` / `input` / `network` / `storage` | 100% of the WPT subset we gate on |
+| HTML + CSS parsing | 100% local parser tests, 94% [WPT CSS](https://github.com/web-platform-tests/wpt) layout pass rate |
+| DOM (`wpt/dom/nodes`) | 100% |
+| Shadow DOM + custom elements | Core surface; full coverage in flight (`compat.web-components-*` scenarios) |
+| Cookie jar (Set-Cookie / SameSite / partitioned storage) | Spec-conformant for the http-only path |
+| CORS preflight + Access-Control-* validation | Enforced on `script.evaluate` fetches via Phase 1 of the auth/CORS spec |
+| Per-origin Authorization injection (Bearer / JWT) | `crater.setOriginAuthorization` BiDi extension command |
+| HTTP Basic 401 challenge + `network.continueWithAuth` | Phase 2, tracked in #147 |
+| Form-based login end-to-end (`form.submit` / `navigate wait:"complete"`) | Working via the cookie jar + Set-Cookie ingest path |
+| Visual regression vs Chromium reference | `pkf run test-visual` (paint-vrt) and `pkf run test-wpt-vrt` |
+
+## Modules
+
+Crater is split into focused MoonBit modules under one repository. Pick the narrow module you need:
+
+```bash
+moon add mizchi/crater-layout            # Taffy-derived layout engine
+moon add mizchi/crater-css               # CSS parser + selector matching
+moon add mizchi/crater-dom               # DOM + Shadow DOM
+moon add mizchi/crater-renderer          # HTML -> layout tree -> paint tree
+moon add mizchi/crater-browser           # Browser shell (cookie jar, fetch, navigation)
+moon add mizchi/crater-browser-runtime   # JS runtime + DOM serializer
+moon add mizchi/crater-webdriver-bidi    # WebDriver BiDi protocol surface
+moon add mizchi/crater-browser-http      # http / cookie / cors / samesite / auth profile
+moon add mizchi/crater-wasm              # wasm component target
+```
+
+Each module exposes its public contract through a generated `.mbti` file; CI ensures the surface doesn't drift accidentally.
+
+## Architecture highlights
+
+- **Profile-backed sessions.** Each BiDi session carries a `Profile { user_agent, cookie_jar, http_cache, auth_state, preflight_cache }`. Cookies, CORS preflight cache, and per-origin Authorization headers all live on the same value, scoped per browsing context.
+- **Two-stage CORS.** The fetch shim runs spec-faithful `classify_request` -> preflight (`OPTIONS`) -> `validate_actual_response` for cross-origin requests, with a JS-side preflight cache that mirrors the MoonBit `PreflightCache` (same Max-Age clamp, same cache key formula).
+- **Caller-wins header attach.** When the runtime auto-attaches cookies or `Authorization`, it skips if the caller (page script) already supplied that header. Same policy for both.
+- **Async / sync bridge.** WebDriver BiDi handlers are synchronous MoonBit code, but navigation and fetch are async JavaScript. Bridges (`js_navigate_and_send_async`, `js_eval_and_send_async`) let the JS side send BiDi responses via `socket.send` once the promise resolves, instead of the MoonBit handler trying (and failing) to await.
+
+Full design documents live under `docs/superpowers/specs/`:
+
+- [Browser auth + CORS](docs/superpowers/specs/2026-05-17-browser-auth-cors-design.md)
+- [BiDi origin-scoped Authorization](docs/superpowers/specs/2026-05-18-bidi-origin-authorization-design.md)
+- [HTTP cache](docs/superpowers/specs/2026-04-04-http-cache-design.md)
+
+## Test compatibility
+
+### Web Platform Tests (CSS)
+
+Pass rates measured by the layout-tree-compare runner (`scripts/wpt-runner.ts`):
 
 | Module | Passed | Total | Rate |
 |--------|--------|-------|------|
@@ -57,16 +116,46 @@ CSS tests from [web-platform-tests](https://github.com/web-platform-tests/wpt):
 | css-content | 1 | 2 | 50.0% |
 | css-multicol | 4 | 4 | 100.0% |
 | css-break | 26 | 27 | 96.3% |
-| **Total** | **1396** | **1484** | **94.1%** |
+| css-color | 30 | 30 | 100.0% |
+| css-backgrounds | 74 | 80 | 92.5% |
+| css-transforms | 2 | 2 | 100.0% |
+| css-writing-modes | 17 | 27 | 63.0% |
+| css-pseudo | 1 | 1 | 100.0% |
+| css-borders | 4 | 5 | 80.0% |
 
-Detailed KPI snapshot and module breakdown: [docs/browser-support-kpi.md](docs/browser-support-kpi.md)
+Module-level pass / fail counts are pinned in `tests/wpt-baselines/<module>.env`; CI fails if the count regresses. See `pkspec spec --goals specs/crater.pkl specs/tasks.Test.pkl` for per-goal coverage.
 
-### Visual Regression Testing (VRT)
+### WebDriver BiDi
 
-Pixel-level comparison between Chromium and Crater rendering using [kagura](https://github.com/mizchi/kagura) native paint backend:
+| Profile | Passed | Total |
+|---|---|---|
+| `wpt/webdriver` (strict subset) | 277 | 277 |
+| `session` | 130 | 130 |
+| `browsing_context` | 1008 | 1008 |
+| `script` | 1025 | 1025 |
+| `input` | 708 | 708 |
+| `network` | 1389 | 1389 |
+
+```bash
+pkf run wpt           # CSS + DOM + WebDriver BiDi
+just wpt-webdriver-profile strict
+```
+
+### Layout (Taffy compatibility)
+
+Crater's layout engine is a MoonBit port of [Taffy](https://github.com/DioxusLabs/taffy):
+
+| Module | Passed | Total | Rate |
+|---|---|---|---|
+| Flexbox | 543 | 609 | 89.2% |
+| Block | 204 | 226 | 90.3% |
+| Grid | 268 | 331 | 81.0% |
+| **Total** | **1015** | **1166** | **87.0%** |
+
+### Visual regression vs Chromium
 
 | Site | Diff | Status |
-|------|------|--------|
+|---|---|---|
 | example.com | 1.16% | PASS |
 | info.cern.ch | 3.30% | PASS |
 | www.google.com | 3.80% | PASS |
@@ -74,33 +163,20 @@ Pixel-level comparison between Chromium and Crater rendering using [kagura](http
 | en.wikipedia.org | 7.65% | WARN |
 
 ```bash
-just vrt-url-native https://example.com        # Compare any URL
-just vrt-url https://example.com --mask-text --mask-dynamic  # Real URL VRT with text/dynamic masks
-just test-wpt-vrt                                # WPT visual regression
-CRATER_PAINT_BACKEND=native just test-vrt        # Full VRT suite
+just vrt-url-native https://example.com
+just vrt-url https://example.com --mask-text --mask-dynamic
+just test-wpt-vrt
+CRATER_PAINT_BACKEND=native just test-vrt
 ```
 
-Browser behavior tests:
+## WPT runner setup
 
-| Suite | Passed | Total | Rate |
-|-------|--------|-------|------|
-| DOM WPT (`wpt/dom/nodes`) | 9296 | 9296 | 100.0% |
-| WebDriver BiDi `strict` | 277 | 277 | 100.0% |
-| WebDriver BiDi `session` | 130 | 130 | 100.0% |
-| WebDriver BiDi `browsing_context` | 1008 | 1008 | 100.0% |
-| WebDriver BiDi `script` | 1025 | 1025 | 100.0% |
-| WebDriver BiDi `input` | 708 | 708 | 100.0% |
-| WebDriver BiDi `network` | 1389 | 1389 | 100.0% |
-
-Run WPT tests:
 ```bash
 npm run wpt:fetch-all  # Fetch all WPT tests
-npm run wpt:run-all    # Run all WPT tests
+npm run wpt:run-all    # Run all enabled WPT tests
 ```
 
-WPT target selection is configured in `wpt.json`.
-
-Browser WPT commands:
+WPT target selection is configured in `wpt.json`. Browser WPT commands:
 
 ```bash
 just wpt-dom-all
@@ -112,43 +188,67 @@ just wpt-webdriver input
 just wpt-webdriver network
 ```
 
-Optional: external intrinsic providers for text/image in WPT runner:
+Optional external intrinsic providers for text/image:
 
 ```bash
-# Text module (mizchi/text-compatible or measureText(text, fontSize) module)
 CRATER_TEXT_MODULE=/abs/path/to/text-module.js \
 CRATER_TEXT_FONT_PATH=/abs/path/to/font.ttf \
 npx tsx scripts/wpt-runner.ts css-overflow
 
-# Image module patterns:
-# - module itself as function, or resolveImageIntrinsicSize(src) / getImageSize(src) / sizeOf(src)
-# - dimensions/getDimensions/metadata/identify/probe/readHeader/imageInfo style functions
-# - image-size style functions that accept src, resolved local path, Uint8Array, or Buffer
-# - nested namespace exports such as default.image.getImageSize or default.metadata.identify
-# - result shapes: {width,height}, [width,height], {dimensions:{width,height}}, {columns,rows}, {shape:[height,width,...]}
-# - mizchi/image-style decode_image_stream(bytes) / decode_png(bytes)
-# - synchronous callback providers are supported; Promise/stream-only providers are not yet supported
 CRATER_IMAGE_MODULE=/abs/path/to/image-module.js \
 npx tsx scripts/wpt-runner.ts css-contain
-
-# Optional local file resolver fallback for images (off by default)
-CRATER_IMAGE_FILE_RESOLVE=1 \
-npx tsx scripts/wpt-runner.ts wpt/css/css-contain/contain-size-021.html
 ```
 
-- Added recursive module scan for `css-align` and `css-box` via `recursiveModules`
-- Expanded `includePrefixes` for additional overflow/alignment coverage
-  (`scroll-`, `scrollbar-`, `scrollable-`, `text-overflow-`,
-  `column-scroll-`, `targeted-column-scroll-`, `align-`, `place-`)
-- Excludes JS harness tests (`testharness.js`, `check-layout-th.js`, interpolation helpers)
-  from layout-tree comparison runs
+See the WPT CI Maintenance section below for shard balancing notes.
 
-Check current enabled test counts:
+## Quality contracts (pkspec)
+
+Crater's behavioural contracts live in `specs/crater.pkl` (pkspec). They link to the tests that exercise them, and CI fails if an approved scenario loses its implementation.
+
 ```bash
-npx tsx scripts/wpt-runner.ts --list
+pkf run spec-check          # contracts are linked
+pkf run spec-lint            # cross-references valid
+pkf run spec-test            # executable smoke tests
+pkspec spec --next  specs/crater.pkl specs/tasks.Test.pkl   # next-priority drafts
 ```
 
-#### WPT CI Maintenance (Parallel Shards)
+Open scenario draft work is tracked in GitHub issues; see the `enhancement` and `bug` labels for the active backlog.
+
+## Performance
+
+HTML parser benchmarks (Apple Silicon):
+
+| Benchmark | Time |
+|---|---|
+| Simple HTML (100 elements) | ~27 µs |
+| Large document (100 sections × 20 paragraphs) | ~5.2 ms |
+| Attribute-heavy (200 elements, 6 attrs each) | ~390 µs |
+| Table (100×20 cells) | ~990 µs |
+
+```bash
+moon bench -p html
+```
+
+## Layout module usage
+
+For projects that just want the layout engine without the rest of the browser, the `crater-renderer` module exposes a minimal HTML → layout API:
+
+```moonbit
+// Parse HTML and render layout
+
+///|
+let html = "<div style=\"display: flex; width: 300px;\"><div style=\"flex: 1\">A</div><div style=\"flex: 2\">B</div></div>"
+
+///|
+let ctx = @renderer.RenderContext::default()
+
+///|
+let layout = @renderer.render(html, ctx)
+
+// layout contains x, y, width, height for each element
+```
+
+## WPT CI Maintenance (Parallel Shards)
 
 The CI workflow runs WPT compatibility checks with about 6 workers:
 
@@ -174,143 +274,29 @@ Use this checklist when maintaining shard balance:
 Optional local dry-run for summaries:
 
 ```bash
-# Example: generate per-shard reports
 mkdir -p /tmp/wpt-reports
 npx tsx scripts/wpt-runner.ts css-overflow css-grid css-tables --workers 4 --json /tmp/wpt-reports/wpt-css-shard-1.json
 npx tsx scripts/wpt-dom-runner.ts --dom --json /tmp/wpt-reports/wpt-dom-dom.json
 npx tsx scripts/wpt-dom-runner.ts --svg --json /tmp/wpt-reports/wpt-dom-svg.json
 npx tsx scripts/wpt-webdriver-runner.ts --subset --json /tmp/wpt-reports/wpt-webdriver-strict.json
-
-# Optional: network sweep profile (non-gating, excludes auth-related paths)
-npx tsx scripts/wpt-webdriver-runner.ts --profile network-no-auth --json /tmp/wpt-reports/wpt-webdriver-network-no-auth.json
-
-# Aggregate compatibility summary
 npx tsx scripts/wpt-ci-summary.ts --input /tmp/wpt-reports --json /tmp/wpt-summary.json --markdown /tmp/wpt-summary.md
-
-# Analyze CI run timing from GitHub Actions run jobs API output
-gh api repos/mizchi/crater/actions/runs/<RUN_ID>/jobs --paginate > /tmp/jobs.json
-npx tsx scripts/ci-timing-summary.ts --input /tmp/jobs.json --json /tmp/ci-timing-summary.json --markdown /tmp/ci-timing-summary.md
 ```
 
-When compatibility improvement/regression should become the new baseline, update `tests/wpt-baseline.env` (used by `scripts/wpt-ci-summary.ts` for CSS baseline delta).
-
-## Features
-
-### Layout Modes
-- **Flexbox** - direction, wrap, wrap-reverse, alignment, grow/shrink
-- **CSS Grid** - templates, auto-placement, areas, fr units, minmax, repeat
-- **Block layout** - margin collapsing
-- **Inline layout** - inline formatting context, inline-block
-
-### Box Model
-- `margin`, `padding`, `border`
-- Percentage and fixed dimensions
-- `min-width`, `max-width`, `min-height`, `max-height`
-- Intrinsic sizing: `min-content`, `max-content`, `fit-content`
-- `box-sizing: border-box`
-
-### Positioning
-- `position: static`, `relative`, `absolute`, `fixed`
-- `top`, `right`, `bottom`, `left` (inset properties)
-
-### Other Properties
-- `gap` (row-gap, column-gap)
-- `aspect-ratio`
-- `overflow-x`, `overflow-y`
-- `visibility: hidden` (with child override)
-- CSS Variables (`--var`, `var()`)
-- `calc()` CSS function
-
-### Accessibility
-- **Accessible Name Computation** - WAI-ARIA accname-1.2 algorithm
-- **ARIA Snapshot** - Playwright-compatible YAML/JSON format
-- **Accessibility Tree** - Full tree structure with roles, states, and `aria-owns` support
-
-## Performance
-
-HTML parser benchmarks (on Apple Silicon):
-
-| Benchmark | Time |
-|-----------|------|
-| Simple HTML (100 elements) | ~27 µs |
-| Large document (100 sections × 20 paragraphs) | ~5.2 ms |
-| Attribute-heavy (200 elements, 6 attrs each) | ~390 µs |
-| Table (100×20 cells) | ~990 µs |
-
-Run benchmarks:
-```bash
-moon bench -p html
-```
+When a compatibility improvement/regression should become the new baseline, update `tests/wpt-baseline.env` (used by `scripts/wpt-ci-summary.ts` for CSS baseline delta).
 
 ## Limitations
 
-- **No font rendering**: Text measurement uses approximate monospace character sizing
-- **No real text layout**: Word wrapping is simplified
-- **Baseline alignment**: Partial implementation
-- **Writing modes**: Limited support for vertical text
+- **Font rendering** is approximate (monospace character sizing). Text-wrap parity with Chromium is an open scenario (#154).
+- **Some DOM gaps** under active fix — see `bug.dom.*` scenarios in `specs/crater.pkl`.
+- **No GPU-based painting** — the kagura native paint backend handles common output but isn't pixel-perfect against Chromium for complex content.
 
 ## Documentation
 
-- [API Reference](docs/api.md) - Public interface documentation
-- [Workspace Guide](docs/monorepo-workspace.md) - Canonical module layout, release policy, and migration notes
-
-## Installation
-
-```bash
-moon add mizchi/crater-layout
-moon add mizchi/crater-css
-```
-
-### Package Selection
-
-The old `mizchi/crater` and `mizchi/crater/css` facades have been retired from
-the workspace. Import the narrower module that matches your use case:
-
-```bash
-moon add mizchi/crater-layout
-moon add mizchi/crater-css
-moon add mizchi/crater-dom
-moon add mizchi/crater-renderer
-moon add mizchi/crater-browser
-moon add mizchi/crater-browser-runtime
-moon add mizchi/crater-webdriver-bidi
-moon add mizchi/crater-wasm
-```
-
-Use the split modules for a smaller dependency graph and a clearer public
-contract for each subsystem.
-
-For browser runtime internals, `mizchi/crater-browser-runtime` is now the
-canonical shared contract for the JS runtime and DOM serializer. The older
-`mizchi/crater-browser/js` package remains only as a compatibility facade in
-the `0.17.x` line.
-
-### Release Policy
-
-- MoonBit modules in this repository are versioned in lockstep with the repo
-  release line. `0.17.x` is the first workspace-split line.
-- New APIs land in the narrow modules first. The root module keeps compatibility
-  wrappers where practical.
-- Root compatibility imports are documented but are no longer the recommended
-  entry point for new integrations.
-
-## Usage
-
-```moonbit
-// Parse HTML and render layout
-
-///|
-let html = "<div style=\"display: flex; width: 300px;\"><div style=\"flex: 1\">A</div><div style=\"flex: 2\">B</div></div>"
-
-///|
-let ctx = @renderer.RenderContext::default()
-
-///|
-let layout = @renderer.render(html, ctx)
-
-// layout contains x, y, width, height for each element
-```
+- [API Reference](docs/api.md)
+- [Workspace Guide](docs/monorepo-workspace.md) — module layout, release policy
+- [Browser support KPI](docs/browser-support-kpi.md) — detailed compatibility snapshot
+- Design docs under `docs/superpowers/specs/`
 
 ## License
 
-Apache-2.0
+Apache-2.0. Layout engine derived from [Taffy](https://github.com/DioxusLabs/taffy) (MIT/Apache-2.0).
