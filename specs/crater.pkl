@@ -954,6 +954,17 @@ scenarios {
     reviewStatus = "approved"
     contributes { "goal.protocol-compat"; "goal.dom-compat" }
   }
+  // -- Protocol: BiDi origin-credentials + Digest auto-retry (#173) ----------
+  new {
+    id = "protocol.bidi-origin-credentials-injection"
+    name = "BiDi clients can register per-origin credentials for HTTP Digest auto-retry"
+    description =
+      "Three BiDi extension commands mirror the Authorization-injection surface for username/password pairs: crater.setOriginCredentials sets, crater.clearOriginCredentials removes, crater.listOriginCredentials returns the set of registered origins (credential values intentionally NOT exposed). The runtime fetch shim's response handler watches for 401 responses whose WWW-Authenticate header begins with `Digest `; when registered credentials exist for the request's origin AND no Authorization was already attached, the shim parses the challenge per RFC 7616 §3.4, computes the response (MD5 / SHA-256 supported, qop=auth and RFC 2069 no-qop forms), and retries the request once with `Authorization: Digest ...`. The retry is one-shot — a second 401 surfaces verbatim. Caller-wins policy still applies: a page-supplied Authorization (or one attached by crater.setOriginAuthorization) bypasses the Digest path entirely. Origin normalization, value redaction in Show, and absence from list responses match the Authorization surface. See GitHub issue #173. Source: TODO follow-up after PR #172."
+    tags { "bidi"; "auth"; "digest"; "runtime"; "protocol" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.protocol-compat" }
+  }
   // -- Protocol: BiDi network.continueWithAuth + addIntercept spec names ----
   new {
     id = "protocol.bidi-network-continue-with-auth"

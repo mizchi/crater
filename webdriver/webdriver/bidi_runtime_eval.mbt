@@ -3407,6 +3407,97 @@ extern "js" fn js_evaluate_expression(
   #|         }
   #|         return true;
   #|       };
+  #|       // ---------------------------------------------------------------
+  #|       // RFC 7616 HTTP Digest support.
+  #|       //
+  #|       // When a 401 response carries `WWW-Authenticate: Digest ...` and
+  #|       // credentials are registered for the request's origin via
+  #|       // `crater.setOriginCredentials`, the shim parses the challenge,
+  #|       // computes a response per RFC 7616 §3.4.1, and retries the
+  #|       // request once with `Authorization: Digest ...` attached. The
+  #|       // retry is one-shot — a second 401 surfaces verbatim to the
+  #|       // caller, no looping.
+  #|       //
+  #|       // Hash primitives use Node's `node:crypto` via `require()` so
+  #|       // MD5 (RFC 7616 mandatory baseline) is available — Web Crypto's
+  #|       // SubtleCrypto omits MD5 on purpose.
+  #|       // ---------------------------------------------------------------
+  #|       const digestHashHex = (algorithm, input) => {
+  #|         const algoUpper = String(algorithm || 'MD5').toUpperCase().replace(/-SESS$/, '');
+  #|         const nodeAlgo = algoUpper === 'SHA-256' || algoUpper === 'SHA256' ? 'sha256' : 'md5';
+  #|         return require('node:crypto').createHash(nodeAlgo).update(input).digest('hex');
+  #|       };
+  #|       const parseDigestChallengeHeader = (header) => {
+  #|         if (!header || !header.startsWith('Digest ')) return null;
+  #|         const params = header.slice('Digest '.length).trim();
+  #|         const out = {};
+  #|         let i = 0;
+  #|         while (i < params.length) {
+  #|           while (i < params.length && /[\s,]/.test(params[i])) i++;
+  #|           const nameStart = i;
+  #|           while (i < params.length && params[i] !== '=') i++;
+  #|           if (i >= params.length) break;
+  #|           const name = params.slice(nameStart, i).trim();
+  #|           i++; // consume '='
+  #|           let value;
+  #|           if (params[i] === '"') {
+  #|             i++;
+  #|             const valStart = i;
+  #|             while (i < params.length && params[i] !== '"') {
+  #|               if (params[i] === '\\' && i + 1 < params.length) i += 2;
+  #|               else i++;
+  #|             }
+  #|             value = params.slice(valStart, i).replace(/\\(.)/g, '$1');
+  #|             if (i < params.length) i++;
+  #|           } else {
+  #|             const valStart = i;
+  #|             while (i < params.length && params[i] !== ',') i++;
+  #|             value = params.slice(valStart, i).trim();
+  #|           }
+  #|           out[name.toLowerCase()] = value;
+  #|         }
+  #|         return out;
+  #|       };
+  #|       const escapeDigestQuoted = (v) => String(v).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  #|       const buildDigestAuthHeader = (creds, challenge, method, uri) => {
+  #|         const algorithm = challenge.algorithm || 'MD5';
+  #|         const algoUpper = String(algorithm).toUpperCase().replace(/-SESS$/, '');
+  #|         if (algoUpper !== 'MD5' && algoUpper !== 'SHA-256' && algoUpper !== 'SHA256') return null;
+  #|         const qopList = challenge.qop ? challenge.qop.split(',').map(s => s.trim()) : [];
+  #|         const qop = qopList.includes('auth') ? 'auth' : (qopList.length === 0 ? '' : null);
+  #|         if (qop === null) return null;
+  #|         const ha1 = digestHashHex(algorithm, creds.username + ':' + challenge.realm + ':' + creds.password);
+  #|         const ha2 = digestHashHex(algorithm, method + ':' + uri);
+  #|         let response;
+  #|         let nc;
+  #|         let cnonce;
+  #|         if (qop) {
+  #|           nc = '00000001';
+  #|           // 16 hex chars of best-effort entropy for cnonce. Random.toString
+  #|           // is fine here because cnonce only needs to be unpredictable to
+  #|           // the SERVER, not cryptographically random — its job is to keep
+  #|           // the client side from being pinned by a chosen-nonce attack.
+  #|           cnonce = Math.random().toString(16).slice(2).padEnd(16, '0').slice(0, 16);
+  #|           response = digestHashHex(algorithm, ha1 + ':' + challenge.nonce + ':' + nc + ':' + cnonce + ':' + qop + ':' + ha2);
+  #|         } else {
+  #|           response = digestHashHex(algorithm, ha1 + ':' + challenge.nonce + ':' + ha2);
+  #|         }
+  #|         const parts = [
+  #|           'username="' + escapeDigestQuoted(creds.username) + '"',
+  #|           'realm="' + escapeDigestQuoted(challenge.realm) + '"',
+  #|           'nonce="' + escapeDigestQuoted(challenge.nonce) + '"',
+  #|           'uri="' + escapeDigestQuoted(uri) + '"',
+  #|           'response="' + response + '"',
+  #|           'algorithm=' + algorithm,
+  #|         ];
+  #|         if (qop) {
+  #|           parts.push('qop=' + qop);
+  #|           parts.push('nc=' + nc);
+  #|           parts.push('cnonce="' + cnonce + '"');
+  #|         }
+  #|         if (challenge.opaque) parts.push('opaque="' + escapeDigestQuoted(challenge.opaque) + '"');
+  #|         return 'Digest ' + parts.join(', ');
+  #|       };
   #|       const maybeSendPreflight = async (resolvedUrl, mode, method, headersObj, sourceOrigin, targetOrigin) => {
   #|         if (mode === 'navigate' || mode === 'no-cors') return;
   #|         if (!sourceOrigin || !targetOrigin || sourceOrigin === targetOrigin) return;
@@ -3573,6 +3664,53 @@ extern "js" fn js_evaluate_expression(
   #|             });
   #|           } catch (_e) { /* swallow — never fail a fetch on ingest */ }
   #|         };
+  #|         let digestAttempted = false;
+  #|         const maybeDigestRetry = (response) => {
+  #|           // One-shot: never recurse past a single retry. A persistent
+  #|           // 401 after one attempt surfaces verbatim to the caller.
+  #|           if (digestAttempted) return response;
+  #|           if (!response || response.status !== 401) return response;
+  #|           const wwwAuth = response.headers.get('www-authenticate');
+  #|           if (!wwwAuth || !wwwAuth.startsWith('Digest ')) return response;
+  #|           // Caller-supplied (or __bidiResolveAuth-supplied) Authorization
+  #|           // wins. We only step in when no Authorization was attached.
+  #|           if (headers.has('Authorization')) return response;
+  #|           if (typeof globalThis.__bidiResolveCredentials !== 'function') return response;
+  #|           let creds;
+  #|           try { creds = globalThis.__bidiResolveCredentials(resolvedUrl); } catch (_e) { return response; }
+  #|           if (!creds || !creds.username || !creds.password) return response;
+  #|           const challenge = parseDigestChallengeHeader(wwwAuth);
+  #|           if (!challenge || !challenge.realm || !challenge.nonce) return response;
+  #|           const u = new URL(resolvedUrl);
+  #|           const uri = u.pathname + (u.search || '');
+  #|           const retryAuth = buildDigestAuthHeader(creds, challenge, methodForPreflight, uri);
+  #|           if (!retryAuth) return response;
+  #|           const retryHeaders = new Headers(headers);
+  #|           retryHeaders.set('Authorization', retryAuth);
+  #|           const retryOptions = { ...reqOptions, headers: retryHeaders };
+  #|           digestAttempted = true;
+  #|           // Fresh activeRequests tracker for the retry — finish() for
+  #|           // the original 401 already ran by the time we land here.
+  #|           globalThis.__activeNetworkRequests++;
+  #|           notifyNetworkChange();
+  #|           let retryDone = false;
+  #|           const retryFinish = () => {
+  #|             if (retryDone) return;
+  #|             retryDone = true;
+  #|             globalThis.__activeNetworkRequests--;
+  #|             notifyNetworkChange();
+  #|           };
+  #|           return dispatchRaw(resolvedUrl, retryOptions)
+  #|             .then(retryResponse => {
+  #|               captureInboundSetCookies(retryResponse);
+  #|               retryFinish();
+  #|               return retryResponse;
+  #|             })
+  #|             .catch(error => {
+  #|               retryFinish();
+  #|               throw error;
+  #|             });
+  #|         };
   #|         const sendActual = () => dispatchRaw(resolvedUrl, reqOptions)
   #|           .then(response => {
   #|             if (!isNavigation && enforceCors && mode === 'cors' && sourceOrigin && targetOrigin && sourceOrigin !== targetOrigin) {
@@ -3593,6 +3731,7 @@ extern "js" fn js_evaluate_expression(
   #|             finish();
   #|             return response;
   #|           })
+  #|           .then(maybeDigestRetry)
   #|           .catch(error => {
   #|             finish();
   #|             throw error;

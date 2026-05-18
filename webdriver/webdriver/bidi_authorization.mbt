@@ -295,6 +295,18 @@ fn BidiProtocol::dispatch_crater(
       self.handle_crater_list_origin_authorizations(request.id, request.params)
       Ok(())
     }
+    "setOriginCredentials" => {
+      self.handle_crater_set_origin_credentials(request.id, request.params)
+      Ok(())
+    }
+    "clearOriginCredentials" => {
+      self.handle_crater_clear_origin_credentials(request.id, request.params)
+      Ok(())
+    }
+    "listOriginCredentials" => {
+      self.handle_crater_list_origin_credentials(request.id, request.params)
+      Ok(())
+    }
     _ => {
       self.send_error(
         request.id,
