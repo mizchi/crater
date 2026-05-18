@@ -917,13 +917,33 @@ extern "js" fn js_evaluate_expression(
   #|         return 'on';
   #|       }
   #|       if (tag === 'SELECT') {
+  #|         // Multi-select: return every selected option's effective value as
+  #|         // an array; serializer emits one name=value pair per entry per
+  #|         // https://html.spec.whatwg.org/#constructing-the-form-data-set.
+  #|         const isMultiple =
+  #|           !!attrs.multiple ||
+  #|           control.multiple === true ||
+  #|           (typeof control.multiple === 'string' && control.multiple !== '');
+  #|         if (isMultiple) {
+  #|           const options = collectSelectOptions(control);
+  #|           const values = [];
+  #|           for (const opt of options) {
+  #|             const oAttrs = opt._attrs || {};
+  #|             const selected = opt.selected === true ||
+  #|               (opt.selected === undefined && !!oAttrs.selected);
+  #|             if (selected) values.push(optionEffectiveValue(opt));
+  #|           }
+  #|           return values;
+  #|         }
   #|         if (typeof control.value === 'string' && control.value !== '') return control.value;
   #|         if (typeof attrs.value === 'string' && attrs.value !== '') return attrs.value;
   #|         const options = collectSelectOptions(control);
   #|         if (options.length === 0) return '';
   #|         for (const opt of options) {
   #|           const oAttrs = opt._attrs || {};
-  #|           if (oAttrs.selected) return optionEffectiveValue(opt);
+  #|           const selected = opt.selected === true ||
+  #|             (opt.selected === undefined && !!oAttrs.selected);
+  #|           if (selected) return optionEffectiveValue(opt);
   #|         }
   #|         // HTML default: first option is selected if none marked.
   #|         return optionEffectiveValue(options[0]);
@@ -960,7 +980,14 @@ extern "js" fn js_evaluate_expression(
   #|         const name = attrs.name;
   #|         if (typeof name !== 'string' || name.length === 0) continue;
   #|         const value = controlEffectiveValue(c);
-  #|         parts.push(enc(name) + '=' + enc(value));
+  #|         if (Array.isArray(value)) {
+  #|           // <select multiple>: one name=value pair per selected option.
+  #|           for (const v of value) {
+  #|             parts.push(enc(name) + '=' + enc(v));
+  #|           }
+  #|         } else {
+  #|           parts.push(enc(name) + '=' + enc(value));
+  #|         }
   #|       }
   #|       return parts.join('&');
   #|     };
@@ -1123,6 +1150,22 @@ extern "js" fn js_evaluate_expression(
   #|           if (submitter.nodeType !== 1 || !(submitter._parent === this || descendsFrom(submitter, this))) {
   #|             throw new TypeError("requestSubmit: submitter is not a descendant of this form");
   #|           }
+  #|           // Per WHATWG https://html.spec.whatwg.org/#dom-form-requestsubmit
+  #|           // the submitter must be a submit button: BUTTON without a type
+  #|           // attribute (default type=submit) or BUTTON with type=submit, or
+  #|           // INPUT with type=submit / type=image.
+  #|           const sTag = String(submitter.tagName || '');
+  #|           const sAttrs = submitter._attrs || {};
+  #|           const sType = typeof sAttrs.type === 'string' ? sAttrs.type.toLowerCase() : '';
+  #|           let isSubmitButton = false;
+  #|           if (sTag === 'BUTTON') {
+  #|             isSubmitButton = !('type' in sAttrs) || sType === '' || sType === 'submit';
+  #|           } else if (sTag === 'INPUT') {
+  #|             isSubmitButton = sType === 'submit' || sType === 'image';
+  #|           }
+  #|           if (!isSubmitButton) {
+  #|             throw new TypeError("requestSubmit: submitter is not a submit button");
+  #|           }
   #|           validatedSubmitter = submitter;
   #|         }
   #|         const allowed = dispatchFormSubmitEvent(this, validatedSubmitter);
@@ -1136,6 +1179,68 @@ extern "js" fn js_evaluate_expression(
   #|           : null;
   #|         if (resetEvent && typeof this.dispatchEvent === 'function') {
   #|           try { this.dispatchEvent(resetEvent); } catch (_e) {}
+  #|           // If a listener canceled the event, skip clearing values.
+  #|           if (resetEvent.defaultPrevented) return undefined;
+  #|         }
+  #|         // Walk form descendants and reset each resettable control to its
+  #|         // default state (https://html.spec.whatwg.org/#form-reset-algorithm).
+  #|         const resettable = new Set(['INPUT', 'SELECT', 'TEXTAREA']);
+  #|         const buttonInputTypes = new Set(['button', 'submit', 'reset', 'image']);
+  #|         const stack = [this];
+  #|         while (stack.length) {
+  #|           const node = stack.pop();
+  #|           if (!node) continue;
+  #|           const kids = node._children || node.childNodes || [];
+  #|           for (let i = kids.length - 1; i >= 0; i--) stack.push(kids[i]);
+  #|           if (node === this) continue;
+  #|           if (node.nodeType !== 1) continue;
+  #|           const tag = String(node.tagName || '');
+  #|           if (!resettable.has(tag)) continue;
+  #|           const attrs = node._attrs || {};
+  #|           if (tag === 'INPUT') {
+  #|             const type = typeof attrs.type === 'string' ? attrs.type.toLowerCase() : '';
+  #|             if (buttonInputTypes.has(type)) continue;
+  #|             if (type === 'checkbox' || type === 'radio') {
+  #|               // defaultChecked falls back to current `checked` attribute
+  #|               // when no override was recorded.
+  #|               const dc = (node._defaultChecked !== undefined)
+  #|                 ? node._defaultChecked
+  #|                 : !!attrs.checked;
+  #|               // Bypass the value/checked setter snapshot so reset does not
+  #|               // become the new "default" baseline.
+  #|               if (dc) attrs.checked = 'checked'; else delete attrs.checked;
+  #|             } else {
+  #|               const dv = (node._defaultValue !== undefined)
+  #|                 ? node._defaultValue
+  #|                 : (typeof attrs.value === 'string' ? attrs.value : '');
+  #|               attrs.value = dv;
+  #|             }
+  #|             continue;
+  #|           }
+  #|           if (tag === 'TEXTAREA') {
+  #|             const dv = (node._defaultValue !== undefined)
+  #|               ? node._defaultValue
+  #|               : (typeof attrs.value === 'string' ? attrs.value : '');
+  #|             attrs.value = dv;
+  #|             continue;
+  #|           }
+  #|           if (tag === 'SELECT') {
+  #|             const options = collectSelectOptions(node);
+  #|             for (const opt of options) {
+  #|               const oAttrs = opt._attrs || {};
+  #|               const ds = (opt._defaultSelected !== undefined)
+  #|                 ? opt._defaultSelected
+  #|                 : !!oAttrs.selected;
+  #|               // Bypass setter snapshot.
+  #|               if (ds) oAttrs.selected = 'selected'; else delete oAttrs.selected;
+  #|               // Keep any explicit opt.selected JS field in sync.
+  #|               if ('selected' in opt) opt.selected = ds;
+  #|             }
+  #|             // Clear any cached select.value so controlEffectiveValue
+  #|             // re-reads option selectedness from defaults.
+  #|             try { node._attrs.value = ''; } catch (_e) {}
+  #|             continue;
+  #|           }
   #|         }
   #|         return undefined;
   #|       };
@@ -1268,9 +1373,39 @@ extern "js" fn js_evaluate_expression(
   #|           return createStyleDeclaration(this);
   #|         },
   #|         get value() { return this._attrs.value || ''; },
-  #|         set value(v) { this._attrs.value = v; },
+  #|         set value(v) {
+  #|           // Snapshot the default (from the value attribute) on first
+  #|           // mutation so form.reset() can restore it.
+  #|           if (this._defaultValue === undefined) {
+  #|             this._defaultValue = typeof this._attrs.value === 'string' ? this._attrs.value : '';
+  #|           }
+  #|           this._attrs.value = v;
+  #|         },
   #|         get checked() { return !!this._attrs.checked; },
-  #|         set checked(v) { this._attrs.checked = v; },
+  #|         set checked(v) {
+  #|           if (this._defaultChecked === undefined) {
+  #|             this._defaultChecked = !!this._attrs.checked;
+  #|           }
+  #|           this._attrs.checked = v;
+  #|         },
+  #|         get defaultValue() {
+  #|           return this._defaultValue !== undefined
+  #|             ? this._defaultValue
+  #|             : (typeof this._attrs.value === 'string' ? this._attrs.value : '');
+  #|         },
+  #|         set defaultValue(v) {
+  #|           this._defaultValue = String(v);
+  #|           this._attrs.value = String(v);
+  #|         },
+  #|         get defaultChecked() {
+  #|           return this._defaultChecked !== undefined
+  #|             ? this._defaultChecked
+  #|             : !!this._attrs.checked;
+  #|         },
+  #|         set defaultChecked(v) {
+  #|           this._defaultChecked = !!v;
+  #|           if (v) this._attrs.checked = 'checked'; else delete this._attrs.checked;
+  #|         },
   #|         get type() { return this._attrs.type || ''; },
   #|         set type(v) { this._attrs.type = v; },
   #|         get src() { return this._attrs.src || ''; },
