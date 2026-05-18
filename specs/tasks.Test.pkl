@@ -526,6 +526,16 @@ tests {
       "bash -lc 'set -e; test -f http/profile/auth.mbt; grep -Fq -- \"fn AuthState::set_origin_header\" http/profile/auth.mbt; grep -Fq -- \"<redacted>\" http/profile/auth.mbt; test -f webdriver/webdriver/bidi_authorization.mbt; grep -Fq -- \"handle_crater_set_origin_authorization\" webdriver/webdriver/bidi_authorization.mbt; grep -Fq -- \"normalize_origin\" webdriver/webdriver/bidi_authorization.mbt; grep -rFq -- \"crater.setOriginAuthorization\" webdriver/webdriver/; grep -Fq -- \"globalThis.__bidiResolveAuth\" webdriver/webdriver/bidi_runtime_context.mbt; grep -Fq -- \"globalThis.__bidiResolveAuth\" webdriver/webdriver/bidi_runtime_eval.mbt; test -f webdriver/webdriver/bidi_authorization_wbtest.mbt; grep -Fq -- \"crater.setOriginAuthorization stores per-origin header\" webdriver/webdriver/bidi_authorization_wbtest.mbt; grep -Fq -- \"crater.setOriginAuthorization rejects CRLF in headerValue\" webdriver/webdriver/bidi_authorization_wbtest.mbt; test -f webdriver/webdriver/bidi_runtime_fetch_wbtest.mbt; grep -Fq -- \"fetch shim attaches Authorization for matching origin\" webdriver/webdriver/bidi_runtime_fetch_wbtest.mbt; grep -Fq -- \"fetch shim respects caller-provided Authorization over bridge\" webdriver/webdriver/bidi_runtime_fetch_wbtest.mbt'"
   }
   new {
+    name = "bidi_network_continue_with_auth_spec_aliases_routed"
+    description =
+      "bidi_protocol_dispatch_network.mbt routes the spec-conformant names `network.continueWithAuth` (Phase 2 PR A) and `network.addIntercept` to the existing handlers, alongside the internal aliases `network.continueAuthRequest` and `network.addInterceptId`. scripts/crater_bidi_modules.py sends the spec names directly. New wbtests in webdriver/webdriver/bidi_network_spec_aliases_wbtest.mbt probe the spec names without going through the shim."
+    tags { "bidi"; "auth"; "network"; "protocol" }
+    specRef { "protocol.bidi-network-continue-with-auth" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; test -f webdriver/webdriver/bidi_protocol_dispatch_network.mbt; grep -Fq -- \"\\\"continueWithAuth\\\" =>\" webdriver/webdriver/bidi_protocol_dispatch_network.mbt; grep -Fq -- \"\\\"addIntercept\\\" =>\" webdriver/webdriver/bidi_protocol_dispatch_network.mbt; test -f webdriver/webdriver/bidi_network_spec_aliases_wbtest.mbt; grep -Fq -- \"network.continueWithAuth\" webdriver/webdriver/bidi_network_spec_aliases_wbtest.mbt; grep -Fq -- \"network.addIntercept\" webdriver/webdriver/bidi_network_spec_aliases_wbtest.mbt; test -f scripts/crater_bidi_modules.py; grep -Fq -- \"network.continueWithAuth\" scripts/crater_bidi_modules.py; grep -Fq -- \"network.addIntercept\\\",\" scripts/crater_bidi_modules.py'"
+  }
+  new {
     name = "bidi_runtime_cookie_url_filter_parity_guarded"
     description =
       "webdriver/webdriver/bidi_runtime_cookie_parity_wbtest.mbt runs 10 representative cookie + request URL inputs through BOTH __bidiResolveCookies (JS, bidi_runtime_context.mbt) and storage_cookie_matches_request_url (MoonBit, bidi_storage.mbt) and asserts they agree. Coverage: domain + path agreement (exact host, cross-site, subdomain matching dot-prefixed domain, path prefix, path mismatch, trailing-slash path, name-prefix boundary, sibling subdomain). Scheme-vs-Secure filtering is intentionally out of scope per the catch-drift-don't-unify plan."
