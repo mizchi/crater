@@ -265,7 +265,7 @@ extern "js" fn js_evaluate_expression(
   #|     if (typeof globalThis.__bidiSyncWindowPropertiesToGlobal === "function") return;
   #|     const reserved = new Set([
   #|       "window", "self", "parent", "top", "frames",
-  #|       "document", "location", "navigator",
+  #|       "document", "location", "navigator", "history",
   #|       "screen", "matchMedia",
   #|       "innerWidth", "innerHeight", "outerWidth", "outerHeight",
   #|       "devicePixelRatio", "pageXOffset", "pageYOffset",
@@ -280,6 +280,11 @@ extern "js" fn js_evaluate_expression(
   #|       "CompositionEvent", "CustomEvent", "MessageEvent", "StorageEvent",
   #|       "DragEvent", "ClipboardEvent", "DataTransfer", "DOMParser",
   #|       "DOMException", "Node", "Attr", "Element", "HTMLElement", "Document",
+  #|       // Observer APIs shimmed by bidi_runtime_eval.mbt. Without these in
+  #|       // the reserved set, the per-eval window→globalThis sync would
+  #|       // delete them (when window doesn't carry them) right before the
+  #|       // user expression runs.
+  #|       "IntersectionObserver", "ResizeObserver", "MutationObserver",
   #|     ]);
   #|     globalThis.__bidiSyncWindowPropertiesToGlobal = (win) => {
   #|       const source = win && typeof win === "object" ? win : globalThis.window;
@@ -3116,32 +3121,177 @@ extern "js" fn js_evaluate_expression(
   #|         hasBeenActive: false
   #|       }
   #|     };
-  #|     globalThis.history = {
-  #|       length: 1,
-  #|       state: null,
-  #|       pushState: function(state, title, url) { this.state = state; this.length++; },
-  #|       replaceState: function(state, title, url) { this.state = state; },
-  #|       go: function(delta) {},
-  #|       back: function() {},
-  #|       forward: function() {}
+  #|     // History API — pushState / replaceState update location AND
+  #|     // globalThis.__pageUrl so SPA routers can read the new URL through
+  #|     // either surface. back() / forward() / go() walk a real stack and
+  #|     // fire `popstate` with the previously-pushed state, per HTML spec.
+  #|     // The popstate event flows through the same dispatchEvent the rest
+  #|     // of the shim uses, so any registered router listener picks it up.
+  #|     const _updateLocationFromUrl = (rawUrl) => {
+  #|       if (rawUrl === undefined || rawUrl === null) return;
+  #|       let resolved;
+  #|       try {
+  #|         resolved = new URL(String(rawUrl), globalThis.location.href);
+  #|       } catch (_e) { return; }
+  #|       globalThis.location.href = resolved.href;
+  #|       globalThis.location.origin = resolved.origin;
+  #|       globalThis.location.protocol = resolved.protocol;
+  #|       globalThis.location.host = resolved.host;
+  #|       globalThis.location.hostname = resolved.hostname;
+  #|       globalThis.location.port = resolved.port;
+  #|       globalThis.location.pathname = resolved.pathname;
+  #|       globalThis.location.search = resolved.search;
+  #|       globalThis.location.hash = resolved.hash;
+  #|       globalThis.__pageUrl = resolved.href;
   #|     };
-  #|     globalThis.localStorage = {
-  #|       _data: {},
-  #|       getItem: function(key) { return this._data[key] || null; },
-  #|       setItem: function(key, value) { this._data[key] = String(value); },
-  #|       removeItem: function(key) { delete this._data[key]; },
-  #|       clear: function() { this._data = {}; },
-  #|       get length() { return Object.keys(this._data).length; },
-  #|       key: function(n) { return Object.keys(this._data)[n] || null; }
+  #|     globalThis.history = (() => {
+  #|       const stack = [{ state: null, url: null }];
+  #|       let cursor = 0;
+  #|       const dispatchPopState = (state) => {
+  #|         try {
+  #|           const ev = globalThis.__bidiCreateEvent
+  #|             ? globalThis.__bidiCreateEvent("popstate", { bubbles: false, cancelable: false })
+  #|             : new Event("popstate");
+  #|           ev.state = state;
+  #|           globalThis.dispatchEvent(ev);
+  #|         } catch (_e) { /* swallow — popstate dispatch must never fail navigation */ }
+  #|       };
+  #|       return {
+  #|         get length() { return stack.length; },
+  #|         get state() { return stack[cursor].state; },
+  #|         pushState(state, _title, url) {
+  #|           // Spec: truncate any forward entries when a new state is pushed.
+  #|           stack.length = cursor + 1;
+  #|           _updateLocationFromUrl(url);
+  #|           stack.push({ state, url: globalThis.location.href });
+  #|           cursor = stack.length - 1;
+  #|         },
+  #|         replaceState(state, _title, url) {
+  #|           _updateLocationFromUrl(url);
+  #|           stack[cursor] = { state, url: globalThis.location.href };
+  #|         },
+  #|         go(delta) {
+  #|           const target = cursor + ((delta | 0) || 0);
+  #|           if (target < 0 || target >= stack.length) return;
+  #|           cursor = target;
+  #|           const entry = stack[cursor];
+  #|           if (entry.url) _updateLocationFromUrl(entry.url);
+  #|           dispatchPopState(entry.state);
+  #|         },
+  #|         back() { this.go(-1); },
+  #|         forward() { this.go(1); },
+  #|       };
+  #|     })();
+  #|     // localStorage / sessionStorage — single-realm in-memory store
+  #|     // backed by a Map so length / key()/iteration are honest and the
+  #|     // underlying data isn't reachable via a property name like `_data`.
+  #|     // Cross-realm `storage` event isn't fired because the runtime has
+  #|     // exactly one realm; same-realm setItem doesn't fire `storage` per
+  #|     // spec, so callers never observe a missing event.
+  #|     const _makeWebStorage = () => {
+  #|       const data = new Map();
+  #|       return {
+  #|         getItem(key) {
+  #|           const k = String(key);
+  #|           return data.has(k) ? data.get(k) : null;
+  #|         },
+  #|         setItem(key, value) {
+  #|           // Spec: keys and values are stored as DOMStrings. Coerce both
+  #|           // BEFORE the Map write so getItem returns a string consistent
+  #|           // with what the page would see in a real browser.
+  #|           data.set(String(key), String(value));
+  #|         },
+  #|         removeItem(key) { data.delete(String(key)); },
+  #|         clear() { data.clear(); },
+  #|         get length() { return data.size; },
+  #|         key(n) {
+  #|           const idx = Number(n);
+  #|           if (!Number.isFinite(idx) || idx < 0 || idx >= data.size) return null;
+  #|           let i = 0;
+  #|           for (const k of data.keys()) {
+  #|             if (i === idx) return k;
+  #|             i++;
+  #|           }
+  #|           return null;
+  #|         },
+  #|       };
   #|     };
-  #|     globalThis.sessionStorage = {
-  #|       _data: {},
-  #|       getItem: function(key) { return this._data[key] || null; },
-  #|       setItem: function(key, value) { this._data[key] = String(value); },
-  #|       removeItem: function(key) { delete this._data[key]; },
-  #|       clear: function() { this._data = {}; },
-  #|       get length() { return Object.keys(this._data).length; },
-  #|       key: function(n) { return Object.keys(this._data)[n] || null; }
+  #|     globalThis.localStorage = _makeWebStorage();
+  #|     globalThis.sessionStorage = _makeWebStorage();
+  #|     // IntersectionObserver — minimum viable shim for headless / paint-
+  #|     // tree-only execution. On observe(target), enqueues a microtask
+  #|     // that fires the callback with a synthetic "fully intersecting"
+  #|     // entry. This is the right default for test-mode: the most common
+  #|     // consumer pattern is "render content once it scrolls into view";
+  #|     // reporting always-intersecting causes that content to render
+  #|     // eagerly, which is what a test harness wants. A future iteration
+  #|     // can read the paint tree to compute real intersections.
+  #|     globalThis.IntersectionObserver = class IntersectionObserver {
+  #|       constructor(callback, options) {
+  #|         this._callback = typeof callback === 'function' ? callback : () => {};
+  #|         this._options = options || {};
+  #|         this._targets = new Set();
+  #|       }
+  #|       observe(target) {
+  #|         if (!target || this._targets.has(target)) return;
+  #|         this._targets.add(target);
+  #|         const rect = (target.getBoundingClientRect && typeof target.getBoundingClientRect === 'function')
+  #|           ? target.getBoundingClientRect()
+  #|           : { x: 0, y: 0, width: 0, height: 0, top: 0, left: 0, right: 0, bottom: 0 };
+  #|         const entry = {
+  #|           target,
+  #|           isIntersecting: true,
+  #|           intersectionRatio: 1,
+  #|           boundingClientRect: rect,
+  #|           intersectionRect: rect,
+  #|           rootBounds: null,
+  #|           time: typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now(),
+  #|         };
+  #|         const cb = this._callback;
+  #|         const self = this;
+  #|         Promise.resolve().then(() => {
+  #|           try { cb.call(self, [entry], self); } catch (_e) { /* swallow */ }
+  #|         });
+  #|       }
+  #|       unobserve(target) { this._targets.delete(target); }
+  #|       disconnect() { this._targets.clear(); }
+  #|       takeRecords() { return []; }
+  #|     };
+  #|     // ResizeObserver — same shape as IntersectionObserver. observe(t)
+  #|     // schedules a microtask that fires the callback with the target's
+  #|     // current bounding rect as the contentRect / borderBoxSize /
+  #|     // contentBoxSize triple. Crater has no real resize signal in test
+  #|     // mode so the observer fires exactly once per observe() and never
+  #|     // re-fires; UI libs that use ResizeObserver to compute initial
+  #|     // layout (popovers, tooltips, virtualized lists) get their first
+  #|     // measurement and proceed.
+  #|     globalThis.ResizeObserver = class ResizeObserver {
+  #|       constructor(callback) {
+  #|         this._callback = typeof callback === 'function' ? callback : () => {};
+  #|         this._targets = new Set();
+  #|       }
+  #|       observe(target) {
+  #|         if (!target || this._targets.has(target)) return;
+  #|         this._targets.add(target);
+  #|         const rect = (target.getBoundingClientRect && typeof target.getBoundingClientRect === 'function')
+  #|           ? target.getBoundingClientRect()
+  #|           : { width: 0, height: 0, x: 0, y: 0, top: 0, left: 0, right: 0, bottom: 0 };
+  #|         const size = { inlineSize: rect.width || 0, blockSize: rect.height || 0 };
+  #|         const entry = {
+  #|           target,
+  #|           contentRect: rect,
+  #|           borderBoxSize: [size],
+  #|           contentBoxSize: [size],
+  #|           devicePixelContentBoxSize: [size],
+  #|         };
+  #|         const cb = this._callback;
+  #|         const self = this;
+  #|         Promise.resolve().then(() => {
+  #|           try { cb.call(self, [entry], self); } catch (_e) { /* swallow */ }
+  #|         });
+  #|       }
+  #|       unobserve(target) { this._targets.delete(target); }
+  #|       disconnect() { this._targets.clear(); }
   #|     };
   #|     globalThis.requestAnimationFrame = function(cb) { return setTimeout(cb, 16); };
   #|     globalThis.cancelAnimationFrame = function(id) { clearTimeout(id); };

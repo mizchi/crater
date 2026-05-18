@@ -10,7 +10,7 @@ extern "js" fn reset_runtime_js_state() -> Unit =
   #|       if (typeof globalThis.__bidiSyncWindowPropertiesToGlobal === "function") return;
   #|       const reserved = new Set([
   #|         "window", "self", "parent", "top", "frames",
-  #|         "document", "location", "navigator",
+  #|         "document", "location", "navigator", "history",
   #|         "screen", "matchMedia",
   #|         "innerWidth", "innerHeight", "outerWidth", "outerHeight",
   #|         "devicePixelRatio", "pageXOffset", "pageYOffset",
@@ -25,6 +25,9 @@ extern "js" fn reset_runtime_js_state() -> Unit =
   #|         "CompositionEvent", "CustomEvent", "MessageEvent", "StorageEvent",
   #|         "DragEvent", "ClipboardEvent", "DataTransfer", "DOMParser",
   #|         "DOMException", "Node", "Attr", "Element", "HTMLElement", "Document",
+  #|         // Observer APIs shimmed by bidi_runtime_eval.mbt. Without
+  #|         // these, the per-eval window→globalThis sync would clear them.
+  #|         "IntersectionObserver", "ResizeObserver", "MutationObserver",
   #|       ]);
   #|       globalThis.__bidiSyncWindowPropertiesToGlobal = (win) => {
   #|         const source = win && typeof win === "object" ? win : globalThis.window;
