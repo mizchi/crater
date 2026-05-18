@@ -118,6 +118,29 @@ test "bidi network.provideResponse (spec name) resolves blocked request" {
 }
 
 ///|
+test "bidi network.continueRequest (spec name) applies header override" {
+  // Spec name routes to handle_network_continue_blocked_request; this exercise
+  // also confirms the `headers` override path is reachable through the
+  // spec-conformant entry point (used by OAuth refresh-token clients).
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":2,\"method\":\"network.rememberBlockedRequest\",\"params\":{\"request\":\"request-spec-alias-6\",\"blockedRequest\":{\"phase\":\"beforeRequestSent\",\"context_id\":\"session-1\",\"url\":\"http://localhost:8000/api/protected\",\"method\":\"GET\",\"request_headers\":{\"authorization\":\"Bearer stale\"}}}}",
+  )
+  ignore(proto.take_messages())
+  let _ = proto.process_message(
+    "{\"id\":3,\"method\":\"network.continueRequest\",\"params\":{\"request\":\"request-spec-alias-6\",\"headers\":[{\"name\":\"authorization\",\"value\":{\"type\":\"string\",\"value\":\"Bearer fresh\"}}]}}",
+  )
+  let json = proto.take_messages()[0].to_json()
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_false(json.contains("unknown command"))
+  assert_true(json.contains("\"consumed\":true"))
+}
+
+///|
 test "bidi network.failRequest (spec name) fails blocked request" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(

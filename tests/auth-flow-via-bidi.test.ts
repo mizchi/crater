@@ -32,7 +32,11 @@
  */
 
 import { expect, test } from "@playwright/test";
-import { startAuthServer } from "../scripts/fixtures/auth-server.ts";
+import {
+  REFRESHED_ACCESS_TOKEN,
+  REFRESH_TOKEN,
+  startAuthServer,
+} from "../scripts/fixtures/auth-server.ts";
 import { connectCraterBidi } from "./helpers/crater-bidi.ts";
 
 const SESSION_ID = "s_test";
@@ -776,6 +780,141 @@ test.describe("auth flow via BiDi (token expiration recovery)", () => {
     } finally {
       try {
         fixture.forgetExpiredToken(expiredToken);
+      } catch {
+        // ignore
+      }
+      try {
+        await session.script.evaluate({
+          expression: `globalThis.__setRequestSandbox({ mode: 'same-origin' }); null`,
+          awaitPromise: false,
+        });
+      } catch {
+        // ignore
+      }
+      await session.end();
+      await fixture.stop();
+      await fixture.apiStop();
+    }
+  });
+});
+
+test.describe("auth flow via BiDi (OAuth refresh-token flow)", () => {
+  test("expired Bearer -> refresh via /oauth/token -> re-register -> retry succeeds", async () => {
+    // End-to-end OAuth-style refresh round-trip driven entirely from
+    // inside the BiDi runtime:
+    //   1. Register a Bearer for the api origin and mark it expired
+    //      server-side.
+    //   2. From page-side JS, fetch /api/protected — gets 401 token_expired.
+    //   3. From page-side JS, POST /oauth/token with the refresh token —
+    //      gets a fresh access_token.
+    //   4. Re-register the fresh Bearer via crater.setOriginAuthorization
+    //      (the driver-side analogue of the page updating its in-memory
+    //      Authorization header).
+    //   5. Retry /api/protected — now succeeds with the refreshed token
+    //      attached by the runtime fetch shim.
+    // This proves the full refresh chain composes cleanly with Crater's
+    // per-origin Authorization injection, including the case where the
+    // driver rotates the registered header value mid-session.
+    const fixture = await startAuthServer();
+    // secretlint-disable-next-line @secretlint/secretlint-rule-pattern
+    const staleBearer = "Bearer test-jwt-token";
+
+    const session = await connectCraterBidi();
+    try {
+      const rememberResp = await session.raw.send(
+        "script.rememberSyntheticLocationHref",
+        { context: session.contextId, href: `${fixture.url}/login` },
+      );
+      expect(
+        rememberResp.type,
+        `rememberSyntheticLocationHref: ${rememberResp.error ?? rememberResp.message}`,
+      ).toBe("success");
+
+      const setStaleResp = await session.raw.send(
+        "crater.setOriginAuthorization",
+        {
+          origin: fixture.apiUrl,
+          headerValue: staleBearer,
+          context: session.contextId,
+        },
+      );
+      expect(
+        setStaleResp.type,
+        `crater.setOriginAuthorization (stale): ${setStaleResp.error ?? setStaleResp.message}`,
+      ).toBe("success");
+      fixture.recordExpiredToken(staleBearer);
+
+      await session.script.evaluate({
+        expression: `globalThis.__setRequestSandbox({ mode: 'open' }); null`,
+        awaitPromise: false,
+      });
+
+      const firstJson = await session.script.evaluate<string>({
+        expression: `(async () => {
+          const r = await fetch(${JSON.stringify(`${fixture.apiUrl}/api/protected`)});
+          const body = await r.text();
+          return JSON.stringify({ status: r.status, body });
+        })()`,
+        awaitPromise: true,
+      });
+      const first = JSON.parse(firstJson) as { status: number; body: string };
+      expect(first.status, `first attempt: ${JSON.stringify(first)}`).toBe(401);
+      expect(JSON.parse(first.body)).toEqual({ error: "token_expired" });
+
+      // Page-side refresh exchange. /oauth/token is gated on the
+      // refresh_token grant only — no Authorization required, so it
+      // works as a recovery path AFTER the Bearer expired.
+      const refreshJson = await session.script.evaluate<string>({
+        expression: `(async () => {
+          const r = await fetch(${JSON.stringify(`${fixture.apiUrl}/oauth/token`)}, {
+            method: 'POST',
+            headers: { 'content-type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              grant_type: 'refresh_token',
+              refresh_token: ${JSON.stringify(REFRESH_TOKEN)},
+            }).toString(),
+          });
+          const body = await r.text();
+          return JSON.stringify({ status: r.status, body });
+        })()`,
+        awaitPromise: true,
+      });
+      const refresh = JSON.parse(refreshJson) as { status: number; body: string };
+      expect(refresh.status, `refresh response: ${JSON.stringify(refresh)}`).toBe(200);
+      const refreshBody = JSON.parse(refresh.body) as { access_token: string };
+      const freshBearer = `Bearer ${refreshBody.access_token}`;
+      expect(freshBearer).toBe(REFRESHED_ACCESS_TOKEN);
+
+      // Driver-side rotation — replace the registered Authorization with
+      // the freshly-issued Bearer.
+      const setFreshResp = await session.raw.send(
+        "crater.setOriginAuthorization",
+        {
+          origin: fixture.apiUrl,
+          headerValue: freshBearer,
+          context: session.contextId,
+        },
+      );
+      expect(
+        setFreshResp.type,
+        `crater.setOriginAuthorization (fresh): ${setFreshResp.error ?? setFreshResp.message}`,
+      ).toBe("success");
+
+      // Retry — runtime fetch shim now attaches the fresh Bearer.
+      const retryJson = await session.script.evaluate<string>({
+        expression: `(async () => {
+          const r = await fetch(${JSON.stringify(`${fixture.apiUrl}/api/protected`)});
+          const body = await r.text();
+          return JSON.stringify({ status: r.status, body });
+        })()`,
+        awaitPromise: true,
+      });
+      const retry = JSON.parse(retryJson) as { status: number; body: string };
+      expect(retry.status, `retry response: ${JSON.stringify(retry)}`).toBe(200);
+      expect(JSON.parse(retry.body)).toEqual({ user: "alice", protected: true });
+    } finally {
+      try {
+        fixture.forgetExpiredToken(staleBearer);
       } catch {
         // ignore
       }
