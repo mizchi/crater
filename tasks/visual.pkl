@@ -23,7 +23,9 @@ testWptVrt: pkfire.Task = new {
   cmd = "just test-wpt-vrt"
   cache = false
   inputs {
-    ...src.nodeSources
+    ...src.wptToolchainSources
+    "playwright.config.ts"
+    "tests/wpt-vrt.test.ts"
     "wpt-vrt.json"
     "tests/wpt-vrt-baseline.json"
     "wpt/**"

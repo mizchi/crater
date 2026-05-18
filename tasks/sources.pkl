@@ -29,6 +29,13 @@ nodeSources: Listing<String> = new {
   "benchmarks/**/*.ts"
 }
 
+wptToolchainSources: Listing<String> = new {
+  "package.json"
+  "pnpm-lock.yaml"
+  "pnpm-workspace.yaml"
+  "tsconfig.json"
+}
+
 pkspecSources: Listing<String> = new {
   ".github/workflows/**/*.yml"
   "Taskfile.pkl"
