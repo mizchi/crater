@@ -36,6 +36,14 @@ wptToolchainSources: Listing<String> = new {
   "tsconfig.json"
 }
 
+playwrightToolchainSources: Listing<String> = new {
+  "package.json"
+  "pnpm-lock.yaml"
+  "pnpm-workspace.yaml"
+  "tsconfig.json"
+  "playwright.config.ts"
+}
+
 pkspecSources: Listing<String> = new {
   ".github/workflows/**/*.yml"
   "Taskfile.pkl"

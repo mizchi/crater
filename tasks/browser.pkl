@@ -9,9 +9,14 @@ testPlaywright: pkfire.Task = new {
   cmd = "just test-playwright-adapter"
   cache = false
   inputs {
-    ...src.nodeSources
+    ...src.playwrightToolchainSources
     "webdriver/**"
     "browser/**"
+    "tests/playwright-adapter.test.ts"
+    "tests/crater-playwright-adapter.test.ts"
+    "tests/playwright-adapter-user-scenarios.test.ts"
+    "tests/playwright-adapter-chromium-parity.test.ts"
+    "tests/helpers/**"
   }
 }
 
@@ -22,10 +27,13 @@ testWebsite: pkfire.Task = new {
   cmd = "just test-website"
   cache = false
   inputs {
-    ...src.nodeSources
+    ...src.playwrightToolchainSources
     "html_assets/**"
     "browser/**"
     "webdriver/**"
+    "tests/website-loading.test.ts"
+    "tests/browser-user-scenarios.test.ts"
+    "tests/helpers/**"
   }
 }
 
@@ -35,12 +43,13 @@ testPreact: pkfire.Task = new {
   cmd = "just test-preact"
   cache = false
   inputs {
-    ...src.nodeSources
+    ...src.playwrightToolchainSources
     "browser/**"
     "dom/**"
     "runtime/**"
     "webdriver/**"
     "tests/preact-compat.test.ts"
+    "scripts/bidi-url.ts"
   }
 }
 
