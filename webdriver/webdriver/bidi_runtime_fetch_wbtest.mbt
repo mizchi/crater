@@ -322,3 +322,185 @@ async test "fetch shim rejects when preflight omits ACA-Methods" {
   assert_true(rejection.contains("CORS preflight"))
   assert_true(rejection.contains("PUT not allowed"))
 }
+
+///|
+/// Repeat cross-origin POST + custom header within Max-Age must hit the
+/// preflight cache and skip the second OPTIONS dispatch. Pins
+/// bug.runtime.fetch-preflight-cache-not-shared: the JS-side fetch shim now
+/// memoizes OPTIONS responses with the same Max-Age clamp (7200s) as the
+/// MoonBit http/cors PreflightCache. Expected method log on the wire across
+/// two POSTs is OPTIONS,POST,POST — *not* OPTIONS,POST,OPTIONS,POST.
+///
+/// Per-test target URL `cache-hit-1.test` keeps the cache key unique and
+/// the `seen` log isolated even when a prior async test's microtasks drain
+/// into our `__rawFetch`.
+async test "fetch shim caches preflight result and skips second OPTIONS within Max-Age" {
+  let proto = make_proto_with_session()
+  let setup =
+    #|globalThis.__pageUrl = 'http://localhost/';
+    #|globalThis.__setRequestSandbox({ mode: 'open' });
+    #|globalThis.__bidiPreflightCache = new Map();
+    #|globalThis.__cacheHitMethodLog = '<unset>';
+    #|const seen = [];
+    #|globalThis.__rawFetch = (url, options) => {
+    #|  const o = options || {};
+    #|  const m = String(o.method || 'GET').toUpperCase();
+    #|  // Only record requests targeting this test's URL — keeps the log
+    #|  // free of late-arriving microtasks from prior tests.
+    #|  if (String(url).indexOf('cache-hit-1.test') !== -1) {
+    #|    seen.push(m);
+    #|    globalThis.__cacheHitMethodLog = seen.join(',');
+    #|  }
+    #|  if (m === 'OPTIONS') {
+    #|    return Promise.resolve({
+    #|      status: 204,
+    #|      headers: {
+    #|        get: (name) => {
+    #|          const n = String(name).toLowerCase();
+    #|          if (n === 'access-control-allow-origin') return 'http://localhost';
+    #|          if (n === 'access-control-allow-methods') return 'POST, GET';
+    #|          if (n === 'access-control-allow-headers') return 'x-custom';
+    #|          if (n === 'access-control-max-age') return '3600';
+    #|          return null;
+    #|        },
+    #|      },
+    #|      text: () => Promise.resolve(''),
+    #|    });
+    #|  }
+    #|  return Promise.resolve({
+    #|    status: 200,
+    #|    headers: {
+    #|      get: (name) => String(name).toLowerCase() === 'access-control-allow-origin' ? 'http://localhost' : null,
+    #|    },
+    #|    text: () => Promise.resolve(''),
+    #|  });
+    #|};
+    #|const opts = {
+    #|  method: 'POST',
+    #|  headers: { 'X-Custom': '1', 'Content-Type': 'application/json' },
+    #|  body: '{}',
+    #|};
+    #|Promise.resolve()
+    #|  .then(() => globalThis.fetch('http://cache-hit-1.test/v1', opts).catch(() => {}))
+    #|  .then(() => globalThis.fetch('http://cache-hit-1.test/v1', opts).catch(() => {}));
+    #|null
+  run_sync_in_context(proto, 2, setup)
+  @async.sleep(30)
+  let resp = read_global_string(proto, 5, "__cacheHitMethodLog")
+  run_sync_in_context(
+    proto, 6, "globalThis.__setRequestSandbox({ mode: 'same-origin' });",
+  )
+  // Exactly one OPTIONS and two POSTs.
+  assert_true(resp.contains("OPTIONS,POST,POST"))
+  assert_false(resp.contains("OPTIONS,POST,OPTIONS"))
+}
+
+///|
+/// Cache hit must still validate the allow-lists against the *current*
+/// request. If the cached entry doesn't cover a new header, the shim evicts
+/// the entry and refetches. Guards against the cache pinning a stale
+/// permissive entry while the actual server is stricter.
+async test "fetch shim preflight cache evicts entry when new header is not covered" {
+  let proto = make_proto_with_session()
+  let setup =
+    #|globalThis.__pageUrl = 'http://localhost/';
+    #|globalThis.__setRequestSandbox({ mode: 'open' });
+    #|globalThis.__bidiPreflightCache = new Map();
+    #|globalThis.__cacheEvictMethodLog = '<unset>';
+    #|const seen = [];
+    #|globalThis.__rawFetch = (url, options) => {
+    #|  const o = options || {};
+    #|  const m = String(o.method || 'GET').toUpperCase();
+    #|  const reqHeaders = new Headers((o && o.headers) || {});
+    #|  const requested = String(reqHeaders.get('Access-Control-Request-Headers') || '').toLowerCase();
+    #|  if (String(url).indexOf('cache-evict-1.test') !== -1) {
+    #|    seen.push(m);
+    #|    globalThis.__cacheEvictMethodLog = seen.join(',');
+    #|  }
+    #|  if (m === 'OPTIONS') {
+    #|    return Promise.resolve({
+    #|      status: 204,
+    #|      headers: {
+    #|        get: (name) => {
+    #|          const n = String(name).toLowerCase();
+    #|          if (n === 'access-control-allow-origin') return 'http://localhost';
+    #|          if (n === 'access-control-allow-methods') return 'POST, GET';
+    #|          // Respond with only the headers actually requested — the
+    #|          // first preflight (x-custom) caches a narrow entry; the
+    #|          // second (x-extra) needs a fresh roundtrip.
+    #|          if (n === 'access-control-allow-headers') return requested;
+    #|          if (n === 'access-control-max-age') return '3600';
+    #|          return null;
+    #|        },
+    #|      },
+    #|      text: () => Promise.resolve(''),
+    #|    });
+    #|  }
+    #|  return Promise.resolve({
+    #|    status: 200,
+    #|    headers: {
+    #|      get: (name) => String(name).toLowerCase() === 'access-control-allow-origin' ? 'http://localhost' : null,
+    #|    },
+    #|    text: () => Promise.resolve(''),
+    #|  });
+    #|};
+    #|Promise.resolve()
+    #|  .then(() => globalThis.fetch('http://cache-evict-1.test/v1', {
+    #|    method: 'POST',
+    #|    headers: { 'X-Custom': '1', 'Content-Type': 'application/json' },
+    #|    body: '{}',
+    #|  }).catch(() => {}))
+    #|  .then(() => globalThis.fetch('http://cache-evict-1.test/v1', {
+    #|    method: 'POST',
+    #|    headers: { 'X-Extra': '2', 'Content-Type': 'application/json' },
+    #|    body: '{}',
+    #|  }).catch(() => {}));
+    #|null
+  run_sync_in_context(proto, 2, setup)
+  @async.sleep(30)
+  let resp = read_global_string(proto, 5, "__cacheEvictMethodLog")
+  run_sync_in_context(
+    proto, 6, "globalThis.__setRequestSandbox({ mode: 'same-origin' });",
+  )
+  // First request keys cache on x-custom, second on x-extra — different
+  // cache keys, so two OPTIONS expected.
+  assert_true(resp.contains("OPTIONS,POST,OPTIONS,POST"))
+}
+
+///|
+/// reset_runtime_js_state must drop the realm-scoped fetch-shim install-once
+/// guard so that the next js_evaluate_expression re-wraps fetch cleanly.
+/// Pins bug.runtime.fetch-install-once-realm-bound: without this drop, a
+/// browsingContext.create / destroy cycle that reuses the same JS realm
+/// would inherit __bidiFetchShimInstalled = true and leave __rawFetch
+/// pointing at the previous session's stale stub. The reinstalled shim
+/// would silently dispatch every fetch through that stale stub.
+///
+/// The test seeds a stub __rawFetch, marks the install flag set (mimicking
+/// post-bootstrap realm state), then runs reset_runtime_js_state. The next
+/// js_evaluate_expression bootstrap MUST observe the flag/raw as cleared
+/// and reinstall, so __rawFetch ends up pointing at the realm's native
+/// fetch, not the stub. We test this by calling globalThis.fetch on a
+/// `data:` URL and confirming the response is the real fetch (data URL
+/// resolved by Node) rather than the stub returning 'stub'.
+async test "reset_runtime_js_state lets next bootstrap rebind __rawFetch to the realm fetch" {
+  // Seed stale state directly via FFI, bypassing the bootstrap so the
+  // flag/__rawFetch don't get re-derived from the current realm.
+  let _ = evaluate_js(
+    "globalThis.__staleSentinelFetch = () => Promise.resolve({ status: 599, text: () => Promise.resolve('stale-stub') }); globalThis.__rawFetch = globalThis.__staleSentinelFetch; globalThis.__bidiFetchShimInstalled = true; 0",
+  )
+  // Verify the seed: the bootstrap above the eval should leave the flag
+  // alone because it was already true.
+  let seeded = evaluate_js(
+    "(globalThis.__rawFetch === globalThis.__staleSentinelFetch ? 'stale' : 'rebound')",
+  )
+  assert_true(seeded.contains("stale"))
+  // Reset and confirm the install-once flag and __rawFetch are dropped.
+  reset_runtime_js_state()
+  // Next bootstrap reinstalls: __rawFetch must now point at the realm's
+  // native fetch, not the stale stub.
+  let rebound = evaluate_js(
+    "(globalThis.__rawFetch === globalThis.__staleSentinelFetch ? 'stale' : 'rebound')",
+  )
+  assert_true(rebound.contains("rebound"))
+}

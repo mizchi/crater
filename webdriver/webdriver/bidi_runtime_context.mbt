@@ -247,6 +247,18 @@ extern "js" fn reset_runtime_js_state() -> Unit =
   #|     globalThis.__bidiSharedNodeStore = new Map();
   #|     globalThis.__bidiHandleStore = new Map();
   #|     globalThis.__bidiNextHandleId = 1;
+  #|     // Drop the realm-scoped fetch-shim install-once flag and the
+  #|     // __rawFetch indirection it pairs with so the next
+  #|     // js_evaluate_expression re-wraps fetch cleanly. Otherwise a
+  #|     // browsingContext.create / destroy cycle that reuses the same JS
+  #|     // realm would inherit the flag without re-wrapping, leaving
+  #|     // __rawFetch pointing at the previous session's stub.
+  #|     try { delete globalThis.__bidiFetchShimInstalled; } catch (_e) {}
+  #|     try { delete globalThis.__rawFetch; } catch (_e) {}
+  #|     // Also drop the per-realm preflight cache so stale entries from
+  #|     // the previous session do not bleed cross-origin allow-lists
+  #|     // into a fresh session.
+  #|     try { delete globalThis.__bidiPreflightCache; } catch (_e) {}
   #|   } catch (_e) {}
   #| }
 

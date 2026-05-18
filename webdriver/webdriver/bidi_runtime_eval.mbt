@@ -3387,6 +3387,26 @@ extern "js" fn js_evaluate_expression(
   #|         'accept', 'accept-language', 'content-language', 'content-type',
   #|       ]);
   #|       const corsSimpleMethods = new Set(['GET', 'HEAD', 'POST']);
+  #|       // Per-realm preflight cache. Mirrors http/cors/cors.mbt
+  #|       // PreflightCache: same cache_key formula (origin|url|method|sortedHeaders)
+  #|       // and same Max-Age clamp [0, 7200]s. Not bridged to MoonBit; the goal
+  #|       // is to avoid redundant OPTIONS *within* the JS realm. Each entry is
+  #|       // { allowed_methods, allowed_headers, expires_at_seconds }.
+  #|       if (!(globalThis.__bidiPreflightCache instanceof Map)) {
+  #|         globalThis.__bidiPreflightCache = new Map();
+  #|       }
+  #|       const preflightCacheKey = (origin, url, method, sortedLowerHeaders) =>
+  #|         origin + '|' + url + '|' + method + '|' + sortedLowerHeaders.join(',');
+  #|       const preflightEntryCovers = (entry, method, customHeaders) => {
+  #|         if (!entry) return false;
+  #|         const methods = entry.allowed_methods || [];
+  #|         if (!methods.includes(method) && !methods.includes('*')) return false;
+  #|         const headers = entry.allowed_headers || [];
+  #|         for (const h of customHeaders) {
+  #|           if (!headers.includes(h) && !headers.includes('*')) return false;
+  #|         }
+  #|         return true;
+  #|       };
   #|       const maybeSendPreflight = async (resolvedUrl, mode, method, headersObj, sourceOrigin, targetOrigin) => {
   #|         if (mode === 'navigate' || mode === 'no-cors') return;
   #|         if (!sourceOrigin || !targetOrigin || sourceOrigin === targetOrigin) return;
@@ -3398,11 +3418,23 @@ extern "js" fn js_evaluate_expression(
   #|           customHeaders.push(lower);
   #|         });
   #|         if (corsSimpleMethods.has(method) && customHeaders.length === 0) return;
+  #|         const sortedHeaders = customHeaders.slice().sort();
+  #|         const cacheKey = preflightCacheKey(sourceOrigin, resolvedUrl, method, sortedHeaders);
+  #|         const nowSeconds = Date.now() / 1000;
+  #|         const cache = globalThis.__bidiPreflightCache;
+  #|         const cached = cache.get(cacheKey);
+  #|         if (cached && cached.expires_at_seconds > nowSeconds) {
+  #|           if (preflightEntryCovers(cached, method, customHeaders)) return;
+  #|           // Allow-lists no longer cover this request — evict and refetch.
+  #|           cache.delete(cacheKey);
+  #|         } else if (cached) {
+  #|           cache.delete(cacheKey);
+  #|         }
   #|         const preflightHeaders = new Headers();
   #|         preflightHeaders.set('Origin', sourceOrigin);
   #|         preflightHeaders.set('Access-Control-Request-Method', method);
   #|         if (customHeaders.length > 0) {
-  #|           preflightHeaders.set('Access-Control-Request-Headers', customHeaders.slice().sort().join(', '));
+  #|           preflightHeaders.set('Access-Control-Request-Headers', sortedHeaders.join(', '));
   #|         }
   #|         let preflightResp;
   #|         try {
@@ -3431,6 +3463,17 @@ extern "js" fn js_evaluate_expression(
   #|             throw new TypeError('CORS preflight: header ' + h + ' not allowed');
   #|           }
   #|         }
+  #|         // Memoize the validated preflight result. Clamp Access-Control-Max-Age
+  #|         // to [0, 7200]s matching http/cors/cors.mbt PreflightCache.
+  #|         const rawMaxAge = Number(preflightResp.headers.get('access-control-max-age'));
+  #|         let maxAge = Number.isFinite(rawMaxAge) ? rawMaxAge : 0;
+  #|         if (maxAge > 7200) maxAge = 7200;
+  #|         if (maxAge < 0) maxAge = 0;
+  #|         cache.set(cacheKey, {
+  #|           allowed_methods: allowedMethods,
+  #|           allowed_headers: allowedHeaders,
+  #|           expires_at_seconds: nowSeconds + maxAge,
+  #|         });
   #|       };
   #|       const fetchWithPolicy = (url, options, enforceCors) => {
   #|         const resolvedUrl = globalThis.__resolveUrl(url, globalThis.__pageUrl);
