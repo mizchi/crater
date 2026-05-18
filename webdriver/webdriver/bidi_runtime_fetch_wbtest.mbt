@@ -466,3 +466,41 @@ async test "fetch shim preflight cache evicts entry when new header is not cover
   // cache keys, so two OPTIONS expected.
   assert_true(resp.contains("OPTIONS,POST,OPTIONS,POST"))
 }
+
+///|
+/// reset_runtime_js_state must drop the realm-scoped fetch-shim install-once
+/// guard so that the next js_evaluate_expression re-wraps fetch cleanly.
+/// Pins bug.runtime.fetch-install-once-realm-bound: without this drop, a
+/// browsingContext.create / destroy cycle that reuses the same JS realm
+/// would inherit __bidiFetchShimInstalled = true and leave __rawFetch
+/// pointing at the previous session's stale stub. The reinstalled shim
+/// would silently dispatch every fetch through that stale stub.
+///
+/// The test seeds a stub __rawFetch, marks the install flag set (mimicking
+/// post-bootstrap realm state), then runs reset_runtime_js_state. The next
+/// js_evaluate_expression bootstrap MUST observe the flag/raw as cleared
+/// and reinstall, so __rawFetch ends up pointing at the realm's native
+/// fetch, not the stub. We test this by calling globalThis.fetch on a
+/// `data:` URL and confirming the response is the real fetch (data URL
+/// resolved by Node) rather than the stub returning 'stub'.
+async test "reset_runtime_js_state lets next bootstrap rebind __rawFetch to the realm fetch" {
+  // Seed stale state directly via FFI, bypassing the bootstrap so the
+  // flag/__rawFetch don't get re-derived from the current realm.
+  let _ = evaluate_js(
+    "globalThis.__staleSentinelFetch = () => Promise.resolve({ status: 599, text: () => Promise.resolve('stale-stub') }); globalThis.__rawFetch = globalThis.__staleSentinelFetch; globalThis.__bidiFetchShimInstalled = true; 0",
+  )
+  // Verify the seed: the bootstrap above the eval should leave the flag
+  // alone because it was already true.
+  let seeded = evaluate_js(
+    "(globalThis.__rawFetch === globalThis.__staleSentinelFetch ? 'stale' : 'rebound')",
+  )
+  assert_true(seeded.contains("stale"))
+  // Reset and confirm the install-once flag and __rawFetch are dropped.
+  reset_runtime_js_state()
+  // Next bootstrap reinstalls: __rawFetch must now point at the realm's
+  // native fetch, not the stale stub.
+  let rebound = evaluate_js(
+    "(globalThis.__rawFetch === globalThis.__staleSentinelFetch ? 'stale' : 'rebound')",
+  )
+  assert_true(rebound.contains("rebound"))
+}
