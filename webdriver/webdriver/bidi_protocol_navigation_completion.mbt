@@ -100,11 +100,17 @@ fn BidiProtocol::complete_navigation_request_with_wait_and_navigation(
 }
 
 ///|
-/// Variant of complete_navigation_request_with_wait_and_navigation that
-/// defers the runtime document load AND the BiDi success response. The
-/// caller (typically the HTTP wait=complete async path) must subsequently
-/// invoke the load and emit the response when it resolves. Returns the
-/// navigation id so the async sender can include it in its payload.
+/// Compute navigation state and return the nav id WITHOUT sending the
+/// BiDi response. Caller MUST send the response via socket asynchronously
+/// (currently: js_navigate_and_send_async).
+///
+/// PRECONDITION: should_block_navigation_response(wait_mode, url) must be
+/// false for this URL — otherwise build_navigation_completion would set
+/// deferred_response=true expecting register_in_flight_navigation to
+/// later fire send_success, and the async bridge would double-respond.
+/// Currently safe because should_navigate_via_async_bridge excludes
+/// trickle URLs (the only ones where block_response would be true for
+/// HTTP).
 fn BidiProtocol::complete_navigation_request_with_wait_deferred(
   self : BidiProtocol,
   request_id : Int,

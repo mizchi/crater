@@ -232,6 +232,81 @@ test "bidi navigate wait=complete on data: URL still responds synchronously" {
 }
 
 ///|
+/// Read the awaitable stub socket installed by the async bridge test setup
+/// expression. The socket is stored on globalThis after the setup IIFE runs
+/// its synchronous preamble (before the first `await`).
+extern "js" fn js_test_get_nav_async_stub_socket() -> @core.Any =
+  #| () => globalThis.__bidiNavAsyncTestSocket
+
+///|
+async test "navigate_and_send_async real FFI sends correct payload via stub socket" {
+  // This test exercises js_navigate_and_send_async through the real
+  // navigate_and_send_async MoonBit wrapper, NOT an inline copy. If the FFI
+  // body drifts (key names, response shape), this test will catch it.
+  reset_runtime_js_state()
+  let _ = evaluate_js("0")
+  js_test_snapshot_loader()
+  js_test_stub_socket_reset()
+  // Install the promise-backed stub socket and stub loader synchronously.
+  // The JS IIFE runs its setup before the first `await`, so the socket is
+  // available immediately on globalThis.__bidiNavAsyncTestSocket.
+  let setup_expr =
+    #|(async () => {
+    #|  globalThis.__bidiNavigateTestSent = [];
+    #|  let resolvePayload = null;
+    #|  const payloadPromise = new Promise((resolve) => { resolvePayload = resolve; });
+    #|  globalThis.__bidiNavAsyncTestSocket = {
+    #|    send(payload) {
+    #|      globalThis.__bidiNavigateTestSent.push(String(payload));
+    #|      if (resolvePayload) {
+    #|        const r = resolvePayload;
+    #|        resolvePayload = null;
+    #|        r(String(payload));
+    #|      }
+    #|    }
+    #|  };
+    #|  globalThis.__loadPageWithScripts = (_url, _opts) => Promise.resolve();
+    #|  return await payloadPromise;
+    #|})()
+  let setup_promise_any = evaluate_js_async(setup_expr)
+  // The synchronous preamble of the IIFE has already run: socket is set.
+  let socket = js_test_get_nav_async_stub_socket()
+  // Call the REAL FFI wrapper — not an inline copy.
+  navigate_and_send_async(socket, 99, "ctx-1", "http://example.com/x", "nav-99")
+  // Now pump the event loop: the navigate async resolves the loader, calls
+  // socket.send(payload), which resolves payloadPromise.
+  let setup_promise : @js_async.Promise[String] = setup_promise_any.cast()
+  let outer_json = @js_async.Promise::wait(setup_promise)
+  // outer_json is the BiDi-serialised result from evaluate_js_async:
+  // {"type":"success","result":{"type":"string","value":"<the raw payload>"},...}
+  // The raw payload is {"id":99,"type":"success","result":{"navigation":"nav-99","url":"http://example.com/x"}}
+  // Verify that the socket received exactly one payload.
+  let sent_json = js_test_stub_socket_sent_json()
+  assert_true(sent_json.contains("nav-99"))
+  assert_true(sent_json.contains("http://example.com/x"))
+  // Also verify the outer BiDi wrapper reports a successful evaluation.
+  assert_true(outer_json.contains("type\\\":\\\"success"))
+  // Verify key fields in the payload that the real FFI body must produce:
+  // "id": 99, "type": "success", result.navigation == "nav-99", result.url
+  assert_true(
+    sent_json.contains("\\\"id\\\":99") || sent_json.contains("\"id\":99"),
+  )
+  assert_true(
+    sent_json.contains("\\\"type\\\":\\\"success") ||
+    sent_json.contains("\"type\":\"success"),
+  )
+  assert_true(
+    sent_json.contains("\\\"navigation\\\":\\\"nav-99") ||
+    sent_json.contains("\"navigation\":\"nav-99"),
+  )
+  assert_true(
+    sent_json.contains("\\\"url\\\":\\\"http://example.com/x") ||
+    sent_json.contains("\"url\":\"http://example.com/x"),
+  )
+  js_test_restore_loader()
+}
+
+///|
 test "bidi navigate wait=none on http URL still responds immediately" {
   js_test_snapshot_loader()
   js_test_stub_socket_reset()
