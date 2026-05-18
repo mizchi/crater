@@ -102,6 +102,22 @@ function handleApp(
   })();
 }
 
+// secretlint-disable-next-line @secretlint/secretlint-rule-pattern
+const PROTECTED_BEARER_TOKEN = "Bearer test-jwt-token"; // test fixture only
+
+function corsHeadersForOrigin(
+  origin: string,
+  appOrigin: string,
+): Record<string, string> {
+  if (origin === appOrigin) {
+    return {
+      "access-control-allow-origin": appOrigin,
+      "access-control-allow-credentials": "true",
+    };
+  }
+  return {};
+}
+
 function handleApi(
   req: IncomingMessage,
   res: ServerResponse,
@@ -137,6 +153,35 @@ function handleApi(
       // (M5 in PR #131 security review.)
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify({ user: "alice" }));
+    }
+    return;
+  }
+  if (url.pathname === "/api/protected") {
+    if (req.method === "OPTIONS") {
+      res.writeHead(204, {
+        "access-control-allow-origin": appOrigin,
+        "access-control-allow-methods": "GET",
+        "access-control-allow-headers": "authorization, content-type",
+        "access-control-allow-credentials": "true",
+        "access-control-max-age": "600",
+      });
+      res.end();
+      return;
+    }
+    const auth = req.headers["authorization"];
+    const corsHeaders = corsHeadersForOrigin(origin, appOrigin);
+    if (auth === PROTECTED_BEARER_TOKEN) {
+      res.writeHead(200, {
+        "content-type": "application/json",
+        ...corsHeaders,
+      });
+      res.end(JSON.stringify({ user: "alice", protected: true }));
+    } else {
+      res.writeHead(401, {
+        "content-type": "text/plain",
+        ...corsHeaders,
+      });
+      res.end("missing or invalid token");
     }
     return;
   }
