@@ -943,6 +943,17 @@ scenarios {
     reviewStatus = "approved"
     contributes { "goal.protocol-compat" }
   }
+  // -- Protocol: BiDi origin-Authorization injection (Phase 7) -----------------
+  new {
+    id = "protocol.bidi-origin-authorization-injection"
+    name = "BiDi clients can inject Authorization headers per origin"
+    description =
+      "Three BiDi extension commands let WebDriver clients register Authorization header values scoped to a single scheme://host[:port] origin: crater.setOriginAuthorization sets, crater.clearOriginAuthorization removes, crater.listOriginAuthorizations returns the set of registered origins (header values intentionally NOT exposed). The runtime fetch shim attaches the registered header to outgoing requests for matching origins; the caller-wins policy from PR #136 / #140 still applies — if the caller has already set Authorization, the bridge does not overwrite. Origin normalization lowercases scheme and host and strips default ports. Header value validation rejects empty / CRLF / control / ANSI / oversized inputs. Stored credentials are redacted in Show output and absent from list responses."
+    tags { "bidi"; "auth"; "runtime"; "protocol" }
+    severity = "major"
+    reviewStatus = "approved"
+    contributes { "goal.protocol-compat"; "goal.dom-compat" }
+  }
   new {
     id = "bug.runtime.cookie-url-filter-parity"
     name = "JS-side cookie URL filter mirrors MoonBit without static guard"

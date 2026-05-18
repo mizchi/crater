@@ -504,3 +504,106 @@ async test "reset_runtime_js_state lets next bootstrap rebind __rawFetch to the 
   )
   assert_true(rebound.contains("rebound"))
 }
+
+///|
+/// Seed an Authorization header for the given origin scoped to session-1.
+fn seed_origin_authorization(
+  proto : BidiProtocol,
+  request_id : Int,
+  origin : String,
+  header_value : String,
+) -> Unit {
+  let payload = "{\"id\":" +
+    request_id.to_string() +
+    ",\"method\":\"crater.setOriginAuthorization\",\"params\":{\"origin\":" +
+    Json::string(origin).stringify() +
+    ",\"headerValue\":" +
+    Json::string(header_value).stringify() +
+    ",\"context\":\"session-1\"}}"
+  let _ = proto.process_message(payload)
+  let _ = proto.take_messages()
+}
+
+///|
+/// Same-origin fetch must attach the registered Authorization header for
+/// the resolved origin when the caller did not provide one. Pins the
+/// origin-Authorization injection bridge wiring inside the fetch shim.
+test "fetch shim attaches Authorization for matching origin" {
+  let proto = make_proto_with_session()
+  seed_origin_authorization(proto, 2, "http://localhost", "Bearer abc123")
+  let setup =
+    #|globalThis.__pageUrl = 'http://localhost/';
+    #|globalThis.__lastAuthCaptured = '<unset>';
+    #|globalThis.__rawFetch = (url, options) => {
+    #|  const h = new Headers((options && options.headers) || {});
+    #|  const v = h.get('Authorization');
+    #|  globalThis.__lastAuthCaptured = v === null || v === undefined ? '<null>' : String(v);
+    #|  return Promise.resolve({ status: 200, headers: { get: () => '*' }, text: () => Promise.resolve('') });
+    #|};
+    #|globalThis.fetch('/api/me');
+    #|null
+  run_sync_in_context(proto, 3, setup)
+  let resp = read_global_string(proto, 4, "__lastAuthCaptured")
+  assert_true(resp.contains("Bearer abc123"))
+}
+
+///|
+/// A caller-supplied Authorization header must win over the bridge — the
+/// shim must never silently overwrite an explicit per-request token.
+test "fetch shim respects caller-provided Authorization over bridge" {
+  let proto = make_proto_with_session()
+  seed_origin_authorization(proto, 2, "http://localhost", "Bearer driver-token")
+  let setup =
+    #|globalThis.__pageUrl = 'http://localhost/';
+    #|globalThis.__lastAuthCaptured = '<unset>';
+    #|globalThis.__rawFetch = (url, options) => {
+    #|  const h = new Headers((options && options.headers) || {});
+    #|  const v = h.get('Authorization');
+    #|  globalThis.__lastAuthCaptured = v === null || v === undefined ? '<null>' : String(v);
+    #|  return Promise.resolve({ status: 200, headers: { get: () => '*' }, text: () => Promise.resolve('') });
+    #|};
+    #|globalThis.fetch('/api/me', { headers: { Authorization: 'Bearer page-token' } });
+    #|null
+  run_sync_in_context(proto, 3, setup)
+  let resp = read_global_string(proto, 4, "__lastAuthCaptured")
+  assert_true(resp.contains("Bearer page-token"))
+  assert_false(resp.contains("driver-token"))
+}
+
+///|
+/// An Authorization registered for one origin must not leak to a fetch
+/// targeting a different origin. The shim resolves per-request via
+/// __bidiResolveAuth which already filters by origin; this pins the
+/// end-to-end wiring through the shim's attach block.
+async test "fetch shim skips Authorization for non-matching origin" {
+  let proto = make_proto_with_session()
+  seed_origin_authorization(
+    proto, 2, "https://api.example.com", "Bearer abc123",
+  )
+  let setup =
+    #|globalThis.__pageUrl = 'http://localhost/';
+    #|globalThis.__setRequestSandbox({ mode: 'open' });
+    #|globalThis.__lastAuthCaptured = '<unset>';
+    #|globalThis.__rawFetch = (url, options) => {
+    #|  const h = new Headers((options && options.headers) || {});
+    #|  const v = h.get('Authorization');
+    #|  globalThis.__lastAuthCaptured = v === null || v === undefined ? '<null>' : String(v);
+    #|  return Promise.resolve({
+    #|    status: 200,
+    #|    headers: {
+    #|      get: (name) => String(name).toLowerCase() === 'access-control-allow-origin' ? '*' : null,
+    #|    },
+    #|    text: () => Promise.resolve(''),
+    #|  });
+    #|};
+    #|globalThis.fetch('https://other.test/v1').catch(() => {});
+    #|null
+  run_sync_in_context(proto, 3, setup)
+  @async.sleep(10)
+  let resp = read_global_string(proto, 4, "__lastAuthCaptured")
+  run_sync_in_context(
+    proto, 5, "globalThis.__setRequestSandbox({ mode: 'same-origin' });",
+  )
+  assert_true(resp.contains("<null>"))
+  assert_false(resp.contains("Bearer"))
+}

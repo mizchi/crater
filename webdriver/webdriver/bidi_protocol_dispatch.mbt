@@ -50,6 +50,7 @@ fn BidiProtocol::dispatch(
     "permissions" => self.dispatch_permissions(request, action)
     "storage" => self.dispatch_storage(request, action)
     "webExtension" => self.dispatch_web_extension(request, action)
+    "crater" => self.dispatch_crater(request, action)
     "log" => self.dispatch_log(request, action)
     _ => {
       self.send_error(

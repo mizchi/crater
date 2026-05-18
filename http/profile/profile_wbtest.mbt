@@ -4,7 +4,7 @@ test "AuthState::default is empty" {
   inspect(
     state,
     content=(
-      #|{}
+      #|AuthState{}
     ),
   )
 }
