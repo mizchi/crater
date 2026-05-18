@@ -8,7 +8,7 @@ testWptCss: pkfire.Task = new {
   cmd = "just wpt-all"
   cache = false
   inputs {
-    ...src.nodeSources
+    ...src.wptToolchainSources
     "css/**"
     "layout/**"
     "painter/**"
@@ -32,7 +32,7 @@ testWptDom: pkfire.Task = new {
   cmd = "just wpt-dom-all"
   cache = false
   inputs {
-    ...src.nodeSources
+    ...src.wptToolchainSources
     "dom/**"
     "runtime/**"
     "js/**"
@@ -49,7 +49,7 @@ testWptWebdriver: pkfire.Task = new {
   cmd = "just wpt-webdriver-all"
   cache = false
   inputs {
-    ...src.nodeSources
+    ...src.wptToolchainSources
     "browser/**"
     "testing/**"
     "webdriver/**"
