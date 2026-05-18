@@ -388,20 +388,26 @@ class NetworkModule(_CommandProxy):
 
     async def continue_response(self, request: str, **kwargs):
         request_id = self._validate_request_id(request)
-        params: dict[str, Any] = {
-            "request": request_id,
-            "mode": "continueResponse",
-        }
+        # Phase 2 PR B: send the spec-conformant method name. The server now
+        # routes `network.continueResponse` to the shared
+        # `handle_network_continue_blocked_response` handler with
+        # `mode: "continueResponse"` injected.
+        params: dict[str, Any] = {"request": request_id}
         for key, value in kwargs.items():
             params[key] = value
-        await self._command("network.continueBlockedResponse", params)
+        await self._command("network.continueResponse", params)
         return {}
 
     async def fail_request(self, request: str):
         request_id = self._validate_request_id(request)
+        # Phase 2 PR B: send the spec-conformant method name. The server now
+        # routes `network.failRequest` to the same handler as the internal
+        # alias `network.failBlockedRequest`. The handler defaults
+        # `errorText` to `"Request failed"` when omitted, so the spec call
+        # site can leave it out (matching the spec).
         await self._session.command(
-            "network.failBlockedRequest",
-            {"request": request_id, "errorText": "Request failed"},
+            "network.failRequest",
+            {"request": request_id},
         )
         return {}
 
@@ -417,14 +423,15 @@ class NetworkModule(_CommandProxy):
 
     async def provide_response(self, request: str, **kwargs):
         request_id = self._validate_request_id(request)
-        params: dict[str, Any] = {
-            "request": request_id,
-            "mode": "provideResponse",
-        }
+        # Phase 2 PR B: send the spec-conformant method name. The server now
+        # routes `network.provideResponse` to the shared
+        # `handle_network_continue_blocked_response` handler with
+        # `mode: "provideResponse"` injected.
+        params: dict[str, Any] = {"request": request_id}
         for key, value in kwargs.items():
             params[key] = value
 
-        await self._command("network.continueBlockedResponse", params)
+        await self._command("network.provideResponse", params)
         return {}
 
     async def add_data_collector(self, **kwargs):
