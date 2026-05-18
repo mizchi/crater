@@ -833,10 +833,10 @@ scenarios {
     id = "bug.bidi.navigate-http-url-not-parsed"
     name = "BiDi navigate to http URL does not populate the runtime document"
     description =
-      "PR #137 made browsingContext.navigate { wait: complete } actually await __loadPageWithScripts for http URLs, but the production navigation pipeline does not invoke __loadPageWithScripts for non-data URLs in the first place. After navigate to http://127.0.0.1:.../login resolves successfully, the BiDi runtime document mock is still about:blank with the default <div id='root'></div> shell — document.forms is empty. Bridging shell-side navigation_fetch results into the BiDi runtime mock is the missing piece. Source: PR #138 (Phase 5 form-based e2e attempt) — the e2e test poll loop never observes any body change after navigate."
+      "PR #137 made browsingContext.navigate { wait: complete } actually await __loadPageWithScripts for http URLs, but the production navigation pipeline does not invoke __loadPageWithScripts for non-data URLs in the first place. After navigate to http://127.0.0.1:.../login resolves successfully, the BiDi runtime document mock is still about:blank with the default <div id='root'></div> shell — document.forms is empty. Root cause fixed in PR #138 follow-up: navigate_and_send_async was not priming the JS runtime before invoking js_navigate_and_send_async, so __loadPageWithScripts was never installed (silent missing-loader path). The missing-loader branch now also surfaces an explicit error. Bridging shell-side navigation_fetch results into the BiDi runtime mock may still be needed for full document population, but the priming gap is closed."
     tags { "bidi"; "navigation"; "runtime"; "bug" }
     severity = "major"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.protocol-compat"; "goal.dom-compat" }
   }
   new {
