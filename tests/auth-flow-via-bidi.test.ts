@@ -583,6 +583,88 @@ test.describe("auth flow via BiDi (Cookie + Authorization coexistence)", () => {
   });
 });
 
+test.describe("auth flow via BiDi (cross-origin redirect strips Authorization)", () => {
+  test("Authorization is dropped when a redirect crosses origins", async () => {
+    // Fetch spec §4.4.4 step 13 deletes CORS non-wildcard request-headers
+    // (including Authorization) when an HTTP redirect crosses origins. The
+    // fixture-level vitest at scripts/fixtures/auth-server.test.ts proves
+    // undici does the right thing in isolation; this case proves Crater's
+    // BiDi runtime fetch shim doesn't accidentally undo that — i.e. the
+    // header registered via crater.setOriginAuthorization for the app
+    // origin must NOT travel along on the api-origin hop after the 302.
+    const fixture = await startAuthServer();
+    const session = await connectCraterBidi();
+    try {
+      const rememberResp = await session.raw.send(
+        "script.rememberSyntheticLocationHref",
+        { context: session.contextId, href: `${fixture.url}/login` },
+      );
+      expect(
+        rememberResp.type,
+        `rememberSyntheticLocationHref: ${rememberResp.error ?? rememberResp.message}`,
+      ).toBe("success");
+
+      // Register a Bearer for the APP origin only. After the 302 to the api
+      // origin, undici must strip it; no api-origin Bearer is registered,
+      // so the api server's /api/echo-auth should see authorization=null.
+      const setAuthResp = await session.raw.send(
+        "crater.setOriginAuthorization",
+        {
+          origin: fixture.url,
+          // secretlint-disable-next-line @secretlint/secretlint-rule-pattern
+          headerValue: "Bearer should-be-stripped-on-redirect",
+          context: session.contextId,
+        },
+      );
+      expect(
+        setAuthResp.type,
+        `crater.setOriginAuthorization: ${setAuthResp.error ?? setAuthResp.message}`,
+      ).toBe("success");
+
+      await session.script.evaluate({
+        expression: `globalThis.__setRequestSandbox({ mode: 'open' }); null`,
+        awaitPromise: false,
+      });
+
+      // Fetch the app's /redirect-cross-origin endpoint, which 302s to
+      // ${api}/api/echo-auth. The echo endpoint reports back what it saw.
+      const echoJson = await session.script.evaluate<string>({
+        expression: `(async () => {
+          const r = await fetch(${JSON.stringify(`${fixture.url}/redirect-cross-origin`)});
+          const body = await r.text();
+          return JSON.stringify({ status: r.status, body });
+        })()`,
+        awaitPromise: true,
+      });
+      const echo = JSON.parse(echoJson) as { status: number; body: string };
+      expect(
+        echo.status,
+        `redirect echo response: ${JSON.stringify(echo)}`,
+      ).toBe(200);
+      const echoBody = JSON.parse(echo.body) as {
+        cookie: string | null;
+        authorization: string | null;
+      };
+      expect(
+        echoBody.authorization,
+        `expected api origin to see no Authorization after redirect, got ${JSON.stringify(echoBody)}`,
+      ).toBeNull();
+    } finally {
+      try {
+        await session.script.evaluate({
+          expression: `globalThis.__setRequestSandbox({ mode: 'same-origin' }); null`,
+          awaitPromise: false,
+        });
+      } catch {
+        // ignore
+      }
+      await session.end();
+      await fixture.stop();
+      await fixture.apiStop();
+    }
+  });
+});
+
 test.describe("auth flow via BiDi (token expiration recovery)", () => {
   test("Token expiration: detect 401 and re-register", async () => {
     // Mark the registered Bearer as expired on the server, fetch and see

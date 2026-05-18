@@ -85,12 +85,30 @@ function handleApp(
   req: IncomingMessage,
   res: ServerResponse,
   sessions: Map<string, string>,
+  apiUrl: string,
 ): Promise<void> {
   return (async () => {
     const url = new URL(req.url ?? "/", `http://${req.headers.host}`);
     if (url.pathname === "/login" && req.method === "GET") {
       res.writeHead(200, { "content-type": "text/html" });
       res.end(loginPageHtml());
+      return;
+    }
+    if (url.pathname === "/redirect-cross-origin") {
+      res.writeHead(302, { location: `${apiUrl}/api/echo-auth` });
+      res.end();
+      return;
+    }
+    if (url.pathname === "/redirect-same-origin") {
+      res.writeHead(302, { location: "/app-echo-auth" });
+      res.end();
+      return;
+    }
+    if (url.pathname === "/app-echo-auth") {
+      const auth = req.headers["authorization"] ?? "";
+      const cookie = req.headers["cookie"] ?? "";
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ authorization: String(auth), cookie: String(cookie) }));
       return;
     }
     if (url.pathname === "/login" && req.method === "POST") {
@@ -313,19 +331,24 @@ export async function startAuthServer(opts: StartOptions = {}): Promise<StartRes
   // startAuthServer call so parallel tests can't leak revocation state.
   const expiredTokens = new Set<string>();
 
-  const appServer = http.createServer((req, res) => {
-    handleApp(req, res, sessions).catch(() => res.end());
-  });
-  await new Promise<void>(r => appServer.listen(opts.port ?? 0, "127.0.0.1", r));
-  const appPort = (appServer.address() as AddressInfo).port;
-  const appUrl = `http://127.0.0.1:${appPort}`;
-
+  // Start the API server FIRST so its URL is known before the app server's
+  // /redirect-cross-origin handler is wired up.
+  const expiredTokensRef = expiredTokens;
+  let appUrlForApi = ""; // bound after appServer listens
   const apiServer = http.createServer((req, res) =>
-    handleApi(req, res, appUrl, sessions, expiredTokens),
+    handleApi(req, res, appUrlForApi, sessions, expiredTokensRef),
   );
   await new Promise<void>(r => apiServer.listen(opts.apiPort ?? 0, "127.0.0.1", r));
   const apiPort = (apiServer.address() as AddressInfo).port;
   const apiUrl = `http://127.0.0.1:${apiPort}`;
+
+  const appServer = http.createServer((req, res) => {
+    handleApp(req, res, sessions, apiUrl).catch(() => res.end());
+  });
+  await new Promise<void>(r => appServer.listen(opts.port ?? 0, "127.0.0.1", r));
+  const appPort = (appServer.address() as AddressInfo).port;
+  const appUrl = `http://127.0.0.1:${appPort}`;
+  appUrlForApi = appUrl;
 
   // The shadow server is only spun up when a test passes `shadowPort`
   // (including `0` for ephemeral). Tests that don't need a 3rd origin get
