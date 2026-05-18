@@ -5,7 +5,7 @@
 /// already supplied an `Authorization` header.
 pub(all) struct AuthState {
   mut origin_headers : Map[String, String]
-} derive(Debug)
+}
 
 ///|
 /// Show impl deliberately redacts header values; only origins are

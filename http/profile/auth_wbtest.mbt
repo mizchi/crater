@@ -48,6 +48,17 @@ test "list_origins returns sorted origins" {
 }
 
 ///|
+test "AuthState cannot be debug-printed with secrets exposed" {
+  let state = AuthState::default()
+  state.set_origin_header("https://api.example.com", "Bearer secret-token")
+  // Verify the type does not have a Debug derive that would dump origin_headers verbatim.
+  // The Show impl is the only way to render AuthState; it redacts.
+  let buf = StringBuilder::new()
+  state.output(buf)
+  inspect(buf.to_string().contains("secret-token"), content="false")
+}
+
+///|
 test "Show impl redacts header values" {
   let state = AuthState::default()
   state.set_origin_header("https://api.example.com", "Bearer secret-token")

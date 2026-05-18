@@ -5,7 +5,6 @@ import {
   "mizchi/crater-browser-http/cache",
   "mizchi/crater-browser-http/cookie_jar",
   "mizchi/crater-browser-http/cors",
-  "moonbitlang/core/debug",
 }
 
 // Values
@@ -15,7 +14,7 @@ import {
 // Types and methods
 pub(all) struct AuthState {
   mut origin_headers : Map[String, String]
-} derive(@debug.Debug)
+}
 pub fn AuthState::clear_origin_header(Self, String) -> Unit
 pub fn AuthState::default() -> Self
 pub fn AuthState::header_for_origin(Self, String) -> String?
