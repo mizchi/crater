@@ -813,20 +813,20 @@ scenarios {
     id = "bug.runtime.fetch-no-partition-cookies"
     name = "Runtime fetch in script.evaluate does not attach partition cookies"
     description =
-      "Runtime fetch() invoked from script.evaluate does not auto-attach cookies from the current storage partition. storage.setCookie + resolveRequestCookies correctly resolves the partition jar, but the actual fetch('/x') request goes out without a Cookie header unless the caller passes headers: { cookie: ... } explicitly. Blocks Tasks 22/23 charter (session-attached fetch from page script). Source: PR #132 Phase 5 e2e attempt; security review item adjacent to I3."
+      "Runtime fetch() invoked from script.evaluate does not auto-attach cookies from the current storage partition. storage.setCookie + resolveRequestCookies correctly resolves the partition jar, but the actual fetch('/x') request goes out without a Cookie header unless the caller passes headers: { cookie: ... } explicitly. Blocks Tasks 22/23 charter (session-attached fetch from page script). Source: PR #132 Phase 5 e2e attempt; security review item adjacent to I3. Fixed: BidiProtocol::cookies_for_context_full_json + set_runtime_context_cookies push a per-context cookie snapshot into the JS realm; the fetch shim's globalThis.__bidiResolveCookies bridge filters by URL on each call and injects the Cookie header when the caller has not supplied one."
     tags { "runtime"; "fetch"; "cookies"; "bidi"; "bug"; "phase5" }
     severity = "major"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.dom-compat"; "goal.protocol-compat" }
   }
   new {
     id = "bug.runtime.fetch-no-cors-gate"
     name = "Runtime fetch in script.evaluate bypasses script_fetch_with_cors"
     description =
-      "Runtime fetch() invoked from script.evaluate does not route through browser/shell/script_fetch.mbt's script_fetch_with_cors, so the Phase 1-4 CORS classify / preflight / validate gate only governs <script src> loading and not WebDriver-driven fetch(). Cross-origin CORS enforcement from script-level fetch is therefore unimplemented. Source: PR #132 Phase 5 e2e attempt."
+      "Runtime fetch() invoked from script.evaluate does not route through browser/shell/script_fetch.mbt's script_fetch_with_cors, so the Phase 1-4 CORS classify / preflight / validate gate only governs <script src> loading and not WebDriver-driven fetch(). Cross-origin CORS enforcement from script-level fetch is therefore unimplemented. Source: PR #132 Phase 5 e2e attempt. Fixed: the JS-side fetch shim now sends OPTIONS preflight for non-simple cross-origin requests (non-GET/HEAD/POST methods or any header outside the CORS-safelisted set) and validates ACA-Origin / ACA-Methods / ACA-Headers on the response before dispatching the actual request."
     tags { "runtime"; "fetch"; "cors"; "bidi"; "bug"; "phase5" }
     severity = "major"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.dom-compat" }
   }
 
@@ -892,5 +892,35 @@ scenarios {
     severity = "minor"
     reviewStatus = "draft"
     contributes { "goal.ci-efficiency"; "goal.paint-accuracy" }
+  }
+  new {
+    id = "bug.runtime.fetch-preflight-cache-not-shared"
+    name = "BiDi runtime preflight is not cached"
+    description =
+      "The BiDi runtime fetch shim sends OPTIONS preflight for every non-simple cross-origin request and never reuses the result. Phase 1-4's PreflightCache (http/cors/cors.mbt PreflightCache::get_or_validate with Max-Age clamp) is MoonBit-side and not bridged to the JS runtime. Repeat POSTs to the same endpoint pay the RTT every time. Follow-up from PR #135 / #136 review."
+    tags { "runtime"; "cors"; "preflight"; "performance" }
+    severity = "minor"
+    reviewStatus = "draft"
+    contributes { "goal.dom-compat"; "goal.ci-efficiency" }
+  }
+  new {
+    id = "bug.runtime.fetch-install-once-realm-bound"
+    name = "Runtime fetch install-once guard is not realm-bound"
+    description =
+      "globalThis.__bidiFetchShimInstalled prevents double-wrapping the fetch shim but is keyed at the realm scope. If a browsingContext.create / destroy cycle ever reuses the same JS realm, the second session would inherit the flag without re-wrapping. Today the guard pairs with __rawFetch reassignment so behavior is fine, but the invariant is unwritten. Follow-up from PR review of commits a2959be / 3fc3b96."
+    tags { "runtime"; "lifecycle" }
+    severity = "minor"
+    reviewStatus = "draft"
+    contributes { "goal.protocol-compat" }
+  }
+  new {
+    id = "bug.runtime.cookie-url-filter-parity"
+    name = "JS-side cookie URL filter mirrors MoonBit without static guard"
+    description =
+      "__bidiResolveCookies in bidi_runtime_context.mbt re-implements the domain/path/secure filtering that storage_cookie_matches_request_url already does on the MoonBit side. Functionally equivalent today, but no test guards the two implementations from diverging. Generate the JS filter from a single source, or add a parity wbtest pair. Follow-up from PR review."
+    tags { "runtime"; "cookies"; "parity" }
+    severity = "minor"
+    reviewStatus = "draft"
+    contributes { "goal.dom-compat" }
   }
 }

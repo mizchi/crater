@@ -37,6 +37,11 @@ fn BidiProtocol::apply_effective_viewport_to_runtime_context(
     get_int_field(screen_area, "availWidth").unwrap_or(width),
     get_int_field(screen_area, "availHeight").unwrap_or(height),
   )
+  // Push the partition cookie snapshot so the runtime fetch shim's
+  // `__bidiResolveCookies` bridge can attach Cookie headers on outbound
+  // fetches. Resolves bug.runtime.fetch-no-partition-cookies.
+  let cookies = self.cookies_for_context_full_json(logical_ctx_id)
+  set_runtime_context_cookies(runtime_ctx_id, Json::array(cookies).stringify())
 }
 
 ///|

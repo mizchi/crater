@@ -1088,6 +1088,92 @@ pub fn set_runtime_context_screen_area(
 }
 
 ///|
+/// Push the partition cookie snapshot for a context into the JS realm and
+/// install (if absent) the `globalThis.__bidiResolveCookies(url)` bridge that
+/// the runtime fetch shim uses to attach a Cookie header. The snapshot is
+/// re-pushed on every script.evaluate via
+/// `apply_effective_viewport_to_runtime_context`, so stale jars between calls
+/// are not a concern.
+extern "js" fn js_set_runtime_context_cookies(
+  ctx_id : String,
+  cookies_json : String,
+) -> Unit =
+  #| (ctxId, cookiesJson) => {
+  #|   if (!globalThis.__bidiContextCookies) {
+  #|     globalThis.__bidiContextCookies = new Map();
+  #|   }
+  #|   let parsed = [];
+  #|   try {
+  #|     const raw = JSON.parse(String(cookiesJson || "[]"));
+  #|     if (Array.isArray(raw)) parsed = raw;
+  #|   } catch (_e) {}
+  #|   globalThis.__bidiContextCookies.set(String(ctxId), parsed);
+  #|   if (typeof globalThis.__bidiResolveCookies !== "function") {
+  #|     const stripLeadingDot = (host) => host && host.charAt(0) === "." ? host.slice(1) : host;
+  #|     const requestHost = (url) => {
+  #|       try { return new URL(url, globalThis.__pageUrl || "about:blank").hostname.toLowerCase(); }
+  #|       catch (_e) { return ""; }
+  #|     };
+  #|     const requestPath = (url) => {
+  #|       try {
+  #|         const path = new URL(url, globalThis.__pageUrl || "about:blank").pathname;
+  #|         return path || "/";
+  #|       } catch (_e) { return "/"; }
+  #|     };
+  #|     const requestScheme = (url) => {
+  #|       try { return new URL(url, globalThis.__pageUrl || "about:blank").protocol; }
+  #|       catch (_e) { return ""; }
+  #|     };
+  #|     const matchDomain = (cookieDomain, host) => {
+  #|       const d = stripLeadingDot(String(cookieDomain || "").toLowerCase());
+  #|       if (d.length === 0) return true;
+  #|       return host === d || host.endsWith("." + d);
+  #|     };
+  #|     const matchPath = (cookiePath, path) => {
+  #|       const cp = String(cookiePath || "/");
+  #|       if (cp.length === 0 || cp === "/") return true;
+  #|       if (path === cp) return true;
+  #|       if (!path.startsWith(cp)) return false;
+  #|       if (cp.endsWith("/")) return true;
+  #|       if (path.length === cp.length) return true;
+  #|       return path.charAt(cp.length) === "/";
+  #|     };
+  #|     globalThis.__bidiResolveCookies = function(url) {
+  #|       try {
+  #|         const ctx = String(globalThis.__bidiCurrentContext || "default-context");
+  #|         const store = globalThis.__bidiContextCookies;
+  #|         if (!store || !store.has(ctx)) return "";
+  #|         const cookies = store.get(ctx) || [];
+  #|         if (!Array.isArray(cookies) || cookies.length === 0) return "";
+  #|         const host = requestHost(url);
+  #|         const path = requestPath(url);
+  #|         const scheme = requestScheme(url);
+  #|         const parts = [];
+  #|         for (const cookie of cookies) {
+  #|           if (!cookie || typeof cookie !== "object") continue;
+  #|           if (cookie.secure && scheme !== "https:") continue;
+  #|           if (!matchDomain(cookie.domain, host)) continue;
+  #|           if (!matchPath(cookie.path, path)) continue;
+  #|           const name = String(cookie.name || "");
+  #|           if (name.length === 0) continue;
+  #|           parts.push(name + "=" + String(cookie.value == null ? "" : cookie.value));
+  #|         }
+  #|         return parts.join("; ");
+  #|       } catch (_e) { return ""; }
+  #|     };
+  #|   }
+  #| }
+
+///|
+/// Push the partition cookie snapshot for `ctx_id` into the JS realm.
+fn set_runtime_context_cookies(
+  ctx_id : String,
+  cookies_json : String,
+) -> Unit {
+  js_set_runtime_context_cookies(ctx_id, cookies_json)
+}
+
+///|
 /// Check if runtime handle exists in current JS handle store.
 extern "js" fn js_has_runtime_handle(handle_id : String) -> Bool =
   #| (handleId) => {

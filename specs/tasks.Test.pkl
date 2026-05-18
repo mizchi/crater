@@ -416,6 +416,26 @@ tests {
       "bash -lc 'set -e; test -f webdriver/webdriver/bidi_runtime_eval.mbt; grep -Fq -- \"get forms() {\" webdriver/webdriver/bidi_runtime_eval.mbt; grep -Fq -- \"const root = this.documentElement;\" webdriver/webdriver/bidi_runtime_eval.mbt; test -f webdriver/webdriver/bidi_runtime_form_wbtest.mbt; grep -Fq -- \"document.forms returns all FORM elements in document order\" webdriver/webdriver/bidi_runtime_form_wbtest.mbt'"
   }
   new {
+    name = "bidi_runtime_fetch_partition_cookie_bridge_wired"
+    description =
+      "The BiDi runtime fetch shim attaches partition cookies via a MoonBit-to-JS bridge. BidiProtocol::cookies_for_context_full_json aggregates the per-context jar; set_runtime_context_cookies pushes the snapshot into the JS realm; the JS shim's globalThis.__bidiResolveCookies(url) filters by URL and the fetch wrap injects the Cookie header when the caller has not supplied one. Covered by webdriver/webdriver/bidi_runtime_fetch_wbtest.mbt."
+    tags { "runtime"; "fetch"; "cookies"; "bidi" }
+    specRef { "bug.runtime.fetch-no-partition-cookies" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; test -f webdriver/webdriver/bidi_storage.mbt; grep -Fq -- \"fn BidiProtocol::cookies_for_context_full_json\" webdriver/webdriver/bidi_storage.mbt; test -f webdriver/webdriver/bidi_runtime_context.mbt; grep -Fq -- \"js_set_runtime_context_cookies\" webdriver/webdriver/bidi_runtime_context.mbt; grep -Fq -- \"fn set_runtime_context_cookies\" webdriver/webdriver/bidi_runtime_context.mbt; grep -Fq -- \"globalThis.__bidiResolveCookies\" webdriver/webdriver/bidi_runtime_context.mbt; test -f webdriver/webdriver/bidi_runtime_eval.mbt; grep -Fq -- \"globalThis.__bidiResolveCookies\" webdriver/webdriver/bidi_runtime_eval.mbt; grep -Fq -- \"set_runtime_context_cookies\" webdriver/webdriver/bidi_protocol_context_lifecycle.mbt; test -f webdriver/webdriver/bidi_runtime_fetch_wbtest.mbt; grep -Fq -- \"fetch shim attaches partition cookies to the actual outbound request\" webdriver/webdriver/bidi_runtime_fetch_wbtest.mbt; grep -Fq -- \"fetch shim respects caller-provided Cookie header over bridge\" webdriver/webdriver/bidi_runtime_fetch_wbtest.mbt'"
+  }
+  new {
+    name = "bidi_runtime_fetch_preflight_dispatch_wired"
+    description =
+      "The BiDi runtime fetch shim sends OPTIONS preflight for non-simple cross-origin requests and validates ACA-Origin / ACA-Methods / ACA-Headers on the response. The wrap short-circuits the Promise.resolve.then chain for same-origin / no-CORS dispatch so simple requests still execute synchronously. Covered by webdriver/webdriver/bidi_runtime_fetch_wbtest.mbt."
+    tags { "runtime"; "fetch"; "cors"; "bidi" }
+    specRef { "bug.runtime.fetch-no-cors-gate" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; test -f webdriver/webdriver/bidi_runtime_eval.mbt; grep -Fq -- \"maybeSendPreflight\" webdriver/webdriver/bidi_runtime_eval.mbt; grep -Fq -- \"corsSafelistedHeaders\" webdriver/webdriver/bidi_runtime_eval.mbt; grep -Fq -- \"Access-Control-Request-Method\" webdriver/webdriver/bidi_runtime_eval.mbt; grep -Fq -- \"Access-Control-Request-Headers\" webdriver/webdriver/bidi_runtime_eval.mbt; grep -Fq -- \"parseCsvAllowList\" webdriver/webdriver/bidi_runtime_eval.mbt; grep -Fq -- \"CORS preflight\" webdriver/webdriver/bidi_runtime_eval.mbt; test -f webdriver/webdriver/bidi_runtime_fetch_wbtest.mbt; grep -Fq -- \"fetch shim sends CORS preflight for non-simple cross-origin requests\" webdriver/webdriver/bidi_runtime_fetch_wbtest.mbt; grep -Fq -- \"fetch shim skips preflight for simple cross-origin GET\" webdriver/webdriver/bidi_runtime_fetch_wbtest.mbt; grep -Fq -- \"fetch shim rejects when preflight omits ACA-Methods\" webdriver/webdriver/bidi_runtime_fetch_wbtest.mbt'"
+  }
+  new {
     name = "bidi_navigate_wait_complete_async_bridge"
     description =
       "browsingContext.navigate { wait: \"complete\" } on http(s) URLs routes through js_navigate_and_send_async — a JS async bridge that awaits __loadPageWithScripts before sending the BiDi success response over the socket. The MoonBit dispatcher detects the http+wait=complete case via should_navigate_via_async_bridge, defers the runtime document load via apply_navigation_commit_state(defer_load: true), and hands the response off to the FFI. Data URL / about:blank / trickle-marker paths keep the existing sync sync_runtime_page path. Covered by webdriver/webdriver/bidi_navigate_wait_wbtest.mbt."

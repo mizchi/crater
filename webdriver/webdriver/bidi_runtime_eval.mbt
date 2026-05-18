@@ -3228,10 +3228,75 @@ extern "js" fn js_evaluate_expression(
   #|       });
   #|     };
   #|
-  #|     // Wrap fetch to track network requests + sandbox/CORS
-  #|     const originalFetch = globalThis.fetch;
-  #|     if (originalFetch) {
+  #|     // Wrap fetch to track network requests + sandbox/CORS.
+  #|     // Install the wrap exactly once per realm; otherwise re-running the
+  #|     // setup script (which happens on every js_evaluate_expression call)
+  #|     // would nest a new wrap around the previous one, eventually leaking
+  #|     // memory and (with the __rawFetch indirection below) recursing.
+  #|     const originalFetch = globalThis.__rawFetch || globalThis.fetch;
+  #|     if (originalFetch && !globalThis.__bidiFetchShimInstalled) {
+  #|       globalThis.__bidiFetchShimInstalled = true;
   #|       globalThis.__rawFetch = originalFetch;
+  #|       // Dispatch each underlying call through __rawFetch so tests (and
+  #|       // any future request-tap layer) can swap the implementation without
+  #|       // re-installing the shim closure.
+  #|       const dispatchRaw = (url, options) => {
+  #|         const target = typeof globalThis.__rawFetch === 'function' ? globalThis.__rawFetch : originalFetch;
+  #|         return target(url, options);
+  #|       };
+  #|       const parseCsvAllowList = (value) => {
+  #|         if (!value) return [];
+  #|         return String(value).split(',').map(s => s.trim()).filter(s => s.length > 0);
+  #|       };
+  #|       const corsSafelistedHeaders = new Set([
+  #|         'accept', 'accept-language', 'content-language', 'content-type',
+  #|       ]);
+  #|       const corsSimpleMethods = new Set(['GET', 'HEAD', 'POST']);
+  #|       const maybeSendPreflight = async (resolvedUrl, mode, method, headersObj, sourceOrigin, targetOrigin) => {
+  #|         if (mode === 'navigate' || mode === 'no-cors') return;
+  #|         if (!sourceOrigin || !targetOrigin || sourceOrigin === targetOrigin) return;
+  #|         const customHeaders = [];
+  #|         headersObj.forEach((_v, key) => {
+  #|           const lower = String(key).toLowerCase();
+  #|           if (corsSafelistedHeaders.has(lower)) return;
+  #|           if (lower === 'origin' || lower === 'user-agent' || lower === 'cookie') return;
+  #|           customHeaders.push(lower);
+  #|         });
+  #|         if (corsSimpleMethods.has(method) && customHeaders.length === 0) return;
+  #|         const preflightHeaders = new Headers();
+  #|         preflightHeaders.set('Origin', sourceOrigin);
+  #|         preflightHeaders.set('Access-Control-Request-Method', method);
+  #|         if (customHeaders.length > 0) {
+  #|           preflightHeaders.set('Access-Control-Request-Headers', customHeaders.slice().sort().join(', '));
+  #|         }
+  #|         let preflightResp;
+  #|         try {
+  #|           preflightResp = await dispatchRaw(resolvedUrl, {
+  #|             method: 'OPTIONS',
+  #|             headers: preflightHeaders,
+  #|             mode: 'cors',
+  #|           });
+  #|         } catch (e) {
+  #|           throw new TypeError('CORS preflight failed: ' + (e && e.message ? e.message : String(e)));
+  #|         }
+  #|         if (preflightResp.status < 200 || preflightResp.status >= 300) {
+  #|           throw new TypeError('CORS preflight: non-2xx status ' + preflightResp.status);
+  #|         }
+  #|         const allowOrigin = preflightResp.headers.get('access-control-allow-origin');
+  #|         if (allowOrigin !== '*' && allowOrigin !== sourceOrigin) {
+  #|           throw new TypeError('CORS preflight: Access-Control-Allow-Origin mismatch');
+  #|         }
+  #|         const allowedMethods = parseCsvAllowList(preflightResp.headers.get('access-control-allow-methods'));
+  #|         if (!allowedMethods.includes(method) && !allowedMethods.includes('*')) {
+  #|           throw new TypeError('CORS preflight: method ' + method + ' not allowed');
+  #|         }
+  #|         const allowedHeaders = parseCsvAllowList(preflightResp.headers.get('access-control-allow-headers')).map(h => h.toLowerCase());
+  #|         for (const h of customHeaders) {
+  #|           if (!allowedHeaders.includes(h) && !allowedHeaders.includes('*')) {
+  #|             throw new TypeError('CORS preflight: header ' + h + ' not allowed');
+  #|           }
+  #|         }
+  #|       };
   #|       const fetchWithPolicy = (url, options, enforceCors) => {
   #|         const resolvedUrl = globalThis.__resolveUrl(url, globalThis.__pageUrl);
   #|         if (globalThis.navigator && globalThis.navigator.onLine === false) {
@@ -3259,11 +3324,22 @@ extern "js" fn js_evaluate_expression(
   #|         if (!headers.has('Accept-Language') && globalThis.navigator && globalThis.navigator.language) {
   #|           headers.set('Accept-Language', String(globalThis.navigator.language));
   #|         }
+  #|         // Attach partition cookies via the MoonBit-side bridge. Caller-set
+  #|         // Cookie header wins; missing bridge or empty jar is a no-op.
+  #|         if (!isNavigation && !headers.has('Cookie') && typeof globalThis.__bidiResolveCookies === 'function') {
+  #|           try {
+  #|             const cookieHeader = globalThis.__bidiResolveCookies(resolvedUrl);
+  #|             if (cookieHeader && cookieHeader.length > 0) {
+  #|               headers.set('Cookie', cookieHeader);
+  #|             }
+  #|           } catch (_e) { /* swallow — no cookies attached */ }
+  #|         }
   #|         reqOptions = { ...reqOptions, headers };
   #|         if (!isNavigation && enforceCors && (mode === 'cors' || mode === 'same-origin') && sourceOrigin && targetOrigin && sourceOrigin !== targetOrigin) {
   #|           if (!headers.has('Origin')) headers.set('Origin', sourceOrigin);
   #|           reqOptions = { ...reqOptions, headers };
   #|         }
+  #|         const methodForPreflight = String((reqOptions.method || 'GET')).toUpperCase();
   #|         let done = false;
   #|         const finish = () => {
   #|           if (done) return;
@@ -3273,7 +3349,7 @@ extern "js" fn js_evaluate_expression(
   #|         };
   #|         globalThis.__activeNetworkRequests++;
   #|         notifyNetworkChange();
-  #|         return originalFetch(resolvedUrl, reqOptions)
+  #|         const sendActual = () => dispatchRaw(resolvedUrl, reqOptions)
   #|           .then(response => {
   #|             if (!isNavigation && enforceCors && mode === 'cors' && sourceOrigin && targetOrigin && sourceOrigin !== targetOrigin) {
   #|               const allowOrigin = response.headers.get('access-control-allow-origin');
@@ -3296,6 +3372,19 @@ extern "js" fn js_evaluate_expression(
   #|             finish();
   #|             throw error;
   #|           });
+  #|         // Detect whether preflight could fire — avoids an extra
+  #|         // microtask hop for the common same-origin / no-CORS case.
+  #|         const isCrossOrigin = !!sourceOrigin && !!targetOrigin && sourceOrigin !== targetOrigin;
+  #|         if (!isNavigation && enforceCors && isCrossOrigin && mode !== 'no-cors') {
+  #|           return Promise.resolve()
+  #|             .then(() => maybeSendPreflight(resolvedUrl, mode, methodForPreflight, headers, sourceOrigin, targetOrigin))
+  #|             .then(sendActual)
+  #|             .catch(error => {
+  #|               finish();
+  #|               throw error;
+  #|             });
+  #|         }
+  #|         return sendActual();
   #|       };
   #|       globalThis.__fetchInternal = function(url, options) {
   #|         return fetchWithPolicy(url, options, false);
