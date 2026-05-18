@@ -358,7 +358,14 @@ class NetworkModule(_CommandProxy):
             if value is None:
                 continue
             params[key] = value
-        return await self._command("network.addInterceptId", params)
+        # Phase 2 PR A: send the spec-conformant method name. The server now
+        # routes `network.addIntercept` to the spec response shape
+        # `{ intercept: "<id>" }`. WPT callers expect a raw id string, so
+        # we extract it here to preserve the existing fixture contract.
+        result = await self._command("network.addIntercept", params)
+        if isinstance(result, Mapping) and "intercept" in result:
+            return result["intercept"]
+        return result
 
     async def remove_intercept(self, intercept: str):
         return await self._command("network.removeIntercept", {"intercept": intercept})
@@ -402,7 +409,10 @@ class NetworkModule(_CommandProxy):
         params = {"request": request, "action": action}
         if credentials is not None:
             params["credentials"] = credentials
-        await self._command("network.continueAuthRequest", params)
+        # Phase 2 PR A: send the spec-conformant method name directly.
+        # The server now routes `network.continueWithAuth` to the same
+        # handler as the internal alias `network.continueAuthRequest`.
+        await self._command("network.continueWithAuth", params)
         return {}
 
     async def provide_response(self, request: str, **kwargs):
