@@ -95,6 +95,8 @@ pub fn input_now_ms() -> Double
 
 pub fn input_set_pointer_event_properties(Double, Double, Double, Double, Double, Double, Double) -> Unit
 
+pub fn navigate_and_send_async(@core.Any, Int, String, String, String) -> Unit
+
 pub fn parse_data_url(String) -> (String, String)?
 
 pub fn parse_method(String) -> @contract.ApiMethod?
