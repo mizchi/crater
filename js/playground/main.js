@@ -1,3 +1,7 @@
+// Side-effect import: must run before anything else so utels' global
+// error listeners are attached before MoonBit bundle eval can throw.
+import { tracker as utelsTracker } from './utels.js';
+
 // Import Crater layout engine (MoonBit compiled to JS)
 import * as crater from '@crater';
 
@@ -33,6 +37,11 @@ function render() {
   } catch (e) {
     jsonOutput.textContent = 'Error: ' + e.message;
     console.error(e);
+    // Locally-caught errors never reach window.error, so forward them to
+    // utels explicitly. The handler render() wraps is where Crater's
+    // MoonBit-side parse / layout panics surface — exactly the path we
+    // most want issue grouping on.
+    utelsTracker?.captureException(e);
   }
 }
 
