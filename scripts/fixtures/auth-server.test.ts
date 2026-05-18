@@ -207,3 +207,48 @@ test("cross-origin /api/me requires ACA-Origin and ACA-Credentials", async () =>
     await apiStop();
   }
 });
+
+test("cross-origin redirect strips Authorization per Fetch spec", async () => {
+  // Per https://fetch.spec.whatwg.org/#http-redirect-fetch step 13: when a
+  // redirect crosses origins, CORS non-wildcard request-header names —
+  // including Authorization — must be deleted from the request before the
+  // follow-up fetch. Node's undici implementation follows this.
+  //
+  // Setup: app server's /redirect-cross-origin returns 302 to the api
+  // server's /api/echo-auth. The echo endpoint reports back the headers
+  // it actually saw, so we can assert that Authorization was dropped on
+  // the redirect hop.
+  const { url, stop, apiStop } = await startAuthServer();
+  try {
+    const response = await fetch(`${url}/redirect-cross-origin`, {
+      headers: { authorization: "Bearer should-be-stripped" },
+      redirect: "follow",
+    });
+    expect(response.status).toBe(200);
+    const echoed = (await response.json()) as { authorization: string | null };
+    // The api server saw no Authorization — Node/undici stripped it across origins.
+    expect(echoed.authorization).toBeNull();
+  } finally {
+    await stop();
+    await apiStop();
+  }
+});
+
+test("same-origin redirect preserves Authorization", async () => {
+  // Companion to the cross-origin strip test: when the redirect target is
+  // on the SAME origin, Authorization must survive. Confirms the strip is
+  // origin-scoped, not blanket.
+  const { url, stop, apiStop } = await startAuthServer();
+  try {
+    const response = await fetch(`${url}/redirect-same-origin`, {
+      headers: { authorization: "Bearer survives-same-origin" },
+      redirect: "follow",
+    });
+    expect(response.status).toBe(200);
+    const echoed = (await response.json()) as { authorization: string | null };
+    expect(echoed.authorization).toBe("Bearer survives-same-origin");
+  } finally {
+    await stop();
+    await apiStop();
+  }
+});
