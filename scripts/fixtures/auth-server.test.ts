@@ -91,6 +91,104 @@ test("GET /api/protected returns 401 with wrong Bearer token", async () => {
   }
 });
 
+test("recordExpiredToken makes /api/protected return 401 token_expired", async () => {
+  const { url, stop, apiUrl, apiStop, recordExpiredToken, forgetExpiredToken } =
+    await startAuthServer({ port: 0, apiPort: 0 });
+  try {
+    // secretlint-disable-next-line @secretlint/secretlint-rule-pattern
+    const token = "Bearer test-jwt-token";
+    recordExpiredToken(token);
+
+    const expired = await fetch(`${apiUrl}/api/protected`, {
+      headers: { authorization: token, origin: url },
+    });
+    expect(expired.status).toBe(401);
+    expect(expired.headers.get("www-authenticate")).toContain("invalid_token");
+    expect(expired.headers.get("content-type")).toContain("application/json");
+    const body = (await expired.json()) as { error: string };
+    expect(body).toEqual({ error: "token_expired" });
+
+    // After forgetting the expired marker, the same token works again.
+    forgetExpiredToken(token);
+    const ok = await fetch(`${apiUrl}/api/protected`, {
+      headers: { authorization: token, origin: url },
+    });
+    expect(ok.status).toBe(200);
+  } finally {
+    await stop();
+    await apiStop();
+  }
+});
+
+test("/api/echo-auth returns received Cookie and Authorization headers", async () => {
+  const { url, stop, apiUrl, apiStop } = await startAuthServer({
+    port: 0,
+    apiPort: 0,
+  });
+  try {
+    const res = await fetch(`${apiUrl}/api/echo-auth`, {
+      headers: {
+        // secretlint-disable-next-line @secretlint/secretlint-rule-pattern
+        authorization: "Bearer test-jwt-token",
+        cookie: "session=s_abc",
+        origin: url,
+      },
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("access-control-allow-origin")).toBe(url);
+    const body = (await res.json()) as { cookie: string | null; authorization: string | null };
+    expect(body.cookie).toBe("session=s_abc");
+    // secretlint-disable-next-line @secretlint/secretlint-rule-pattern
+    expect(body.authorization).toBe("Bearer test-jwt-token");
+  } finally {
+    await stop();
+    await apiStop();
+  }
+});
+
+test("shadow API on optional 3rd port gates on its own Bearer token", async () => {
+  const fixture = await startAuthServer({ port: 0, apiPort: 0, shadowPort: 0 });
+  try {
+    expect(fixture.shadowUrl).not.toBeNull();
+    const ok = await fetch(`${fixture.shadowUrl}/api/v2/data`, {
+      headers: {
+        // secretlint-disable-next-line @secretlint/secretlint-rule-pattern
+        authorization: "Bearer shadow-token-v2",
+        origin: fixture.url,
+      },
+    });
+    expect(ok.status).toBe(200);
+    expect(ok.headers.get("access-control-allow-origin")).toBe(fixture.url);
+    expect(await ok.json()).toEqual({ shadow: true, source: "v2" });
+
+    // The main /api/protected token must NOT unlock the shadow endpoint
+    // — that's the entire point of "multi-origin routing".
+    const wrong = await fetch(`${fixture.shadowUrl}/api/v2/data`, {
+      headers: {
+        // secretlint-disable-next-line @secretlint/secretlint-rule-pattern
+        authorization: "Bearer test-jwt-token",
+        origin: fixture.url,
+      },
+    });
+    expect(wrong.status).toBe(401);
+  } finally {
+    await fixture.stop();
+    await fixture.apiStop();
+    await fixture.shadowStop();
+  }
+});
+
+test("shadowStop is a no-op when shadowPort was not requested", async () => {
+  const fixture = await startAuthServer({ port: 0, apiPort: 0 });
+  try {
+    expect(fixture.shadowUrl).toBeNull();
+    await fixture.shadowStop(); // must not throw
+  } finally {
+    await fixture.stop();
+    await fixture.apiStop();
+  }
+});
+
 test("cross-origin /api/me requires ACA-Origin and ACA-Credentials", async () => {
   const { url, stop, apiUrl, apiStop } = await startAuthServer({ port: 0, apiPort: 0 });
   try {
