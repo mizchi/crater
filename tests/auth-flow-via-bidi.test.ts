@@ -164,3 +164,139 @@ test.describe("auth flow via BiDi (cookie injection)", () => {
     }
   });
 });
+
+test.describe("auth flow via BiDi (Bearer header injection)", () => {
+  test("Bearer flow via crater.setOriginAuthorization", async () => {
+    // Phase 1 e2e for PR #146 (#148): the runtime fetch shim must attach
+    // the registered Authorization header on script-side fetch() to a
+    // matching origin, without the page ever touching the token.
+    const fixture = await startAuthServer();
+    const session = await connectCraterBidi();
+    try {
+      // 1. Pin the active origin to the fixture app server so the runtime
+      //    fetch shim has a non-empty source origin. (Same workaround as the
+      //    cookie test above — browsingContext.navigate doesn't reliably
+      //    fetch the HTML document on the JS target, so we use the synthetic
+      //    location instead. This still drives the runtime down the same
+      //    __bidiResolveAuth path.)
+      const fixtureLandingHref = `${fixture.url}/login`;
+      const rememberResp = await session.raw.send(
+        "script.rememberSyntheticLocationHref",
+        { context: session.contextId, href: fixtureLandingHref },
+      );
+      expect(
+        rememberResp.type,
+        `rememberSyntheticLocationHref: ${rememberResp.error ?? rememberResp.message}`,
+      ).toBe("success");
+
+      // 2. Register the per-origin Authorization header for the API origin
+      //    via raw BiDi. The crater-bidi helper has no typed wrapper for
+      //    this method yet; we send the JSON-RPC frame directly. Shape
+      //    matches webdriver/webdriver/bidi_authorization.mbt
+      //    handle_crater_set_origin_authorization.
+      const setAuthResp = await session.raw.send(
+        "crater.setOriginAuthorization",
+        {
+          origin: fixture.apiUrl,
+          // secretlint-disable-next-line @secretlint/secretlint-rule-pattern
+          headerValue: "Bearer test-jwt-token",
+          context: session.contextId,
+        },
+      );
+      expect(
+        setAuthResp.type,
+        `crater.setOriginAuthorization: ${setAuthResp.error ?? setAuthResp.message}`,
+      ).toBe("success");
+
+      // 3. Confirm the registration surfaces via crater.listOriginAuthorizations
+      //    without leaking the header value (spec §5.3).
+      const listResp = await session.raw.send(
+        "crater.listOriginAuthorizations",
+        { context: session.contextId },
+      );
+      expect(
+        listResp.type,
+        `crater.listOriginAuthorizations: ${listResp.error ?? listResp.message}`,
+      ).toBe("success");
+      const listed = (listResp.result as { origins?: Array<{ origin: string }> }).origins ?? [];
+      expect(
+        listed.some((o) => o.origin === fixture.apiUrl),
+        `expected fixture API origin in listOriginAuthorizations, got ${JSON.stringify(listed)}`,
+      ).toBe(true);
+
+      // 4. Open the request sandbox for cross-origin fetch (app:apiPort is a
+      //    different origin from app:appPort). Without `mode: 'open'` the
+      //    runtime fetch shim blocks cross-origin requests at the preflight
+      //    stage. This mirrors the Playwright adapter, which calls
+      //    __setRequestSandbox({mode:'open'}) on every navigated context
+      //    (see webdriver/playwright/adapter.ts ~3257).
+      await session.script.evaluate({
+        expression: `globalThis.__setRequestSandbox({ mode: 'open' }); null`,
+        awaitPromise: false,
+      });
+
+      // 5. Issue a script-side fetch to the protected endpoint WITHOUT
+      //    setting Authorization in JS. If the shim is wired correctly, the
+      //    header gets attached by __bidiResolveAuth before the request
+      //    hits the network.
+      const protectedJson = await session.script.evaluate<string>({
+        expression: `(async () => {
+          const r = await fetch(${JSON.stringify(`${fixture.apiUrl}/api/protected`)});
+          const body = await r.text();
+          return JSON.stringify({ status: r.status, body });
+        })()`,
+        awaitPromise: true,
+      });
+      const parsed = JSON.parse(protectedJson) as { status: number; body: string };
+      expect(
+        parsed.status,
+        `protected response: ${JSON.stringify(parsed)}`,
+      ).toBe(200);
+      const decoded = JSON.parse(parsed.body) as { user: string; protected: boolean };
+      expect(decoded.user).toBe("alice");
+      expect(decoded.protected).toBe(true);
+
+      // 6. Negative control: after clearing the registration, the same
+      //    fetch must fail with 401. This proves the 200 above was driven
+      //    by the bridge, not by an ambient header.
+      const clearResp = await session.raw.send(
+        "crater.clearOriginAuthorization",
+        { origin: fixture.apiUrl, context: session.contextId },
+      );
+      expect(
+        clearResp.type,
+        `crater.clearOriginAuthorization: ${clearResp.error ?? clearResp.message}`,
+      ).toBe("success");
+      const unauthJson = await session.script.evaluate<string>({
+        expression: `(async () => {
+          const r = await fetch(${JSON.stringify(`${fixture.apiUrl}/api/protected`)});
+          const body = await r.text();
+          return JSON.stringify({ status: r.status, body });
+        })()`,
+        awaitPromise: true,
+      });
+      const unauth = JSON.parse(unauthJson) as { status: number; body: string };
+      expect(
+        unauth.status,
+        `protected response after clear: ${JSON.stringify(unauth)}`,
+      ).toBe(401);
+      expect(unauth.body).toContain("missing or invalid token");
+    } finally {
+      // Reset sandbox mode so subsequent tests on a reused server aren't
+      // affected. The contextId is unique per-test (browsingContext.create
+      // in connectCraterBidi), but the install-once fetch shim flags
+      // persist across contexts.
+      try {
+        await session.script.evaluate({
+          expression: `globalThis.__setRequestSandbox({ mode: 'same-origin' }); null`,
+          awaitPromise: false,
+        });
+      } catch {
+        // ignore — session may already be closing
+      }
+      await session.end();
+      await fixture.stop();
+      await fixture.apiStop();
+    }
+  });
+});

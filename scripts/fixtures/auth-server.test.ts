@@ -43,6 +43,54 @@ test("recordSession seeds a session id that /dashboard accepts", async () => {
   }
 });
 
+test("GET /api/protected returns 200 + JSON with correct Bearer token", async () => {
+  const { url, stop, apiUrl, apiStop } = await startAuthServer({ port: 0, apiPort: 0 });
+  try {
+    const ok = await fetch(`${apiUrl}/api/protected`, {
+      headers: {
+        // secretlint-disable-next-line @secretlint/secretlint-rule-pattern
+        authorization: "Bearer test-jwt-token",
+        origin: url,
+      },
+    });
+    expect(ok.status).toBe(200);
+    expect(ok.headers.get("content-type")).toContain("application/json");
+    expect(ok.headers.get("access-control-allow-origin")).toBe(url);
+    const body = (await ok.json()) as { user: string; protected: boolean };
+    expect(body).toEqual({ user: "alice", protected: true });
+  } finally {
+    await stop();
+    await apiStop();
+  }
+});
+
+test("GET /api/protected returns 401 without Authorization header", async () => {
+  const { stop, apiUrl, apiStop } = await startAuthServer({ port: 0, apiPort: 0 });
+  try {
+    const res = await fetch(`${apiUrl}/api/protected`);
+    expect(res.status).toBe(401);
+    expect(await res.text()).toContain("missing or invalid token");
+  } finally {
+    await stop();
+    await apiStop();
+  }
+});
+
+test("GET /api/protected returns 401 with wrong Bearer token", async () => {
+  const { stop, apiUrl, apiStop } = await startAuthServer({ port: 0, apiPort: 0 });
+  try {
+    const res = await fetch(`${apiUrl}/api/protected`, {
+      // secretlint-disable-next-line @secretlint/secretlint-rule-pattern
+      headers: { authorization: "Bearer wrong-token" },
+    });
+    expect(res.status).toBe(401);
+    expect(await res.text()).toContain("missing or invalid token");
+  } finally {
+    await stop();
+    await apiStop();
+  }
+});
+
 test("cross-origin /api/me requires ACA-Origin and ACA-Credentials", async () => {
   const { url, stop, apiUrl, apiStop } = await startAuthServer({ port: 0, apiPort: 0 });
   try {
