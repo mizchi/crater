@@ -62,6 +62,15 @@ fn BidiProtocol::apply_effective_viewport_to_runtime_context(
     logical_ctx_id,
   )
   set_runtime_context_credentials(runtime_ctx_id, creds_json)
+  // Drain user prompts (alert/confirm/prompt) the page recorded in the
+  // PREVIOUS evaluate, then push the current unhandledPromptBehavior
+  // snapshot so the page's next alert/confirm/prompt resolves with the
+  // right semantics. The drain runs at the start of every evaluate
+  // (apply_effective_viewport runs ahead of js_evaluate_expression), so
+  // there's a one-evaluate delay between an alert call and the
+  // userPromptOpened event — same as the cookie-ingest pattern. (#183)
+  self.flush_pending_user_prompts()
+  self.push_prompt_handlers_snapshot(logical_ctx_id)
 }
 
 ///|

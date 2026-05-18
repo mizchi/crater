@@ -99,6 +99,8 @@ pub fn js_set_runtime_context_authorization(String, String) -> Unit
 
 pub fn js_set_runtime_context_credentials(String, String) -> Unit
 
+pub fn js_set_runtime_prompt_handlers(String) -> Unit
+
 pub fn navigate_and_send_async(@core.Any, Int, String, String, String) -> Unit
 
 pub fn parse_data_url(String) -> (String, String)?
