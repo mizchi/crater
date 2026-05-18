@@ -132,6 +132,43 @@ fn BidiProtocol::handle_browsing_context_navigate(
                 ctx_id,
                 resolved_url,
               )
+            } else if self.should_navigate_via_async_bridge(
+                resolved_url, wait_mode,
+              ) {
+              // HTTP wait=complete: the sync sync_runtime_page() path returns
+              // before __loadPageWithScripts resolves (MoonBit cannot await a
+              // JS Promise across the FFI boundary). Hand the load over to
+              // js_navigate_and_send_async, which awaits the page load in JS
+              // and emits the BiDi success response via socket.send() once
+              // the document is actually loaded. Fixes
+              // bug.bidi.navigate-wait-complete-returns-early.
+              let nav_id = self.complete_navigation_request_with_wait_deferred(
+                request.id,
+                ctx_id,
+                resolved_url,
+                wait_mode,
+                None,
+              )
+              match self.socket {
+                Some(socket) =>
+                  navigate_and_send_async(
+                    socket,
+                    request.id,
+                    ctx_id,
+                    resolved_url,
+                    nav_id,
+                  )
+                None =>
+                  // No socket attached (typically wbtest harness). Fall back
+                  // to the sync path so the test-only outbox observes the
+                  // success response. Production server always has a socket.
+                  self.complete_navigation_request_with_wait_after_deferred(
+                    request.id,
+                    ctx_id,
+                    resolved_url,
+                    nav_id,
+                  )
+              }
             } else {
               self.complete_navigation_request_with_wait(
                 request.id,

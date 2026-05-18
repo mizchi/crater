@@ -24,9 +24,27 @@ fn BidiProtocol::apply_navigation_commit_state(
   url : String,
   navigation_id : String,
 ) -> Unit {
+  self.apply_navigation_commit_state_internal(ctx_id, url, navigation_id, false)
+}
+
+///|
+/// Apply committed navigation state. When `defer_load` is true, the runtime
+/// document load (sync_runtime_page / sync_runtime_html) is skipped — the
+/// caller is responsible for invoking the load and sending the BiDi response
+/// once it resolves. Used for HTTP wait=complete navigations that need the
+/// JS async bridge so script.evaluate sees the loaded document.
+fn BidiProtocol::apply_navigation_commit_state_internal(
+  self : BidiProtocol,
+  ctx_id : String,
+  url : String,
+  navigation_id : String,
+  defer_load : Bool,
+) -> Unit {
   let previous_children = self.context_children.get(ctx_id).unwrap_or([])
   reset_runtime_event_buffers(ctx_id)
-  self.load_data_url_content(ctx_id, url)
+  if !defer_load {
+    self.load_data_url_content(ctx_id, url)
+  }
   let defer_parent_lifecycle = self.collect_iframe_sources(ctx_id).length() > 0
   for child_ctx_id in previous_children {
     let original_opener = self.context_original_opener.get(child_ctx_id)
@@ -82,6 +100,74 @@ fn BidiProtocol::complete_navigation_request_with_wait_and_navigation(
 }
 
 ///|
+/// Variant of complete_navigation_request_with_wait_and_navigation that
+/// defers the runtime document load AND the BiDi success response. The
+/// caller (typically the HTTP wait=complete async path) must subsequently
+/// invoke the load and emit the response when it resolves. Returns the
+/// navigation id so the async sender can include it in its payload.
+fn BidiProtocol::complete_navigation_request_with_wait_deferred(
+  self : BidiProtocol,
+  request_id : Int,
+  ctx_id : String,
+  url : String,
+  wait_mode : String,
+  navigation_id : String?,
+) -> String {
+  let completion = self.build_navigation_completion_internal(
+    request_id, ctx_id, url, wait_mode, navigation_id, true,
+  )
+  completion.navigation_id
+}
+
+///|
+/// Fallback path used when an async bridge call cannot be made (e.g. the
+/// wbtest harness never attaches a socket). Performs the deferred runtime
+/// document load synchronously and emits the BiDi success response into the
+/// outbox so test code observes the same result shape as the production
+/// async path.
+fn BidiProtocol::complete_navigation_request_with_wait_after_deferred(
+  self : BidiProtocol,
+  request_id : Int,
+  ctx_id : String,
+  url : String,
+  navigation_id : String,
+) -> Unit {
+  self.load_data_url_content(ctx_id, url)
+  let result = make_object({
+    "navigation": Json::string(navigation_id),
+    "url": Json::string(url),
+  })
+  self.send_success(request_id, Some(result))
+}
+
+///|
+/// Decide whether navigate should hand off to js_navigate_and_send_async
+/// instead of the broken sync sync_runtime_page() path. Only HTTP(S) URLs
+/// with wait=complete need the async bridge — data:/about:/trickle URLs
+/// already work via the existing sync paths.
+fn BidiProtocol::should_navigate_via_async_bridge(
+  self : BidiProtocol,
+  url : String,
+  wait_mode : String,
+) -> Bool {
+  ignore(self)
+  if wait_mode != "complete" {
+    return false
+  }
+  if !(url.has_prefix("http://") || url.has_prefix("https://")) {
+    return false
+  }
+  // Trickle-marker URLs are WPT test fixtures handled by the existing
+  // sync block-and-respond path; keep them on that path so the in-flight
+  // navigation accounting (register_in_flight_navigation /
+  // apply_navigation_wait_delay) still applies.
+  if is_trickle_navigation_url(url) {
+    return false
+  }
+  true
+}
+
+///|
 fn BidiProtocol::build_navigation_completion(
   self : BidiProtocol,
   request_id : Int,
@@ -89,6 +175,21 @@ fn BidiProtocol::build_navigation_completion(
   url : String,
   wait_mode : String,
   navigation_id : String?,
+) -> NavigationCompletion {
+  self.build_navigation_completion_internal(
+    request_id, ctx_id, url, wait_mode, navigation_id, false,
+  )
+}
+
+///|
+fn BidiProtocol::build_navigation_completion_internal(
+  self : BidiProtocol,
+  request_id : Int,
+  ctx_id : String,
+  url : String,
+  wait_mode : String,
+  navigation_id : String?,
+  defer_load : Bool,
 ) -> NavigationCompletion {
   let nav_id = match navigation_id {
     Some(id) => id
@@ -98,7 +199,7 @@ fn BidiProtocol::build_navigation_completion(
       generated_id
     }
   }
-  self.apply_navigation_commit_state(ctx_id, url, nav_id)
+  self.apply_navigation_commit_state_internal(ctx_id, url, nav_id, defer_load)
   let has_inline_redirect = match resolve_inline_script_redirect_url(url) {
     Some(_) => true
     None => false
