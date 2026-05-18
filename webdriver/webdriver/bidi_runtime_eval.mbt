@@ -847,6 +847,300 @@ extern "js" fn js_evaluate_expression(
   #|       });
   #|     };
   #|
+  #|     // ---- HTML form submission helpers (used by createMockElement('form')) ----
+  #|     const descendsFrom = (node, ancestor) => {
+  #|       let cur = node && (node._parent || node.parentNode || null);
+  #|       while (cur) {
+  #|         if (cur === ancestor) return true;
+  #|         cur = cur._parent || cur.parentNode || null;
+  #|       }
+  #|       return false;
+  #|     };
+  #|     const collectFormControls = (formEl) => {
+  #|       const out = [];
+  #|       const stack = [formEl];
+  #|       const allowed = new Set(['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON']);
+  #|       while (stack.length) {
+  #|         const node = stack.pop();
+  #|         if (!node) continue;
+  #|         const kids = node._children || node.childNodes || [];
+  #|         for (let i = kids.length - 1; i >= 0; i--) stack.push(kids[i]);
+  #|         if (node === formEl) continue;
+  #|         if (node.nodeType !== 1) continue;
+  #|         if (!allowed.has(String(node.tagName || ''))) continue;
+  #|         const attrs = node._attrs || {};
+  #|         if ('disabled' in attrs) continue;
+  #|         const name = attrs.name;
+  #|         if (typeof name !== 'string' || name.length === 0) continue;
+  #|         out.push(node);
+  #|       }
+  #|       return out;
+  #|     };
+  #|     const optionEffectiveValue = (option) => {
+  #|       const oAttrs = option._attrs || {};
+  #|       if (typeof oAttrs.value === 'string') return oAttrs.value;
+  #|       // Fall back to the option's text content (concatenated descendant text).
+  #|       const collectText = (node) => {
+  #|         if (!node) return '';
+  #|         if (node.nodeType === 3) {
+  #|           if (typeof node.data === 'string') return node.data;
+  #|           if (typeof node.nodeValue === 'string') return node.nodeValue;
+  #|           return '';
+  #|         }
+  #|         const kids = node._children || node.childNodes || [];
+  #|         let buf = '';
+  #|         for (let i = 0; i < kids.length; i++) buf += collectText(kids[i]);
+  #|         return buf;
+  #|       };
+  #|       return collectText(option);
+  #|     };
+  #|     const collectSelectOptions = (selectEl) => {
+  #|       const out = [];
+  #|       const stack = [selectEl];
+  #|       while (stack.length) {
+  #|         const node = stack.pop();
+  #|         if (!node) continue;
+  #|         const kids = node._children || node.childNodes || [];
+  #|         for (let i = kids.length - 1; i >= 0; i--) stack.push(kids[i]);
+  #|         if (node === selectEl) continue;
+  #|         if (node.nodeType !== 1) continue;
+  #|         if (String(node.tagName || '') === 'OPTION') out.push(node);
+  #|       }
+  #|       return out;
+  #|     };
+  #|     const controlEffectiveValue = (control) => {
+  #|       const attrs = control._attrs || {};
+  #|       const tag = String(control.tagName || '');
+  #|       const type = String(attrs.type || '').toLowerCase();
+  #|       if (tag === 'INPUT' && (type === 'checkbox' || type === 'radio')) {
+  #|         if (typeof attrs.value === 'string' && attrs.value !== '') return attrs.value;
+  #|         return 'on';
+  #|       }
+  #|       if (tag === 'SELECT') {
+  #|         if (typeof control.value === 'string' && control.value !== '') return control.value;
+  #|         if (typeof attrs.value === 'string' && attrs.value !== '') return attrs.value;
+  #|         const options = collectSelectOptions(control);
+  #|         if (options.length === 0) return '';
+  #|         for (const opt of options) {
+  #|           const oAttrs = opt._attrs || {};
+  #|           if (oAttrs.selected) return optionEffectiveValue(opt);
+  #|         }
+  #|         // HTML default: first option is selected if none marked.
+  #|         return optionEffectiveValue(options[0]);
+  #|       }
+  #|       if (typeof control.value === 'string' && control.value !== '') return control.value;
+  #|       if (typeof attrs.value === 'string') return attrs.value;
+  #|       return '';
+  #|     };
+  #|     const isSubmissionExcluded = (control, submitter) => {
+  #|       const tag = String(control.tagName || '');
+  #|       const type = String((control._attrs && control._attrs.type) || '').toLowerCase();
+  #|       if (tag === 'BUTTON') {
+  #|         // Only the explicit submitter contributes; buttons without type default to submit.
+  #|         if (control === submitter) return false;
+  #|         return true;
+  #|       }
+  #|       if (tag === 'INPUT') {
+  #|         if (type === 'button' || type === 'reset' || type === 'image' || type === 'file') {
+  #|           return control !== submitter;
+  #|         }
+  #|         if (type === 'submit') return control !== submitter;
+  #|         if (type === 'checkbox' || type === 'radio') {
+  #|           return !control._attrs || !control._attrs.checked;
+  #|         }
+  #|       }
+  #|       return false;
+  #|     };
+  #|     const serializeFormDataUrlEncoded = (controls, submitter) => {
+  #|       const parts = [];
+  #|       const enc = (s) => encodeURIComponent(String(s));
+  #|       for (const c of controls) {
+  #|         if (isSubmissionExcluded(c, submitter)) continue;
+  #|         const attrs = c._attrs || {};
+  #|         const name = attrs.name;
+  #|         if (typeof name !== 'string' || name.length === 0) continue;
+  #|         const value = controlEffectiveValue(c);
+  #|         parts.push(enc(name) + '=' + enc(value));
+  #|       }
+  #|       return parts.join('&');
+  #|     };
+  #|     const dispatchFormSubmitEvent = (formEl, submitter) => {
+  #|       const baseEvent = globalThis.__bidiCreateEvent
+  #|         ? globalThis.__bidiCreateEvent('submit', { bubbles: true, cancelable: true })
+  #|         : {
+  #|             type: 'submit',
+  #|             bubbles: true,
+  #|             cancelable: true,
+  #|             defaultPrevented: false,
+  #|             preventDefault() { this.defaultPrevented = true; },
+  #|             stopPropagation() {},
+  #|             stopImmediatePropagation() {},
+  #|           };
+  #|       baseEvent.submitter = submitter || null;
+  #|       if (typeof formEl.dispatchEvent === 'function') {
+  #|         try { formEl.dispatchEvent(baseEvent); } catch (_e) {}
+  #|       }
+  #|       return !baseEvent.defaultPrevented;
+  #|     };
+  #|     const resolveSubmissionUrl = (action) => {
+  #|       const base = (globalThis.location && typeof globalThis.location.href === 'string')
+  #|         ? globalThis.location.href
+  #|         : (globalThis.__pageUrl || 'about:blank');
+  #|       try {
+  #|         return new URL(String(action || ''), base).href;
+  #|       } catch (_e) {
+  #|         return String(action || base);
+  #|       }
+  #|     };
+  #|     // WHATWG "Plan to navigate" filters unsafe URL schemes. We allow the
+  #|     // realistic safe set for a test runtime and explicitly drop anything else
+  #|     // (notably javascript: / vbscript: / other script-evaluating schemes) so a
+  #|     // scripted page cannot navigate via form.action="javascript:...".
+  #|     const isSubmissionSchemeAllowed = (url) => {
+  #|       let proto = '';
+  #|       try {
+  #|         proto = new URL(String(url || '')).protocol;
+  #|       } catch (_e) {
+  #|         return false;
+  #|       }
+  #|       const allowedSchemes = new Set(['http:', 'https:', 'about:', 'blob:', 'data:', 'file:']);
+  #|       return allowedSchemes.has(proto);
+  #|     };
+  #|     const performSubmission = (formEl, submitter) => {
+  #|       try {
+  #|         const attrs = formEl._attrs || {};
+  #|         const actionAttr = (typeof attrs.action === 'string' && attrs.action) ? attrs.action : '';
+  #|         const method = String(attrs.method || 'GET').toUpperCase();
+  #|         let action = resolveSubmissionUrl(actionAttr);
+  #|         if (!isSubmissionSchemeAllowed(action)) {
+  #|           let proto = '';
+  #|           try { proto = new URL(String(action || '')).protocol; } catch (_e) {}
+  #|           if (typeof console !== 'undefined' && console.error) {
+  #|             try { console.error('[bidi] form submission to unsafe scheme:', proto || action); } catch (_e) {}
+  #|           }
+  #|           return;
+  #|         }
+  #|         const controls = collectFormControls(formEl);
+  #|         const serialized = serializeFormDataUrlEncoded(controls, submitter);
+  #|         if (method === 'POST') {
+  #|           const fetchFn = globalThis.__fetchInternal || globalThis.fetch;
+  #|           if (typeof fetchFn === 'function') {
+  #|             const init = {
+  #|               method: 'POST',
+  #|               headers: { 'content-type': 'application/x-www-form-urlencoded' },
+  #|               body: serialized,
+  #|               redirect: 'manual',
+  #|             };
+  #|             try {
+  #|               const p = fetchFn(action, init);
+  #|               if (p && typeof p.then === 'function') {
+  #|                 p.then((response) => {
+  #|                   if (!response) return;
+  #|                   const status = Number(response.status || 0);
+  #|                   if (status >= 300 && status < 400) {
+  #|                     let loc = null;
+  #|                     try { loc = response.headers && response.headers.get && response.headers.get('location'); } catch (_e) {}
+  #|                     if (loc) {
+  #|                       const resolved = resolveSubmissionUrl(loc);
+  #|                       if (globalThis.location) {
+  #|                         try { globalThis.location.href = resolved; } catch (_e) {}
+  #|                       }
+  #|                       globalThis.__pageUrl = resolved;
+  #|                       if (typeof globalThis.__loadPageWithScripts === 'function') {
+  #|                         try {
+  #|                           const rp = globalThis.__loadPageWithScripts(resolved);
+  #|                           if (rp && typeof rp.then === 'function') rp.then(() => {}, () => {});
+  #|                         } catch (_e) {}
+  #|                       } else if (typeof globalThis.__loadPage === 'function') {
+  #|                         try {
+  #|                           const rp = globalThis.__loadPage(resolved);
+  #|                           if (rp && typeof rp.then === 'function') rp.then(() => {}, () => {});
+  #|                         } catch (_e) {}
+  #|                       }
+  #|                     }
+  #|                   } else if (status >= 200 && status < 300) {
+  #|                     try {
+  #|                       const tp = response.text && response.text();
+  #|                       if (tp && typeof tp.then === 'function') {
+  #|                         tp.then((html) => {
+  #|                           if (typeof globalThis.__loadHTML === 'function') {
+  #|                             try { globalThis.__loadHTML(String(html || '')); } catch (_e) {}
+  #|                           }
+  #|                           if (globalThis.location) {
+  #|                             try { globalThis.location.href = action; } catch (_e) {}
+  #|                           }
+  #|                           globalThis.__pageUrl = action;
+  #|                         }, () => {});
+  #|                       }
+  #|                     } catch (_e) {}
+  #|                   }
+  #|                 }, () => {});
+  #|               }
+  #|             } catch (_e) {}
+  #|           }
+  #|           return;
+  #|         }
+  #|         // GET (and any other method) — encode in query string and navigate.
+  #|         let target = action;
+  #|         if (serialized.length > 0) {
+  #|           try {
+  #|             const u = new URL(target);
+  #|             u.search = '?' + serialized;
+  #|             target = u.href;
+  #|           } catch (_e) {
+  #|             const hashIdx = target.indexOf('#');
+  #|             const base = hashIdx >= 0 ? target.slice(0, hashIdx) : target;
+  #|             const frag = hashIdx >= 0 ? target.slice(hashIdx) : '';
+  #|             const qIdx = base.indexOf('?');
+  #|             target = (qIdx >= 0 ? base.slice(0, qIdx) : base) + '?' + serialized + frag;
+  #|           }
+  #|         }
+  #|         if (globalThis.location) {
+  #|           try { globalThis.location.href = target; } catch (_e) {}
+  #|         }
+  #|         globalThis.__pageUrl = target;
+  #|         if (typeof globalThis.__loadPageWithScripts === 'function') {
+  #|           try {
+  #|             const np = globalThis.__loadPageWithScripts(target);
+  #|             if (np && typeof np.then === 'function') np.then(() => {}, () => {});
+  #|           } catch (_e) {}
+  #|         } else if (typeof globalThis.__loadPage === 'function') {
+  #|           try {
+  #|             const np = globalThis.__loadPage(target);
+  #|             if (np && typeof np.then === 'function') np.then(() => {}, () => {});
+  #|           } catch (_e) {}
+  #|         }
+  #|       } catch (_e) {}
+  #|     };
+  #|     const installFormSubmissionMethods = (el) => {
+  #|       el.submit = function() {
+  #|         performSubmission(this, null);
+  #|         return undefined;
+  #|       };
+  #|       el.requestSubmit = function(submitter) {
+  #|         let validatedSubmitter = null;
+  #|         if (submitter !== undefined && submitter !== null) {
+  #|           if (submitter.nodeType !== 1 || !(submitter._parent === this || descendsFrom(submitter, this))) {
+  #|             throw new TypeError("requestSubmit: submitter is not a descendant of this form");
+  #|           }
+  #|           validatedSubmitter = submitter;
+  #|         }
+  #|         const allowed = dispatchFormSubmitEvent(this, validatedSubmitter);
+  #|         if (!allowed) return undefined;
+  #|         performSubmission(this, validatedSubmitter);
+  #|         return undefined;
+  #|       };
+  #|       el.reset = function() {
+  #|         const resetEvent = globalThis.__bidiCreateEvent
+  #|           ? globalThis.__bidiCreateEvent('reset', { bubbles: true, cancelable: true })
+  #|           : null;
+  #|         if (resetEvent && typeof this.dispatchEvent === 'function') {
+  #|           try { this.dispatchEvent(resetEvent); } catch (_e) {}
+  #|         }
+  #|         return undefined;
+  #|       };
+  #|     };
+  #|
   #|     // Minimal Mock DOM for Preact compatibility
   #|     const createMockElement = (tagName) => {
   #|       const lowerTag = String(tagName || "").toLowerCase();
@@ -1443,6 +1737,9 @@ extern "js" fn js_evaluate_expression(
   #|           return toCollection(results, "htmlcollection");
   #|         }
   #|       };
+  #|       if (lowerTag === 'form') {
+  #|         installFormSubmissionMethods(el);
+  #|       }
   #|       return el;
   #|     };
   #|
@@ -2391,6 +2688,20 @@ extern "js" fn js_evaluate_expression(
   #|       },
   #|       getElementsByTagName(tag) { return html.getElementsByTagName(tag); },
   #|       getElementsByClassName(cls) { return html.getElementsByClassName(cls); },
+  #|       get forms() {
+  #|         const out = [];
+  #|         const root = this.documentElement;
+  #|         if (!root) return out;
+  #|         const stack = [root];
+  #|         while (stack.length) {
+  #|           const node = stack.pop();
+  #|           if (!node) continue;
+  #|           if (node.nodeType === 1 && String(node.tagName || '') === 'FORM') out.push(node);
+  #|           const kids = node._children || node.childNodes || [];
+  #|           for (let i = kids.length - 1; i >= 0; i--) stack.push(kids[i]);
+  #|         }
+  #|         return out;
+  #|       },
   #|       execCommand(command) {
   #|         const cmd = String(command || '').toLowerCase();
   #|         if (cmd === 'selectall') return true;

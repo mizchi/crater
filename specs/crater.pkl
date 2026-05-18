@@ -751,21 +751,51 @@ scenarios {
   // -- Auth / CORS / runtime gaps discovered during Phase 5 e2e (PR #132) ----
   new {
     id = "bug.dom.html-form-element-submit-missing"
-    name = "HTMLFormElement.submit and requestSubmit are not exposed"
+    name = "HTMLFormElement.submit and requestSubmit are exposed in the BiDi runtime"
     description =
-      "Crater's DOM JS bindings do not expose HTMLFormElement.prototype.submit() or .requestSubmit(). This blocks form-based login flows driven via BiDi (script.evaluate calling form.submit()) and forces tests to fall back to manual fetch() + window.location reassign. Source: PR #132 Phase 5 e2e attempt."
+      "createMockElement('form') in webdriver/webdriver/bidi_runtime_eval.mbt installs submit(), requestSubmit(submitter?), and reset() on form elements. form.submit() bypasses the submit event (per WHATWG), serializes controls into application/x-www-form-urlencoded, resolves the action relative to globalThis.location, and routes through __loadPageWithScripts / __loadPage (GET) or fetch() with redirect handling (POST). form.requestSubmit dispatches a cancelable 'submit' event with .submitter and honors preventDefault before invoking the submission helper. Covered by webdriver/webdriver/bidi_runtime_form_wbtest.mbt."
     tags { "dom"; "forms"; "bidi"; "bug"; "phase5" }
     severity = "major"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.dom-compat" }
   }
   new {
     id = "bug.dom.document-forms-missing"
-    name = "document.forms HTMLCollection is not exposed"
+    name = "document.forms returns FORM elements in document order via tree walk"
     description =
-      "document.forms (HTMLCollection of all <form> elements in document order) is not exposed on the JS document binding, so scripted form discovery from BiDi cannot work without querySelectorAll. Source: PR #132 Phase 5 e2e attempt."
+      "globalThis.document in webdriver/webdriver/bidi_runtime_eval.mbt exposes a `forms` getter that walks the documentElement subtree iteratively and returns every Element whose tagName is FORM in document order. Scripts driven via BiDi script.evaluate can discover forms without falling back to querySelectorAll('form'). Covered by webdriver/webdriver/bidi_runtime_form_wbtest.mbt."
     tags { "dom"; "forms"; "bug"; "phase5" }
     severity = "major"
+    reviewStatus = "approved"
+    contributes { "goal.dom-compat" }
+  }
+  new {
+    id = "bug.dom.requestSubmit-button-type-not-validated"
+    name = "form.requestSubmit submitter validation does not check button type"
+    description =
+      "requestSubmit(submitter) in webdriver/webdriver/bidi_runtime_eval.mbt currently validates only nodeType === 1 + descendsFrom(form). Per WHATWG, the submitter must additionally be a submit button: either button[type=submit] (default type for <button>) or input[type=submit] / input[type=image]. Today a <button type=button> or <input type=text> passed as submitter is accepted instead of triggering a TypeError. Source: PR review on dom/form-submit, follow-up to bug.dom.html-form-element-submit-missing."
+    tags { "dom"; "forms"; "bidi"; "bug" }
+    severity = "minor"
+    reviewStatus = "draft"
+    contributes { "goal.dom-compat" }
+  }
+  new {
+    id = "bug.dom.form-reset-does-not-clear-values"
+    name = "form.reset fires reset event but does not clear control values"
+    description =
+      "el.reset() installed by createMockElement('form') in webdriver/webdriver/bidi_runtime_eval.mbt dispatches a cancelable 'reset' event, but never iterates form controls to restore them to their default state. Per WHATWG, each resettable control must be reset to its default value: input.defaultValue, select selectedness from the OPTION with the `selected` attribute, textarea.defaultValue, checkbox/radio default checkedness. Source: PR review on dom/form-submit."
+    tags { "dom"; "forms"; "bidi"; "bug" }
+    severity = "minor"
+    reviewStatus = "draft"
+    contributes { "goal.dom-compat" }
+  }
+  new {
+    id = "bug.dom.form-select-multiple-not-supported"
+    name = "form serialization does not handle select multiple"
+    description =
+      "controlEffectiveValue in webdriver/webdriver/bidi_runtime_eval.mbt handles single-select <select> by emitting one name=value pair per element. For <select multiple>, WHATWG specifies one name=value pair per selected option, e.g. tags=a&tags=c. Today only the first selected option (single-select fallback) is emitted, so multi-select forms are serialized incorrectly. Source: PR review on dom/form-submit."
+    tags { "dom"; "forms"; "bidi"; "bug" }
+    severity = "minor"
     reviewStatus = "draft"
     contributes { "goal.dom-compat" }
   }

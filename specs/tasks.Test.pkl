@@ -395,4 +395,24 @@ tests {
     cmd =
       "bash -lc 'set -e; test -f http/samesite/samesite.mbt; grep -Fq -- \"pub fn classify_site_context\" http/samesite/samesite.mbt; grep -Fq -- \"pub fn should_attach_cookie\" http/samesite/samesite.mbt; test -f browser/shell/navigation_fetch.mbt; grep -Fq -- \"navigation_cookie_header\" browser/shell/navigation_fetch.mbt; grep -Fq -- \"is_top_level_navigation=true\" browser/shell/navigation_fetch.mbt; grep -Fq -- \"SameSite enforcement (RFC 6265bis)\" http/cookie_jar/cookie_jar.mbt; test -f http/samesite/samesite_wbtest.mbt; test -f browser/shell/navigation_samesite_wbtest.mbt; test -f http/cookie_jar/cookie_jar_wbtest.mbt; grep -Fq -- \"samesite: Strict cookie blocked on cross-site request\" http/cookie_jar/cookie_jar_wbtest.mbt'"
   }
+  new {
+    name = "bidi_form_submit_methods_exposed"
+    description =
+      "BiDi runtime exposes HTMLFormElement.submit / requestSubmit / reset. createMockElement('form') in webdriver/webdriver/bidi_runtime_eval.mbt installs installFormSubmissionMethods, which serializes controls into application/x-www-form-urlencoded and routes through the existing __loadPageWithScripts / fetch navigation helpers. Covered by webdriver/webdriver/bidi_runtime_form_wbtest.mbt."
+    tags { "dom"; "forms"; "bidi" }
+    specRef { "bug.dom.html-form-element-submit-missing" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; test -f webdriver/webdriver/bidi_runtime_eval.mbt; grep -Fq -- \"installFormSubmissionMethods(el)\" webdriver/webdriver/bidi_runtime_eval.mbt; grep -Fq -- \"const installFormSubmissionMethods = (el)\" webdriver/webdriver/bidi_runtime_eval.mbt; grep -Fq -- \"el.requestSubmit = function\" webdriver/webdriver/bidi_runtime_eval.mbt; grep -Fq -- \"serializeFormDataUrlEncoded\" webdriver/webdriver/bidi_runtime_eval.mbt; test -f webdriver/webdriver/bidi_runtime_form_wbtest.mbt; grep -Fq -- \"form.requestSubmit dispatches submit event and honors preventDefault\" webdriver/webdriver/bidi_runtime_form_wbtest.mbt; grep -Fq -- \"form.submit bypasses submit event listener\" webdriver/webdriver/bidi_runtime_form_wbtest.mbt'"
+  }
+  new {
+    name = "bidi_document_forms_getter_exposed"
+    description =
+      "BiDi runtime document exposes a `forms` getter that walks the documentElement subtree iteratively and returns every Element whose tagName is FORM in document order. Covered by webdriver/webdriver/bidi_runtime_form_wbtest.mbt."
+    tags { "dom"; "forms"; "bidi" }
+    specRef { "bug.dom.document-forms-missing" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; test -f webdriver/webdriver/bidi_runtime_eval.mbt; grep -Fq -- \"get forms() {\" webdriver/webdriver/bidi_runtime_eval.mbt; grep -Fq -- \"const root = this.documentElement;\" webdriver/webdriver/bidi_runtime_eval.mbt; test -f webdriver/webdriver/bidi_runtime_form_wbtest.mbt; grep -Fq -- \"document.forms returns all FORM elements in document order\" webdriver/webdriver/bidi_runtime_form_wbtest.mbt'"
+  }
 }
