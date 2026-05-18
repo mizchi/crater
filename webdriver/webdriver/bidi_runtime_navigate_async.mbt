@@ -76,12 +76,15 @@ extern "js" fn js_navigate_and_send_async(
   #|       errorMsg = "load failed: " + ((e && e.message) ? e.message : String(e));
   #|     }
   #|   } else {
-  #|     // No loader available in this runtime — treat as a no-op success so the
-  #|     // BiDi caller does not hang. Matches js_sync_runtime_page_async's
-  #|     // "missing-loader" branch which previously also returned without error.
+  #|     // No loader available — surface an error so this class of bug fails
+  #|     // loudly. Previously this branch silently returned success=true, which
+  #|     // masked the navigate-http-url-not-parsed bug: the FFI appeared to
+  #|     // succeed but no page was loaded. Now we set success=false so the BiDi
+  #|     // response carries an explicit error and callers can detect the failure.
   #|     globalThis.__pageUrl = url;
   #|     persistContextRuntime();
-  #|     success = true;
+  #|     errorMsg = "runtime loader missing: __loadPageWithScripts and __loadPage are not installed";
+  #|     success = false;
   #|   }
   #|
   #|   const response = success
@@ -116,5 +119,12 @@ pub fn navigate_and_send_async(
   url : String,
   navigation_id : String,
 ) -> Unit {
+  // Prime runtime helpers; mirrors sync_runtime_page (bidi_runtime_document.mbt:125-129).
+  // Without this, the first navigate after reset_runtime_js_state runs before
+  // __loadPageWithScripts is installed (it lives behind js_evaluate_expression's
+  // setup), so the FFI silently falls into the "missing-loader" branch and
+  // returns success without actually fetching the page.
+  // See bug.bidi.navigate-http-url-not-parsed.
+  let _ = evaluate_js_with_console("undefined", false, false, false, "{}")
   js_navigate_and_send_async(socket, request_id, ctx_id, url, navigation_id)
 }

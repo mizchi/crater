@@ -445,4 +445,14 @@ tests {
     cmd =
       "bash -lc 'set -e; test -f webdriver/webdriver/bidi_runtime_navigate_async.mbt; grep -Fq -- \"extern \\\"js\\\" fn js_navigate_and_send_async\" webdriver/webdriver/bidi_runtime_navigate_async.mbt; grep -Fq -- \"await globalThis.__loadPageWithScripts\" webdriver/webdriver/bidi_runtime_navigate_async.mbt; grep -Fq -- \"socket.send(payload)\" webdriver/webdriver/bidi_runtime_navigate_async.mbt; test -f webdriver/webdriver/bidi_protocol_navigation_completion.mbt; grep -Fq -- \"fn BidiProtocol::should_navigate_via_async_bridge\" webdriver/webdriver/bidi_protocol_navigation_completion.mbt; grep -Fq -- \"defer_load : Bool\" webdriver/webdriver/bidi_protocol_navigation_completion.mbt; grep -Fq -- \"complete_navigation_request_with_wait_deferred\" webdriver/webdriver/bidi_protocol_navigation_completion.mbt; test -f webdriver/webdriver/bidi_protocol_browsing_context_navigate_dispatch.mbt; grep -Fq -- \"should_navigate_via_async_bridge\" webdriver/webdriver/bidi_protocol_browsing_context_navigate_dispatch.mbt; grep -Fq -- \"navigate_and_send_async(\" webdriver/webdriver/bidi_protocol_browsing_context_navigate_dispatch.mbt; test -f webdriver/webdriver/bidi_navigate_wait_wbtest.mbt; grep -Fq -- \"bidi navigate wait=complete on http URL takes deferred path\" webdriver/webdriver/bidi_navigate_wait_wbtest.mbt; grep -Fq -- \"bidi navigate wait=complete on data: URL still responds synchronously\" webdriver/webdriver/bidi_navigate_wait_wbtest.mbt'"
   }
+  new {
+    name = "bidi_navigate_http_url_not_parsed_prime_fix"
+    description =
+      "navigate_and_send_async primes the JS runtime via evaluate_js_with_console before invoking js_navigate_and_send_async, matching the pattern sync_runtime_page uses. Without priming, the first navigate after reset_runtime_js_state runs before __loadPageWithScripts is installed, causing the FFI to silently fall into the missing-loader branch. After the fix, the missing-loader branch also surfaces an explicit error instead of a silent success. Covered by webdriver/webdriver/bidi_navigate_wait_wbtest.mbt."
+    tags { "bidi"; "navigation"; "webdriver"; "bug" }
+    specRef { "bug.bidi.navigate-http-url-not-parsed" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; test -f webdriver/webdriver/bidi_runtime_navigate_async.mbt; grep -Fq -- \"evaluate_js_with_console\" webdriver/webdriver/bidi_runtime_navigate_async.mbt; grep -Fq -- \"Prime runtime helpers\" webdriver/webdriver/bidi_runtime_navigate_async.mbt; grep -Fq -- \"runtime loader missing\" webdriver/webdriver/bidi_runtime_navigate_async.mbt; grep -Fq -- \"success = false\" webdriver/webdriver/bidi_runtime_navigate_async.mbt; test -f webdriver/webdriver/bidi_navigate_wait_wbtest.mbt; grep -Fq -- \"navigate_and_send_async missing-loader branch sends error payload\" webdriver/webdriver/bidi_navigate_wait_wbtest.mbt'"
+  }
 }
