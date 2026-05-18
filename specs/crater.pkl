@@ -829,6 +829,36 @@ scenarios {
     reviewStatus = "approved"
     contributes { "goal.dom-compat" }
   }
+  new {
+    id = "bug.bidi.navigate-http-url-not-parsed"
+    name = "BiDi navigate to http URL does not populate the runtime document"
+    description =
+      "PR #137 made browsingContext.navigate { wait: complete } actually await __loadPageWithScripts for http URLs, but the production navigation pipeline does not invoke __loadPageWithScripts for non-data URLs in the first place. After navigate to http://127.0.0.1:.../login resolves successfully, the BiDi runtime document mock is still about:blank with the default <div id='root'></div> shell — document.forms is empty. Bridging shell-side navigation_fetch results into the BiDi runtime mock is the missing piece. Source: PR #138 (Phase 5 form-based e2e attempt) — the e2e test poll loop never observes any body change after navigate."
+    tags { "bidi"; "navigation"; "runtime"; "bug" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.protocol-compat"; "goal.dom-compat" }
+  }
+  new {
+    id = "bug.bidi.form-submit-no-followup-navigation"
+    name = "form.submit in BiDi runtime does not drive a follow-up navigation"
+    description =
+      "PR #135 added form.submit() to the BiDi runtime DOM with URL-encoded body construction and __loadPageWithScripts dispatch. In practice, calling form.submit() from script.evaluate does not produce a document update — the POST + 302 + GET sequence does not flow through the navigation pipeline that updates document.body. Likely the same root cause as bug.bidi.navigate-http-url-not-parsed (BiDi runtime mock vs shell-side navigation are disjoint). Source: PR #138."
+    tags { "bidi"; "form"; "runtime"; "navigation"; "bug" }
+    severity = "major"
+    reviewStatus = "draft"
+    contributes { "goal.dom-compat"; "goal.protocol-compat" }
+  }
+  new {
+    id = "bug.bidi.context-state-leaks-across-tests"
+    name = "BiDi runtime context state leaks across test sessions"
+    description =
+      "Running the existing storage.setCookie + rememberSyntheticLocationHref e2e test changes runtime state such that a subsequent navigate parses HTML correctly, while a standalone form-based test does not. Specifically rememberSyntheticLocationHref appears to leave behind something that makes the next navigate populate document.forms. This is a test-isolation smell that masks bug.bidi.navigate-http-url-not-parsed when the cookie-injection test runs first. Source: PR #138 e2e investigation."
+    tags { "bidi"; "test-isolation"; "bug" }
+    severity = "minor"
+    reviewStatus = "draft"
+    contributes { "goal.protocol-compat" }
+  }
 
   // -- Diagnostic / Tools (issue-driven) -------------------------------------
   new {
