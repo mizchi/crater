@@ -307,6 +307,75 @@ async test "navigate_and_send_async real FFI sends correct payload via stub sock
 }
 
 ///|
+/// Hardening check for the missing-loader branch of js_navigate_and_send_async.
+///
+/// Before hardening (PR #138), the "else" branch that fires when neither
+/// __loadPageWithScripts nor __loadPage is installed silently set success=true.
+/// That masked the bug where the FFI returned a success response without
+/// actually loading anything. After hardening, the branch sets success=false and
+/// populates errorMsg so the BiDi response carries an explicit error.
+///
+/// This test pins that hardened behaviour: it installs a socket, clears both
+/// loaders, calls js_navigate_and_send_async directly (bypassing the priming
+/// call in the MoonBit wrapper), and asserts that the response is an error.
+///
+/// The companion test "navigate_and_send_async real FFI sends correct payload
+/// via stub socket" (above) already exercises the success path through the full
+/// MoonBit wrapper including the priming call. Together they establish:
+/// - missing-loader → error (this test)
+/// - primed runtime + stub loader → success (existing test)
+async test "navigate_and_send_async missing-loader branch sends error payload" {
+  // Use evaluate_js_async to set up the stub socket. This primes the runtime
+  // as a side effect (evaluate_js_with_console installs __loadPageWithScripts
+  // and __loadPage). We clear both immediately after so the FFI body can't find
+  // either loader.
+  reset_runtime_js_state()
+  js_test_stub_socket_reset()
+  let setup_expr =
+    #|(async () => {
+    #|  let resolvePayload = null;
+    #|  const payloadPromise = new Promise((resolve) => { resolvePayload = resolve; });
+    #|  globalThis.__bidiNavAsyncTestSocket = {
+    #|    send(payload) {
+    #|      globalThis.__bidiNavigateTestSent = globalThis.__bidiNavigateTestSent || [];
+    #|      globalThis.__bidiNavigateTestSent.push(String(payload));
+    #|      if (resolvePayload) { const r = resolvePayload; resolvePayload = null; r(String(payload)); }
+    #|    }
+    #|  };
+    #|  return await payloadPromise;
+    #|})()
+  let setup_promise_any = evaluate_js_async(setup_expr)
+  // Remove both loaders so the FFI body has no path to a real load.
+  let remove_expr =
+    #|(function() {
+    #|  delete globalThis.__loadPageWithScripts;
+    #|  delete globalThis.__loadPage;
+    #|})()
+  let _ = evaluate_js(remove_expr)
+  let socket = js_test_get_nav_async_stub_socket()
+  // Call the low-level FFI directly — bypasses the priming call in the
+  // MoonBit navigate_and_send_async wrapper. This reproduces the pre-fix
+  // behaviour: no priming, no loader, missing-loader branch fires.
+  js_navigate_and_send_async(
+    socket, 55, "ctx-y", "http://example.com/missing-loader-test", "nav-55",
+  )
+  let setup_promise : @js_async.Promise[String] = setup_promise_any.cast()
+  let _payload = @js_async.Promise::wait(setup_promise)
+  let sent_json = js_test_stub_socket_sent_json()
+  // After hardening: missing-loader branch emits an error payload.
+  // The error response shape is {id, type, error, message} — it does not
+  // include navigationId, so we check for requestId (55) and the error type.
+  assert_true(
+    sent_json.contains("\"id\":55") || sent_json.contains("\\\"id\\\":55"),
+  )
+  assert_true(
+    sent_json.contains("\\\"type\\\":\\\"error") ||
+    sent_json.contains("\"type\":\"error"),
+  )
+  assert_true(sent_json.contains("runtime loader missing"))
+}
+
+///|
 test "bidi navigate wait=none on http URL still responds immediately" {
   js_test_snapshot_loader()
   js_test_stub_socket_reset()
