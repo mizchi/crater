@@ -45,6 +45,17 @@
       ],
       "quick": true,
       "timeout": 20
+    },
+    "auth": {
+      "description": "HTTP auth / Basic challenge / continueWithAuth Phase 2 driver",
+      "targets": [
+        "network/auth_required",
+        "network/continue_with_auth",
+        "network/add_intercept/phase_auth_required.py",
+        "network/continue_response/credentials.py"
+      ],
+      "quick": false,
+      "timeout": 60
     }
   }
 }
