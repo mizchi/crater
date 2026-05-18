@@ -843,10 +843,10 @@ scenarios {
     id = "bug.bidi.form-submit-no-followup-navigation"
     name = "form.submit in BiDi runtime does not drive a follow-up navigation"
     description =
-      "PR #135 added form.submit() to the BiDi runtime DOM with URL-encoded body construction and __loadPageWithScripts dispatch. In practice, calling form.submit() from script.evaluate does not produce a document update — the POST + 302 + GET sequence does not flow through the navigation pipeline that updates document.body. Likely the same root cause as bug.bidi.navigate-http-url-not-parsed (BiDi runtime mock vs shell-side navigation are disjoint). Source: PR #138."
-    tags { "bidi"; "form"; "runtime"; "navigation"; "bug" }
+      "PR #135 added form.submit() to the BiDi runtime DOM with URL-encoded body construction and __loadPageWithScripts dispatch. The dispatch itself worked; what failed was the inbound cookie pipeline. PR #136 added the OUTBOUND __bidiResolveCookies bridge that attaches partition cookies to fetch requests, but the symmetric INBOUND path was missing — Set-Cookie headers on responses were silently dropped, so POST /login + 302 + Set-Cookie + GET /dashboard followed the redirect with no Cookie attached and got a 401 from the auth server. Fixed by adding BidiProtocol::persist_cookies_from_response and the __bidiPendingCookieIngest buffer drained on every script.evaluate via apply_effective_viewport_to_runtime_context. Covered by webdriver/webdriver/bidi_runtime_set_cookie_ingest_wbtest.mbt."
+    tags { "bidi"; "form"; "runtime"; "navigation"; "cookies"; "bug" }
     severity = "major"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.dom-compat"; "goal.protocol-compat" }
   }
   new {

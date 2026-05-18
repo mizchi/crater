@@ -37,6 +37,13 @@ fn BidiProtocol::apply_effective_viewport_to_runtime_context(
     get_int_field(screen_area, "availWidth").unwrap_or(width),
     get_int_field(screen_area, "availHeight").unwrap_or(height),
   )
+  // Drain any inbound Set-Cookie observations the fetch shim has recorded
+  // since the last sync point, BEFORE we push the outbound snapshot. This
+  // way the snapshot we push includes cookies that were just persisted
+  // from prior fetch responses (e.g. POST /login -> 302 + Set-Cookie ->
+  // GET /dashboard with the new session cookie). Resolves
+  // bug.bidi.form-submit-no-followup-navigation.
+  self.flush_pending_cookie_ingest()
   // Push the partition cookie snapshot so the runtime fetch shim's
   // `__bidiResolveCookies` bridge can attach Cookie headers on outbound
   // fetches. Resolves bug.runtime.fetch-no-partition-cookies.

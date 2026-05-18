@@ -1827,3 +1827,123 @@ fn BidiProtocol::try_handle_synthetic_document_cookie_eval(
     None => false
   }
 }
+
+///|
+/// Persist Set-Cookie response headers from an outbound fetch into the
+/// partition cookie jar, scoped to `ctx_id`'s user context. Each entry in
+/// `set_cookie_headers` is the raw `Set-Cookie` header value (no name=
+/// prefix; just the cookie definition like
+/// `sid=abc; Path=/; HttpOnly; SameSite=Lax`). Mirrors what the network
+/// pipeline does in `bidi_network_continue_response.mbt` for intercepted
+/// responses, but flows from the fetch shim's response handler.
+///
+/// Closes `bug.bidi.form-submit-no-followup-navigation`: POST /login
+/// returns 302 + Set-Cookie, the fetch shim follows the redirect to
+/// /dashboard, but the follow-up GET had no Cookie attached because the
+/// inbound Set-Cookie was being discarded. Outbound resolution was already
+/// in place via `__bidiResolveCookies`; this is the inbound counterpart.
+fn BidiProtocol::persist_cookies_from_response(
+  self : BidiProtocol,
+  ctx_id : String,
+  request_url : String,
+  set_cookie_headers : Array[String],
+) -> Unit {
+  if set_cookie_headers.length() == 0 {
+    return
+  }
+  let base_url = if request_url.length() > 0 {
+    request_url
+  } else {
+    self.get_context_cookie_base_url(ctx_id)
+  }
+  let user_context = self.resolve_storage_user_context(ctx_id)
+  let source_origin = storage_cookie_origin_from_base_url(base_url)
+  let now = storage_now_seconds()
+  for header_value in set_cookie_headers {
+    let parsed = match
+      @crater_network.synthetic_network_parse_set_cookie_header_value(
+        header_value, base_url, now,
+      ) {
+      Some(cookie) => cookie
+      None => continue
+    }
+    let stored : StoredCookie = {
+      name: parsed.name,
+      value_text: parsed.value_text,
+      domain: parsed.domain,
+      domain_explicit: parsed.domain_explicit,
+      path: parsed.path,
+      http_only: parsed.http_only,
+      secure: parsed.secure,
+      same_site: parsed.same_site,
+      expiry: parsed.expiry,
+      context_id: Some(ctx_id),
+      user_context: Some(user_context),
+      source_origin,
+    }
+    match stored.expiry {
+      Some(expiry) =>
+        if expiry <= now {
+          self.delete_matching_storage_cookie_identity(
+            stored.context_id,
+            stored.user_context,
+            stored.source_origin,
+            stored.name,
+            stored.domain,
+            stored.path,
+          )
+        } else {
+          self.store_storage_cookie(stored)
+        }
+      None => self.store_storage_cookie(stored)
+    }
+  }
+}
+
+///|
+/// Drain the JS-side `__bidiPendingCookieIngest` buffer and persist each
+/// recorded Set-Cookie observation into the partition jar. Called from
+/// `apply_effective_viewport_to_runtime_context` so every script.evaluate
+/// boundary catches cookies that the fetch shim recorded since the last
+/// evaluate. Mirrors the outbound-snapshot push pattern used by
+/// `set_runtime_context_cookies`.
+fn BidiProtocol::flush_pending_cookie_ingest(self : BidiProtocol) -> Unit {
+  let drained = drain_pending_cookie_ingest()
+  if drained.length() == 0 {
+    return
+  }
+  let parsed = @json.parse(drained) catch { _ => return }
+  let entries = match parsed {
+    Json::Array(items) => items
+    _ => return
+  }
+  for entry in entries {
+    let map = match entry {
+      Json::Object(map) => map
+      _ => continue
+    }
+    let ctx_id = match map.get("ctx") {
+      Some(Json::String(value)) => value
+      _ => continue
+    }
+    if !self.manager.has_session(ctx_id) {
+      continue
+    }
+    let request_url = match map.get("url") {
+      Some(Json::String(value)) => value
+      _ => ""
+    }
+    let headers : Array[String] = []
+    match map.get("cookies") {
+      Some(Json::Array(items)) =>
+        for item in items {
+          match item {
+            Json::String(value) => headers.push(value)
+            _ => ()
+          }
+        }
+      _ => ()
+    }
+    self.persist_cookies_from_response(ctx_id, request_url, headers)
+  }
+}

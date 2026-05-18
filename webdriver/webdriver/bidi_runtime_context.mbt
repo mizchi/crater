@@ -1171,6 +1171,29 @@ fn set_runtime_context_cookies(ctx_id : String, cookies_json : String) -> Unit {
 }
 
 ///|
+/// Drain the `globalThis.__bidiPendingCookieIngest` buffer and return its
+/// contents as JSON. The buffer is the fetch shim's record of inbound
+/// `Set-Cookie` response headers; MoonBit calls this at every
+/// `apply_effective_viewport_to_runtime_context` to ingest those cookies
+/// back into the partition jar. Returns `"[]"` when the buffer is missing
+/// or empty so MoonBit can use a single shape for both paths.
+extern "js" fn js_drain_pending_cookie_ingest() -> String =
+  #| () => {
+  #|   const buf = globalThis.__bidiPendingCookieIngest;
+  #|   if (!Array.isArray(buf) || buf.length === 0) return "[]";
+  #|   const out = JSON.stringify(buf);
+  #|   globalThis.__bidiPendingCookieIngest = [];
+  #|   return out;
+  #| }
+
+///|
+/// Drain the pending cookie ingest buffer to a JSON string. Each entry is
+/// `{url, cookies: [setCookieHeaderValue, ...], ctx}`.
+fn drain_pending_cookie_ingest() -> String {
+  js_drain_pending_cookie_ingest()
+}
+
+///|
 /// Check if runtime handle exists in current JS handle store.
 extern "js" fn js_has_runtime_handle(handle_id : String) -> Bool =
   #| (handleId) => {
