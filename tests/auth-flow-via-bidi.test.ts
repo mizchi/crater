@@ -33,6 +33,8 @@
 
 import { expect, test } from "@playwright/test";
 import {
+  DIGEST_PASSWORD,
+  DIGEST_USERNAME,
   REFRESHED_ACCESS_TOKEN,
   REFRESH_TOKEN,
   startAuthServer,
@@ -928,6 +930,191 @@ test.describe("auth flow via BiDi (OAuth refresh-token flow)", () => {
       } catch {
         // ignore
       }
+      try {
+        await session.script.evaluate({
+          expression: `globalThis.__setRequestSandbox({ mode: 'same-origin' }); null`,
+          awaitPromise: false,
+        });
+      } catch {
+        // ignore
+      }
+      await session.end();
+      await fixture.stop();
+      await fixture.apiStop();
+    }
+  });
+});
+
+test.describe("auth flow via BiDi (HTTP Digest auto-retry)", () => {
+  test("crater.setOriginCredentials drives a 401 Digest retry to 200", async () => {
+    // End-to-end Digest auto-retry: register credentials via the new
+    // crater.setOriginCredentials BiDi command, fetch /digest/protected
+    // from inside the BiDi runtime, and assert the response was 200 —
+    // proving the shim parsed the challenge, computed the response, and
+    // retried the request with Authorization: Digest attached, all
+    // without the page touching the credentials.
+    const fixture = await startAuthServer();
+    const session = await connectCraterBidi();
+    try {
+      const rememberResp = await session.raw.send(
+        "script.rememberSyntheticLocationHref",
+        { context: session.contextId, href: `${fixture.url}/login` },
+      );
+      expect(
+        rememberResp.type,
+        `rememberSyntheticLocationHref: ${rememberResp.error ?? rememberResp.message}`,
+      ).toBe("success");
+
+      const setCredsResp = await session.raw.send(
+        "crater.setOriginCredentials",
+        {
+          origin: fixture.apiUrl,
+          username: DIGEST_USERNAME,
+          password: DIGEST_PASSWORD,
+          context: session.contextId,
+        },
+      );
+      expect(
+        setCredsResp.type,
+        `crater.setOriginCredentials: ${setCredsResp.error ?? setCredsResp.message}`,
+      ).toBe("success");
+
+      // crater.listOriginCredentials must surface the registered origin
+      // without exposing the credential values.
+      const listResp = await session.raw.send(
+        "crater.listOriginCredentials",
+        { context: session.contextId },
+      );
+      expect(listResp.type).toBe("success");
+      const listed = (listResp.result as { origins?: Array<{ origin: string }> }).origins ?? [];
+      expect(listed.some(o => o.origin === fixture.apiUrl)).toBe(true);
+      const listedJson = JSON.stringify(listed);
+      expect(listedJson).not.toContain(DIGEST_USERNAME);
+      expect(listedJson).not.toContain(DIGEST_PASSWORD);
+
+      await session.script.evaluate({
+        expression: `globalThis.__setRequestSandbox({ mode: 'open' }); null`,
+        awaitPromise: false,
+      });
+
+      const digestJson = await session.script.evaluate<string>({
+        expression: `(async () => {
+          const r = await fetch(${JSON.stringify(`${fixture.apiUrl}/digest/protected`)});
+          const body = await r.text();
+          return JSON.stringify({ status: r.status, body });
+        })()`,
+        awaitPromise: true,
+      });
+      const digest = JSON.parse(digestJson) as { status: number; body: string };
+      expect(
+        digest.status,
+        `digest response: ${JSON.stringify(digest)}`,
+      ).toBe(200);
+      const decoded = JSON.parse(digest.body) as { user: string; digest: boolean };
+      expect(decoded).toEqual({ user: DIGEST_USERNAME, digest: true });
+    } finally {
+      try {
+        await session.script.evaluate({
+          expression: `globalThis.__setRequestSandbox({ mode: 'same-origin' }); null`,
+          awaitPromise: false,
+        });
+      } catch {
+        // ignore
+      }
+      await session.end();
+      await fixture.stop();
+      await fixture.apiStop();
+    }
+  });
+
+  test("missing credentials surface the raw 401 — no infinite retry", async () => {
+    // Negative path: without crater.setOriginCredentials registered for
+    // the api origin, the shim must NOT silently absorb the 401. The
+    // page-side fetch sees status=401 just like any other endpoint —
+    // confirms the retry path is gated on registered credentials and
+    // doesn't loop or hang when none exist.
+    const fixture = await startAuthServer();
+    const session = await connectCraterBidi();
+    try {
+      const rememberResp = await session.raw.send(
+        "script.rememberSyntheticLocationHref",
+        { context: session.contextId, href: `${fixture.url}/login` },
+      );
+      expect(rememberResp.type).toBe("success");
+
+      await session.script.evaluate({
+        expression: `globalThis.__setRequestSandbox({ mode: 'open' }); null`,
+        awaitPromise: false,
+      });
+
+      const raw = await session.script.evaluate<string>({
+        expression: `(async () => {
+          const r = await fetch(${JSON.stringify(`${fixture.apiUrl}/digest/protected`)});
+          return JSON.stringify({ status: r.status });
+        })()`,
+        awaitPromise: true,
+      });
+      const parsed = JSON.parse(raw) as { status: number };
+      expect(parsed.status).toBe(401);
+    } finally {
+      try {
+        await session.script.evaluate({
+          expression: `globalThis.__setRequestSandbox({ mode: 'same-origin' }); null`,
+          awaitPromise: false,
+        });
+      } catch {
+        // ignore
+      }
+      await session.end();
+      await fixture.stop();
+      await fixture.apiStop();
+    }
+  });
+
+  test("caller-supplied Authorization wins over registered Digest credentials", async () => {
+    // If the page sets its own Authorization header, the shim must NOT
+    // strip it and step in with the registered Digest credentials. A
+    // wrong page-supplied Authorization should surface a 401 verbatim —
+    // proving the credentials path is gated behind the no-Authorization
+    // precondition, matching the policy used for crater.setOriginAuthorization.
+    const fixture = await startAuthServer();
+    const session = await connectCraterBidi();
+    try {
+      const rememberResp = await session.raw.send(
+        "script.rememberSyntheticLocationHref",
+        { context: session.contextId, href: `${fixture.url}/login` },
+      );
+      expect(rememberResp.type).toBe("success");
+
+      const setCredsResp = await session.raw.send(
+        "crater.setOriginCredentials",
+        {
+          origin: fixture.apiUrl,
+          username: DIGEST_USERNAME,
+          password: DIGEST_PASSWORD,
+          context: session.contextId,
+        },
+      );
+      expect(setCredsResp.type).toBe("success");
+
+      await session.script.evaluate({
+        expression: `globalThis.__setRequestSandbox({ mode: 'open' }); null`,
+        awaitPromise: false,
+      });
+
+      const raw = await session.script.evaluate<string>({
+        expression: `(async () => {
+          const r = await fetch(${JSON.stringify(`${fixture.apiUrl}/digest/protected`)}, {
+            // secretlint-disable-next-line @secretlint/secretlint-rule-pattern
+            headers: { Authorization: 'Bearer wrong-i-want-the-401' },
+          });
+          return JSON.stringify({ status: r.status });
+        })()`,
+        awaitPromise: true,
+      });
+      const parsed = JSON.parse(raw) as { status: number };
+      expect(parsed.status).toBe(401);
+    } finally {
       try {
         await session.script.evaluate({
           expression: `globalThis.__setRequestSandbox({ mode: 'same-origin' }); null`,

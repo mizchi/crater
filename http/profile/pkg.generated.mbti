@@ -14,13 +14,23 @@ import {
 // Types and methods
 pub(all) struct AuthState {
   mut origin_headers : Map[String, String]
+  mut origin_credentials : Map[String, OriginCredentials]
 }
+pub fn AuthState::clear_origin_credentials(Self, String) -> Unit
 pub fn AuthState::clear_origin_header(Self, String) -> Unit
+pub fn AuthState::credentials_for_origin(Self, String) -> OriginCredentials?
 pub fn AuthState::default() -> Self
 pub fn AuthState::header_for_origin(Self, String) -> String?
+pub fn AuthState::list_credential_origins(Self) -> Array[String]
 pub fn AuthState::list_origins(Self) -> Array[String]
+pub fn AuthState::set_origin_credentials(Self, String, String, String) -> Unit
 pub fn AuthState::set_origin_header(Self, String, String) -> Unit
 pub impl Show for AuthState
+
+pub(all) struct OriginCredentials {
+  username : String
+  password : String
+}
 
 pub(all) struct Profile {
   mut user_agent : String?

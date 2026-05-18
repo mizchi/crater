@@ -55,6 +55,13 @@ fn BidiProtocol::apply_effective_viewport_to_runtime_context(
   // protocol.bidi-origin-authorization-injection.
   let auth_json = self.serialize_auth_snapshot_for_runtime(logical_ctx_id)
   set_runtime_context_authorization(runtime_ctx_id, auth_json)
+  // Push the partition credentials snapshot so the runtime fetch shim's
+  // 401 Digest auto-retry path can resolve username/password by origin.
+  // Resolves protocol.bidi-origin-credentials-injection (#173).
+  let creds_json = self.serialize_credentials_snapshot_for_runtime(
+    logical_ctx_id,
+  )
+  set_runtime_context_credentials(runtime_ctx_id, creds_json)
 }
 
 ///|

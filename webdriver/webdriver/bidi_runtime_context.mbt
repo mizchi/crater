@@ -1834,3 +1834,52 @@ fn set_runtime_context_authorization(
 ) -> Unit {
   js_set_runtime_context_authorization(ctx_id, auth_json)
 }
+
+///|
+/// Push the per-context Digest credentials snapshot into the JS realm.
+/// The snapshot shape is `{ origin: { username, password } }`. Consumed
+/// by the fetch shim's 401 Digest auto-retry path via the auto-installed
+/// `globalThis.__bidiResolveCredentials(url)` helper.
+///
+/// Credentials are passed by-value into the JS realm — there is no
+/// indirection that would let the page read them ambient-style. The
+/// runtime-side helper only returns the matching entry for the request's
+/// origin AND only inside the retry path that already has a Digest
+/// challenge in hand, so an attacker page on a different origin can't
+/// silently extract a stored credential by issuing fetches.
+pub extern "js" fn js_set_runtime_context_credentials(
+  ctx_id : String,
+  creds_json : String,
+) -> Unit =
+  #| (ctxId, credsJson) => {
+  #|   if (!globalThis.__bidiContextCredentials) globalThis.__bidiContextCredentials = {};
+  #|   try {
+  #|     globalThis.__bidiContextCredentials[ctxId] = JSON.parse(credsJson);
+  #|   } catch (_e) {
+  #|     globalThis.__bidiContextCredentials[ctxId] = {};
+  #|   }
+  #|   if (typeof globalThis.__bidiResolveCredentials !== 'function') {
+  #|     globalThis.__bidiResolveCredentials = function(url) {
+  #|       const ctx = String(globalThis.__bidiCurrentContext || 'default-context');
+  #|       const map = (globalThis.__bidiContextCredentials || {})[ctx] || {};
+  #|       try {
+  #|         const u = new URL(url);
+  #|         let origin = u.protocol + '//' + u.hostname;
+  #|         if (
+  #|           (u.protocol === 'http:'  && u.port && u.port !== '80') ||
+  #|           (u.protocol === 'https:' && u.port && u.port !== '443')
+  #|         ) origin += ':' + u.port;
+  #|         return map[origin] || null;
+  #|       } catch (_e) { return null; }
+  #|     };
+  #|   }
+  #| }
+
+///|
+/// Push the per-context credentials snapshot for `ctx_id` into the JS realm.
+fn set_runtime_context_credentials(
+  ctx_id : String,
+  creds_json : String,
+) -> Unit {
+  js_set_runtime_context_credentials(ctx_id, creds_json)
+}
