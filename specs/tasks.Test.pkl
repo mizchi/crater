@@ -416,6 +416,36 @@ tests {
       "bash -lc 'set -e; test -f webdriver/webdriver/bidi_runtime_eval.mbt; grep -Fq -- \"get forms() {\" webdriver/webdriver/bidi_runtime_eval.mbt; grep -Fq -- \"const root = this.documentElement;\" webdriver/webdriver/bidi_runtime_eval.mbt; test -f webdriver/webdriver/bidi_runtime_form_wbtest.mbt; grep -Fq -- \"document.forms returns all FORM elements in document order\" webdriver/webdriver/bidi_runtime_form_wbtest.mbt'"
   }
   new {
+    name = "bidi_form_request_submit_validates_submit_button"
+    description =
+      "form.requestSubmit(submitter) in webdriver/webdriver/bidi_runtime_eval.mbt validates the submitter is a submit button: BUTTON without a type attribute / BUTTON with type=submit / INPUT with type=submit / INPUT with type=image. Anything else (DIV, BUTTON type=button, INPUT type=text, INPUT type=reset, ...) throws TypeError per WHATWG. Covered by webdriver/webdriver/bidi_runtime_form_wbtest.mbt."
+    tags { "dom"; "forms"; "bidi" }
+    specRef { "bug.dom.requestSubmit-button-type-not-validated" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; test -f webdriver/webdriver/bidi_runtime_eval.mbt; grep -Fq -- \"requestSubmit: submitter is not a submit button\" webdriver/webdriver/bidi_runtime_eval.mbt; grep -Fq -- \"isSubmitButton\" webdriver/webdriver/bidi_runtime_eval.mbt; test -f webdriver/webdriver/bidi_runtime_form_wbtest.mbt; grep -Fq -- \"requestSubmit throws when submitter is not a submit button\" webdriver/webdriver/bidi_runtime_form_wbtest.mbt; grep -Fq -- \"requestSubmit accepts button with type=submit\" webdriver/webdriver/bidi_runtime_form_wbtest.mbt; grep -Fq -- \"requestSubmit accepts default-type button\" webdriver/webdriver/bidi_runtime_form_wbtest.mbt; grep -Fq -- \"requestSubmit accepts input type=submit and type=image\" webdriver/webdriver/bidi_runtime_form_wbtest.mbt'"
+  }
+  new {
+    name = "bidi_form_reset_restores_default_values"
+    description =
+      "form.reset() in webdriver/webdriver/bidi_runtime_eval.mbt walks form descendants and restores INPUT/TEXTAREA value to defaultValue and INPUT checkbox/radio checked to defaultChecked after the reset event. The value/checked setters on createMockElement snapshot the default on first mutation so reset has something to restore. Listeners that call preventDefault skip the restore step. Covered by webdriver/webdriver/bidi_runtime_form_wbtest.mbt."
+    tags { "dom"; "forms"; "bidi" }
+    specRef { "bug.dom.form-reset-does-not-clear-values" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; test -f webdriver/webdriver/bidi_runtime_eval.mbt; grep -Fq -- \"_defaultValue\" webdriver/webdriver/bidi_runtime_eval.mbt; grep -Fq -- \"_defaultChecked\" webdriver/webdriver/bidi_runtime_eval.mbt; grep -Fq -- \"form-reset-algorithm\" webdriver/webdriver/bidi_runtime_eval.mbt; grep -Fq -- \"if (resetEvent.defaultPrevented) return undefined;\" webdriver/webdriver/bidi_runtime_eval.mbt; test -f webdriver/webdriver/bidi_runtime_form_wbtest.mbt; grep -Fq -- \"form.reset clears input values to defaultValue\" webdriver/webdriver/bidi_runtime_form_wbtest.mbt; grep -Fq -- \"form.reset restores checkbox checked to defaultChecked\" webdriver/webdriver/bidi_runtime_form_wbtest.mbt; grep -Fq -- \"form.reset preventDefault stops value clearing\" webdriver/webdriver/bidi_runtime_form_wbtest.mbt'"
+  }
+  new {
+    name = "bidi_form_select_multiple_serialized"
+    description =
+      "controlEffectiveValue / serializeFormDataUrlEncoded in webdriver/webdriver/bidi_runtime_eval.mbt handles <select multiple> by emitting one name=value pair per selected option. controlEffectiveValue returns an Array for multi-select; single-select serialization is unchanged. Covered by webdriver/webdriver/bidi_runtime_form_wbtest.mbt."
+    tags { "dom"; "forms"; "bidi" }
+    specRef { "bug.dom.form-select-multiple-not-supported" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; test -f webdriver/webdriver/bidi_runtime_eval.mbt; grep -Fq -- \"// Multi-select: return every selected option\" webdriver/webdriver/bidi_runtime_eval.mbt; grep -Fq -- \"if (Array.isArray(value))\" webdriver/webdriver/bidi_runtime_eval.mbt; grep -Fq -- \"<select multiple>: one name=value pair per selected option\" webdriver/webdriver/bidi_runtime_eval.mbt; test -f webdriver/webdriver/bidi_runtime_form_wbtest.mbt; grep -Fq -- \"form.submit serializes multi-select as repeated name=value\" webdriver/webdriver/bidi_runtime_form_wbtest.mbt'"
+  }
+  new {
     name = "bidi_runtime_fetch_partition_cookie_bridge_wired"
     description =
       "The BiDi runtime fetch shim attaches partition cookies via a MoonBit-to-JS bridge. BidiProtocol::cookies_for_context_full_json aggregates the per-context jar; set_runtime_context_cookies pushes the snapshot into the JS realm; the JS shim's globalThis.__bidiResolveCookies(url) filters by URL and the fetch wrap injects the Cookie header when the caller has not supplied one. Covered by webdriver/webdriver/bidi_runtime_fetch_wbtest.mbt."

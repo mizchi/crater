@@ -773,30 +773,30 @@ scenarios {
     id = "bug.dom.requestSubmit-button-type-not-validated"
     name = "form.requestSubmit submitter validation does not check button type"
     description =
-      "requestSubmit(submitter) in webdriver/webdriver/bidi_runtime_eval.mbt currently validates only nodeType === 1 + descendsFrom(form). Per WHATWG, the submitter must additionally be a submit button: either button[type=submit] (default type for <button>) or input[type=submit] / input[type=image]. Today a <button type=button> or <input type=text> passed as submitter is accepted instead of triggering a TypeError. Source: PR review on dom/form-submit, follow-up to bug.dom.html-form-element-submit-missing."
+      "requestSubmit(submitter) in webdriver/webdriver/bidi_runtime_eval.mbt currently validates only nodeType === 1 + descendsFrom(form). Per WHATWG, the submitter must additionally be a submit button: either button[type=submit] (default type for <button>) or input[type=submit] / input[type=image]. Today a <button type=button> or <input type=text> passed as submitter is accepted instead of triggering a TypeError. Source: PR review on dom/form-submit, follow-up to bug.dom.html-form-element-submit-missing. Fixed: requestSubmit now classifies the submitter by tag and effective type — BUTTON without a type attribute or with type=submit, and INPUT with type=submit or type=image are accepted; anything else throws TypeError. Covered by webdriver/webdriver/bidi_runtime_form_wbtest.mbt."
     tags { "dom"; "forms"; "bidi"; "bug" }
     severity = "minor"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.dom-compat" }
   }
   new {
     id = "bug.dom.form-reset-does-not-clear-values"
     name = "form.reset fires reset event but does not clear control values"
     description =
-      "el.reset() installed by createMockElement('form') in webdriver/webdriver/bidi_runtime_eval.mbt dispatches a cancelable 'reset' event, but never iterates form controls to restore them to their default state. Per WHATWG, each resettable control must be reset to its default value: input.defaultValue, select selectedness from the OPTION with the `selected` attribute, textarea.defaultValue, checkbox/radio default checkedness. Source: PR review on dom/form-submit."
+      "el.reset() installed by createMockElement('form') in webdriver/webdriver/bidi_runtime_eval.mbt dispatches a cancelable 'reset' event, but never iterates form controls to restore them to their default state. Per WHATWG, each resettable control must be reset to its default value: input.defaultValue, select selectedness from the OPTION with the `selected` attribute, textarea.defaultValue, checkbox/radio default checkedness. Source: PR review on dom/form-submit. Fixed: el.reset() now walks form descendants after the reset event and, unless a listener called preventDefault, restores INPUT (non-button), TEXTAREA value to defaultValue, INPUT checkbox/radio checked to defaultChecked, and SELECT option selectedness to defaultSelected. The value / checked setters snapshot the default on first mutation so reset has something to restore. Covered by webdriver/webdriver/bidi_runtime_form_wbtest.mbt."
     tags { "dom"; "forms"; "bidi"; "bug" }
     severity = "minor"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.dom-compat" }
   }
   new {
     id = "bug.dom.form-select-multiple-not-supported"
     name = "form serialization does not handle select multiple"
     description =
-      "controlEffectiveValue in webdriver/webdriver/bidi_runtime_eval.mbt handles single-select <select> by emitting one name=value pair per element. For <select multiple>, WHATWG specifies one name=value pair per selected option, e.g. tags=a&tags=c. Today only the first selected option (single-select fallback) is emitted, so multi-select forms are serialized incorrectly. Source: PR review on dom/form-submit."
+      "controlEffectiveValue in webdriver/webdriver/bidi_runtime_eval.mbt handles single-select <select> by emitting one name=value pair per element. For <select multiple>, WHATWG specifies one name=value pair per selected option, e.g. tags=a&tags=c. Today only the first selected option (single-select fallback) is emitted, so multi-select forms are serialized incorrectly. Source: PR review on dom/form-submit. Fixed: controlEffectiveValue now detects <select multiple> (via _attrs.multiple or the JS field) and returns an Array of effective values for each selected option; serializeFormDataUrlEncoded emits one name=value pair per array entry. Single-select behavior is unchanged. Covered by webdriver/webdriver/bidi_runtime_form_wbtest.mbt."
     tags { "dom"; "forms"; "bidi"; "bug" }
     severity = "minor"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.dom-compat" }
   }
   new {
