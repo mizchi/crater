@@ -500,3 +500,53 @@ test("/digest/protected rejects RFC 2069 (no-qop) form with wrong response", asy
     await apiStop();
   }
 });
+
+test("/digest/protected rejects an unsupported algorithm string", async () => {
+  // Hardening lock: the server must NOT silently downgrade an unknown
+  // algorithm value to MD5. Earlier behaviour treated anything other than
+  // a recognized SHA-256 spelling as MD5, which is the exact footgun an
+  // algorithm-confusion downgrade would exploit. After the allowlist fix,
+  // an unknown algorithm string is rejected outright.
+  const { stop, apiUrl, apiStop } = await startAuthServer({ port: 0, apiPort: 0 });
+  try {
+    const challengeRes = await fetch(`${apiUrl}/digest/protected`);
+    const challenge = parseDigestChallenge(challengeRes.headers.get("www-authenticate")!)!;
+    const uri = "/digest/protected";
+    // Use computeDigestAuthorization to build a structurally valid header
+    // but with an unsupported algorithm name. Even if the underlying hash
+    // matches what the server's MD5 path would compute, the algorithm
+    // string itself must be rejected before the comparison runs.
+    const authHeader = computeDigestAuthorization({
+      username: DIGEST_USERNAME,
+      password: DIGEST_PASSWORD,
+      realm: challenge.get("realm")!,
+      nonce: challenge.get("nonce")!,
+      uri,
+      method: "GET",
+      qop: challenge.get("qop"),
+      nc: "00000001",
+      cnonce: "deadbeef",
+      algorithm: "MD5", // start from a valid base...
+    }).replace("algorithm=MD5", "algorithm=NOT-A-REAL-ALGO");
+
+    const denied = await fetch(`${apiUrl}${uri}`, {
+      headers: { authorization: authHeader },
+    });
+    expect(denied.status).toBe(401);
+  } finally {
+    await stop();
+    await apiStop();
+  }
+});
+
+test("parseDigestChallenge unescapes RFC 7230 quoted-pair backslash escapes", async () => {
+  // The parser is reused for both server challenges and client Authorization
+  // headers (exported as parseDigestChallenge). A value of `al\"ice` on the
+  // wire decodes to the literal `al"ice`, not the escaped form.
+  const challenge = parseDigestChallenge(
+    `Digest realm="al\\"ice's realm", nonce="abc\\\\def", qop="auth"`,
+  )!;
+  expect(challenge.get("realm")).toBe(`al"ice's realm`);
+  expect(challenge.get("nonce")).toBe("abc\\def");
+  expect(challenge.get("qop")).toBe("auth");
+});

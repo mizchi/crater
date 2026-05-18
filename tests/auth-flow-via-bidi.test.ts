@@ -596,6 +596,16 @@ test.describe("auth flow via BiDi (cross-origin redirect strips Authorization)",
     // BiDi runtime fetch shim doesn't accidentally undo that — i.e. the
     // header registered via crater.setOriginAuthorization for the app
     // origin must NOT travel along on the api-origin hop after the 302.
+    //
+    // IMPORTANT: this assertion holds *because* the runtime fetch shim
+    // currently delegates redirect-follow to Node's undici implementation,
+    // which strips per spec. If the shim is ever rewritten to follow
+    // redirects manually (e.g. to surface per-hop network events for an
+    // intercept), this test will start passing trivially regardless of
+    // whether the new manual follow logic strips Authorization. In that
+    // case, the test must be reworked to inspect the actual outbound
+    // headers on the post-redirect hop — not just the final response body.
+    // Tracked alongside the addIntercept-fetch-wiring follow-up (#173).
     const fixture = await startAuthServer();
     const session = await connectCraterBidi();
     try {
