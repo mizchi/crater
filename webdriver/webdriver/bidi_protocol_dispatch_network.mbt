@@ -141,6 +141,17 @@ fn BidiProtocol::dispatch_network(
       self.handle_network_continue_auth_request(request.id, request.params)
       Ok(())
     }
+    // Spec-conformant name from WebDriver BiDi specification.
+    // Routes to the same handler as the internal alias `continueBlockedRequest`.
+    // Per spec, params may include `headers`, `method`, `url`, `body`, `cookies`
+    // overrides for an intercepted request paused at `beforeRequestSent`.
+    "continueRequest" => {
+      self.handle_network_continue_blocked_request(request.id, request.params)
+      Ok(())
+    }
+    // Internal alias kept for backwards-compat with the WPT shim and existing
+    // wbtests. Retire once the shim drops its rename and dependent wbtests
+    // migrate to the spec name `continueRequest`.
     "continueBlockedRequest" => {
       self.handle_network_continue_blocked_request(request.id, request.params)
       Ok(())

@@ -150,6 +150,15 @@ function handleApp(
 // secretlint-disable-next-line @secretlint/secretlint-rule-pattern
 const PROTECTED_BEARER_TOKEN = "Bearer test-jwt-token"; // test fixture only
 
+// Models a single canonical refresh token mapped to a single fresh access
+// token. Tests should mark `PROTECTED_BEARER_TOKEN` as expired (via
+// `recordExpiredToken`) and exchange this refresh token through
+// `/oauth/token` to drive the refresh flow.
+// secretlint-disable-next-line @secretlint/secretlint-rule-pattern
+export const REFRESH_TOKEN = "rt-test-refresh"; // test fixture only
+// secretlint-disable-next-line @secretlint/secretlint-rule-pattern
+export const REFRESHED_ACCESS_TOKEN = "Bearer test-jwt-token-refreshed"; // test fixture only
+
 function corsHeadersForOrigin(
   origin: string,
   appOrigin: string,
@@ -228,7 +237,7 @@ function handleApi(
       res.end(JSON.stringify({ error: "token_expired" }));
       return;
     }
-    if (auth === PROTECTED_BEARER_TOKEN) {
+    if (auth === PROTECTED_BEARER_TOKEN || auth === REFRESHED_ACCESS_TOKEN) {
       res.writeHead(200, {
         "content-type": "application/json",
         ...corsHeaders,
@@ -273,6 +282,71 @@ function handleApi(
         authorization: typeof authHeader === "string" ? authHeader : null,
       }),
     );
+    return;
+  }
+  // OAuth-style refresh token exchange.
+  //
+  // Request:  POST /oauth/token   application/x-www-form-urlencoded
+  //           grant_type=refresh_token&refresh_token=<token>
+  // Response: 200 application/json { access_token, token_type, expires_in }
+  //           or 400 { error: "invalid_grant" } on bad refresh_token.
+  //
+  // The fresh access token is `REFRESHED_ACCESS_TOKEN` — `/api/protected`
+  // accepts BOTH `PROTECTED_BEARER_TOKEN` and `REFRESHED_ACCESS_TOKEN`, so
+  // a test driving the "expired token → refresh → retry" flow can:
+  //   1. recordExpiredToken(PROTECTED_BEARER_TOKEN)
+  //   2. fetch /api/protected with PROTECTED_BEARER_TOKEN  → 401 token_expired
+  //   3. POST /oauth/token with REFRESH_TOKEN              → 200 access_token
+  //   4. fetch /api/protected with REFRESHED_ACCESS_TOKEN  → 200
+  // This is *not* a full OAuth implementation — there's no client_id, no
+  // PKCE, no token rotation, no scope handling. It's the minimum surface
+  // that makes the refresh round-trip exerciseable end-to-end.
+  if (url.pathname === "/oauth/token") {
+    if (req.method === "OPTIONS") {
+      res.writeHead(204, {
+        "access-control-allow-origin": appOrigin,
+        "access-control-allow-methods": "POST",
+        "access-control-allow-headers": "content-type",
+        "access-control-allow-credentials": "true",
+        "access-control-max-age": "600",
+      });
+      res.end();
+      return;
+    }
+    if (req.method !== "POST") {
+      res.writeHead(405);
+      res.end();
+      return;
+    }
+    const corsHeaders = corsHeadersForOrigin(origin, appOrigin);
+    readBody(req).then(body => {
+      const params = new URLSearchParams(body);
+      const grant = params.get("grant_type");
+      const refresh = params.get("refresh_token");
+      if (grant !== "refresh_token" || refresh !== REFRESH_TOKEN) {
+        res.writeHead(400, {
+          "content-type": "application/json",
+          ...corsHeaders,
+        });
+        res.end(JSON.stringify({ error: "invalid_grant" }));
+        return;
+      }
+      // Strip the "Bearer " prefix in the response body — clients reattach
+      // it themselves when setting the Authorization header. This mirrors
+      // RFC 6749 §5.1.
+      const access = REFRESHED_ACCESS_TOKEN.replace(/^Bearer /, "");
+      res.writeHead(200, {
+        "content-type": "application/json",
+        ...corsHeaders,
+      });
+      res.end(
+        JSON.stringify({
+          access_token: access,
+          token_type: "Bearer",
+          expires_in: 3600,
+        }),
+      );
+    });
     return;
   }
   void sessions; // sessions available for future authenticated /api/* routes

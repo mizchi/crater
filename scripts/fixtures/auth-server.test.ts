@@ -1,5 +1,9 @@
 import { test, expect } from "vitest";
-import { startAuthServer } from "./auth-server.ts";
+import {
+  REFRESHED_ACCESS_TOKEN,
+  REFRESH_TOKEN,
+  startAuthServer,
+} from "./auth-server.ts";
 
 test("login + dashboard round-trip", async () => {
   const { url, stop } = await startAuthServer({ port: 0 });
@@ -231,6 +235,98 @@ test("cross-origin redirect strips Authorization per Fetch spec", async () => {
   } finally {
     await stop();
     await apiStop();
+  }
+});
+
+test("/oauth/token rejects bogus refresh_token with invalid_grant", async () => {
+  const { stop, apiUrl, apiStop } = await startAuthServer({ port: 0, apiPort: 0 });
+  try {
+    const res = await fetch(`${apiUrl}/oauth/token`, {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        grant_type: "refresh_token",
+        refresh_token: "not-the-real-token",
+      }),
+    });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "invalid_grant" });
+  } finally {
+    await stop();
+    await apiStop();
+  }
+});
+
+test("/oauth/token exchanges valid refresh_token for a fresh Bearer", async () => {
+  const { stop, apiUrl, apiStop } = await startAuthServer({ port: 0, apiPort: 0 });
+  try {
+    const res = await fetch(`${apiUrl}/oauth/token`, {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        grant_type: "refresh_token",
+        refresh_token: REFRESH_TOKEN,
+      }),
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("application/json");
+    const body = (await res.json()) as {
+      access_token: string;
+      token_type: string;
+      expires_in: number;
+    };
+    expect(body.token_type).toBe("Bearer");
+    expect(`Bearer ${body.access_token}`).toBe(REFRESHED_ACCESS_TOKEN);
+    expect(body.expires_in).toBeGreaterThan(0);
+  } finally {
+    await stop();
+    await apiStop();
+  }
+});
+
+test("refresh-token round-trip: expired Bearer -> refresh -> retry succeeds", async () => {
+  // End-to-end shape: simulate a client whose Bearer was revoked. The
+  // server marks the original token as expired, the client posts to
+  // /oauth/token to get a fresh Bearer, and the retry succeeds with the
+  // new header. Models the full "401 -> refresh -> 200" loop a real
+  // OAuth client would run.
+  const fixture = await startAuthServer({ port: 0, apiPort: 0 });
+  try {
+    // secretlint-disable-next-line @secretlint/secretlint-rule-pattern
+    const staleBearer = "Bearer test-jwt-token";
+    fixture.recordExpiredToken(staleBearer);
+
+    const stale = await fetch(`${fixture.apiUrl}/api/protected`, {
+      headers: { authorization: staleBearer, origin: fixture.url },
+    });
+    expect(stale.status).toBe(401);
+    expect(stale.headers.get("www-authenticate")).toContain("invalid_token");
+    expect(await stale.json()).toEqual({ error: "token_expired" });
+
+    const refreshed = await fetch(`${fixture.apiUrl}/oauth/token`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/x-www-form-urlencoded",
+        origin: fixture.url,
+      },
+      body: new URLSearchParams({
+        grant_type: "refresh_token",
+        refresh_token: REFRESH_TOKEN,
+      }),
+    });
+    expect(refreshed.status).toBe(200);
+    const refreshedBody = (await refreshed.json()) as { access_token: string };
+    const freshBearer = `Bearer ${refreshedBody.access_token}`;
+    expect(freshBearer).toBe(REFRESHED_ACCESS_TOKEN);
+
+    const retry = await fetch(`${fixture.apiUrl}/api/protected`, {
+      headers: { authorization: freshBearer, origin: fixture.url },
+    });
+    expect(retry.status).toBe(200);
+    expect(await retry.json()).toEqual({ user: "alice", protected: true });
+  } finally {
+    await fixture.stop();
+    await fixture.apiStop();
   }
 });
 
