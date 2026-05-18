@@ -1794,9 +1794,43 @@ pub fn get_runtime_href_at_point(x : Double, y : Double) -> String? {
 }
 
 ///|
-/// Temporary stub; real extern js install lands in Task 4 of the
-/// origin-Authorization plan. Keeps the snapshot push call site
-/// compilable while the BiDi handlers ship in isolation.
-fn set_runtime_context_authorization(_ctx_id : String, _json : String) -> Unit {
-  ()
+/// Push the per-context Authorization snapshot into the JS realm. The
+/// snapshot is consumed by the auto-installed globalThis.__bidiResolveAuth
+/// helper that the fetch shim calls before dispatching each outbound
+/// request. Mirror of set_runtime_context_cookies.
+pub extern "js" fn js_set_runtime_context_authorization(
+  ctx_id : String,
+  auth_json : String,
+) -> Unit =
+  #| (ctxId, authJson) => {
+  #|   if (!globalThis.__bidiContextAuth) globalThis.__bidiContextAuth = {};
+  #|   try {
+  #|     globalThis.__bidiContextAuth[ctxId] = JSON.parse(authJson);
+  #|   } catch (_e) {
+  #|     globalThis.__bidiContextAuth[ctxId] = {};
+  #|   }
+  #|   if (typeof globalThis.__bidiResolveAuth !== 'function') {
+  #|     globalThis.__bidiResolveAuth = function(url) {
+  #|       const ctx = String(globalThis.__bidiCurrentContext || 'default-context');
+  #|       const map = (globalThis.__bidiContextAuth || {})[ctx] || {};
+  #|       try {
+  #|         const u = new URL(url);
+  #|         let origin = u.protocol + '//' + u.hostname;
+  #|         if (
+  #|           (u.protocol === 'http:'  && u.port && u.port !== '80') ||
+  #|           (u.protocol === 'https:' && u.port && u.port !== '443')
+  #|         ) origin += ':' + u.port;
+  #|         return map[origin] || null;
+  #|       } catch (_e) { return null; }
+  #|     };
+  #|   }
+  #| }
+
+///|
+/// Push the per-context Authorization snapshot for `ctx_id` into the JS realm.
+fn set_runtime_context_authorization(
+  ctx_id : String,
+  auth_json : String,
+) -> Unit {
+  js_set_runtime_context_authorization(ctx_id, auth_json)
 }

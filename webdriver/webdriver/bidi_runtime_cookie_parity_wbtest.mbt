@@ -34,12 +34,12 @@ priv struct ParityCase {
 /// the fields they care about so cases stay short.
 fn make_stored(
   name~ : String,
-  value~ : String = "v",
+  value? : String = "v",
   domain~ : String,
-  path~ : String = "/",
-  secure~ : Bool = false,
-  same_site~ : String = "lax",
-  expiry~ : Int? = None,
+  path? : String = "/",
+  secure? : Bool = false,
+  same_site? : String = "lax",
+  expiry? : Int? = None,
 ) -> StoredCookie {
   {
     name,
@@ -68,7 +68,6 @@ fn seed_parity_cookie(proto : BidiProtocol, cookie_json : String) -> Unit {
     ",\"partition\":{\"type\":\"context\",\"context\":\"session-1\"}}}"
   let _ = proto.process_message(payload)
   let _ = proto.take_messages()
-
 }
 
 ///|
@@ -221,11 +220,15 @@ test "cookie URL filter parity: 10 representative cases" {
     seed_parity_cookie(proto, case.cookie_json)
     // JS side
     let js_matches = js_bridge_matches(
-      proto, 3, case.stored_cookie.name, case.request_url,
+      proto,
+      3,
+      case.stored_cookie.name,
+      case.request_url,
     )
     // MoonBit side
     let moonbit_matches = storage_cookie_matches_request_url(
-      case.stored_cookie, Some(case.request_url),
+      case.stored_cookie,
+      Some(case.request_url),
     )
     // Both sides must agree with the expected outcome AND with each other.
     if js_matches != case.expected || moonbit_matches != case.expected {
