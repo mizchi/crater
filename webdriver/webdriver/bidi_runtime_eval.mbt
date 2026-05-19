@@ -1887,6 +1887,48 @@ extern "js" fn js_evaluate_expression(
   #|       if (lowerTag === 'form') {
   #|         installFormSubmissionMethods(el);
   #|       }
+  #|       if (lowerTag === 'a' || lowerTag === 'area' || lowerTag === 'link') {
+  #|         // HTMLHyperlinkElementUtils — resolves `href` against the current
+  #|         // document base URL and exposes the URL components real pages
+  #|         // read (`a.protocol`, `a.host`, `a.origin`, `a.pathname`, ...).
+  #|         // Without these getters, framework code that decides routing
+  #|         // from `a.href` or `event.target.host` silently sees undefined.
+  #|         const resolvedUrl = function(self) {
+  #|           const raw = self._attrs ? self._attrs.href : undefined;
+  #|           if (raw === undefined || raw === null || raw === '') return null;
+  #|           const base = (globalThis.location && typeof globalThis.location.href === 'string' && globalThis.location.href)
+  #|             ? globalThis.location.href
+  #|             : 'about:blank';
+  #|           try { return new URL(String(raw), base); } catch (_e) { return null; }
+  #|         };
+  #|         const urlProp = (prop) => function() {
+  #|           const url = resolvedUrl(this);
+  #|           if (!url) return '';
+  #|           const value = url[prop];
+  #|           return value === undefined || value === null ? '' : String(value);
+  #|         };
+  #|         Object.defineProperty(el, 'href', {
+  #|           get() {
+  #|             const url = resolvedUrl(this);
+  #|             if (url) return url.href;
+  #|             const raw = this._attrs ? this._attrs.href : undefined;
+  #|             return raw === undefined || raw === null ? '' : String(raw);
+  #|           },
+  #|           set(v) { this._attrs.href = v === undefined || v === null ? '' : String(v); },
+  #|           enumerable: true,
+  #|           configurable: true,
+  #|         });
+  #|         Object.defineProperty(el, 'protocol', { get: urlProp('protocol'), configurable: true });
+  #|         Object.defineProperty(el, 'host', { get: urlProp('host'), configurable: true });
+  #|         Object.defineProperty(el, 'hostname', { get: urlProp('hostname'), configurable: true });
+  #|         Object.defineProperty(el, 'port', { get: urlProp('port'), configurable: true });
+  #|         Object.defineProperty(el, 'pathname', { get: urlProp('pathname'), configurable: true });
+  #|         Object.defineProperty(el, 'search', { get: urlProp('search'), configurable: true });
+  #|         Object.defineProperty(el, 'hash', { get: urlProp('hash'), configurable: true });
+  #|         Object.defineProperty(el, 'origin', { get: urlProp('origin'), configurable: true });
+  #|         Object.defineProperty(el, 'username', { get: urlProp('username'), configurable: true });
+  #|         Object.defineProperty(el, 'password', { get: urlProp('password'), configurable: true });
+  #|       }
   #|       return el;
   #|     };
   #|
