@@ -35,6 +35,7 @@ async function expectHtmlWithinBudget(
     outputDirName: string;
     threshold: number;
     maxDiffRatio: number;
+    maxLayoutShiftPx?: number;
     reportTitle: string;
     prepareChromiumPage?: (page: Page) => Promise<void>;
     prepareCraterPage?: (page: Awaited<ReturnType<typeof connectCraterPageForVrt>>) => Promise<void>;
@@ -63,6 +64,7 @@ async function expectHtmlWithinBudget(
       outputDir: path.join(OUTPUT_ROOT, options.outputDirName),
       threshold: options.threshold,
       maxDiffRatio: options.maxDiffRatio,
+      maxLayoutShiftPx: options.maxLayoutShiftPx,
       report: paintVrtReport(options.reportTitle),
       cropToContent: true,
       contentPadding: 12,
@@ -72,6 +74,17 @@ async function expectHtmlWithinBudget(
     });
 
     expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
+    if (
+      options.maxLayoutShiftPx !== undefined &&
+      result.layoutShift !== undefined
+    ) {
+      expect(result.layoutShift.maxLeftShiftPx).toBeLessThanOrEqual(
+        options.maxLayoutShiftPx,
+      );
+      expect(result.layoutShift.maxRightShiftPx).toBeLessThanOrEqual(
+        options.maxLayoutShiftPx,
+      );
+    }
   } finally {
     await craterPage.close();
   }
@@ -79,7 +92,12 @@ async function expectHtmlWithinBudget(
 
 async function expectSnapshotWithinBudget(
   snapshotName: string,
-  options: { threshold: number; maxDiffRatio: number; reportTitle: string },
+  options: {
+    threshold: number;
+    maxDiffRatio: number;
+    maxLayoutShiftPx?: number;
+    reportTitle: string;
+  },
 ): Promise<void> {
   const snapshot = loadRealWorldSnapshot(snapshotName);
   await expectHtmlWithinBudget({
@@ -89,6 +107,7 @@ async function expectSnapshotWithinBudget(
     outputDirName: snapshot.name,
     threshold: options.threshold,
     maxDiffRatio: options.maxDiffRatio,
+    maxLayoutShiftPx: options.maxLayoutShiftPx,
     reportTitle: options.reportTitle,
   });
 }
@@ -802,10 +821,14 @@ test.describe("Paint VRT", () => {
 
   // --- URL VRT snapshots: real websites captured with capture-real-world-snapshot.ts ---
 
-  const urlSnapshots: { name: string; maxDiffRatio: number }[] = [
+  const urlSnapshots: {
+    name: string;
+    maxDiffRatio: number;
+    maxLayoutShiftPx?: number;
+  }[] = [
     { name: "info-cern-ch", maxDiffRatio: 0.12 },
     { name: "google", maxDiffRatio: 0.10 },
-    { name: "hackernews", maxDiffRatio: 0.20 },
+    { name: "hackernews", maxDiffRatio: 0.20, maxLayoutShiftPx: 300 },
     { name: "wikipedia", maxDiffRatio: 0.25 },
     { name: "craigslist", maxDiffRatio: 0.15 },
     { name: "lobsters", maxDiffRatio: 0.20 },
@@ -813,7 +836,7 @@ test.describe("Paint VRT", () => {
     { name: "npmjs-express", maxDiffRatio: 0.25 },
   ];
 
-  for (const { name: snapshotName, maxDiffRatio } of urlSnapshots) {
+  for (const { name: snapshotName, maxDiffRatio, maxLayoutShiftPx } of urlSnapshots) {
     test(`url snapshot: ${snapshotName} visual diff within budget`, async () => {
       test.slow();
       test.skip(
@@ -827,9 +850,21 @@ test.describe("Paint VRT", () => {
           `${snapshotName} snapshot is not available locally`,
         ),
       );
+      // The hackernews snapshot fails the layout-shift gate because of the
+      // parser-side adoption-agency bug (#214): rank 12+ rows escape the
+      // table and block-fall back, displacing content by ~500px. Once #214
+      // lands and rank 12+ renders in the table column again, this fixme
+      // can be removed.
+      if (snapshotName === "hackernews") {
+        test.fail(
+          true,
+          "rank 12+ block fall-back exceeds layout-shift budget (#214)",
+        );
+      }
       await expectSnapshotWithinBudget(snapshotName, {
         threshold: 0.3,
         maxDiffRatio,
+        maxLayoutShiftPx,
         reportTitle: `url snapshot: ${snapshotName} visual diff within budget`,
       });
     });

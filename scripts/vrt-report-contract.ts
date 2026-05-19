@@ -30,6 +30,14 @@ export interface VrtCssRuleUsageMetrics {
   sameAsFallbackRules?: number;
 }
 
+export interface VrtLayoutShiftMetrics {
+  avgLeftShiftPx?: number;
+  maxLeftShiftPx?: number;
+  avgRightShiftPx?: number;
+  maxRightShiftPx?: number;
+  contentRowCount?: number;
+}
+
 export interface VrtArtifactMetrics {
   width?: number;
   height?: number;
@@ -44,6 +52,8 @@ export interface VrtArtifactMetrics {
   viewport?: VrtArtifactViewport;
   snapshotKind?: string;
   cssRuleUsage?: VrtCssRuleUsageMetrics;
+  maxLayoutShiftPx?: number;
+  layoutShift?: VrtLayoutShiftMetrics;
 }
 
 export interface VrtStableIdentity {
@@ -186,6 +196,19 @@ function asCssRuleUsageMetrics(value: unknown): VrtCssRuleUsageMetrics | undefin
     : undefined;
 }
 
+function asLayoutShiftMetrics(value: unknown): VrtLayoutShiftMetrics | undefined {
+  const record = asRecord(value);
+  if (!record) return undefined;
+  const metrics: VrtLayoutShiftMetrics = {
+    avgLeftShiftPx: asFiniteNumber(record.avgLeftShiftPx),
+    maxLeftShiftPx: asFiniteNumber(record.maxLeftShiftPx),
+    avgRightShiftPx: asFiniteNumber(record.avgRightShiftPx),
+    maxRightShiftPx: asFiniteNumber(record.maxRightShiftPx),
+    contentRowCount: asFiniteNumber(record.contentRowCount),
+  };
+  return Object.values(metrics).some((v) => v !== undefined) ? metrics : undefined;
+}
+
 function normalizeMetrics(record: Record<string, unknown>): VrtArtifactMetrics {
   return {
     width: asFiniteNumber(record.width),
@@ -203,6 +226,8 @@ function normalizeMetrics(record: Record<string, unknown>): VrtArtifactMetrics {
       ? record.snapshotKind
       : undefined,
     cssRuleUsage: asCssRuleUsageMetrics(record.cssRuleUsage),
+    maxLayoutShiftPx: asFiniteNumber(record.maxLayoutShiftPx),
+    layoutShift: asLayoutShiftMetrics(record.layoutShift),
   };
 }
 
@@ -431,10 +456,16 @@ export function createNormalizedVrtArtifactReport(
     variant,
     shard: input.shard,
   });
+  const layoutShiftPass = metadata.maxLayoutShiftPx === undefined
+    ? true
+    : metadata.layoutShift === undefined
+    ? false
+    : (metadata.layoutShift.maxLeftShiftPx ?? 0) <= metadata.maxLayoutShiftPx
+      && (metadata.layoutShift.maxRightShiftPx ?? 0) <= metadata.maxLayoutShiftPx;
   const derivedStatus = input.status ?? (
     metadata.diffRatio === undefined || metadata.maxDiffRatio === undefined
       ? "unknown"
-      : metadata.diffRatio <= metadata.maxDiffRatio
+      : metadata.diffRatio <= metadata.maxDiffRatio && layoutShiftPass
       ? "pass"
       : "fail"
   );

@@ -61,6 +61,14 @@ export interface VisualDiffOptions {
   backgroundTolerance?: number;
   maskToVisibleContent?: boolean;
   maskPadding?: number;
+  /**
+   * Optional cap on the per-row left/right content-edge displacement between
+   * chromium and crater (in pixels). When set, the comparison fails if any
+   * row's left or right edge is shifted by more than this many pixels. Catches
+   * cases where `diffRatio` stays low because shifted content lands on a same-
+   * colored background (e.g. when a whole table column is offset).
+   */
+  maxLayoutShiftPx?: number;
   report?: VrtArtifactReportContext;
 }
 
@@ -74,6 +82,8 @@ export interface VisualDiffResult {
   maskPixels?: number;
   threshold: number;
   maxDiffRatio: number;
+  layoutShift?: LayoutShiftMetrics;
+  maxLayoutShiftPx?: number;
   chromiumPath: string;
   craterPath: string;
   diffPath: string;
@@ -243,6 +253,7 @@ export function buildVrtArtifactReportJson(
     roi?: RoiRect;
     maskPixels?: number;
     cssRuleUsage?: VrtCssRuleUsageMetrics;
+    layoutShift?: LayoutShiftMetrics;
   },
 ): string {
   const title = resolveReportTitle(options);
@@ -287,6 +298,8 @@ export function buildVrtArtifactReportJson(
       maskPixels: metrics.maskPixels,
       threshold: options.threshold,
       maxDiffRatio: options.maxDiffRatio,
+      maxLayoutShiftPx: options.maxLayoutShiftPx,
+      layoutShift: metrics.layoutShift,
       backend,
       viewport: {
         width: metrics.width,
@@ -404,6 +417,97 @@ function detectContentRoi(
     y,
     width: Math.max(1, right - x),
     height: Math.max(1, bottom - y),
+  };
+}
+
+export interface LayoutShiftMetrics {
+  avgLeftShiftPx: number;
+  maxLeftShiftPx: number;
+  avgRightShiftPx: number;
+  maxRightShiftPx: number;
+  contentRowCount: number;
+}
+
+/**
+ * Per-row "earliest x where chromium and crater disagree". Catches layout
+ * displacement that pixelmatch's diffRatio under-weighs when the displaced
+ * content lands on a same-colored region (e.g. a whole table column offset
+ * inside a same-colored background band).
+ *
+ * For each row, we walk both images side by side and find the first and last
+ * x at which the two pixels differ by more than `tolerance`. We then report
+ * the x-distance from the nearest image edge so that a row with no diff
+ * contributes 0 and a row with diff at the very edge contributes 0 too —
+ * only diffs that have travelled inward count as a layout shift.
+ */
+export function computeLayoutShiftMetrics(
+  chromium: DecodedImage,
+  crater: DecodedImage,
+  options: { tolerance?: number } = {},
+): LayoutShiftMetrics {
+  if (chromium.width !== crater.width || chromium.height !== crater.height) {
+    throw new Error(
+      "computeLayoutShiftMetrics requires images of identical dimensions",
+    );
+  }
+  const tolerance = options.tolerance ?? 18;
+  const w = chromium.width;
+  const h = chromium.height;
+  let sumLeft = 0;
+  let sumRight = 0;
+  let maxLeft = 0;
+  let maxRight = 0;
+  let rows = 0;
+  for (let y = 0; y < h; y += 1) {
+    const rowStart = y * w * 4;
+    let firstDiff = -1;
+    let lastDiff = -1;
+    for (let x = 0; x < w; x += 1) {
+      const off = rowStart + x * 4;
+      const dr = Math.abs(
+        (chromium.data[off] ?? 0) - (crater.data[off] ?? 0),
+      );
+      const dg = Math.abs(
+        (chromium.data[off + 1] ?? 0) - (crater.data[off + 1] ?? 0),
+      );
+      const db = Math.abs(
+        (chromium.data[off + 2] ?? 0) - (crater.data[off + 2] ?? 0),
+      );
+      const da = Math.abs(
+        (chromium.data[off + 3] ?? 0) - (crater.data[off + 3] ?? 0),
+      );
+      const delta = dr + dg + db + da;
+      if (delta <= tolerance) continue;
+      if (firstDiff < 0) firstDiff = x;
+      lastDiff = x;
+    }
+    if (firstDiff < 0) continue;
+    // firstDiff = how far from the left edge the first mismatch sits.
+    // (w - 1 - lastDiff) = how far from the right edge the last mismatch sits.
+    // Both grow when content has been shifted inward on one side.
+    const leftShift = firstDiff;
+    const rightShift = w - 1 - lastDiff;
+    sumLeft += leftShift;
+    sumRight += rightShift;
+    if (leftShift > maxLeft) maxLeft = leftShift;
+    if (rightShift > maxRight) maxRight = rightShift;
+    rows += 1;
+  }
+  if (rows === 0) {
+    return {
+      avgLeftShiftPx: 0,
+      maxLeftShiftPx: 0,
+      avgRightShiftPx: 0,
+      maxRightShiftPx: 0,
+      contentRowCount: 0,
+    };
+  }
+  return {
+    avgLeftShiftPx: sumLeft / rows,
+    maxLeftShiftPx: maxLeft,
+    avgRightShiftPx: sumRight / rows,
+    maxRightShiftPx: maxRight,
+    contentRowCount: rows,
   };
 }
 
@@ -766,6 +870,12 @@ export async function compareReferenceFixtureToImage(
     data: result.output,
   };
 
+  const layoutShift = options.maxLayoutShiftPx !== undefined
+    ? computeLayoutShiftMetrics(chromiumImage, craterImage, {
+        tolerance: options.backgroundTolerance ?? 18,
+      })
+    : undefined;
+
   await fs.mkdir(options.outputDir, { recursive: true });
   const chromiumPath = path.join(options.outputDir, "chromium.png");
   const craterPath = path.join(options.outputDir, "crater.png");
@@ -785,6 +895,7 @@ export async function compareReferenceFixtureToImage(
       roi,
       maskPixels: compareMask ? maskPixelCount(compareMask) : undefined,
       cssRuleUsage: craterImage.cssRuleUsage,
+      layoutShift,
     }),
   );
 
@@ -798,6 +909,8 @@ export async function compareReferenceFixtureToImage(
     maskPixels: compareMask ? maskPixelCount(compareMask) : undefined,
     threshold: options.threshold,
     maxDiffRatio: options.maxDiffRatio,
+    layoutShift,
+    maxLayoutShiftPx: options.maxLayoutShiftPx,
     chromiumPath,
     craterPath,
     diffPath,
