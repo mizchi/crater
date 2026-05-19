@@ -126,4 +126,12 @@ fn BidiProtocol::handle_pointer_click_navigation(
   let nav_id = self.next_navigation_id.to_string()
   self.next_navigation_id += 1
   self.emit_navigation_events(ctx_id, destination, nav_id)
+  // Push the destination as a synthetic-navigation marker so the
+  // adapter's `flushPendingNavigation` picks it up on the next
+  // `script.evaluate` boundary and mirrors it onto `page.url()`.
+  // The shim `click()` path doesn't run for `input.performActions`
+  // pointer simulation, so without this `page.click(selector)`
+  // would leave `page.url()` stale even after the server-side
+  // session URL advanced. (#208)
+  push_synthetic_navigation(destination)
 }

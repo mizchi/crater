@@ -1314,6 +1314,27 @@ fn drain_pending_user_prompts() -> String {
 }
 
 ///|
+/// Push a synthetic-navigation marker onto the JS realm so the adapter's
+/// `flushPendingNavigation` can mirror it onto `currentUrl` on the next
+/// `script.evaluate` boundary. Used by server-side pointer-click
+/// navigation (`input.performActions` path), where the in-realm shim
+/// `click()` default action doesn't run. (#208)
+pub extern "js" fn js_push_synthetic_navigation(url : String) -> Unit =
+  #| (url) => {
+  #|   if (typeof url !== "string" || url.length === 0) return;
+  #|   globalThis.__craterPendingNavigation = {
+  #|     url: url,
+  #|     kind: "pointer-click",
+  #|     urlOnly: true,
+  #|   };
+  #| }
+
+///|
+fn push_synthetic_navigation(url : String) -> Unit {
+  js_push_synthetic_navigation(url)
+}
+
+///|
 /// Check if runtime handle exists in current JS handle store.
 extern "js" fn js_has_runtime_handle(handle_id : String) -> Bool =
   #| (handleId) => {
