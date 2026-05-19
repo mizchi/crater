@@ -289,6 +289,9 @@ extern "js" fn js_evaluate_expression(
   #|       // ensures the per-eval sync doesn't drop the WebSocket / EventSource
   #|       // constructors that real-time apps need.
   #|       "WebSocket", "EventSource",
+  #|       // File upload surface — Blob/File are native in Node 22, FileReader
+  #|       // is shimmed below. Real apps' upload UIs touch all three.
+  #|       "Blob", "File", "FileReader", "FileList",
   #|     ]);
   #|     globalThis.__bidiSyncWindowPropertiesToGlobal = (win) => {
   #|       const source = win && typeof win === "object" ? win : globalThis.window;
@@ -3339,6 +3342,115 @@ extern "js" fn js_evaluate_expression(
   #|         }
   #|       };
   #|     })();
+  #|     // FileReader shim — Node 22 ships Blob and File natively but NOT
+  #|     // FileReader. Real upload UIs call readAsText / readAsArrayBuffer /
+  #|     // readAsDataURL on a File and listen for the `load` event. We
+  #|     // implement the readers as thin async wrappers over Blob.text() /
+  #|     // Blob.arrayBuffer(), fire load/loadend events through a small
+  #|     // EventTarget-shaped surface, and honor abort(). The reserved-
+  #|     // properties set above keeps it from being clobbered by the
+  #|     // per-evaluate window→globalThis sync.
+  #|     if (typeof globalThis.FileReader !== 'function') {
+  #|       class FileReader {
+  #|         constructor() {
+  #|           this.result = null;
+  #|           this.error = null;
+  #|           this.readyState = 0;
+  #|           this.onload = null;
+  #|           this.onloadend = null;
+  #|           this.onloadstart = null;
+  #|           this.onerror = null;
+  #|           this.onabort = null;
+  #|           this.onprogress = null;
+  #|           this._listeners = {};
+  #|         }
+  #|         addEventListener(type, listener) {
+  #|           const key = String(type);
+  #|           if (!this._listeners[key]) this._listeners[key] = [];
+  #|           if (typeof listener === 'function' && !this._listeners[key].includes(listener)) {
+  #|             this._listeners[key].push(listener);
+  #|           }
+  #|         }
+  #|         removeEventListener(type, listener) {
+  #|           const key = String(type);
+  #|           if (!this._listeners[key]) return;
+  #|           this._listeners[key] = this._listeners[key].filter(fn => fn !== listener);
+  #|         }
+  #|         _fire(type) {
+  #|           const ev = { type, target: this, currentTarget: this };
+  #|           const propHandler = this['on' + type];
+  #|           if (typeof propHandler === 'function') {
+  #|             try { propHandler.call(this, ev); } catch (_e) {}
+  #|           }
+  #|           const list = this._listeners[type] || [];
+  #|           for (const fn of list.slice()) {
+  #|             try { fn.call(this, ev); } catch (_e) {}
+  #|           }
+  #|         }
+  #|         _read(blob, mode) {
+  #|           if (this.readyState === 1) {
+  #|             throw new DOMException('FileReader is already reading', 'InvalidStateError');
+  #|           }
+  #|           this.readyState = 1;
+  #|           this.result = null;
+  #|           this.error = null;
+  #|           const self = this;
+  #|           const succeed = (value) => {
+  #|             if (self.readyState !== 1) return;
+  #|             self.result = value;
+  #|             self.readyState = 2;
+  #|             self._fire('load');
+  #|             self._fire('loadend');
+  #|           };
+  #|           const fail = (err) => {
+  #|             if (self.readyState !== 1) return;
+  #|             self.error = err;
+  #|             self.readyState = 2;
+  #|             self._fire('error');
+  #|             self._fire('loadend');
+  #|           };
+  #|           Promise.resolve().then(() => self._fire('loadstart'));
+  #|           const blobApi = (typeof blob === 'object' && blob !== null) ? blob : null;
+  #|           if (!blobApi) { fail(new TypeError('FileReader read called with non-Blob')); return; }
+  #|           if (mode === 'text') {
+  #|             Promise.resolve(blobApi.text()).then(succeed, fail);
+  #|           } else if (mode === 'arrayBuffer') {
+  #|             Promise.resolve(blobApi.arrayBuffer()).then(succeed, fail);
+  #|           } else if (mode === 'dataURL') {
+  #|             Promise.resolve(blobApi.arrayBuffer()).then((buf) => {
+  #|               const bytes = new Uint8Array(buf);
+  #|               let bin = '';
+  #|               for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  #|               const b64 = btoa(bin);
+  #|               const ct = (blobApi.type && typeof blobApi.type === 'string') ? blobApi.type : 'application/octet-stream';
+  #|               succeed('data:' + ct + ';base64,' + b64);
+  #|             }, fail);
+  #|           } else if (mode === 'binaryString') {
+  #|             Promise.resolve(blobApi.arrayBuffer()).then((buf) => {
+  #|               const bytes = new Uint8Array(buf);
+  #|               let bin = '';
+  #|               for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  #|               succeed(bin);
+  #|             }, fail);
+  #|           }
+  #|         }
+  #|         readAsText(blob) { this._read(blob, 'text'); }
+  #|         readAsArrayBuffer(blob) { this._read(blob, 'arrayBuffer'); }
+  #|         readAsDataURL(blob) { this._read(blob, 'dataURL'); }
+  #|         readAsBinaryString(blob) { this._read(blob, 'binaryString'); }
+  #|         abort() {
+  #|           if (this.readyState !== 1) return;
+  #|           this.readyState = 2;
+  #|           this.error = new DOMException('Read aborted', 'AbortError');
+  #|           this._fire('abort');
+  #|           this._fire('loadend');
+  #|         }
+  #|       }
+  #|       FileReader.EMPTY = 0;
+  #|       FileReader.LOADING = 1;
+  #|       FileReader.DONE = 2;
+  #|       globalThis.FileReader = FileReader;
+  #|     }
   #|     globalThis.getComputedStyle = function(el) {
   #|       // Return a CSSStyleDeclaration-like object with direct property access
   #|       const style = el._style || {};
