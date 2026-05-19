@@ -33,6 +33,17 @@ pub fn px_to_row(px : Double) -> Int {
 }
 
 ///|
+/// Convert a text run top Y to the nearest character row.
+///
+/// TUI text is painted onto fixed 16px cells while CSS preformatted text can
+/// use a slightly smaller line height. Snapping pre/code text positions to the
+/// nearest row preserves adjacent CSS line boxes instead of letting them
+/// overwrite the same terminal row.
+fn px_to_text_row(px : Double) -> Int {
+  ((px + font_height / 2.0) / font_height).to_int()
+}
+
+///|
 /// Convert pixel height to character height (rounds up).
 fn px_to_row_height(px : Double) -> Int {
   let result = px / font_height

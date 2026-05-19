@@ -78,8 +78,13 @@ fn render_paint_node(
   if node.tag == "img" && w > 0 && h > 0 {
     render_image_node(ctx, node, col, row, w, h)
   } else {
+    let text_row = if child_inside_pre {
+      px_to_text_row(abs_y) - ctx.scroll_y
+    } else {
+      row
+    }
     render_text_node(
-      ctx, node, col, row, w, h, inside_link, child_link_source_id, child_inside_pre,
+      ctx, node, col, text_row, w, h, inside_link, child_link_source_id, child_inside_pre,
       visible_rect,
     )
   }
