@@ -3116,6 +3116,78 @@ extern "js" fn js_evaluate_expression(
   #|       replace: function(url) { globalThis.__pageUrl = url; this.href = url; },
   #|       reload: function() {}
   #|     };
+  #|     // ServiceWorker registration shim — PWAs / offline-capable apps
+  #|     // call `navigator.serviceWorker.register(url)` at boot and chain
+  #|     // off the returned ServiceWorkerRegistration. Without this, the
+  #|     // promise either rejects or never resolves and the boot path
+  #|     // bails. We return a minimal-but-spec-shaped Registration with
+  #|     // non-null active/installing/waiting ServiceWorker stubs and a
+  #|     // resolved `navigator.serviceWorker.ready` so subsequent .then
+  #|     // chains keep moving. The SW script itself is NOT executed —
+  #|     // fetch interception by the worker is out of scope. (#181)
+  #|     const _makeServiceWorker = (scriptURL) => ({
+  #|       scriptURL: String(scriptURL || ''),
+  #|       state: 'activated',
+  #|       onstatechange: null,
+  #|       postMessage(_msg, _transfer) { /* no-op */ },
+  #|       addEventListener(_type, _listener) { /* no-op */ },
+  #|       removeEventListener(_type, _listener) { /* no-op */ },
+  #|     });
+  #|     const _makeRegistration = (scope, scriptURL) => {
+  #|       const sw = _makeServiceWorker(scriptURL);
+  #|       return {
+  #|         scope: String(scope || '/'),
+  #|         installing: null,
+  #|         waiting: null,
+  #|         active: sw,
+  #|         navigationPreload: {
+  #|           enable: () => Promise.resolve(),
+  #|           disable: () => Promise.resolve(),
+  #|           getState: () => Promise.resolve({ enabled: false }),
+  #|           setHeaderValue: (_v) => Promise.resolve(),
+  #|         },
+  #|         update: () => Promise.resolve(),
+  #|         unregister: () => Promise.resolve(true),
+  #|         addEventListener(_type, _listener) {},
+  #|         removeEventListener(_type, _listener) {},
+  #|         onupdatefound: null,
+  #|         pushManager: {
+  #|           subscribe: () => Promise.reject(new DOMException('Push not supported', 'NotSupportedError')),
+  #|           getSubscription: () => Promise.resolve(null),
+  #|           permissionState: () => Promise.resolve('denied'),
+  #|         },
+  #|       };
+  #|     };
+  #|     const _serviceWorkerContainer = (() => {
+  #|       const registrations = new Map(); // scope -> registration
+  #|       const defaultScope = '/';
+  #|       const defaultReg = _makeRegistration(defaultScope, '');
+  #|       registrations.set(defaultScope, defaultReg);
+  #|       const container = {
+  #|         controller: defaultReg.active,
+  #|         ready: Promise.resolve(defaultReg),
+  #|         register(scriptURL, options) {
+  #|           const scope = (options && options.scope) ? String(options.scope) : defaultScope;
+  #|           const reg = _makeRegistration(scope, scriptURL);
+  #|           registrations.set(scope, reg);
+  #|           return Promise.resolve(reg);
+  #|         },
+  #|         getRegistration(scope) {
+  #|           const key = scope === undefined ? defaultScope : String(scope);
+  #|           return Promise.resolve(registrations.get(key) || null);
+  #|         },
+  #|         getRegistrations() {
+  #|           return Promise.resolve(Array.from(registrations.values()));
+  #|         },
+  #|         startMessages() { /* no-op */ },
+  #|         addEventListener(_type, _listener) {},
+  #|         removeEventListener(_type, _listener) {},
+  #|         oncontrollerchange: null,
+  #|         onmessage: null,
+  #|         onmessageerror: null,
+  #|       };
+  #|       return container;
+  #|     })();
   #|     globalThis.navigator = {
   #|       userAgent: 'Crater/1.0 (MoonBit; BiDi)',
   #|       platform: 'Crater',
@@ -3126,8 +3198,16 @@ extern "js" fn js_evaluate_expression(
   #|       userActivation: {
   #|         isActive: false,
   #|         hasBeenActive: false
-  #|       }
+  #|       },
+  #|       serviceWorker: _serviceWorkerContainer,
   #|     };
+  #|     // Stash the container so any LATER navigator-replacing code path
+  #|     // can re-attach it. The win.navigator literal in
+  #|     // installContextWindowApi reads from `__bidiServiceWorkerContainer`
+  #|     // rather than from a snapshot of `globalThis.navigator` taken
+  #|     // before this init ran, so the SW surface survives the
+  #|     // contextWindow rebind that happens at every evaluate.
+  #|     globalThis.__bidiServiceWorkerContainer = _serviceWorkerContainer;
   #|     // History API — pushState / replaceState update location AND
   #|     // globalThis.__pageUrl so SPA routers can read the new URL through
   #|     // either surface. back() / forward() / go() walk a real stack and
@@ -5094,6 +5174,18 @@ extern "js" fn js_evaluate_expression(
   #|       userActivation: baseNavigator.userActivation && typeof baseNavigator.userActivation === 'object'
   #|         ? { ...baseNavigator.userActivation }
   #|         : { isActive: false, hasBeenActive: false },
+  #|       // Forward the ServiceWorker container so the
+  #|       // navigator.serviceWorker.register surface survives the
+  #|       // globalThis.navigator = contextWindow.navigator replacement
+  #|       // that happens at every script.evaluate boundary. We read
+  #|       // from the persisted `__bidiServiceWorkerContainer` stash
+  #|       // rather than baseNavigator, because contextWindow setup
+  #|       // can fire BEFORE the document-init block (which is guarded
+  #|       // by `if (!globalThis.document)`) runs on the first
+  #|       // evaluate, in which case baseNavigator wouldn't yet have
+  #|       // the container. The stash is set unconditionally in the
+  #|       // init block (#181).
+  #|       serviceWorker: globalThis.__bidiServiceWorkerContainer || baseNavigator.serviceWorker,
   #|     };
   #|     win.innerWidth = Number(globalThis.innerWidth || 1024);
   #|     win.innerHeight = Number(globalThis.innerHeight || 768);
@@ -5141,6 +5233,24 @@ extern "js" fn js_evaluate_expression(
   #|     globalThis.navigator = contextWindow.navigator;
   #|   } else if (globalThis.navigator && typeof globalThis.navigator === 'object') {
   #|     contextWindow.navigator = globalThis.navigator;
+  #|   }
+  #|   // Reattach the ServiceWorker container if the navigator rebind
+  #|   // above (or a stale contextWindow.navigator created before the
+  #|   // SW init ran) left it missing. Runs every evaluate so a fresh
+  #|   // navigator never lacks navigator.serviceWorker by the time
+  #|   // user code runs (#181).
+  #|   if (
+  #|     globalThis.navigator &&
+  #|     typeof globalThis.navigator === 'object' &&
+  #|     !globalThis.navigator.serviceWorker &&
+  #|     globalThis.__bidiServiceWorkerContainer
+  #|   ) {
+  #|     try {
+  #|       globalThis.navigator.serviceWorker = globalThis.__bidiServiceWorkerContainer;
+  #|       if (contextWindow.navigator && contextWindow.navigator !== globalThis.navigator) {
+  #|         contextWindow.navigator.serviceWorker = globalThis.__bidiServiceWorkerContainer;
+  #|       }
+  #|     } catch (_e) { /* navigator may be frozen — swallow */ }
   #|   }
   #|   if (contextWindow.document && typeof contextWindow.document === "object") {
   #|     globalThis.document = contextWindow.document;
