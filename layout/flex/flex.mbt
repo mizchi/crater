@@ -65,6 +65,243 @@ fn relative_normal_flow_parent_x(
 }
 
 ///|
+fn flex_abs_cb_applies(style : @style.Style) -> Bool {
+  match style.display {
+    @types.Inline => false
+    _ =>
+      match style.position {
+        @types.Absolute | @types.Fixed | @types.Relative => true
+        @types.Static =>
+          style.contain.layout ||
+          style.contain.paint ||
+          !style.transform.is_none() ||
+          style.has_filter
+      }
+  }
+}
+
+///|
+fn layout_abs_descendant_against_cb(
+  child : @node.Node,
+  existing_layout : @layout_types.Layout,
+  cb_width : Double,
+  cb_height : Double,
+  parent_border : @types.Rect[Double],
+  parent_padding : @types.Rect[Double],
+  static_y : Double,
+  warnings : Array[@layout_types.LayoutWarning],
+  cache : IntrinsicCache,
+  dispatch : @node.DispatchFn,
+) -> @layout_types.Layout {
+  let child_style = child.style
+  if child_style.display == @types.Display::None {
+    return @absolute.create_zero_layout(child.id)
+  }
+  let params = @absolute.compute_size_params(child_style, cb_width, cb_height)
+  let (initial_width, initial_height) = @types.resolve_dimensions_with_aspect_ratio(
+    params.initial_width,
+    params.initial_height,
+    child_style.aspect_ratio,
+    params.min_width,
+    params.max_width,
+    params.min_height,
+    params.max_height,
+  )
+  let raw_width = match initial_width {
+    Some(w) => w
+    None => existing_layout.width
+  }
+  let raw_height = match initial_height {
+    Some(h) => h
+    None => existing_layout.height
+  }
+  let (child_width, child_height) = @absolute.apply_constraints_with_aspect_ratio(
+    raw_width,
+    raw_height,
+    child_style,
+    params.min_width,
+    params.max_width,
+    params.min_height,
+    params.max_height,
+  )
+  let child_padding = @types.resolve_rect(child_style.padding, cb_width)
+  let child_border = @types.resolve_rect(child_style.border, cb_width)
+  let min_child_width = child_padding.horizontal_sum() +
+    child_border.horizontal_sum()
+  let min_child_height = child_padding.vertical_sum() +
+    child_border.vertical_sum()
+  let child_width = if child_width < min_child_width {
+    min_child_width
+  } else {
+    child_width
+  }
+  let child_height = if child_height < min_child_height {
+    min_child_height
+  } else {
+    child_height
+  }
+  let nested_available_height = match initial_height {
+    Some(_) => Some(child_height)
+    None => None
+  }
+  let child_inner = if child.children.length() > 0 {
+    compute_nested(
+      child,
+      {
+        available_width: child_width,
+        available_height: nested_available_height,
+        sizing_mode: @layout_types.Definite,
+        viewport_width: cb_width,
+        viewport_height: cb_height,
+        stretch_width: false,
+        stretch_height: false,
+      },
+      warnings,
+      cache,
+      dispatch,
+    )
+  } else {
+    existing_layout
+  }
+  let margin_left_is_auto = @absolute.is_margin_auto(child_style.margin.left)
+  let margin_right_is_auto = @absolute.is_margin_auto(child_style.margin.right)
+  let margin_top_is_auto = @absolute.is_margin_auto(child_style.margin.top)
+  let margin_bottom_is_auto = @absolute.is_margin_auto(
+    child_style.margin.bottom,
+  )
+  let child_x = match (params.inset_left, params.inset_right) {
+    (Some(l), Some(r)) =>
+      if margin_left_is_auto && margin_right_is_auto {
+        let available = cb_width - l - r - child_width
+        if available >= 0.0 {
+          l + available / 2.0 + parent_border.left
+        } else {
+          l + parent_border.left
+        }
+      } else if margin_left_is_auto {
+        cb_width - child_width - r - params.margin_right + parent_border.left
+      } else if margin_right_is_auto {
+        l + params.margin_left + parent_border.left
+      } else {
+        l + params.margin_left + parent_border.left
+      }
+    (Some(l), None) => l + params.margin_left + parent_border.left
+    (None, Some(r)) =>
+      parent_border.left + cb_width - child_width - r - params.margin_right
+    (None, None) =>
+      params.margin_left + parent_border.left + parent_padding.left
+  }
+  let child_y = match (params.inset_top, params.inset_bottom) {
+    (Some(t), Some(b)) =>
+      if margin_top_is_auto && margin_bottom_is_auto {
+        let available = cb_height - t - b - child_height
+        if available >= 0.0 {
+          t + available / 2.0 + parent_border.top
+        } else {
+          t + parent_border.top
+        }
+      } else if margin_top_is_auto {
+        cb_height - child_height - b - params.margin_bottom + parent_border.top
+      } else if margin_bottom_is_auto {
+        t + params.margin_top + parent_border.top
+      } else {
+        t + params.margin_top + parent_border.top
+      }
+    (Some(t), None) => t + params.margin_top + parent_border.top
+    (None, Some(b)) =>
+      parent_border.top + cb_height - child_height - b - params.margin_bottom
+    (None, None) =>
+      static_y + params.margin_top + parent_border.top + parent_padding.top
+  }
+  let child_margin = @types.resolve_rect(child_style.margin, cb_width)
+  {
+    id: child.id,
+    x: child_x,
+    y: child_y,
+    width: child_width,
+    height: child_height,
+    margin: child_margin,
+    padding: child_inner.padding,
+    border: child_inner.border,
+    overflow_x: child_style.overflow_x,
+    overflow_y: child_style.overflow_y,
+    scroll_width: child_inner.scroll_width,
+    scroll_height: child_inner.scroll_height,
+    children: child_inner.children,
+    text: child.text,
+  }
+}
+
+///|
+fn rebase_abs_descendants_to_flex_cb(
+  layout : @layout_types.Layout,
+  node : @node.Node,
+  cb_width : Double,
+  cb_height : Double,
+  parent_border : @types.Rect[Double],
+  parent_padding : @types.Rect[Double],
+  parent_offset_x : Double,
+  parent_offset_y : Double,
+  warnings : Array[@layout_types.LayoutWarning],
+  cache : IntrinsicCache,
+  dispatch : @node.DispatchFn,
+) -> @layout_types.Layout {
+  if layout.children.length() == 0 || node.children.length() == 0 {
+    return layout
+  }
+  let adjusted_children : Array[@layout_types.Layout] = []
+  let min_len = if layout.children.length() < node.children.length() {
+    layout.children.length()
+  } else {
+    node.children.length()
+  }
+  for i = 0; i < min_len; i = i + 1 {
+    let child_layout = layout.children[i]
+    let child_node = node.children[i]
+    let adjusted = if child_node.style.position == @types.Absolute {
+      let rebased = layout_abs_descendant_against_cb(
+        child_node,
+        child_layout,
+        cb_width,
+        cb_height,
+        parent_border,
+        parent_padding,
+        parent_offset_y + child_layout.y,
+        warnings,
+        cache,
+        dispatch,
+      )
+      {
+        ..rebased,
+        x: rebased.x - parent_offset_x,
+        y: rebased.y - parent_offset_y,
+      }
+    } else if flex_abs_cb_applies(child_node.style) {
+      child_layout
+    } else {
+      rebase_abs_descendants_to_flex_cb(
+        child_layout,
+        child_node,
+        cb_width,
+        cb_height,
+        parent_border,
+        parent_padding,
+        parent_offset_x + child_layout.x,
+        parent_offset_y + child_layout.y,
+        warnings,
+        cache,
+        dispatch,
+      )
+    }
+    adjusted_children.push(adjusted)
+  }
+  for i = min_len; i < layout.children.length(); i = i + 1 {
+    adjusted_children.push(layout.children[i])
+  }
+  { ..layout, children: adjusted_children }
+}
+
+///|
 /// Resolve a dimension to pixels for intrinsic sizing
 /// Percentages resolve to 0 in intrinsic sizing mode
 fn resolve_dimension_intrinsic(dim : @types.Dimension) -> Double {
@@ -353,6 +590,19 @@ fn estimate_flex_text_intrinsic_main_size(
   match node.text {
     Some(text) =>
       if main_axis_is_inline {
+        match node.measure {
+          Some(mf) => {
+            let intrinsic = (mf.func)(0.0, 0.0)
+            return Some(
+              if is_row {
+                intrinsic.max_width
+              } else {
+                intrinsic.max_height
+              },
+            )
+          }
+          None => ()
+        }
         let (max_cols, _) = estimate_flex_text_columns(
           text,
           node.style.white_space,
@@ -398,6 +648,19 @@ fn estimate_flex_text_min_main_size(
   match node.text {
     Some(text) =>
       if main_axis_is_inline {
+        match node.measure {
+          Some(mf) => {
+            let intrinsic = (mf.func)(0.0, 0.0)
+            return Some(
+              if is_row {
+                intrinsic.min_width
+              } else {
+                intrinsic.min_height
+              },
+            )
+          }
+          None => ()
+        }
         let (_, max_word_cols) = estimate_flex_text_columns(
           text,
           node.style.white_space,
@@ -470,6 +733,177 @@ fn ends_with_collapsible_flex_whitespace(text : String) -> Bool {
 }
 
 ///|
+fn trim_flex_measure_whitespace_edges(text : String) -> String {
+  let chars : Array[Char] = []
+  for c in text.iter() {
+    chars.push(c)
+  }
+  let mut start = 0
+  while start < chars.length() && is_flex_whitespace_char(chars[start]) {
+    start = start + 1
+  }
+  let mut end = chars.length()
+  while end > start && is_flex_whitespace_char(chars[end - 1]) {
+    end = end - 1
+  }
+  let buf = StringBuilder::new()
+  for i = start; i < end; i = i + 1 {
+    buf.write_char(chars[i])
+  }
+  buf.to_string()
+}
+
+///|
+fn estimate_flex_text_measure_columns(text : String) -> (Int, Int) {
+  let raw_trimmed = trim_flex_measure_whitespace_edges(text)
+  let mut measured_text = if raw_trimmed.is_empty() && !text.is_empty() {
+    " "
+  } else {
+    raw_trimmed
+  }
+  if !raw_trimmed.is_empty() {
+    let mut starts_with_ws = false
+    let mut seen_first = false
+    let mut ends_with_ws = false
+    let mut before_first_non_ws = true
+    let mut leading_has_line_break = false
+    for c in text.iter() {
+      if !seen_first {
+        seen_first = true
+        starts_with_ws = is_flex_whitespace_char(c)
+      }
+      if before_first_non_ws {
+        if c == '\n' || c == '\r' {
+          leading_has_line_break = true
+        }
+        if !is_flex_whitespace_char(c) {
+          before_first_non_ws = false
+        }
+      }
+      ends_with_ws = is_flex_whitespace_char(c)
+    }
+    let buf = StringBuilder::new()
+    if starts_with_ws && !leading_has_line_break {
+      buf.write_char(' ')
+    }
+    buf.write_string(measured_text)
+    if ends_with_ws {
+      buf.write_char(' ')
+    }
+    measured_text = buf.to_string()
+  }
+
+  let mut line_cols = 0
+  let mut max_line_cols = 0
+  let mut word_cols = 0
+  let mut max_word_cols = 0
+  for c in measured_text.iter() {
+    if c == '\n' {
+      if line_cols > max_line_cols {
+        max_line_cols = line_cols
+      }
+      if word_cols > max_word_cols {
+        max_word_cols = word_cols
+      }
+      line_cols = 0
+      word_cols = 0
+    } else if c == ' ' || c == '\t' {
+      if word_cols > max_word_cols {
+        max_word_cols = word_cols
+      }
+      word_cols = 0
+      line_cols = line_cols + 1
+    } else {
+      let cw = flex_text_char_display_width(c)
+      line_cols = line_cols + cw
+      word_cols = word_cols + cw
+    }
+  }
+  if line_cols > max_line_cols {
+    max_line_cols = line_cols
+  }
+  if word_cols > max_word_cols {
+    max_word_cols = word_cols
+  }
+  (max_line_cols, max_word_cols)
+}
+
+///|
+fn scale_normalized_flex_text_dimension(
+  original_value : Double,
+  original_cols : Int,
+  normalized_cols : Int,
+  style : @style.Style,
+) -> Double {
+  if normalized_cols == 0 {
+    return 0.0
+  }
+  if original_cols > 0 && original_value > 0.0 {
+    original_value * normalized_cols.to_double() / original_cols.to_double()
+  } else {
+    normalized_cols.to_double() * flex_text_char_width(style)
+  }
+}
+
+///|
+fn normalized_flex_text_measure(
+  measure : @layout_types.MeasureFunc?,
+  original_text : String,
+  normalized_text : String,
+  style : @style.Style,
+) -> @layout_types.MeasureFunc? {
+  match measure {
+    Some(mf) => {
+      let (original_max_cols, original_min_cols) = estimate_flex_text_measure_columns(
+        original_text,
+      )
+      let (normalized_max_cols, normalized_min_cols) = estimate_flex_text_measure_columns(
+        normalized_text,
+      )
+      Some({
+        func: fn(available_width, available_height) {
+          let intrinsic = (mf.func)(available_width, available_height)
+          if style.writing_mode.is_vertical() {
+            {
+              ..intrinsic,
+              min_height: scale_normalized_flex_text_dimension(
+                intrinsic.min_height,
+                original_min_cols,
+                normalized_min_cols,
+                style,
+              ),
+              max_height: scale_normalized_flex_text_dimension(
+                intrinsic.max_height,
+                original_max_cols,
+                normalized_max_cols,
+                style,
+              ),
+            }
+          } else {
+            {
+              ..intrinsic,
+              min_width: scale_normalized_flex_text_dimension(
+                intrinsic.min_width,
+                original_min_cols,
+                normalized_min_cols,
+                style,
+              ),
+              max_width: scale_normalized_flex_text_dimension(
+                intrinsic.max_width,
+                original_max_cols,
+                normalized_max_cols,
+                style,
+              ),
+            }
+          }
+        },
+      })
+    }
+    None => None
+  }
+}
+
+///|
 fn previous_significant_is_text(
   items : Array[FlattenedChild],
   index : Int,
@@ -527,13 +961,19 @@ fn normalize_flattened_flex_text_items(
       let prev_is_text = previous_significant_is_text(items, i)
       let next_is_text = next_significant_is_text(items, i)
       if prev_is_text && next_is_text {
+        let normalized_text = "\u00A0"
         let normalized_node = @node.Node::with_uid_and_measure(
           node.id,
           node.uid,
           node.style,
           node.children,
-          node.measure,
-          Some("\u00A0"),
+          normalized_flex_text_measure(
+            node.measure,
+            text,
+            normalized_text,
+            node.style,
+          ),
+          Some(normalized_text),
         )
         normalized.push({ ..item, node: normalized_node })
       }
@@ -558,7 +998,12 @@ fn normalize_flattened_flex_text_items(
         node.uid,
         node.style,
         node.children,
-        node.measure,
+        normalized_flex_text_measure(
+          node.measure,
+          text,
+          normalized_text,
+          node.style,
+        ),
         Some(normalized_text),
       )
       normalized.push({ ..item, node: normalized_node })
@@ -991,6 +1436,16 @@ fn uses_svg_default_intrinsic_box(node : @node.Node) -> Bool {
       (w - 300.0).abs() < 0.01 && (h - 150.0).abs() < 0.01
     _ => false
   }
+}
+
+///|
+fn uses_svg_auto_viewbox_box(node : @node.Node) -> Bool {
+  node.id.has_prefix("svg") &&
+  node.children.length() == 0 &&
+  node.measure is Some(_) &&
+  node.style.width == @types.Auto &&
+  node.style.height == @types.Auto &&
+  node.style.aspect_ratio is Some(_)
 }
 
 ///|
@@ -4204,6 +4659,7 @@ fn compute_internal(
     let flat_child = flattened[i]
     let child = flat_child.node
     let child_style = child.style
+    let svg_auto_viewbox_box = uses_svg_auto_viewbox_box(child)
 
     // Skip display:none children
     if child_style.display == @types.Display::None {
@@ -4283,7 +4739,18 @@ fn compute_internal(
               }
               // If max_height is set and less than intrinsic, use constrained value
               if max_h < @double.infinity || min_h > 0.0 {
-                let constrained = @types.clamp(intrinsic_h, min_h, max_h)
+                let preferred_h = if svg_auto_viewbox_box {
+                  if max_h < @double.infinity {
+                    max_h
+                  } else if min_h > 0.0 {
+                    min_h
+                  } else {
+                    intrinsic_h
+                  }
+                } else {
+                  intrinsic_h
+                }
+                let constrained = @types.clamp(preferred_h, min_h, max_h)
                 Some(constrained)
               } else {
                 None
@@ -4317,7 +4784,18 @@ fn compute_internal(
               }
               // If max_width is set and less than intrinsic, use constrained value
               if max_w < @double.infinity || min_w > 0.0 {
-                let constrained = @types.clamp(intrinsic_w, min_w, max_w)
+                let preferred_w = if svg_auto_viewbox_box {
+                  if max_w < @double.infinity {
+                    max_w
+                  } else if min_w > 0.0 {
+                    min_w
+                  } else {
+                    intrinsic_w
+                  }
+                } else {
+                  intrinsic_w
+                }
+                let constrained = @types.clamp(preferred_w, min_w, max_w)
                 Some(constrained)
               } else {
                 None
@@ -4513,7 +4991,7 @@ fn compute_internal(
                       _ => false
                     }
                     // Note: Check for wrap/direction regardless of explicit display
-                    if is_wrap && is_row_flex {
+                    if is_wrap && is_row_flex && child_style.flex_grow > 0.0 {
                       content_width // Use available width for row wrap container
                     } else if has_percent_width_table_descendant(child) {
                       // Percentage width tables inside this flex item resolve
@@ -5747,6 +6225,8 @@ fn compute_internal(
           let item = flex_items[i]
           if item.frozen {
             used_space = used_space + item.final_main + item.margin_main
+          } else if item.flex_grow <= 0.0 {
+            used_space = used_space + item.final_main + item.margin_main
           } else {
             used_space = used_space + item.base_main + item.margin_main
             unfrozen_flex_grow = unfrozen_flex_grow + item.flex_grow
@@ -5809,6 +6289,8 @@ fn compute_internal(
         for i = 0; i < flex_items.length(); i = i + 1 {
           let item = flex_items[i]
           if item.frozen {
+            used_space = used_space + item.final_main + item.margin_main
+          } else if item.flex_shrink <= 0.0 {
             used_space = used_space + item.final_main + item.margin_main
           } else {
             used_space = used_space + item.base_main + item.margin_main
@@ -7232,6 +7714,7 @@ fn compute_internal(
             }
           _ => false
         }
+        let child_is_inline_block = child.style.display == @types.InlineBlock
         let child_is_table = match child.style.display {
           @types.Table | @types.InlineTable => true
           _ => false
@@ -7250,7 +7733,12 @@ fn compute_internal(
           // Grid and table descendants need this flag to treat auto sizing as
           // extrinsically definite on the flex main axis.
           stretch_width: (
-            is_row && (child_is_grid || child_is_sized_block_flow)
+            is_row &&
+            (
+              child_is_grid ||
+              child_is_sized_block_flow ||
+              child_is_inline_block
+            )
           ) ||
           child_is_table,
           stretch_height: (child_is_grid && !is_row) ||
@@ -8133,11 +8621,11 @@ fn compute_internal(
   indexed_layouts.sort_by(fn(a, b) { a.dom_index - b.dom_index })
 
   // Extract layouts from indexed_layouts
-  let child_layouts : Array[@layout_types.Layout] = Array::new(
+  let raw_child_layouts : Array[@layout_types.Layout] = Array::new(
     capacity=indexed_layouts.length(),
   )
   for il in indexed_layouts {
-    child_layouts.push(il.layout)
+    raw_child_layouts.push(il.layout)
   }
 
   // If width is auto, calculate actual width from child layouts
@@ -8146,7 +8634,7 @@ fn compute_internal(
   // container_width (which is available_width - margins). Only calculate shrink-to-fit width
   // when in MaxContent sizing mode.
   let final_width = if width_is_auto &&
-    child_layouts.length() > 0 &&
+    raw_child_layouts.length() > 0 &&
     !suppress_auto_inline_size {
     match ctx.sizing_mode {
       @layout_types.Definite =>
@@ -8246,6 +8734,52 @@ fn compute_internal(
     }
   } else {
     container_width
+  }
+  let child_layouts = if flex_abs_cb_applies(style) {
+    let adjusted : Array[@layout_types.Layout] = Array::new(
+      capacity=indexed_layouts.length(),
+    )
+    let cb_width = if final_width > border.horizontal_sum() {
+      final_width - border.horizontal_sum()
+    } else {
+      0.0
+    }
+    let cb_height = if final_height > border.vertical_sum() {
+      final_height - border.vertical_sum()
+    } else {
+      0.0
+    }
+    for il in indexed_layouts {
+      if il.dom_index >= 0 && il.dom_index < child_count {
+        let child = children[il.dom_index]
+        if child.style.position == @types.Absolute ||
+          child.style.position == @types.Fixed ||
+          flex_abs_cb_applies(child.style) {
+          adjusted.push(il.layout)
+        } else {
+          adjusted.push(
+            rebase_abs_descendants_to_flex_cb(
+              il.layout,
+              child,
+              cb_width,
+              cb_height,
+              border,
+              padding,
+              il.layout.x,
+              il.layout.y,
+              warnings,
+              cache,
+              dispatch,
+            ),
+          )
+        }
+      } else {
+        adjusted.push(il.layout)
+      }
+    }
+    adjusted
+  } else {
+    raw_child_layouts
   }
   // Calculate scroll dimensions
   let (scroll_width, scroll_height) = calculate_scroll_dimensions(

@@ -19,7 +19,7 @@ pub struct Node {
   children : Array[Node]
   measure : @layout_types.MeasureFunc?
   text : String? // Text content for text nodes
-  src : String? // Image src attribute for <img> elements
+  src : String? // Image source for replaced image content
 }
 
 ///|

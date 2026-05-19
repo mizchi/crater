@@ -148,6 +148,29 @@ test "image provider draws raster img instead of alt text" {
 }
 
 ///|
+test "svg data uri with negative bounds is centered in destination region" {
+  let style = @style.Style::default()
+  let node = @paint_model.PaintNode::new(
+    "svg#icon",
+    "svg",
+    0.0,
+    0.0,
+    24.0,
+    24.0,
+    @paint_model.PaintProperties::from_style(style),
+    [],
+    src=Some(
+      "data:image/svg+xml,<svg viewBox=\"0 -10 10 10\" xmlns=\"http://www.w3.org/2000/svg\"><rect x=\"0\" y=\"-5\" width=\"10\" height=\"5\" fill=\"#474747\"></rect></svg>",
+    ),
+  )
+  let fb = @raster.Framebuffer::new(24, 24)
+  let palette = @raster.DynamicPalette::new()
+  @raster.render_paint_node_to_framebuffer(node, fb, palette)
+  inspect(fb.get_pixel(12, 6), content="0")
+  inspect(fb.get_pixel(12, 18) > 0, content="true")
+}
+
+///|
 test "render_paint_node_to_framebuffer blends semi transparent background" {
   let style = @style.Style::default()
   style.background_color = @types.Color::rgba(255, 0, 0, 0.5)

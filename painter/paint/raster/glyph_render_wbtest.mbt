@@ -172,6 +172,14 @@ test "draw_text_with_glyphs_clipped uses kerning-aware word widths for wrapping"
 }
 
 ///|
+test "resolve_glyph_text_wrap_width_keeps_single_layout_line_with_tall_line_height" {
+  inspect(
+    resolve_glyph_text_wrap_width(130, 21, 14.0, 21.0, "Fast rendering engine"),
+    content="0",
+  )
+}
+
+///|
 test "draw_text_with_glyphs_clipped wraps with family-specific advances" {
   @glyph.clear_glyph_caches()
   let provider : @glyph.GlyphProvider = {
@@ -410,6 +418,50 @@ test "draw_text_with_glyphs_clipped antialiases glyphs without clip" {
     }
   }
   inspect(has_intermediate, content="true")
+}
+
+///|
+test "draw_text_with_glyphs_clipped preserves fractional glyph x positions" {
+  @glyph.clear_glyph_caches()
+  let provider : @glyph.GlyphProvider = {
+    get_glyph: fn(_codepoint, font_size, _is_bold) {
+      let commands : Array[@svg.PathCommand] = [
+        MoveTo(0.0, -font_size),
+        LineTo(2.0, -font_size),
+        LineTo(2.0, 0.0),
+        LineTo(0.0, 0.0),
+        ClosePath,
+      ]
+      (commands, 5.5)
+    },
+    get_kern: fn(_left, _right, _font_size, _is_bold) { 0.0 },
+    get_glyph_by_weight: None,
+    get_kern_by_weight: None,
+    ascent_ratio: 1.0,
+    get_glyph_for_family: None,
+    get_kern_for_family: None,
+    get_glyph_for_family_by_weight: None,
+    get_kern_for_family_by_weight: None,
+    get_ascent_for_family: None,
+  }
+  let fb = Framebuffer::new(16, 12)
+  let palette = DynamicPalette::new()
+  let _ = draw_text_with_glyphs_clipped(
+    fb,
+    palette,
+    provider,
+    0,
+    0,
+    "AA",
+    16,
+    @svg.Color::rgb(0, 0, 0),
+    8.0,
+    8.0,
+    false,
+    None,
+  )
+  let edge = palette.colors[fb.get_pixel(5, 4)]
+  inspect(edge.r > 0 && edge.r < 255, content="true")
 }
 
 ///|

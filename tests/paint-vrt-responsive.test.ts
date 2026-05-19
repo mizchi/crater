@@ -103,7 +103,7 @@ test.describe("Responsive VRT", () => {
     </body></html>`;
 
     const results = await compareAtViewports(browser, "R1-fluid-boxes", html, {
-      maxDiffRatio: 0.05,
+      maxDiffRatio: 0.005,
     });
     for (const r of results) {
       expect(r.result.diffRatio, `${r.viewport}`).toBeLessThanOrEqual(r.result.maxDiffRatio);
@@ -126,7 +126,7 @@ test.describe("Responsive VRT", () => {
     </body></html>`;
 
     const results = await compareAtViewports(browser, "R2-flex-wrap", html, {
-      maxDiffRatio: 0.05,
+      maxDiffRatio: 0.005,
     });
     for (const r of results) {
       expect(r.result.diffRatio, `${r.viewport}`).toBeLessThanOrEqual(r.result.maxDiffRatio);
@@ -149,7 +149,7 @@ test.describe("Responsive VRT", () => {
     </body></html>`;
 
     const results = await compareAtViewports(browser, "R3-max-width-center", html, {
-      maxDiffRatio: 0.15,
+      maxDiffRatio: 0.076,
     });
     for (const r of results) {
       expect(r.result.diffRatio, `${r.viewport}`).toBeLessThanOrEqual(r.result.maxDiffRatio);
@@ -176,7 +176,7 @@ test.describe("Responsive VRT", () => {
     </body></html>`;
 
     const results = await compareAtViewports(browser, "R4-sidebar-main", html, {
-      maxDiffRatio: 0.05,
+      maxDiffRatio: 0.005,
     });
     for (const r of results) {
       expect(r.result.diffRatio, `${r.viewport}`).toBeLessThanOrEqual(r.result.maxDiffRatio);
@@ -201,7 +201,7 @@ test.describe("Responsive VRT", () => {
     </body></html>`;
 
     const results = await compareAtViewports(browser, "R5-grid-auto-fill", html, {
-      maxDiffRatio: 0.10,
+      maxDiffRatio: 0.005,
     });
     for (const r of results) {
       expect(r.result.diffRatio, `${r.viewport}`).toBeLessThanOrEqual(r.result.maxDiffRatio);
@@ -224,7 +224,7 @@ test.describe("Responsive VRT", () => {
     </body></html>`;
 
     const results = await compareAtViewports(browser, "R6-text-wrapping", html, {
-      maxDiffRatio: 0.20,
+      maxDiffRatio: 0.125,
     });
     for (const r of results) {
       expect(r.result.diffRatio, `${r.viewport}`).toBeLessThanOrEqual(r.result.maxDiffRatio);
@@ -250,7 +250,7 @@ test.describe("Responsive VRT", () => {
     </body></html>`;
 
     const results = await compareAtViewports(browser, "R7-overflow-scroll", html, {
-      maxDiffRatio: 0.10,
+      maxDiffRatio: 0.005,
     });
     for (const r of results) {
       expect(r.result.diffRatio, `${r.viewport}`).toBeLessThanOrEqual(r.result.maxDiffRatio);
@@ -280,7 +280,7 @@ test.describe("Responsive VRT", () => {
     </body></html>`;
 
     const results = await compareAtViewports(browser, "R8-navbar", html, {
-      maxDiffRatio: 0.15,
+      maxDiffRatio: 0.005,
     });
     for (const r of results) {
       expect(r.result.diffRatio, `${r.viewport}`).toBeLessThanOrEqual(r.result.maxDiffRatio);

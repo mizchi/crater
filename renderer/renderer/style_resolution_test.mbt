@@ -168,6 +168,73 @@ test "render_to_node applies margin-trim from stylesheet" {
 }
 
 ///|
+test "ua_default_heading_pre_table_metrics_match_chromium_basics" {
+  let html =
+    #|<!doctype html>
+    #|<body>
+    #|  <h1>h1</h1>
+    #|  <h2>h2</h2>
+    #|  <h3>h3</h3>
+    #|  <h4>h4</h4>
+    #|  <h5>h5</h5>
+    #|  <h6>h6</h6>
+    #|  <pre>pre</pre>
+    #|  <table><tr><th id="head">th</th><td id="cell">td</td></tr></table>
+    #|</body>
+  let root = @renderer.render_to_node(html, @renderer.RenderContext::default())
+  let h1 = root.children[0]
+  let h2 = root.children[1]
+  let h3 = root.children[2]
+  let h4 = root.children[3]
+  let h5 = root.children[4]
+  let h6 = root.children[5]
+  let pre = root.children[6]
+  let table = root.children[7]
+  inspect(h1.style.font_size, content="32")
+  inspect(h2.style.font_size, content="24")
+  inspect(h3.style.font_size, content="18.72")
+  inspect(h4.style.font_size, content="16")
+  inspect(h5.style.font_size, content="13.28")
+  inspect(h6.style.font_size, content="10.72")
+  inspect(pre.style.font_size, content="13")
+  inspect(pre.style.font_family, content="monospace")
+  inspect(pre.style.white_space, content="Pre")
+  inspect(pre.style.margin.top, content="Length(13)")
+  inspect(table.style.box_sizing, content="BorderBox")
+
+  fn find_node_by_id(node : @node.Node, id : String) -> @node.Node? {
+    if node.id == id {
+      return Some(node)
+    }
+    for child in node.children {
+      match find_node_by_id(child, id) {
+        Some(found) => return Some(found)
+        None => ()
+      }
+    }
+    None
+  }
+
+  match find_node_by_id(root, "th#head") {
+    Some(th) => {
+      inspect(th.style.padding.top, content="Length(1)")
+      inspect(th.style.padding.left, content="Length(1)")
+      inspect(th.style.vertical_align, content="Middle")
+      inspect(th.style.text_align, content="Center")
+    }
+    None => fail("expected th#head")
+  }
+  match find_node_by_id(root, "td#cell") {
+    Some(td) => {
+      inspect(td.style.padding.top, content="Length(1)")
+      inspect(td.style.padding.left, content="Length(1)")
+      inspect(td.style.vertical_align, content="Middle")
+    }
+    None => fail("expected td#cell")
+  }
+}
+
+///|
 test "font-size cascading from stylesheet" {
   let css = "#div1 { font-size: 20px; width: 30px; }"
   let stylesheet = @css.parse_stylesheet(css)

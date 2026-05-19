@@ -939,6 +939,16 @@ fn is_replaced_intrinsic_candidate(node : @node.Node) -> Bool {
 }
 
 ///|
+fn is_auto_viewbox_svg_leaf(node : @node.Node) -> Bool {
+  id_matches_tag(node.id, "svg") &&
+  node.children.length() == 0 &&
+  node.measure is Some(_) &&
+  node.style.width == @types.Auto &&
+  node.style.height == @types.Auto &&
+  node.style.aspect_ratio is Some(_)
+}
+
+///|
 fn text_glyph_height_from_style(style : @style.Style) -> Double {
   if style.font_size > 0.0 {
     style.font_size * inline_text_glyph_height_ratio
@@ -1961,6 +1971,15 @@ fn compute_inline_child(
               }
               if keep_nowrap_max_content {
                 max_content
+              } else if is_auto_viewbox_svg_leaf(node) {
+                let content_available = available_width -
+                  padding.horizontal_sum() -
+                  border.horizontal_sum()
+                if content_available > 0.0 {
+                  content_available
+                } else {
+                  min_content
+                }
               } else {
                 let content_available = available_width -
                   padding.horizontal_sum() -

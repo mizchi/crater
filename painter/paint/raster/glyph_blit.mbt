@@ -39,6 +39,11 @@ fn blend_color_over_pixel_alpha(
 }
 
 ///|
+fn floor_to_int(value : Double) -> Int {
+  value.floor().to_int()
+}
+
+///|
 fn blit_glyph_bitmap(
   fb : Framebuffer,
   palette : DynamicPalette,
@@ -50,8 +55,8 @@ fn blit_glyph_bitmap(
   opacity : Double,
   clip : ClipRect?,
 ) -> Unit {
-  let dx = draw_x.to_int() + bitmap.offset_x
-  let dy = draw_y.to_int() + bitmap.offset_y
+  let dx = floor_to_int(draw_x) + bitmap.offset_x
+  let dy = floor_to_int(draw_y) + bitmap.offset_y
   let has_coverage = bitmap.coverage.length() == bitmap.width * bitmap.height
   for by = 0; by < bitmap.height; by = by + 1 {
     let py = dy + by

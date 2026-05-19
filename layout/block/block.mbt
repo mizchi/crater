@@ -185,6 +185,16 @@ fn is_ruby_internal_id(node_id : String) -> Bool {
 }
 
 ///|
+fn is_auto_viewbox_svg_leaf(node : @node.Node) -> Bool {
+  id_matches_tag(node.id, "svg") &&
+  node.children.length() == 0 &&
+  node.measure is Some(_) &&
+  node.style.width == @types.Auto &&
+  node.style.height == @types.Auto &&
+  node.style.aspect_ratio is Some(_)
+}
+
+///|
 /// Whether this box establishes containing block for absolute descendants.
 fn establishes_abs_containing_block(
   style : @style.Style,
@@ -2605,6 +2615,7 @@ fn compute_with_collapse(
           @types.Auto => true
           _ => false
         }
+        let auto_viewbox_svg_leaf = is_auto_viewbox_svg_leaf(node)
 
         // Resolve min/max constraints
         let min_width = style.min_width.resolve_or(parent_width, 0.0)
@@ -2648,6 +2659,10 @@ fn compute_with_collapse(
               height_is_definite &&
               definite_height_for_auto_width > 0.0 {
               None
+            } else if auto_viewbox_svg_leaf &&
+              ctx.sizing_mode == @layout_types.Definite &&
+              parent_width > 0.0 {
+              Some(parent_width)
             } else if style.display == @types.Block &&
               ctx.sizing_mode == @layout_types.Definite &&
               !suppress_inline_intrinsic {
@@ -2695,7 +2710,8 @@ fn compute_with_collapse(
             }
           @types.Auto =>
             // If aspect_ratio is set and width is definite, use None to let aspect_ratio calculate
-            if ratio_for_auto is Some(_) && width_is_definite {
+            if ratio_for_auto is Some(_) &&
+              (width_is_definite || auto_viewbox_svg_leaf) {
               None
             } else {
               Some(
@@ -2901,7 +2917,7 @@ fn compute_with_collapse(
     (_, @types.Dimension::MaxContent) => true
     (_, @types.MinContent) => true
     (_, @types.FitContent(_)) => true
-    (_, @types.Auto) if is_inline_block => true
+    (_, @types.Auto) if is_inline_block && !ctx.stretch_width => true
     _ => false
   }
   // Check if we can calculate width from height + aspect_ratio

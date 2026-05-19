@@ -83,7 +83,7 @@ test.describe("VRT Levels", () => {
     </body></html>`;
 
     const result = await compareFixture(browser, "L1-colored-boxes", html, {
-      maxDiffRatio: 0.01,
+      maxDiffRatio: 0.001,
     });
     expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
   });
@@ -102,7 +102,7 @@ test.describe("VRT Levels", () => {
     </body></html>`;
 
     const result = await compareFixture(browser, "L2-basic-text", html, {
-      maxDiffRatio: 0.15,
+      maxDiffRatio: 0.037,
     });
     expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
   });
@@ -133,7 +133,7 @@ test.describe("VRT Levels", () => {
     </body></html>`;
 
     const result = await compareFixture(browser, "L3-flexbox", html, {
-      maxDiffRatio: 0.15,
+      maxDiffRatio: 0.005,
     });
     expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
   });
@@ -153,7 +153,7 @@ test.describe("VRT Levels", () => {
     </body></html>`;
 
     const result = await compareFixture(browser, "L4-centered", html, {
-      maxDiffRatio: 0.15,
+      maxDiffRatio: 0.042,
     });
     expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
   });
@@ -175,7 +175,7 @@ test.describe("VRT Levels", () => {
     </body></html>`;
 
     const result = await compareFixture(browser, "L5-absolute", html, {
-      maxDiffRatio: 0.02,
+      maxDiffRatio: 0.001,
     });
     expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
   });
@@ -193,7 +193,7 @@ test.describe("VRT Levels", () => {
     </body></html>`;
 
     const result = await compareFixture(browser, "L6-inline-styles", html, {
-      maxDiffRatio: 0.20,
+      maxDiffRatio: 0.065,
     });
     expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
   });
@@ -222,7 +222,7 @@ test.describe("VRT Levels", () => {
     </body></html>`;
 
     const result = await compareFixture(browser, "L7-table", html, {
-      maxDiffRatio: 0.15,
+      maxDiffRatio: 0.025,
     });
     expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
   });
@@ -260,7 +260,7 @@ test.describe("VRT Levels", () => {
     </body></html>`;
 
     const result = await compareFixture(browser, "L8-lists", html, {
-      maxDiffRatio: 0.20,
+      maxDiffRatio: 0.055,
     });
     expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
   });
@@ -301,7 +301,7 @@ test.describe("VRT Levels", () => {
     </body></html>`;
 
     const result = await compareFixture(browser, "L9-forms", html, {
-      maxDiffRatio: 0.20,
+      maxDiffRatio: 0.038,
     });
     expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
   });
@@ -338,7 +338,7 @@ test.describe("VRT Levels", () => {
     </body></html>`;
 
     const result = await compareFixture(browser, "L10-grid", html, {
-      maxDiffRatio: 0.15,
+      maxDiffRatio: 0.014,
     });
     expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
   });
@@ -368,7 +368,7 @@ test.describe("VRT Levels", () => {
     </body></html>`;
 
     const result = await compareFixture(browser, "L11-overflow", html, {
-      maxDiffRatio: 0.10, // overflow clipping + gradient rendering
+      maxDiffRatio: 0.008, // overflow clipping + gradient rendering
     });
     expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
   });
@@ -394,7 +394,7 @@ test.describe("VRT Levels", () => {
     </body></html>`;
 
     const result = await compareFixture(browser, "L12-float", html, {
-      maxDiffRatio: 0.20,
+      maxDiffRatio: 0.001,
     });
     expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
   });
@@ -419,7 +419,7 @@ test.describe("VRT Levels", () => {
     </body></html>`;
 
     const result = await compareFixture(browser, "L13-gradient", html, {
-      maxDiffRatio: 0.15,
+      maxDiffRatio: 0.005,
     });
     expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
   });
@@ -444,7 +444,7 @@ test.describe("VRT Levels", () => {
     </body></html>`;
 
     const result = await compareFixture(browser, "L14-border-radius", html, {
-      maxDiffRatio: 0.15,
+      maxDiffRatio: 0.005,
     });
     expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
   });
@@ -474,7 +474,7 @@ test.describe("VRT Levels", () => {
     </body></html>`;
 
     const result = await compareFixture(browser, "L15-flex-column-wrap", html, {
-      maxDiffRatio: 0.05,
+      maxDiffRatio: 0.001,
     });
     expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
   });
@@ -498,7 +498,7 @@ test.describe("VRT Levels", () => {
     </body></html>`;
 
     const result = await compareFixture(browser, "L16-min-max-sizing", html, {
-      maxDiffRatio: 0.15,
+      maxDiffRatio: 0.003,
     });
     expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
   });
@@ -519,7 +519,7 @@ test.describe("VRT Levels", () => {
     </body></html>`;
 
     const result = await compareFixture(browser, "L17-z-index", html, {
-      maxDiffRatio: 0.02,
+      maxDiffRatio: 0.001,
     });
     expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
   });
@@ -543,7 +543,7 @@ test.describe("VRT Levels", () => {
     </body></html>`;
 
     const result = await compareFixture(browser, "L18-box-shadow", html, {
-      maxDiffRatio: 0.15,
+      maxDiffRatio: 0.005,
     });
     expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
   });
@@ -573,7 +573,7 @@ test.describe("VRT Levels", () => {
     </body></html>`;
 
     const result = await compareFixture(browser, "L19-inline-block", html, {
-      maxDiffRatio: 0.20,
+      maxDiffRatio: 0.038,
     });
     expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
   });
@@ -597,7 +597,7 @@ test.describe("VRT Levels", () => {
     </body></html>`;
 
     const result = await compareFixture(browser, "L20-percentage-sizing", html, {
-      maxDiffRatio: 0.10,
+      maxDiffRatio: 0.001,
     });
     expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
   });
@@ -637,7 +637,7 @@ test.describe("VRT Levels", () => {
     </body></html>`;
 
     const result = await compareFixture(browser, "L21-nested-flexbox", html, {
-      maxDiffRatio: 0.15,
+      maxDiffRatio: 0.005,
     });
     expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
   });
@@ -661,7 +661,7 @@ test.describe("VRT Levels", () => {
     </body></html>`;
 
     const result = await compareFixture(browser, "L22-fixed-position", html, {
-      maxDiffRatio: 0.15,
+      maxDiffRatio: 0.005,
     });
     expect(result.diffRatio).toBeLessThanOrEqual(result.maxDiffRatio);
   });

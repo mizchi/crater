@@ -24,7 +24,11 @@ fn render_node_text_content(
           )
           let font_size = node.paint.font_size
           let wrap_width = resolve_glyph_text_wrap_width(
-            text_w, h, font_size, text_content,
+            text_w,
+            h,
+            font_size,
+            node.paint.line_height,
+            text_content,
           )
           let _ = draw_text_with_glyphs_clipped(
             fb,

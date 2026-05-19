@@ -8,7 +8,7 @@ import {
 }
 
 // Values
-pub fn cached_glyph_bitmap(GlyphProvider, Int, Double, Bool, String, Double, Double) -> GlyphBitmap
+pub fn cached_glyph_bitmap(GlyphProvider, Int, Double, Bool, String, Double, Double, subpixel_x? : Double, subpixel_y? : Double) -> GlyphBitmap
 
 pub fn clear_glyph_caches() -> Unit
 

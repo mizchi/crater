@@ -81,7 +81,7 @@ test "mixed_inline_and_table_child_keeps_table_shrink_width" {
   inspect(
     table.width,
     content=(
-      #|12
+      #|14
     ),
   )
 }

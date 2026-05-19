@@ -2,11 +2,296 @@
 // Final node construction for replaced elements, form controls, and br.
 
 ///|
+fn escape_svg_attr(value : String) -> String {
+  let buf = StringBuilder::new()
+  for c in value.iter() {
+    match c {
+      '&' => buf.write_string("&amp;")
+      '"' => buf.write_string("&quot;")
+      '<' => buf.write_string("&lt;")
+      '>' => buf.write_string("&gt;")
+      _ => buf.write_char(c)
+    }
+  }
+  buf.to_string()
+}
+
+///|
+fn escape_svg_text(value : String) -> String {
+  let buf = StringBuilder::new()
+  for c in value.iter() {
+    match c {
+      '&' => buf.write_string("&amp;")
+      '<' => buf.write_string("&lt;")
+      '>' => buf.write_string("&gt;")
+      _ => buf.write_char(c)
+    }
+  }
+  buf.to_string()
+}
+
+///|
+fn append_svg_attr(buf : StringBuilder, name : String, value : String) -> Unit {
+  if name.is_empty() {
+    return
+  }
+  buf.write_char(' ')
+  buf.write_string(name)
+  buf.write_string("=\"")
+  buf.write_string(escape_svg_attr(value))
+  buf.write_char('"')
+}
+
+///|
+fn svg_color_to_hex(color : @types.Color) -> String {
+  fn hex_char(n : Int) -> Char {
+    if n < 10 {
+      ('0'.to_int() + n).unsafe_to_char()
+    } else {
+      ('a'.to_int() + n - 10).unsafe_to_char()
+    }
+  }
+
+  fn hex2(n : Int) -> String {
+    let clamped = n.max(0).min(255)
+    let hi = clamped / 16 % 16
+    let lo = clamped % 16
+    let buf = StringBuilder::new()
+    buf.write_char(hex_char(hi))
+    buf.write_char(hex_char(lo))
+    buf.to_string()
+  }
+
+  "#" + hex2(color.r) + hex2(color.g) + hex2(color.b)
+}
+
+///|
+fn is_svg_paintable_element(tag : String) -> Bool {
+  match tag.to_lower() {
+    "path"
+    | "rect"
+    | "circle"
+    | "ellipse"
+    | "polygon"
+    | "polyline"
+    | "text"
+    | "tspan" => true
+    _ => false
+  }
+}
+
+///|
+fn collect_html_text(node : @html.Node) -> String {
+  match node {
+    @html.Node::Text(text) => text
+    @html.Node::Element(child_elem) => collect_element_text(child_elem)
+  }
+}
+
+///|
+fn collect_element_text(elem : @html.Element) -> String {
+  let mut text = ""
+  for child in elem.children {
+    text = text + collect_html_text(child)
+  }
+  text
+}
+
+///|
+fn resolve_textarea_paint_text(elem : @html.Element) -> String? {
+  let text = collect_element_text(elem)
+  if text.is_empty() {
+    None
+  } else {
+    Some(text)
+  }
+}
+
+///|
+fn find_option_paint_text(
+  elem : @html.Element,
+  require_selected : Bool,
+) -> String? {
+  for child in elem.children {
+    match child {
+      @html.Node::Element(child_elem) => {
+        let tag = child_elem.tag.to_lower()
+        if tag == "option" {
+          if !require_selected || child_elem.attributes.contains("selected") {
+            return Some(collect_element_text(child_elem).trim().to_owned())
+          }
+        } else {
+          match find_option_paint_text(child_elem, require_selected) {
+            Some(text) => return Some(text)
+            None => ()
+          }
+        }
+      }
+      @html.Node::Text(_) => ()
+    }
+  }
+  None
+}
+
+///|
+fn resolve_single_select_paint_text(elem : @html.Element) -> String? {
+  match find_option_paint_text(elem, true) {
+    Some(text) => Some(text)
+    None => find_option_paint_text(elem, false)
+  }
+}
+
+///|
+fn find_svg_char_index(s : String, target : Char) -> Int? {
+  for i = 0; i < s.length(); i = i + 1 {
+    if s[i].to_int().unsafe_to_char() == target {
+      return Some(i)
+    }
+  }
+  None
+}
+
+///|
+fn resolve_svg_paint_value(
+  value : String,
+  inherited_color : String,
+  css_vars : Map[String, String],
+  depth : Int,
+) -> String {
+  if depth > 8 {
+    return inherited_color
+  }
+  let trimmed = value.trim().to_owned()
+  let lower = trimmed.to_lower()
+  if lower == "currentcolor" {
+    return inherited_color
+  }
+  if lower.has_prefix("var(") && trimmed.has_suffix(")") {
+    let inner = trimmed.unsafe_substring(start=4, end=trimmed.length() - 1)
+    let comma_idx = find_svg_char_index(inner, ',')
+    let name = match comma_idx {
+      Some(idx) => inner.unsafe_substring(start=0, end=idx).trim().to_owned()
+      None => inner.trim().to_owned()
+    }
+    match css_vars.get(name) {
+      Some(found) =>
+        return resolve_svg_paint_value(
+          found,
+          inherited_color,
+          css_vars,
+          depth + 1,
+        )
+      None =>
+        match comma_idx {
+          Some(idx) => {
+            let fallback = inner.unsafe_substring(
+              start=idx + 1,
+              end=inner.length(),
+            )
+            return resolve_svg_paint_value(
+              fallback,
+              inherited_color,
+              css_vars,
+              depth + 1,
+            )
+          }
+          None => return inherited_color
+        }
+    }
+  }
+  trimmed
+}
+
+///|
+fn append_serialized_svg_element(
+  buf : StringBuilder,
+  elem : @html.Element,
+  inherited_color : String,
+  css_vars : Map[String, String],
+) -> Unit {
+  buf.write_char('<')
+  buf.write_string(elem.tag)
+  match elem.id {
+    Some(id) => append_svg_attr(buf, "id", id)
+    None => ()
+  }
+  if !elem.classes.is_empty() {
+    append_svg_attr(buf, "class", elem.classes.join(" "))
+  }
+  match elem.style {
+    Some(style) => append_svg_attr(buf, "style", style)
+    None => ()
+  }
+  let mut has_xmlns = false
+  let mut has_fill = false
+  let mut element_fill = inherited_color
+  elem.attributes.each(fn(name, value) {
+    if name == "xmlns" {
+      has_xmlns = true
+    }
+    if name == "fill" {
+      has_fill = true
+      let resolved = resolve_svg_paint_value(
+        value, inherited_color, css_vars, 0,
+      )
+      if resolved.to_lower() != "none" {
+        element_fill = resolved
+      }
+      append_svg_attr(buf, name, resolved)
+    } else if name == "stroke" {
+      append_svg_attr(
+        buf,
+        name,
+        resolve_svg_paint_value(value, inherited_color, css_vars, 0),
+      )
+    } else {
+      append_svg_attr(buf, name, value)
+    }
+  })
+  if elem.tag == "svg" && !has_xmlns {
+    append_svg_attr(buf, "xmlns", "http://www.w3.org/2000/svg")
+  }
+  if !has_fill &&
+    is_svg_paintable_element(elem.tag) &&
+    inherited_color != "#000000" {
+    append_svg_attr(buf, "fill", inherited_color)
+  }
+  buf.write_char('>')
+  for child in elem.children {
+    match child {
+      @html.Node::Text(text) => buf.write_string(escape_svg_text(text))
+      @html.Node::Element(child_elem) =>
+        append_serialized_svg_element(buf, child_elem, element_fill, css_vars)
+    }
+  }
+  buf.write_string("</")
+  buf.write_string(elem.tag)
+  buf.write_char('>')
+}
+
+///|
+fn inline_svg_data_uri(
+  elem : @html.Element,
+  style : @style.Style,
+  css_vars : Map[String, String],
+) -> String {
+  let buf = StringBuilder::new()
+  append_serialized_svg_element(
+    buf,
+    elem,
+    svg_color_to_hex(style.color),
+    css_vars,
+  )
+  "data:image/svg+xml," + buf.to_string()
+}
+
+///|
 fn finalize_special_element_node(
   elem : @html.Element,
   tag_lower : String,
   style : @style.Style,
   children : Array[@node.Node],
+  css_vars : Map[String, String],
 ) -> @node.Node {
   let node_id = make_node_id(elem)
 
@@ -47,11 +332,12 @@ fn finalize_special_element_node(
               _ => ""
             }
         }
-        let mut label_cols = 0
-        for c in label.iter() {
-          label_cols = label_cols + char_display_width(c)
-        }
-        let label_width = label_cols.to_double() * char_width
+        let label_width = resolve_control_label_width(
+          label,
+          control_font_size,
+          control_line_height,
+          style.writing_mode,
+        )
         let min_width = control_font_size * 1.75
         let intrinsic_w = @types.max(
           min_width,
@@ -215,7 +501,11 @@ fn finalize_special_element_node(
         style.height
       },
     }
-    return @node.Node::with_measure(node_id, textarea_style, measure)
+    match resolve_textarea_paint_text(elem) {
+      Some(text) =>
+        return @node.Node::with_measure(node_id, textarea_style, measure, text~)
+      None => return @node.Node::with_measure(node_id, textarea_style, measure)
+    }
   }
   if tag_lower == "select" {
     fn border_is_zero_length(dim : @types.Dimension) -> Bool {
@@ -257,18 +547,6 @@ fn finalize_special_element_node(
       style.writing_mode,
     )
     let suppress_intrinsic_width = style.suppresses_intrinsic_width()
-    fn collect_html_text(node : @html.Node) -> String {
-      match node {
-        @html.Node::Text(text) => text
-        @html.Node::Element(child_elem) => {
-          let mut text = ""
-          for grand_child in child_elem.children {
-            text = text + collect_html_text(grand_child)
-          }
-          text
-        }
-      }
-    }
     let mut max_option_cols = 0
     if !suppress_intrinsic_width {
       for child in elem.children {
@@ -311,6 +589,14 @@ fn finalize_special_element_node(
     } else {
       single_default_width
     }
+    let padding_v = resolve_dimension_to_px(style.padding.top) +
+      resolve_dimension_to_px(style.padding.bottom)
+    let border_v = resolve_dimension_to_px(style.border.top) +
+      resolve_dimension_to_px(style.border.bottom)
+    let single_default_height = @types.max(
+      19.0,
+      default_line_height + padding_v + border_v,
+    )
     let default_height = if is_listbox {
       if visible_rows <= 1 {
         17.5
@@ -325,7 +611,7 @@ fn finalize_special_element_node(
         2.0 + visible_rows.to_double() * row_height
       }
     } else {
-      19.0
+      single_default_height
     }
     let default_border : @types.Rect[@types.Dimension] = @types.Rect::new(
       @types.Length(1.0),
@@ -414,10 +700,28 @@ fn finalize_special_element_node(
         style.height
       },
     }
-    return @node.Node::new(node_id, select_style, normalized_children)
+    let select_node = @node.Node::new(
+      node_id, select_style, normalized_children,
+    )
+    if is_listbox {
+      return select_node
+    }
+    match resolve_single_select_paint_text(elem) {
+      Some(text) =>
+        return @node.Node::with_uid_and_measure(
+          select_node.id,
+          select_node.uid,
+          select_node.style,
+          select_node.children,
+          select_node.measure,
+          Some(text),
+        )
+      None => return select_node
+    }
   }
-  if tag_lower == "svg" && children.is_empty() {
-    // Root SVG behaves as a replaced element with default object size 300x150.
+  if tag_lower == "svg" {
+    // Root SVG is replaced; viewBox supplies intrinsic ratio/size while the
+    // style layer resolves auto viewport size.
     // Keep CSS width/height auto semantics and expose intrinsic size via MeasureFunc.
     let attr_width = match elem.attributes.get("width") {
       Some(w) => parse_html_dimension(w).unwrap_or(0.0)
@@ -427,10 +731,33 @@ fn finalize_special_element_node(
       Some(h) => parse_html_dimension(h).unwrap_or(0.0)
       None => 0.0
     }
-    let intrinsic_width = if attr_width > 0.0 { attr_width } else { 300.0 }
-    let intrinsic_height = if attr_height > 0.0 { attr_height } else { 150.0 }
+    let viewbox_size = match elem.attributes.get("viewBox") {
+      Some(vb) => parse_viewbox(vb)
+      None => None
+    }
+    let intrinsic_width = if attr_width > 0.0 {
+      attr_width
+    } else {
+      match viewbox_size {
+        Some((vb_w, _)) if vb_w > 0.0 => vb_w
+        _ => 300.0
+      }
+    }
+    let intrinsic_height = if attr_height > 0.0 {
+      attr_height
+    } else {
+      match viewbox_size {
+        Some((_, vb_h)) if vb_h > 0.0 => vb_h
+        _ => 150.0
+      }
+    }
     let measure = create_image_measure(intrinsic_width, intrinsic_height)
-    return @node.Node::with_measure(node_id, style, measure)
+    return @node.Node::with_measure(
+      node_id,
+      style,
+      measure,
+      src=Some(inline_svg_data_uri(elem, style, css_vars)),
+    )
   }
   if tag_lower == "img" && children.is_empty() {
     // HTML width/height attributes are presentational hints (used as CSS defaults),

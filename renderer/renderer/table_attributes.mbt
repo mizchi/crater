@@ -81,9 +81,14 @@ fn apply_table_cell_attributes(
   let mut next_style = { ..style, rowspan, colspan }
   let cp = current_cellpadding.val
   if cp >= 0.0 {
-    let default_pad = @types.Dimension::Length(0.0)
+    fn is_default_table_cell_padding(dim : @types.Dimension) -> Bool {
+      match dim {
+        @types.Dimension::Length(v) => v == 0.0 || v == 1.0
+        _ => false
+      }
+    }
     let has_css_padding = next_style.padding.top != @types.Dimension::Auto &&
-      next_style.padding.top != default_pad
+      !is_default_table_cell_padding(next_style.padding.top)
     if !has_css_padding {
       next_style = {
         ..next_style,

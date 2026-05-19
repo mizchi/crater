@@ -59,6 +59,30 @@ const FONT_FILE_MAP: Record<string, FontFileMapEntry> = {
     regular: ["Arial.ttf", "LiberationSans-Regular.ttf", "DejaVuSans.ttf"],
     bold: ["Arial Bold.ttf", "Arial_Bold.ttf", "arialbd.ttf", "LiberationSans-Bold.ttf", "DejaVuSans-Bold.ttf"],
   },
+  helvetica: {
+    regular: ["Helvetica.ttc", "HelveticaNeue.ttc"],
+    bold: [],
+  },
+  "system-ui": {
+    regular: [
+      "SFNS.ttf",
+      "SFCompact.ttf",
+      "HelveticaNeue.ttc",
+      "Helvetica.ttc",
+      "Arial.ttf",
+      "LiberationSans-Regular.ttf",
+      "DejaVuSans.ttf",
+    ],
+    bold: [
+      "SFNS.ttf",
+      "SFCompact.ttf",
+      "HelveticaNeue.ttc",
+      "Helvetica.ttc",
+      "Arial Bold.ttf",
+      "LiberationSans-Bold.ttf",
+      "DejaVuSans-Bold.ttf",
+    ],
+  },
   verdana: {
     regular: ["Verdana.ttf", "DejaVuSans.ttf", "LiberationSans-Regular.ttf"],
     bold: ["Verdana Bold.ttf", "Verdana_Bold.ttf", "verdanab.ttf", "DejaVuSans-Bold.ttf", "LiberationSans-Bold.ttf"],
@@ -85,8 +109,8 @@ const FONT_FILE_MAP: Record<string, FontFileMapEntry> = {
     },
   },
   roboto: {
-    regular: ["Roboto-Regular.ttf", "Arial.ttf", "LiberationSans-Regular.ttf"],
-    bold: ["Roboto-Bold.ttf", "Arial Bold.ttf", "LiberationSans-Bold.ttf"],
+    regular: ["Roboto-Regular.ttf"],
+    bold: ["Roboto-Bold.ttf"],
     byWeight: {
       300: ["Roboto-Light.ttf"],
       500: ["Roboto-Medium.ttf"],
@@ -95,8 +119,8 @@ const FONT_FILE_MAP: Record<string, FontFileMapEntry> = {
     },
   },
   "noto sans": {
-    regular: ["NotoSans-Regular.ttf", "Arial.ttf", "LiberationSans-Regular.ttf"],
-    bold: ["NotoSans-Bold.ttf", "Arial Bold.ttf", "LiberationSans-Bold.ttf"],
+    regular: ["NotoSans-Regular.ttf"],
+    bold: ["NotoSans-Bold.ttf"],
     byWeight: {
       300: ["NotoSans-Light.ttf"],
       500: ["NotoSans-Medium.ttf"],
@@ -104,10 +128,44 @@ const FONT_FILE_MAP: Record<string, FontFileMapEntry> = {
       900: ["NotoSans-Black.ttf"],
     },
   },
+  cjk: {
+    regular: [
+      "STHeiti Light.ttc",
+      "AppleSDGothicNeo.ttc",
+      "AppleGothic.ttf",
+      "ヒラギノ角ゴシック W3.ttc",
+      "ヒラギノ角ゴシック W4.ttc",
+      "Hiragino Sans GB.ttc",
+      "Arial Unicode.ttf",
+      "NotoSansCJK-Regular.ttc",
+      "NotoSansCJKjp-Regular.otf",
+      "NotoSerifCJK-Regular.ttc",
+    ],
+    bold: [
+      "STHeiti Medium.ttc",
+      "AppleSDGothicNeo.ttc",
+      "AppleGothic.ttf",
+      "ヒラギノ角ゴシック W6.ttc",
+      "ヒラギノ角ゴシック W5.ttc",
+      "Hiragino Sans GB.ttc",
+      "NotoSansCJK-Bold.ttc",
+      "NotoSansCJKjp-Bold.otf",
+      "NotoSerifCJK-Bold.ttc",
+      "Arial Unicode.ttf",
+      "AppleGothic.ttf",
+    ],
+  },
 };
 const ALIASES: Record<string, string> = {
-  helvetica: "arial",
-  "helvetica neue": "arial",
+  "-apple-system": "system-ui",
+  ".apple-system": "system-ui",
+  "apple system": "system-ui",
+  blinkmacsystemfont: "system-ui",
+  "ui-sans-serif": "system-ui",
+  "sf pro": "system-ui",
+  "sf pro display": "system-ui",
+  "sf pro text": "system-ui",
+  "helvetica neue": "helvetica",
   geneva: "verdana",
   "trebuchet ms": "verdana",
   tahoma: "verdana",
@@ -118,13 +176,28 @@ const ALIASES: Record<string, string> = {
   "palatino linotype": "georgia",
   palatino: "georgia",
   "book antiqua": "georgia",
+  "noto sans cjk": "cjk",
+  "noto sans cjk jp": "cjk",
+  "hiragino sans": "cjk",
+  "hiragino kaku gothic pro": "cjk",
 };
+
+function sameFontFileName(a: string, b: string): boolean {
+  return a.normalize("NFC").toLowerCase() === b.normalize("NFC").toLowerCase();
+}
 
 function findFontIn(root: string, fileName: string, depth: number): string | null {
   try {
     const direct = `${root}/${fileName}`;
     Deno.statSync(direct);
     return direct;
+  } catch {}
+  try {
+    for (const entry of Deno.readDirSync(root)) {
+      if (entry.isFile && sameFontFileName(entry.name, fileName)) {
+        return `${root}/${entry.name}`;
+      }
+    }
   } catch {}
   if (depth <= 0) return null;
   try {
@@ -187,6 +260,7 @@ interface FontInstance {
   glyphAdvance?: (cp: number, fs: number) => number;
   kernAdvance?: (cp1: number, cp2: number, fs: number) => number;
   ascentRatio: number;
+  coverage?: Set<number>;
 }
 
 // Cache of loaded font instances. `byWeight` always contains 400 (= regular)
@@ -200,6 +274,7 @@ interface FontEntry {
   byWeight: Map<number, FontInstance>;
 }
 const fontCache = new Map<string, FontEntry>();
+const drawableGlyphCache = new WeakMap<FontInstance, Map<number, boolean>>();
 
 function fontPathLabel(fontPath: string | URL): string {
   return fontPath instanceof URL ? fontPath.pathname : fontPath;
@@ -216,6 +291,7 @@ async function loadFontInstance(fontPath: string | URL): Promise<FontInstance | 
     const glyphAdvance = mod.glyphAdvance ?? mod.default?.glyphAdvance;
     const kernAdvance = mod.kernAdvance ?? mod.default?.kernAdvance;
     const getFontInfo = mod.getFontInfo ?? mod.default?.getFontInfo;
+    const codepointCoverage = mod.codepointCoverage ?? mod.default?.codepointCoverage;
 
     if (!loadFont || !measureText) return null;
 
@@ -229,6 +305,15 @@ async function loadFontInstance(fontPath: string | URL): Promise<FontInstance | 
         ascentRatio = (info.ascent || 0) / (info.units_per_em || 2048);
       } catch {}
     }
+    let coverage: Set<number> | undefined;
+    if (codepointCoverage) {
+      try {
+        const parsed = JSON.parse(codepointCoverage() as string);
+        if (Array.isArray(parsed)) {
+          coverage = new Set(parsed.map((value) => Number(value)).filter(Number.isFinite));
+        }
+      } catch {}
+    }
 
     return {
       measureText: (text, fontSize) => measureText(text, fontSize) as number,
@@ -237,6 +322,7 @@ async function loadFontInstance(fontPath: string | URL): Promise<FontInstance | 
       glyphAdvance: glyphAdvance ? (cp, fs) => glyphAdvance(cp, fs) as number : undefined,
       kernAdvance: kernAdvance ? (cp1, cp2, fs) => kernAdvance(cp1, cp2, fs) as number : undefined,
       ascentRatio,
+      coverage,
     };
   } catch {
     return null;
@@ -252,9 +338,12 @@ const PRELOAD_FAMILIES = [
   "georgia",
   "times new roman",
   "courier new",
+  "system-ui",
   "sans-serif",
+  "helvetica",
   "roboto",
   "noto sans",
+  "cjk",
 ];
 
 async function loadDeclaredExtraWeights(
@@ -364,6 +453,77 @@ function getFontInstance(fontFamily: string, isBold: boolean): FontInstance | nu
   return isBold && fallback.bold ? fallback.bold : fallback.regular || null;
 }
 
+const GLYPH_FALLBACK_FAMILIES = ["cjk", "sans-serif", "arial"];
+
+function normalizedFamilyNames(fontFamily: string): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const f of resolveEffectiveFontFamily(fontFamily)
+    .split(",")
+    .map((family) => family.trim().replace(/['"]/g, "").toLowerCase())) {
+    const norm = ALIASES[f] || f;
+    if (!norm || seen.has(norm)) continue;
+    seen.add(norm);
+    out.push(norm);
+  }
+  for (const fallback of GLYPH_FALLBACK_FAMILIES) {
+    const norm = ALIASES[fallback] || fallback;
+    if (seen.has(norm)) continue;
+    seen.add(norm);
+    out.push(norm);
+  }
+  return out;
+}
+
+function fontSupportsCodepoint(font: FontInstance, codepoint: number): boolean {
+  if (codepoint <= 0x20) return true;
+  if (font.coverage && !font.coverage.has(codepoint)) return false;
+  let cache = drawableGlyphCache.get(font);
+  if (!cache) {
+    cache = new Map<number, boolean>();
+    drawableGlyphCache.set(font, cache);
+  }
+  const cached = cache.get(codepoint);
+  if (cached !== undefined) return cached;
+
+  let drawable = true;
+  if (font.glyphToSvgPath) {
+    try {
+      drawable = font.glyphToSvgPath(codepoint, 16).trim().length > 0;
+    } catch {
+      drawable = false;
+    }
+  } else if (font.glyphOutlineCommands) {
+    try {
+      const outline = font.glyphOutlineCommands(codepoint, 16).trim();
+      drawable = outline.length > 0 && outline !== "[]";
+    } catch {
+      drawable = false;
+    }
+  }
+  cache.set(codepoint, drawable);
+  return drawable;
+}
+
+function fontFromEntry(entry: FontEntry, isBold: boolean): FontInstance | null {
+  if (isBold && entry.bold) return entry.bold;
+  return entry.regular ?? entry.bold ?? null;
+}
+
+function getFontInstanceForCodepoint(
+  fontFamily: string,
+  isBold: boolean,
+  codepoint: number,
+): FontInstance | null {
+  for (const family of normalizedFamilyNames(fontFamily)) {
+    const entry = fontCache.get(family);
+    if (!entry) continue;
+    const font = fontFromEntry(entry, isBold);
+    if (font && fontSupportsCodepoint(font, codepoint)) return font;
+  }
+  return getFontInstance(fontFamily, isBold);
+}
+
 function entryFacesByWeight(entry: FontEntry): Map<number, FontInstance> {
   // entry.byWeight already includes 400 (regular) and 700 (bold) when those
   // were loaded, plus any extras populated by loadDeclaredExtraWeights.
@@ -399,6 +559,53 @@ function getFontInstanceByWeight(
   return picked !== null ? faces.get(picked) ?? null : null;
 }
 
+function fontFromEntryByWeight(entry: FontEntry, weight: number): FontInstance | null {
+  const faces = entryFacesByWeight(entry);
+  if (faces.size === 0) return null;
+  const picked = pickNearestFontWeight([...faces.keys()], weight);
+  return picked !== null ? faces.get(picked) ?? null : null;
+}
+
+function getFontInstanceByWeightForCodepoint(
+  fontFamily: string,
+  weight: number,
+  codepoint: number,
+): FontInstance | null {
+  for (const family of normalizedFamilyNames(fontFamily)) {
+    const entry = fontCache.get(family);
+    if (!entry) continue;
+    const font = fontFromEntryByWeight(entry, weight);
+    if (font && fontSupportsCodepoint(font, codepoint)) return font;
+  }
+  return getFontInstanceByWeight(fontFamily, weight);
+}
+
+function measureTextWithGlyphFallback(
+  text: string,
+  fontSize: number,
+  fontFamily: string,
+  isBold: boolean,
+): number {
+  let width = 0;
+  let previousFont: FontInstance | null = null;
+  let previousCodepoint: number | null = null;
+  for (const char of text) {
+    const codepoint = char.codePointAt(0);
+    if (codepoint === undefined) continue;
+    const font = getFontInstanceForCodepoint(fontFamily, isBold, codepoint);
+    if (!font) continue;
+    if (previousFont === font && previousCodepoint !== null && font.kernAdvance) {
+      width += font.kernAdvance(previousCodepoint, codepoint, fontSize);
+    }
+    width += font.glyphAdvance
+      ? font.glyphAdvance(codepoint, fontSize)
+      : font.measureText(char, fontSize);
+    previousFont = font;
+    previousCodepoint = codepoint;
+  }
+  return width;
+}
+
 // ============================================================
 // Install global providers
 // ============================================================
@@ -416,6 +623,7 @@ if (!defaultFont) {
 
   // Multi-font text intrinsic functions (cached per font instance)
   const intrinsicCache = new Map<FontInstance, ReturnType<typeof createTextIntrinsicFnFromMeasureText>>();
+  const fallbackIntrinsicCache = new Map<string, ReturnType<typeof createTextIntrinsicFnFromMeasureText>>();
   function getIntrinsicFn(font: FontInstance) {
     let fn = intrinsicCache.get(font);
     if (!fn) {
@@ -423,6 +631,18 @@ if (!defaultFont) {
         (text: string, fontSize: number) => font.measureText(text, fontSize),
       );
       intrinsicCache.set(font, fn);
+    }
+    return fn;
+  }
+  function getFallbackIntrinsicFn(fontFamily: string, isBold: boolean) {
+    const key = `${isBold ? "700" : "400"}|${fontFamily}`;
+    let fn = fallbackIntrinsicCache.get(key);
+    if (!fn) {
+      fn = createTextIntrinsicFnFromMeasureText(
+        (text: string, fontSize: number) =>
+          measureTextWithGlyphFallback(text, fontSize, fontFamily, isBold),
+      );
+      fallbackIntrinsicCache.set(key, fn);
     }
     return fn;
   }
@@ -441,7 +661,7 @@ if (!defaultFont) {
   ) => {
     const font = getFontInstance(fontFamily, isBold);
     if (!font) return null;
-    const fn = getIntrinsicFn(font);
+    const fn = getFallbackIntrinsicFn(fontFamily, isBold);
     return fn(text, fontSize, lineHeight, whiteSpace, writingMode, availableWidth, availableHeight);
   };
 
@@ -455,7 +675,7 @@ if (!defaultFont) {
     const font = getFontInstance(fontFamily, isBold);
     if (!font) return null;
     // Use full intrinsic measurement (with word-wrap calculation)
-    const fn = getIntrinsicFn(font);
+    const fn = getFallbackIntrinsicFn(fontFamily, isBold);
     const lineHeight = fontSize > 0 ? fontSize * 1.2 : 16;
     return fn(text, fontSize, lineHeight, "normal", "horizontal-tb", 9999, 9999);
   };
@@ -499,24 +719,26 @@ if (!defaultFont) {
 
   // Multi-font outline commands provider (returns JSON array, avoids SVG string roundtrip)
   (globalThis as any).__craterOutlineCommandsForFamily = (cp: number, fs: number, isBold: boolean, ff: string) => {
-    const font = getFontInstance(ff, isBold);
+    const font = getFontInstanceForCodepoint(ff, isBold, cp);
     if (!font || !font.glyphOutlineCommands) return "";
     return font.glyphOutlineCommands(cp, fs);
   };
 
   // Multi-font glyph providers for sixel rendering
   (globalThis as any).__craterGlyphForFamily = (cp: number, fs: number, isBold: boolean, ff: string) => {
-    const font = getFontInstance(ff, isBold);
+    const font = getFontInstanceForCodepoint(ff, isBold, cp);
     if (!font || !font.glyphToSvgPath) return "";
     return font.glyphToSvgPath(cp, fs);
   };
   (globalThis as any).__craterAdvanceForFamily = (cp: number, fs: number, isBold: boolean, ff: string) => {
-    const font = getFontInstance(ff, isBold);
+    const font = getFontInstanceForCodepoint(ff, isBold, cp);
     if (!font || !font.glyphAdvance) return fs * 0.5;
     return font.glyphAdvance(cp, fs);
   };
   (globalThis as any).__craterKernForFamily = (cp1: number, cp2: number, fs: number, isBold: boolean, ff: string) => {
-    const font = getFontInstance(ff, isBold);
+    const font = getFontInstanceForCodepoint(ff, isBold, cp1);
+    const nextFont = getFontInstanceForCodepoint(ff, isBold, cp2);
+    if (font !== nextFont) return 0;
     if (!font || !font.kernAdvance) return 0;
     return font.kernAdvance(cp1, cp2, fs);
   };
@@ -534,7 +756,7 @@ if (!defaultFont) {
     fs: number,
     weight: number,
   ) => {
-    const font = getFontInstanceByWeight(DEFAULT_TEXT_FONT_FAMILY, weight);
+    const font = getFontInstanceByWeightForCodepoint(DEFAULT_TEXT_FONT_FAMILY, weight, cp);
     if (!font || !font.glyphOutlineCommands) return "";
     return font.glyphOutlineCommands(cp, fs);
   };
@@ -543,7 +765,7 @@ if (!defaultFont) {
     fs: number,
     weight: number,
   ) => {
-    const font = getFontInstanceByWeight(DEFAULT_TEXT_FONT_FAMILY, weight);
+    const font = getFontInstanceByWeightForCodepoint(DEFAULT_TEXT_FONT_FAMILY, weight, cp);
     if (!font || !font.glyphToSvgPath) return "";
     return font.glyphToSvgPath(cp, fs);
   };
@@ -552,7 +774,7 @@ if (!defaultFont) {
     fs: number,
     weight: number,
   ) => {
-    const font = getFontInstanceByWeight(DEFAULT_TEXT_FONT_FAMILY, weight);
+    const font = getFontInstanceByWeightForCodepoint(DEFAULT_TEXT_FONT_FAMILY, weight, cp);
     if (!font || !font.glyphAdvance) return fs * 0.5;
     return font.glyphAdvance(cp, fs);
   };
@@ -562,7 +784,9 @@ if (!defaultFont) {
     fs: number,
     weight: number,
   ) => {
-    const font = getFontInstanceByWeight(DEFAULT_TEXT_FONT_FAMILY, weight);
+    const font = getFontInstanceByWeightForCodepoint(DEFAULT_TEXT_FONT_FAMILY, weight, cp1);
+    const nextFont = getFontInstanceByWeightForCodepoint(DEFAULT_TEXT_FONT_FAMILY, weight, cp2);
+    if (font !== nextFont) return 0;
     if (!font || !font.kernAdvance) return 0;
     return font.kernAdvance(cp1, cp2, fs);
   };
@@ -572,7 +796,7 @@ if (!defaultFont) {
     weight: number,
     ff: string,
   ) => {
-    const font = getFontInstanceByWeight(ff, weight);
+    const font = getFontInstanceByWeightForCodepoint(ff, weight, cp);
     if (!font || !font.glyphOutlineCommands) return "";
     return font.glyphOutlineCommands(cp, fs);
   };
@@ -582,7 +806,7 @@ if (!defaultFont) {
     weight: number,
     ff: string,
   ) => {
-    const font = getFontInstanceByWeight(ff, weight);
+    const font = getFontInstanceByWeightForCodepoint(ff, weight, cp);
     if (!font || !font.glyphToSvgPath) return "";
     return font.glyphToSvgPath(cp, fs);
   };
@@ -592,7 +816,7 @@ if (!defaultFont) {
     weight: number,
     ff: string,
   ) => {
-    const font = getFontInstanceByWeight(ff, weight);
+    const font = getFontInstanceByWeightForCodepoint(ff, weight, cp);
     if (!font || !font.glyphAdvance) return fs * 0.5;
     return font.glyphAdvance(cp, fs);
   };
@@ -603,7 +827,9 @@ if (!defaultFont) {
     weight: number,
     ff: string,
   ) => {
-    const font = getFontInstanceByWeight(ff, weight);
+    const font = getFontInstanceByWeightForCodepoint(ff, weight, cp1);
+    const nextFont = getFontInstanceByWeightForCodepoint(ff, weight, cp2);
+    if (font !== nextFont) return 0;
     if (!font || !font.kernAdvance) return 0;
     return font.kernAdvance(cp1, cp2, fs);
   };

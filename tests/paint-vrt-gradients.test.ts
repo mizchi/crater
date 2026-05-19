@@ -103,7 +103,7 @@ test.describe("Paint VRT — CSS background gradients", () => {
       viewport: { width: 540, height: 280 },
       outputDirName: "gradient-radial-basic",
       threshold: 0.35,
-      maxDiffRatio: 0.2,
+      maxDiffRatio: 0.001,
       reportTitle: "radial-gradient renders centred circle and offset ellipse",
     });
   });
@@ -134,7 +134,7 @@ test.describe("Paint VRT — CSS background gradients", () => {
       viewport: { width: 540, height: 280 },
       outputDirName: "gradient-conic-basic",
       threshold: 0.35,
-      maxDiffRatio: 0.2,
+      maxDiffRatio: 0.001,
       reportTitle: "conic-gradient renders rotation and from-angle variants",
     });
   });
@@ -165,7 +165,7 @@ test.describe("Paint VRT — CSS background gradients", () => {
       viewport: { width: 580, height: 280 },
       outputDirName: "gradient-repeating-linear",
       threshold: 0.35,
-      maxDiffRatio: 0.2,
+      maxDiffRatio: 0.001,
       reportTitle: "repeating-linear-gradient renders evenly spaced stripes",
     });
   });
@@ -190,7 +190,7 @@ test.describe("Paint VRT — CSS background gradients", () => {
       viewport: { width: 360, height: 300 },
       outputDirName: "gradient-repeating-radial",
       threshold: 0.35,
-      maxDiffRatio: 0.2,
+      maxDiffRatio: 0.001,
       reportTitle: "repeating-radial-gradient renders concentric rings",
     });
   });
@@ -218,7 +218,7 @@ test.describe("Paint VRT — CSS background gradients", () => {
       viewport: { width: 420, height: 280 },
       outputDirName: "gradient-linear-stops",
       threshold: 0.35,
-      maxDiffRatio: 0.2,
+      maxDiffRatio: 0.001,
       reportTitle: "linear-gradient respects explicit color-stop positions",
     });
   });

@@ -36,6 +36,30 @@ const FONT_FILE_MAP: Record<string, { regular: string[]; bold: string[] }> = {
     regular: ["Arial.ttf", "arial.ttf", "LiberationSans-Regular.ttf", "DejaVuSans.ttf"],
     bold: ["Arial Bold.ttf", "Arial_Bold.ttf", "arialbd.ttf", "arial-bold.ttf", "LiberationSans-Bold.ttf", "DejaVuSans-Bold.ttf"],
   },
+  helvetica: {
+    regular: ["Helvetica.ttc", "HelveticaNeue.ttc"],
+    bold: [],
+  },
+  "system-ui": {
+    regular: [
+      "SFNS.ttf",
+      "SFCompact.ttf",
+      "HelveticaNeue.ttc",
+      "Helvetica.ttc",
+      "Arial.ttf",
+      "LiberationSans-Regular.ttf",
+      "DejaVuSans.ttf",
+    ],
+    bold: [
+      "SFNS.ttf",
+      "SFCompact.ttf",
+      "HelveticaNeue.ttc",
+      "Helvetica.ttc",
+      "Arial Bold.ttf",
+      "LiberationSans-Bold.ttf",
+      "DejaVuSans-Bold.ttf",
+    ],
+  },
   verdana: {
     regular: ["Verdana.ttf", "verdana.ttf"],
     bold: ["Verdana Bold.ttf", "Verdana_Bold.ttf", "verdanab.ttf", "verdana-bold.ttf"],
@@ -68,8 +92,15 @@ const FONT_FILE_MAP: Record<string, { regular: string[]; bold: string[] }> = {
 
 // Aliases
 const FAMILY_ALIASES: Record<string, string> = {
-  "helvetica": "arial",
-  "helvetica neue": "arial",
+  "-apple-system": "system-ui",
+  ".apple-system": "system-ui",
+  "apple system": "system-ui",
+  "blinkmacsystemfont": "system-ui",
+  "ui-sans-serif": "system-ui",
+  "sf pro": "system-ui",
+  "sf pro display": "system-ui",
+  "sf pro text": "system-ui",
+  "helvetica neue": "helvetica",
   "courier new": "courier",
   "times": "times new roman",
   "dejavu sans": "sans-serif",
@@ -83,12 +114,23 @@ function getFontDirs(): string[] {
   return LINUX_FONT_DIRS;
 }
 
+function sameFontFileName(a: string, b: string): boolean {
+  return a.normalize("NFC").toLowerCase() === b.normalize("NFC").toLowerCase();
+}
+
 function findFontFile(fileName: string, dirs: string[]): string | null {
   for (const dir of dirs) {
     // Direct match
     const direct = path.join(dir, fileName);
     try {
       if (fs.statSync(direct).isFile()) return direct;
+    } catch {}
+    try {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        if (entry.isFile() && sameFontFileName(entry.name, fileName)) {
+          return path.join(dir, entry.name);
+        }
+      }
     } catch {}
     // Recursive search (one level deep)
     try {

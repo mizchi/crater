@@ -3,7 +3,7 @@
   "version": "0.17.1",
   "description": "Layout kernel for crater CSS layout engine",
   "deps": {
-    "mizchi/css": "0.1.0",
+    "mizchi/css": "0.1.1",
     "mizchi/crater-core": {
       "path": "../core",
       "version": "0.17.1"

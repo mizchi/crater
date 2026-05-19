@@ -26,11 +26,16 @@ fn render_svg_into_region(
   let tmp_fb = Framebuffer::new(w, h)
   let tmp_palette = DynamicPalette::new()
   tmp_fb.fill_rect(0, 0, w, h, 0)
-  let camera = @svg.Camera::new(w, h)
-  camera.set_position(vw / 2.0, vh / 2.0)
-  let zoom = (w.to_double() / vw).min(h.to_double() / vh)
-  camera.set_zoom(zoom)
-  render_svg_scene_with_camera(scene, tmp_fb, tmp_palette, camera)
+  match svg_node.view_box {
+    Some(_) => render_svg_scene(scene, tmp_fb, tmp_palette)
+    None => {
+      let camera = @svg.Camera::new(w, h)
+      camera.set_position(bounds.min_x + vw / 2.0, bounds.min_y + vh / 2.0)
+      let zoom = (w.to_double() / vw).min(h.to_double() / vh)
+      camera.set_zoom(zoom)
+      render_svg_scene_with_camera(scene, tmp_fb, tmp_palette, camera)
+    }
+  }
   for py = 0; py < h; py = py + 1 {
     let dst_y = y + py
     if dst_y < 0 || dst_y >= fb.height {

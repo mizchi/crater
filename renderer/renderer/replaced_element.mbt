@@ -99,6 +99,24 @@ fn resolve_input_paint_text(
   input_type : String,
   attributes : Map[String, String],
 ) -> String? {
+  match input_type {
+    "button" =>
+      match attributes.get("value") {
+        Some(value) if !value.is_empty() => return Some(value)
+        _ => return None
+      }
+    "submit" =>
+      match attributes.get("value") {
+        Some(value) if !value.is_empty() => return Some(value)
+        _ => return Some("Submit")
+      }
+    "reset" =>
+      match attributes.get("value") {
+        Some(value) if !value.is_empty() => return Some(value)
+        _ => return Some("Reset")
+      }
+    _ => ()
+  }
   if !is_text_like_input_type(input_type) {
     return None
   }
@@ -212,6 +230,50 @@ fn resolve_control_char_width(
     measured
   } else {
     font_size * 0.5
+  }
+}
+
+///|
+fn resolve_control_label_width(
+  label : String,
+  font_size : Double,
+  line_height : Double,
+  writing_mode : @style.WritingMode,
+) -> Double {
+  if label.is_empty() {
+    return 0.0
+  }
+  let label_measure = create_text_measure_with_provider(
+    label,
+    font_size,
+    line_height,
+    @style.WhiteSpace::Nowrap,
+    writing_mode,
+  )
+  let intrinsic = (label_measure.func)(9999.0, 9999.0)
+  let char_width = resolve_control_char_width(
+    font_size, line_height, writing_mode,
+  )
+  let mut label_cols = 0
+  let mut has_non_ascii = false
+  for c in label.iter() {
+    if c.to_int() > 127 {
+      has_non_ascii = true
+    }
+    label_cols = label_cols + char_display_width(c)
+  }
+  let fallback_width = label_cols.to_double() * char_width
+  let measured_width = if intrinsic.max_width > 0.0 {
+    intrinsic.max_width
+  } else if intrinsic.min_width > 0.0 {
+    intrinsic.min_width
+  } else {
+    fallback_width
+  }
+  if has_non_ascii && measured_width < fallback_width {
+    fallback_width
+  } else {
+    measured_width
   }
 }
 

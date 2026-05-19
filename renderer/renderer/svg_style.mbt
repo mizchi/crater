@@ -107,15 +107,15 @@ fn apply_svg_attributes_to_style(
       aspect_ratio: Some(attr_width_for_ratio / attr_height_for_ratio),
     }
   }
+  let viewbox_size = match attrs.get("viewBox") {
+    Some(vb) => parse_viewbox(vb)
+    None => None
+  }
   if result.aspect_ratio is None {
-    match attrs.get("viewBox") {
-      Some(vb) =>
-        match parse_viewbox(vb) {
-          Some((vb_w, vb_h)) if vb_w > 0.0 && vb_h > 0.0 =>
-            result = { ..result, aspect_ratio: Some(vb_w / vb_h) }
-          _ => ()
-        }
-      None => ()
+    match viewbox_size {
+      Some((vb_w, vb_h)) if vb_w > 0.0 && vb_h > 0.0 =>
+        result = { ..result, aspect_ratio: Some(vb_w / vb_h) }
+      _ => ()
     }
   }
 
@@ -148,7 +148,6 @@ fn apply_svg_attributes_to_style(
       }
     None => ()
   }
-
   // Handle SVG x/y position attributes for rect, text, etc.
   let has_x = attrs.contains("x")
   let has_y = attrs.contains("y")
@@ -296,6 +295,7 @@ fn apply_svg_intrinsic_size(style : @style.Style, tag : String) -> @style.Style 
   }
   let has_default_object_size = style.width == @types.Auto &&
     style.height == @types.Auto &&
+    style.aspect_ratio is None &&
     !style.contain.size &&
     style.display != @types.Contents
 

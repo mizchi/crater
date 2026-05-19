@@ -180,6 +180,47 @@ test "abspos_non_auto_inset_inside_static_flex_uses_outer_abs_containing_block" 
 }
 
 ///|
+test "abspos_stretch_inside_static_flex_uses_outer_abs_containing_block" {
+  let html =
+    #|<style>
+    #|body { margin: 0; }
+    #|.navigation { display: grid; grid-template-columns: min-content 1fr; width: 600px; height: 80px; column-gap: 10px; }
+    #|.navigation__logo { width: 80px; height: 20px; }
+    #|.navigation__popup { display: contents; }
+    #|.menu { position: relative; display: flex; height: 30px; }
+    #|.menu__tab { display: block; width: 120px; height: 30px; }
+    #|.menu__panel { position: absolute; left: 0; right: 0; top: 30px; height: 20px; }
+    #|</style>
+    #|<nav class="navigation">
+    #|  <div class="navigation__logo"></div>
+    #|  <div class="navigation__popup">
+    #|    <div class="menu">
+    #|      <div class="menu__tab">
+    #|        <div class="menu__panel"></div>
+    #|      </div>
+    #|    </div>
+    #|  </div>
+    #|</nav>
+  let ctx : @renderer.RenderContext = {
+    viewport_width: 800.0,
+    viewport_height: 200.0,
+    root_font_size: 16.0,
+    color_scheme: @css.ColorScheme::Light,
+  }
+  let layout = @renderer.render(html, ctx)
+  let navigation = layout.children[0]
+  let popup = navigation.children[1]
+  let menu = popup.children[0]
+  let tab = menu.children[0]
+  let panel = tab.children[0]
+
+  inspect(menu.x, content="90")
+  inspect(menu.width, content="510")
+  inspect(panel.x, content="0")
+  inspect(panel.width, content="510")
+}
+
+///|
 test "abspos_non_auto_inset_inside_static_grid_uses_outer_abs_containing_block" {
   let html =
     #|<div style="position: relative; width: 300px; height: 300px;">

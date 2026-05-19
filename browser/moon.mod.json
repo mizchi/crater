@@ -14,7 +14,7 @@
       "path": "../dom",
       "version": "0.17.1"
     },
-    "mizchi/css": "0.1.0",
+    "mizchi/css": "0.1.1",
     "mizchi/crater-layout": {
       "path": "../layout",
       "version": "0.17.1"

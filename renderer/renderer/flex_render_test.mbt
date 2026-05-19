@@ -573,6 +573,85 @@ test "flex_margin_no_collapse_wpt" {
 }
 
 ///|
+test "google_header_flex_grow_wrapper_keeps_actions_right_aligned" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|.nav { display: flex; align-items: center; width: 800px; height: 60px; }
+    #|.left1 { display: inline-block; width: 120px; height: 20px; }
+    #|.left2 { display: inline-block; width: 60px; height: 20px; }
+    #|.grow { display: inline-block; flex-grow: 1; }
+    #|.actions { display: flex; justify-content: flex-end; width: 100%; height: 40px; }
+    #|.login { width: 85px; height: 40px; }
+    #|</style>
+    #|<div class="nav">
+    #|  <a class="left1"></a>
+    #|  <a class="left2"></a>
+    #|  <div class="grow"><header class="actions"><a id="login" class="login"></a></header></div>
+    #|</div>
+
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let nav = layout.children[0]
+  let left1 = nav.children[0]
+  let left2 = nav.children[1]
+  let grow = nav.children[2]
+  let actions = grow.children[0]
+  let login = actions.children[0]
+
+  inspect(left1.width, content="120")
+  inspect(left2.x, content="120")
+  inspect(grow.x, content="180")
+  inspect(grow.width, content="620")
+  inspect(actions.width, content="620")
+  inspect(login.id, content="a#login")
+  inspect(login.x, content="535")
+  inspect(login.width, content="85")
+}
+
+///|
+test "google_footer_nested_flex_groups_share_one_wrapped_row" {
+  let html_str =
+    #|<!doctype html>
+    #|<style>
+    #|body { margin: 0; font: 14px Arial, sans-serif; }
+    #|.outer {
+    #|  display: flex;
+    #|  flex-wrap: wrap;
+    #|  justify-content: space-evenly;
+    #|  width: 760px;
+    #|  padding: 0 20px;
+    #|}
+    #|.group {
+    #|  display: flex;
+    #|  flex-wrap: wrap;
+    #|}
+    #|a {
+    #|  display: block;
+    #|  padding: 15px;
+    #|  white-space: nowrap;
+    #|}
+    #|</style>
+    #|<div class="outer">
+    #|  <div id="left" class="group"><a>広告</a><a>ビジネス</a><a>検索の仕組み</a></div>
+    #|  <div id="right" class="group"><a>プライバシー</a><a>規約</a><a>設定</a></div>
+    #|</div>
+
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let outer = layout.children[0]
+  let left = outer.children[0]
+  let right = outer.children[1]
+
+  inspect(left.id, content="div#left")
+  inspect(right.id, content="div#right")
+  inspect(left.width, content="258")
+  inspect(right.y, content="0")
+  guard left.width < 360.0 else {
+    fail("nested flex group should shrink to its content width")
+  }
+}
+
+///|
 test "safe center stylesheet falls back to start in row reverse wrap reverse overflow" {
   let html_str =
     #|<!doctype html>
@@ -854,6 +933,80 @@ test "wpt_flex_item_content_min_width_max_content_like" {
   guard content.height < 40.0 else {
     fail("min-width:max-content content should stay on a single line")
   }
+}
+
+///|
+test "hn_flex_nav_name_link_keeps_single_line_auto_min_width" {
+  @renderer.clear_text_metrics_provider()
+  let provider = @renderer.TextMetricsProvider::new(fn(
+    text : String,
+    _font_size : Double,
+    line_height : Double,
+    _white_space : @style.WhiteSpace,
+    _writing_mode : @style.WritingMode,
+    _font_weight : Double,
+    _font_family : String,
+  ) -> @layout_types.MeasureFunc {
+    let trimmed = text.trim()
+    let min_width = if trimmed == "Hacker News" {
+      45.0
+    } else {
+      trimmed.length().to_double() * 7.0
+    }
+    let max_width = if trimmed == "Hacker News" { 95.0 } else { min_width }
+    {
+      func: fn(
+        available_width : Double,
+        _available_height : Double,
+      ) -> @layout_types.IntrinsicSize {
+        let wraps = available_width > 0.0 && available_width < max_width
+        {
+          min_width,
+          max_width,
+          min_height: line_height,
+          max_height: if wraps {
+            line_height * 2.0
+          } else {
+            line_height
+          },
+        }
+      },
+    }
+  })
+  @renderer.set_text_metrics_provider(provider)
+  let html =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; font-family: Verdana, Geneva, sans-serif; font-size: 10pt; }
+    #|#header { display: flex; align-items: center; width: 800px; }
+    #|#header nav { display: flex; gap: 6px; }
+    #|</style>
+    #|<div id="header">
+    #|  <span>Y</span>
+    #|  <nav>
+    #|    <a><b>Hacker News</b></a>
+    #|    <span>|</span><a>new</a>
+    #|    <span>|</span><a>past</a>
+    #|  </nav>
+    #|</div>
+  let layout = @renderer.render(html, @renderer.RenderContext::default())
+  let header = layout.children[0]
+  let nav = header.children[1]
+  let hn = nav.children[0]
+  guard hn.width >= 90.0 else {
+    fail("Hacker News flex item should keep its max-content width")
+  }
+  guard hn.height <= 18.0 else {
+    fail("Hacker News flex item should not wrap to two lines")
+  }
+  let hn_text = hn.children[0]
+  guard hn_text.width >= 90.0 else {
+    fail("Hacker News text child should inherit the one-line flex item width")
+  }
+  guard hn_text.height <= 18.0 else {
+    fail("Hacker News text child should not wrap to two lines")
+  }
+  @renderer.clear_text_metrics_provider()
 }
 
 ///|

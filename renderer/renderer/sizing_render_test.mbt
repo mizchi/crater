@@ -32,6 +32,33 @@ test "wpt_intrinsic_percent_non_replaced_calc_mixed_static_layout" {
 }
 
 ///|
+test "height mixed calc percentage uses vertical viewport basis" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|#logo-slot {
+    #|  min-height: 150px;
+    #|  height: calc(100% - 560px);
+    #|  max-height: 290px;
+    #|}
+    #|</style>
+    #|<div id="logo-slot"></div>
+  let ctx : @renderer.RenderContext = {
+    ..@renderer.RenderContext::default(),
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+  }
+  let root = @renderer.render_to_node(html_str, ctx)
+  let slot_node = root.children[0]
+  inspect(slot_node.style.height, content="Length(40)")
+
+  let layout = @renderer.render(html_str, ctx)
+  let slot = layout.children[0]
+  inspect(slot.height, content="150")
+}
+
+///|
 test "wpt_margin_collapse_indefinite_block_size_005_like_stretch_behaves_as_auto" {
   let html_str =
     #|<!DOCTYPE html>

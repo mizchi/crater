@@ -86,6 +86,28 @@ describe("CI compatible font setup", () => {
     }
   });
 
+  test("BiDi font resolver keeps Chrome-like macOS fallback order", () => {
+    const bidiSource = readRepoFile("webdriver/bidi_main/start-with-font.ts");
+
+    expect(bidiSource).toContain("\"system-ui\": {");
+    expect(bidiSource).toContain("SFNS.ttf");
+    expect(bidiSource).toContain("\"-apple-system\": \"system-ui\"");
+    expect(bidiSource).toContain("blinkmacsystemfont: \"system-ui\"");
+    expect(bidiSource).toContain("helvetica: {");
+    expect(bidiSource).toContain("\"helvetica neue\": \"helvetica\"");
+    expect(bidiSource).not.toContain("helvetica: \"arial\"");
+    expect(bidiSource).not.toContain("regular: [\"Roboto-Regular.ttf\", \"Arial.ttf\"");
+
+    const stHeitiIndex = bidiSource.indexOf("STHeiti Light.ttc");
+    const hiraginoIndex = bidiSource.indexOf("W3.ttc");
+    const arialUnicodeIndex = bidiSource.indexOf("Arial Unicode.ttf");
+    expect(stHeitiIndex).toBeGreaterThanOrEqual(0);
+    expect(hiraginoIndex).toBeGreaterThanOrEqual(0);
+    expect(arialUnicodeIndex).toBeGreaterThanOrEqual(0);
+    expect(stHeitiIndex).toBeLessThan(hiraginoIndex);
+    expect(hiraginoIndex).toBeLessThan(arialUnicodeIndex);
+  });
+
   test("start-with-font resolves helper scripts from the repo root after webdriver split", () => {
     const bidiPath = new URL("../webdriver/bidi_main/start-with-font.ts", import.meta.url);
     const textIntrinsicPath = new URL("../../scripts/text-intrinsic.ts", bidiPath);

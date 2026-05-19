@@ -214,10 +214,7 @@ pub fn layout_glyph_bitmaps(
     let mut prev_cp = 0
     for c in word {
       let cp = c.to_int()
-      let bitmap = cached_glyph_bitmap(
-        provider, cp, font_size, effective_is_bold, font_family, effective_font_weight,
-        baseline_offset,
-      )
+      let spacing = if prev_cp != 0 { letter_spacing } else { 0.0 }
       let kern = if prev_cp != 0 {
         kern_from_provider(
           provider, prev_cp, cp, font_size, effective_is_bold, font_family, effective_font_weight,
@@ -225,8 +222,19 @@ pub fn layout_glyph_bitmaps(
       } else {
         0.0
       }
-      let spacing = if prev_cp != 0 { letter_spacing } else { 0.0 }
-      let mut draw_x = cur_x + spacing + kern
+      let next_draw_x = cur_x + spacing + kern
+      let bitmap = cached_glyph_bitmap(
+        provider,
+        cp,
+        font_size,
+        effective_is_bold,
+        font_family,
+        effective_font_weight,
+        baseline_offset,
+        subpixel_x=glyph_subpixel_offset(next_draw_x),
+        subpixel_y=glyph_subpixel_offset(cur_y),
+      )
+      let mut draw_x = next_draw_x
       if max_width > 0 &&
         draw_x + bitmap.advance > hard_wrap_limit &&
         cur_x > x.to_double() + 0.01 {
@@ -235,6 +243,26 @@ pub fn layout_glyph_bitmaps(
         max_y_seen = cur_y + effective_line_height
         draw_x = cur_x
         prev_cp = 0
+        let wrapped_bitmap = cached_glyph_bitmap(
+          provider,
+          cp,
+          font_size,
+          effective_is_bold,
+          font_family,
+          effective_font_weight,
+          baseline_offset,
+          subpixel_x=glyph_subpixel_offset(draw_x),
+          subpixel_y=glyph_subpixel_offset(cur_y),
+        )
+        placements.push({
+          bitmap: wrapped_bitmap,
+          x: draw_x,
+          y: cur_y,
+          line_height: effective_line_height,
+        })
+        cur_x = draw_x + wrapped_bitmap.advance
+        prev_cp = cp
+        continue
       }
       placements.push({
         bitmap,

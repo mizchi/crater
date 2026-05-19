@@ -7,6 +7,33 @@
 let glyph_bitmap_cache : Ref[Map[String, GlyphBitmap]] = { val: {} }
 
 ///|
+let glyph_subpixel_steps : Int = 8
+
+///|
+fn glyph_subpixel_bucket(value : Double) -> Int {
+  let base = value.floor()
+  let frac = value - base
+  let raw = (frac * glyph_subpixel_steps.to_double()).to_int()
+  if raw < 0 {
+    0
+  } else if raw >= glyph_subpixel_steps {
+    glyph_subpixel_steps - 1
+  } else {
+    raw
+  }
+}
+
+///|
+fn glyph_subpixel_offset_from_bucket(bucket : Int) -> Double {
+  bucket.to_double() / glyph_subpixel_steps.to_double()
+}
+
+///|
+fn glyph_subpixel_offset(value : Double) -> Double {
+  glyph_subpixel_offset_from_bucket(glyph_subpixel_bucket(value))
+}
+
+///|
 /// Cache for parsed glyph path commands (still used for advance width).
 /// Key: "cp:fs_int:bold" -> (commands, advance)
 let glyph_cache : Ref[Map[String, (Array[@svg.PathCommand], Double)]] = {
@@ -20,6 +47,8 @@ fn glyph_cache_key(
   is_bold : Bool,
   font_family : String,
   font_weight? : Double = 400.0,
+  subpixel_x_bucket? : Int = 0,
+  subpixel_y_bucket? : Int = 0,
 ) -> String {
   let bold_flag = if is_bold { 1 } else { 0 }
   let fs_key = (font_size * 10.0).to_int()
@@ -31,6 +60,10 @@ fn glyph_cache_key(
   weight_key.to_string() +
   ":" +
   bold_flag.to_string() +
+  ":" +
+  subpixel_x_bucket.to_string() +
+  ":" +
+  subpixel_y_bucket.to_string() +
   ":" +
   font_family
 }
@@ -50,13 +83,19 @@ pub fn cached_glyph_bitmap(
   font_family : String,
   font_weight : Double,
   baseline_offset : Double,
+  subpixel_x? : Double = 0.0,
+  subpixel_y? : Double = 0.0,
 ) -> GlyphBitmap {
+  let subpixel_x_bucket = glyph_subpixel_bucket(subpixel_x)
+  let subpixel_y_bucket = glyph_subpixel_bucket(subpixel_y)
   let cache_key = glyph_cache_key(
     codepoint,
     font_size,
     is_bold,
     font_family,
     font_weight~,
+    subpixel_x_bucket~,
+    subpixel_y_bucket~,
   )
   match glyph_bitmap_cache.val.get(cache_key) {
     Some(bm) => bm
@@ -64,7 +103,11 @@ pub fn cached_glyph_bitmap(
       let (commands, advance) = glyph_from_provider(
         provider, codepoint, font_size, is_bold, font_family, font_weight,
       )
-      let translated = translate_path_commands(commands, 0.0, baseline_offset)
+      let translated = translate_path_commands(
+        commands,
+        glyph_subpixel_offset_from_bucket(subpixel_x_bucket),
+        baseline_offset + glyph_subpixel_offset_from_bucket(subpixel_y_bucket),
+      )
       let bm = rasterize_glyph_to_bitmap(translated, advance)
       glyph_bitmap_cache.val.set(cache_key, bm)
       bm

@@ -47,9 +47,24 @@ fn resolve_glyph_text_wrap_width(
   w : Int,
   h : Int,
   font_size : Double,
+  line_height : Double,
   text : String,
 ) -> Int {
-  if h.to_double() <= font_size * 1.3 && text.length() <= 72 {
+  let single_line_height = if line_height > 0.0 {
+    line_height
+  } else {
+    font_size * 1.2
+  }
+  let mut has_forced_break = false
+  for c in text.iter() {
+    if c == '\n' || c == '\r' {
+      has_forced_break = true
+      break
+    }
+  }
+  if !has_forced_break &&
+    h.to_double() <= single_line_height * 1.1 &&
+    text.length() <= 72 {
     0
   } else {
     w

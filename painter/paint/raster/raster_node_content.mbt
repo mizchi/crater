@@ -12,7 +12,7 @@ fn render_node_content(
   h : Int,
   clip : ClipRect?,
 ) -> Unit {
-  let drew_replaced_image = if node.tag == "img" && w > 0 && h > 0 {
+  let drew_replaced_image = if w > 0 && h > 0 {
     match node.src {
       Some(src) =>
         render_image_src_into_region(

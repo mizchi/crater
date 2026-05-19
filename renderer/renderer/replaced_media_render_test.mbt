@@ -831,6 +831,74 @@ test "svg_default_intrinsic_size_wpt_like" {
 }
 
 ///|
+test "svg_viewbox_auto_size_uses_available_inline_size" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|</style>
+    #|<svg id="target" viewBox="0 0 200 80"></svg>
+
+  let ctx = @renderer.RenderContext::default()
+  let root = @renderer.render_to_node(html_str, ctx)
+
+  @node.setup()
+  let layout_ctx : @layout_types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @layout_types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = @node.compute_layout_in_context(root, layout_ctx)
+
+  let svg = layout.children[0]
+
+  inspect(svg.id, content="svg#target")
+  inspect(svg.width, content="800")
+  inspect(svg.height, content="320")
+}
+
+///|
+test "svg_viewbox_icon_fills_fixed_inline_container" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|.button { display: inline-block; width: 40px; height: 40px; padding: 4px; }
+    #|</style>
+    #|<span class="button"><svg id="icon" viewBox="0 0 24 24"></svg></span>
+
+  let ctx = @renderer.RenderContext::default()
+  let root = @renderer.render_to_node(html_str, ctx)
+
+  @node.setup()
+  let layout_ctx : @layout_types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @layout_types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = @node.compute_layout_in_context(root, layout_ctx)
+
+  let button = layout.children[0]
+  let svg = button.children[0]
+
+  inspect(button.width, content="48")
+  inspect(button.height, content="48")
+  inspect(svg.id, content="svg#icon")
+  inspect(svg.x, content="4")
+  inspect(svg.y, content="4")
+  inspect(svg.width, content="40")
+  inspect(svg.height, content="40")
+}
+
+///|
 test "intrinsic_percent_replaced_nested_wrapper_quirks_like" {
   let html_str =
     #|<!-- quirks mode -->
@@ -1180,4 +1248,52 @@ test "img without src and percent max-size stays zero-sized in grid item" {
   inspect(outer.width, content="100")
   inspect(img.width, content="0")
   inspect(inner.width, content="0")
+}
+
+///|
+test "inline svg data uri resolves inherited icon fill color" {
+  let html =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|:root { --icon-fill: #474747; }
+    #|.icon { color: #9aa0a6; }
+    #|</style>
+    #|<span class="icon">
+    #|  <svg id="search" viewBox="0 0 10 10">
+    #|    <path d="M0 0h10v10H0z"></path>
+    #|  </svg>
+    #|</span>
+    #|<svg id="mic" viewBox="0 0 10 10">
+    #|  <path fill="var(--icon-fill)" d="M0 0h10v10H0z"></path>
+    #|</svg>
+  let node = @renderer.render_to_node(html, @renderer.RenderContext::default())
+  fn find_node_by_id(n : @node.Node, id : String) -> @node.Node? {
+    if n.id == id {
+      return Some(n)
+    }
+    for child in n.children {
+      match find_node_by_id(child, id) {
+        Some(found) => return Some(found)
+        None => continue
+      }
+    }
+    None
+  }
+  let search = match find_node_by_id(node, "svg#search") {
+    Some(n) => n
+    None => fail("search svg should be present")
+  }
+  let mic = match find_node_by_id(node, "svg#mic") {
+    Some(n) => n
+    None => fail("mic svg should be present")
+  }
+
+  match search.src {
+    Some(src) => inspect(src.contains("fill=\"#9aa0a6\""), content="true")
+    None => fail("inline search svg should become a data URI")
+  }
+  match mic.src {
+    Some(src) => inspect(src.contains("fill=\"#474747\""), content="true")
+    None => fail("inline mic svg should become a data URI")
+  }
 }

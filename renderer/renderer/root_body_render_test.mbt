@@ -129,3 +129,59 @@ test "body child percent height stays auto when body height is indefinite" {
     )
   }
 }
+
+///|
+test "body definite height gives google-like column flex viewport basis" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|  html, body {
+    #|    height: 100%;
+    #|    margin: 0;
+    #|  }
+    #|  #page {
+    #|    display: flex;
+    #|    flex-direction: column;
+    #|    height: 100%;
+    #|  }
+    #|  #nav, #logo, #search, #footer {
+    #|    flex-shrink: 0;
+    #|  }
+    #|  #nav { height: 60px; }
+    #|  #slot {
+    #|    min-height: 150px;
+    #|    height: calc(100% - 560px);
+    #|    max-height: 290px;
+    #|    flex-shrink: 0;
+    #|  }
+    #|  #logo { height: 92px; }
+    #|  #search { height: 100px; }
+    #|  #grow {
+    #|    flex-grow: 1;
+    #|    flex-shrink: 0;
+    #|  }
+    #|  #footer { height: 104px; }
+    #|</style>
+    #|<div id="page">
+    #|  <div id="nav"></div>
+    #|  <div id="slot"></div>
+    #|  <div id="logo"></div>
+    #|  <div id="search"></div>
+    #|  <div id="grow"></div>
+    #|  <div id="footer"></div>
+    #|</div>
+  let ctx : @renderer.RenderContext = {
+    ..@renderer.RenderContext::default(),
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+  }
+  let layout = @renderer.render(html_str, ctx)
+  let page = layout.children[0]
+  let grow = page.children[4]
+  let footer = page.children[5]
+  inspect(page.id, content="div#page")
+  inspect(page.height, content="600")
+  inspect(grow.height, content="94")
+  inspect(footer.y, content="496")
+  inspect(footer.height, content="104")
+}

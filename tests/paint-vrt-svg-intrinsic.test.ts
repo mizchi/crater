@@ -103,8 +103,38 @@ test.describe("Paint VRT — SVG intrinsic sizing", () => {
       viewport: { width: 480, height: 200 },
       outputDirName: "svg-intrinsic-explicit-dims",
       threshold: 0.3,
-      maxDiffRatio: 0.15,
+      maxDiffRatio: 0.01,
       reportTitle: "svg with explicit width and height attributes",
+    });
+  });
+
+  test("inline svg path content paints as image content", async () => {
+    const html = `<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body { margin: 0; padding: 32px; background: #f6f7fb; font-family: Arial, sans-serif; }
+      .logo { display: block; width: 160px; height: 48px; }
+    </style>
+  </head>
+  <body>
+    <svg class="logo" viewBox="0 0 160 48" width="160" height="48" xmlns="http://www.w3.org/2000/svg" role="img">
+      <path d="M 0 0 L 160 0 L 160 48 L 0 48 Z" fill="#4285f4"></path>
+      <path d="M 14 12 L 146 12 L 146 36 L 14 36 Z" fill="#f6f7fb"></path>
+      <path d="M 22 18 L 70 18 L 70 30 L 22 30 Z" fill="#ea4335"></path>
+      <path d="M 82 18 L 138 18 L 138 30 L 82 30 Z" fill="#fbbc04"></path>
+    </svg>
+  </body>
+</html>`;
+    await expectHtmlWithinBudget({
+      fixtureId: "svg-intrinsic-inline-path-content",
+      html,
+      viewport: { width: 320, height: 160 },
+      outputDirName: "svg-intrinsic-inline-path-content",
+      threshold: 0.3,
+      maxDiffRatio: 0.01,
+      reportTitle: "inline svg path content paints as image content",
     });
   });
 
@@ -130,7 +160,7 @@ test.describe("Paint VRT — SVG intrinsic sizing", () => {
       viewport: { width: 480, height: 240 },
       outputDirName: "svg-intrinsic-viewbox-only",
       threshold: 0.3,
-      maxDiffRatio: 0.15,
+      maxDiffRatio: 0.01,
       reportTitle: "svg with viewBox only takes intrinsic from viewBox",
     });
   });
@@ -162,7 +192,7 @@ test.describe("Paint VRT — SVG intrinsic sizing", () => {
       viewport: { width: 480, height: 200 },
       outputDirName: "svg-intrinsic-flex-icon",
       threshold: 0.3,
-      maxDiffRatio: 0.15,
+      maxDiffRatio: 0.022,
       reportTitle: "svg inside flex container honors flex sizing",
     });
   });
@@ -193,7 +223,7 @@ test.describe("Paint VRT — SVG intrinsic sizing", () => {
       viewport: { width: 480, height: 200 },
       outputDirName: "svg-intrinsic-inline-replaced",
       threshold: 0.3,
-      maxDiffRatio: 0.15,
+      maxDiffRatio: 0.088,
       reportTitle: "inline svg as replaced text element preserves baseline",
     });
   });
@@ -223,7 +253,7 @@ test.describe("Paint VRT — SVG intrinsic sizing", () => {
       viewport: { width: 480, height: 240 },
       outputDirName: "svg-intrinsic-percent-parent",
       threshold: 0.3,
-      maxDiffRatio: 0.15,
+      maxDiffRatio: 0.005,
       reportTitle: "svg sized by parent container with percent width",
     });
   });

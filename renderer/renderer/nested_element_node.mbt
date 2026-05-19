@@ -75,5 +75,7 @@ fn element_to_node_with_styles_internal(
   } else {
     children
   }
-  finalize_special_element_node(elem, tag_lower, style, children)
+  finalize_special_element_node(
+    elem, tag_lower, style, children, element_css_vars,
+  )
 }

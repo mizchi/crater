@@ -211,38 +211,71 @@ fn get_ua_default_style(tag : String) -> @style.Style {
       }
     "h2" =>
       {
-        // h2 has 0.83em margin
+        // h2 UA defaults: 1.5em bold heading with 0.83em block margins.
         ..default_style,
+        font_size: 24.0,
         font_weight: 700.0,
+        line_height: 28.8,
         margin: {
           left: @types.Length(0.0),
           right: @types.Length(0.0),
-          top: @types.Length(13.3),
-          bottom: @types.Length(13.3),
+          top: @types.Length(19.92),
+          bottom: @types.Length(19.92),
         },
       }
     "h3" =>
       {
-        // h3 has 1em margin
+        // h3 UA defaults: 1.17em bold heading with 1em block margins.
         ..default_style,
+        font_size: 18.72,
         font_weight: 700.0,
+        line_height: 22.464,
         margin: {
           left: @types.Length(0.0),
           right: @types.Length(0.0),
-          top: @types.Length(16.0),
-          bottom: @types.Length(16.0),
+          top: @types.Length(18.72),
+          bottom: @types.Length(18.72),
         },
       }
-    "h4" | "h5" | "h6" =>
+    "h4" =>
       {
-        // h4-h6 have 1.33em margin
+        // h4 UA defaults: 1em bold heading with 1.33em block margins.
         ..default_style,
         font_weight: 700.0,
+        line_height: 19.2,
         margin: {
           left: @types.Length(0.0),
           right: @types.Length(0.0),
-          top: @types.Length(21.3),
-          bottom: @types.Length(21.3),
+          top: @types.Length(21.28),
+          bottom: @types.Length(21.28),
+        },
+      }
+    "h5" =>
+      {
+        // h5 UA defaults: 0.83em bold heading with 1.67em block margins.
+        ..default_style,
+        font_size: 13.28,
+        font_weight: 700.0,
+        line_height: 15.936,
+        margin: {
+          left: @types.Length(0.0),
+          right: @types.Length(0.0),
+          top: @types.Length(22.1776),
+          bottom: @types.Length(22.1776),
+        },
+      }
+    "h6" =>
+      {
+        // h6 UA defaults: 0.67em bold heading with 2.33em block margins.
+        ..default_style,
+        font_size: 10.72,
+        font_weight: 700.0,
+        line_height: 12.864,
+        margin: {
+          left: @types.Length(0.0),
+          right: @types.Length(0.0),
+          top: @types.Length(24.9776),
+          bottom: @types.Length(24.9776),
         },
       }
     "ul" | "ol" =>
@@ -321,15 +354,20 @@ fn get_ua_default_style(tag : String) -> @style.Style {
     // Pre element - preserve formatting, prevent wrapping
     "pre" =>
       {
-        // pre has margin like p, and overflow hidden to prevent wrap issues
+        // pre uses smaller monospace text, preserves whitespace, and has 1em
+        // margins relative to its own default font size.
         ..default_style,
         display: @types.Block,
+        font_family: "monospace",
+        font_size: 13.0,
+        line_height: 15.6,
+        white_space: @style.WhiteSpace::Pre,
         overflow_x: @types.Hidden,
         margin: {
           left: @types.Length(0.0),
           right: @types.Length(0.0),
-          top: @types.Length(16.0),
-          bottom: @types.Length(16.0),
+          top: @types.Length(13.0),
+          bottom: @types.Length(13.0),
         },
       }
     // Link element - blue color (standard browser UA style)
@@ -458,19 +496,27 @@ fn get_ua_default_style(tag : String) -> @style.Style {
         },
       }
     // Table elements
-    "table" => { ..default_style, display: @types.Table, border_spacing: 2.0 }
+    "table" =>
+      {
+        ..default_style,
+        display: @types.Table,
+        box_sizing: @types.BorderBox,
+        border_spacing: 2.0,
+      }
     "tr" => { ..default_style, display: @types.TableRow }
     "td" =>
       {
         ..default_style,
         display: @types.TableCell,
-        vertical_align: @style.Baseline,
+        padding: @types.Rect::all(@types.Length(1.0)),
+        vertical_align: @style.Middle,
         text_align: @style.TextAlign::Left, // UA default: start (left for LTR)
       }
     "th" =>
       {
         ..default_style,
         display: @types.TableCell,
+        padding: @types.Rect::all(@types.Length(1.0)),
         vertical_align: @style.Middle,
         text_align: @style.TextAlign::Center, // th defaults to center
         font_weight: 700.0,
@@ -665,6 +711,23 @@ fn compute_element_style_indexed(
   }
   style = { ..style, display: ua_style.display }
   style = { ..style, box_sizing: ua_style.box_sizing }
+  if ua_style.text_align != default_style.text_align {
+    style = { ..style, text_align: ua_style.text_align }
+  }
+  if ua_style.vertical_align != default_style.vertical_align {
+    style = { ..style, vertical_align: ua_style.vertical_align }
+  }
+  if ua_style.white_space != default_style.white_space {
+    style = { ..style, white_space: ua_style.white_space }
+  }
+  if ua_style.overflow_x != default_style.overflow_x ||
+    ua_style.overflow_y != default_style.overflow_y {
+    style = {
+      ..style,
+      overflow_x: ua_style.overflow_x,
+      overflow_y: ua_style.overflow_y,
+    }
+  }
   style = { ..style, margin: ua_style.margin, padding: ua_style.padding }
   if ua_style.font_size != default_style.font_size {
     style = { ..style, font_size: ua_style.font_size }
@@ -1067,6 +1130,150 @@ fn apply_css_property(
 }
 
 ///|
+fn is_css_calc_space(c : Char) -> Bool {
+  c == ' ' || c == '\n' || c == '\t' || c == '\r' || c == '\u{0C}'
+}
+
+///|
+fn parse_number_with_suffix(token : String, suffix : String) -> Double? {
+  match token.strip_suffix(suffix) {
+    Some(raw) => {
+      let parsed = @string.parse_double(raw.to_owned()) catch {
+        _ => return None
+      }
+      Some(parsed)
+    }
+    None => None
+  }
+}
+
+///|
+fn parse_calc_length_or_percent_token(
+  token : String,
+  ctx : @css.ComputeContext,
+) -> (Double, Double)? {
+  let t = token.trim().to_owned()
+  if t.is_empty() {
+    return None
+  }
+  match parse_number_with_suffix(t, "%") {
+    Some(n) => return Some((0.0, n / 100.0))
+    None => ()
+  }
+  match parse_number_with_suffix(t, "px") {
+    Some(n) => return Some((n, 0.0))
+    None => ()
+  }
+  match parse_number_with_suffix(t, "vh") {
+    Some(n) => return Some((ctx.viewport_height * n / 100.0, 0.0))
+    None => ()
+  }
+  match parse_number_with_suffix(t, "vw") {
+    Some(n) => return Some((ctx.viewport_width * n / 100.0, 0.0))
+    None => ()
+  }
+  let parsed = @string.parse_double(t) catch { _ => return None }
+  Some((parsed, 0.0))
+}
+
+///|
+fn parse_simple_calc_length_percent_terms(
+  value : String,
+  ctx : @css.ComputeContext,
+) -> (Double, Double)? {
+  let v = value.trim().to_owned()
+  if !v.has_prefix("calc(") || !v.has_suffix(")") {
+    return None
+  }
+  let inner = v.unsafe_substring(start=5, end=v.length() - 1)
+  let mut i = 0
+  let mut sign = 1.0
+  let mut length_px = 0.0
+  let mut percent = 0.0
+  let mut saw_term = false
+  while i < inner.length() {
+    while i < inner.length() &&
+          is_css_calc_space(inner[i].to_int().unsafe_to_char()) {
+      i = i + 1
+    }
+    if i >= inner.length() {
+      break
+    }
+    let c = inner[i].to_int().unsafe_to_char()
+    if c == '+' {
+      sign = 1.0
+      i = i + 1
+      continue
+    }
+    if c == '-' {
+      sign = -1.0
+      i = i + 1
+      continue
+    }
+    let start = i
+    while i < inner.length() {
+      let ch = inner[i].to_int().unsafe_to_char()
+      if ch == '+' || ch == '-' || is_css_calc_space(ch) {
+        break
+      }
+      i = i + 1
+    }
+    if start == i {
+      return None
+    }
+    let token = inner.unsafe_substring(start~, end=i)
+    match parse_calc_length_or_percent_token(token, ctx) {
+      Some((term_px, term_percent)) => {
+        length_px = length_px + sign * term_px
+        percent = percent + sign * term_percent
+        saw_term = true
+        sign = 1.0
+      }
+      None => return None
+    }
+  }
+  if saw_term {
+    Some((length_px, percent))
+  } else {
+    None
+  }
+}
+
+///|
+fn mixed_calc_height_reference(ctx : @css.ComputeContext) -> Double {
+  match ctx.parent_style {
+    Some(parent) =>
+      match parent.height {
+        @types.Length(h) => h
+        @types.Percent(p) => ctx.viewport_height * p
+        _ => ctx.viewport_height
+      }
+    None => ctx.viewport_height
+  }
+}
+
+///|
+fn resolve_axis_mixed_calc_dimension(
+  property : String,
+  value : String,
+  ctx : @css.ComputeContext,
+) -> @types.Dimension? {
+  if property != "height" && property != "max-height" {
+    return None
+  }
+  match parse_simple_calc_length_percent_terms(value, ctx) {
+    Some((length_px, percent)) =>
+      if length_px.abs() < 0.0001 || percent.abs() < 0.0001 {
+        None
+      } else {
+        let resolved = mixed_calc_height_reference(ctx) * percent + length_px
+        Some(@types.Length(if resolved < 0.0 { 0.0 } else { resolved }))
+      }
+    None => None
+  }
+}
+
+///|
 /// Apply a CSS property value to a style with custom viewport and CSS variables
 fn apply_css_property_with_viewport(
   style : @style.Style,
@@ -1095,7 +1302,16 @@ fn apply_css_property_with_viewport(
     viewport_height,
     custom_properties: css_vars,
   }
-  @css.apply_property_direct(style, property, value, ctx)
+  let resolved = @css.apply_property_direct(style, property, value, ctx)
+  match resolve_axis_mixed_calc_dimension(property, value, ctx) {
+    Some(dim) =>
+      match property {
+        "height" => { ..resolved, height: dim }
+        "max-height" => { ..resolved, max_height: dim }
+        _ => resolved
+      }
+    None => resolved
+  }
 }
 
 ///|

@@ -95,6 +95,8 @@ pub fn input_now_ms() -> Double
 
 pub fn input_set_pointer_event_properties(Double, Double, Double, Double, Double, Double, Double) -> Unit
 
+pub fn js_push_synthetic_navigation(String) -> Unit
+
 pub fn js_set_runtime_context_authorization(String, String) -> Unit
 
 pub fn js_set_runtime_context_credentials(String, String) -> Unit

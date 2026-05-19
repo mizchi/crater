@@ -279,6 +279,117 @@ test "input_button_like_intrinsic_width_uses_value_length" {
 }
 
 ///|
+test "input_button_like_intrinsic_width_uses_label_metrics_provider" {
+  @renderer.clear_text_metrics_provider()
+  let provider = @renderer.TextMetricsProvider::new(fn(
+    text : String,
+    _font_size : Double,
+    _line_height : Double,
+    _white_space : @style.WhiteSpace,
+    _writing_mode : @style.WritingMode,
+    _font_weight : Double,
+    _font_family : String,
+  ) -> @layout_types.MeasureFunc {
+    let width = if text == "iiiiiiii" {
+      24.0
+    } else if text == "0" {
+      8.0
+    } else {
+      80.0
+    }
+    {
+      func: fn(
+        _available_width : Double,
+        _available_height : Double,
+      ) -> @layout_types.IntrinsicSize {
+        {
+          min_width: width,
+          max_width: width,
+          min_height: 16.0,
+          max_height: 16.0,
+        }
+      },
+    }
+  })
+  @renderer.set_text_metrics_provider(provider)
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>body { margin: 0; }</style>
+    #|<input id="sub" type="submit" value="iiiiiiii" style="font: 14px Arial, sans-serif; padding-left: 16px; padding-right: 16px; height: 36px">
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  @renderer.clear_text_metrics_provider()
+  let input_sub = layout.children[0]
+  guard input_sub.width > 30.0 && input_sub.width < 45.0 else {
+    fail("button-like input width should use the label metrics provider")
+  }
+}
+
+///|
+test "input_button_like_value_is_available_for_paint" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<input id="btn" type="button" value="Button text"><input id="sub" type="submit" value="Submit text"><input id="reset" type="reset">
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let btn = root.children[0]
+  let sub = root.children[1]
+  let reset = root.children[2]
+
+  debug_inspect(btn.text, content="Some(\"Button text\")")
+  debug_inspect(sub.text, content="Some(\"Submit text\")")
+  debug_inspect(reset.text, content="Some(\"Reset\")")
+}
+
+///|
+test "textarea_and_single_select_values_are_available_for_paint" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<textarea id="message">Textarea value</textarea><select id="default"><option>First option</option><option>Second option</option></select><select id="selected"><option>First option</option><option selected>Selected option</option></select>
+  let root = @renderer.render_to_node(
+    html_str,
+    @renderer.RenderContext::default(),
+  )
+  let textarea = root.children[0]
+  let default_select = root.children[1]
+  let selected_select = root.children[2]
+
+  debug_inspect(textarea.text, content="Some(\"Textarea value\")")
+  debug_inspect(default_select.text, content="Some(\"First option\")")
+  debug_inspect(selected_select.text, content="Some(\"Selected option\")")
+  guard default_select.children.length() >= 2 else {
+    fail("single select should keep option children for tree parity")
+  }
+}
+
+///|
+test "single_select_auto_height_includes_explicit_padding_and_border" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; font-family: Arial, sans-serif; }
+    #|select {
+    #|  display: block;
+    #|  width: 100%;
+    #|  padding: 8px 10px;
+    #|  border: 1px solid #ccc;
+    #|  font-size: 14px;
+    #|  box-sizing: border-box;
+    #|}
+    #|</style>
+    #|<select id="category"><option>General</option></select>
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let select = layout.children[0]
+  guard select.id == "select#category" else {
+    fail("first body child should be select")
+  }
+  guard select.height >= 34.0 && select.height <= 38.0 else {
+    fail("single select auto height should include padding and border")
+  }
+}
+
+///|
 test "text_input_auto_height_includes_explicit_padding_and_border" {
   let html_str =
     #|<!DOCTYPE html>
@@ -298,6 +409,43 @@ test "text_input_auto_height_includes_explicit_padding_and_border" {
     fail(
       "text input auto height should include explicit vertical padding and border",
     )
+  }
+}
+
+///|
+test "centered submit inputs honor text align center" {
+  let html =
+    #|<!doctype html>
+    #|<style>
+    #|body { margin: 0; }
+    #|.wrap { width: 584px; margin-left: 108px; }
+    #|.buttons { height: 70px; }
+    #|.buttons input[type="submit"] {
+    #|  margin: 11px 4px;
+    #|  padding: 0 16px;
+    #|  height: 36px;
+    #|  min-width: 54px;
+    #|  text-align: center;
+    #|}
+    #|</style>
+    #|<div class="wrap">
+    #|  <div class="buttons"><center><input value="Google 検索" type="submit"><input value="I'm Feeling Lucky" type="submit"></center></div>
+    #|</div>
+  let layout = @renderer.render(html, @renderer.RenderContext::default())
+  let wrap = layout.children[0]
+  let buttons = wrap.children[0]
+  let center = buttons.children[0]
+  let first = center.children[0]
+  let second = center.children[1]
+  let group_left = first.x
+  let group_right = second.x + second.width + second.margin.right
+  let group_center = (group_left + group_right) / 2.0
+  inspect(center.width, content="584")
+  inspect(first.id, content="input")
+  inspect(second.id, content="input")
+  inspect(group_center, content="294")
+  guard group_center > 287.0 && group_center < 297.0 else {
+    fail("submit input group should be centered in the 584px wrapper")
   }
 }
 
