@@ -1919,6 +1919,92 @@ extern "js" fn js_evaluate_expression(
   #|       };
   #|       if (lowerTag === 'form') {
   #|         installFormSubmissionMethods(el);
+  #|         // HTMLFormElement attribute-backed getters. `action` resolves
+  #|         // against the document base URL like the spec; when missing it
+  #|         // defaults to the current location. `method` defaults to "get".
+  #|         Object.defineProperty(el, 'action', {
+  #|           get() {
+  #|             const raw = this._attrs ? this._attrs.action : undefined;
+  #|             const base = (globalThis.location && typeof globalThis.location.href === 'string' && globalThis.location.href)
+  #|               ? globalThis.location.href
+  #|               : 'about:blank';
+  #|             if (raw === undefined || raw === null || raw === '') return base;
+  #|             try { return new URL(String(raw), base).href; } catch (_e) { return String(raw); }
+  #|           },
+  #|           set(v) { this._attrs.action = v === undefined || v === null ? '' : String(v); },
+  #|           enumerable: true, configurable: true,
+  #|         });
+  #|         Object.defineProperty(el, 'method', {
+  #|           get() {
+  #|             const raw = this._attrs ? this._attrs.method : undefined;
+  #|             if (raw === undefined || raw === null) return 'get';
+  #|             const lower = String(raw).toLowerCase();
+  #|             return lower === 'post' || lower === 'dialog' ? lower : 'get';
+  #|           },
+  #|           set(v) { this._attrs.method = v === undefined || v === null ? '' : String(v); },
+  #|           enumerable: true, configurable: true,
+  #|         });
+  #|         const formAttrGetter = (name) => ({
+  #|           get() {
+  #|             const v = this._attrs ? this._attrs[name] : undefined;
+  #|             return v === undefined || v === null ? '' : String(v);
+  #|           },
+  #|           set(v) { this._attrs[name] = v === undefined || v === null ? '' : String(v); },
+  #|           enumerable: true, configurable: true,
+  #|         });
+  #|         Object.defineProperty(el, 'name', formAttrGetter('name'));
+  #|         Object.defineProperty(el, 'target', formAttrGetter('target'));
+  #|         Object.defineProperty(el, 'enctype', formAttrGetter('enctype'));
+  #|         Object.defineProperty(el, 'acceptCharset', formAttrGetter('accept-charset'));
+  #|         Object.defineProperty(el, 'autocomplete', formAttrGetter('autocomplete'));
+  #|         Object.defineProperty(el, 'noValidate', {
+  #|           get() { return this._attrs ? ('novalidate' in this._attrs) : false; },
+  #|           set(v) {
+  #|             if (v) this._attrs.novalidate = '';
+  #|             else delete this._attrs.novalidate;
+  #|           },
+  #|           enumerable: true, configurable: true,
+  #|         });
+  #|       }
+  #|       if (lowerTag === 'input' || lowerTag === 'button' || lowerTag === 'select' || lowerTag === 'textarea') {
+  #|         // Form-associated control attribute-backed getters. These mirror
+  #|         // the IDL surface real pages depend on (form serialization,
+  #|         // routing, validation). Pure attribute reflection; behavior like
+  #|         // checked/value state for checkboxes is already on the shim and
+  #|         // not touched here.
+  #|         const controlAttrGetter = (name, fallback) => ({
+  #|           get() {
+  #|             const v = this._attrs ? this._attrs[name] : undefined;
+  #|             if (v === undefined || v === null) return fallback;
+  #|             return String(v);
+  #|           },
+  #|           set(v) { this._attrs[name] = v === undefined || v === null ? '' : String(v); },
+  #|           enumerable: true, configurable: true,
+  #|         });
+  #|         // `type` defaults vary by tag: INPUT → "text", BUTTON → "submit".
+  #|         const typeDefault = lowerTag === 'button' ? 'submit' : (lowerTag === 'input' ? 'text' : '');
+  #|         Object.defineProperty(el, 'name', controlAttrGetter('name', ''));
+  #|         Object.defineProperty(el, 'type', controlAttrGetter('type', typeDefault));
+  #|         Object.defineProperty(el, 'placeholder', controlAttrGetter('placeholder', ''));
+  #|         Object.defineProperty(el, 'autocomplete', controlAttrGetter('autocomplete', ''));
+  #|         // Boolean reflections — present iff the attribute exists.
+  #|         const boolAttr = (name) => ({
+  #|           get() { return this._attrs ? (name in this._attrs) : false; },
+  #|           set(v) {
+  #|             if (v) this._attrs[name] = '';
+  #|             else delete this._attrs[name];
+  #|           },
+  #|           enumerable: true, configurable: true,
+  #|         });
+  #|         Object.defineProperty(el, 'disabled', boolAttr('disabled'));
+  #|         Object.defineProperty(el, 'required', boolAttr('required'));
+  #|         Object.defineProperty(el, 'readOnly', boolAttr('readonly'));
+  #|         Object.defineProperty(el, 'form', {
+  #|           get() {
+  #|             return typeof this.closest === 'function' ? this.closest('form') : null;
+  #|           },
+  #|           enumerable: true, configurable: true,
+  #|         });
   #|       }
   #|       if (lowerTag === 'a' || lowerTag === 'area' || lowerTag === 'link') {
   #|         // HTMLHyperlinkElementUtils — resolves `href` against the current
