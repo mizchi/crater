@@ -28,6 +28,8 @@ extern "js" fn reset_runtime_js_state() -> Unit =
   #|         // Observer APIs shimmed by bidi_runtime_eval.mbt. Without
   #|         // these, the per-eval window→globalThis sync would clear them.
   #|         "IntersectionObserver", "ResizeObserver", "MutationObserver",
+  #|         // Network primitives provided natively by Node 22+.
+  #|         "WebSocket", "EventSource",
   #|       ]);
   #|       globalThis.__bidiSyncWindowPropertiesToGlobal = (win) => {
   #|         const source = win && typeof win === "object" ? win : globalThis.window;
