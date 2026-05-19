@@ -3293,8 +3293,48 @@ extern "js" fn js_evaluate_expression(
   #|       unobserve(target) { this._targets.delete(target); }
   #|       disconnect() { this._targets.clear(); }
   #|     };
-  #|     globalThis.requestAnimationFrame = function(cb) { return setTimeout(cb, 16); };
-  #|     globalThis.cancelAnimationFrame = function(id) { clearTimeout(id); };
+  #|     // requestAnimationFrame — batched per frame so multiple
+  #|     // synchronous rAF calls coalesce into a single timer fire (matches
+  #|     // real-browser semantics: all rAF callbacks scheduled in one task
+  #|     // flush together on the next frame, NOT one timer per callback).
+  #|     // Callbacks receive a DOMHighResTimeStamp from performance.now()
+  #|     // when available; consecutive flushes see monotonically increasing
+  #|     // timestamps. The previous impl (setTimeout(cb, 16) per callback)
+  #|     // serialized callbacks across separate timers and re-entered the
+  #|     // event loop between each, breaking animation libraries that
+  #|     // expect a single timestamp shared across all rAF callbacks for
+  #|     // a frame (#185).
+  #|     (() => {
+  #|       const queue = [];
+  #|       let scheduled = false;
+  #|       let nextId = 1;
+  #|       const flush = () => {
+  #|         scheduled = false;
+  #|         const callbacks = queue.splice(0);
+  #|         const ts = typeof performance !== 'undefined' && performance.now
+  #|           ? performance.now()
+  #|           : Date.now();
+  #|         for (const entry of callbacks) {
+  #|           if (entry.cancelled) continue;
+  #|           try { entry.cb(ts); } catch (_e) { /* swallow — never fail other rAF callbacks */ }
+  #|         }
+  #|       };
+  #|       globalThis.requestAnimationFrame = function(cb) {
+  #|         if (typeof cb !== 'function') return 0;
+  #|         const id = nextId++;
+  #|         queue.push({ id, cb, cancelled: false });
+  #|         if (!scheduled) {
+  #|           scheduled = true;
+  #|           setTimeout(flush, 16);
+  #|         }
+  #|         return id;
+  #|       };
+  #|       globalThis.cancelAnimationFrame = function(id) {
+  #|         for (const entry of queue) {
+  #|           if (entry.id === id) entry.cancelled = true;
+  #|         }
+  #|       };
+  #|     })();
   #|     globalThis.getComputedStyle = function(el) {
   #|       // Return a CSSStyleDeclaration-like object with direct property access
   #|       const style = el._style || {};
