@@ -21,6 +21,7 @@ describe("buildFlakerBatchPlan", () => {
       "browser-user-scenarios",
       "crater-playwright-adapter",
       "paint-vrt",
+      "paint-vrt-font-fallback",
       "paint-vrt-gradients",
       "paint-vrt-levels",
       "paint-vrt-responsive",

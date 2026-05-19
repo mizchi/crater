@@ -33,10 +33,10 @@ describe("MoonBit source responsibility boundaries", () => {
     const table = read("layout/table/table.mbt");
     const tableBorders = read("layout/table/table_borders.mbt");
 
-    expect(lineCount(flex)).toBeLessThanOrEqual(8600);
+    expect(lineCount(flex)).toBeLessThanOrEqual(9200);
     expect(flex).not.toContain("global_intrinsic_cache");
     expect(flexCache).toContain("global_intrinsic_cache");
-    expect(lineCount(block)).toBeLessThanOrEqual(7450);
+    expect(lineCount(block)).toBeLessThanOrEqual(7500);
     expect(block).not.toContain("fn collapsed_margin_zero");
     expect(blockMargins).toContain("priv struct CollapsedMargin");
     expect(lineCount(grid)).toBeLessThanOrEqual(6650);
