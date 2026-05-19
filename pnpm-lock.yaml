@@ -83,6 +83,10 @@ importers:
   js: {}
 
   js/playground:
+    dependencies:
+      '@mizchi/utels':
+        specifier: ^0.1.0
+        version: 0.1.0
     devDependencies:
       vite:
         specifier: ^5.0.0
@@ -669,6 +673,10 @@ packages:
     resolution: {integrity: sha512-vUFXW7H7ktgkb6mqbV7G77MG/ybTW0Lg/w+wHRpinoK0+EAAD7PVuVoceiH+ufTW+A0AsJ+U+zOPIXwYZsHoiQ==}
     engines: {node: '>=24'}
     hasBin: true
+
+  '@mizchi/utels@0.1.0':
+    resolution: {integrity: sha512-pG8TxukDbjS9cfWokiXbDtrTTey5g6Rvwjlw1welsvnPBDnOHoIWXEYOMBZ0eKfpcaTp05bTis20rwlygQc3uQ==}
+    engines: {node: '>=24'}
 
   '@napi-rs/wasm-runtime@0.2.12':
     resolution: {integrity: sha512-ZVWUcfwY4E/yPitQJl481FjFo3K22D6qF0DuFH6Y/nbnE11GY5uguDxZMGXPQ8WQ0128MXQD7TnfHyK4oWoIJQ==}
@@ -3187,6 +3195,10 @@ snapshots:
       - bluebird
       - encoding
       - supports-color
+
+  '@mizchi/utels@0.1.0':
+    dependencies:
+      '@jridgewell/trace-mapping': 0.3.31
 
   '@napi-rs/wasm-runtime@0.2.12':
     dependencies:
