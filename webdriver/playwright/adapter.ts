@@ -137,6 +137,13 @@ export type CraterWaitForFunctionOptions = {
 
 export type CraterLocatorActionOptions = {
   timeout?: number;
+  /**
+   * Skip the actionability check (visible + enabled + stable bounding rect).
+   * Matches Playwright's `force` option. Useful for pages where Crater's
+   * visibility heuristic incorrectly rejects an element (#207) — the caller
+   * has already decided the element is the right target.
+   */
+  force?: boolean;
 };
 
 const FULL_PAGE_SCREENSHOT_MAX_HEIGHT = 16384;
@@ -2194,7 +2201,7 @@ export class CraterLocator {
   }
 
   async click(options: CraterLocatorActionOptions = {}): Promise<void> {
-    await this.waitForActionable(options);
+    if (!options.force) await this.waitForActionable(options);
     await this.page.evaluate(`
       (() => {
         const el = ${this.queryExpr("querySelector")};
@@ -2207,7 +2214,7 @@ export class CraterLocator {
   }
 
   async hover(options: CraterLocatorActionOptions = {}): Promise<void> {
-    await this.waitForActionable(options);
+    if (!options.force) await this.waitForActionable(options);
     await this.page.evaluate(`
       (() => {
         const el = ${this.queryExpr("querySelector")};
@@ -2280,8 +2287,8 @@ export class CraterLocator {
     await markLiveDomCaptureNeeded(this.page);
   }
 
-  async focus(): Promise<void> {
-    await this.waitForActionable();
+  async focus(options: CraterLocatorActionOptions = {}): Promise<void> {
+    if (!options.force) await this.waitForActionable(options);
     await this.page.evaluate(`
       (() => {
         const el = ${this.queryExpr("querySelector")};
@@ -2297,7 +2304,7 @@ export class CraterLocator {
   }
 
   async fill(value: string, options: CraterLocatorActionOptions = {}): Promise<void> {
-    await this.waitForActionable(options);
+    if (!options.force) await this.waitForActionable(options);
     await this.page.evaluate(`
       (() => {
         ${adapterDomActionsExpr()}
@@ -2314,8 +2321,8 @@ export class CraterLocator {
     await this.fill("");
   }
 
-  async type(text: string): Promise<void> {
-    await this.waitForActionable();
+  async type(text: string, options: CraterLocatorActionOptions = {}): Promise<void> {
+    if (!options.force) await this.waitForActionable(options);
     const handled = await this.page.evaluate<boolean>(`
       (() => {
         ${adapterDomActionsExpr()}
@@ -2368,16 +2375,19 @@ export class CraterLocator {
     await markLiveDomCaptureNeeded(this.page);
   }
 
-  async check(): Promise<void> {
-    await this.setChecked(true);
+  async check(options: CraterLocatorActionOptions = {}): Promise<void> {
+    await this.setChecked(true, options);
   }
 
-  async uncheck(): Promise<void> {
-    await this.setChecked(false);
+  async uncheck(options: CraterLocatorActionOptions = {}): Promise<void> {
+    await this.setChecked(false, options);
   }
 
-  async selectOption(value: CraterSelectOptionValue): Promise<void> {
-    await this.waitForActionable();
+  async selectOption(
+    value: CraterSelectOptionValue,
+    options: CraterLocatorActionOptions = {},
+  ): Promise<void> {
+    if (!options.force) await this.waitForActionable(options);
     const requestExpr = jsValue(value);
     await this.page.evaluate(`
       (() => {
@@ -2612,8 +2622,11 @@ export class CraterLocator {
     `);
   }
 
-  private async setChecked(checked: boolean): Promise<void> {
-    await this.waitForActionable();
+  private async setChecked(
+    checked: boolean,
+    options: CraterLocatorActionOptions = {},
+  ): Promise<void> {
+    if (!options.force) await this.waitForActionable(options);
     await this.page.evaluate(`
       (() => {
         ${adapterDomActionsExpr()}
@@ -5435,8 +5448,12 @@ export class CraterBidiPage {
     await this.performPointer(pointerMoveActions(sharedId));
   }
 
-  async fill(selector: string, value: string): Promise<void> {
-    await this.locator(selector).fill(value);
+  async fill(
+    selector: string,
+    value: string,
+    options: CraterLocatorActionOptions = {},
+  ): Promise<void> {
+    await this.locator(selector).fill(value, options);
   }
 
   async type(selector: string, text: string): Promise<void> {
