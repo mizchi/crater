@@ -1484,29 +1484,40 @@ fn BidiProtocol::try_handle_synthetic_iframe_creation(
     self.refresh_child_contexts_from_iframes_with_depth(child_ctx_id, 1)
   }
 
-  let mirror_iframe_foo_to_parent = trimmed.contains("window.baz") &&
-    trimmed.contains("iframe.contentWindow.foo")
-  if mirror_iframe_foo_to_parent {
-    set_runtime_context(child_ctx_id)
-    self.apply_effective_viewport_to_runtime_context(child_ctx_id, child_ctx_id)
-    let opened_eval_json = evaluate_js_with_console(
-      "window.foo", false, false, false, "{}",
-    )
-    let opened_eval = @json.parse(opened_eval_json) catch {
-      _ =>
-        make_object({
-          "result": make_object({ "type": Json::string("undefined") }),
-        })
+  // Cross-frame mirror: copy `<var>.contentWindow.<prop>` from the
+  // child realm into a parent-realm LHS. The pattern parser handles
+  // ANY identifier name on either side, not just the hardcoded
+  // `window.baz = iframe.contentWindow.foo` WPT shape (#182 slice 5).
+  match extract_iframe_content_window_mirror(trimmed) {
+    Some((lhs, prop)) => {
+      set_runtime_context(child_ctx_id)
+      self.apply_effective_viewport_to_runtime_context(
+        child_ctx_id, child_ctx_id,
+      )
+      let opened_eval_json = evaluate_js_with_console(
+        "window." + prop,
+        false,
+        false,
+        false,
+        "{}",
+      )
+      let opened_eval = @json.parse(opened_eval_json) catch {
+        _ =>
+          make_object({
+            "result": make_object({ "type": Json::string("undefined") }),
+          })
+      }
+      let opened_value = get_field(opened_eval, "result").unwrap_or(
+        make_object({ "type": Json::string("undefined") }),
+      )
+      set_runtime_context(parent_ctx_id)
+      self.apply_effective_viewport_to_runtime_context(
+        parent_ctx_id, parent_ctx_id,
+      )
+      evaluate_js(lhs + " = " + bidi_value_to_js_literal(opened_value))
+      |> ignore
     }
-    let opened_value = get_field(opened_eval, "result").unwrap_or(
-      make_object({ "type": Json::string("undefined") }),
-    )
-    set_runtime_context(parent_ctx_id)
-    self.apply_effective_viewport_to_runtime_context(
-      parent_ctx_id, parent_ctx_id,
-    )
-    evaluate_js("window.baz = " + bidi_value_to_js_literal(opened_value))
-    |> ignore
+    None => ()
   }
 
   self.send_script_undefined_result(request_id, realm_id)
