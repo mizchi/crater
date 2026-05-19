@@ -1118,6 +1118,15 @@ fn calculate_intrinsic_column_widths(
         continue
       }
 
+      // Anonymous single-column cells synthesized from stray inline content
+      // (e.g. when a parser-edge attaches a previous row's inline anchors to
+      // an otherwise-empty spacer <tr>) must not inflate a real column's
+      // intrinsic width — their content is layout noise, not the column's
+      // max-content. Skip their contribution to column widths.
+      if cell.id.has_prefix("__anon-table-cell-") && span == 1 {
+        col_index = col_index + raw_colspan
+        continue
+      }
       let cell_width = measure_cell_content_width(cell, border_collapse~)
       let mut current_span_width = 0.0
       for i = 0; i < active_columns.length(); i = i + 1 {
@@ -1127,7 +1136,6 @@ fn calculate_intrinsic_column_widths(
           current_span_width = current_span_width + border_spacing
         }
       }
-
       if cell_width > current_span_width {
         let extra_per_col = (cell_width - current_span_width) /
           active_columns.length().to_double()
@@ -1135,7 +1143,6 @@ fn calculate_intrinsic_column_widths(
           widths[idx] = widths[idx] + extra_per_col
         }
       }
-
       col_index = col_index + raw_colspan
     }
   }
