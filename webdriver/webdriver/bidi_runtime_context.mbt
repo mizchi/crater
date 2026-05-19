@@ -30,6 +30,9 @@ extern "js" fn reset_runtime_js_state() -> Unit =
   #|         "IntersectionObserver", "ResizeObserver", "MutationObserver",
   #|         // Network primitives provided natively by Node 22+.
   #|         "WebSocket", "EventSource",
+  #|         // File upload surface (Blob/File native in Node 22, FileReader
+  #|         // shimmed by bidi_runtime_eval.mbt).
+  #|         "Blob", "File", "FileReader", "FileList",
   #|       ]);
   #|       globalThis.__bidiSyncWindowPropertiesToGlobal = (win) => {
   #|         const source = win && typeof win === "object" ? win : globalThis.window;
