@@ -126,13 +126,16 @@ fn render_node_box_decorations(
   if !rounded_border_drawn &&
     bt > 0 &&
     !node.paint.border_top_color.is_transparent() {
-    fill_rect_clipped(
+    fill_horizontal_border_trapezoid_clipped(
       fb,
       palette,
       x,
       y,
       w,
       bt,
+      bl,
+      br,
+      false,
       node.paint.border_top_color,
       opacity,
       clip,
@@ -141,13 +144,16 @@ fn render_node_box_decorations(
   if !rounded_border_drawn &&
     bb > 0 &&
     !node.paint.border_bottom_color.is_transparent() {
-    fill_rect_clipped(
+    fill_horizontal_border_trapezoid_clipped(
       fb,
       palette,
       x,
       y + h - bb,
       w,
       bb,
+      bl,
+      br,
+      true,
       node.paint.border_bottom_color,
       opacity,
       clip,
@@ -156,13 +162,16 @@ fn render_node_box_decorations(
   if !rounded_border_drawn &&
     bl > 0 &&
     !node.paint.border_left_color.is_transparent() {
-    fill_rect_clipped(
+    fill_vertical_border_trapezoid_clipped(
       fb,
       palette,
       x,
-      y + bt,
+      y,
+      h,
       bl,
-      h - bt - bb,
+      bt,
+      bb,
+      false,
       node.paint.border_left_color,
       opacity,
       clip,
@@ -171,13 +180,16 @@ fn render_node_box_decorations(
   if !rounded_border_drawn &&
     br > 0 &&
     !node.paint.border_right_color.is_transparent() {
-    fill_rect_clipped(
+    fill_vertical_border_trapezoid_clipped(
       fb,
       palette,
       x + w - br,
-      y + bt,
+      y,
+      h,
       br,
-      h - bt - bb,
+      bt,
+      bb,
+      true,
       node.paint.border_right_color,
       opacity,
       clip,
