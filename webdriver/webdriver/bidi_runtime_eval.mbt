@@ -1766,7 +1766,20 @@ extern "js" fn js_evaluate_expression(
   #|           return !event.defaultPrevented;
   #|         },
   #|         click() {
-  #|           this.dispatchEvent(globalThis.__bidiCreateEvent('click', { bubbles: true }));
+  #|           const evt = globalThis.__bidiCreateEvent('click', { bubbles: true, cancelable: true });
+  #|           this.dispatchEvent(evt);
+  #|           // Default action for anchors: navigate. Skipped when a listener
+  #|           // calls preventDefault, when the anchor has no href, or when
+  #|           // target asks for a new browsing context (_blank etc. — there
+  #|           // is no second page to host it in test mode).
+  #|           if (evt && evt.defaultPrevented) return;
+  #|           const tag = String(this.tagName || '').toUpperCase();
+  #|           if (tag !== 'A' && tag !== 'AREA') return;
+  #|           const target = this._attrs ? String(this._attrs.target || '').toLowerCase() : '';
+  #|           if (target && target !== '_self') return;
+  #|           const href = typeof this.href === 'string' ? this.href : '';
+  #|           if (!href) return;
+  #|           try { globalThis.location.href = href; } catch (_e) {}
   #|         },
   #|         focus() {
   #|           focusNode(this);
