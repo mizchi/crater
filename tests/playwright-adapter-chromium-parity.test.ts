@@ -70,6 +70,17 @@ async function runWithCrater<T>(
   }
 }
 
+async function closeServer(server: Server): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    server.close((error) => {
+      if (error) reject(error);
+      else resolve();
+    });
+    server.closeIdleConnections();
+    server.closeAllConnections();
+  });
+}
+
 async function collectLocatorSnapshot(page: ChromiumOrCraterPage) {
   await page.setContent(`
     <html>
@@ -818,12 +829,7 @@ test.describe("Crater Playwright adapter Chromium parity", () => {
     if (!fixtureServer) {
       return;
     }
-    await new Promise<void>((resolve, reject) => {
-      fixtureServer!.close((error) => {
-        if (error) reject(error);
-        else resolve();
-      });
-    });
+    await closeServer(fixtureServer);
     fixtureServer = null;
     fixtureOrigin = "";
     fixtureResponses.clear();
