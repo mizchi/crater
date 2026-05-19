@@ -725,6 +725,32 @@ function adapterDomActionsExpr(): string {
       };
       const clickElement = (element) => {
         recordFileChooser(element);
+        // Pre-record anchor default-action navigation. The in-realm
+        // shim click() would do this, but the element returned by
+        // the Locator-path querySelectorAll is not always the same
+        // object the runtime shim attached methods to, so the override
+        // never fires. Recording here is a no-op when the shim does
+        // run (same URL gets written twice). See issue 208.
+        try {
+          const tag = String(element.tagName || "").toUpperCase();
+          if (tag === "A" || tag === "AREA") {
+            const targetAttr = element._attrs && element._attrs.target;
+            const targetGet = (typeof element.getAttribute === "function") ? element.getAttribute("target") : "";
+            const target = String(targetAttr || targetGet || "").toLowerCase();
+            if (!target || target === "_self") {
+              const hrefProp = element.href;
+              const hrefAttr = element._attrs && element._attrs.href;
+              const href = hrefProp || hrefAttr || "";
+              if (href) {
+                globalThis.__craterPendingNavigation = {
+                  url: String(href),
+                  kind: "anchor",
+                  urlOnly: true,
+                };
+              }
+            }
+          }
+        } catch (_e) {}
         element.click();
       };
       const hoverElement = (element) => {
@@ -4972,8 +4998,16 @@ export class CraterBidiPage {
         if (!raw) {
           return;
         }
-        const pending = JSON.parse(raw) as { url?: string };
+        const pending = JSON.parse(raw) as { url?: string; urlOnly?: boolean };
         if (!pending.url) {
+          continue;
+        }
+        if (pending.urlOnly) {
+          // Synthetic URL update — anchor / form default action recorded
+          // a new in-realm location but didn't request a real fetch.
+          // Mirror it onto `currentUrl` so `page.url()` reflects the
+          // new location without tearing down the document. (#208)
+          this.currentUrl = pending.url;
           continue;
         }
         await this.loadPage(pending.url);
@@ -5122,7 +5156,15 @@ export class CraterBidiPage {
         return;
       }
       const value = deserializeBidiValue(result.result);
-      if (typeof value === "string" && value) {
+      // Skip overwriting `currentUrl` with the in-realm
+      // `about:blank` default — the realm starts there for every fresh
+      // context and never gets the synthetic post-click URL written
+      // back because the click happens in a different context-window
+      // instance (see #208 attempt notes). A real navigation calls
+      // `syncRuntimeLocation` directly, which sets `currentUrl` ahead
+      // of the realm read, so skipping `about:blank` here only loses
+      // information when the truth was already `about:blank`.
+      if (typeof value === "string" && value && value !== "about:blank") {
         this.currentUrl = value;
       }
     } catch (_error) {}
