@@ -285,6 +285,10 @@ extern "js" fn js_evaluate_expression(
   #|       // delete them (when window doesn't carry them) right before the
   #|       // user expression runs.
   #|       "IntersectionObserver", "ResizeObserver", "MutationObserver",
+  #|       // Network primitives provided natively by Node 22+. Reserving them
+  #|       // ensures the per-eval sync doesn't drop the WebSocket / EventSource
+  #|       // constructors that real-time apps need.
+  #|       "WebSocket", "EventSource",
   #|     ]);
   #|     globalThis.__bidiSyncWindowPropertiesToGlobal = (win) => {
   #|       const source = win && typeof win === "object" ? win : globalThis.window;
