@@ -1615,6 +1615,10 @@
     }
   },
   "remote": {
+    "http://127.0.0.1:49916/assets/nested/value.js?__crater_module_instance=crater-module-26-0-1": "c0b01d360a3bff57f9a4784e750cb895a4866ace3f4fa80c0dabf8816d9fd8ec",
+    "http://127.0.0.1:50116/assets/nested/value.js?__crater_module_instance=crater-module-26-0-1": "c0b01d360a3bff57f9a4784e750cb895a4866ace3f4fa80c0dabf8816d9fd8ec",
+    "http://127.0.0.1:50452/assets/nested/value.js?__crater_module_instance=crater-module-26-0-1": "c0b01d360a3bff57f9a4784e750cb895a4866ace3f4fa80c0dabf8816d9fd8ec",
+    "http://127.0.0.1:51147/assets/nested/value.js?__crater_module_instance=crater-module-26-0-1": "c0b01d360a3bff57f9a4784e750cb895a4866ace3f4fa80c0dabf8816d9fd8ec",
     "http://127.0.0.1:59872/assets/nested/value.js?__crater_module_instance=crater-module-26-0-1": "c0b01d360a3bff57f9a4784e750cb895a4866ace3f4fa80c0dabf8816d9fd8ec",
     "http://127.0.0.1:60320/assets/nested/value.js?__crater_module_instance=crater-module-26-0-1": "c0b01d360a3bff57f9a4784e750cb895a4866ace3f4fa80c0dabf8816d9fd8ec",
     "http://127.0.0.1:61175/assets/nested/value.js?__crater_module_instance=crater-module-26-0-1": "c0b01d360a3bff57f9a4784e750cb895a4866ace3f4fa80c0dabf8816d9fd8ec",
