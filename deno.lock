@@ -1615,6 +1615,8 @@
     }
   },
   "remote": {
+    "http://127.0.0.1:59872/assets/nested/value.js?__crater_module_instance=crater-module-26-0-1": "c0b01d360a3bff57f9a4784e750cb895a4866ace3f4fa80c0dabf8816d9fd8ec",
+    "http://127.0.0.1:62734/assets/nested/value.js?__crater_module_instance=crater-module-26-0-1": "c0b01d360a3bff57f9a4784e750cb895a4866ace3f4fa80c0dabf8816d9fd8ec",
     "http://localhost:5500/_nuxt/@fs/Users/mz/ghq/github.com/studio-design/studio-publish-regression-test/studio-preview/.nuxt/manifest/meta/dev.json?import": "858f50a24cef1dff3ab43b9cff53db16c168dbff1ada78fc5cab0e95991cc90c",
     "http://localhost:5500/_nuxt/@fs/Users/mz/ghq/github.com/studio-design/studio-publish-regression-test/studio-preview/node_modules/.cache/vite/client/deps/@dotlottie_player-component.js?v=eb4b3b66": "1ce46030a500cc0383cddbf0cbb9c670fbae7dea9f0e6bcd118d789dfdcee9ba",
     "http://localhost:5500/_nuxt/@fs/Users/mz/ghq/github.com/studio-design/studio-publish-regression-test/studio-preview/node_modules/.cache/vite/client/deps/@vueuse_core.js?v=eb4b3b66": "5f653b9c57f5782b5bb03702d0c45a3244cede1f4f2de02060ded03abe2ddce3",
@@ -2128,7 +2130,11 @@
     "https://deno.land/std@0.208.0/http/unstable_cookie_map.ts": "b635eb7b87de20ba924ae77aef083d1ee6bca531b85ed518339bf05fb9defc4f",
     "https://deno.land/std@0.208.0/http/unstable_method.ts": "e7a0241972871a1a7dae2ce33e93e32e9d21f165ebeaf88bbe9f5c6b9c20307e",
     "https://deno.land/std@0.208.0/http/unstable_server_sent_event.ts": "6410770e067fc7a67e1acec7592e54b9ff1c95706c9a9457e8d396f23c3eb390",
-    "https://deno.land/std@0.208.0/http/user_agent.ts": "35d3c70d0926b0e121b8c1bbc324b3522479158acaa4f0c43928362b7bf4e6f4"
+    "https://deno.land/std@0.208.0/http/user_agent.ts": "35d3c70d0926b0e121b8c1bbc324b3522479158acaa4f0c43928362b7bf4e6f4",
+    "https://esm.sh/lodash-es@4.17.21/es2022/add.mjs?__crater_module_instance=crater-module-49-0-0": "8466c75c2773cd062a2e1533734623a3dfbada27e53e85065f43af44837cb8e3",
+    "https://esm.sh/lodash-es@4.17.21/es2022/add.mjs?__crater_module_instance=crater-module-49-0-1": "8466c75c2773cd062a2e1533734623a3dfbada27e53e85065f43af44837cb8e3",
+    "https://esm.sh/lodash-es@4.17.21/es2022/add.mjs?__crater_module_instance=crater-module-51-0-0-0": "8466c75c2773cd062a2e1533734623a3dfbada27e53e85065f43af44837cb8e3",
+    "https://esm.sh/lodash-es@4.17.21/es2022/add.mjs?__crater_module_instance=crater-module-51-0-0-1": "8466c75c2773cd062a2e1533734623a3dfbada27e53e85065f43af44837cb8e3"
   },
   "workspace": {
     "packageJson": {

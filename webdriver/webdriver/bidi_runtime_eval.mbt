@@ -1992,6 +1992,32 @@ extern "js" fn js_evaluate_expression(
   #|       cloneNode() { return createMockProcessingInstruction(this.target, this.data); }
   #|     });
   #|
+  #|     const namedEntityTable = {
+  #|       amp: "&", lt: "<", gt: ">", quot: '"', apos: "'",
+  #|       nbsp: " ", ensp: " ", emsp: " ",
+  #|       copy: "©", reg: "®", trade: "™",
+  #|       mdash: "—", ndash: "–",
+  #|       lsquo: "‘", rsquo: "’", ldquo: "“", rdquo: "”",
+  #|       hellip: "…", bull: "•", middot: "·",
+  #|       cent: "¢", pound: "£", euro: "€", yen: "¥",
+  #|       deg: "°", plusmn: "±", times: "×", divide: "÷",
+  #|       frac12: "½", frac14: "¼", frac34: "¾",
+  #|     };
+  #|     const decodeHtmlEntities = (input) => {
+  #|       const s = String(input);
+  #|       if (s.indexOf("&") < 0) return s;
+  #|       return s.replace(/&(#x[0-9A-Fa-f]+|#[0-9]+|[A-Za-z][A-Za-z0-9]{0,8});/g, (whole, body) => {
+  #|         if (body.charCodeAt(0) === 35) { // #
+  #|           const isHex = body.charCodeAt(1) === 120 || body.charCodeAt(1) === 88;
+  #|           const num = isHex ? parseInt(body.slice(2), 16) : parseInt(body.slice(1), 10);
+  #|           if (!Number.isFinite(num) || num < 0 || num > 0x10FFFF) return whole;
+  #|           try { return String.fromCodePoint(num); } catch (_e) { return whole; }
+  #|         }
+  #|         const named = namedEntityTable[body];
+  #|         return named === undefined ? whole : named;
+  #|       });
+  #|     };
+  #|     globalThis.__bidiDecodeHtmlEntities = decodeHtmlEntities;
   #|     const parseHTMLFragment = (fragmentHtml, ownerDocument) => {
   #|       const source = String(fragmentHtml || "");
   #|       const root = { _children: [] };
@@ -2022,7 +2048,8 @@ extern "js" fn js_evaluate_expression(
   #|         }
   #|         if (token[0] !== "<") {
   #|           if (token.trim() === "") continue;
-  #|           const textNode = createMockTextNode(token);
+  #|           const decoded = decodeHtmlEntities(token);
+  #|           const textNode = createMockTextNode(decoded);
   #|           textNode.ownerDocument = ownerDocument;
   #|           pushNode(stack[stack.length - 1], textNode);
   #|           continue;
@@ -2053,7 +2080,8 @@ extern "js" fn js_evaluate_expression(
   #|         let attrMatch;
   #|         while ((attrMatch = attrRe.exec(attrChunk))) {
   #|           const attrName = String(attrMatch[1]);
-  #|           const attrValue = attrMatch[2] ?? attrMatch[3] ?? attrMatch[4] ?? attrName;
+  #|           const rawAttrValue = attrMatch[2] ?? attrMatch[3] ?? attrMatch[4] ?? attrName;
+  #|           const attrValue = decodeHtmlEntities(rawAttrValue);
   #|           if (attrName.includes(":") && typeof element.setAttributeNS === "function") {
   #|             const ns = attrName.startsWith("svg:") ? "http://www.w3.org/2000/svg" : null;
   #|             element.setAttributeNS(ns, attrName, attrValue);
@@ -3318,6 +3346,16 @@ extern "js" fn js_evaluate_expression(
   #|         this._callback = typeof callback === 'function' ? callback : () => {};
   #|         this._options = options || {};
   #|         this._targets = new Set();
+  #|         this.root = (options && 'root' in options) ? options.root : null;
+  #|         this.rootMargin = (options && typeof options.rootMargin === 'string') ? options.rootMargin : '0px';
+  #|         const t = options ? options.threshold : undefined;
+  #|         if (Array.isArray(t)) {
+  #|           this.thresholds = t.slice().sort((a, b) => a - b);
+  #|         } else if (typeof t === 'number') {
+  #|           this.thresholds = [t];
+  #|         } else {
+  #|           this.thresholds = [0];
+  #|         }
   #|       }
   #|       observe(target) {
   #|         if (!target || this._targets.has(target)) return;
@@ -3379,6 +3417,7 @@ extern "js" fn js_evaluate_expression(
   #|       }
   #|       unobserve(target) { this._targets.delete(target); }
   #|       disconnect() { this._targets.clear(); }
+  #|       takeRecords() { return []; }
   #|     };
   #|     // requestAnimationFrame — batched per frame so multiple
   #|     // synchronous rAF calls coalesce into a single timer fire (matches
@@ -4644,6 +4683,9 @@ extern "js" fn js_evaluate_expression(
   #|           return htmlStr.slice(start, i).toLowerCase();
   #|         };
   #|
+  #|         const decodeEntitiesLocal = (typeof globalThis.__bidiDecodeHtmlEntities === 'function')
+  #|           ? globalThis.__bidiDecodeHtmlEntities
+  #|           : (s) => s;
   #|         const parseAttrValue = () => {
   #|           skipWhitespace();
   #|           if (htmlStr[i] === '=') {
@@ -4656,10 +4698,10 @@ extern "js" fn js_evaluate_expression(
   #|               const end = htmlStr.indexOf(quote, i);
   #|               if (end < 0) {
   #|                 i = len;
-  #|                 return htmlStr.slice(start);
+  #|                 return decodeEntitiesLocal(htmlStr.slice(start));
   #|               }
   #|               i = end + 1;
-  #|               return htmlStr.slice(start, end);
+  #|               return decodeEntitiesLocal(htmlStr.slice(start, end));
   #|             } else {
   #|               const start = i;
   #|               while (i < len) {
@@ -4667,7 +4709,7 @@ extern "js" fn js_evaluate_expression(
   #|                 if (isWhitespaceCode(code) || htmlStr[i] === '>') break;
   #|                 i++;
   #|               }
-  #|               return htmlStr.slice(start, i);
+  #|               return decodeEntitiesLocal(htmlStr.slice(start, i));
   #|             }
   #|           }
   #|           return '';
@@ -4810,7 +4852,7 @@ extern "js" fn js_evaluate_expression(
   #|                 text += htmlStr[i++];
   #|               }
   #|               if (text.trim()) {
-  #|                 el.appendChild(globalThis.document.createTextNode(text));
+  #|                 el.appendChild(globalThis.document.createTextNode(decodeEntitiesLocal(text)));
   #|               }
   #|             }
   #|           }
