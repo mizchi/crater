@@ -1768,18 +1768,38 @@ extern "js" fn js_evaluate_expression(
   #|         click() {
   #|           const evt = globalThis.__bidiCreateEvent('click', { bubbles: true, cancelable: true });
   #|           this.dispatchEvent(evt);
-  #|           // Default action for anchors: navigate. Skipped when a listener
-  #|           // calls preventDefault, when the anchor has no href, or when
-  #|           // target asks for a new browsing context (_blank etc. — there
-  #|           // is no second page to host it in test mode).
   #|           if (evt && evt.defaultPrevented) return;
   #|           const tag = String(this.tagName || '').toUpperCase();
-  #|           if (tag !== 'A' && tag !== 'AREA') return;
-  #|           const target = this._attrs ? String(this._attrs.target || '').toLowerCase() : '';
-  #|           if (target && target !== '_self') return;
-  #|           const href = typeof this.href === 'string' ? this.href : '';
-  #|           if (!href) return;
-  #|           try { globalThis.location.href = href; } catch (_e) {}
+  #|           // Anchor default action: navigate. Skipped for target != _self
+  #|           // (no second browsing context in test mode) and empty href.
+  #|           if (tag === 'A' || tag === 'AREA') {
+  #|             const target = this._attrs ? String(this._attrs.target || '').toLowerCase() : '';
+  #|             if (target && target !== '_self') return;
+  #|             const href = typeof this.href === 'string' ? this.href : '';
+  #|             if (!href) return;
+  #|             try { globalThis.location.href = href; } catch (_e) {}
+  #|             return;
+  #|           }
+  #|           // Button / input default action: trigger the owning form's
+  #|           // submit / reset path so a Playwright-driven `page.click("#go")`
+  #|           // mirrors a real form interaction. BUTTON without `type` is
+  #|           // implicitly type=submit per WHATWG; INPUT requires an explicit
+  #|           // type=submit or type=reset.
+  #|           if (tag === 'BUTTON' || tag === 'INPUT') {
+  #|             const rawType = this._attrs && typeof this._attrs.type === 'string'
+  #|               ? this._attrs.type.toLowerCase()
+  #|               : '';
+  #|             let buttonType = rawType;
+  #|             if (tag === 'BUTTON' && !buttonType) buttonType = 'submit';
+  #|             if (buttonType !== 'submit' && buttonType !== 'reset') return;
+  #|             const owningForm = typeof this.closest === 'function' ? this.closest('form') : null;
+  #|             if (!owningForm) return;
+  #|             if (buttonType === 'submit' && typeof owningForm.requestSubmit === 'function') {
+  #|               try { owningForm.requestSubmit(this); } catch (_e) {}
+  #|             } else if (buttonType === 'reset' && typeof owningForm.reset === 'function') {
+  #|               try { owningForm.reset(); } catch (_e) {}
+  #|             }
+  #|           }
   #|         },
   #|         focus() {
   #|           focusNode(this);
