@@ -26,6 +26,25 @@ task(
 )
 
 task(
+  id="paint-vrt-font-fallback",
+  node="layout",
+  cmd=["pnpm", "exec", "playwright", "test", "tests/paint-vrt-font-fallback.test.ts"],
+  srcs=[
+    "layout/**",
+    "painter/**",
+    "renderer/**",
+    "css/**",
+    "dom/css/**",
+    "browser/**",
+    "tests/paint-vrt-font-fallback.test.ts",
+    "tests/helpers/crater-vrt.ts",
+    "tests/helpers/crater-bidi-page.ts",
+  ],
+  needs=["paint-vrt"],
+  trigger="auto",
+)
+
+task(
   id="paint-vrt-levels",
   node="layout",
   cmd=["pnpm", "exec", "playwright", "test", "tests/paint-vrt-levels.test.ts"],
