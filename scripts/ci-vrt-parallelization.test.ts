@@ -57,4 +57,22 @@ describe("CI VRT parallelization", () => {
     expect(ciWorkflow).toContain("pnpm exec flaker --version");
     expect(dailyWorkflow).toContain("pnpm exec flaker --version");
   });
+
+  test("installs repository dependencies before daily flaker planning scripts", () => {
+    const workflow = readRepoFile(".github/workflows/flaker-daily.yml");
+    const batchPlanJob = extractWorkflowJob(workflow, "batch-plan");
+    const summaryJob = extractWorkflowJob(workflow, "flaker-daily-summary");
+
+    for (const job of [batchPlanJob, summaryJob]) {
+      expect(job).toContain("uses: actions/setup-node@v6");
+      expect(job).toContain("uses: pnpm/action-setup@v5");
+      expect(job).toContain("run: pnpm install");
+    }
+    expect(batchPlanJob.indexOf("run: pnpm install")).toBeLessThan(
+      batchPlanJob.indexOf("node scripts/flaker-batch-plan.ts"),
+    );
+    expect(summaryJob.indexOf("run: pnpm install")).toBeLessThan(
+      summaryJob.indexOf("node scripts/flaker-batch-summary.ts"),
+    );
+  });
 });
