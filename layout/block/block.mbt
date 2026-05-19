@@ -6715,10 +6715,16 @@ fn layout_absolute_child(
       (w, h, inner)
     }
     (Some(w), None) => {
+      let nested_auto_height = if child_style.writing_mode.is_vertical() &&
+        cb_height > 0.0 {
+        Some(cb_height)
+      } else {
+        None
+      }
       let inner = compute_nested(
         child,
         nested_basis_width(w),
-        None,
+        nested_auto_height,
         warnings,
         dispatch,
       )

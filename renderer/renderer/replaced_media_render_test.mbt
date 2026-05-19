@@ -862,6 +862,32 @@ test "svg_viewbox_auto_size_uses_available_inline_size" {
 }
 
 ///|
+test "svg_root_with_css_size_keeps_svg_children" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|#svgMain { width: 200px; height: 200px; background: blue; }
+    #|</style>
+    #|<svg id="svgMain"><g id="group"><rect id="redSquare" width="100" height="100" fill="red"></rect></g></svg>
+
+  let layout = @renderer.render(html_str, @renderer.RenderContext::default())
+  let svg = layout.children[0]
+  let group = svg.children[0]
+  let rect = group.children[0]
+
+  inspect(svg.id, content="svg#svgMain")
+  inspect(svg.width, content="200")
+  inspect(svg.height, content="200")
+  inspect(group.id, content="g#group")
+  inspect(group.width, content="100")
+  inspect(group.height, content="100")
+  inspect(rect.id, content="rect#redSquare")
+  inspect(rect.width, content="100")
+  inspect(rect.height, content="100")
+}
+
+///|
 test "svg_viewbox_icon_fills_fixed_inline_container" {
   let html_str =
     #|<!DOCTYPE html>

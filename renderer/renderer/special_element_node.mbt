@@ -752,10 +752,14 @@ fn finalize_special_element_node(
       }
     }
     let measure = create_image_measure(intrinsic_width, intrinsic_height)
-    return @node.Node::with_measure(
-      node_id,
-      style,
-      measure,
+    let svg_node = @node.Node::new(node_id, style, children)
+    return @node.Node::with_uid_and_measure(
+      svg_node.id,
+      svg_node.uid,
+      svg_node.style,
+      svg_node.children,
+      Some(measure),
+      svg_node.text,
       src=Some(inline_svg_data_uri(elem, style, css_vars)),
     )
   }

@@ -122,6 +122,89 @@ test "absolute_position_in_static_grid_parent_uses_grid_containing_block" {
 }
 
 ///|
+test "wpt_position_absolute_center_vertical_rl_inline_blocks_wrap_to_columns" {
+  let html =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|#containing-block {
+    #|  position: relative;
+    #|  width: 100px;
+    #|  height: 100px;
+    #|  display: flex;
+    #|  flex-direction: column;
+    #|}
+    #|#containing-block > div { flex-grow: 1; }
+    #|#inner-flex {
+    #|  display: flex;
+    #|  align-items: center;
+    #|  margin: 10px;
+    #|  width: 100px;
+    #|}
+    #|span {
+    #|  display: inline-block;
+    #|  inline-size: 50px;
+    #|  block-size: 10px;
+    #|}
+    #|</style>
+    #|<div id="containing-block">
+    #|  <div id="inner-flex">
+    #|    <div style="position: absolute; left: 0; width: 100px; writing-mode: vertical-rl;">
+    #|      <span></span><span></span>
+    #|    </div>
+    #|  </div>
+    #|  <div style="width: 100px;"></div>
+    #|</div>
+  let layout = @renderer.render(html, @renderer.RenderContext::default())
+  let containing_block = layout.children[0]
+  let inner_flex = containing_block.children[0]
+  let absolute_child = inner_flex.children[0]
+  let first_span = absolute_child.children[0]
+  let second_span = absolute_child.children[1]
+
+  inspect(absolute_child.width, content="100")
+  inspect(first_span.x, content="90")
+  inspect(first_span.y, content="0")
+  inspect(second_span.x, content="80")
+  inspect(second_span.y, content="0")
+}
+
+///|
+test "absolute_vertical_rl_inline_blocks_use_containing_block_height" {
+  let html =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; }
+    #|#containing-block {
+    #|  position: relative;
+    #|  width: 100px;
+    #|  height: 100px;
+    #|}
+    #|span {
+    #|  display: inline-block;
+    #|  inline-size: 50px;
+    #|  block-size: 10px;
+    #|}
+    #|</style>
+    #|<div id="containing-block">
+    #|  <div style="position: absolute; left: 0; width: 100px; writing-mode: vertical-rl;">
+    #|    <span></span><span></span>
+    #|  </div>
+    #|</div>
+  let layout = @renderer.render(html, @renderer.RenderContext::default())
+  let containing_block = layout.children[0]
+  let absolute_child = containing_block.children[0]
+  let first_span = absolute_child.children[0]
+  let second_span = absolute_child.children[1]
+
+  inspect(absolute_child.width, content="100")
+  inspect(first_span.x, content="90")
+  inspect(first_span.y, content="0")
+  inspect(second_span.x, content="80")
+  inspect(second_span.y, content="0")
+}
+
+///|
 test "absolute_position_in_inline_with_line_break_uses_multiline_static_y" {
   let html =
     #|<div style="border: 1px solid; position: relative; width: 100px; height: 100px; display: inline-block;">

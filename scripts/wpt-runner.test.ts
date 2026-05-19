@@ -8,7 +8,9 @@ import {
   createFocusedComparisonRoot,
   createTextIntrinsicFnFromMeasureText,
   isScriptMutationDependentTest,
+  LOCAL_WPT_RUNTIME_BUILD_COMMAND,
   normalizeComparisonRootToContentBox,
+  resolveLocalWptRuntimeCandidates,
   resolveBuiltinTextAdvanceRatioOverride,
   resolveFocusedComparisonNodeId,
   resolveImageIntrinsicFn,
@@ -16,6 +18,15 @@ import {
   shouldKeepHtmlRootForComparison,
   withTimeout,
 } from "./wpt-runner.ts";
+
+describe("local WPT runtime resolution", () => {
+  it("points at the conformance project output that moon -C conformance/wpt builds", () => {
+    expect(resolveLocalWptRuntimeCandidates("/repo")).toContain(
+      "/repo/conformance/_build/js/release/build/wpt/wpt.js",
+    );
+    expect(LOCAL_WPT_RUNTIME_BUILD_COMMAND).toContain("-C conformance/wpt");
+  });
+});
 
 describe("withTimeout", () => {
   it("returns the operation result before the timeout", async () => {

@@ -142,7 +142,12 @@ fn layout_abs_descendant_against_cb(
   }
   let nested_available_height = match initial_height {
     Some(_) => Some(child_height)
-    None => None
+    None =>
+      if child_style.writing_mode.is_vertical() && cb_height > 0.0 {
+        Some(cb_height)
+      } else {
+        None
+      }
   }
   let child_inner = if child.children.length() > 0 {
     compute_nested(
@@ -8112,9 +8117,13 @@ fn compute_internal(
       }
       (Some(w), None) => {
         let auto_height_probe = if child_style.writing_mode.is_vertical() {
-          match ctx.available_height {
-            Some(h) if h > 0.0 => Some(h)
-            _ => Some(padding_box_height)
+          if padding_box_height > 0.0 && padding_box_height < 1.0e9 {
+            Some(padding_box_height)
+          } else {
+            match ctx.available_height {
+              Some(h) if h > 0.0 => Some(h)
+              _ => None
+            }
           }
         } else {
           None
@@ -8191,9 +8200,13 @@ fn compute_internal(
         // Both width and height are auto: use shrink-to-fit approach
         let shrink_to_fit_width = resolve_abs_shrink_to_fit_width(None)
         let auto_height_probe = if child_style.writing_mode.is_vertical() {
-          match ctx.available_height {
-            Some(h) if h > 0.0 => Some(h)
-            _ => Some(padding_box_height)
+          if padding_box_height > 0.0 && padding_box_height < 1.0e9 {
+            Some(padding_box_height)
+          } else {
+            match ctx.available_height {
+              Some(h) if h > 0.0 => Some(h)
+              _ => None
+            }
           }
         } else {
           None
