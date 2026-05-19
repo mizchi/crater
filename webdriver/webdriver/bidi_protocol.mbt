@@ -1379,18 +1379,71 @@ fn BidiProtocol::try_handle_synthetic_iframe_creation(
   expression : String,
 ) -> Bool {
   let trimmed = expression.trim().to_owned()
-  let creates_iframe = (
-      trimmed.contains("createElement('iframe')") ||
-      trimmed.contains("createElement(\"iframe\")")
-    ) &&
-    trimmed.contains("appendChild(iframe)")
-  if !creates_iframe {
+  // Detection: any `createElement('iframe')` (single or double quotes,
+  // optional internal whitespace) followed somewhere by ANY appendChild
+  // call. The previous matcher required the literal `appendChild(iframe)`
+  // — that missed every real-app pattern that names the element variable
+  // anything other than `iframe`, uses a non-document.body parent, or
+  // appends via insertBefore / replaceChild / prepend. Loosening to
+  // "anything that ends in some kind of append" catches the common cases
+  // without false-positive risk (the createElement gate is the strong
+  // condition).
+  let creates_iframe_element = trimmed.contains("createElement('iframe')") ||
+    trimmed.contains("createElement(\"iframe\")")
+  let has_dom_insertion = trimmed.contains("appendChild(") ||
+    trimmed.contains("insertBefore(") ||
+    trimmed.contains("replaceChild(") ||
+    trimmed.contains("prepend(") ||
+    trimmed.contains("append(") ||
+    trimmed.contains("replaceWith(") ||
+    trimmed.contains("before(") ||
+    trimmed.contains("after(")
+  if !creates_iframe_element || !has_dom_insertion {
     return false
   }
 
-  let raw_src = extract_quoted_after_marker(trimmed, "iframe.src=").unwrap_or(
-    "about:blank",
-  )
+  // src extraction: try the canonical `iframe.src=...` form first
+  // (kept for back-compat with the WPT shape), then progressively wider
+  // variants — `.src = ...` with surrounding whitespace, `.srcdoc`,
+  // `setAttribute('src', ...)`. Each variant returns Some when matched;
+  // first match wins. Fall back to about:blank.
+  let raw_src = match extract_quoted_after_marker(trimmed, "iframe.src=") {
+    Some(v) if v != "" => v
+    _ =>
+      match extract_quoted_after_marker(trimmed, ".src = ") {
+        Some(v) if v != "" => v
+        _ =>
+          match extract_quoted_after_marker(trimmed, ".src=") {
+            Some(v) if v != "" => v
+            _ =>
+              match extract_quoted_after_marker(trimmed, ".src =") {
+                Some(v) if v != "" => v
+                _ =>
+                  match
+                    extract_second_quoted_after_marker(
+                      trimmed, "setAttribute('src'",
+                    ) {
+                    Some(v) if v != "" => v
+                    _ =>
+                      match
+                        extract_second_quoted_after_marker(
+                          trimmed, "setAttribute(\"src\"",
+                        ) {
+                        Some(v) if v != "" => v
+                        _ =>
+                          // srcdoc path — inline HTML, no real URL. Per
+                          // spec, srcdoc renders as `about:srcdoc`.
+                          if trimmed.contains(".srcdoc") {
+                            "about:srcdoc"
+                          } else {
+                            "about:blank"
+                          }
+                      }
+                  }
+              }
+          }
+      }
+  }
   let src = if raw_src == "" { "about:blank" } else { raw_src }
 
   let user_ctx = self.context_user_context
