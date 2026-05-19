@@ -1138,6 +1138,10 @@ extern "js" fn js_evaluate_expression(
   #|           try { globalThis.location.href = target; } catch (_e) {}
   #|         }
   #|         globalThis.__pageUrl = target;
+  #|         // Record a synthetic navigation for the adapter, in case the
+  #|         // __loadPage path below isn't wired (test mode without a
+  #|         // network). (#208)
+  #|         globalThis.__craterPendingNavigation = { url: target, kind: 'form-get', urlOnly: true };
   #|         if (typeof globalThis.__loadPageWithScripts === 'function') {
   #|           try {
   #|             const np = globalThis.__loadPageWithScripts(target);
@@ -1778,6 +1782,11 @@ extern "js" fn js_evaluate_expression(
   #|             const href = typeof this.href === 'string' ? this.href : '';
   #|             if (!href) return;
   #|             try { globalThis.location.href = href; } catch (_e) {}
+  #|             // Record a synthetic navigation so the adapter can mirror
+  #|             // the new URL onto `page.url()`. `urlOnly` skips the full
+  #|             // fetch+reload path and just updates the tracked URL,
+  #|             // leaving the document in place. (#208)
+  #|             globalThis.__craterPendingNavigation = { url: href, kind: 'anchor', urlOnly: true };
   #|             return;
   #|           }
   #|           // Button / input default action: trigger the owning form's
