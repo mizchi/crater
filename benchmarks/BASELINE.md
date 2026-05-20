@@ -813,3 +813,46 @@ moon bench --manifest-path benchmarks/moon.mod.json -p mizchi/crater-benchmarks 
 
 - `CRATER_VRT_STATIC_HTML_MAIN_BUDGET` defaults to 4000 chars. This keeps the direct static VRT path materially faster while preserving an env override for wider first-viewport content.
 - The same `mdn-wasm-text` VRT passes with `capturePaintData: node_layout=2127ms ... total=2216ms`; the browser path includes glyph/raster work and remains slower than the pure `moon bench` render phase.
+
+### O(n^2) Probes
+
+Command:
+
+```bash
+moon bench --manifest-path benchmarks/moon.mod.json -p mizchi/crater-benchmarks -f static_snapshot_bench.mbt --target js --release -i 12-32
+```
+
+MDN main excerpt scaling:
+
+| Benchmark | Mean |
+|-----------|------|
+| `static_snapshot_node_build_mdn_main_1k` | 15.83 ms |
+| `static_snapshot_node_build_mdn_main_4k` | 55.12 ms |
+| `static_snapshot_node_build_mdn_main_16k` | 156.57 ms |
+| `static_snapshot_layout_mdn_main_1k` | 24.04 ms |
+| `static_snapshot_layout_mdn_main_2k` | 305.51 ms |
+| `static_snapshot_layout_mdn_main_4k` | 588.61 ms |
+| `static_snapshot_layout_mdn_main_8k` | 1.19 s |
+| `static_snapshot_layout_mdn_main_16k` | 2.52 s |
+
+Synthetic layout-shape probes:
+
+| Benchmark | Mean |
+|-----------|------|
+| `static_snapshot_layout_long_text_500` | 143.89 µs |
+| `static_snapshot_layout_long_text_1000` | 273.77 µs |
+| `static_snapshot_layout_long_text_2000` | 585.54 µs |
+| `static_snapshot_layout_inline_links_100` | 584.84 µs |
+| `static_snapshot_layout_inline_links_200` | 1.19 ms |
+| `static_snapshot_layout_inline_links_400` | 2.21 ms |
+| `static_snapshot_layout_block_paragraphs_100` | 436.10 µs |
+| `static_snapshot_layout_block_paragraphs_200` | 941.41 µs |
+| `static_snapshot_layout_block_paragraphs_400` | 1.79 ms |
+| `static_snapshot_layout_whitespace_nodes_200` | 142.57 µs |
+| `static_snapshot_layout_whitespace_nodes_400` | 248.45 µs |
+| `static_snapshot_layout_whitespace_nodes_800` | 504.43 µs |
+
+Notes:
+
+- The simple long text, inline link, block paragraph, and whitespace sibling probes are roughly linear at these sizes.
+- `mdn-wasm-text` has a large 1k -> 2k step, then scales close to 2x per 2x budget. This points to a content-shape threshold rather than a broad O(n^2) pattern in the synthetic cases above.

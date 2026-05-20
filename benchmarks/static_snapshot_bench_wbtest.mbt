@@ -21,3 +21,24 @@ test "mdn static snapshot benchmark fixture uses viewport trim" {
   assert_true(trimmed.contains("crater-vrt-truncated-static-html"))
   let _ = @html.parse_document(trimmed)
 }
+
+///|
+test "static snapshot scale fixtures are renderable" {
+  let long_text = static_snapshot_long_paragraph_html(500)
+  let links = static_snapshot_inline_links_html(100)
+  let blocks = static_snapshot_block_paragraphs_html(100)
+  assert_true(long_text.length() > 5000)
+  assert_true(links.length() > 3000)
+  assert_true(blocks.length() > 6000)
+  let _ = @renderer.render_to_node(long_text, static_snapshot_context())
+  let _ = @renderer.render_to_node(links, static_snapshot_context())
+  let _ = @renderer.render_to_node(blocks, static_snapshot_context())
+}
+
+///|
+test "pathological whitespace node fixture is renderable" {
+  let node = static_snapshot_pathological_whitespace_nodes(10)
+  assert_eq(node.children.length(), 10)
+  let layout_ctx = default_layout_ctx(static_snapshot_context())
+  let _ = @tree.compute_layout_in_context(node, layout_ctx)
+}
