@@ -37,3 +37,15 @@ test "layout_glyph_bitmaps places wrapped glyphs outside raster" {
   inspect((placements[2].y - 10.0).abs() < 0.01, content="true")
   inspect(used_height, content="20")
 }
+
+///|
+test "resolve_text_wrap_tolerance tightens only long paragraph text" {
+  inspect(
+    resolve_text_wrap_tolerance(440, 14.0, line_height=22.0, text_length=100),
+    content="1",
+  )
+  inspect(
+    resolve_text_wrap_tolerance(27, 14.0, line_height=22.0, text_length=8) > 1.0,
+    content="true",
+  )
+}

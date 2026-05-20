@@ -6,7 +6,10 @@
  * Usage: deno run -A webdriver/bidi_main/start-with-font.ts
  * Optional: CRATER_BIDI_HOST=127.0.0.1 CRATER_BIDI_PORT=9223
  */
-import { createTextIntrinsicFnFromMeasureText } from "../../scripts/text-intrinsic.ts";
+import {
+  callTextIntrinsicFn,
+  createTextIntrinsicFnFromMeasureText,
+} from "../../scripts/text-intrinsic.ts";
 import {
   DEFAULT_TEXT_FONT_FAMILY,
   resolveEffectiveFontFamily,
@@ -662,7 +665,16 @@ if (!defaultFont) {
     const font = getFontInstance(fontFamily, isBold);
     if (!font) return null;
     const fn = getFallbackIntrinsicFn(fontFamily, isBold);
-    return fn(text, fontSize, lineHeight, whiteSpace, writingMode, availableWidth, availableHeight);
+    return callTextIntrinsicFn(fn, {
+      text,
+      fontSize,
+      lineHeight,
+      whiteSpace,
+      writingMode,
+      fontFamily,
+      availableWidth,
+      availableHeight,
+    });
   };
 
   // Simple multi-font text metrics (backward compat)
@@ -677,7 +689,16 @@ if (!defaultFont) {
     // Use full intrinsic measurement (with word-wrap calculation)
     const fn = getFallbackIntrinsicFn(fontFamily, isBold);
     const lineHeight = fontSize > 0 ? fontSize * 1.2 : 16;
-    return fn(text, fontSize, lineHeight, "normal", "horizontal-tb", 9999, 9999);
+    return callTextIntrinsicFn(fn, {
+      text,
+      fontSize,
+      lineHeight,
+      whiteSpace: "normal",
+      writingMode: "horizontal-tb",
+      fontFamily,
+      availableWidth: 9999,
+      availableHeight: 9999,
+    });
   };
 
   // Ascent ratio (default font)

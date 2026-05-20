@@ -470,10 +470,15 @@ pub fn compute_layout_from_render_root(
   } else {
     root_margin.left
   }
+  let y_offset = if prepared.suppress_quirks_body_ua_top_margin {
+    root_margin.top
+  } else {
+    root_margin.top + scaled_layout.y
+  }
   {
     id: scaled_layout.id,
     x: x_offset,
-    y: root_margin.top,
+    y: y_offset,
     width: scaled_layout.width,
     height: scaled_layout.height,
     margin: scaled_layout.margin,

@@ -603,5 +603,10 @@ pub fn parse_document_streaming(html : String, chunk_size : Int) -> Document {
     offset = end
   }
   let root = builder.finish()
-  { root, stylesheets: [], stylesheet_links: [] }
+  {
+    root,
+    stylesheets: [],
+    stylesheet_links: [],
+    quirks_mode: !has_html_no_quirks_doctype(html),
+  }
 }

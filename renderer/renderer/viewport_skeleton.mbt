@@ -19,7 +19,7 @@ let viewport_skeleton_count : Ref[Int] = { val: 0 }
 let viewport_full_node_count : Ref[Int] = { val: 0 }
 
 ///|
-let viewport_full_node_cutoff : Ref[Int] = { val: 300 }
+let viewport_full_node_cutoff : Ref[Int] = { val: 2000 }
 
 ///|
 let viewport_skeleton_enabled : Ref[Bool] = { val: true }

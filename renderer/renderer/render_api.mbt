@@ -14,7 +14,10 @@ pub fn render_with_external_css(
   ctx : RenderContext,
   external_css : Array[String],
 ) -> @layout_types.Layout {
+  let t0 = perf_clock_us()
   let doc = @html.parse_document(html)
+  let t1 = perf_clock_us()
+  maybe_log_perf("[perf] html_parse=" + ((t1 - t0) / 1000L).to_string() + "ms")
   render_document_with_external_css(doc, ctx, external_css)
 }
 
@@ -91,7 +94,10 @@ pub fn render_to_node_and_layout_with_external_css(
   ctx : RenderContext,
   external_css : Array[String],
 ) -> (@node.Node, @layout_types.Layout) {
+  let t0 = perf_clock_us()
   let doc = @html.parse_document(html)
+  let t1 = perf_clock_us()
+  maybe_log_perf("[perf] html_parse=" + ((t1 - t0) / 1000L).to_string() + "ms")
   render_to_node_and_layout_with_document(doc, ctx, external_css)
 }
 

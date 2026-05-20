@@ -296,4 +296,189 @@ describe("runVrtReportSummaryCli", () => {
       },
     });
   });
+
+  it("filters current paint VRT summaries by task id and excluded filter", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "crater-vrt-report-current-filter-"));
+    const inputDir = path.join(root, "output", "playwright", "vrt");
+    fs.mkdirSync(path.join(inputDir, "mdn-wasm-text"), { recursive: true });
+    fs.mkdirSync(path.join(inputDir, "wikipedia"), { recursive: true });
+    fs.mkdirSync(path.join(inputDir, "wpt", "css-display", "display-contents"), { recursive: true });
+    fs.mkdirSync(path.join(inputDir, "font-fallback-ja-system"), { recursive: true });
+
+    fs.writeFileSync(
+      path.join(inputDir, "mdn-wasm-text", "report.json"),
+      JSON.stringify({
+        schemaVersion: 1,
+        suite: "vrt-artifact",
+        status: "pass",
+        title: "real-world snapshot: mdn-wasm-text stays within loose visual diff budget",
+        identity: {
+          key: "paint-mdn",
+          taskId: "paint-vrt",
+          spec: "tests/paint-vrt.test.ts",
+          filter: "mdn-wasm-text",
+          title: "real-world snapshot: mdn-wasm-text stays within loose visual diff budget",
+          variant: { backend: "sixel", snapshotKind: "real-world" },
+        },
+        metadata: {
+          width: 1440,
+          height: 960,
+          diffRatio: 0.03,
+          maxDiffRatio: 0.04,
+        },
+      }),
+      "utf8",
+    );
+    fs.writeFileSync(
+      path.join(inputDir, "font-fallback-ja-system", "report.json"),
+      JSON.stringify({
+        schemaVersion: 1,
+        suite: "vrt-artifact",
+        status: "pass",
+        title: "Japanese text uses system fallback glyphs",
+        identity: {
+          key: "paint-font",
+          taskId: "paint-vrt-font-fallback",
+          spec: "tests/paint-vrt-font-fallback.test.ts",
+          filter: "font-fallback-ja-system",
+          title: "Japanese text uses system fallback glyphs",
+          variant: { backend: "sixel" },
+        },
+        metadata: {
+          diffRatio: 0.08,
+          maxDiffRatio: 0.095,
+        },
+      }),
+      "utf8",
+    );
+    fs.writeFileSync(
+      path.join(inputDir, "wikipedia", "report.json"),
+      JSON.stringify({
+        schemaVersion: 1,
+        suite: "vrt-artifact",
+        status: "pass",
+        title: "url snapshot: wikipedia visual diff within budget",
+        identity: {
+          key: "paint-wikipedia",
+          taskId: "paint-vrt",
+          spec: "tests/paint-vrt.test.ts",
+          filter: "wikipedia",
+          title: "url snapshot: wikipedia visual diff within budget",
+          variant: { backend: "sixel" },
+        },
+        metadata: {
+          diffRatio: 0.2,
+          maxDiffRatio: 0.25,
+        },
+      }),
+      "utf8",
+    );
+    fs.writeFileSync(
+      path.join(inputDir, "wpt", "css-display", "display-contents", "report.json"),
+      JSON.stringify({
+        schemaVersion: 1,
+        suite: "vrt-artifact",
+        status: "fail",
+        title: "display contents WPT",
+        identity: {
+          key: "wpt-display",
+          taskId: "wpt-vrt",
+          spec: "tests/wpt-vrt.test.ts",
+          filter: "css-display/display-contents.html",
+          title: "display contents WPT",
+          variant: { backend: "sixel", snapshotKind: "wpt" },
+        },
+        metadata: {
+          diffRatio: 0.9,
+          maxDiffRatio: 0.15,
+        },
+      }),
+      "utf8",
+    );
+
+    const result = runVrtReportSummaryCli([
+      "--input",
+      "output/playwright/vrt",
+      "--label",
+      "paint-vrt-current",
+      "--include-task-id",
+      "paint-vrt",
+      "--include-task-id",
+      "paint-vrt-font-fallback",
+      "--exclude-filter",
+      "wikipedia",
+      "--json",
+      "out/vrt-current.json",
+    ], {
+      cwd: root,
+    });
+
+    expect(result.exitCode).toBe(0);
+    const jsonWrite = result.writes?.find((write) => write.path.endsWith("vrt-current.json"));
+    expect(jsonWrite).toBeDefined();
+    const parsed = JSON.parse(jsonWrite!.content) as {
+      total: number;
+      rows: Array<{ label: string; status: string; diffRatio: number }>;
+    };
+    expect(parsed.total).toBe(2);
+    expect(parsed.rows.map((row) => row.label).sort()).toEqual([
+      "Japanese text uses system fallback glyphs",
+      "real-world snapshot: mdn-wasm-text stays within loose visual diff budget",
+    ]);
+  });
+
+  it("fails freshness check when an existing summary is older than selected reports", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "crater-vrt-report-fresh-check-"));
+    const inputDir = path.join(root, "output", "playwright", "vrt", "google");
+    const outDir = path.join(root, "output", "playwright");
+    fs.mkdirSync(inputDir, { recursive: true });
+    fs.mkdirSync(outDir, { recursive: true });
+
+    const reportPath = path.join(inputDir, "report.json");
+    const summaryPath = path.join(outDir, "vrt-current-summary.json");
+    fs.writeFileSync(
+      reportPath,
+      JSON.stringify({
+        schemaVersion: 1,
+        suite: "vrt-artifact",
+        status: "pass",
+        title: "url snapshot: google visual diff within budget",
+        identity: {
+          key: "paint-google",
+          taskId: "paint-vrt",
+          spec: "tests/paint-vrt.test.ts",
+          filter: "google",
+          title: "url snapshot: google visual diff within budget",
+          variant: { backend: "sixel" },
+        },
+        metadata: {
+          diffRatio: 0.006,
+          maxDiffRatio: 0.02,
+        },
+      }),
+      "utf8",
+    );
+    fs.writeFileSync(summaryPath, "{}\n", "utf8");
+    fs.utimesSync(summaryPath, new Date("2026-01-01T00:00:00Z"), new Date("2026-01-01T00:00:00Z"));
+    fs.utimesSync(reportPath, new Date("2026-01-02T00:00:00Z"), new Date("2026-01-02T00:00:00Z"));
+
+    const result = runVrtReportSummaryCli([
+      "--input",
+      "output/playwright/vrt",
+      "--label",
+      "paint-vrt-current",
+      "--include-task-id",
+      "paint-vrt",
+      "--json",
+      "output/playwright/vrt-current-summary.json",
+      "--check-fresh",
+    ], {
+      cwd: root,
+    });
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("VRT summary is stale");
+    expect(result.stderr).toContain("google/report.json");
+    expect(result.writes).toEqual([]);
+  });
 });

@@ -120,6 +120,7 @@ pub struct PreparedRenderDocument {
   render_root : @html.Element
   render_root_tag : String
   body_uses_document_root_style : Bool
+  suppress_quirks_body_ua_top_margin : Bool
   before_index : PseudoRuleIndex
   after_index : PseudoRuleIndex
 }

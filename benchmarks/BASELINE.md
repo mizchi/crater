@@ -784,3 +784,32 @@ inline-only style cache は lookup ごとに `tag|root|viewport|inline_css` の 
   - `render_to_node applies margin-trim from stylesheet` は pass
   - `css-flexbox` は `289 / 289`
   - `css-grid` は `30 / 33` で既知の 3 failure のまま
+
+---
+
+## Static Snapshot VRT Trim Bench (2026-05-20)
+
+### Problem
+large no-script real-world snapshots can bypass runtime DOM setup, but they still need to keep the first viewport content small enough for direct MoonBit render. The previous static main excerpt was 35k chars; `mdn-wasm-text` remained layout-bound.
+
+### Command
+
+```bash
+moon bench --manifest-path benchmarks/moon.mod.json -p mizchi/crater-benchmarks -f static_snapshot_bench.mbt --target js --release
+```
+
+### Results
+
+| Benchmark | Mean |
+|-----------|------|
+| `static_snapshot_parse_mdn_full_snapshot` | 9.23 ms |
+| `static_snapshot_parse_mdn_trimmed_viewport` | 3.42 ms |
+| `static_snapshot_prepare_mdn_trimmed_viewport` | 3.70 ms |
+| `static_snapshot_node_build_mdn_trimmed_viewport` | 46.58 ms |
+| `static_snapshot_layout_mdn_trimmed_viewport` | 533.83 ms |
+| `static_snapshot_render_mdn_trimmed_viewport` | 615.84 ms |
+
+### Notes
+
+- `CRATER_VRT_STATIC_HTML_MAIN_BUDGET` defaults to 4000 chars. This keeps the direct static VRT path materially faster while preserving an env override for wider first-viewport content.
+- The same `mdn-wasm-text` VRT passes with `capturePaintData: node_layout=2127ms ... total=2216ms`; the browser path includes glyph/raster work and remains slower than the pure `moon bench` render phase.

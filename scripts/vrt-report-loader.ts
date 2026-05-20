@@ -9,6 +9,12 @@ import {
   type VrtStableIdentity,
 } from "./vrt-report-contract.ts";
 
+export interface VrtArtifactReportFilterOptions {
+  includeTaskIds?: string[];
+  excludeFilters?: string[];
+  requireIdentity?: boolean;
+}
+
 function collectReportFiles(rootDir: string): string[] {
   if (!fs.existsSync(rootDir)) {
     return [];
@@ -48,6 +54,49 @@ function readJsonReport(filePath: string): VrtArtifactRawReport | null {
 function normalizeLabel(rootDir: string, reportPath: string): string {
   const relativeDir = path.relative(rootDir, path.dirname(reportPath));
   return relativeDir.length > 0 ? relativeDir : ".";
+}
+
+function normalizeFilterValues(values: string[] | undefined): Set<string> {
+  return new Set((values ?? [])
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0));
+}
+
+function matchesReportFilter(
+  input: {
+    title: string;
+    fallbackLabel: string;
+    identity?: VrtStableIdentity;
+  },
+  options: VrtArtifactReportFilterOptions | undefined,
+): boolean {
+  if (!options) {
+    return true;
+  }
+
+  if (options.requireIdentity && !input.identity) {
+    return false;
+  }
+
+  const includeTaskIds = normalizeFilterValues(options.includeTaskIds);
+  if (includeTaskIds.size > 0 && !includeTaskIds.has(input.identity?.taskId ?? "")) {
+    return false;
+  }
+
+  const excludeFilters = normalizeFilterValues(options.excludeFilters);
+  if (excludeFilters.size > 0) {
+    const filterCandidates = [
+      input.identity?.filter,
+      input.identity?.title,
+      input.title,
+      input.fallbackLabel,
+    ].filter((value): value is string => typeof value === "string" && value.length > 0);
+    if (filterCandidates.some((value) => excludeFilters.has(value))) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 function collectVariantKeys(identities: Array<VrtStableIdentity | undefined>): string[] {
@@ -144,7 +193,10 @@ function disambiguateReportLabels(
   });
 }
 
-export function loadVrtArtifactReports(inputDir: string): LoadedVrtArtifactReport[] {
+export function loadVrtArtifactReports(
+  inputDir: string,
+  options?: VrtArtifactReportFilterOptions,
+): LoadedVrtArtifactReport[] {
   const rows: Array<LoadedVrtArtifactReport & {
     fallbackLabel: string;
     identity?: VrtStableIdentity;
@@ -155,12 +207,17 @@ export function loadVrtArtifactReports(inputDir: string): LoadedVrtArtifactRepor
       continue;
     }
     const fallbackLabel = normalizeLabel(inputDir, reportPath);
+    const label = readVrtArtifactTitle(report, fallbackLabel);
+    const identity = readVrtArtifactIdentity(report);
+    if (!matchesReportFilter({ title: label, fallbackLabel, identity }, options)) {
+      continue;
+    }
     rows.push({
-      label: readVrtArtifactTitle(report, fallbackLabel),
+      label,
       fallbackLabel,
       reportPath,
       report,
-      identity: readVrtArtifactIdentity(report),
+      identity,
     });
   }
   return disambiguateReportLabels(rows)

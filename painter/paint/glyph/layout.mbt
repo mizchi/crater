@@ -16,9 +16,14 @@ pub(all) struct GlyphPlacement {
 pub fn resolve_text_wrap_tolerance(
   max_width : Int,
   font_size : Double,
+  line_height? : Double = 0.0,
+  text_length? : Int = 0,
 ) -> Double {
   if max_width <= 0 {
     return text_wrap_tolerance
+  }
+  if font_size > 0.0 && line_height > font_size * 1.35 && text_length > 72 {
+    return 1.0
   }
   let width_tolerance = max_width.to_double() * 0.2
   let font_tolerance = if font_size > 0.0 {
@@ -159,7 +164,12 @@ pub fn layout_glyph_bitmaps(
       get_ascent(font_family) * font_size
     _ => provider.ascent_ratio * font_size
   }
-  let wrap_tolerance = resolve_text_wrap_tolerance(max_width, font_size)
+  let wrap_tolerance = resolve_text_wrap_tolerance(
+    max_width,
+    font_size,
+    line_height~,
+    text_length=text.length(),
+  )
   let max_x_limit = if max_width > 0 {
     (x + max_width).to_double() + wrap_tolerance
   } else {

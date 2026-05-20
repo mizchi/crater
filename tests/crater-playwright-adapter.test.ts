@@ -107,6 +107,15 @@ test.describe("Crater Playwright adapter package", () => {
     expect(items).toBe("one,two");
   });
 
+  test("preserves inline sibling whitespace in loaded HTML textContent", async () => {
+    await page.setContentWithScripts(`<div id="x"><a>foo</a> <span>bar</span></div>`);
+
+    await expect(page.locator("#x").textContent()).resolves.toBe("foo bar");
+
+    await page.setContentWithScripts(`<a>foo</a> <span>bar</span>`);
+    await expect(page.locator("body").textContent()).resolves.toBe("foo bar");
+  });
+
   test("exposes WebMCP modelContext tools to the browser-side adapter", async () => {
     await page.setContentWithScripts(`
       <html>

@@ -340,7 +340,12 @@ fn build_render_document_from_dom_tree(dom : @dom.DomTree) -> @html.Document {
   let stylesheets : Array[String] = []
   let stylesheet_links : Array[String] = []
   collect_render_document_resources(root, stylesheets, stylesheet_links)
-  @html.assign_synthetic_ids({ root, stylesheets, stylesheet_links })
+  @html.assign_synthetic_ids({
+    root,
+    stylesheets,
+    stylesheet_links,
+    quirks_mode: false,
+  })
 }
 
 ///|

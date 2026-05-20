@@ -950,8 +950,39 @@ export async function renderCraterHtml(
     return renderCraterHtmlNative(html, viewport);
   }
   await page.setViewport(viewport.width, viewport.height);
+  if (shouldCaptureStaticHtmlDirectly(html)) {
+    return await page.capturePaintData({ html: trimStaticHtmlForViewport(html) });
+  }
   await page.setContentWithScripts(html);
   return await captureCraterPageImage(page);
+}
+
+function shouldCaptureStaticHtmlDirectly(html: string): boolean {
+  return html.length > 100_000 && !/<script[\s>]/i.test(html);
+}
+
+function trimStaticHtmlForViewport(html: string): string {
+  const bodyMatch = /<body\b[^>]*>/i.exec(html);
+  if (!bodyMatch) {
+    return html;
+  }
+  const bodyStart = bodyMatch.index;
+  const bodyBudget = Number(process.env.CRATER_VRT_STATIC_HTML_BODY_BUDGET ?? 1_000);
+  const mainBudget = Number(process.env.CRATER_VRT_STATIC_HTML_MAIN_BUDGET ?? 4_000);
+  const keepUntil = Math.min(html.length, bodyStart + Math.max(1_000, bodyBudget));
+  if (keepUntil === html.length) {
+    return html;
+  }
+  const mainIndex = html.toLowerCase().indexOf("<main", keepUntil);
+  if (mainIndex >= 0) {
+    const mainEnd = Math.min(html.length, mainIndex + Math.max(1_000, mainBudget));
+    return `${html.slice(0, keepUntil)}
+<!-- crater-vrt-skipped-static-html -->
+${html.slice(mainIndex, mainEnd)}
+<!-- crater-vrt-truncated-static-html -->
+</body></html>`;
+  }
+  return html;
 }
 
 export async function captureCraterPageImage(

@@ -2217,7 +2217,6 @@ extern "js" fn js_evaluate_expression(
   #|           continue;
   #|         }
   #|         if (token[0] !== "<") {
-  #|           if (token.trim() === "") continue;
   #|           const decoded = decodeHtmlEntities(token);
   #|           const textNode = createMockTextNode(decoded);
   #|           textNode.ownerDocument = ownerDocument;
@@ -5021,9 +5020,7 @@ extern "js" fn js_evaluate_expression(
   #|               while (i < len && htmlStr[i] !== '<') {
   #|                 text += htmlStr[i++];
   #|               }
-  #|               if (text.trim()) {
-  #|                 el.appendChild(globalThis.document.createTextNode(decodeEntitiesLocal(text)));
-  #|               }
+  #|               el.appendChild(globalThis.document.createTextNode(decodeEntitiesLocal(text)));
   #|             }
   #|           }
   #|
@@ -5032,17 +5029,17 @@ extern "js" fn js_evaluate_expression(
   #|
   #|         // Parse all top-level elements
   #|         while (i < len) {
-  #|           skipWhitespace();
-  #|           if (i >= len) break;
-  #|
   #|           if (htmlStr[i] === '<') {
   #|             const el = parseElement();
   #|             if (el && el.nodeType) {
   #|               nodes.push(el);
   #|             }
   #|           } else {
-  #|             // Skip text at top level
-  #|             while (i < len && htmlStr[i] !== '<') i++;
+  #|             let text = '';
+  #|             while (i < len && htmlStr[i] !== '<') {
+  #|               text += htmlStr[i++];
+  #|             }
+  #|             nodes.push(globalThis.document.createTextNode(decodeEntitiesLocal(text)));
   #|           }
   #|         }
   #|

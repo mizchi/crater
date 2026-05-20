@@ -25,6 +25,7 @@ pub(all) struct Document {
   root : Element
   stylesheets : Array[String]
   stylesheet_links : Array[String]
+  quirks_mode : Bool
 }
 
 pub(all) struct Element {

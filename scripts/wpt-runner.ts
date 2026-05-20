@@ -26,7 +26,10 @@ import {
 } from './wpt-html-utils.ts';
 import { createTextIntrinsicFnFromMeasureText } from './text-intrinsic.ts';
 
-export { createTextIntrinsicFnFromMeasureText } from './text-intrinsic.ts';
+export {
+  callTextIntrinsicFn,
+  createTextIntrinsicFnFromMeasureText,
+} from './text-intrinsic.ts';
 
 // Load config from wpt.json
 const wptConfig = loadWptConfig();

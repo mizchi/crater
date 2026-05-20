@@ -38,7 +38,7 @@ pub fn rasterize_glyph_to_bitmap(Array[@svg.PathCommand], Double) -> GlyphBitmap
 
 pub fn resolve_effective_font_weight(Bool, Double) -> Double
 
-pub fn resolve_text_wrap_tolerance(Int, Double) -> Double
+pub fn resolve_text_wrap_tolerance(Int, Double, line_height? : Double, text_length? : Int) -> Double
 
 pub fn set_glyph_provider(GlyphProvider) -> Unit
 
