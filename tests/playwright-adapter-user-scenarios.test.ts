@@ -313,7 +313,7 @@ test.describe("Crater Playwright adapter user scenarios", () => {
               if (toast && toast.parentNode) {
                 toast.parentNode.removeChild(toast);
               }
-            }, 40);
+            }, 200);
           </script>
         </body>
       </html>
