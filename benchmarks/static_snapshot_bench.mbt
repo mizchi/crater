@@ -334,6 +334,57 @@ fn static_snapshot_pathological_whitespace_nodes(count : Int) -> @tree.Node {
 }
 
 ///|
+fn bench_static_snapshot_node_build_mdn_main(
+  b : @bench.T,
+  name : String,
+  main_budget : Int,
+) -> Unit {
+  let doc = @html.parse_document(
+    static_snapshot_mdn_trimmed_with_main_budget(main_budget),
+  )
+  let ctx = static_snapshot_context()
+  let prepared = @renderer.prepare_render_document(doc, ctx, [])
+  b.bench(name~, fn() {
+    b.keep(@renderer.build_render_root_node(doc, ctx, prepared))
+  })
+}
+
+///|
+fn bench_static_snapshot_layout_node(
+  b : @bench.T,
+  name : String,
+  node : @tree.Node,
+) -> Unit {
+  let layout_ctx = default_layout_ctx(static_snapshot_context())
+  @tree.setup()
+  b.bench(name~, fn() {
+    b.keep(@tree.compute_layout_in_context(node, layout_ctx))
+  })
+}
+
+///|
+fn bench_static_snapshot_layout_html(
+  b : @bench.T,
+  name : String,
+  html : String,
+) -> Unit {
+  bench_static_snapshot_layout_node(b, name, static_snapshot_layout_node(html))
+}
+
+///|
+fn bench_static_snapshot_layout_mdn_main(
+  b : @bench.T,
+  name : String,
+  main_budget : Int,
+) -> Unit {
+  bench_static_snapshot_layout_node(
+    b,
+    name,
+    static_snapshot_mdn_node_for_main_budget(main_budget),
+  )
+}
+
+///|
 test "bench_static_snapshot_parse_full_reference" (b : @bench.T) {
   let html = static_snapshot_full_reference_html()
   b.bench(name="static_snapshot_parse_full_reference", fn() {
@@ -436,228 +487,173 @@ test "bench_static_snapshot_layout_mdn_trimmed_viewport" (b : @bench.T) {
   let doc = @html.parse_document(static_snapshot_mdn_trimmed_html())
   let ctx = static_snapshot_context()
   let prepared = @renderer.prepare_render_document(doc, ctx, [])
-  let node = @renderer.build_render_root_node(doc, ctx, prepared)
-  let layout_ctx = default_layout_ctx(ctx)
-  @tree.setup()
-  b.bench(name="static_snapshot_layout_mdn_trimmed_viewport", fn() {
-    b.keep(@tree.compute_layout_in_context(node, layout_ctx))
-  })
+  bench_static_snapshot_layout_node(
+    b,
+    "static_snapshot_layout_mdn_trimmed_viewport",
+    @renderer.build_render_root_node(doc, ctx, prepared),
+  )
 }
 
 ///|
 test "bench_static_snapshot_node_build_mdn_main_1k" (b : @bench.T) {
-  let doc = @html.parse_document(
-    static_snapshot_mdn_trimmed_with_main_budget(1000),
+  bench_static_snapshot_node_build_mdn_main(
+    b, "static_snapshot_node_build_mdn_main_1k", 1000,
   )
-  let ctx = static_snapshot_context()
-  let prepared = @renderer.prepare_render_document(doc, ctx, [])
-  b.bench(name="static_snapshot_node_build_mdn_main_1k", fn() {
-    b.keep(@renderer.build_render_root_node(doc, ctx, prepared))
-  })
 }
 
 ///|
 test "bench_static_snapshot_node_build_mdn_main_4k" (b : @bench.T) {
-  let doc = @html.parse_document(
-    static_snapshot_mdn_trimmed_with_main_budget(4000),
+  bench_static_snapshot_node_build_mdn_main(
+    b, "static_snapshot_node_build_mdn_main_4k", 4000,
   )
-  let ctx = static_snapshot_context()
-  let prepared = @renderer.prepare_render_document(doc, ctx, [])
-  b.bench(name="static_snapshot_node_build_mdn_main_4k", fn() {
-    b.keep(@renderer.build_render_root_node(doc, ctx, prepared))
-  })
 }
 
 ///|
 test "bench_static_snapshot_node_build_mdn_main_16k" (b : @bench.T) {
-  let doc = @html.parse_document(
-    static_snapshot_mdn_trimmed_with_main_budget(16000),
+  bench_static_snapshot_node_build_mdn_main(
+    b, "static_snapshot_node_build_mdn_main_16k", 16000,
   )
-  let ctx = static_snapshot_context()
-  let prepared = @renderer.prepare_render_document(doc, ctx, [])
-  b.bench(name="static_snapshot_node_build_mdn_main_16k", fn() {
-    b.keep(@renderer.build_render_root_node(doc, ctx, prepared))
-  })
 }
 
 ///|
 test "bench_static_snapshot_layout_mdn_main_1k" (b : @bench.T) {
-  let node = static_snapshot_mdn_node_for_main_budget(1000)
-  let layout_ctx = default_layout_ctx(static_snapshot_context())
-  @tree.setup()
-  b.bench(name="static_snapshot_layout_mdn_main_1k", fn() {
-    b.keep(@tree.compute_layout_in_context(node, layout_ctx))
-  })
+  bench_static_snapshot_layout_mdn_main(
+    b, "static_snapshot_layout_mdn_main_1k", 1000,
+  )
 }
 
 ///|
 test "bench_static_snapshot_layout_mdn_main_2k" (b : @bench.T) {
-  let node = static_snapshot_mdn_node_for_main_budget(2000)
-  let layout_ctx = default_layout_ctx(static_snapshot_context())
-  @tree.setup()
-  b.bench(name="static_snapshot_layout_mdn_main_2k", fn() {
-    b.keep(@tree.compute_layout_in_context(node, layout_ctx))
-  })
+  bench_static_snapshot_layout_mdn_main(
+    b, "static_snapshot_layout_mdn_main_2k", 2000,
+  )
 }
 
 ///|
 test "bench_static_snapshot_layout_mdn_main_4k" (b : @bench.T) {
-  let node = static_snapshot_mdn_node_for_main_budget(4000)
-  let layout_ctx = default_layout_ctx(static_snapshot_context())
-  @tree.setup()
-  b.bench(name="static_snapshot_layout_mdn_main_4k", fn() {
-    b.keep(@tree.compute_layout_in_context(node, layout_ctx))
-  })
+  bench_static_snapshot_layout_mdn_main(
+    b, "static_snapshot_layout_mdn_main_4k", 4000,
+  )
 }
 
 ///|
 test "bench_static_snapshot_layout_mdn_main_8k" (b : @bench.T) {
-  let node = static_snapshot_mdn_node_for_main_budget(8000)
-  let layout_ctx = default_layout_ctx(static_snapshot_context())
-  @tree.setup()
-  b.bench(name="static_snapshot_layout_mdn_main_8k", fn() {
-    b.keep(@tree.compute_layout_in_context(node, layout_ctx))
-  })
+  bench_static_snapshot_layout_mdn_main(
+    b, "static_snapshot_layout_mdn_main_8k", 8000,
+  )
 }
 
 ///|
 test "bench_static_snapshot_layout_mdn_main_16k" (b : @bench.T) {
-  let node = static_snapshot_mdn_node_for_main_budget(16000)
-  let layout_ctx = default_layout_ctx(static_snapshot_context())
-  @tree.setup()
-  b.bench(name="static_snapshot_layout_mdn_main_16k", fn() {
-    b.keep(@tree.compute_layout_in_context(node, layout_ctx))
-  })
+  bench_static_snapshot_layout_mdn_main(
+    b, "static_snapshot_layout_mdn_main_16k", 16000,
+  )
 }
 
 ///|
 test "bench_static_snapshot_layout_long_text_500" (b : @bench.T) {
-  let node = static_snapshot_layout_node(
+  bench_static_snapshot_layout_html(
+    b,
+    "static_snapshot_layout_long_text_500",
     static_snapshot_long_paragraph_html(500),
   )
-  let layout_ctx = default_layout_ctx(static_snapshot_context())
-  @tree.setup()
-  b.bench(name="static_snapshot_layout_long_text_500", fn() {
-    b.keep(@tree.compute_layout_in_context(node, layout_ctx))
-  })
 }
 
 ///|
 test "bench_static_snapshot_layout_long_text_1000" (b : @bench.T) {
-  let node = static_snapshot_layout_node(
+  bench_static_snapshot_layout_html(
+    b,
+    "static_snapshot_layout_long_text_1000",
     static_snapshot_long_paragraph_html(1000),
   )
-  let layout_ctx = default_layout_ctx(static_snapshot_context())
-  @tree.setup()
-  b.bench(name="static_snapshot_layout_long_text_1000", fn() {
-    b.keep(@tree.compute_layout_in_context(node, layout_ctx))
-  })
 }
 
 ///|
 test "bench_static_snapshot_layout_long_text_2000" (b : @bench.T) {
-  let node = static_snapshot_layout_node(
+  bench_static_snapshot_layout_html(
+    b,
+    "static_snapshot_layout_long_text_2000",
     static_snapshot_long_paragraph_html(2000),
   )
-  let layout_ctx = default_layout_ctx(static_snapshot_context())
-  @tree.setup()
-  b.bench(name="static_snapshot_layout_long_text_2000", fn() {
-    b.keep(@tree.compute_layout_in_context(node, layout_ctx))
-  })
 }
 
 ///|
 test "bench_static_snapshot_layout_inline_links_100" (b : @bench.T) {
-  let node = static_snapshot_layout_node(static_snapshot_inline_links_html(100))
-  let layout_ctx = default_layout_ctx(static_snapshot_context())
-  @tree.setup()
-  b.bench(name="static_snapshot_layout_inline_links_100", fn() {
-    b.keep(@tree.compute_layout_in_context(node, layout_ctx))
-  })
+  bench_static_snapshot_layout_html(
+    b,
+    "static_snapshot_layout_inline_links_100",
+    static_snapshot_inline_links_html(100),
+  )
 }
 
 ///|
 test "bench_static_snapshot_layout_inline_links_200" (b : @bench.T) {
-  let node = static_snapshot_layout_node(static_snapshot_inline_links_html(200))
-  let layout_ctx = default_layout_ctx(static_snapshot_context())
-  @tree.setup()
-  b.bench(name="static_snapshot_layout_inline_links_200", fn() {
-    b.keep(@tree.compute_layout_in_context(node, layout_ctx))
-  })
+  bench_static_snapshot_layout_html(
+    b,
+    "static_snapshot_layout_inline_links_200",
+    static_snapshot_inline_links_html(200),
+  )
 }
 
 ///|
 test "bench_static_snapshot_layout_inline_links_400" (b : @bench.T) {
-  let node = static_snapshot_layout_node(static_snapshot_inline_links_html(400))
-  let layout_ctx = default_layout_ctx(static_snapshot_context())
-  @tree.setup()
-  b.bench(name="static_snapshot_layout_inline_links_400", fn() {
-    b.keep(@tree.compute_layout_in_context(node, layout_ctx))
-  })
+  bench_static_snapshot_layout_html(
+    b,
+    "static_snapshot_layout_inline_links_400",
+    static_snapshot_inline_links_html(400),
+  )
 }
 
 ///|
 test "bench_static_snapshot_layout_block_paragraphs_100" (b : @bench.T) {
-  let node = static_snapshot_layout_node(
+  bench_static_snapshot_layout_html(
+    b,
+    "static_snapshot_layout_block_paragraphs_100",
     static_snapshot_block_paragraphs_html(100),
   )
-  let layout_ctx = default_layout_ctx(static_snapshot_context())
-  @tree.setup()
-  b.bench(name="static_snapshot_layout_block_paragraphs_100", fn() {
-    b.keep(@tree.compute_layout_in_context(node, layout_ctx))
-  })
 }
 
 ///|
 test "bench_static_snapshot_layout_block_paragraphs_200" (b : @bench.T) {
-  let node = static_snapshot_layout_node(
+  bench_static_snapshot_layout_html(
+    b,
+    "static_snapshot_layout_block_paragraphs_200",
     static_snapshot_block_paragraphs_html(200),
   )
-  let layout_ctx = default_layout_ctx(static_snapshot_context())
-  @tree.setup()
-  b.bench(name="static_snapshot_layout_block_paragraphs_200", fn() {
-    b.keep(@tree.compute_layout_in_context(node, layout_ctx))
-  })
 }
 
 ///|
 test "bench_static_snapshot_layout_block_paragraphs_400" (b : @bench.T) {
-  let node = static_snapshot_layout_node(
+  bench_static_snapshot_layout_html(
+    b,
+    "static_snapshot_layout_block_paragraphs_400",
     static_snapshot_block_paragraphs_html(400),
   )
-  let layout_ctx = default_layout_ctx(static_snapshot_context())
-  @tree.setup()
-  b.bench(name="static_snapshot_layout_block_paragraphs_400", fn() {
-    b.keep(@tree.compute_layout_in_context(node, layout_ctx))
-  })
 }
 
 ///|
 test "bench_static_snapshot_layout_whitespace_nodes_200" (b : @bench.T) {
-  let node = static_snapshot_pathological_whitespace_nodes(200)
-  let layout_ctx = default_layout_ctx(static_snapshot_context())
-  @tree.setup()
-  b.bench(name="static_snapshot_layout_whitespace_nodes_200", fn() {
-    b.keep(@tree.compute_layout_in_context(node, layout_ctx))
-  })
+  bench_static_snapshot_layout_node(
+    b,
+    "static_snapshot_layout_whitespace_nodes_200",
+    static_snapshot_pathological_whitespace_nodes(200),
+  )
 }
 
 ///|
 test "bench_static_snapshot_layout_whitespace_nodes_400" (b : @bench.T) {
-  let node = static_snapshot_pathological_whitespace_nodes(400)
-  let layout_ctx = default_layout_ctx(static_snapshot_context())
-  @tree.setup()
-  b.bench(name="static_snapshot_layout_whitespace_nodes_400", fn() {
-    b.keep(@tree.compute_layout_in_context(node, layout_ctx))
-  })
+  bench_static_snapshot_layout_node(
+    b,
+    "static_snapshot_layout_whitespace_nodes_400",
+    static_snapshot_pathological_whitespace_nodes(400),
+  )
 }
 
 ///|
 test "bench_static_snapshot_layout_whitespace_nodes_800" (b : @bench.T) {
-  let node = static_snapshot_pathological_whitespace_nodes(800)
-  let layout_ctx = default_layout_ctx(static_snapshot_context())
-  @tree.setup()
-  b.bench(name="static_snapshot_layout_whitespace_nodes_800", fn() {
-    b.keep(@tree.compute_layout_in_context(node, layout_ctx))
-  })
+  bench_static_snapshot_layout_node(
+    b,
+    "static_snapshot_layout_whitespace_nodes_800",
+    static_snapshot_pathological_whitespace_nodes(800),
+  )
 }
