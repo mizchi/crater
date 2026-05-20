@@ -12,12 +12,34 @@ test "static snapshot benchmark fixtures are renderable and trimmed" {
 }
 
 ///|
-test "mdn static snapshot benchmark fixture uses viewport trim" {
-  let full = static_snapshot_mdn_full_html()
-  let trimmed = static_snapshot_mdn_trimmed_html()
-  assert_true(full.length() > 100000)
-  assert_true(trimmed.length() > 10000)
+fn synthetic_main_trim_fixture() -> String {
+  let before_main = StringBuilder::new()
+  for i = 0; i < 260; i = i + 1 {
+    before_main.write_string("<div>preface ")
+    before_main.write_string(i.to_string())
+    before_main.write_string("</div>")
+  }
+  let main = StringBuilder::new()
+  for i = 0; i < 260; i = i + 1 {
+    main.write_string("<p>main paragraph ")
+    main.write_string(i.to_string())
+    main.write_string(" keeps enough content for first viewport sizing.</p>")
+  }
+  "<!DOCTYPE html><html><body>" +
+  before_main.to_string() +
+  "<main>" +
+  main.to_string() +
+  "</main></body></html>"
+}
+
+///|
+test "static snapshot viewport trim keeps body and main excerpts" {
+  let full = synthetic_main_trim_fixture()
+  let trimmed = js_trim_static_html_for_viewport(full, 1000, 4000)
+  assert_true(full.length() > 10000)
+  assert_true(trimmed.length() > 5000)
   assert_true(trimmed.length() < full.length())
+  assert_true(trimmed.contains("crater-vrt-skipped-static-html"))
   assert_true(trimmed.contains("crater-vrt-truncated-static-html"))
   let _ = @html.parse_document(trimmed)
 }

@@ -216,8 +216,8 @@ test.describe("Crater Playwright adapter user scenarios", () => {
     const firstRow = await page.$(".row");
     await expect(firstRow?.getAttribute("data-id")).resolves.toBe("a");
     await expect(
-      page.$eval("#rows", (element) => element.textContent?.replace(/\\s+/g, " ").trim()),
-    ).resolves.toBe("AlphaBeta");
+      page.$eval("#rows", (element) => element.textContent?.replace(/\s+/g, " ").trim()),
+    ).resolves.toBe("Alpha Beta");
 
     await page.selectOption("#mode", "advanced");
     await expect(page.locator("#selected").textContent()).resolves.toBe("mode:advanced");
