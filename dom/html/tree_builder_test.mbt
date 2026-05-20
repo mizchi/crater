@@ -22,6 +22,93 @@ fn find_body_v2(elem : @html.Element) -> @html.Element {
 }
 
 ///|
+fn expect_element_node(
+  node : @html.Node,
+  tag : String,
+) -> @html.Element raise Error {
+  match node {
+    @html.Node::Element(e) => {
+      if e.tag != tag {
+        fail("expected <" + tag + ">")
+      }
+      e
+    }
+    @html.Node::Text(_) => fail("expected <" + tag + ">")
+  }
+}
+
+///|
+fn expect_text_node(node : @html.Node, expected : String) -> Unit raise Error {
+  match node {
+    @html.Node::Text(t) =>
+      if t != expected {
+        fail("expected text " + expected)
+      }
+    @html.Node::Element(_) => fail("expected text " + expected)
+  }
+}
+
+///|
+fn assert_formatting_reparented_across_paragraph(
+  tag : String,
+) -> Unit raise Error {
+  let html = "<" + tag + ">1<p>2</" + tag + ">3</p>"
+  let result = @html.parse_fragment_v2(html)
+  let body = find_body_v2(result)
+  if body.children.length() != 2 {
+    fail("expected original formatting element and paragraph")
+  }
+  let original = expect_element_node(body.children[0], tag)
+  if original.children.length() != 1 {
+    fail("expected original formatting element to keep only leading text")
+  }
+  expect_text_node(original.children[0], "1")
+  let paragraph = expect_element_node(body.children[1], "p")
+  if paragraph.children.length() != 2 {
+    fail("expected paragraph to contain reconstructed formatting and text")
+  }
+  let reconstructed = expect_element_node(paragraph.children[0], tag)
+  if reconstructed.children.length() != 1 {
+    fail("expected reconstructed formatting element to keep text")
+  }
+  expect_text_node(reconstructed.children[0], "2")
+  expect_text_node(paragraph.children[1], "3")
+}
+
+///|
+fn count_direct_element_children(elem : @html.Element, tag : String) -> Int {
+  let mut count = 0
+  for child in elem.children {
+    match child {
+      @html.Node::Element(e) if e.tag == tag => count = count + 1
+      _ => ()
+    }
+  }
+  count
+}
+
+///|
+fn hn_submission_rows(id : String, rank : String, title : String) -> String {
+  "<tr class=\"athing submission\" id=\"" +
+  id +
+  "\"><td align=\"right\" class=\"title\">" +
+  rank +
+  ".</td><td class=\"votelinks\" valign=\"top\"><center><a id=\"up_" +
+  id +
+  "\" href=\"vote?id=" +
+  id +
+  "&amp;how=up\"><div class=\"votearrow\" title=\"upvote\"></div></a></center></td><td class=\"title\"><span class=\"titleline\"><a href=\"item?id=" +
+  id +
+  "\">" +
+  title +
+  "</a></span></td></tr><tr><td colspan=\"2\"></td><td class=\"subtext\"><span class=\"subline\"><a href=\"item?id=" +
+  id +
+  "\">1 point</a> | <a href=\"hide?id=" +
+  id +
+  "\">hide</a></span></td></tr><tr class=\"spacer\" style=\"height:5px\"></tr>"
+}
+
+///|
 test "tree_builder/simple text" {
   let html = "Test"
   let result = @html.parse_fragment_v2(html)
@@ -163,6 +250,101 @@ test "tree_builder/foster parenting anchor" {
   // With foster parenting, the anchor should come first
   // Without it, the table comes first
   inspect(first_tag, content="a")
+}
+
+///|
+test "tree_builder/adoption agency reparents anchor across paragraph" {
+  let html = "<a>1<p>2</a>3</p>"
+  let result = @html.parse_fragment_v2(html)
+  let body = find_body_v2(result)
+  let tags : Array[String] = []
+  for child in body.children {
+    match child {
+      @html.Node::Element(e) => tags.push(e.tag)
+      @html.Node::Text(t) => if !t.trim().is_empty() { tags.push("#text:" + t) }
+    }
+  }
+  debug_inspect(tags, content="[\"a\", \"p\"]")
+  match body.children[0] {
+    @html.Node::Element(anchor) => {
+      inspect(anchor.tag, content="a")
+      inspect(anchor.children.length(), content="1")
+      match anchor.children[0] {
+        @html.Node::Text(t) => inspect(t, content="1")
+        _ => fail("expected text in original anchor")
+      }
+    }
+    _ => fail("expected original anchor")
+  }
+  match body.children[1] {
+    @html.Node::Element(paragraph) => {
+      inspect(paragraph.tag, content="p")
+      inspect(paragraph.children.length(), content="2")
+      match paragraph.children[0] {
+        @html.Node::Element(anchor) => {
+          inspect(anchor.tag, content="a")
+          match anchor.children[0] {
+            @html.Node::Text(t) => inspect(t, content="2")
+            _ => fail("expected text in reconstructed anchor")
+          }
+        }
+        _ => fail("expected reconstructed anchor in paragraph")
+      }
+      match paragraph.children[1] {
+        @html.Node::Text(t) => inspect(t, content="3")
+        _ => fail("expected trailing paragraph text")
+      }
+    }
+    _ => fail("expected paragraph")
+  }
+}
+
+///|
+test "tree_builder/adoption agency handles common formatting elements" {
+  for tag in ["b", "i", "font", "nobr"] {
+    assert_formatting_reparented_across_paragraph(tag)
+  }
+}
+
+///|
+test "tree_builder/reconstructs active formatting after paragraph close" {
+  let result = @html.parse_fragment_v2("<p><b>foo</p>bar")
+  let body = find_body_v2(result)
+  inspect(body.children.length(), content="2")
+  let paragraph = expect_element_node(body.children[0], "p")
+  let paragraph_bold = expect_element_node(paragraph.children[0], "b")
+  expect_text_node(paragraph_bold.children[0], "foo")
+  let trailing_bold = expect_element_node(body.children[1], "b")
+  expect_text_node(trailing_bold.children[0], "bar")
+}
+
+///|
+test "tree_builder/reconstructs active formatting before phrasing start tag" {
+  let result = @html.parse_fragment_v2("<p><b>foo</p><span>bar</span>")
+  let body = find_body_v2(result)
+  inspect(body.children.length(), content="2")
+  let paragraph = expect_element_node(body.children[0], "p")
+  let paragraph_bold = expect_element_node(paragraph.children[0], "b")
+  expect_text_node(paragraph_bold.children[0], "foo")
+  let trailing_bold = expect_element_node(body.children[1], "b")
+  let span = expect_element_node(trailing_bold.children[0], "span")
+  expect_text_node(span.children[0], "bar")
+}
+
+///|
+test "tree_builder/hackernews vote anchor div keeps rows in tbody" {
+  let html = "<table><tbody>" +
+    hn_submission_rows("1", "1", "First story") +
+    hn_submission_rows("2", "2", "Second story") +
+    hn_submission_rows("3", "3", "Third story") +
+    "</tbody></table>"
+  let result = @html.parse_fragment_v2(html)
+  let body = find_body_v2(result)
+  inspect(body.children.length(), content="1")
+  let table = expect_element_node(body.children[0], "table")
+  inspect(table.children.length(), content="1")
+  let tbody = expect_element_node(table.children[0], "tbody")
+  inspect(count_direct_element_children(tbody, "tr"), content="9")
 }
 
 ///|

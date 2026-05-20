@@ -397,6 +397,7 @@ pub fn DocumentRenderCoordinator::process_html(
     root: parse_result.root,
     stylesheets: [],
     stylesheet_links: [],
+    quirks_mode: false,
   }
   self.layout_manager.build_tree_from_html(doc, viewport_width, viewport_height)
 

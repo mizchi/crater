@@ -236,6 +236,10 @@ pub fn can_use_actual_paint_for_screenshot_data(
 pub fn normalize_capture_paint_data_options(
   params : Map[String, Json],
 ) -> Result[String, RenderingValidationError] {
+  match params.get("html") {
+    None | Some(String(_)) => ()
+    Some(_) => return Err(InvalidArgument("html must be a string"))
+  }
   match params.get("origin") {
     None | Some(String("viewport")) => Ok("viewport")
     Some(String(_)) =>

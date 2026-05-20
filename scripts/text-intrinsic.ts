@@ -14,7 +14,18 @@ export type ExternalTextIntrinsicFn = (
   availableHeight: number,
 ) => { minWidth: number; maxWidth: number; minHeight: number; maxHeight: number };
 
-type TextIntrinsicResult = ReturnType<ExternalTextIntrinsicFn>;
+export type TextIntrinsicResult = ReturnType<ExternalTextIntrinsicFn>;
+
+export interface TextIntrinsicCallOptions {
+  text: string;
+  fontSize: number;
+  lineHeight: number;
+  whiteSpace: string;
+  writingMode: string;
+  fontFamily: string;
+  availableWidth: number;
+  availableHeight: number;
+}
 
 const TEXT_MEASURE_CACHE_LIMIT = 20_000;
 const TEXT_INTRINSIC_CACHE_LIMIT = 10_000;
@@ -173,4 +184,20 @@ export function createTextIntrinsicFnFromMeasureText(
       return { minWidth: minWordWidth, maxWidth, minHeight, maxHeight };
     });
   };
+}
+
+export function callTextIntrinsicFn(
+  fn: ExternalTextIntrinsicFn,
+  options: TextIntrinsicCallOptions,
+): TextIntrinsicResult {
+  return fn(
+    options.text,
+    options.fontSize,
+    options.lineHeight,
+    options.whiteSpace,
+    options.writingMode,
+    options.fontFamily,
+    options.availableWidth,
+    options.availableHeight,
+  );
 }

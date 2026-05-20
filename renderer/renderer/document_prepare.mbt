@@ -274,8 +274,89 @@ pub struct PreparedRenderDocument {
   render_root : @html.Element
   render_root_tag : String
   body_uses_document_root_style : Bool
+  suppress_quirks_body_ua_top_margin : Bool
   before_index : PseudoRuleIndex
   after_index : PseudoRuleIndex
+}
+
+///|
+fn text_is_whitespace_only(s : String) -> Bool {
+  for i = 0; i < s.length(); i = i + 1 {
+    let c = s[i].to_int().unsafe_to_char()
+    if c != ' ' && c != '\t' && c != '\n' && c != '\r' {
+      return false
+    }
+  }
+  true
+}
+
+///|
+fn tag_has_ua_top_margin(tag : String) -> Bool {
+  match tag.to_lower() {
+    "p"
+    | "h1"
+    | "h2"
+    | "h3"
+    | "h4"
+    | "h5"
+    | "h6"
+    | "ul"
+    | "ol"
+    | "menu"
+    | "dl"
+    | "pre"
+    | "blockquote"
+    | "figure" => true
+    _ => false
+  }
+}
+
+///|
+fn leading_margin_is_ua_default(elem : @html.Element) -> Bool {
+  if elem.style is Some(_) {
+    return false
+  }
+  if tag_has_ua_top_margin(elem.tag) {
+    return true
+  }
+  for child in elem.children {
+    match child {
+      @html.Node::Text(t) => if !text_is_whitespace_only(t) { return false }
+      @html.Node::Element(child_elem) =>
+        if leading_margin_is_ua_default(child_elem) {
+          return true
+        } else if child_elem.style is Some(_) {
+          return false
+        }
+    }
+  }
+  false
+}
+
+///|
+fn should_suppress_quirks_body_ua_top_margin(
+  doc : @html.Document,
+  render_root : @html.Element,
+  external_bundle : PreparedExternalCss,
+) -> Bool {
+  if !doc.quirks_mode ||
+    render_root.tag.to_lower() != "body" ||
+    !doc.stylesheets.is_empty() ||
+    external_bundle.total_rules > 0 {
+    return false
+  }
+  for child in render_root.children {
+    match child {
+      @html.Node::Text(t) => if !text_is_whitespace_only(t) { return false }
+      @html.Node::Element(elem) =>
+        if leading_margin_is_ua_default(elem) {
+          return true
+        } else if elem.style is Some(_) {
+          return false
+        }
+    }
+  }
+  false
 }
 
 ///|
@@ -327,6 +408,12 @@ fn prepare_render_document_with_external_css_bundle(
     indexed_stylesheets.push(@css.IndexedStylesheet::new(stylesheet))
   }
   let _t1 = perf_clock_us()
+  maybe_log_perf(
+    "[perf] css_parse=" +
+    ((_t1 - t0) / 1000L).to_string() +
+    "ms rules=" +
+    total_rules.to_string(),
+  )
   let _t2 = perf_clock_us()
   let css_vars = collect_root_css_variables(stylesheets, ctx)
   let doc_root_selector = if indexed_stylesheets.length() == 0 {
@@ -345,6 +432,9 @@ fn prepare_render_document_with_external_css_bundle(
   )
   let render_root = select_render_root(doc.root, doc_root_style)
   let render_root_tag = render_root.tag.to_lower()
+  let suppress_quirks_body_ua_top_margin = should_suppress_quirks_body_ua_top_margin(
+    doc, render_root, external_bundle,
+  )
   let prepared : PreparedRenderDocument = {
     stylesheets,
     indexed_stylesheets,
@@ -355,6 +445,7 @@ fn prepare_render_document_with_external_css_bundle(
     render_root_tag,
     body_uses_document_root_style: render_root_tag == "body" &&
     doc.root.tag.to_lower() != "body",
+    suppress_quirks_body_ua_top_margin,
     before_index: if doc.stylesheets.is_empty() {
       external_bundle.before_index
     } else {

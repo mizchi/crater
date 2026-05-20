@@ -146,6 +146,16 @@ test "parse_document with style tag" {
 }
 
 ///|
+test "parse_document records no-doctype quirks mode" {
+  let quirks_doc = @html.parse_document("<html><body><p>old</p></body></html>")
+  let standards_doc = @html.parse_document(
+    "<!doctype html><html><body><p>modern</p></body></html>",
+  )
+  inspect(quirks_doc.quirks_mode, content="true")
+  inspect(standards_doc.quirks_mode, content="false")
+}
+
+///|
 test "parse_document wraps style media attribute into media rule" {
   let html =
     #|<html>

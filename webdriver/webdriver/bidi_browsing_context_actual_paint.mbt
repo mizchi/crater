@@ -36,7 +36,7 @@ extern "js" fn call_font_aware_text_provider(
   #|  const fn = isBold ? (globalThis.__craterMeasureTextIntrinsicBold || globalThis.__craterMeasureTextIntrinsic) : globalThis.__craterMeasureTextIntrinsic;
   #|  if (typeof fn !== "function") return "";
   #|  try {
-  #|    const result = fn(text, fontSize, lineHeight, whiteSpace, writingMode, availableWidth, availableHeight);
+  #|    const result = fn(text, fontSize, lineHeight, whiteSpace, writingMode, fontFamily, availableWidth, availableHeight);
   #|    let minWidth, maxWidth, minHeight, maxHeight;
   #|    if (result && typeof result === "object") {
   #|      minWidth = Number(result.minWidth ?? result.min_width);
@@ -57,14 +57,15 @@ extern "js" fn call_paint_text_provider(
   line_height : Double,
   white_space : String,
   writing_mode : String,
+  font_family : String,
   available_width : Double,
   available_height : Double,
 ) -> String =
-  #|(text, fontSize, lineHeight, whiteSpace, writingMode, availableWidth, availableHeight) => {
+  #|(text, fontSize, lineHeight, whiteSpace, writingMode, fontFamily, availableWidth, availableHeight) => {
   #|  const fn = globalThis.__craterMeasureTextIntrinsic;
   #|  if (typeof fn !== "function") return "";
   #|  try {
-  #|    const result = fn(text, fontSize, lineHeight, whiteSpace, writingMode, availableWidth, availableHeight);
+  #|    const result = fn(text, fontSize, lineHeight, whiteSpace, writingMode, fontFamily, availableWidth, availableHeight);
   #|    let minWidth, maxWidth, minHeight, maxHeight;
   #|    if (Array.isArray(result) && result.length >= 4) {
   #|      minWidth = Number(result[0]); maxWidth = Number(result[1]);
@@ -367,14 +368,15 @@ extern "js" fn call_bold_text_provider(
   line_height : Double,
   white_space : String,
   writing_mode : String,
+  font_family : String,
   available_width : Double,
   available_height : Double,
 ) -> String =
-  #|(text, fontSize, lineHeight, whiteSpace, writingMode, availableWidth, availableHeight) => {
+  #|(text, fontSize, lineHeight, whiteSpace, writingMode, fontFamily, availableWidth, availableHeight) => {
   #|  const fn = globalThis.__craterMeasureTextIntrinsicBold;
   #|  if (typeof fn !== "function") return "";
   #|  try {
-  #|    const result = fn(text, fontSize, lineHeight, whiteSpace, writingMode, availableWidth, availableHeight);
+  #|    const result = fn(text, fontSize, lineHeight, whiteSpace, writingMode, fontFamily, availableWidth, availableHeight);
   #|    let minWidth, maxWidth, minHeight, maxHeight;
   #|    if (result && typeof result === "object") {
   #|      minWidth = Number(result.minWidth ?? result.min_width);
@@ -414,20 +416,20 @@ fn ensure_paint_text_provider() -> Unit {
               multi
             } else if is_bold && has_bold_text_provider() {
               call_bold_text_provider(
-                text, font_size, line_height, ws, wm, available_width, available_height,
+                text, font_size, line_height, ws, wm, ff, available_width, available_height,
               )
             } else {
               call_paint_text_provider(
-                text, font_size, line_height, ws, wm, available_width, available_height,
+                text, font_size, line_height, ws, wm, ff, available_width, available_height,
               )
             }
           } else if is_bold && has_bold_text_provider() {
             call_bold_text_provider(
-              text, font_size, line_height, ws, wm, available_width, available_height,
+              text, font_size, line_height, ws, wm, ff, available_width, available_height,
             )
           } else {
             call_paint_text_provider(
-              text, font_size, line_height, ws, wm, available_width, available_height,
+              text, font_size, line_height, ws, wm, ff, available_width, available_height,
             )
           }
           @rendering.resolve_text_intrinsic_size_from_provider_payload(
@@ -848,7 +850,10 @@ fn BidiProtocol::resolve_capture_paint_data(
   set_runtime_context(ctx_id)
   self.apply_effective_viewport_to_runtime_context(ctx_id, ctx_id)
 
-  let html = capture_current_paint_html()
+  let html = match params.get("html") {
+    Some(String(html)) => html
+    _ => capture_current_paint_html()
+  }
   let frame = match
     self.build_actual_paint_frame(
       request_id,

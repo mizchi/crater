@@ -5795,10 +5795,11 @@ export class CraterBidiPage {
     return buffer;
   }
 
-  async capturePaintData(): Promise<{ width: number; height: number; data: Uint8Array }> {
+  async capturePaintData(options: { html?: string } = {}): Promise<{ width: number; height: number; data: Uint8Array }> {
     const resp = await this.sendBidi("browsingContext.capturePaintData", {
       context: this.requireContextId(),
       origin: "viewport",
+      ...(options.html === undefined ? {} : { html: options.html }),
     });
     if (resp.type === "error") {
       throw new Error(resp.message || resp.error || "capturePaintData failed");

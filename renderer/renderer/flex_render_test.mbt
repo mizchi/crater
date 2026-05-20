@@ -1010,6 +1010,21 @@ test "hn_flex_nav_name_link_keeps_single_line_auto_min_width" {
 }
 
 ///|
+test "flex_drops_whitespace_only_text_between_icon_links" {
+  let html =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 0; font-family: monospace; font-size: 16px; line-height: 1; }
+    #|.nav { display: inline-flex; }
+    #|.icon { display: block; width: 10px; height: 10px; }
+    #|</style>
+    #|<div class="nav"><a><span class="icon"></span></a> <a><span class="icon"></span></a></div>
+  let layout = @renderer.render(html, @renderer.RenderContext::default())
+  let nav = layout.children[0]
+  inspect(nav.width, content="20")
+}
+
+///|
 test "wpt_flex_child_percent_basis_resize_1_like" {
   let html_str =
     #|<!DOCTYPE html>

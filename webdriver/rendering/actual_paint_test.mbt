@@ -72,6 +72,21 @@ test "capture paint data options validate viewport only origin" {
       inspect(error.message(), content="origin must be 'viewport'")
     }
   }
+  match
+    normalize_capture_paint_data_options({
+      "origin": Json::string("viewport"),
+      "html": Json::string("<p>static</p>"),
+    }) {
+    Ok(origin) => inspect(origin, content="viewport")
+    Err(error) => fail("unexpected html option error: " + error.message())
+  }
+  match normalize_capture_paint_data_options({ "html": Json::number(1.0) }) {
+    Ok(_) => fail("expected invalid html")
+    Err(error) => {
+      inspect(error.name(), content="invalid argument")
+      inspect(error.message(), content="html must be a string")
+    }
+  }
 }
 
 ///|

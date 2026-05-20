@@ -93,7 +93,59 @@ test "body_collapsed_top_margin_does_not_expand_body_box" {
   let child = layout.children[0]
 
   inspect(layout.id, content="body")
+  inspect(layout.y, content="10")
   inspect(layout.height, content="50")
+  inspect(child.y, content="0")
+}
+
+///|
+test "body_margin_collapses_with_first_child_top_margin" {
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|body { margin: 16px; }
+    #|div { margin-top: 16px; height: 50px; }
+    #|</style>
+    #|<div></div>
+  let ctx = @renderer.RenderContext::default()
+  let layout = @renderer.render(html_str, ctx)
+  let child = layout.children[0]
+
+  inspect(layout.id, content="body")
+  inspect(layout.y, content="16")
+  inspect(layout.height, content="50")
+  inspect(child.y, content="0")
+}
+
+///|
+test "quirks_body_ua_top_margin_stays_at_body_margin" {
+  let html_str =
+    #|<html><body>
+    #|  <header><title>old page</title></header>
+    #|  <h1>Old page heading</h1>
+    #|  <p>Intro text</p>
+    #|</body></html>
+  let ctx = @renderer.RenderContext::default()
+  let layout = @renderer.render(html_str, ctx)
+  let h1 = layout.children[1]
+
+  inspect(layout.id, content="body")
+  inspect(layout.y, content="8")
+  inspect(h1.y, content="0")
+}
+
+///|
+test "quirks_author_top_margin_still_moves_body" {
+  let html_str =
+    #|<html><body>
+    #|  <div style="margin-top: 24px; height: 50px;"></div>
+    #|</body></html>
+  let ctx = @renderer.RenderContext::default()
+  let layout = @renderer.render(html_str, ctx)
+  let child = layout.children[0]
+
+  inspect(layout.id, content="body")
+  inspect(layout.y, content="24")
   inspect(child.y, content="0")
 }
 

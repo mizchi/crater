@@ -391,6 +391,136 @@ describe("renderCraterHtml", () => {
       sameAsFallbackRules: 1,
     });
   });
+
+  it("captures large static html directly without loading runtime DOM", async () => {
+    delete process.env.CRATER_PAINT_BACKEND;
+
+    const calls: string[] = [];
+    const html = `<main>${"x".repeat(100_001)}</main>`;
+    const fakePage = {
+      async setViewport(width: number, height: number) {
+        calls.push(`viewport:${width}x${height}`);
+      },
+      async setContentWithScripts() {
+        calls.push("content");
+      },
+      async capturePaintData(options?: { html?: string }) {
+        calls.push(`paint:${options?.html?.length ?? 0}`);
+        return {
+          width: 320,
+          height: 240,
+          data: new Uint8Array([255, 255, 255, 255]),
+        };
+      },
+      async getCssRuleUsageDetails() {
+        calls.push("css");
+        return { rules: [], elements: {} };
+      },
+    };
+
+    const image = await renderCraterHtml(fakePage as never, html, {
+      width: 320,
+      height: 240,
+    });
+
+    expect(calls).toEqual([
+      "viewport:320x240",
+      `paint:${html.length}`,
+    ]);
+    expect(image.cssRuleUsage).toBeUndefined();
+  });
+
+  it("trims large static body html before direct capture", async () => {
+    delete process.env.CRATER_PAINT_BACKEND;
+    const previousMainBudget = process.env.CRATER_VRT_STATIC_HTML_MAIN_BUDGET;
+    delete process.env.CRATER_VRT_STATIC_HTML_MAIN_BUDGET;
+
+    const calls: string[] = [];
+    const html = `<html><head><style>body{margin:0}</style></head><body><nav>${"n".repeat(2_000)}</nav><main>${"x".repeat(120_000)}</main></body></html>`;
+    const fakePage = {
+      async setViewport(width: number, height: number) {
+        calls.push(`viewport:${width}x${height}`);
+      },
+      async setContentWithScripts() {
+        calls.push("content");
+      },
+      async capturePaintData(options?: { html?: string }) {
+        calls.push(`paint:${options?.html?.length ?? 0}`);
+        expect(options?.html).toContain("crater-vrt-truncated-static-html");
+        return {
+          width: 320,
+          height: 240,
+          data: new Uint8Array([255, 255, 255, 255]),
+        };
+      },
+      async getCssRuleUsageDetails() {
+        calls.push("css");
+        return { rules: [], elements: {} };
+      },
+    };
+
+    try {
+      await renderCraterHtml(fakePage as never, html, {
+        width: 320,
+        height: 240,
+      });
+    } finally {
+      if (previousMainBudget === undefined) {
+        delete process.env.CRATER_VRT_STATIC_HTML_MAIN_BUDGET;
+      } else {
+        process.env.CRATER_VRT_STATIC_HTML_MAIN_BUDGET = previousMainBudget;
+      }
+    }
+
+    expect(calls[0]).toBe("viewport:320x240");
+    expect(calls[1]).toMatch(/^paint:[4-6]\d{3}$/);
+  });
+
+  it("allows static html main trim budget override", async () => {
+    delete process.env.CRATER_PAINT_BACKEND;
+    const previousMainBudget = process.env.CRATER_VRT_STATIC_HTML_MAIN_BUDGET;
+    process.env.CRATER_VRT_STATIC_HTML_MAIN_BUDGET = "12000";
+
+    const calls: string[] = [];
+    const html = `<html><head><style>body{margin:0}</style></head><body><nav>${"n".repeat(2_000)}</nav><main>${"x".repeat(120_000)}</main></body></html>`;
+    const fakePage = {
+      async setViewport(width: number, height: number) {
+        calls.push(`viewport:${width}x${height}`);
+      },
+      async setContentWithScripts() {
+        calls.push("content");
+      },
+      async capturePaintData(options?: { html?: string }) {
+        calls.push(`paint:${options?.html?.length ?? 0}`);
+        expect(options?.html).toContain("crater-vrt-truncated-static-html");
+        return {
+          width: 320,
+          height: 240,
+          data: new Uint8Array([255, 255, 255, 255]),
+        };
+      },
+      async getCssRuleUsageDetails() {
+        calls.push("css");
+        return { rules: [], elements: {} };
+      },
+    };
+
+    try {
+      await renderCraterHtml(fakePage as never, html, {
+        width: 320,
+        height: 240,
+      });
+    } finally {
+      if (previousMainBudget === undefined) {
+        delete process.env.CRATER_VRT_STATIC_HTML_MAIN_BUDGET;
+      } else {
+        process.env.CRATER_VRT_STATIC_HTML_MAIN_BUDGET = previousMainBudget;
+      }
+    }
+
+    expect(calls[0]).toBe("viewport:320x240");
+    expect(calls[1]).toMatch(/^paint:1[2-4]\d{3}$/);
+  });
 });
 
 describe("reference fixtures", () => {

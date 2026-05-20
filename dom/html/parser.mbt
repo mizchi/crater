@@ -19,6 +19,7 @@ pub(all) struct Document {
   root : Element
   stylesheets : Array[String] // CSS content from <style> tags
   stylesheet_links : Array[String] // URLs from <link rel="stylesheet">
+  quirks_mode : Bool
 }
 
 ///|
@@ -225,6 +226,25 @@ fn Parser::skip_doctype(self : Parser) -> Unit {
     // Not a DOCTYPE, reset position
     self.pos = start_pos
   }
+}
+
+///|
+/// Detect the small no-quirks doctype shape that Crater currently supports.
+fn has_html_no_quirks_doctype(html : String) -> Bool {
+  let parser = Parser::new(html)
+  parser.skip_whitespace()
+  while parser.skip_comment() {
+    parser.skip_whitespace()
+  }
+  guard parser.peek() is Some('<') && parser.peek_at(1) is Some('!') else {
+    return false
+  }
+  let _ = parser.consume() // <
+  let _ = parser.consume() // !
+  let word = parser.consume_name().to_lower()
+  guard word == "doctype" else { return false }
+  parser.skip_whitespace()
+  parser.consume_name().to_lower() == "html"
 }
 
 ///|
@@ -848,6 +868,7 @@ pub fn parse_document_v2(html : String) -> Element {
 ///|
 /// Parse HTML and extract stylesheets
 pub fn parse_document(html : String) -> Document {
+  let quirks_mode = !has_html_no_quirks_doctype(html)
   let root = parse_document_v2(html)
   let resource_html = strip_noscript_blocks(html)
   let resource_root = if resource_html == html {
@@ -858,7 +879,7 @@ pub fn parse_document(html : String) -> Document {
   let stylesheets : Array[String] = []
   let stylesheet_links : Array[String] = []
   extract_stylesheets(resource_root, stylesheets, stylesheet_links, false)
-  { root, stylesheets, stylesheet_links }
+  { root, stylesheets, stylesheet_links, quirks_mode }
 }
 
 ///|

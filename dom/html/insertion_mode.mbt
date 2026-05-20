@@ -163,8 +163,14 @@ fn TreeBuilder::handle_after_head(self : TreeBuilder, token : Token) -> Unit {
 /// Handle in body insertion mode - this is the main handler
 fn TreeBuilder::handle_in_body(self : TreeBuilder, token : Token) -> Unit {
   match token {
-    Token::Character(c) => self.insert_character(c)
-    Token::Characters(s) => self.insert_characters(s)
+    Token::Character(c) => {
+      self.reconstruct_active_formatting_elements()
+      self.insert_character(c)
+    }
+    Token::Characters(s) => {
+      self.reconstruct_active_formatting_elements()
+      self.insert_characters(s)
+    }
     Token::Comment(_) => () // Ignore comments for now
     Token::Doctype(_) => () // Parse error, ignore
     Token::StartTag(tag, attrs, self_closing) =>
@@ -314,6 +320,10 @@ fn TreeBuilder::handle_in_body_start_tag(
     }
     "a" => {
       // Check for active anchor and close if needed
+      if self.has_active_formatting_element("a") {
+        self.run_adoption_agency("a")
+      }
+      self.reconstruct_active_formatting_elements()
       let elem = create_element(tag, attrs)
       self.insert_element(elem)
       self.active_formatting.push(FormattingElement::Element(elem))
@@ -330,6 +340,7 @@ fn TreeBuilder::handle_in_body_start_tag(
     | "strong"
     | "tt"
     | "u" => {
+      self.reconstruct_active_formatting_elements()
       let elem = create_element(tag, attrs)
       self.insert_element(elem)
       self.active_formatting.push(FormattingElement::Element(elem))
@@ -339,6 +350,7 @@ fn TreeBuilder::handle_in_body_start_tag(
         // Run adoption agency
         self.pop_until("nobr")
       }
+      self.reconstruct_active_formatting_elements()
       let elem = create_element(tag, attrs)
       self.insert_element(elem)
       self.active_formatting.push(FormattingElement::Element(elem))
@@ -404,6 +416,7 @@ fn TreeBuilder::handle_in_body_start_tag(
       // These are table-only elements, ignore if not in table context
       ()
     _ => {
+      self.reconstruct_active_formatting_elements()
       let elem = create_element(tag, attrs)
       self.insert_element(elem)
       if self_closing {
@@ -530,13 +543,7 @@ fn TreeBuilder::handle_in_body_end_tag(
     | "strike"
     | "strong"
     | "tt"
-    | "u" =>
-      // Simple close - full adoption agency needed for complete spec
-      if self.has_element_in_scope(tag) {
-        self.generate_implied_end_tags()
-        self.pop_until(tag)
-        self.remove_from_active_formatting(tag)
-      }
+    | "u" => self.run_adoption_agency(tag)
     "br" => {
       // </br> is treated as <br>
       let elem = create_element("br", {})
@@ -1160,6 +1167,222 @@ fn TreeBuilder::remove_from_active_formatting(
       }
       _ => ()
     }
+  }
+}
+
+///|
+fn TreeBuilder::has_active_formatting_element(
+  self : TreeBuilder,
+  tag : String,
+) -> Bool {
+  for i = self.active_formatting.length() - 1; i >= 0; i = i - 1 {
+    match self.active_formatting[i] {
+      FormattingElement::Element(e) if e.tag == tag => return true
+      FormattingElement::Marker => return false
+      _ => ()
+    }
+  }
+  false
+}
+
+///|
+fn TreeBuilder::has_open_element_match(
+  self : TreeBuilder,
+  element : Element,
+) -> Bool {
+  for open in self.open_elements {
+    if same_tree_builder_element(open, element) {
+      return true
+    }
+  }
+  false
+}
+
+///|
+fn TreeBuilder::reconstruct_active_formatting_elements(
+  self : TreeBuilder,
+) -> Unit {
+  if self.active_formatting.is_empty() {
+    return
+  }
+  let mut entry_index = self.active_formatting.length() - 1
+  match self.active_formatting[entry_index] {
+    FormattingElement::Marker => return
+    FormattingElement::Element(e) if self.has_open_element_match(e) => return
+    _ => ()
+  }
+  while entry_index > 0 {
+    entry_index = entry_index - 1
+    match self.active_formatting[entry_index] {
+      FormattingElement::Marker => {
+        entry_index = entry_index + 1
+        break
+      }
+      FormattingElement::Element(e) if self.has_open_element_match(e) => {
+        entry_index = entry_index + 1
+        break
+      }
+      _ => ()
+    }
+  }
+  while entry_index < self.active_formatting.length() {
+    match self.active_formatting[entry_index] {
+      FormattingElement::Element(e) => {
+        let reconstructed = clone_element_without_children(e)
+        self.insert_element(reconstructed)
+        self.active_formatting[entry_index] = FormattingElement::Element(
+          reconstructed,
+        )
+      }
+      FormattingElement::Marker => ()
+    }
+    entry_index = entry_index + 1
+  }
+}
+
+///|
+fn TreeBuilder::find_open_element_index(
+  self : TreeBuilder,
+  tag : String,
+) -> Int {
+  for i = self.open_elements.length() - 1; i >= 0; i = i - 1 {
+    if self.open_elements[i].tag == tag {
+      return i
+    }
+  }
+  -1
+}
+
+///|
+fn TreeBuilder::find_furthest_special_after(
+  self : TreeBuilder,
+  stack_index : Int,
+) -> Int {
+  for i = stack_index + 1; i < self.open_elements.length(); i = i + 1 {
+    if is_special_element(self.open_elements[i].tag) {
+      return i
+    }
+  }
+  -1
+}
+
+///|
+fn same_tree_builder_element(a : Element, b : Element) -> Bool {
+  a.tag == b.tag && a.id == b.id
+}
+
+///|
+fn remove_last_matching_child(parent : Element, target : Element) -> Unit {
+  for i = parent.children.length() - 1; i >= 0; i = i - 1 {
+    match parent.children[i] {
+      Node::Element(e) if same_tree_builder_element(e, target) => {
+        let _ = parent.children.remove(i)
+        return
+      }
+      _ => ()
+    }
+  }
+}
+
+///|
+fn insert_after_matching_child(
+  parent : Element,
+  anchor : Element,
+  child : Element,
+) -> Unit {
+  for i = parent.children.length() - 1; i >= 0; i = i - 1 {
+    match parent.children[i] {
+      Node::Element(e) if same_tree_builder_element(e, anchor) => {
+        parent.children.insert(i + 1, Node::Element(child))
+        return
+      }
+      _ => ()
+    }
+  }
+  parent.children.push(Node::Element(child))
+}
+
+///|
+fn clone_element_without_children(element : Element) -> Element {
+  {
+    tag: element.tag,
+    id: element.id,
+    classes: element.classes,
+    style: element.style,
+    attributes: element.attributes,
+    children: [],
+  }
+}
+
+///|
+fn wrap_children_in_formatting_clone(
+  block : Element,
+  formatting : Element,
+) -> Unit {
+  let reconstructed = clone_element_without_children(formatting)
+  for child in block.children {
+    reconstructed.children.push(child)
+  }
+  block.children.clear()
+  block.children.push(Node::Element(reconstructed))
+}
+
+///|
+fn TreeBuilder::reparent_formatting_around_block(
+  self : TreeBuilder,
+  formatting_index : Int,
+  block_index : Int,
+) -> Unit {
+  if formatting_index <= 0 ||
+    block_index <= formatting_index ||
+    block_index >= self.open_elements.length() {
+    return
+  }
+  let common_ancestor = self.open_elements[formatting_index - 1]
+  let formatting = self.open_elements[formatting_index]
+  let block = self.open_elements[block_index]
+  let block_parent = self.open_elements[block_index - 1]
+  remove_last_matching_child(block_parent, block)
+  wrap_children_in_formatting_clone(block, formatting)
+  insert_after_matching_child(common_ancestor, formatting, block)
+  let _ = self.open_elements.remove(formatting_index)
+}
+
+///|
+fn TreeBuilder::run_adoption_agency(self : TreeBuilder, tag : String) -> Unit {
+  let mut attempt = 0
+  while attempt < 8 {
+    attempt = attempt + 1
+    let formatting_index = self.find_open_element_index(tag)
+    if formatting_index < 0 {
+      self.any_other_end_tag(tag)
+      return
+    }
+    if !self.has_element_in_scope(tag) {
+      self.remove_from_active_formatting(tag)
+      return
+    }
+    match self.current_node() {
+      Some(e) if e.tag == tag => {
+        let _ = self.open_elements.pop()
+        self.remove_from_active_formatting(tag)
+        return
+      }
+      _ => ()
+    }
+    let furthest_block_index = self.find_furthest_special_after(
+      formatting_index,
+    )
+    if furthest_block_index < 0 {
+      self.pop_until(tag)
+      self.remove_from_active_formatting(tag)
+      return
+    }
+    self.reparent_formatting_around_block(
+      formatting_index, furthest_block_index,
+    )
+    self.remove_from_active_formatting(tag)
+    return
   }
 }
 

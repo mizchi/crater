@@ -2223,8 +2223,22 @@ fn compute_root_layout(
   let layout = result.layout
 
   let adjusted_for_margin = if node.id == "body" {
-    // Browser compatibility: body box metrics should remain content-based.
-    layout
+    // Browser compatibility: a first child's collapsed top margin moves the
+    // body border box in the viewport, but it collapses with body margin and
+    // must not expand body box metrics.
+    match result.collapsed.top {
+      Some(escaped_margin_set) => {
+        let escaped_margin = collapsed_margin_value(escaped_margin_set)
+        let body_margin = @types.resolve_rect(
+          node.style.margin,
+          ctx.viewport_width,
+        )
+        let collapsed_offset = collapse_margins(body_margin.top, escaped_margin) -
+          body_margin.top
+        { ..layout, y: layout.y + collapsed_offset }
+      }
+      None => layout
+    }
   } else {
     // For non-body roots, preserve escaped margin behavior used by internal layout tests.
     match result.collapsed.top {

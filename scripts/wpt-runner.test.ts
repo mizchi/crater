@@ -6,6 +6,7 @@ import {
 import {
   createHtmlRootComparisonLayout,
   createFocusedComparisonRoot,
+  callTextIntrinsicFn,
   createTextIntrinsicFnFromMeasureText,
   isScriptMutationDependentTest,
   LOCAL_WPT_RUNTIME_BUILD_COMMAND,
@@ -70,6 +71,22 @@ describe("withTimeout", () => {
 });
 
 describe("createTextIntrinsicFnFromMeasureText", () => {
+  it("keeps fontFamily before availableWidth when calling intrinsic providers", () => {
+    const fn = createTextIntrinsicFnFromMeasureText((text) => text.length * 10);
+    const result = callTextIntrinsicFn(fn, {
+      text: "alpha beta gamma",
+      fontSize: 16,
+      lineHeight: 20,
+      whiteSpace: "normal",
+      writingMode: "horizontal-tb",
+      fontFamily: "Arial",
+      availableWidth: 100,
+      availableHeight: 600,
+    });
+
+    expect(result.maxHeight).toBe(40);
+  });
+
   it("falls back to char-based widths when measureText returns 0", () => {
     const fn = createTextIntrinsicFnFromMeasureText(() => 0);
     const result = fn(

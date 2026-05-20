@@ -468,6 +468,14 @@ vrt-report-summary input_dir label="vrt-artifacts" output_dir="vrt-report-summar
     mkdir -p {{output_dir}}
     if [ -n "{{collect_task_id}}" ]; then node --import tsx scripts/vrt-report-summary.ts --input {{input_dir}} --label {{label}} --collect-task-id {{collect_task_id}} --json {{output_dir}}/{{label}}.json --markdown {{output_dir}}/{{label}}.md; else node --import tsx scripts/vrt-report-summary.ts --input {{input_dir}} --label {{label}} --json {{output_dir}}/{{label}}.json --markdown {{output_dir}}/{{label}}.md; fi | tee {{output_dir}}/{{label}}.log
 
+# Regenerate the local current paint VRT summary while ignoring stale WPT/url scratch reports
+paint-vrt-current-summary input_dir="output/playwright/vrt" output_prefix="output/playwright/vrt-current-summary":
+    node --import tsx scripts/vrt-report-summary.ts --input {{input_dir}} --label paint-vrt-current --include-task-id paint-vrt --include-task-id paint-vrt-font-fallback --include-task-id paint-vrt-gradients --include-task-id paint-vrt-svg-intrinsic --exclude-filter wikipedia --json {{output_prefix}}.json --markdown {{output_prefix}}.md
+
+# Check that the local current paint VRT summary is newer than all selected report.json files
+paint-vrt-current-summary-check input_dir="output/playwright/vrt" output_prefix="output/playwright/vrt-current-summary":
+    node --import tsx scripts/vrt-report-summary.ts --input {{input_dir}} --label paint-vrt-current --include-task-id paint-vrt --include-task-id paint-vrt-font-fallback --include-task-id paint-vrt-gradients --include-task-id paint-vrt-svg-intrinsic --exclude-filter wikipedia --json {{output_prefix}}.json --markdown {{output_prefix}}.md --check-fresh
+
 # Capture a live site into real-world/ (gitignored)
 capture-realworld *args:
     pnpm capture:realworld -- {{args}}

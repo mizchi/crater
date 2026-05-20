@@ -831,9 +831,9 @@ test.describe("Paint VRT", () => {
   }[] = [
     { name: "info-cern-ch", maxDiffRatio: 0.08 },
     { name: "google", maxDiffRatio: 0.02 },
-    // HN still has the parser-side rank 12+ block fall-back tracked by #214.
-    // Keep the current VRT green, then ratchet maxLayoutShiftPx back toward 300.
-    { name: "hackernews", maxDiffRatio: 0.075, maxLayoutShiftPx: 820 },
+    // HN now renders rank 12+ content instead of viewport skeleton fallbacks.
+    // Text/glyph residuals keep diffRatio higher, but layoutShift can tighten.
+    { name: "hackernews", maxDiffRatio: 0.085, maxLayoutShiftPx: 800 },
     {
       name: "wikipedia",
       maxDiffRatio: 0.25,

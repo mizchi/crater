@@ -73,3 +73,11 @@ test "full document render disables viewport skeleton culling" {
   assert_eq(full_skeletons, 0)
   assert_eq(full_images, 360)
 }
+
+///|
+test "viewport skeleton keeps dense above fold content before y cutoff" {
+  let html = many_image_document(120)
+  let ctx = RenderContext::default()
+  ignore(render_to_node_and_layout(html, ctx))
+  assert_eq(viewport_skeleton_count.val, 0)
+}

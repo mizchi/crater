@@ -149,7 +149,7 @@ test.describe("Responsive VRT", () => {
     </body></html>`;
 
     const results = await compareAtViewports(browser, "R3-max-width-center", html, {
-      maxDiffRatio: 0.076,
+      maxDiffRatio: 0.05,
     });
     for (const r of results) {
       expect(r.result.diffRatio, `${r.viewport}`).toBeLessThanOrEqual(r.result.maxDiffRatio);
@@ -224,7 +224,7 @@ test.describe("Responsive VRT", () => {
     </body></html>`;
 
     const results = await compareAtViewports(browser, "R6-text-wrapping", html, {
-      maxDiffRatio: 0.125,
+      maxDiffRatio: 0.097,
     });
     for (const r of results) {
       expect(r.result.diffRatio, `${r.viewport}`).toBeLessThanOrEqual(r.result.maxDiffRatio);
