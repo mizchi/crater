@@ -373,7 +373,7 @@ tests {
     specRef { "ci.affected" }
     workdir = ".."
     cmd =
-      "bash -lc 'set -e; for p in \"cachix/install-nix-action\" \"github:mizchi/pkfire/v0.10.0\" \"actions/cache@v4\" \"~/.pkl/cache\" \"pkf pkl-cache warm\" \"scripts/ci/pkfire-affected-base.sh\" \"scripts/ci/affected-gates.sh\"; do grep -Fq -- \"$p\" .github/workflows/ci.yml; done; for p in \"github:mizchi/pkspec/v0.1.8\" \"PKFIRE_CACHE_DIR\" \"Restore pkfire task cache\" \"Preview affected core gates\" \"Run affected core gates\" \"check test test-taffy test-wasm test-native-smoke\"; do if grep -Fq -- \"$p\" .github/workflows/ci.yml; then echo \"unexpected affected job core wiring: $p\" >&2; exit 1; fi; done'"
+      "bash -lc 'set -e; affected_block=$(awk \"/^  affected:/,/^  test:/\" .github/workflows/ci.yml); for p in \"cachix/install-nix-action\" \"github:mizchi/pkfire/v0.10.0\" \"actions/cache@v4\" \"~/.pkl/cache\" \"pkf pkl-cache warm\" \"scripts/ci/pkfire-affected-base.sh\" \"scripts/ci/affected-gates.sh\"; do grep -Fq -- \"$p\" .github/workflows/ci.yml; done; echo \"$affected_block\" | grep -Fq -- \"fetch-depth: 0\"; if echo \"$affected_block\" | grep -Fq -- \"submodules: recursive\"; then echo \"affected job should not checkout submodules\" >&2; exit 1; fi; for p in \"github:mizchi/pkspec/v0.1.8\" \"PKFIRE_CACHE_DIR\" \"Restore pkfire task cache\" \"Preview affected core gates\" \"Run affected core gates\" \"check test test-taffy test-wasm test-native-smoke\"; do if grep -Fq -- \"$p\" .github/workflows/ci.yml; then echo \"unexpected affected job core wiring: $p\" >&2; exit 1; fi; done'"
   }
   new {
     name = "ci_keeps_manifest_only_changes_out_of_heavy_gates"

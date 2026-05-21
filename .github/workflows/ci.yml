@@ -29,7 +29,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
         with:
-          submodules: recursive
           fetch-depth: 0
 
       # The mizchi/pkfire action curls the GitHub releases API
