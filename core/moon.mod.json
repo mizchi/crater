@@ -2,7 +2,7 @@
   "name": "mizchi/crater-core",
   "version": "0.17.1",
   "deps": {
-    "mizchi/css": "0.1.1"
+    "mizchi/css": "0.1.3"
   },
   "repository": "https://github.com/mizchi/crater",
   "license": "Apache-2.0",
