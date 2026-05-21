@@ -368,17 +368,17 @@ tests {
   new {
     name = "ci_wires_pkfire_affected_with_cache"
     description =
-      "The GitHub Actions CI should restore pkfire/Pkl caches and execute affected core gates against the resolved base."
+      "The GitHub Actions CI should restore the Pkl cache and compute heavy-gate booleans from pkfire affected output without duplicating core test execution."
     tags { "ci"; "pkfire"; "affected" }
     specRef { "ci.affected" }
     workdir = ".."
     cmd =
-      "bash -lc 'set -e; for p in \"cachix/install-nix-action\" \"github:mizchi/pkfire/v0.10.0\" \"github:mizchi/pkspec/v0.1.8\" \"actions/cache@v4\" \"PKFIRE_CACHE_DIR\" \"~/.pkl/cache\" \"pkf pkl-cache warm\" \"scripts/ci/pkfire-affected-base.sh\" \"pkf affected\" \"-j 1\" \"--profile=ci\" \"check test test-taffy test-wasm test-native-smoke\"; do grep -Fq -- \"$p\" .github/workflows/ci.yml; done'"
+      "bash -lc 'set -e; for p in \"cachix/install-nix-action\" \"github:mizchi/pkfire/v0.10.0\" \"actions/cache@v4\" \"~/.pkl/cache\" \"pkf pkl-cache warm\" \"scripts/ci/pkfire-affected-base.sh\" \"scripts/ci/affected-gates.sh\"; do grep -Fq -- \"$p\" .github/workflows/ci.yml; done; for p in \"github:mizchi/pkspec/v0.1.8\" \"PKFIRE_CACHE_DIR\" \"Restore pkfire task cache\" \"Preview affected core gates\" \"Run affected core gates\" \"check test test-taffy test-wasm test-native-smoke\"; do if grep -Fq -- \"$p\" .github/workflows/ci.yml; then echo \"unexpected affected job core wiring: $p\" >&2; exit 1; fi; done'"
   }
   new {
     name = "ci_keeps_manifest_only_changes_out_of_heavy_gates"
     description =
-      "MoonBit dependency manifest bumps should still run core affected gates, but must not force WPT/VRT heavy gates on push."
+      "MoonBit dependency manifest bumps should still be covered by the normal core CI jobs, but must not force WPT/VRT heavy gates on push."
     tags { "ci"; "pkfire"; "affected"; "vrt"; "wpt" }
     specRef { "ci.affected" }
     workdir = ".."
