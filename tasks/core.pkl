@@ -14,20 +14,12 @@ setup: pkfire.Task = new {
   description = "Install submodules, MoonBit deps, and Node deps"
   cmd = "just setup"
   cache = false
-  inputs {
-    ".gitmodules"
-    "moon.mod.json"
-    "moon.work"
-    "package.json"
-    "pnpm-lock.yaml"
-  }
 }
 
 fmt: pkfire.Task = new {
   name = "fmt"
   description = "Format every MoonBit workspace member"
   cmd = "just fmt"
-  cache = false
   inputs = src.moonSources
 }
 
@@ -35,7 +27,6 @@ info: pkfire.Task = new {
   name = "info"
   description = "Regenerate MoonBit interface files"
   cmd = "just info"
-  cache = false
   inputs = src.moonSources
 }
 

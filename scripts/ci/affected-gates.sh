@@ -4,17 +4,18 @@
 # to $GITHUB_OUTPUT and prints a summary to stdout.
 #
 # Falls back to running everything when:
-# - the event is `push` to main (gating shouldn't hide regressions in mainline)
 # - the event is `schedule` (nightly runs the full matrix)
 # - the `--force-all` flag is given (debugging knob)
 set -euo pipefail
 
 force_all=false
 base=""
+changed_files=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --force-all) force_all=true; shift ;;
     --base) base="$2"; shift 2 ;;
+    --files) changed_files+=("$2"); shift 2 ;;
     *) echo "unknown arg: $1" >&2; exit 2 ;;
   esac
 done
@@ -38,19 +39,30 @@ if [[ "$event" == "schedule" ]]; then
   emit_all_true "schedule event"
   exit 0
 fi
-if [[ "$event" == "push" ]]; then
-  emit_all_true "push event"
-  exit 0
-fi
 
-if [[ -z "$base" ]]; then
+affected_args=()
+if [[ ${#changed_files[@]} -gt 0 ]]; then
+  for file in "${changed_files[@]}"; do
+    affected_args+=(--files "$file")
+  done
+elif [[ -n "$base" ]]; then
+  affected_args+=(--since "$base")
+else
   base="$(bash scripts/ci/pkfire-affected-base.sh)"
+  affected_args+=(--since "$base")
 fi
-echo "affected base: ${base}"
+if [[ -n "$base" ]]; then
+  echo "affected base: ${base}"
+fi
+if [[ ${#changed_files[@]} -gt 0 ]]; then
+  printf 'affected files:'
+  printf ' %s' "${changed_files[@]}"
+  printf '\n'
+fi
 
 set +e
 plan="$(pkf affected \
-  --since="$base" \
+  "${affected_args[@]}" \
   --dry-run \
   test-wpt-css test-wpt-dom test-wpt-webdriver test-vrt test-wpt-vrt 2>&1)"
 status=$?

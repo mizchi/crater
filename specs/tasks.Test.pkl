@@ -244,6 +244,16 @@ tests {
     }
   }
   new {
+    name = "pkfire_lint_has_no_findings"
+    description =
+      "Taskfile lint should stay clean so affected inputs are either cacheable or intentionally input-free."
+    tags { "pkfire"; "lint"; "contract" }
+    specRef { "task.diagnostics" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -euo pipefail; json=$(pkf lint --json); printf \"%s\" \"$json\" | grep -Fq \"\\\"findings\\\": []\"'"
+  }
+  new {
     name = "pkfire_lists_taskfile_diagnostics_tasks"
     description =
       "The Taskfile should expose pkfire lint, doctor, and long-list diagnostics without bloating the public task list."
@@ -358,12 +368,22 @@ tests {
   new {
     name = "ci_wires_pkfire_affected_with_cache"
     description =
-      "The GitHub Actions CI should restore pkfire/Pkl caches and execute affected core gates against the resolved base."
+      "The GitHub Actions CI should restore the Pkl cache and compute heavy-gate booleans from pkfire affected output without duplicating core test execution."
     tags { "ci"; "pkfire"; "affected" }
     specRef { "ci.affected" }
     workdir = ".."
     cmd =
-      "bash -lc 'set -e; for p in \"cachix/install-nix-action\" \"github:mizchi/pkfire/v0.10.0\" \"github:mizchi/pkspec/v0.1.8\" \"actions/cache@v4\" \"PKFIRE_CACHE_DIR\" \"~/.pkl/cache\" \"pkf pkl-cache warm\" \"scripts/ci/pkfire-affected-base.sh\" \"pkf affected\" \"-j 1\" \"--profile=ci\" \"check test test-taffy test-wasm test-native-smoke\"; do grep -Fq -- \"$p\" .github/workflows/ci.yml; done'"
+      "bash -lc 'set -e; affected_block=$(awk \"/^  affected:/,/^  test:/\" .github/workflows/ci.yml); for p in \"cachix/install-nix-action\" \"github:mizchi/pkfire/v0.10.0\" \"actions/cache@v4\" \"~/.pkl/cache\" \"pkf pkl-cache warm\" \"scripts/ci/pkfire-affected-base.sh\" \"scripts/ci/affected-gates.sh\"; do grep -Fq -- \"$p\" .github/workflows/ci.yml; done; echo \"$affected_block\" | grep -Fq -- \"fetch-depth: 0\"; if echo \"$affected_block\" | grep -Fq -- \"submodules: recursive\"; then echo \"affected job should not checkout submodules\" >&2; exit 1; fi; for p in \"github:mizchi/pkspec/v0.1.8\" \"PKFIRE_CACHE_DIR\" \"Restore pkfire task cache\" \"Preview affected core gates\" \"Run affected core gates\" \"check test test-taffy test-wasm test-native-smoke\"; do if grep -Fq -- \"$p\" .github/workflows/ci.yml; then echo \"unexpected affected job core wiring: $p\" >&2; exit 1; fi; done'"
+  }
+  new {
+    name = "ci_keeps_manifest_only_changes_out_of_heavy_gates"
+    description =
+      "MoonBit dependency manifest bumps should still be covered by the normal core CI jobs, but must not force WPT/VRT heavy gates on push."
+    tags { "ci"; "pkfire"; "affected"; "vrt"; "wpt" }
+    specRef { "ci.affected" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -euo pipefail; out=$(mktemp); log=$(mktemp); trap \"rm -f $out $log\" EXIT; GITHUB_EVENT_NAME=push GITHUB_OUTPUT=$out bash scripts/ci/affected-gates.sh --files moon.mod.json --files browser/moon.mod.json --files dom/moon.mod.json --files js/moon.mod.json --files layout/moon.mod.json --files renderer/moon.mod.json --files painter/moon.mod.json --files webdriver/moon.mod.json >$log; for gate in wpt_css wpt_dom wpt_webdriver paint_vrt wpt_vrt; do grep -Fxq \"$gate=false\" \"$out\"; done; if grep -Eq \"github.event_name == .push.\" .github/workflows/ci.yml; then echo \"push should not force heavy gates\" >&2; exit 1; fi'"
   }
   new {
     name = "cookie_jar_default_on_webdriver_session"

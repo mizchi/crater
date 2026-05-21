@@ -52,10 +52,18 @@ testWasm: pkfire.Task = new {
   name = "test-wasm"
   description = "Run wasm component build and tests"
   cmd = "just wasm"
-  cache = false
   inputs {
     ...src.moonSources
-    "wasm/**"
+    "package.json"
+    "pnpm-lock.yaml"
+    "wasm/test/**/*.mjs"
+    "wasm/wit/**"
+    "wasm/wkg.toml"
+  }
+  outputs {
+    "wasm/_build/crater-embedded.wasm"
+    "wasm/_build/crater.wasm"
+    "wasm/dist/**"
   }
 }
 

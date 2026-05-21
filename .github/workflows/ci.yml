@@ -17,7 +17,6 @@ jobs:
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     env:
-      PKFIRE_CACHE_DIR: ${{ github.workspace }}/.cache/pkfire
       GITHUB_EVENT_BEFORE: ${{ github.event.before }}
     outputs:
       wpt_css: ${{ steps.gates.outputs.wpt_css }}
@@ -30,13 +29,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
         with:
-          submodules: recursive
           fetch-depth: 0
 
-      # The mizchi/pkfire / mizchi/pkspec actions curl the GitHub releases
-      # API unauthenticated, so concurrent runs hit the 60/hr per-IP limit
-      # and fail with curl 22 / HTTP 429. Install the binaries from their
-      # nix flakes instead — the access-tokens entry lets nix use the
+      # The mizchi/pkfire action curls the GitHub releases API
+      # unauthenticated, so concurrent runs hit the 60/hr per-IP limit
+      # and fail with curl 22 / HTTP 429. Install the binary from its
+      # nix flake instead — the access-tokens entry lets nix use the
       # job's GITHUB_TOKEN for github.com fetches, giving us the
       # 5000/hr authenticated quota and a deterministic install.
       - name: Install Nix
@@ -46,13 +44,11 @@ jobs:
             experimental-features = nix-command flakes
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install pkfire and pkspec via nix
+      - name: Install pkfire via nix
         run: |
           nix profile install --no-write-lock-file \
-            github:mizchi/pkfire/v0.10.0 \
-            github:mizchi/pkspec/v0.1.8
+            github:mizchi/pkfire/v0.10.0
           pkf --version
-          pkspec --version
 
       - name: Restore Pkl package cache
         uses: actions/cache@v4
@@ -63,44 +59,8 @@ jobs:
             pkl-cache-${{ runner.os }}-
             pkl-cache-
 
-      - name: Restore pkfire task cache
-        uses: actions/cache@v4
-        with:
-          # NOTE: bumped to v2 to invalidate cache entries poisoned by
-          # the glob-outputs bug fixed in mizchi/pkfire#15. Entries
-          # written by pkfire <= v0.10.0 archive an empty payload for
-          # outputs declared with glob patterns (e.g. `js/dist/**`),
-          # which caused affected pkfire runs to hit cache, restore
-          # nothing, and fail downstream node:test imports with
-          # ERR_MODULE_NOT_FOUND. Drop the v2 suffix once the affected
-          # tasks have re-stored against a fixed pkfire build.
-          path: .cache/pkfire
-          key: pkfire-task-v2-${{ runner.os }}-${{ github.ref_name }}-${{ github.run_id }}
-          restore-keys: |
-            pkfire-task-v2-${{ runner.os }}-${{ github.ref_name }}-
-            pkfire-task-v2-${{ runner.os }}-main-
-            pkfire-task-v2-${{ runner.os }}-
-
       - name: Warm Pkl package cache
         run: pkf pkl-cache warm
-
-      - name: Setup Crater toolchain
-        uses: ./.github/actions/setup-crater
-        with:
-          wasm-tools: "true"
-          native-deps: "true"
-
-      - name: Prefetch MoonBit dependencies
-        uses: ./.github/actions/moon-prefetch
-        with:
-          manifests: |
-            js/moon.mod.json
-            browser/moon.mod.json
-            browser/native/moon.mod.json
-            wasm/moon.mod.json
-
-      - name: Prefetch rusty_v8 source binding
-        uses: ./.github/actions/rusty-v8-prefetch
 
       - name: Resolve affected base
         id: affected_base
@@ -119,29 +79,8 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Preview affected core gates
-        run: |
-          pkf affected \
-            -j 1 \
-            --since="${{ steps.affected_base.outputs.base }}" \
-            --profile=ci \
-            --explain \
-            --dry-run \
-            check test test-taffy test-wasm test-native-smoke
-
-      - name: Run affected core gates
-        run: |
-          pkf affected \
-            -j 1 \
-            --since="${{ steps.affected_base.outputs.base }}" \
-            --profile=ci \
-            --keep-going \
-            --timing \
-            check test test-taffy test-wasm test-native-smoke
-
       - name: Decide which heavy gates to run
         id: gates
-        if: always()
         run: bash scripts/ci/affected-gates.sh --base "${{ steps.affected_base.outputs.base }}"
 
   test:
@@ -277,7 +216,6 @@ jobs:
       always()
       && needs.wasm-component.result == 'success'
       && (github.event_name == 'schedule'
-        || github.event_name == 'push'
         || needs.affected.outputs.wpt_css == 'true')
     strategy:
       fail-fast: false
@@ -350,7 +288,6 @@ jobs:
     if: >-
       always()
       && (github.event_name == 'schedule'
-        || github.event_name == 'push'
         || needs.affected.outputs.wpt_dom == 'true')
 
     steps:
@@ -389,7 +326,6 @@ jobs:
     if: >-
       always()
       && (github.event_name == 'schedule'
-        || github.event_name == 'push'
         || needs.affected.outputs.wpt_css == 'true'
         || needs.affected.outputs.wpt_dom == 'true'
         || needs.affected.outputs.wpt_webdriver == 'true')
@@ -449,7 +385,6 @@ jobs:
     if: >-
       always()
       && (github.event_name == 'schedule'
-        || github.event_name == 'push'
         || needs.affected.outputs.wpt_webdriver == 'true')
 
     steps:
@@ -715,7 +650,6 @@ jobs:
     if: >-
       always()
       && (github.event_name == 'schedule'
-        || github.event_name == 'push'
         || (github.event_name == 'pull_request'
           && contains(github.event.pull_request.labels.*.name, 'vrt')
           && needs.affected.outputs.paint_vrt == 'true'))
@@ -926,8 +860,9 @@ jobs:
     if: >-
       always()
       && (github.event_name == 'schedule'
-        || github.event_name == 'push'
-        || needs.affected.outputs.paint_vrt == 'true')
+        || (github.event_name == 'pull_request'
+          && contains(github.event.pull_request.labels.*.name, 'vrt')
+          && needs.affected.outputs.paint_vrt == 'true'))
     runs-on: ubuntu-latest
     needs:
       - affected
@@ -982,7 +917,6 @@ jobs:
     if: >-
       always()
       && (github.event_name == 'schedule'
-        || github.event_name == 'push'
         || (github.event_name == 'pull_request'
           && contains(github.event.pull_request.labels.*.name, 'vrt')
           && needs.affected.outputs.wpt_vrt == 'true'))
@@ -1106,8 +1040,9 @@ jobs:
     if: >-
       always()
       && (github.event_name == 'schedule'
-        || github.event_name == 'push'
-        || needs.affected.outputs.wpt_vrt == 'true')
+        || (github.event_name == 'pull_request'
+          && contains(github.event.pull_request.labels.*.name, 'vrt')
+          && needs.affected.outputs.wpt_vrt == 'true'))
     runs-on: ubuntu-latest
     needs:
       - affected

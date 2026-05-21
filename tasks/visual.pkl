@@ -7,12 +7,15 @@ testVrt: pkfire.Task = new {
   description = "Run paint visual regression tests"
   visibility = "internal"
   cmd = "just test-vrt"
-  cache = false
   inputs {
     ...src.nodeSources
     "tests/fixtures/**"
-    "renderer/**"
-    "painter/**"
+    "renderer/**/*.mbt"
+    "renderer/**/*.mbti"
+    "renderer/**/moon.pkg"
+    "painter/**/*.mbt"
+    "painter/**/*.mbti"
+    "painter/**/moon.pkg"
   }
 }
 
@@ -21,7 +24,6 @@ testWptVrt: pkfire.Task = new {
   description = "Run WPT visual regression tests"
   visibility = "internal"
   cmd = "just test-wpt-vrt"
-  cache = false
   inputs {
     ...src.wptToolchainSources
     "playwright.config.ts"

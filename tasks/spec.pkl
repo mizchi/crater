@@ -7,7 +7,6 @@ specCheck: pkfire.Task = new {
   description = "Validate approved pkspec scenarios are implemented"
   visibility = "internal"
   cmd = "pkspec spec --check --strict specs/crater.pkl specs/tasks.Test.pkl"
-  cache = false
   inputs = src.pkspecSources
 }
 
@@ -16,7 +15,6 @@ specLint: pkfire.Task = new {
   description = "Lint pkspec Goal/Scenario references and lifecycle metadata"
   visibility = "internal"
   cmd = "pkspec spec --lint specs/crater.pkl specs/tasks.Test.pkl"
-  cache = false
   inputs = src.pkspecSources
 }
 
@@ -25,7 +23,6 @@ specDocs: pkfire.Task = new {
   description = "Render docs/SPEC.md from pkspec sources"
   visibility = "internal"
   cmd = "pkspec spec --output docs/SPEC.md specs/crater.pkl specs/tasks.Test.pkl"
-  cache = false
   inputs = src.pkspecSources
   outputs { "docs/SPEC.md" }
 }
@@ -34,7 +31,6 @@ specTest: pkfire.Task = new {
   name = "spec-test"
   description = "Run lightweight pkspec shell tests for task/spec wiring"
   cmd = "pkspec exec -f specs/tasks.Test.pkl --no-record-timings"
-  cache = false
   inputs = src.pkspecSources
 }
 

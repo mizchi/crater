@@ -7,7 +7,6 @@ testPlaywright: pkfire.Task = new {
   description = "Run Playwright adapter and user scenario tests"
   visibility = "internal"
   cmd = "just test-playwright-adapter"
-  cache = false
   inputs {
     ...src.playwrightToolchainSources
     "webdriver/**"
@@ -25,7 +24,6 @@ testWebsite: pkfire.Task = new {
   description = "Run website loading and browser user scenario tests"
   visibility = "internal"
   cmd = "just test-website"
-  cache = false
   inputs {
     ...src.playwrightToolchainSources
     "html_assets/**"
@@ -41,7 +39,6 @@ testPreact: pkfire.Task = new {
   name = "test-preact"
   description = "Run Preact compatibility scenarios against the browser adapter"
   cmd = "just test-preact"
-  cache = false
   inputs {
     ...src.playwrightToolchainSources
     "browser/**"
