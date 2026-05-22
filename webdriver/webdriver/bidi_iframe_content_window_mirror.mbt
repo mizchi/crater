@@ -6,20 +6,18 @@
 ///
 ///   window.baz = iframe.contentWindow.foo
 ///
-/// Real pages assign to arbitrary LHS targets and read arbitrary
-/// properties through any iframe variable. This module extracts the
-/// (lhs, prop) tuple from the expression so the handler can mirror
-/// any single property assignment.
+/// Real pages assign to arbitrary LHS targets and read property chains
+/// through any iframe variable. This module extracts the (lhs, chain)
+/// tuple from the expression so the handler can mirror read-only
+/// property/index access.
 ///
 /// Scope and limits:
 ///
-/// - Only assignments of the literal form `<lhs> = <var>.contentWindow.<prop>`
-///   are recognized. Compound expressions (function calls, arithmetic on
-///   the RHS) fall through to the broader synthetic flow without mirror.
-/// - The read source is always `window.<prop>` in the child realm.
-///   We don't attempt to honor nested property access like
-///   `iframe.contentWindow.foo.bar` — pages that want that should use
-///   a real cross-frame channel (postMessage) once it's wired.
+/// - Only assignments of the literal form
+///   `<lhs> = <var>.contentWindow.<chain>` are recognized. Compound
+///   expressions (function calls, arithmetic on the RHS) fall through
+///   to the broader synthetic flow without mirror.
+/// - The read source is always `window.<chain>` in the child realm.
 /// - Single mirror per expression (the first match is used). The
 ///   hardcoded one-liner this replaces had the same constraint.
 
@@ -39,14 +37,68 @@ fn is_iframe_mirror_whitespace(c : Char) -> Bool {
 }
 
 ///|
-/// Extract the (lhs, prop) tuple from a cross-frame mirror expression
-/// like `<lhs> = <iframeVar>.contentWindow.<prop>`. Returns None if no
+fn read_iframe_mirror_identifier_end(chars : Array[Char], start : Int) -> Int {
+  let mut end = start
+  while end < chars.length() && is_iframe_mirror_identifier_char(chars[end]) {
+    end += 1
+  }
+  end
+}
+
+///|
+fn read_iframe_mirror_bracket_end(chars : Array[Char], start : Int) -> Int? {
+  let mut cursor = start + 1
+  let mut quote : Char? = None
+  let mut escaped = false
+  while cursor < chars.length() {
+    let c = chars[cursor]
+    match quote {
+      Some(q) =>
+        if escaped {
+          escaped = false
+        } else if c == '\\' {
+          escaped = true
+        } else if c == q {
+          quote = None
+        }
+      None =>
+        if c == '"' || c == '\'' {
+          quote = Some(c)
+        } else if c == ']' {
+          return Some(cursor + 1)
+        } else if c == '(' || c == ')' || c == ';' {
+          return None
+        }
+    }
+    cursor += 1
+  }
+  None
+}
+
+///|
+fn skip_iframe_mirror_whitespace(chars : Array[Char], start : Int) -> Int {
+  let mut cursor = start
+  while cursor < chars.length() && is_iframe_mirror_whitespace(chars[cursor]) {
+    cursor += 1
+  }
+  cursor
+}
+
+///|
+fn is_iframe_mirror_rhs_terminator(c : Char) -> Bool {
+  c == ';' || c == '}'
+}
+
+///|
+/// Extract the (lhs, chain) tuple from a cross-frame mirror expression
+/// like `<lhs> = <iframeVar>.contentWindow.<chain>`. Returns None if no
 /// matching pattern is present.
 ///
 /// Examples:
 ///
 /// - `window.baz = iframe.contentWindow.foo` → Some(("window.baz", "foo"))
 /// - `globalThis.captured = f.contentWindow.theProp;` → Some(("globalThis.captured", "theProp"))
+/// - `window.key = iframe.contentWindow.config.apiKey` → Some(("window.key", "config.apiKey"))
 /// - `iframe.src = '/x'` (no .contentWindow.) → None
 fn extract_iframe_content_window_mirror(source : String) -> (String, String)? {
   let marker = ".contentWindow."
@@ -56,16 +108,36 @@ fn extract_iframe_content_window_mirror(source : String) -> (String, String)? {
   }
   let chars = source.to_array()
   let len = chars.length()
-  // Extract prop: identifier chars after the marker.
-  let prop_start = marker_idx + marker.length()
-  let mut prop_end = prop_start
-  while prop_end < len && is_iframe_mirror_identifier_char(chars[prop_end]) {
-    prop_end += 1
-  }
-  if prop_end == prop_start {
+  // Extract chain: identifier after the marker, followed by zero or
+  // more `.identifier` or `[index]` / `["key"]` accesses.
+  let chain_start = marker_idx + marker.length()
+  let mut chain_end = read_iframe_mirror_identifier_end(chars, chain_start)
+  if chain_end == chain_start {
     return None
   }
-  let prop = source.unsafe_substring(start=prop_start, end=prop_end)
+  let mut done = false
+  while !done && chain_end < len {
+    if chars[chain_end] == '.' {
+      let next_start = chain_end + 1
+      let next_end = read_iframe_mirror_identifier_end(chars, next_start)
+      if next_end == next_start {
+        return None
+      }
+      chain_end = next_end
+    } else if chars[chain_end] == '[' {
+      match read_iframe_mirror_bracket_end(chars, chain_end) {
+        Some(next_end) => chain_end = next_end
+        None => return None
+      }
+    } else {
+      done = true
+    }
+  }
+  let rhs_tail = skip_iframe_mirror_whitespace(chars, chain_end)
+  if rhs_tail < len && !is_iframe_mirror_rhs_terminator(chars[rhs_tail]) {
+    return None
+  }
+  let chain = source.unsafe_substring(start=chain_start, end=chain_end)
   // Walk backward past the iframe var name.
   let mut var_start = marker_idx
   while var_start > 0 && is_iframe_mirror_identifier_char(chars[var_start - 1]) {
@@ -114,5 +186,5 @@ fn extract_iframe_content_window_mirror(source : String) -> (String, String)? {
   if !has_ident {
     return None
   }
-  Some((lhs, prop))
+  Some((lhs, chain))
 }

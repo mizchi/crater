@@ -114,3 +114,104 @@ test "extract handles a multi-statement expression with mirror at the end" {
     None => assert_false(true)
   }
 }
+
+///|
+test "extract handles nested property chain after contentWindow" {
+  let result = extract_iframe_content_window_mirror(
+    "window.captured = iframe.contentWindow.config.apiKey;",
+  )
+  match result {
+    Some((lhs, prop)) => {
+      assert_eq(lhs, "window.captured")
+      assert_eq(prop, "config.apiKey")
+    }
+    None => assert_false(true)
+  }
+}
+
+///|
+test "extract handles array index chain after contentWindow" {
+  let result = extract_iframe_content_window_mirror(
+    "window.first = iframe.contentWindow.items[0];",
+  )
+  match result {
+    Some((lhs, prop)) => {
+      assert_eq(lhs, "window.first")
+      assert_eq(prop, "items[0]")
+    }
+    None => assert_false(true)
+  }
+}
+
+///|
+test "extract rejects contentWindow method calls" {
+  let result = extract_iframe_content_window_mirror(
+    "window.x = iframe.contentWindow.fn();",
+  )
+  match result {
+    Some(_) => assert_false(true)
+    None => ()
+  }
+}
+
+///|
+test "extract rejects compound RHS expressions" {
+  let result = extract_iframe_content_window_mirror(
+    "window.x = iframe.contentWindow.foo + 1;",
+  )
+  match result {
+    Some(_) => assert_false(true)
+    None => ()
+  }
+}
+
+///|
+fn mirror_proto() -> BidiProtocol {
+  let proto = BidiProtocol::new()
+  let _ = proto.process_message(
+    "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
+  )
+  let _ = proto.take_messages()
+  proto
+}
+
+///|
+fn mirror_eval(proto : BidiProtocol, request_id : Int, expr : String) -> String {
+  let payload = "{\"id\":" +
+    request_id.to_string() +
+    ",\"method\":\"script.evaluate\",\"params\":{\"expression\":" +
+    Json::string(expr).stringify() +
+    ",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}"
+  let _ = proto.process_message(payload)
+  let msgs = proto.take_messages()
+  let mut response = ""
+  for msg in msgs {
+    let json = msg.to_json()
+    if json.contains("\"id\":" + request_id.to_string()) {
+      response = json
+    }
+  }
+  response
+}
+
+///|
+test "contentWindow nested property mirror writes parent value" {
+  let proto = mirror_proto()
+  let _ = mirror_eval(
+    proto, 2, "const f = document.createElement('iframe'); f.src=\"data:text/html,<script>window.config={apiKey:'secret'};</script>\"; document.body.appendChild(f); window.captured = f.contentWindow.config.apiKey;",
+  )
+  let json = mirror_eval(proto, 3, "window.captured")
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"value\":\"secret\""))
+}
+
+///|
+test "contentWindow array index mirror writes parent value" {
+  let proto = mirror_proto()
+  let _ = mirror_eval(
+    proto, 2, "const f = document.createElement('iframe'); f.src=\"data:text/html,<script>window.items=['first','second'];</script>\"; document.body.appendChild(f); window.first = f.contentWindow.items[0];",
+  )
+  let json = mirror_eval(proto, 3, "window.first")
+  assert_true(json.contains("\"type\":\"success\""))
+  assert_true(json.contains("\"value\":\"first\""))
+}
