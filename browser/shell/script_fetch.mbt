@@ -94,8 +94,8 @@ async fn Browser::fetch_external_script_source(
   }
   // Stash the cache and preflight cache up front so the closures below
   // can reference them without re-resolving through `self`.
-  let cache = self.profile.http_cache
-  let preflight_cache = self.profile.preflight_cache
+  let cache = self.profile.http_cache()
+  let preflight_cache = self.profile.preflight_cache()
   // The actual fetcher wires the response path through the HTTP cache.
   // The async hop is inside this closure; the gate calls it exactly
   // once after the preflight step decides the request can proceed.

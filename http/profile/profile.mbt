@@ -4,7 +4,7 @@
 /// instead of threading each field separately. P1 keeps the Profile
 /// single per BrowserState; per-userContext partitioning is a P2
 /// scenario.
-pub(all) struct Profile {
+pub struct Profile {
   mut user_agent : String?
   mut cookie_jar : @cookie_jar.CookieJar
   http_cache : @cache.MemoryCacheBackend
@@ -47,4 +47,42 @@ pub fn Profile::new(
 /// to so this sub-package stays free of webdriver-side dependencies.
 pub fn Profile::effective_user_agent(self : Profile) -> String? {
   self.user_agent
+}
+
+///|
+pub fn Profile::set_user_agent(self : Profile, user_agent : String) -> Unit {
+  self.user_agent = Some(user_agent)
+}
+
+///|
+pub fn Profile::clear_user_agent(self : Profile) -> Unit {
+  self.user_agent = None
+}
+
+///|
+pub fn Profile::cookie_jar(self : Profile) -> @cookie_jar.CookieJar {
+  self.cookie_jar
+}
+
+///|
+pub fn Profile::set_cookie_jar(
+  self : Profile,
+  cookie_jar : @cookie_jar.CookieJar,
+) -> Unit {
+  self.cookie_jar = cookie_jar
+}
+
+///|
+pub fn Profile::http_cache(self : Profile) -> @cache.MemoryCacheBackend {
+  self.http_cache
+}
+
+///|
+pub fn Profile::auth_state(self : Profile) -> AuthState {
+  self.auth_state
+}
+
+///|
+pub fn Profile::preflight_cache(self : Profile) -> @cors.PreflightCache {
+  self.preflight_cache
 }

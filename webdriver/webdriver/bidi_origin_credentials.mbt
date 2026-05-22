@@ -107,7 +107,7 @@ fn BidiProtocol::handle_crater_set_origin_credentials(
       return
     }
   }
-  profile.auth_state.set_origin_credentials(normalized, username, password)
+  profile.auth_state().set_origin_credentials(normalized, username, password)
   self.push_credentials_snapshot(ctx)
   self.send_success(request_id, Some(make_object({})))
 }
@@ -152,7 +152,7 @@ fn BidiProtocol::handle_crater_clear_origin_credentials(
       return
     }
   }
-  profile.auth_state.clear_origin_credentials(normalized)
+  profile.auth_state().clear_origin_credentials(normalized)
   self.push_credentials_snapshot(ctx)
   self.send_success(request_id, Some(make_object({})))
 }
@@ -179,7 +179,8 @@ fn BidiProtocol::handle_crater_list_origin_credentials(
     }
   }
   let origins_json : Array[Json] = []
-  for origin in profile.auth_state.list_credential_origins() {
+  let auth_state = profile.auth_state()
+  for origin in auth_state.list_credential_origins() {
     origins_json.push(make_object({ "origin": Json::string(origin) }))
   }
   self.send_success(
@@ -199,13 +200,14 @@ fn BidiProtocol::serialize_credentials_snapshot_for_runtime(
 ) -> String {
   match self.profile_for_session(ctx_id) {
     Some(profile) => {
+      let auth_state = profile.auth_state()
       let entries : Map[String, Json] = Map([], capacity=0)
-      for origin in profile.auth_state.list_credential_origins() {
-        match profile.auth_state.credentials_for_origin(origin) {
+      for origin in auth_state.list_credential_origins() {
+        match auth_state.credentials_for_origin(origin) {
           Some(creds) =>
             entries[origin] = make_object({
-              "username": Json::string(creds.username),
-              "password": Json::string(creds.password),
+              "username": Json::string(creds.username()),
+              "password": Json::string(creds.password()),
             })
           None => ()
         }

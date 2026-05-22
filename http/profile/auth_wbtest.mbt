@@ -1,7 +1,8 @@
 ///|
 test "AuthState::default has empty origin_headers" {
   let state = AuthState::default()
-  inspect(state.origin_headers.length(), content="0")
+  inspect(state.list_origins().length(), content="0")
+  inspect(state.list_credential_origins().length(), content="0")
 }
 
 ///|

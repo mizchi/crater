@@ -14,14 +14,14 @@ test "crater.setOriginCredentials stores per-origin credentials" {
   let json = msgs[0].to_json()
   assert_true(json.contains("\"type\":\"success\""))
   let profile = proto.profile_for_session("session-1").unwrap()
-  let creds = profile.auth_state.credentials_for_origin(
-    "https://api.example.com",
-  )
+  let creds = profile
+    .auth_state()
+    .credentials_for_origin("https://api.example.com")
   inspect(creds is Some(_), content="true")
   match creds {
     Some(c) => {
-      assert_eq(c.username, "alice")
-      assert_eq(c.password, "wonderland")
+      assert_eq(c.username(), "alice")
+      assert_eq(c.password(), "wonderland")
     }
     None => assert_false(true)
   }
@@ -42,11 +42,12 @@ test "crater.setOriginCredentials normalizes origin" {
   ignore(proto.take_messages())
   let profile = proto.profile_for_session("session-1").unwrap()
   inspect(
-    profile.auth_state.credentials_for_origin("https://example.com") is Some(_),
+    profile.auth_state().credentials_for_origin("https://example.com")
+    is Some(_),
     content="true",
   )
   inspect(
-    profile.auth_state.credentials_for_origin("https://Example.COM:443")
+    profile.auth_state().credentials_for_origin("https://Example.COM:443")
     is Some(_),
     content="false",
   )
@@ -124,7 +125,7 @@ test "crater.clearOriginCredentials removes the per-origin entry" {
   ignore(proto.take_messages())
   let profile = proto.profile_for_session("session-1").unwrap()
   inspect(
-    profile.auth_state.credentials_for_origin("https://api.example.com")
+    profile.auth_state().credentials_for_origin("https://api.example.com")
     is Some(_),
     content="false",
   )

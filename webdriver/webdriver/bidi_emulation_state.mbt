@@ -125,7 +125,11 @@ fn BidiProtocol::mirror_global_user_agent_to_session_profiles(
   // See code-review comment on commit 495dffe (Important #2).
   for ctx_id in self.manager.list_sessions() {
     match self.profile_for_session(ctx_id) {
-      Some(profile) => profile.user_agent = user_agent
+      Some(profile) =>
+        match user_agent {
+          Some(value) => profile.set_user_agent(value)
+          None => profile.clear_user_agent()
+        }
       None => ()
     }
   }

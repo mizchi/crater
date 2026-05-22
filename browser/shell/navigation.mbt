@@ -113,7 +113,7 @@ async fn Browser::load_url_request(
       self.html_content,
       url,
       self.request_sandbox,
-      self.profile.http_cache,
+      self.profile.http_cache(),
     ) catch {
       _ => [] // Fallback to no external CSS on error
     },

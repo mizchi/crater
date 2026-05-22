@@ -269,15 +269,14 @@ pub fn Browser::new(
 
 ///|
 /// Backward-compatible accessor for the per-session cookie jar.
-/// Prefer reading `state.profile.cookie_jar` directly in new code;
-/// this method keeps existing call sites working through the migration.
+/// Prefer this method over reaching into Profile internals.
 pub fn Browser::cookie_jar(self : Browser) -> @http_cookie_jar.CookieJar {
-  self.profile.cookie_jar
+  self.profile.cookie_jar()
 }
 
 ///|
 /// Backward-compatible accessor for the per-session HTTP cache.
-/// Prefer reading `state.profile.http_cache` directly in new code.
+/// Prefer this method over reaching into Profile internals.
 pub fn Browser::http_cache(self : Browser) -> @http_cache.MemoryCacheBackend {
-  self.profile.http_cache
+  self.profile.http_cache()
 }

@@ -54,7 +54,7 @@ pub(all) enum LCPElementType {
 } derive(Eq, @debug.Debug)
 pub impl Show for LCPElementType
 
-pub(all) struct LCPTracker {
+pub struct LCPTracker {
   candidates : Array[LCPCandidate]
   mut current_lcp : LCPCandidate?
   mut finalized : Bool

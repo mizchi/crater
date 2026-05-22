@@ -16,18 +16,3 @@ test "browser facade renders text output" {
   assert_true(rendered.contains("Hello"))
   assert_true(rendered.contains("World"))
 }
-
-///|
-test "browser facade exposes cdp session and dom serialization" {
-  let session = CdpSession::new("test-session")
-  session.load_html(
-    "<html><body><button id=\"save\">Save</button></body></html>",
-  )
-
-  let found = session.query_selector("#save")
-  inspect(found is Ok(Some(_)), content="true")
-  inspect(
-    serialize_dom_to_html(session.get_tree()).contains("button"),
-    content="true",
-  )
-}

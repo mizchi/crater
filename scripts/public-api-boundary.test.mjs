@@ -86,6 +86,37 @@ test("webdriver root facade does not expose CDP handler internals", () => {
   assert.doesNotMatch(mbti, /CdpSessionManager/)
 })
 
+test("browser root facade keeps CDP in its dedicated subpackage", () => {
+  const mbti = read("browser/pkg.generated.mbti")
+
+  assert.doesNotMatch(mbti, /CdpProtocol/)
+  assert.doesNotMatch(mbti, /CdpSession/)
+  assert.doesNotMatch(mbti, /CdpRequest/)
+  assert.doesNotMatch(mbti, /cdp_protocol/)
+})
+
+test("browser http profile hides mutable implementation fields", () => {
+  const mbti = read("http/profile/pkg.generated.mbti")
+
+  assert.match(mbti, /pub struct AuthState\b/)
+  assert.doesNotMatch(mbti, /pub\(all\) struct AuthState/)
+  assert.match(mbti, /pub struct OriginCredentials\b/)
+  assert.doesNotMatch(mbti, /pub\(all\) struct OriginCredentials/)
+
+  assert.match(mbti, /pub struct Profile\b/)
+  assert.doesNotMatch(mbti, /pub\(all\) struct Profile/)
+
+  assert.match(mbti, /pub fn Profile::cookie_jar\(Self\)/)
+  assert.match(mbti, /pub fn Profile::http_cache\(Self\)/)
+  assert.match(mbti, /pub fn Profile::auth_state\(Self\)/)
+  assert.match(mbti, /pub fn Profile::preflight_cache\(Self\)/)
+  assert.match(mbti, /pub fn Profile::effective_user_agent\(Self\) -> String\?/)
+  assert.match(mbti, /pub fn Profile::set_user_agent\(Self, String\) -> Unit/)
+  assert.match(mbti, /pub fn Profile::clear_user_agent\(Self\) -> Unit/)
+  assert.doesNotMatch(mbti, /Profile::user_agent/)
+  assert.doesNotMatch(mbti, /Profile::set_user_agent_override/)
+})
+
 test("webvitals layout shift result exposes its numeric fields", () => {
   const mbti = read("webvitals/pkg.generated.mbti")
 
@@ -93,4 +124,18 @@ test("webvitals layout shift result exposes its numeric fields", () => {
   assert.match(mbti, /impact_fraction : Double/)
   assert.match(mbti, /distance_fraction : Double/)
   assert.match(mbti, /score : Double/)
+})
+
+test("webvitals lcp tracker hides mutable implementation fields", () => {
+  const mbti = read("webvitals/pkg.generated.mbti")
+
+  assert.match(mbti, /pub struct LCPTracker\b/)
+  assert.doesNotMatch(mbti, /pub\(all\) struct LCPTracker/)
+  assert.match(mbti, /pub fn LCPTracker::new\(Double, Double\) -> Self/)
+  assert.match(mbti, /pub fn LCPTracker::add_candidate\(Self, LCPCandidate\) -> Unit/)
+  assert.match(mbti, /pub fn LCPTracker::get_lcp\(Self\) -> LCPCandidate\?/)
+  assert.match(mbti, /pub fn LCPTracker::get_lcp_time\(Self\) -> Double\?/)
+  assert.match(mbti, /pub fn LCPTracker::is_finalized\(Self\) -> Bool/)
+  assert.match(mbti, /pub fn LCPTracker::is_lcp_ready\(Self\) -> Bool/)
+  assert.match(mbti, /pub fn LCPTracker::finalize\(Self\) -> Unit/)
 })

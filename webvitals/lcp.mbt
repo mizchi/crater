@@ -139,7 +139,7 @@ pub fn LCPCandidate::get_lcp_time(self : LCPCandidate) -> Double? {
 
 ///|
 /// Tracks LCP candidates and determines the final LCP element
-pub(all) struct LCPTracker {
+pub struct LCPTracker {
   /// All candidates discovered so far
   candidates : Array[LCPCandidate]
   /// Current LCP (largest rendered candidate)

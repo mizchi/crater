@@ -6,15 +6,12 @@ import {
   "mizchi/crater-browser-http/cache",
   "mizchi/crater-browser-http/cookie_jar",
   "mizchi/crater-browser-runtime",
-  "mizchi/crater-browser/cdp",
   "mizchi/crater-browser/shell",
   "mizchi/crater-dom/dom",
 }
 
 // Values
 pub fn browser(Int, Int, terminal_cols? : Int) -> @shell.Browser
-
-pub fn cdp_protocol() -> @cdp.CdpProtocol
 
 pub fn create_dom_init_code(@dom.DomTree) -> String
 
@@ -35,49 +32,13 @@ pub using @cache {type CacheDirectives}
 
 pub using @cache {type CacheEntry}
 
-pub using @cdp {type CdpBoxModel}
-
-pub using @cdp {type CdpContext}
-
-pub using @cdp {type CdpError}
-
-pub using @cdp {type CdpErrorCode}
-
-pub using @cdp {type CdpEvent}
-
-pub using @cdp {type CdpFrameInfo}
-
-pub using @cdp {type CdpNavigateResult}
-
-pub using @cdp {type CdpNavigationEntry}
-
-pub using @cdp {type CdpNavigationHistory}
-
-pub using @cdp {type CdpNode}
-
-pub using @cdp {type CdpOutMessage}
-
-pub using @cdp {type CdpProtocol}
-
-pub using @cdp {type CdpRequest}
-
-pub using @cdp {type CdpResponse}
-
-pub using @cdp {type CdpResponseError}
-
-pub using @cdp {type CdpSession}
-
 pub using @cookie_jar {type CookieJar}
 
 pub using @crater-browser-http {type CredentialsMode}
 
-pub using @cdp {type DomDomain}
-
 pub using @crater-browser-http {type FetchOptions}
 
 pub using @crater-browser-http {type HttpResponse}
-
-pub using @cdp {type InputDomain}
 
 pub using @crater-browser-runtime {type JsContext}
 
@@ -86,8 +47,6 @@ pub using @crater-browser-runtime {type JsResult}
 pub using @cache {type MemoryCacheBackend}
 
 pub using @shell {type OutputMode}
-
-pub using @cdp {type PageDomain}
 
 pub using @cookie_jar {type ParsedCookie}
 

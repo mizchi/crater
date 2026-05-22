@@ -2,9 +2,19 @@
 /// Per-origin username/password pair for HTTP Basic / Digest authentication.
 /// Written via WebDriver `crater.setOriginCredentials` and consumed by the
 /// BiDi runtime fetch shim's 401 Digest retry path.
-pub(all) struct OriginCredentials {
+pub struct OriginCredentials {
   username : String
   password : String
+}
+
+///|
+pub fn OriginCredentials::username(self : OriginCredentials) -> String {
+  self.username
+}
+
+///|
+pub fn OriginCredentials::password(self : OriginCredentials) -> String {
+  self.password
 }
 
 ///|
@@ -22,9 +32,9 @@ pub(all) struct OriginCredentials {
 ///   Digest auto-retry path to compute a Digest response from the
 ///   challenge the server returned. Never sent unless a 401 challenge
 ///   arrives.
-pub(all) struct AuthState {
-  mut origin_headers : Map[String, String]
-  mut origin_credentials : Map[String, OriginCredentials]
+pub struct AuthState {
+  origin_headers : Map[String, String]
+  origin_credentials : Map[String, OriginCredentials]
 }
 
 ///|

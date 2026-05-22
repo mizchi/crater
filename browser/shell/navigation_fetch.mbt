@@ -34,7 +34,8 @@ async fn Browser::fetch_navigation_document(
   let url = request.url
   let page_headers : Map[String, String] = {}
   let is_secure = url.has_prefix("https://")
-  match navigation_cookie_header(self.profile.cookie_jar, source_url, url) {
+  let cookie_jar = self.profile.cookie_jar()
+  match navigation_cookie_header(cookie_jar, source_url, url) {
     Some(cookie_header) => page_headers["Cookie"] = cookie_header
     None => ()
   }
@@ -52,7 +53,7 @@ async fn Browser::fetch_navigation_document(
   }
   let response = @http.fetch(url, options=page_options)
   match response.headers.get("set-cookie") {
-    Some(sc) => self.profile.cookie_jar.store_from_header(sc, url, is_secure)
+    Some(sc) => cookie_jar.store_from_header(sc, url, is_secure)
     None => ()
   }
   response
