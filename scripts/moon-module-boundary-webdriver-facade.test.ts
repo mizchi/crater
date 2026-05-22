@@ -275,7 +275,7 @@ describe("MoonBit WebDriver facade and contract boundaries", () => {
     expect(webdriverPackage).not.toContain('"mizchi/crater-webdriver-bidi/network" @network');
   });
 
-  it("keeps protocol-neutral network URL pattern matching in crater-network", () => {
+  it("keeps adapter-shared network URL pattern matching in crater-network", () => {
     const expectedNetworkFiles = [
       "network/url_patterns.mbt",
       "network/url_patterns_test.mbt",
@@ -311,7 +311,7 @@ describe("MoonBit WebDriver facade and contract boundaries", () => {
     }
   });
 
-  it("keeps protocol-neutral network header and query helpers in crater-network", () => {
+  it("keeps adapter-shared network header and query helpers in crater-network", () => {
     const expectedNetworkFiles = [
       "network/header_url_helpers.mbt",
       "network/header_url_helpers_test.mbt",
@@ -431,7 +431,7 @@ describe("MoonBit WebDriver facade and contract boundaries", () => {
     }
   });
 
-  it("keeps protocol-neutral network cookie override normalization in crater-network", () => {
+  it("keeps adapter-shared network cookie override normalization in crater-network", () => {
     const cookieHeaderSource = read("network/cookie_headers.mbt");
     expect(cookieHeaderSource).toContain(
       "pub fn synthetic_network_normalize_set_cookie_override_entry",
@@ -473,7 +473,7 @@ describe("MoonBit WebDriver facade and contract boundaries", () => {
     }
   });
 
-  it("keeps protocol-neutral network BytesValue and credentials normalization in crater-network", () => {
+  it("keeps adapter-shared network BytesValue and credentials normalization in crater-network", () => {
     const continueValueSource = read("network/continue_values.mbt");
     for (const symbol of [
       "pub fn synthetic_network_normalize_bytes_value",

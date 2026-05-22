@@ -157,7 +157,7 @@ jobs:
       - name: Update MoonBit dependencies
         run: |
           moon update
-          moon update --manifest-path browser/moon.mod.json
+          moon -C browser update
 
       - name: Build BiDi server
         run: just build-bidi

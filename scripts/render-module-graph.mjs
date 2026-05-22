@@ -27,7 +27,7 @@ const LAYERS = [
     "mizchi/crater-core",
   ])],
   ["Foundation", new Set([
-    "mizchi/crater-css",
+    "mizchi/crater-aomx",
     "mizchi/crater-dom",
     "mizchi/crater-layout",
     "mizchi/crater-network",
@@ -62,7 +62,6 @@ const LAYERS = [
     "mizchi/crater-conformance",
     "mizchi/crater-benchmarks",
     "mizchi/crater-tools",
-    "mizchi/crater-aomx",
   ])],
 ];
 
@@ -79,7 +78,7 @@ function shortName(name) {
 }
 
 function nodeId(name) {
-  return name.replaceAll("/", "_").replaceAll("-", "_");
+  return name.replace(/[^a-zA-Z0-9_]/g, "_");
 }
 
 function loadModules() {

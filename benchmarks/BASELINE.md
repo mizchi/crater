@@ -107,7 +107,7 @@ Measured on the same machine with immediate before/after `--release` runs.
 
 Command:
 ```bash
-moon bench --manifest-path benchmarks/moon.mod.json -p mizchi/crater-benchmarks -f optimization_bench.mbt --target js --release
+moon -C benchmarks bench -p mizchi/crater-benchmarks -f optimization_bench.mbt --target js --release
 ```
 
 Context:
@@ -131,7 +131,7 @@ Notes:
 
 Command:
 ```bash
-moon bench --manifest-path benchmarks/moon.mod.json -p mizchi/crater-benchmarks -f optimization_bench.mbt --target js --release
+moon -C benchmarks bench -p mizchi/crater-benchmarks -f optimization_bench.mbt --target js --release
 ```
 
 Context:
@@ -151,7 +151,7 @@ Notes:
 
 Command:
 ```bash
-moon bench --manifest-path benchmarks/moon.mod.json -p mizchi/crater-benchmarks -f optimization_bench.mbt --target js --release
+moon -C benchmarks bench -p mizchi/crater-benchmarks -f optimization_bench.mbt --target js --release
 ```
 
 Context:
@@ -172,8 +172,8 @@ Notes:
 
 Commands:
 ```bash
-moon bench --manifest-path benchmarks/moon.mod.json -p mizchi/crater-benchmarks -f cascade_index_bench.mbt --target js --release
-moon bench --manifest-path benchmarks/moon.mod.json -p mizchi/crater-benchmarks -f optimization_bench.mbt --target js --release
+moon -C benchmarks bench -p mizchi/crater-benchmarks -f cascade_index_bench.mbt --target js --release
+moon -C benchmarks bench -p mizchi/crater-benchmarks -f optimization_bench.mbt --target js --release
 ```
 
 Context:
@@ -196,8 +196,8 @@ Notes:
 
 Commands:
 ```bash
-moon bench --manifest-path benchmarks/moon.mod.json -p mizchi/crater-benchmarks -f cascade_index_bench.mbt --target js --release
-moon bench --manifest-path benchmarks/moon.mod.json -p mizchi/crater-benchmarks -f optimization_bench.mbt --target js --release
+moon -C benchmarks bench -p mizchi/crater-benchmarks -f cascade_index_bench.mbt --target js --release
+moon -C benchmarks bench -p mizchi/crater-benchmarks -f optimization_bench.mbt --target js --release
 ```
 
 Context:
@@ -224,7 +224,7 @@ Notes:
 
 Commands:
 ```bash
-moon bench --manifest-path benchmarks/moon.mod.json -p mizchi/crater-benchmarks -f vrt_api_bench.mbt --target js --release -i 13-21
+moon -C benchmarks bench -p mizchi/crater-benchmarks -f vrt_api_bench.mbt --target js --release -i 13-21
 pnpm exec tsx scripts/vrt-bench.ts --group all --json /tmp/crater-vrt-bench-prepared-css-all.json --markdown /tmp/crater-vrt-bench-prepared-css-all.md
 ```
 
@@ -795,7 +795,7 @@ large no-script real-world snapshots can bypass runtime DOM setup, but they stil
 ### Command
 
 ```bash
-moon bench --manifest-path benchmarks/moon.mod.json -p mizchi/crater-benchmarks -f static_snapshot_bench.mbt --target js --release
+moon -C benchmarks bench -p mizchi/crater-benchmarks -f static_snapshot_bench.mbt --target js --release
 ```
 
 ### Results
@@ -819,7 +819,7 @@ moon bench --manifest-path benchmarks/moon.mod.json -p mizchi/crater-benchmarks 
 Command:
 
 ```bash
-moon bench --manifest-path benchmarks/moon.mod.json -p mizchi/crater-benchmarks -f static_snapshot_bench.mbt --target js --release -i 12-32
+moon -C benchmarks bench -p mizchi/crater-benchmarks -f static_snapshot_bench.mbt --target js --release -i 12-32
 ```
 
 MDN main excerpt scaling:

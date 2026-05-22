@@ -66,7 +66,7 @@ export interface VrtBenchRunSummary {
   generatedAt: string;
 }
 
-const BENCH_MANIFEST = "benchmarks/moon.mod.json";
+const BENCH_MODULE_DIR = "benchmarks";
 const BENCH_PACKAGE = "mizchi/crater-benchmarks";
 const BENCH_SOURCE_FILE = "vrt_api_bench.mbt";
 const DRIVER_FILE_CANDIDATES = [
@@ -145,9 +145,9 @@ function runOrThrow(command: string, args: string[]): void {
 
 export function buildBenchCommandArgs(): string[] {
   return [
+    "-C",
+    BENCH_MODULE_DIR,
     "bench",
-    "--manifest-path",
-    BENCH_MANIFEST,
     "-p",
     BENCH_PACKAGE,
     "-f",

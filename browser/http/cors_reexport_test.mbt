@@ -4,7 +4,7 @@ test "browser/http re-exports CORS surface" {
     url="https://example.com/x",
     origin="https://example.com",
     mode=@http.RequestMode::Cors,
-    method="GET",
+    http_method="GET",
     headers={},
   )
   inspect(d, content="Allow")

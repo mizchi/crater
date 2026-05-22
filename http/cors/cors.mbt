@@ -5,7 +5,7 @@
 ///   header validation via http enforce_cors_response.
 /// - `PreflightRequired(req)`: an OPTIONS preflight must be sent and
 ///   succeed before the actual request runs. `req` carries the URL,
-///   origin, method, and (lowercased, sorted) custom request headers
+///   origin, HTTP method, and (lowercased, sorted) custom request headers
 ///   that go on the Access-Control-Request-* lines.
 /// - `Blocked(reason)`: SOP itself refuses the request (currently
 ///   NoCors with a non-simple method or a custom header).
@@ -41,7 +41,7 @@ pub impl Show for CorsDecision with output(self, logger) {
 pub(all) struct PreflightRequest {
   url : String
   origin : String
-  method : String
+  http_method : String
   request_headers : Array[String]
 }
 
@@ -51,10 +51,12 @@ pub impl Show for PreflightRequest with output(self, logger) {
   self.url.output(logger)
   logger.write_string(", origin: ")
   self.origin.output(logger)
-  logger.write_string(", method: ")
-  self.method.output(logger)
+  logger.write_string(", http_method: ")
+  self.http_method.output(logger)
   logger.write_string(", request_headers: ")
-  self.request_headers.output(logger)
+  logger.write_string("[")
+  logger.write_string(self.request_headers.join(", "))
+  logger.write_string("]")
   logger.write_string("}")
 }
 
@@ -93,7 +95,7 @@ pub struct PreflightCache {
 /// MemoryCacheBackend's max_entries=1000. Hitting the cap evicts the
 /// oldest entry in FIFO insertion order.
 pub fn PreflightCache::new(max_entries? : Int = 512) -> PreflightCache {
-  PreflightCache::{ entries: Map::new(), insertion_order: [], max_entries }
+  PreflightCache::{ entries: {}, insertion_order: [], max_entries }
 }
 
 ///|
@@ -111,7 +113,7 @@ pub fn classify_request(
   url~ : String,
   origin~ : String,
   mode~ : @http_impl.RequestMode,
-  method~ : String,
+  http_method~ : String,
   headers~ : Map[String, String],
 ) -> CorsDecision {
   let target_origin = origin_of(url)
@@ -132,8 +134,8 @@ pub fn classify_request(
 
   // SOP guard for NoCors: must stay simple.
   if mode == @http_impl.RequestMode::NoCors {
-    if !is_simple_method(method) {
-      return Blocked("NoCors disallows non-simple method " + method)
+    if !is_simple_method(http_method) {
+      return Blocked("NoCors disallows non-simple method " + http_method)
     }
     if !custom.is_empty() {
       return Blocked("NoCors disallows custom header(s): " + custom.join(", "))
@@ -142,13 +144,13 @@ pub fn classify_request(
   }
 
   // Cors / SameOrigin / Navigate: preflight if non-simple.
-  if is_simple_method(method) && custom.is_empty() {
+  if is_simple_method(http_method) && custom.is_empty() {
     return Allow
   }
   PreflightRequired(PreflightRequest::{
     url,
     origin,
-    method,
+    http_method,
     request_headers: custom,
   })
 }
@@ -157,8 +159,8 @@ pub fn classify_request(
 /// CORS "simple" method set: GET / HEAD / POST. Anything else
 /// (PUT/DELETE/PATCH/...) triggers a preflight in CORS mode and is
 /// blocked outright in NoCors mode.
-pub fn is_simple_method(method : String) -> Bool {
-  method == "GET" || method == "HEAD" || method == "POST"
+pub fn is_simple_method(http_method : String) -> Bool {
+  http_method == "GET" || http_method == "HEAD" || http_method == "POST"
 }
 
 ///|
@@ -204,7 +206,7 @@ pub fn origin_of(url : String) -> String {
 /// - response.headers["access-control-allow-origin"] must equal
 ///   `request.origin` exactly, or be `"*"`.
 /// - response.headers["access-control-allow-methods"] must contain
-///   `request.method` (case-sensitive) or `"*"`.
+///   `request.http_method` (case-sensitive) or `"*"`.
 /// - For each header name in `request.request_headers` (already
 ///   lowercased by classify_request), the value of
 ///   `access-control-allow-headers` parsed as a CSV must contain the
@@ -225,9 +227,10 @@ pub fn validate_preflight_response(
   let allowed_methods = parse_csv(
     header_or_empty(response.headers, "access-control-allow-methods"),
   )
-  if !allowed_methods.contains(request.method) && !allowed_methods.contains("*") {
+  if !allowed_methods.contains(request.http_method) &&
+    !allowed_methods.contains("*") {
     return Err(
-      "Access-Control-Allow-Methods does not include " + request.method,
+      "Access-Control-Allow-Methods does not include " + request.http_method,
     )
   }
   let allowed_headers : Array[String] = parse_csv(
@@ -472,7 +475,7 @@ fn cache_key(req : PreflightRequest) -> String {
   "|" +
   req.url +
   "|" +
-  req.method +
+  req.http_method +
   "|" +
   req.request_headers.join(",")
 }
@@ -485,9 +488,9 @@ fn validate_cached_entry(
   entry : PreflightEntry,
   req : PreflightRequest,
 ) -> Result[Unit, String] {
-  if !entry.allowed_methods.contains(req.method) &&
+  if !entry.allowed_methods.contains(req.http_method) &&
     !entry.allowed_methods.contains("*") {
-    return Err("cached entry does not allow method " + req.method)
+    return Err("cached entry does not allow method " + req.http_method)
   }
   for h in req.request_headers {
     if !entry.allowed_headers.contains(h) &&

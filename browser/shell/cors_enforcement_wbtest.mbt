@@ -33,7 +33,7 @@ fn cors_test_response(
 /// the initiating page; the target URL goes to a different origin so
 /// classify_request takes the cross-origin branch.
 fn cors_test_options(
-  method? : String = "GET",
+  http_method? : String = "GET",
   origin~ : String,
   mode? : @http.RequestMode = Cors,
   credentials? : @http.CredentialsMode = Omit,
@@ -41,12 +41,35 @@ fn cors_test_options(
 ) -> @http.FetchOptions {
   {
     ..@http.FetchOptions::default(),
-    http_method: method,
+    http_method,
     headers,
     mode,
     credentials,
     origin,
   }
+}
+
+///|
+/// Canned async fetcher body used by local ResponseFetcher closures.
+/// The production seam is async/raising; wbtests keep that contract
+/// while returning deterministic responses.
+async fn cors_test_fetch_response(
+  _u : String,
+  _o : @http.FetchOptions,
+  calls : Array[Int],
+  response : @http.HttpResponse,
+) -> @http.HttpResponse raise @http.HttpError {
+  @async.sleep(0) catch {
+    _ => ()
+  }
+  if calls.length() > 0 {
+    calls[0] = calls[0] + 1
+  }
+  let unreachable_error : @http.HttpError? = None
+  if unreachable_error is Some(err) {
+    raise err
+  }
+  response
 }
 
 ///|
@@ -61,11 +84,15 @@ async test "script_fetch_with_cors: cross-origin GET Allow + ACA-Origin echo →
     cors_test_response(status=0)
   }
   let fetcher = async fn(
-    _u : String,
-    _o : @http.FetchOptions,
+    u : String,
+    o : @http.FetchOptions,
   ) -> @http.HttpResponse raise @http.HttpError {
-    fetcher_calls[0] = fetcher_calls[0] + 1
-    cors_test_response(status=200, aca_origin="https://example.com")
+    cors_test_fetch_response(
+      u,
+      o,
+      fetcher_calls,
+      cors_test_response(status=200, aca_origin="https://example.com"),
+    )
   }
   let response = script_fetch_with_cors(
     url="https://api.other.com/x.js",
@@ -90,11 +117,11 @@ async test "script_fetch_with_cors: cross-origin GET Allow but missing ACA-Origi
     cors_test_response(status=0)
   }
   let fetcher = async fn(
-    _u : String,
-    _o : @http.FetchOptions,
+    u : String,
+    o : @http.FetchOptions,
   ) -> @http.HttpResponse raise @http.HttpError {
     // No ACA-Origin header → validate_actual_response should refuse.
-    cors_test_response(status=200)
+    cors_test_fetch_response(u, o, [], cors_test_response(status=200))
   }
   let outcome : Result[Int, String] = try {
     let r = script_fetch_with_cors(
@@ -110,12 +137,11 @@ async test "script_fetch_with_cors: cross-origin GET Allow but missing ACA-Origi
     @http.HttpError::CorsBlocked(_) => Err("CorsBlocked")
     e => Err("other:" + e.to_string())
   }
-  inspect(
-    outcome,
-    content=(
-      #|Err(CorsBlocked)
-    ),
-  )
+  match outcome {
+    Err(reason) => inspect(reason, content="CorsBlocked")
+    Ok(status) =>
+      fail("expected CorsBlocked, got status: " + status.to_string())
+  }
 }
 
 ///|
@@ -138,16 +164,22 @@ async test "script_fetch_with_cors: PreflightRequired path invokes preflight fet
     { status: 204, headers: h, body: "" }
   }
   let fetcher = async fn(
-    _u : String,
-    _o : @http.FetchOptions,
+    u : String,
+    o : @http.FetchOptions,
   ) -> @http.HttpResponse raise @http.HttpError {
-    fetcher_calls[0] = fetcher_calls[0] + 1
-    cors_test_response(status=200, aca_origin="https://example.com")
+    cors_test_fetch_response(
+      u,
+      o,
+      fetcher_calls,
+      cors_test_response(status=200, aca_origin="https://example.com"),
+    )
   }
   // POST with a custom header → classify_request returns PreflightRequired.
-  let opts = cors_test_options(method="POST", origin="https://example.com", headers={
-    "X-Csrf": "tok",
-  })
+  let opts = cors_test_options(
+    http_method="POST",
+    origin="https://example.com",
+    headers={ "X-Csrf": "tok" },
+  )
   let response = script_fetch_with_cors(
     url="https://api.other.com/upload",
     options=opts,
@@ -179,15 +211,21 @@ async test "script_fetch_with_cors: cached preflight skips preflight fetcher on 
     { status: 204, headers: h, body: "" }
   }
   let fetcher = async fn(
-    _u : String,
-    _o : @http.FetchOptions,
+    u : String,
+    o : @http.FetchOptions,
   ) -> @http.HttpResponse raise @http.HttpError {
-    fetcher_calls[0] = fetcher_calls[0] + 1
-    cors_test_response(status=200, aca_origin="https://example.com")
+    cors_test_fetch_response(
+      u,
+      o,
+      fetcher_calls,
+      cors_test_response(status=200, aca_origin="https://example.com"),
+    )
   }
-  let opts = cors_test_options(method="POST", origin="https://example.com", headers={
-    "X-Csrf": "tok",
-  })
+  let opts = cors_test_options(
+    http_method="POST",
+    origin="https://example.com",
+    headers={ "X-Csrf": "tok" },
+  )
   // Frozen clock under Max-Age: second call must hit the cache.
   let now = fn() -> Double { 1000.0 }
   // First request → cache miss, preflight fetcher called once.
@@ -221,13 +259,13 @@ async test "script_fetch_with_cors: NoCors cross-origin skips validate_actual_re
     cors_test_response(status=0)
   }
   let fetcher = async fn(
-    _u : String,
-    _o : @http.FetchOptions,
+    u : String,
+    o : @http.FetchOptions,
   ) -> @http.HttpResponse raise @http.HttpError {
     // No ACA-Origin header. With NoCors mode the gate must NOT call
     // validate_actual_response — the script tag treats the response
     // as opaque-but-loadable per spec.
-    cors_test_response(status=200)
+    cors_test_fetch_response(u, o, [], cors_test_response(status=200))
   }
   let response = script_fetch_with_cors(
     url="https://cdn.other.com/lib.js",
@@ -249,16 +287,21 @@ async test "script_fetch_with_cors: NoCors + non-simple method → Blocked class
     cors_test_response(status=0)
   }
   let fetcher = async fn(
-    _u : String,
-    _o : @http.FetchOptions,
+    u : String,
+    o : @http.FetchOptions,
   ) -> @http.HttpResponse raise @http.HttpError {
-    cors_test_response(status=200, aca_origin="https://example.com")
+    cors_test_fetch_response(
+      u,
+      o,
+      [],
+      cors_test_response(status=200, aca_origin="https://example.com"),
+    )
   }
   let outcome : Result[Int, String] = try {
     let r = script_fetch_with_cors(
       url="https://api.other.com/x.js",
       options=cors_test_options(
-        method="PUT",
+        http_method="PUT",
         origin="https://example.com",
         mode=NoCors,
       ),
@@ -272,10 +315,9 @@ async test "script_fetch_with_cors: NoCors + non-simple method → Blocked class
     @http.HttpError::CorsBlocked(_) => Err("CorsBlocked")
     e => Err("other:" + e.to_string())
   }
-  inspect(
-    outcome,
-    content=(
-      #|Err(CorsBlocked)
-    ),
-  )
+  match outcome {
+    Err(reason) => inspect(reason, content="CorsBlocked")
+    Ok(status) =>
+      fail("expected CorsBlocked, got status: " + status.to_string())
+  }
 }

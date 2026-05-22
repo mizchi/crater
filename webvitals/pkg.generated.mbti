@@ -71,7 +71,7 @@ pub fn LCPTracker::new(Double, Double) -> Self
 pub fn LCPTracker::on_element_rendered(Self, String, Double) -> Unit
 pub fn LCPTracker::on_resource_loaded(Self, String, Double) -> Unit
 
-pub struct LayoutShift {
+pub(all) struct LayoutShift {
   impact_fraction : Double
   distance_fraction : Double
   score : Double

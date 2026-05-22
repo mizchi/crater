@@ -60,8 +60,13 @@ describe("renderMarkdownSummary", () => {
 
 describe("buildBenchCommandArgs", () => {
   it("forces js target for mixed-target workspace benches", () => {
-    expect(buildBenchCommandArgs()).toContain("--target");
-    expect(buildBenchCommandArgs()).toContain("js");
+    const args = buildBenchCommandArgs();
+
+    expect(args).toContain("--target");
+    expect(args).toContain("js");
+    expect(args).toContain("-C");
+    expect(args).toContain("benchmarks");
+    expect(args).not.toContain("--manifest-path");
   });
 });
 

@@ -1,954 +1,158 @@
 # Crater Public API Reference
 
-This document describes the public interfaces provided by Crater for external use.
+This document describes the current public MoonBit module boundaries. Prefer
+these module roots over old `mizchi/crater/...` subpackage imports.
 
-## Package Overview
+## Module Overview
 
-```
-mizchi/crater-layout                 # Layout entry point (Node, LayoutTree, compute_layout)
-mizchi/crater-layout/core_subset     # TUI-oriented checked layout subset
-mizchi/crater-dom/html               # HTML parser (parse_document, Element)
-mizchi/crater-dom/layout/html_tree   # HTML -> LayoutTree builders
-mizchi/crater-dom/layout/style_bridge # Cascaded CSS / tree mutation bridge helpers
-mizchi/crater-dom/layout/html_bridge # Compatibility wrapper for html_tree/style_bridge
-mizchi/crater-dom/layout/dom_bridge  # DOM mutation -> LayoutTree bridge helpers
-mizchi/crater-css                    # Unified CSS entry point
-mizchi/crater-dom/css/responsive     # Breakpoint / computed-style discovery
-mizchi/crater-dom/dom                # DOM tree (DomTree, MutationRecord)
-mizchi/crater-dom/aom                # Accessibility (AccessibilityTree, Role)
-mizchi/crater-painter/paint          # Broad paint facade
-mizchi/crater-renderer               # Renderer module public facade (VRT helpers)
-mizchi/crater-renderer/vrt           # Narrow VRT implementation package
-mizchi/crater-webvitals              # Web Vitals metrics (LCPTracker, LayoutShift)
-```
+| Module | Purpose |
+| --- | --- |
+| `mizchi/css` | External CSS parser, selector matcher, cascade, computed values, and diagnostics |
+| `mizchi/crater-core` | Layout records, layout context, intrinsic size, and shared core contracts |
+| `mizchi/crater-core/node` | Layout input node model |
+| `mizchi/crater-layout` | Layout entry point and block/flex/grid dispatch |
+| `mizchi/crater-layout/tree` | Incremental layout tree and node helpers |
+| `mizchi/crater-layout/core_subset` | TUI-oriented checked subset over the layout API |
+| `mizchi/crater-dom` | DOM, HTML parser, scheduler, and AOM facade |
+| `mizchi/crater-dom/html` | HTML document and fragment parser |
+| `mizchi/crater-dom/dom` | Mutable DOM tree and mutation records |
+| `mizchi/crater-dom/aom` | Accessibility tree, roles, and focus helpers |
+| `mizchi/crater-dom/css/responsive` | Breakpoint and computed-style discovery helpers |
+| `mizchi/crater-dom/layout/html_tree` | HTML document to layout tree bridge |
+| `mizchi/crater-dom/layout/style_bridge` | Cascaded CSS to layout tree bridge |
+| `mizchi/crater-painter` | Paint/SVG facade over the paint model and conversion helpers |
+| `mizchi/crater-painter/paint/model` | Paint tree model |
+| `mizchi/crater-painter/paint/build` | Compatibility wrapper for paint tree construction |
+| `mizchi/crater-painter/paint/traversal` | Paint tree traversal and flattening |
+| `mizchi/crater-painter/paint/scroll` | Scrollable element hit testing |
+| `mizchi/crater-renderer` | HTML/CSS to paint tree rendering and VRT helpers |
+| `mizchi/crater-renderer/renderer` | Narrow renderer implementation package |
+| `mizchi/crater-renderer/vrt` | VRT page preparation and render variants |
+| `mizchi/crater-aomx` | AOM-derived extraction, grounding, and diff helpers |
+| `mizchi/crater-browser-http` | Cookie, CORS, SameSite, HTTP cache, and auth profile helpers |
+| `mizchi/crater-browser-runtime` | Shared JS runtime contract and DOM serializer |
+| `mizchi/crater-browser` | Browser shell integration |
+| `mizchi/crater-network` | WebDriver BiDi synthetic network state and byte/query helpers |
+| `mizchi/crater-webdriver-bidi` | WebDriver BiDi public facade |
+| `mizchi/crater-js` | JavaScript exports for renderer/layout consumers |
+| `mizchi/crater-wasm` | WASM component facade |
+| `mizchi/crater` | Umbrella meta-module over the foundation/render layer |
 
----
+## Layout
 
-## High-Level API
-
-### `mizchi/crater-layout`
-
-Layout-specific entry point. Use this when you want the layout engine boundary
-without pulling in the root package.
-
-```moonbit
-pub fn compute_layout(Node, Size[Double]) -> Layout
-pub fn compute_layout_with_warnings(Node, Size[Double]) -> LayoutResult
-pub fn compute_layout_in_context(Node, LayoutContext) -> Layout
-pub fn compute_block_layout(Node, LayoutContext) -> Layout
-pub fn compute_block_layout_with_dispatch(Node, LayoutContext, DispatchFn) -> Layout
-pub fn compute_flex_layout(Node, LayoutContext) -> Layout
-pub fn compute_flex_layout_with_dispatch(Node, LayoutContext, DispatchFn) -> Layout
-pub fn compute_grid_layout_in_context(Node, LayoutContext, DispatchFn) -> Layout
-pub fn compute_grid_layout(Node, Double, Double) -> Layout
-pub fn setup() -> Unit
-pub fn layout_tree_from_node(Node, Double, Double) -> LayoutTree
-```
-
-### `mizchi/crater-dom/layout/html_tree`
-
-HTML-specific bridge APIs that build `LayoutTree` values from parsed documents.
+Use `mizchi/crater-layout` for layout computation.
 
 ```moonbit
-pub fn layout_node_from_html_element(Element, CascadedValues) -> LayoutNode
-pub fn layout_tree_from_html_document(Document, Double, Double) -> LayoutTree
+pub fn compute_layout(@node.Node, @values.Size[Double]) -> @core.Layout
+pub fn compute_layout_with_warnings(@node.Node, @values.Size[Double]) -> @core.LayoutResult
+pub fn compute_layout_in_context(@node.Node, @core.LayoutContext) -> @core.Layout
+pub fn layout_tree_from_node(@node.Node, Double, Double) -> LayoutTree
 ```
 
-### `mizchi/crater-dom/layout/style_bridge`
+Use `mizchi/crater-layout/tree` when you need incremental tree operations, and
+`mizchi/crater-layout/core_subset` when you need the checked TUI subset.
 
-Bridge APIs that apply cascaded CSS values or mutate `LayoutTree` structure.
+## CSS
+
+Use `mizchi/css` as the public CSS boundary.
 
 ```moonbit
-pub fn apply_css_values(LayoutNode, CascadedValues) -> Bool
-pub fn update_node_style(LayoutTree, String, CascadedValues) -> Bool
-pub fn batch_update_styles(LayoutTree, Array[(String, CascadedValues)]) -> Int
-pub fn add_node(LayoutTree, String, Int, LayoutNode) -> Bool
-pub fn remove_node(LayoutTree, String) -> Bool
+// Typical package imports:
+"mizchi/css"
+"mizchi/css/parser"
+"mizchi/css/selector"
+"mizchi/css/cascade"
+"mizchi/css/media"
+"mizchi/css/computed"
+"mizchi/css/values"
+"mizchi/css/style"
+"mizchi/css/diagnostics"
 ```
 
-### `mizchi/crater-dom/layout/html_bridge`
+Crater modules consume CSS through this external module. Do not add new imports
+that point at old Crater-owned CSS package paths.
 
-Compatibility wrapper around `mizchi/crater-dom/layout/html_tree` and
-`mizchi/crater-dom/layout/style_bridge`. Keep using it only when you need the old
-single import surface.
+## DOM And AOM
 
-### `mizchi/crater-dom/layout/dom_bridge`
-
-DOM mutation bridge built on top of `LayoutTree`.
+Use `mizchi/crater-dom` for the combined facade, or the narrower packages when a
+single subsystem is enough.
 
 ```moonbit
-pub struct Document
-pub fn Document::new(Double, Double) -> Document
-pub fn Document::process_mutations(Document) -> Int
-pub fn Document::update(Document) -> Layout
+pub fn parse_document(String) -> @html.Document
+pub fn parse_fragment(String) -> @html.Element
+pub fn build_accessibility_tree(@html.Document) -> @aom.AccessibilityTree
 ```
 
-### `mizchi/crater-layout/core_subset`
+Bridge packages under `mizchi/crater-dom/layout/*` connect parsed HTML and
+cascaded CSS to `LayoutTree`. Keep new bridge code in the DOM module unless the
+logic is purely CSS or purely layout.
 
-TUI-oriented checked subset on top of `mizchi/crater/layout`.
+## Paint And Renderer
+
+Use `mizchi/crater-renderer` for high-level render/VRT workflows.
 
 ```moonbit
-pub fn validate_core_subset(Node) -> Array[CoreIssue]
-pub fn compute_core_layout(Node, Size[Double]) -> CoreComputeResult
+pub fn render_html_to_paint_tree(String, @values.Size[Double]) -> @model.PaintNode
+pub fn render_html_to_paint_tree_json(String, @values.Size[Double]) -> String
+pub fn prepare_vrt_page(String, @values.Size[Double], Array[String]) -> @vrt.PreparedVrtPage
+pub fn diff_rendered_paint_trees(String, String, @values.Size[Double]) -> @diff.PaintTreeDiff
 ```
 
-### `mizchi/crater-css`
+Use `mizchi/crater-painter` or `mizchi/crater-painter/paint/model` when you
+already have layout data and only need paint tree data structures or conversion
+helpers.
 
-Unified CSS entry point. This package groups parser / selector / cascade /
-computed-style APIs behind a single import surface. Responsive / breakpoint
-discovery helpers are re-exported from `mizchi/crater-dom/css/responsive`.
+## Web Vitals
 
-```moonbit
-pub fn parse_stylesheet(String) -> Stylesheet
-pub fn parse_stylesheet_with_diagnostics(String) -> ParseResult
-pub fn parse_selector_list(String) -> SelectorList?
-pub fn cascade_element(Element, Array[Stylesheet], Array[Declaration]) -> CascadedValues
-pub fn compute_style(CascadedValues, ComputeContext) -> Style
-pub fn compute_inline_raw(String, ComputeContext) -> Style
-pub fn parse_color(String) -> CssColorValue
-pub fn discover_responsive_breakpoints(String) -> BreakpointDiscoveryResult
-```
-
-### `mizchi/crater/paint`
-
-Paint tree entry point. Use this boundary when you want visual tree generation,
-stacking order normalization, or VRT-oriented paint diffs without depending on
-renderer internals.
+Use `mizchi/crater-webvitals` for metric helpers that operate over Crater layout
+output.
 
 ```moonbit
-pub fn from_node_and_layout(Node, Layout) -> PaintNode
-pub fn from_node_and_layout_with_viewport(Node, Layout, Double, Double, Double) -> PaintNode?
-pub fn sort_tree_by_stacking_order(PaintNode) -> PaintNode
-pub fn flatten_for_rendering(PaintNode) -> Array[PaintNode]
-pub fn diff_trees(PaintNode, PaintNode) -> PaintTreeDiff
-```
-
-### `mizchi/crater/paint/model`
-
-Narrow paint-model boundary. Use this when you only need `PaintNode` /
-`PaintProperties` data and methods such as `to_json_string()`.
-
-```moonbit
-pub type PaintNode
-pub type PaintProperties
-```
-
-### `mizchi/crater/paint/build`
-
-Compatibility wrapper over `mizchi/crater/paint/traversal` and
-`mizchi/crater/paint/scroll`.
-
-```moonbit
-pub fn sort_tree_by_stacking_order(PaintNode) -> PaintNode
-pub fn flatten_for_rendering(PaintNode) -> Array[PaintNode]
-pub fn collect_scrollable_elements(PaintNode) -> Array[ScrollableElement]
-pub fn find_scrollable_at(PaintNode, Double, Double, Double, Double) -> ScrollableHitResult?
-```
-
-### `mizchi/crater/paint/traversal`
-
-Paint tree traversal helpers that operate on existing `PaintNode` values.
-
-```moonbit
-pub fn sort_tree_by_stacking_order(PaintNode) -> PaintNode
-pub fn flatten_for_rendering(PaintNode) -> Array[PaintNode]
-```
-
-### `mizchi/crater/paint/scroll`
-
-Scrollable extraction and hit-testing over `PaintNode` trees.
-
-```moonbit
-pub fn collect_scrollable_elements(PaintNode) -> Array[ScrollableElement]
-pub fn find_scrollable_at(PaintNode, Double, Double, Double, Double) -> ScrollableHitResult?
-```
-
-### `mizchi/crater/paint/node_bridge`
-
-Bridge from `layout.Node` + computed `Layout` data into `PaintNode`.
-
-```moonbit
-pub fn from_node_and_layout(Node, Layout) -> PaintNode
-```
-
-### `mizchi/crater/paint/layout_tree_bridge`
-
-Bridge from plain `Layout` trees into `PaintNode`, using default paint style.
-
-```moonbit
-pub fn from_layout(Layout) -> PaintNode
-```
-
-### `mizchi/crater/paint/render_bridge`
-
-Narrow facade for consumers that need both full paint conversion and viewport
-culling over `layout.Node` + `Layout`.
-
-```moonbit
-pub fn from_node_and_layout(Node, Layout) -> PaintNode
-pub fn from_node_and_layout_with_viewport(Node, Layout, Double, Double, Double) -> PaintNode?
-```
-
-### `mizchi/crater/paint/layout_bridge`
-
-Compatibility wrapper over `mizchi/crater/paint/node_bridge`,
-`mizchi/crater/paint/layout_tree_bridge`, and
-`mizchi/crater/paint/viewport_bridge`.
-
-```moonbit
-pub fn from_layout(Layout) -> PaintNode
-pub fn from_node_and_layout(Node, Layout) -> PaintNode
-pub fn from_node_and_layout_with_viewport(Node, Layout, Double, Double, Double) -> PaintNode?
-```
-
-### `mizchi/crater/paint/viewport_bridge`
-
-Viewport-aware paint bridge for scroll/viewport consumers.
-
-```moonbit
-pub fn from_node_and_layout_with_viewport(Node, Layout, Double, Double, Double) -> PaintNode?
-```
-
-### `mizchi/crater/paint/diff`
-
-Paint tree diff helpers.
-
-```moonbit
-pub fn diff_trees(PaintNode, PaintNode) -> PaintTreeDiff
-```
-
-### `mizchi/crater-renderer`
-
-Renderer module facade. Prefer this package over importing `.../vrt` directly
-when you want the public renderer/VRT surface.
-
-```moonbit
-pub fn render_html_to_paint_tree(String, Size[Double]) -> PaintNode
-pub fn render_html_to_paint_tree_with_external_css(String, Size[Double], Array[String]) -> PaintNode
-pub fn render_html_to_paint_tree_json(String, Size[Double]) -> String
-pub fn diff_rendered_paint_trees(String, String, Size[Double]) -> PaintTreeDiff
-pub fn render_html_batch_variants(String, Size[Double], Array[RenderVariant]) -> Array[RenderVariantResult]
-```
-
-### `mizchi/crater-renderer/renderer`
-
-High-level HTML-to-layout renderer implementation.
-
-```moonbit
-// Render HTML string to Layout
-pub fn render(String, RenderContext) -> Layout
-
-// Render HTML with external CSS
-pub fn render_with_external_css(String, RenderContext, Array[String]) -> Layout
-
-// Render to Node (without layout computation)
-pub fn render_to_node(String, RenderContext) -> Node
-
-// RenderContext configuration
-pub struct RenderContext {
-  viewport_width : Double
-  viewport_height : Double
-  root_font_size : Double
-  color_scheme : ColorScheme
-}
-pub fn RenderContext::default() -> Self
-```
-
-### `mizchi/crater-renderer/terminal`
-
-Terminal graphics helpers layered on top of `mizchi/crater-renderer/renderer`.
-
-```moonbit
-pub fn render_to_sixel(String, Int, Int) -> String
-pub fn render_to_sixel_with_css(String, Int, Int, Int, Array[String]) -> String
-pub fn render_to_kitty_with_css(String, Int, Int, Int, Array[String]) -> String
-```
-
----
-
-## Core Types
-
-### `mizchi/crater/types`
-
-Basic geometric and color types.
-
-```moonbit
-// Dimension for CSS values
-pub enum Dimension {
-  Length(Double)      // Fixed pixel value
-  Percent(Double)     // Percentage value
-  Auto                // Auto sizing
-  MinContent          // Minimum content size
-  MaxContent          // Maximum content size
-  FitContent(Double)  // Fit content with max
-}
-
-// Rectangle with four sides
-pub struct Rect[T] {
-  left : T
-  right : T
-  top : T
-  bottom : T
-}
-
-// 2D Size
-pub struct Size[T] {
-  width : T
-  height : T
-}
-
-// 2D Point
-pub struct Point[T] {
-  x : T
-  y : T
-}
-
-// RGBA Color
-pub struct Color {
-  r : Int
-  g : Int
-  b : Int
-  a : Double
-}
-pub fn Color::rgb(Int, Int, Int) -> Self
-pub fn Color::rgba(Int, Int, Int, Double) -> Self
-
-// Bounding rectangle
-pub struct BoundingRect {
-  x : Double
-  y : Double
-  width : Double
-  height : Double
-}
-```
-
-### `mizchi/crater/style`
-
-CSS style property definitions.
-
-```moonbit
-pub struct Style {
-  display : Display
-  position : Position
-  box_sizing : BoxSizing
-  overflow_x : Overflow
-  overflow_y : Overflow
-
-  // Dimensions
-  width : Dimension
-  height : Dimension
-  min_width : Dimension
-  max_width : Dimension
-  // ... (see full definition in style/pkg.generated.mbti)
-
-  // Flexbox
-  flex_direction : FlexDirection
-  flex_wrap : FlexWrap
-  justify_content : Alignment
-  align_items : Alignment
-  flex_grow : Double
-  flex_shrink : Double
-  flex_basis : Dimension
-
-  // Grid
-  grid_template_rows : Array[TrackSizingFunction]
-  grid_template_columns : Array[TrackSizingFunction]
-  grid_auto_flow : GridAutoFlow
-  // ...
-}
-
-pub enum Display {
-  Block | Inline | InlineBlock | Flex | InlineFlex
-  Grid | InlineGrid | Table | None | Contents | FlowRoot
-  // ...
-}
-
-pub enum Position { Static | Relative | Absolute | Fixed }
-pub enum FlexDirection { Row | RowReverse | Column | ColumnReverse }
-pub enum FlexWrap { NoWrap | Wrap | WrapReverse }
-pub enum Alignment { Start | End | Center | SpaceBetween | SpaceAround | Stretch | ... }
-pub enum GridAutoFlow { Row | Column | RowDense | ColumnDense }
-```
-
----
-
-## Layout System
-
-### `mizchi/crater/node`
-
-Layout node representation.
-
-```moonbit
-// Input node for layout computation
-pub struct Node {
-  id : String
-  uid : Int
-  style : Style
-  children : Array[Node]
-  measure : MeasureFunc?
-  text : String?
-}
-pub fn Node::new(String, Style, Array[Node]) -> Self
-pub fn Node::leaf(String, Style) -> Self
-pub fn Node::with_measure(String, Style, MeasureFunc, text? : String) -> Self
-
-// Output layout result
-pub struct Layout {
-  id : String
-  x : Double
-  y : Double
-  width : Double
-  height : Double
-  margin : Rect[Double]
-  padding : Rect[Double]
-  border : Rect[Double]
-  overflow_x : Overflow
-  overflow_y : Overflow
-  children : Array[Layout]
-  text : String?
-}
-
-// Layout computation context
-pub struct LayoutContext {
-  available_width : Double
-  available_height : Double?
-  sizing_mode : SizingMode
-  viewport_width : Double
-  viewport_height : Double
-}
-
-// Custom measurement function
-pub struct MeasureFunc {
-  func : (Double, Double) -> IntrinsicSize
-}
-
-pub struct IntrinsicSize {
-  min_width : Double
-  max_width : Double
-  min_height : Double
-  max_height : Double
-}
-```
-
-### `mizchi/crater/layout/tree`
-
-Incremental layout tree for efficient updates.
-
-```moonbit
-// Layout tree with caching
-pub struct LayoutTree {
-  root : LayoutNode
-  viewport_width : Double
-  viewport_height : Double
-  // ...
-}
-pub fn LayoutTree::new(LayoutNode, Double, Double) -> Self
-pub fn LayoutTree::from_node(Node, Double, Double) -> Self
-pub fn LayoutTree::compute_incremental(Self) -> Layout
-pub fn LayoutTree::compute_full(Self) -> Layout
-pub fn LayoutTree::resize_viewport(Self, Double, Double) -> Unit
-pub fn LayoutTree::mark_node_dirty(Self, Int) -> Unit
-
-// Layout node with dirty tracking
-pub struct LayoutNode {
-  id : String
-  uid : Int
-  style : Style
-  children : Array[LayoutNode]
-  // ... caching fields
-}
-pub fn LayoutNode::new(String, Style, Array[LayoutNode]) -> Self
-pub fn LayoutNode::mark_dirty(Self) -> Unit
-pub fn LayoutNode::set_width(Self, Double) -> Self
-pub fn LayoutNode::set_height(Self, Double) -> Self
-pub fn LayoutNode::set_display(Self, Display) -> Self
-// ... many style setters
-
-// HTML tree bridge
-pub fn layout_tree_from_html_document(Document, Double, Double) -> LayoutTree
-
-// Style bridge
-pub fn apply_css_values(LayoutNode, CascadedValues) -> Bool
-pub fn update_node_style(LayoutTree, String, CascadedValues) -> Bool
-
-// DOM bridge
-pub struct Document
-pub fn Document::new(Double, Double) -> Self
-pub fn Document::append_child(Self, NodeId, NodeId) -> Result[Unit, CoreError]
-pub fn Document::compute_layout(Self) -> Layout
-pub fn Document::update(Self) -> Layout
-```
-
----
-
-## Parsing
-
-### `mizchi/crater/html`
-
-HTML parser.
-
-```moonbit
-// Parse HTML to Element tree
-pub fn parse(String) -> Element?
-pub fn parse_document(String) -> Document
-pub fn parse_fragment(String) -> Element
-
-// Streaming parser for large documents
-pub fn parse_document_streaming(String, Int) -> Document
-
-pub struct Document {
-  root : Element
-  stylesheets : Array[String]
-  stylesheet_links : Array[String]
-}
-
-pub struct Element {
-  tag : String
-  id : String?
-  classes : Array[String]
-  style : String?
-  attributes : Map[String, String]
-  children : Array[Node]
-}
-
-pub enum Node {
-  Element(Element)
-  Text(String)
-}
-```
-
-### `mizchi/crater-css/parser`
-
-CSS parser.
-
-```moonbit
-// Parse inline style string
-pub fn parse_inline_style(String) -> Style
-
-// Parse stylesheet
-pub fn parse_stylesheet(String) -> Stylesheet
-
-// Parse with diagnostics
-pub fn parse_stylesheet_with_diagnostics(String) -> ParseResult
-
-pub struct ParseResult {
-  stylesheet : Stylesheet
-  diagnostics : DiagnosticsCollector
-}
-```
-
-### `mizchi/crater-css/cascade`
-
-CSS cascade algorithm.
-
-```moonbit
-pub struct Stylesheet {
-  rules : Array[CSSRule]
-  origin : Origin
-}
-pub fn Stylesheet::new(Origin) -> Self
-pub fn Stylesheet::match_element(Self, Element) -> Array[RuleMatch]
-
-pub struct CascadedValues {
-  values : Map[String, Declaration]
-}
-pub fn CascadedValues::get(Self, String) -> Declaration?
-pub fn CascadedValues::get_value(Self, String) -> String?
-
-pub struct Declaration {
-  property : String
-  value : PropertyValue
-  origin : Origin
-  importance : Importance
-  specificity : Specificity
-  source_order : Int
-}
-
-pub enum Origin { UserAgent | User | Author }
-pub enum Importance { Normal | Important }
-```
-
-### `mizchi/crater-css/selector`
-
-CSS selector matching.
-
-```moonbit
-// Parse and match selectors
-pub fn parse_selector_text(String) -> ComplexSelector?
-pub fn matches_selector_text(Element, String) -> Bool
-pub fn matches_complex(Element, ComplexSelector) -> Bool
-
-pub struct ComplexSelector {
-  head : CompoundSelector
-  tail : Array[ComplexSelectorStep]
-}
-
-pub struct Specificity {
-  a : Int  // ID selectors
-  b : Int  // Class, attribute, pseudo-class
-  c : Int  // Type selectors, pseudo-elements
-}
-```
-
-### `mizchi/crater-css/media`
-
-Media query support.
-
-```moonbit
-pub fn parse_media_query_list(String) -> MediaQueryList
-
-pub struct MediaQueryList {
-  queries : Array[MediaQuery]
-}
-pub fn MediaQueryList::evaluate(Self, MediaEnvironment) -> Bool
-
-pub struct MediaEnvironment {
-  viewport_width : Double
-  viewport_height : Double
-  device_pixel_ratio : Double
-  color_scheme : ColorScheme
-}
-
-pub enum ColorScheme { Light | Dark }
-```
-
----
-
-## DOM
-
-### `mizchi/crater/dom`
-
-DOM tree manipulation.
-
-```moonbit
-pub struct DomTree {
-  // ...
-}
-pub fn DomTree::new() -> Self
-pub fn DomTree::create_element(Self, String) -> NodeId
-pub fn DomTree::create_text(Self, String) -> NodeId
-pub fn DomTree::append_child(Self, NodeId, NodeId) -> Result[Unit, CoreError]
-pub fn DomTree::remove_child(Self, NodeId, NodeId) -> Result[Unit, CoreError]
-pub fn DomTree::set_attribute(Self, NodeId, String, String) -> Result[Unit, CoreError]
-pub fn DomTree::get_attribute(Self, NodeId, String) -> Result[String?, CoreError]
-pub fn DomTree::query_selector(Self, NodeId, String) -> Result[NodeId?, CoreError]
-pub fn DomTree::query_selector_all(Self, NodeId, String) -> Result[Array[NodeId], CoreError]
-
-// Mutation tracking
-pub fn DomTree::flush_mutations(Self) -> (Array[MutationRecord], FlushResult)
-pub fn DomTree::has_pending_mutations(Self) -> Bool
-
-pub struct NodeId(Int)
-pub fn NodeId::to_int(Self) -> Int
-
-pub enum MutationType { ChildList | Attributes | CharacterData | StyleChange }
-
-pub struct MutationRecord {
-  type_ : MutationType
-  target : NodeId
-  added_nodes : Array[NodeId]
-  removed_nodes : Array[NodeId]
-  attribute_name : String?
-  // ...
-}
-```
-
----
-
-## Accessibility
-
-### `mizchi/crater/aom`
-
-Accessibility Object Model.
-
-```moonbit
-// Build accessibility tree from HTML
-pub fn build_accessibility_tree(Document) -> AccessibilityTree
-pub fn build_accessibility_tree_with_layout(Document, LayoutTree) -> AccessibilityTree
-
-pub struct AccessibilityTree {
-  root : AccessibilityNode
-  node_map : Map[String, AccessibilityNode]
-}
-pub fn AccessibilityTree::find_by_id(Self, String) -> AccessibilityNode?
-pub fn AccessibilityTree::find_by_role(Self, Role) -> Array[AccessibilityNode]
-pub fn AccessibilityTree::to_aria_snapshot(Self) -> String
-pub fn AccessibilityTree::to_aria_json(Self) -> String
-
-pub struct AccessibilityNode {
-  id : String
-  role : Role
-  name : String?
-  description : String?
-  states : Array[State]
-  bounds : Bounds?
-  children : Array[AccessibilityNode]
-  focusable : Bool
-  tabindex : Int?
-  // ...
-}
-
-pub enum Role {
-  Button | Checkbox | Link | Textbox | Heading | List | ListItem
-  Navigation | Main | Banner | ContentInfo | Form | Search
-  // ... (100+ roles)
-}
-
-pub enum State {
-  Busy | Checked | Disabled | Expanded | Hidden | Invalid | Pressed | Selected
-  // ...
-}
-
-// Focus management
-pub struct FocusManager {
-  tree : AccessibilityTree
-  // ...
-}
-pub fn FocusManager::new(AccessibilityTree) -> Self
-pub fn FocusManager::focus_next(Self) -> AccessibilityNode?
-pub fn FocusManager::focus_prev(Self) -> AccessibilityNode?
-pub fn FocusManager::current(Self) -> AccessibilityNode?
-```
-
----
-
-## Paint
-
-### `mizchi/crater/paint`
-
-Paint tree for rendering.
-
-```moonbit
-// Create paint tree from layout
-pub fn from_layout(Layout) -> PaintNode
-pub fn from_node_and_layout(Node, Layout) -> PaintNode
-
-pub struct PaintNode {
-  id : String
-  tag : String
-  x : Double
-  y : Double
-  width : Double
-  height : Double
-  overflow_x : Overflow
-  overflow_y : Overflow
-  paint : PaintProperties
-  stacking_order : Int
-  text : String?
-  children : Array[PaintNode]
-}
-
-pub struct PaintProperties {
-  z_index : ZIndex
-  visibility : Visibility
-  opacity : Double
-  color : Color
-  background_color : Color
-}
-pub fn PaintProperties::should_render(Self) -> Bool
-```
-
-### `mizchi/crater/paint/model`
-
-Narrow paint data-model facade.
-
-```moonbit
-pub type PaintNode
-pub type PaintProperties
-```
-
-### `mizchi/crater/paint/build`
-
-Compatibility wrapper facade.
-
-```moonbit
-pub fn collect_scrollable_elements(PaintNode) -> Array[ScrollableElement]
-pub fn flatten_for_rendering(PaintNode) -> Array[PaintNode]
-pub fn sort_tree_by_stacking_order(PaintNode) -> PaintNode
-```
-
-### `mizchi/crater/paint/traversal`
-
-Paint traversal facade.
-
-```moonbit
-pub fn flatten_for_rendering(PaintNode) -> Array[PaintNode]
-pub fn sort_tree_by_stacking_order(PaintNode) -> PaintNode
-```
-
-### `mizchi/crater/paint/scroll`
-
-Paint scroll facade.
-
-```moonbit
-pub fn collect_scrollable_elements(PaintNode) -> Array[ScrollableElement]
-pub fn find_scrollable_at(PaintNode, Double, Double, Double, Double) -> ScrollableHitResult?
-```
-
-### `mizchi/crater/paint/node_bridge`
-
-Paint node-to-paint bridge facade.
-
-```moonbit
-pub fn from_node_and_layout(Node, Layout) -> PaintNode
-```
-
-### `mizchi/crater/paint/layout_tree_bridge`
-
-Paint layout-tree-to-paint facade.
-
-```moonbit
-pub fn from_layout(Layout) -> PaintNode
-```
-
-### `mizchi/crater/paint/render_bridge`
-
-Paint render bridge facade for packages that need both node conversion and
-viewport culling.
-
-```moonbit
-pub fn from_node_and_layout(Node, Layout) -> PaintNode
-pub fn from_node_and_layout_with_viewport(Node, Layout, Double, Double, Double) -> PaintNode?
-```
-
-### `mizchi/crater/paint/layout_bridge`
-
-Paint layout bridge compatibility facade over node/layout-tree/viewport
-bridges.
-
-```moonbit
-pub fn from_layout(Layout) -> PaintNode
-pub fn from_node_and_layout(Node, Layout) -> PaintNode
-pub fn from_node_and_layout_with_viewport(Node, Layout, Double, Double, Double) -> PaintNode?
-```
-
-### `mizchi/crater/paint/viewport_bridge`
-
-Viewport-aware paint bridge facade.
-
-```moonbit
-pub fn from_node_and_layout_with_viewport(Node, Layout, Double, Double, Double) -> PaintNode?
-```
-
-### `mizchi/crater/paint/diff`
-
-Paint diff facade.
-
-```moonbit
-pub fn diff_trees(PaintNode, PaintNode) -> PaintTreeDiff
-```
-
----
-
-## Metrics
-
-### `mizchi/crater-webvitals`
-
-Web Vitals metrics.
-
-```moonbit
-// Layout Shift calculation
-pub fn compute_element_shift(BoundingRect, BoundingRect, Size[Double]) -> LayoutShift
-pub fn compute_total(Array[BoundingRect], Array[BoundingRect], Size[Double]) -> Double
-
-pub struct LayoutShift {
+pub(all) struct LayoutShift {
   impact_fraction : Double
   distance_fraction : Double
   score : Double
 }
 
-// LCP tracking
-pub struct LCPTracker {
-  // ...
-}
-pub fn LCPTracker::new(Double, Double) -> Self
-pub fn LCPTracker::add_candidate(Self, LCPCandidate) -> Unit
-pub fn LCPTracker::get_lcp(Self) -> LCPCandidate?
-pub fn LCPTracker::get_lcp_time(Self) -> Double?
-
-pub struct LCPCandidate {
-  element_id : String
-  element_type : LCPElementType
-  size : Double
-  // ...
-}
+pub fn compute_element_shift(@values.BoundingRect, @values.BoundingRect, @values.Size[Double]) -> LayoutShift
+pub fn compute_total(Array[@values.BoundingRect], Array[@values.BoundingRect], @values.Size[Double]) -> Double
 ```
 
----
+LCP helpers are exposed through `LCPCandidate`, `LCPTracker`, and
+`extract_lcp_candidates`.
 
-## Diagnostics
+## WebDriver BiDi
 
-### `mizchi/crater-css/diagnostics`
-
-CSS property support diagnostics.
+Use the root `mizchi/crater-webdriver-bidi` package for stable protocol-facing
+types and server configuration.
 
 ```moonbit
-pub fn get_support_level(String) -> SupportLevel
-
-pub enum SupportLevel {
-  Supported
-  Partial(String)
-  UnsupportedLayout
-  UnsupportedVisual
-  Deprecated(String)
-  Unknown
-}
-
-pub struct DiagnosticsCollector {
-  // ...
-}
-pub fn DiagnosticsCollector::new() -> Self
-pub fn DiagnosticsCollector::add_property(Self, String, String, String) -> Unit
-pub fn DiagnosticsCollector::get_diagnostics(Self) -> Array[Diagnostic]
-pub fn DiagnosticsCollector::get_summary(Self) -> DiagnosticSummary
-pub fn DiagnosticsCollector::format_report(Self, Int) -> String
+pub fn parse_method(String) -> ApiMethod?
+pub using @contract {type WebDriverRequest}
+pub using @contract {type WebDriverResponse}
+pub using @rpc {type RpcRequest}
+pub using @rpc {type RpcResponse}
+pub using @server {type SessionManager}
+pub using @webdriver {type BidiServer}
+pub using @webdriver {type BidiServerConfig}
 ```
 
----
+The root facade intentionally does not expose CDP session handlers. Internal
+handler helpers remain in `mizchi/crater-webdriver-bidi/webdriver` while
+contract-only code belongs in `contract`, `rpc`, `protocol`, or `server`.
 
-## Usage Examples
+## Browser And Network
 
-### Basic Layout
+Use `mizchi/crater-browser` for the browser shell and `mizchi/crater-browser-*`
+modules for narrower browser support packages.
 
-```moonbit
-let html = "<div style=\"display: flex; width: 300px;\">
-  <div style=\"flex: 1\">A</div>
-  <div style=\"flex: 2\">B</div>
-</div>"
+`mizchi/crater-network` is currently scoped to WebDriver BiDi synthetic network
+state and byte/query normalization shared by the adapter. It is not a general
+HTTP client boundary; general browser HTTP concerns live in
+`mizchi/crater-browser-http`.
 
-let ctx = @renderer.RenderContext::default()
-let layout = @renderer.render(html, ctx)
-// layout.children[0].width == 100.0
-// layout.children[1].width == 200.0
-```
+## Compatibility Bridges
 
-### Incremental Layout
-
-```moonbit
-let doc = @layout_dom.Document::new(800.0, 600.0)
-let root = doc.get_document_root()
-
-let div = doc.create_element("div")
-doc.set_attribute(div, "style", "display: flex; width: 100%")
-doc.append_child(root, div)
-
-let layout = doc.update()  // Compute initial layout
-
-// Update style
-doc.set_attribute(div, "style", "display: block; width: 50%")
-let new_layout = doc.update()  // Only recompute affected nodes
-```
-
-### Accessibility Tree
-
-```moonbit
-let html = "<nav><a href=\"/\">Home</a><a href=\"/about\">About</a></nav>"
-let doc = @html.parse_document(html)
-let tree = @aom.build_accessibility_tree(doc)
-
-let nav = tree.find_by_role(Role::Navigation)
-let snapshot = tree.to_aria_snapshot()
-// - navigation:
-//   - link "Home"
-//   - link "About"
-```
+Compatibility bridges are documented in `docs/compatibility-bridges.md`. They
+should stay thin: re-export types, forward functions, and keep implementation
+state in the canonical package.

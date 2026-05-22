@@ -19,7 +19,6 @@ The current workspace members are:
 - `./webvitals`
 - `./http`
 - `./network`
-- `./css`
 - `./dom`
 - `./layout`
 - `./painter`
@@ -99,7 +98,7 @@ The intended direction is:
 | --- | --- |
 | `mizchi/crater-core` | Pure interface | Geometry primitives, color, CSS value types, layout output records — no in-repo deps; every other module depends on this |
 | `mizchi/crater-layout` | Canonical library | Layout kernel, tree, shared layout data types |
-| `mizchi/crater-css` | Canonical library | CSS parsing, selector matching, cascade, and computed style engine |
+| `mizchi/css` | External canonical dependency | CSS parsing, selector matching, cascade, and computed style engine |
 | `mizchi/crater-dom` | Canonical library | DOM, HTML parsing, scheduler, AOM, and HTML/CSS bridge-analysis packages |
 | `mizchi/crater-aomx` | Canonical library | AOM-derived content extraction, grounding, and structural diff helpers |
 | `mizchi/crater-webvitals` | Canonical library | Web Vitals metrics such as CLS and LCP helpers |
@@ -107,7 +106,7 @@ The intended direction is:
 | `mizchi/crater-renderer` | Canonical library | Renderer and VRT/export-oriented integration |
 | `mizchi/crater-browser-helpers` | Canonical library | Shared browser-facing render/AOM helper functions for shell and BiDi |
 | `mizchi/crater-browser-runtime` | Canonical library | Shared JS runtime contract and DOM serializer |
-| `mizchi/crater-network` | Canonical library | Protocol-neutral network state and byte/query encoding helpers |
+| `mizchi/crater-network` | Canonical library | WebDriver BiDi synthetic network state and byte/query encoding helpers |
 | `mizchi/crater-browser` | Integration | Browser shell, interaction, TUI, network/cache integration |
 | `mizchi/crater-webdriver-bidi` | Adapter | WebDriver BiDi server / protocol adapter |
 | `mizchi/crater-browser-native` | Adapter | Native browser host bindings |
@@ -118,7 +117,7 @@ The intended direction is:
 | `mizchi/crater-conformance` | Internal / dev-only | External-spec conformance (taffy snapshot, WPT runtime adapter) |
 | `mizchi/crater-tools` | Internal / dev-only | Dev-only build/fixture binaries (webdriver fixture builder) |
 We do not need to create all of these at once. The current workspace has
-already extracted `mizchi/crater-core`, `mizchi/crater-layout`, `mizchi/crater-css`,
+already extracted `mizchi/crater-core`, `mizchi/crater-layout`,
 `mizchi/crater-dom`, `mizchi/crater-aomx`, `mizchi/crater-benchmarks`,
 `mizchi/crater-browser-helpers`, `mizchi/crater-testing`,
 `mizchi/crater-webvitals`, `mizchi/crater-painter`, `mizchi/crater-renderer`,
@@ -130,11 +129,11 @@ facade over the extracted runtime contract.
 
 ## Retired Root Packages
 
-The old root facades have been removed from the workspace:
+The old root subpackage facades have been removed from the workspace:
 
-- `mizchi/crater`
 - `mizchi/crater/css`
 
+The root `mizchi/crater` module remains as an umbrella meta-module.
 Implementation-heavy packages now live in dedicated modules. Internal packages
 should depend on the canonical module that owns the feature instead of routing
 through `src/` compatibility wrappers.
@@ -202,21 +201,21 @@ For new code, prefer the narrowest module that matches the subsystem you need:
 | Need | Recommended import |
 | --- | --- |
 | Layout kernel and tree primitives | `mizchi/crater-layout` |
-| CSS parser / selector / cascade | `mizchi/crater-css` |
+| CSS parser / selector / cascade | `mizchi/css` |
 | DOM / HTML / AOM / scheduler | `mizchi/crater-dom` |
 | Paint tree / SVG / image output | `mizchi/crater-painter` |
 | Renderer / VRT facade | `mizchi/crater-renderer` |
 | Browser shell / interaction / CDP | `mizchi/crater-browser` |
 | Browser runtime contract / DOM serializer | `mizchi/crater-browser-runtime` |
-| Protocol-neutral network state / byte helpers | `mizchi/crater-network` |
+| WebDriver BiDi synthetic network state / byte helpers | `mizchi/crater-network` |
 | BiDi / WebDriver helper surface | `mizchi/crater-webdriver-bidi` |
 | Native V8 host bindings | `mizchi/crater-browser-native` |
 | JS exports | `mizchi/crater-js` |
 | WASM component facade | `mizchi/crater-wasm` |
 
-Do not add new dependencies on the retired `mizchi/crater` or
-`mizchi/crater/css` facades. Use the narrower module that matches the feature
-area instead.
+Do not add new dependencies on old root subpackage facades such as
+`mizchi/crater/css`. Use the narrower module that matches the feature area
+instead.
 
 Prefer the layers in this order:
 
@@ -235,25 +234,25 @@ it.
 
 ## Compatibility Policy
 
-The root compatibility facades have been retired:
+The old root subpackage compatibility facades have been retired:
 
-- `mizchi/crater`
 - `mizchi/crater/css`
 
-Existing consumers should migrate to direct module imports. The workspace no
-longer keeps `src/` wrappers for these facades.
+Existing consumers should migrate to direct module imports. The root
+`mizchi/crater` module remains only as an umbrella meta-module; the workspace no
+longer keeps `src/` wrappers for old subpackage facades.
 
 ## Split Quality Notes
 
 The current split is good enough for workspace management, but not every
 boundary is equally strong from a reuse perspective.
 
-- `layout`, `css`, `dom`, `painter`, `renderer`, `aomx`, and `webvitals` are
-  the strongest reusable boundaries today
+- `layout`, external `mizchi/css`, `dom`, `painter`, `renderer`, `aomx`, and
+  `webvitals` are the strongest reusable boundaries today
 - `browser` is still broad and should be treated as a product-level integration
   module rather than a narrow library
-- `jsbidi`, `browser-native`, `js`, and `wasm` are target/protocol adapters,
-  not primary domain modules
+- `webdriver-bidi`, `browser-native`, `js`, and `wasm` are target/protocol
+  adapters, not primary domain modules
 - `benchmarks` and `testing` are internal support modules even though they are
   workspace members
 
@@ -289,9 +288,9 @@ The layout kernel has been moved into `layout/`:
 - `trace`
 - `tree`
 
-### `mizchi/crater-css`
+### `mizchi/css`
 
-The CSS kernel has been moved into `css/`:
+The CSS kernel is now consumed as the external `mizchi/css` module:
 
 - `token`
 - `parser`
@@ -445,10 +444,10 @@ JSON-RPC request/response helpers and method-name parsing live in `rpc`;
 QuickJS runtime FFI/state and JS-side navigation encoding helpers live in
 `runtime`; pure BiDi JSON parameter and validation helpers live in `protocol`,
 while BiDi wire parsing/serialization lives in `protocol/wire`;
-protocol-neutral network runtime state and byte/query helpers live in
-`mizchi/crater-network`, with `webdriver/network` kept as a compatibility
-adapter; the larger `webdriver` package remains a compatibility facade plus the
-current protocol/runtime implementation while those pieces are split out.
+WebDriver BiDi synthetic network state and byte/query helpers live in
+`mizchi/crater-network`; the larger `webdriver` package remains a compatibility
+facade plus the current protocol/runtime implementation while those pieces are
+split out.
 
 ### `mizchi/crater-wasm`
 
@@ -466,7 +465,7 @@ incremental/accessibility/yoga interfaces.
 ## Migration Order
 
 1. Extract `layout/` as `mizchi/crater-layout`.
-2. Extract `css/` as `mizchi/crater-css`.
+2. Depend on external `mizchi/css` for CSS parsing/cascade/style APIs.
 3. Extract `dom/` as `mizchi/crater-dom`.
 4. Rewrite internal imports in dependent modules from `mizchi/crater/...` to
    the extracted module paths for moved packages.

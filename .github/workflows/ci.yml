@@ -132,11 +132,11 @@ jobs:
         continue-on-error: true
 
       - name: Run js tests
-        run: moon test --manifest-path js/moon.mod.json --target js
+        run: moon -C js test --target js
         continue-on-error: true
 
       - name: Run browser tests
-        run: moon test --manifest-path browser/moon.mod.json -p mizchi/crater-browser --target js -j 1
+        run: moon -C browser test -p mizchi/crater-browser --target js -j 1
         continue-on-error: true
 
       - name: Format check

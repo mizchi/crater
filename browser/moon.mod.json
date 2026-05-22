@@ -59,6 +59,7 @@
   },
   "repository": "https://github.com/mizchi/crater",
   "license": "Apache-2.0",
+  "readme": "README.md",
   "description": "Browser engine for crater CSS layout engine",
   "preferred-target": "js"
 }

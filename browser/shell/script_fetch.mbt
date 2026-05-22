@@ -41,7 +41,7 @@ async fn script_fetch_with_cors(
     url~,
     origin=options.origin,
     mode=options.mode,
-    method=options.http_method,
+    http_method=options.http_method,
     headers=options.headers,
   )
   match decision {
@@ -138,14 +138,14 @@ async fn Browser::fetch_external_script_source(
     url=script_url,
     origin=script_options.origin,
     mode=script_options.mode,
-    method=script_options.http_method,
+    http_method=script_options.http_method,
     headers=script_options.headers,
   )
   match pre_decision {
     PreflightRequired(preflight_req) =>
       if !preflight_cache.contains_fresh(preflight_req, @http_cache.now_seconds) {
         let headers : Map[String, String] = {
-          "Access-Control-Request-Method": preflight_req.method,
+          "Access-Control-Request-Method": preflight_req.http_method,
         }
         if !preflight_req.request_headers.is_empty() {
           headers["Access-Control-Request-Headers"] = preflight_req.request_headers.join(

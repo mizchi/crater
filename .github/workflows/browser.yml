@@ -7,7 +7,6 @@ on:
       - 'aomx/**'
       - 'benchmarks/**'
       - 'browser/**'
-      - 'css/**'
       - 'dom/**'
       - 'js/**'
       - 'justfile'
@@ -25,7 +24,6 @@ on:
       - 'aomx/**'
       - 'benchmarks/**'
       - 'browser/**'
-      - 'css/**'
       - 'dom/**'
       - 'js/**'
       - 'justfile'
@@ -63,7 +61,7 @@ jobs:
         run: moon update
 
       - name: Update dependencies (browser)
-        run: moon update --manifest-path browser/moon.mod.json
+        run: moon -C browser update
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -71,10 +69,10 @@ jobs:
           node-version: '24'
 
       - name: Check code
-        run: moon check --manifest-path browser/moon.mod.json --target js -j 1
+        run: moon -C browser check --target js -j 1
 
       - name: Run tests
-        run: moon test --manifest-path browser/moon.mod.json -p mizchi/crater-browser --target js -j 1
+        run: moon -C browser test -p mizchi/crater-browser --target js -j 1
 
       - name: Install pnpm
         uses: pnpm/action-setup@v5

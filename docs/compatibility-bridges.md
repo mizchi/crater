@@ -18,10 +18,10 @@ New code should depend on the canonical package listed below.
 | `mizchi/crater-webdriver-bidi/webdriver` BiDi wire parser/serializer | `mizchi/crater-webdriver-bidi/protocol/wire` |
 | `mizchi/crater-webdriver-bidi/network` | `mizchi/crater-network` |
 
-The old root facades `mizchi/crater` and `mizchi/crater/css` have been retired
-from the workspace. Use the dedicated modules directly, especially
-`mizchi/crater-css`, `mizchi/crater-layout`, `mizchi/crater-renderer`, and
-`mizchi/crater-painter`.
+Old root subpackage facades such as `mizchi/crater/css` have been retired from
+the workspace. The root `mizchi/crater` module remains only as an umbrella
+meta-module. Use the dedicated modules directly, especially `mizchi/css`,
+`mizchi/crater-layout`, `mizchi/crater-renderer`, and `mizchi/crater-painter`.
 
 Compatibility bridge packages should stay thin:
 

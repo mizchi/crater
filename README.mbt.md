@@ -66,7 +66,7 @@ Crater is split into focused MoonBit modules under one repository. Pick the narr
 
 ```bash
 moon add mizchi/crater-layout            # Taffy-derived layout engine
-moon add mizchi/crater-css               # CSS parser + selector matching
+moon add mizchi/css                      # CSS parser + selector matching
 moon add mizchi/crater-dom               # DOM + Shadow DOM
 moon add mizchi/crater-renderer          # HTML -> layout tree -> paint tree
 moon add mizchi/crater-browser           # Browser shell (cookie jar, fetch, navigation)

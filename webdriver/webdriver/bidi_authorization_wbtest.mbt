@@ -13,10 +13,10 @@ test "crater.setOriginAuthorization stores per-origin header" {
   )
   ignore(proto.take_messages())
   let profile = proto.profile_for_session("session-1").unwrap()
-  inspect(
-    profile.auth_state.header_for_origin("https://api.example.com"),
-    content="Some(Bearer abc123)",
-  )
+  match profile.auth_state.header_for_origin("https://api.example.com") {
+    Some(header) => inspect(header, content="Bearer abc123")
+    None => fail("expected origin authorization header")
+  }
 }
 
 ///|
@@ -34,13 +34,13 @@ test "crater.setOriginAuthorization normalizes origin" {
   )
   ignore(proto.take_messages())
   let profile = proto.profile_for_session("session-1").unwrap()
+  match profile.auth_state.header_for_origin("https://example.com") {
+    Some(header) => inspect(header, content="Bearer abc")
+    None => fail("expected normalized origin authorization header")
+  }
   inspect(
-    profile.auth_state.header_for_origin("https://example.com"),
-    content="Some(Bearer abc)",
-  )
-  inspect(
-    profile.auth_state.header_for_origin("https://Example.COM:443"),
-    content="None",
+    profile.auth_state.header_for_origin("https://Example.COM:443") is None,
+    content="true",
   )
 }
 
@@ -132,8 +132,8 @@ test "crater.clearOriginAuthorization removes the entry" {
   ignore(proto.take_messages())
   let profile = proto.profile_for_session("session-1").unwrap()
   inspect(
-    profile.auth_state.header_for_origin("https://api.example.com"),
-    content="None",
+    profile.auth_state.header_for_origin("https://api.example.com") is None,
+    content="true",
   )
 }
 

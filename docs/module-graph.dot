@@ -7,7 +7,7 @@ digraph crater_modules {
   }
   subgraph cluster_Foundation {
     label="Foundation";
-    mizchi_crater_css [label="crater-css"];
+    mizchi_crater_aomx [label="crater-aomx"];
     mizchi_crater_dom [label="crater-dom"];
     mizchi_crater_html_assets [label="crater-html-assets"];
     mizchi_crater_layout [label="crater-layout"];
@@ -42,9 +42,8 @@ digraph crater_modules {
     mizchi_crater [label="crater (umbrella)"];
     mizchi_crater_wasm [label="crater-wasm"];
   }
-  subgraph cluster_Test _ Dev {
+  subgraph cluster_Test___Dev {
     label="Test / Dev";
-    mizchi_crater_aomx [label="crater-aomx"];
     mizchi_crater_benchmarks [label="crater-benchmarks"];
     mizchi_crater_conformance [label="crater-conformance"];
     mizchi_crater_testing [label="crater-testing"];
@@ -53,7 +52,6 @@ digraph crater_modules {
   mizchi_crater_aomx -> mizchi_crater_dom;
   mizchi_crater_benchmarks -> mizchi_crater_core;
   mizchi_crater_benchmarks -> mizchi_crater_browser;
-  mizchi_crater_benchmarks -> mizchi_crater_css;
   mizchi_crater_benchmarks -> mizchi_crater_dom;
   mizchi_crater_benchmarks -> mizchi_crater_layout;
   mizchi_crater_benchmarks -> mizchi_crater_painter;
@@ -61,7 +59,6 @@ digraph crater_modules {
   mizchi_crater_browser -> mizchi_crater_core;
   mizchi_crater_browser -> mizchi_crater_aomx;
   mizchi_crater_browser -> mizchi_crater_dom;
-  mizchi_crater_browser -> mizchi_crater_css;
   mizchi_crater_browser -> mizchi_crater_layout;
   mizchi_crater_browser -> mizchi_crater_painter;
   mizchi_crater_browser -> mizchi_crater_renderer;
@@ -74,26 +71,20 @@ digraph crater_modules {
   mizchi_crater_browser_native -> mizchi_crater_browser_runtime;
   mizchi_crater_browser_native -> mizchi_crater_dom;
   mizchi_crater_browser_helpers -> mizchi_crater_renderer;
-  mizchi_crater_browser_helpers -> mizchi_crater_css;
   mizchi_crater_browser_helpers -> mizchi_crater_dom;
   mizchi_crater_browser_helpers -> mizchi_crater_aomx;
   mizchi_crater_conformance -> mizchi_crater_core;
-  mizchi_crater_conformance -> mizchi_crater_css;
   mizchi_crater_conformance -> mizchi_crater_layout;
   mizchi_crater_conformance -> mizchi_crater_renderer;
-  mizchi_crater_css -> mizchi_crater_core;
   mizchi_crater_dom -> mizchi_crater_core;
-  mizchi_crater_dom -> mizchi_crater_css;
   mizchi_crater_dom -> mizchi_crater_layout;
   mizchi_crater_js -> mizchi_crater_core;
   mizchi_crater_js -> mizchi_crater_aomx;
-  mizchi_crater_js -> mizchi_crater_css;
   mizchi_crater_js -> mizchi_crater_dom;
   mizchi_crater_js -> mizchi_crater_layout;
   mizchi_crater_js -> mizchi_crater_painter;
   mizchi_crater_js -> mizchi_crater_renderer;
   mizchi_crater_layout -> mizchi_crater_core;
-  mizchi_crater -> mizchi_crater_css;
   mizchi_crater -> mizchi_crater_dom;
   mizchi_crater -> mizchi_crater_layout;
   mizchi_crater -> mizchi_crater_webvitals;
@@ -102,7 +93,6 @@ digraph crater_modules {
   mizchi_crater_painter -> mizchi_crater_core;
   mizchi_crater_painter -> mizchi_crater_terminal_protocol;
   mizchi_crater_renderer -> mizchi_crater_core;
-  mizchi_crater_renderer -> mizchi_crater_css;
   mizchi_crater_renderer -> mizchi_crater_dom;
   mizchi_crater_renderer -> mizchi_crater_layout;
   mizchi_crater_renderer -> mizchi_crater_painter;
@@ -111,7 +101,6 @@ digraph crater_modules {
   mizchi_crater_testing -> mizchi_crater_browser;
   mizchi_crater_testing -> mizchi_crater_browser_native;
   mizchi_crater_testing -> mizchi_crater_browser_runtime;
-  mizchi_crater_testing -> mizchi_crater_css;
   mizchi_crater_testing -> mizchi_crater_dom;
   mizchi_crater_testing -> mizchi_crater_layout;
   mizchi_crater_tools -> mizchi_crater_webdriver_bidi;
@@ -123,6 +112,7 @@ digraph crater_modules {
   mizchi_crater_webdriver_bidi -> mizchi_crater_painter;
   mizchi_crater_webdriver_bidi -> mizchi_crater_renderer;
   mizchi_crater_webdriver_bidi -> mizchi_crater_browser;
+  mizchi_crater_webdriver_bidi -> mizchi_crater_browser_http;
   mizchi_crater_webdriver_bidi -> mizchi_crater_browser_helpers;
   mizchi_crater_webvitals -> mizchi_crater_core;
 }

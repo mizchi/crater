@@ -437,10 +437,10 @@ function ensureCraterDistBuilt() {
     [
       "moon",
       [
+        "-C",
+        ".",
         "build",
-        "--manifest-path",
-        path.join(REPO_ROOT, "browser", "moon.mod.json"),
-        path.join(REPO_ROOT, "browser", "cmd", "crater"),
+        "cmd/crater",
         "--target",
         "js",
         "--release",

@@ -2,11 +2,16 @@
 /// JavaScript fetch() wrapper for JS target
 
 ///|
-/// Disable TLS certificate verification for Node.js
-/// Terminal browser doesn't need strict TLS - content rendering is the priority
+/// Optionally disable TLS certificate verification for Node.js.
+/// This is gated behind CRATER_ALLOW_INSECURE_TLS=1 so normal test runs
+/// do not trigger Node's insecure TLS warning.
 extern "js" fn js_disable_tls_verify() -> Unit =
   #| () => {
-  #|   if (typeof process !== 'undefined' && process.env) {
+  #|   if (
+  #|     typeof process !== 'undefined' &&
+  #|     process.env &&
+  #|     process.env.CRATER_ALLOW_INSECURE_TLS === '1'
+  #|   ) {
   #|     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
   #|   }
   #| }

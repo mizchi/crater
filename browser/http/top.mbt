@@ -38,10 +38,10 @@ pub fn classify_request(
   url~ : String,
   origin~ : String,
   mode~ : RequestMode,
-  method~ : String,
+  http_method~ : String,
   headers~ : Map[String, String],
 ) -> CorsDecision {
-  @cors.classify_request(url~, origin~, mode~, method~, headers~)
+  @cors.classify_request(url~, origin~, mode~, http_method~, headers~)
 }
 
 ///|

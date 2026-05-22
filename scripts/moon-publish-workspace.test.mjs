@@ -43,6 +43,7 @@ test('default publish plan excludes internal modules and respects dependency ord
 
   assert.ok(!names.includes('mizchi/crater-benchmarks'))
   assert.ok(!names.includes('mizchi/crater-testing'))
+  assert.ok(names.includes('mizchi/crater-aomx'))
   assert.equal(skippedLocalDeps.size, 0)
 
   assertBefore(names, 'mizchi/crater-core', 'mizchi/crater-layout')
@@ -110,7 +111,7 @@ test('check command formatting uses dependency order and target-aware invocation
   assert.ok(wasmCommand)
   assert.equal(
     wasmCommand.command,
-    'moon check --manifest-path wasm/moon.mod.json --target wasm -j 1',
+    'moon -C wasm check --target wasm -j 1',
   )
 })
 
@@ -152,7 +153,7 @@ test('package command formatting mirrors publish order without network-facing dr
   assert.ok(httpCommand)
   assert.equal(
     httpCommand.command,
-    'moon package --manifest-path http/moon.mod.json --frozen',
+    'moon -C http package --frozen',
   )
 })
 
@@ -179,8 +180,8 @@ test('publish retries after registry propagation lag', () => {
     module: {
       name: 'mizchi/crater-browser-helpers',
     },
-    args: ['publish', '--manifest-path', 'browser_helpers/moon.mod.json', '--frozen'],
-    command: 'moon publish --manifest-path browser_helpers/moon.mod.json --frozen',
+    args: ['-C', 'browser_helpers', 'publish', '--frozen'],
+    command: 'moon -C browser_helpers publish --frozen',
   }]
   let publishAttempts = 0
 
@@ -217,9 +218,9 @@ test('publish retries after registry propagation lag', () => {
 
   assert.equal(exitCode, 0)
   assert.deepEqual(calls, [
-    'publish --manifest-path browser_helpers/moon.mod.json --frozen',
+    '-C browser_helpers publish --frozen',
     'update',
-    'publish --manifest-path browser_helpers/moon.mod.json --frozen',
+    '-C browser_helpers publish --frozen',
   ])
   assert.deepEqual(sleeps, [1234])
   assert.ok(
@@ -235,8 +236,8 @@ test('publish retries when registry metadata is present but the version is not s
     module: {
       name: 'mizchi/crater-browser',
     },
-    args: ['publish', '--manifest-path', 'browser/moon.mod.json', '--frozen'],
-    command: 'moon publish --manifest-path browser/moon.mod.json --frozen',
+    args: ['-C', 'browser', 'publish', '--frozen'],
+    command: 'moon -C browser publish --frozen',
   }]
   let publishAttempts = 0
 
@@ -273,9 +274,9 @@ test('publish retries when registry metadata is present but the version is not s
 
   assert.equal(exitCode, 0)
   assert.deepEqual(calls, [
-    'publish --manifest-path browser/moon.mod.json --frozen',
+    '-C browser publish --frozen',
     'update',
-    'publish --manifest-path browser/moon.mod.json --frozen',
+    '-C browser publish --frozen',
   ])
   assert.deepEqual(sleeps, [4321])
 })
@@ -286,8 +287,8 @@ test('publish skips duplicate version errors when resuming', () => {
     module: {
       name: 'mizchi/crater-browser-http',
     },
-    args: ['publish', '--manifest-path', 'http/moon.mod.json', '--frozen'],
-    command: 'moon publish --manifest-path http/moon.mod.json --frozen',
+    args: ['-C', 'http', 'publish', '--frozen'],
+    command: 'moon -C http publish --frozen',
   }]
 
   const exitCode = runCommands(commands, {

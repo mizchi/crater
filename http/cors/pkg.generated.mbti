@@ -6,7 +6,7 @@ import {
 }
 
 // Values
-pub fn classify_request(url~ : String, origin~ : String, mode~ : @crater-browser-http.RequestMode, method~ : String, headers~ : Map[String, String]) -> CorsDecision
+pub fn classify_request(url~ : String, origin~ : String, mode~ : @crater-browser-http.RequestMode, http_method~ : String, headers~ : Map[String, String]) -> CorsDecision
 
 pub fn is_safelisted_header(String) -> Bool
 
@@ -49,7 +49,7 @@ pub(all) struct PreflightEntry {
 pub(all) struct PreflightRequest {
   url : String
   origin : String
-  method : String
+  http_method : String
   request_headers : Array[String]
 }
 pub impl Show for PreflightRequest

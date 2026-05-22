@@ -3,6 +3,7 @@
   "version": "0.17.1",
   "repository": "https://github.com/mizchi/crater",
   "license": "Apache-2.0",
-  "description": "Reusable network state and encoding helpers for crater adapters",
+  "readme": "README.md",
+  "description": "WebDriver BiDi synthetic network state and byte/query encoding helpers for crater adapters",
   "preferred-target": "js"
 }

@@ -4,7 +4,7 @@ test "classify_request: simple GET same-origin is Allow" {
     url="https://example.com/api/x",
     origin="https://example.com",
     mode=@http_impl.RequestMode::Cors,
-    method="GET",
+    http_method="GET",
     headers={},
   )
   inspect(d, content="Allow")
@@ -16,7 +16,7 @@ test "classify_request: simple GET cross-origin is Allow (validate at response)"
     url="https://api.other.com/x",
     origin="https://example.com",
     mode=@http_impl.RequestMode::Cors,
-    method="GET",
+    http_method="GET",
     headers={},
   )
   inspect(d, content="Allow")
@@ -28,14 +28,14 @@ test "classify_request: POST cross-origin with custom header → PreflightRequir
     url="https://api.other.com/upload",
     origin="https://example.com",
     mode=@http_impl.RequestMode::Cors,
-    method="POST",
+    http_method="POST",
     headers={ "X-Csrf": "tok", "Content-Type": "application/json" },
   )
   match d {
     PreflightRequired(req) => {
       inspect(req.url, content="https://api.other.com/upload")
-      inspect(req.method, content="POST")
-      inspect(req.request_headers, content="[x-csrf]")
+      inspect(req.http_method, content="POST")
+      inspect(req.request_headers.join(","), content="x-csrf")
     }
     _ => panic()
   }
@@ -47,7 +47,7 @@ test "classify_request: NoCors + custom header → Blocked" {
     url="https://api.other.com/x",
     origin="https://example.com",
     mode=@http_impl.RequestMode::NoCors,
-    method="POST",
+    http_method="POST",
     headers={ "X-Csrf": "tok" },
   )
   match d {
@@ -92,7 +92,7 @@ test "validate_preflight_response: all required headers present → Ok" {
   let req = PreflightRequest::{
     url: "https://api.other.com/x",
     origin: "https://example.com",
-    method: "POST",
+    http_method: "POST",
     request_headers: ["content-type", "x-csrf"],
   }
   let resp = test_preflight_response(
@@ -114,7 +114,7 @@ test "validate_preflight_response: missing ACA-Origin → Err" {
   let req = PreflightRequest::{
     url: "https://api.other.com/x",
     origin: "https://example.com",
-    method: "POST",
+    http_method: "POST",
     request_headers: ["content-type"],
   }
   let resp = test_preflight_response(
@@ -133,7 +133,7 @@ test "validate_preflight_response: required method not listed → Err" {
   let req = PreflightRequest::{
     url: "https://api.other.com/x",
     origin: "https://example.com",
-    method: "DELETE",
+    http_method: "DELETE",
     request_headers: [],
   }
   let resp = test_preflight_response(
@@ -223,7 +223,7 @@ test "PreflightCache::get_or_validate: cache hit within Max-Age (fetcher called 
   let req = PreflightRequest::{
     url: "https://api.other.com/x",
     origin: "https://example.com",
-    method: "POST",
+    http_method: "POST",
     request_headers: ["content-type", "x-csrf"],
   }
   // Mutable counter via 1-element array (Ref not assumed available).
@@ -277,7 +277,7 @@ test "PreflightCache::get_or_validate: max_entries cap evicts oldest in FIFO ord
     test_preflight_response(
       status=204,
       aca_origin=r.origin,
-      aca_methods=r.method,
+      aca_methods=r.http_method,
       aca_headers=r.request_headers.join(", "),
       aca_max_age="600",
     )
@@ -286,19 +286,19 @@ test "PreflightCache::get_or_validate: max_entries cap evicts oldest in FIFO ord
   let req_a = PreflightRequest::{
     url: "https://api.other.com/a",
     origin: "https://example.com",
-    method: "PUT",
+    http_method: "PUT",
     request_headers: ["x-a"],
   }
   let req_b = PreflightRequest::{
     url: "https://api.other.com/b",
     origin: "https://example.com",
-    method: "PUT",
+    http_method: "PUT",
     request_headers: ["x-b"],
   }
   let req_c = PreflightRequest::{
     url: "https://api.other.com/c",
     origin: "https://example.com",
-    method: "PUT",
+    http_method: "PUT",
     request_headers: ["x-c"],
   }
   let _ = cache.get_or_validate(req_a, now, fetcher)
@@ -326,7 +326,7 @@ test "PreflightCache::get_or_validate: Access-Control-Max-Age is clamped to 7200
   let req = PreflightRequest::{
     url: "https://api.other.com/clamp",
     origin: "https://example.com",
-    method: "PUT",
+    http_method: "PUT",
     request_headers: ["x-token"],
   }
   let fetcher = fn(_r : PreflightRequest) -> @http_impl.HttpResponse {
@@ -349,7 +349,7 @@ test "PreflightCache::get_or_validate: Access-Control-Max-Age is clamped to 7200
     "|" +
     req.url +
     "|" +
-    req.method +
+    req.http_method +
     "|" +
     req.request_headers.join(",")
   match cache.entries.get(key) {
@@ -364,7 +364,7 @@ test "PreflightCache::contains_fresh agrees with get_or_validate (hit, miss-by-e
   let req = PreflightRequest::{
     url: "https://api.example.com/x",
     origin: "https://example.com",
-    method: "POST",
+    http_method: "POST",
     request_headers: ["x-csrf"],
   }
   let now = fn() -> Double { 1000.0 }
@@ -393,7 +393,7 @@ test "PreflightCache::contains_fresh agrees with get_or_validate (hit, miss-by-e
   let mismatch = PreflightRequest::{
     url: "https://api.example.com/x",
     origin: "https://example.com",
-    method: "POST",
+    http_method: "POST",
     request_headers: ["x-csrf", "x-not-allowed"],
   }
   inspect(cache.contains_fresh(mismatch, now), content="false")
@@ -405,7 +405,7 @@ test "PreflightCache::get_or_validate: cache miss past Max-Age (fetcher called t
   let req = PreflightRequest::{
     url: "https://api.other.com/y",
     origin: "https://example.com",
-    method: "PUT",
+    http_method: "PUT",
     request_headers: ["x-token"],
   }
   let calls : Array[Int] = [0]

@@ -49,14 +49,14 @@ jobs:
         run: |
           moon version --all
           moon update
-          moon update --manifest-path browser/moon.mod.json
+          moon -C browser update
 
       - name: Install npm dependencies
         run: npm install
 
       - name: Build WASM component
         run: |
-          moon build --manifest-path wasm/moon.mod.json --target wasm --release
+          moon -C wasm build --target wasm --release
           wasm-tools component embed --world crater wasm/wit wasm/_build/wasm/release/build/gen/gen.wasm -o wasm/_build/crater-embedded.wasm
           wasm-tools component new wasm/_build/crater-embedded.wasm -o wasm/_build/crater.wasm
           npx jco transpile wasm/_build/crater.wasm -o wasm/dist --name crater

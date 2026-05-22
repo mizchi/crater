@@ -18,7 +18,7 @@ fn min_int(a : Int, b : Int) -> Int {
 
 ///|
 /// Result of CLS calculation
-pub struct LayoutShift {
+pub(all) struct LayoutShift {
   impact_fraction : Double // 衝撃率: affected viewport fraction
   distance_fraction : Double // 距離率: movement relative to viewport
   score : Double // impact_fraction × distance_fraction

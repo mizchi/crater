@@ -9,9 +9,9 @@ const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(SCRIPT_DIR, "..", "..");
 const BASELINE_PATH = path.join(REPO_ROOT, "benchmarks", "tests", "component-vrt-bench-baseline.json");
 const BENCH_COMMAND = [
+  "-C",
+  "benchmarks",
   "bench",
-  "--manifest-path",
-  path.join(REPO_ROOT, "benchmarks", "moon.mod.json"),
   "-p",
   "mizchi/crater-benchmarks/component_vrt",
   "--target",

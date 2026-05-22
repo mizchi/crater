@@ -14,21 +14,16 @@ test "webdriver-bidi facade parses api method names" {
 }
 
 ///|
-test "webdriver-bidi facade handles cdp session queries" {
-  let session = @cdp.CdpSession::new("test-session")
-  let tree = session.get_tree()
-  let doc = tree.get_document()
-  let html = tree.create_element("html")
-  let body = tree.create_element("body")
-  let button = tree.create_element("button")
-  let _ = tree.append_child(doc, html)
-  let _ = tree.append_child(html, body)
-  let _ = tree.append_child(body, button)
-  let _ = tree.set_attribute(button, "id", "save")
-  session.set_title("Facade Title")
+test "webdriver-bidi facade exposes server configuration without cdp handlers" {
+  let config = BidiServerConfig::{
+    host: "127.0.0.1",
+    port: 9222,
+    auth_token: "test-token",
+  }
 
-  let found = handle_find_element(session, "id", "save")
-
-  inspect(found is Ok(_), content="true")
-  inspect(handle_get_title(session), content="Facade Title")
+  inspect(
+    config.web_socket_url(),
+    content="ws://127.0.0.1:9222/session/test-token",
+  )
+  let _server = BidiServer::new(config~)
 }

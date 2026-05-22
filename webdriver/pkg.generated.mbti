@@ -2,7 +2,6 @@
 package "mizchi/crater-webdriver-bidi"
 
 import {
-  "mizchi/crater-browser/cdp",
   "mizchi/crater-webdriver-bidi/contract",
   "mizchi/crater-webdriver-bidi/rpc",
   "mizchi/crater-webdriver-bidi/server",
@@ -10,26 +9,6 @@ import {
 }
 
 // Values
-pub fn handle_element_click(@cdp.CdpSession, Int) -> Result[Unit, @webdriver.CdpHandlerError]
-
-pub fn handle_find_element(@cdp.CdpSession, String, String) -> Result[Int, @webdriver.CdpHandlerError]
-
-pub fn handle_find_elements(@cdp.CdpSession, String, String) -> Result[Array[Int], @webdriver.CdpHandlerError]
-
-pub fn handle_get_current_url(@cdp.CdpSession) -> String
-
-pub fn handle_get_element_attribute(@cdp.CdpSession, Int, String) -> Result[String?, @webdriver.CdpHandlerError]
-
-pub fn handle_get_element_tag_name(@cdp.CdpSession, Int) -> Result[String, @webdriver.CdpHandlerError]
-
-pub fn handle_get_element_text(@cdp.CdpSession, Int) -> Result[String, @webdriver.CdpHandlerError]
-
-pub fn handle_get_title(@cdp.CdpSession) -> String
-
-pub fn handle_navigate(@cdp.CdpSession, String) -> Result[Unit, @webdriver.CdpHandlerError]
-
-pub fn handle_rpc(@webdriver.CdpSessionManager, @rpc.RpcRequest) -> @rpc.RpcResponse
-
 pub fn parse_method(String) -> @contract.ApiMethod?
 
 // Errors
@@ -46,10 +25,6 @@ pub using @webdriver {type BidiServer}
 pub using @webdriver {type BidiServerConfig}
 
 pub using @contract {type Capabilities}
-
-pub using @webdriver {type CdpHandlerError}
-
-pub using @webdriver {type CdpSessionManager}
 
 pub using @contract {type ErrorCode}
 

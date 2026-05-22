@@ -133,7 +133,7 @@ export function formatPublishCommands(
   } = {},
 ) {
   return orderedModules.map((module) => {
-    const args = ['publish', '--manifest-path', module.manifestRel]
+    const args = ['-C', module.relativeDir, 'publish']
     if (frozen) args.push('--frozen')
     if (dryRun) args.push('--dry-run')
     args.push(...extraMoonArgs)
@@ -153,7 +153,7 @@ export function formatPackageCommands(
   } = {},
 ) {
   return orderedModules.map((module) => {
-    const args = ['package', '--manifest-path', module.manifestRel]
+    const args = ['-C', module.relativeDir, 'package']
     if (frozen) args.push('--frozen')
     args.push(...extraMoonArgs)
     return {
@@ -178,9 +178,9 @@ export function formatCheckCommands(
 ) {
   return orderedModules.map((module) => {
     const args = [
+      '-C',
+      module.relativeDir,
       'check',
-      '--manifest-path',
-      module.manifestRel,
       '--target',
       resolveCheckTarget(module),
       '-j',
@@ -222,6 +222,8 @@ Notes:
     still depend on it, the script prints a warning and assumes it is already published.
   - On macOS, \`--dry-run\` uses \`moon package\` by default to avoid the current
     Moon CLI panic in \`moon publish --dry-run\`.
+  - Commands use \`moon -C <module-dir>\` instead of the deprecated per-manifest
+    selector.
 `)
 }
 

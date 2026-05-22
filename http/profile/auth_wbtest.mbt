@@ -8,11 +8,11 @@ test "AuthState::default has empty origin_headers" {
 test "set_origin_header round-trips through header_for_origin" {
   let state = AuthState::default()
   state.set_origin_header("https://api.example.com", "Bearer abc123")
-  inspect(
-    state.header_for_origin("https://api.example.com"),
-    content="Some(Bearer abc123)",
-  )
-  inspect(state.header_for_origin("https://other.com"), content="None")
+  match state.header_for_origin("https://api.example.com") {
+    Some(header) => inspect(header, content="Bearer abc123")
+    None => fail("expected origin header")
+  }
+  inspect(state.header_for_origin("https://other.com") is None, content="true")
 }
 
 ///|
@@ -20,10 +20,10 @@ test "set_origin_header overwrites prior value for same origin" {
   let state = AuthState::default()
   state.set_origin_header("https://api.example.com", "Bearer first")
   state.set_origin_header("https://api.example.com", "Bearer second")
-  inspect(
-    state.header_for_origin("https://api.example.com"),
-    content="Some(Bearer second)",
-  )
+  match state.header_for_origin("https://api.example.com") {
+    Some(header) => inspect(header, content="Bearer second")
+    None => fail("expected origin header")
+  }
 }
 
 ///|
@@ -31,7 +31,10 @@ test "clear_origin_header removes the entry" {
   let state = AuthState::default()
   state.set_origin_header("https://api.example.com", "Bearer abc")
   state.clear_origin_header("https://api.example.com")
-  inspect(state.header_for_origin("https://api.example.com"), content="None")
+  inspect(
+    state.header_for_origin("https://api.example.com") is None,
+    content="true",
+  )
 }
 
 ///|
@@ -42,8 +45,8 @@ test "list_origins returns sorted origins" {
   state.set_origin_header("https://c.example.com", "Bearer c")
   let origins = state.list_origins()
   inspect(
-    origins,
-    content="[https://a.example.com, https://b.example.com, https://c.example.com]",
+    origins.join(", "),
+    content="https://a.example.com, https://b.example.com, https://c.example.com",
   )
 }
 
