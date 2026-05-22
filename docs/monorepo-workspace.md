@@ -143,7 +143,7 @@ through `src/` compatibility wrappers.
 The workspace now follows a lockstep MoonBit versioning policy.
 
 - repo-managed Moon modules in this repository share the same release line
-- the current workspace-split line is `0.17.x`
+- the current workspace-split line is `0.18.x`
 - path dependencies inside the workspace are kept on the same version so
   publish metadata matches the repo release
 - npm package versions remain independent and may move on a different cadence

@@ -1,15 +1,15 @@
 {
   "name": "mizchi/crater-painter",
-  "version": "0.17.1",
+  "version": "0.18.0",
   "deps": {
     "mizchi/css": "0.2.0",
     "mizchi/crater-core": {
       "path": "../core",
-      "version": "0.17.1"
+      "version": "0.18.0"
     },
     "mizchi/crater-terminal-protocol": {
       "path": "../terminal_protocol",
-      "version": "0.17.1"
+      "version": "0.18.0"
     },
     "mizchi/font": "0.7.3",
     "mizchi/svg": "0.2.1",

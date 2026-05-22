@@ -1,6 +1,6 @@
 {
   "name": "mizchi/crater-html-assets",
-  "version": "0.17.1",
+  "version": "0.18.0",
   "repository": "https://github.com/mizchi/crater",
   "license": "Apache-2.0",
   "description": "Lightweight HTML asset discovery helpers for crater",

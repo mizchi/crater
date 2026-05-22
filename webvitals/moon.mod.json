@@ -1,11 +1,11 @@
 {
   "name": "mizchi/crater-webvitals",
-  "version": "0.17.1",
+  "version": "0.18.0",
   "deps": {
     "mizchi/css": "0.2.0",
     "mizchi/crater-core": {
       "path": "../core",
-      "version": "0.17.1"
+      "version": "0.18.0"
     }
   },
   "readme": "README.md",

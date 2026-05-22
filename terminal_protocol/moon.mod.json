@@ -1,6 +1,6 @@
 {
   "name": "mizchi/crater-terminal-protocol",
-  "version": "0.17.1",
+  "version": "0.18.0",
   "deps": {
     "mizchi/tui-terminal-protocol": "0.1.2",
     "moonbitlang/async": "0.17.1"

@@ -1,6 +1,6 @@
 {
   "name": "mizchi/crater-core",
-  "version": "0.17.1",
+  "version": "0.18.0",
   "deps": {
     "mizchi/css": "0.2.0"
   },
