@@ -62,7 +62,6 @@ pkf run spec-check                                          # contract が壊れ
 | `bug.runtime.fetch-no-cors-gate` | runtime `fetch()` が `script_fetch_with_cors` を通らない | PR #132 |
 | `diagnostic.css-rule-usage-tracking` | dead CSS rule tracking | #27 |
 | `tui.raster-image-display` | TUI JPEG / PNG / GIF | #16 |
-| `ci.dead-module-detection` | dead-module sweep 続き | #60 |
 | `ci.affected-required-check` | affected pkfire の required 化判断 | — |
 | `ci.flaker-vrt-harness-contract` | vrt-harness consumer payload 接続 | — |
 

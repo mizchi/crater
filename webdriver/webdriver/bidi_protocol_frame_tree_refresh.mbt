@@ -33,6 +33,26 @@ fn BidiProtocol::refresh_child_contexts_from_iframes(
 }
 
 ///|
+/// Register iframe elements that were inserted by an already-completed
+/// script.evaluate call. This intentionally avoids
+/// apply_effective_viewport_to_runtime_context: evaluate applies it at the
+/// start of the command, and applying it again here would drain deferred
+/// runtime bridges (notably userPromptOpened) too early.
+fn BidiProtocol::refresh_child_contexts_from_runtime_iframes_after_eval(
+  self : BidiProtocol,
+  parent_ctx_id : String,
+) -> Unit {
+  set_runtime_context(parent_ctx_id)
+  let frame_sources = get_runtime_iframe_sources()
+  if frame_sources.length() == 0 {
+    return
+  }
+  self.refresh_child_contexts_from_iframe_sources_with_depth(
+    parent_ctx_id, frame_sources, 0,
+  )
+}
+
+///|
 /// Rebuild child contexts from iframe elements with recursion guard.
 fn BidiProtocol::refresh_child_contexts_from_iframes_with_depth(
   self : BidiProtocol,
@@ -43,10 +63,28 @@ fn BidiProtocol::refresh_child_contexts_from_iframes_with_depth(
     return
   }
   let frame_sources = self.collect_iframe_sources(parent_ctx_id)
+  self.refresh_child_contexts_from_iframe_sources_with_depth(
+    parent_ctx_id, frame_sources, depth,
+  )
+}
+
+///|
+fn BidiProtocol::refresh_child_contexts_from_iframe_sources_with_depth(
+  self : BidiProtocol,
+  parent_ctx_id : String,
+  frame_sources : Array[String],
+  depth : Int,
+) -> Unit {
+  let existing_children = self.context_children.get(parent_ctx_id).unwrap_or([])
   let user_ctx = self.context_user_context
     .get(parent_ctx_id)
     .unwrap_or("default")
+  let mut frame_index = 0
   for src in frame_sources {
+    if frame_index < existing_children.length() {
+      frame_index += 1
+      continue
+    }
     let child_ctx_id = self.create_child_context(parent_ctx_id, user_ctx)
     self.emit_context_created(
       child_ctx_id,
@@ -84,5 +122,6 @@ fn BidiProtocol::refresh_child_contexts_from_iframes_with_depth(
         depth + 1,
       )
     }
+    frame_index += 1
   }
 }

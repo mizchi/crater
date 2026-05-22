@@ -27,6 +27,17 @@ checkFlaker: pkfire.Task = new {
   inputs = src.flakerSources
 }
 
+checkDeadModules: pkfire.Task = new {
+  name = "check-dead-modules"
+  description = "Detect unallowlisted MoonBit packages with no internal imports"
+  visibility = "internal"
+  cmd = "node scripts/find-dead-mbt-packages.mjs"
+  inputs {
+    ...src.moonSources
+    "scripts/find-dead-mbt-packages.mjs"
+  }
+}
+
 checkTaskfile: pkfire.Task = new {
   name = "check-taskfile"
   description = "Validate pkfire Taskfile wiring with pkf lint"
@@ -51,6 +62,7 @@ check: pkfire.Task = new {
     checkMoon
     checkTs
     checkFlaker
+    checkDeadModules
     checkTaskfile
     checkMbti
     spec.specCheck
@@ -62,6 +74,7 @@ tasks: Listing<pkfire.Task> = new {
   checkMoon
   checkTs
   checkFlaker
+  checkDeadModules
   checkTaskfile
   checkMbti
   check

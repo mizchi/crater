@@ -110,3 +110,16 @@ test "fragment + setAttribute src combination registers a child" {
   let children = proto.context_children.get("session-1").unwrap_or([])
   assert_true(children.length() >= 1)
 }
+
+///|
+test "iframe inserted across separate evaluates registers a child" {
+  let proto = adv_proto()
+  adv_eval(
+    proto, 2, "globalThis.__pendingFrame = document.createElement('iframe'); globalThis.__pendingFrame.src = '/late-frame';",
+  )
+  let before_insert = proto.context_children.get("session-1").unwrap_or([])
+  assert_eq(before_insert.length(), 0)
+  adv_eval(proto, 3, "document.body.appendChild(globalThis.__pendingFrame);")
+  let after_insert = proto.context_children.get("session-1").unwrap_or([])
+  assert_true(after_insert.length() >= 1)
+}

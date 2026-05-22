@@ -497,6 +497,16 @@ scenarios {
     reviewStatus = "approved"
     contributes { "goal.protocol-compat"; "goal.dom-compat" }
   }
+  new {
+    id = "protocol.bidi-async-iframe-cross-evaluate"
+    name = "BiDi iframe insertion across evaluates registers children"
+    description =
+      "script.evaluate registers iframe child contexts even when one evaluate creates and stores an iframe element and a later evaluate appends it to the document. Eval-end runtime iframe scanning adds only missing child contexts and avoids re-draining runtime bridges such as userPromptOpened. See GitHub issue #198."
+    tags { "protocol"; "bidi"; "iframe"; "issue:198" }
+    severity = "major"
+    reviewStatus = "approved"
+    contributes { "goal.protocol-compat"; "goal.dom-compat" }
+  }
 
   // -- Diagnostic APIs (vrt-harness CSS challenge driven) -------------------
   new {
@@ -939,10 +949,10 @@ scenarios {
     id = "ci.dead-module-detection"
     name = "dead-module detection has documented methodology"
     description =
-      "Document the dead-module sweep methodology and act on remaining cleanup candidates surfaced during pre-release boundary tightening. See GitHub issue #60."
+      "scripts/find-dead-mbt-packages.mjs walks repo-local MoonBit package manifests, derives canonical import paths from the nearest moon.mod.json, ignores generated dependency trees and test/benchmark packages, and fails check-dead-modules when a non-main package has no internal import unless it is explicitly allowlisted as a build-tooling or compatibility facade. See GitHub issue #60."
     tags { "ci"; "workspace"; "boundary"; "issue:60" }
     severity = "minor"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.ci-efficiency" }
   }
   new {

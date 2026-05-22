@@ -254,6 +254,15 @@ tests {
       "bash -lc 'set -euo pipefail; json=$(pkf lint --json); printf \"%s\" \"$json\" | grep -Fq \"\\\"findings\\\": []\"'"
   }
   new {
+    name = "ci_dead_module_detection_guard"
+    description =
+      "The dead-module detector should be wired as a pkfire gate and pass with only explicitly allowlisted build-tooling or compatibility packages."
+    tags { "ci"; "workspace"; "boundary"; "issue:60" }
+    specRef { "ci.dead-module-detection" }
+    workdir = ".."
+    cmd = "pkf run " + check.checkDeadModules.name
+  }
+  new {
     name = "pkfire_lists_taskfile_diagnostics_tasks"
     description =
       "The Taskfile should expose pkfire lint, doctor, and long-list diagnostics without bloating the public task list."
@@ -314,6 +323,16 @@ tests {
     workdir = ".."
     cmd =
       "bash -lc 'set -e; grep -Fq -- \"extract handles nested property chain after contentWindow\" webdriver/webdriver/bidi_iframe_content_window_mirror_wbtest.mbt; grep -Fq -- \"extract handles array index chain after contentWindow\" webdriver/webdriver/bidi_iframe_content_window_mirror_wbtest.mbt; grep -Fq -- \"extract rejects contentWindow method calls\" webdriver/webdriver/bidi_iframe_content_window_mirror_wbtest.mbt; grep -Fq -- \"contentWindow nested property mirror writes parent value\" webdriver/webdriver/bidi_iframe_content_window_mirror_wbtest.mbt; grep -Fq -- \"read_iframe_mirror_bracket_end\" webdriver/webdriver/bidi_iframe_content_window_mirror.mbt; grep -Fq -- \"is_iframe_mirror_rhs_terminator\" webdriver/webdriver/bidi_iframe_content_window_mirror.mbt'"
+  }
+  new {
+    name = "protocol_bidi_async_iframe_cross_evaluate"
+    description =
+      "script.evaluate should register iframe child contexts when creation and insertion happen in separate evaluate calls."
+    tags { "protocol"; "bidi"; "iframe"; "issue:198" }
+    specRef { "protocol.bidi-async-iframe-cross-evaluate" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; grep -Fq -- \"iframe inserted across separate evaluates registers a child\" webdriver/webdriver/bidi_iframe_advanced_patterns_wbtest.mbt; grep -Fq -- \"refresh_child_contexts_from_runtime_iframes_after_eval\" webdriver/webdriver/bidi_protocol_frame_tree_refresh.mbt; grep -Fq -- \"frame_index < existing_children.length()\" webdriver/webdriver/bidi_protocol_frame_tree_refresh.mbt; grep -Fq -- \"refresh_child_contexts_from_runtime_iframes_after_eval(ctx_id)\" webdriver/webdriver/bidi_protocol_script_eval.mbt'"
   }
   new {
     name = "paint_gradient_vrt_fixtures_exist"

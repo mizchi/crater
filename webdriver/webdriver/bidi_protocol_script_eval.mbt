@@ -428,6 +428,7 @@ fn BidiProtocol::handle_script_evaluate(
       realm_id,
       ctx_id,
     )
+    self.refresh_child_contexts_from_runtime_iframes_after_eval(ctx_id)
     self.send_raw(raw)
     return
   }
@@ -487,6 +488,7 @@ fn BidiProtocol::handle_script_evaluate(
             self.process_console_entries(eval_result, ctx_id, realm_id)
           }
           self.emit_synthetic_mutation_observer_messages(ctx_id, realm_id, expr)
+          self.refresh_child_contexts_from_runtime_iframes_after_eval(ctx_id)
           let eval_result = self.maybe_adjust_document_dimensions_eval_result(
             expr, eval_result,
           )
@@ -537,6 +539,7 @@ fn BidiProtocol::handle_script_evaluate(
     self.process_console_entries(eval_result, ctx_id, realm_id)
   }
   self.emit_synthetic_mutation_observer_messages(ctx_id, realm_id, expr)
+  self.refresh_child_contexts_from_runtime_iframes_after_eval(ctx_id)
   let eval_result = self.maybe_adjust_document_dimensions_eval_result(
     expr, eval_result,
   )
