@@ -585,4 +585,24 @@ tests {
     cmd =
       "bash -lc 'set -e; test -f webdriver/webdriver/bidi_runtime_cookie_parity_wbtest.mbt; grep -Fq -- \"cookie URL filter parity: 10 representative cases\" webdriver/webdriver/bidi_runtime_cookie_parity_wbtest.mbt; grep -Fq -- \"storage_cookie_matches_request_url\" webdriver/webdriver/bidi_runtime_cookie_parity_wbtest.mbt; grep -Fq -- \"__bidiResolveCookies\" webdriver/webdriver/bidi_runtime_cookie_parity_wbtest.mbt; test -f webdriver/webdriver/bidi_storage.mbt; grep -Fq -- \"fn storage_cookie_matches_request_url\" webdriver/webdriver/bidi_storage.mbt; test -f webdriver/webdriver/bidi_runtime_context.mbt; grep -Fq -- \"globalThis.__bidiResolveCookies\" webdriver/webdriver/bidi_runtime_context.mbt'"
   }
+  new {
+    name = "playwright_synthetic_navigation_url"
+    description =
+      "CraterBidiPage.page.click drains synthetic navigation after input.performActions, and the pointer runtime routes submit buttons through requestSubmit so form GET updates page.url. Covered by tests/playwright-adapter-user-scenarios.test.ts."
+    tags { "playwright"; "navigation"; "issue:208" }
+    specRef { "protocol.playwright-synthetic-navigation-url" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; test -f tests/playwright-adapter-user-scenarios.test.ts; grep -Fq -- \"form submit through page.click updates page.url\" tests/playwright-adapter-user-scenarios.test.ts; grep -Fq -- \"await this.flushPendingNavigation();\" webdriver/playwright/adapter.ts; grep -Fq -- \"await this.refreshCurrentUrl();\" webdriver/playwright/adapter.ts; grep -Fq -- \"buttonType === \\\"submit\\\"\" webdriver/webdriver/bidi_runtime_input_pointer.mbt; grep -Fq -- \"form.requestSubmit(safeTarget)\" webdriver/webdriver/bidi_runtime_input_pointer.mbt'"
+  }
+  new {
+    name = "playwright_actionability_visible_form_input"
+    description =
+      "CraterBidiPage actionability treats stale ancestor computed display:none as non-authoritative when the target has a rendered box and no explicit hidden state. Covered by tests/playwright-adapter-user-scenarios.test.ts."
+    tags { "playwright"; "actionability"; "issue:207" }
+    specRef { "protocol.playwright-actionability-visible-form-input" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; test -f tests/playwright-adapter-user-scenarios.test.ts; grep -Fq -- \"form input remains actionable when ancestor computed display is stale\" tests/playwright-adapter-user-scenarios.test.ts; grep -Fq -- \"hasInlineDisplayNone\" webdriver/playwright/adapter.ts; grep -Fq -- \"targetHasRenderedBox\" webdriver/playwright/adapter.ts; grep -Fq -- \"style.display === \\\"none\\\" && !targetHasRenderedBox\" webdriver/playwright/adapter.ts'"
+  }
 }

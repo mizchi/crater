@@ -185,6 +185,60 @@ test.describe("Crater Playwright adapter user scenarios", () => {
     await expect(page.locator("#hidden").isHidden()).resolves.toBe(true);
   });
 
+  test("form submit through page.click updates page.url", async () => {
+    await page.setContentWithScripts(`
+      <html>
+        <body>
+          <form action="https://example.org/q" method="GET">
+            <input id="q" name="query" />
+            <button id="go" type="submit">Go</button>
+          </form>
+        </body>
+      </html>
+    `);
+
+    await page.fill("#q", "hello");
+    await page.click("#go");
+
+    expect(page.url()).toBe("https://example.org/q?query=hello");
+    await expect(page.evaluate(() => location.href)).resolves.toBe(
+      "https://example.org/q?query=hello",
+    );
+  });
+
+  test("form input remains actionable when ancestor computed display is stale", async () => {
+    await page.setContentWithScripts(`
+      <html>
+        <body>
+          <main id="app">
+            <form>
+              <input id="search" name="q" />
+            </form>
+          </main>
+          <script>
+            const nativeGetComputedStyle = window.getComputedStyle.bind(window);
+            window.getComputedStyle = (node) => {
+              const style = nativeGetComputedStyle(node);
+              if (node && node.id === "app") {
+                return new Proxy(style, {
+                  get(target, prop, receiver) {
+                    if (prop === "display") return "none";
+                    return Reflect.get(target, prop, receiver);
+                  },
+                });
+              }
+              return style;
+            };
+          </script>
+        </body>
+      </html>
+    `);
+
+    await page.fill("#search", "moonbit", { timeout: 250 });
+
+    await expect(page.locator("#search").inputValue()).resolves.toBe("moonbit");
+  });
+
   test("page aliases: use Playwright-style selectors and screenshot", async () => {
     await page.setContentWithScripts(`
       <html>

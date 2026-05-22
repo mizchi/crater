@@ -321,6 +321,25 @@ extern "js" fn js_input_dispatch_pointer_event_with_related(
   #|   const applyClickDefaultAction = () => {
   #|     if (safeTagName === "button" || safeTagName === "input") {
   #|       const inputType = safeInputType();
+  #|       const buttonType =
+  #|         safeTagName === "button" && !inputType
+  #|           ? "submit"
+  #|           : inputType;
+  #|       if (
+  #|         buttonType === "submit" ||
+  #|         (safeTagName === "input" && buttonType === "image")
+  #|       ) {
+  #|         const form = findAncestorForm(safeTarget);
+  #|         if (!form) return;
+  #|         if (typeof form.requestSubmit === "function") {
+  #|           try { form.requestSubmit(safeTarget); } catch (_e) {}
+  #|           return;
+  #|         }
+  #|         if (typeof form.submit === "function") {
+  #|           try { form.submit(); } catch (_e) {}
+  #|         }
+  #|         return;
+  #|       }
   #|       if (inputType === "reset") {
   #|         const form = findAncestorForm(safeTarget);
   #|         if (!form) return;

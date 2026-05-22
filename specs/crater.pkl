@@ -465,6 +465,28 @@ scenarios {
     reviewStatus = "draft"
     contributes { "goal.protocol-compat"; "goal.dom-compat" }
   }
+  new {
+    id = "protocol.playwright-synthetic-navigation-url"
+    name = "Playwright synthetic navigation updates page url"
+    description =
+      "page.click-driven form submission should mirror synthetic location navigation into page.url without requiring a real browser reload. See GitHub issue #208."
+    tags { "protocol"; "playwright"; "navigation"; "issue:208" }
+    severity = "major"
+    reviewStatus = "approved"
+    dependsOn { "browser.playwright" }
+    contributes { "goal.protocol-compat" }
+  }
+  new {
+    id = "protocol.playwright-actionability-visible-form-input"
+    name = "Playwright actionability accepts visible form inputs"
+    description =
+      "Locator actionability should not reject a form input solely because an ancestor reports stale computed display:none when the target has a rendered box and no explicit hidden state. See GitHub issue #207."
+    tags { "protocol"; "playwright"; "actionability"; "issue:207" }
+    severity = "major"
+    reviewStatus = "approved"
+    dependsOn { "browser.playwright" }
+    contributes { "goal.protocol-compat" }
+  }
 
   // -- Diagnostic APIs (vrt-harness CSS challenge driven) -------------------
   new {

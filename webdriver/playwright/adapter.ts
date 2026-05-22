@@ -1693,13 +1693,43 @@ function elementVisibleExpr(nodeExpr: string): string {
   return `(() => {
     const target = ${nodeExpr};
     if (!target) return false;
+    const attr = (node, name) => {
+      let value = null;
+      try {
+        if (node && typeof node.getAttribute === "function") value = node.getAttribute(name);
+      } catch (_e) {}
+      if ((value === null || value === undefined) && node && node._attrs) value = node._attrs[name];
+      return value == null ? "" : String(value);
+    };
+    const hasInlineDisplayNone = (node) => {
+      if (!node) return false;
+      try {
+        if (node.style && typeof node.style.display === "string") {
+          return node.style.display.trim().toLowerCase() === "none";
+        }
+      } catch (_e) {}
+      return /(?:^|;)\\s*display\\s*:\\s*none(?:\\s*!important)?\\s*(?:;|$)/i.test(attr(node, "style"));
+    };
+    const targetHasRenderedBox = (() => {
+      if (!target || typeof target.getBoundingClientRect !== "function") return true;
+      try {
+        const rect = target.getBoundingClientRect();
+        const width = Number(rect.width ?? ((rect.right ?? 0) - (rect.left ?? 0)));
+        const height = Number(rect.height ?? ((rect.bottom ?? 0) - (rect.top ?? 0)));
+        return width > 0 && height > 0;
+      } catch (_e) {
+        return true;
+      }
+    })();
     const styleOf = (node) => window.getComputedStyle ? window.getComputedStyle(node) : node.style;
     const ownStyle = styleOf(target) || {};
     if (ownStyle.visibility === "hidden" || ownStyle.visibility === "collapse") return false;
+    if (hasInlineDisplayNone(target) || ownStyle.display === "none") return false;
     let node = target;
     while (node && node.nodeType === 1) {
       const style = styleOf(node) || {};
-      if (node.hidden || style.display === "none") return false;
+      if (node.hidden || hasInlineDisplayNone(node)) return false;
+      if (style.display === "none" && !targetHasRenderedBox) return false;
       node = node.parentElement || node.parentNode || node._parent || null;
     }
     return true;
@@ -6040,6 +6070,8 @@ export class CraterBidiPage {
         },
       ],
     });
+    await this.flushPendingNavigation();
+    await this.refreshCurrentUrl();
   }
 
   private async performKey(actions: Array<Record<string, string>>): Promise<void> {
