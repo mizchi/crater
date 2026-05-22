@@ -507,6 +507,16 @@ scenarios {
     reviewStatus = "draft"
     contributes { "goal.diagnostic-api"; "goal.protocol-compat" }
   }
+  new {
+    id = "diagnostic.hover-forced-state-selector-target"
+    name = "forced hover selectors are targetable"
+    description =
+      "getComputedStylesWithState accepts target selectors that include forced user-action pseudo-classes such as .footer a:hover and .file-table .file-name a:hover. Crater strips the forced pseudo only for element lookup, then applies the requested forced state during cascade evaluation so VRT prescanners do not need Chromium fallback for subject hover rules. See GitHub issue #225."
+    tags { "diagnostic"; "vrt"; "hover"; "issue:225" }
+    severity = "major"
+    reviewStatus = "approved"
+    contributes { "goal.diagnostic-api"; "goal.protocol-compat" }
+  }
 
   // -- CI efficiency --------------------------------------------------------
   new {

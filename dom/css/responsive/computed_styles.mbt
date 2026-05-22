@@ -94,7 +94,9 @@ pub fn discover_computed_styles_with_state(
   let doc = @html.parse_document(html)
   let stylesheets = parse_document_stylesheets(doc)
   // Find the target element in the DOM
-  let target_sel = @selector.parse_selector_text(target_selector)
+  let target_sel = @selector.parse_selector_text(
+    forced_state_target_lookup_selector_text(target_selector, forced_states),
+  )
   let elements = collect_matching_elements(doc, target_sel)
   let normal_values : Map[String, String] = {}
   let forced_values : Map[String, String] = {}
@@ -129,6 +131,146 @@ pub fn discover_computed_styles_with_state(
     }
   }
   { normal: normal_values, forced: forced_values, diff }
+}
+
+///|
+fn forced_state_target_lookup_selector_text(
+  selector : String,
+  forced_states : @selector.ForcedPseudoStates,
+) -> String {
+  if forced_states.is_empty() {
+    return selector
+  }
+  let start = subject_selector_start(selector)
+  let prefix = selector.unsafe_substring(start=0, end=start)
+  let subject = selector.unsafe_substring(start~, end=selector.length())
+  let stripped = strip_forced_state_pseudos_from_subject_text(
+    subject, forced_states,
+  )
+  prefix + stripped
+}
+
+///|
+fn subject_selector_start(selector : String) -> Int {
+  let mut start = 0
+  let mut paren_depth = 0
+  let mut bracket_depth = 0
+  for i = 0; i < selector.length(); i = i + 1 {
+    let c = selector[i].to_int().unsafe_to_char()
+    if c == '(' {
+      paren_depth = paren_depth + 1
+    } else if c == ')' {
+      if paren_depth > 0 {
+        paren_depth = paren_depth - 1
+      }
+    } else if c == '[' {
+      bracket_depth = bracket_depth + 1
+    } else if c == ']' {
+      if bracket_depth > 0 {
+        bracket_depth = bracket_depth - 1
+      }
+    } else if paren_depth == 0 && bracket_depth == 0 {
+      if c == '>' || c == '+' || c == '~' || is_css_ascii_whitespace(c) {
+        start = i + 1
+      }
+    }
+  }
+  while start < selector.length() &&
+        is_css_ascii_whitespace(selector[start].to_int().unsafe_to_char()) {
+    start = start + 1
+  }
+  start
+}
+
+///|
+fn strip_forced_state_pseudos_from_subject_text(
+  subject : String,
+  forced_states : @selector.ForcedPseudoStates,
+) -> String {
+  let out = StringBuilder::new()
+  let mut paren_depth = 0
+  let mut bracket_depth = 0
+  let mut i = 0
+  while i < subject.length() {
+    if paren_depth == 0 && bracket_depth == 0 {
+      match forced_pseudo_token_length_at(subject, i, forced_states) {
+        Some(len) => {
+          i = i + len
+          continue
+        }
+        None => ()
+      }
+    }
+    let c = subject[i].to_int().unsafe_to_char()
+    out.write_char(c)
+    if c == '(' {
+      paren_depth = paren_depth + 1
+    } else if c == ')' {
+      if paren_depth > 0 {
+        paren_depth = paren_depth - 1
+      }
+    } else if c == '[' {
+      bracket_depth = bracket_depth + 1
+    } else if c == ']' {
+      if bracket_depth > 0 {
+        bracket_depth = bracket_depth - 1
+      }
+    }
+    i = i + 1
+  }
+  out.to_string()
+}
+
+///|
+fn forced_pseudo_token_length_at(
+  subject : String,
+  index : Int,
+  forced_states : @selector.ForcedPseudoStates,
+) -> Int? {
+  if forced_states.focus_visible &&
+    string_has_token_at(subject, index, ":focus-visible") {
+    Some(":focus-visible".length())
+  } else if forced_states.focus_within &&
+    string_has_token_at(subject, index, ":focus-within") {
+    Some(":focus-within".length())
+  } else if forced_states.active &&
+    string_has_token_at(subject, index, ":active") {
+    Some(":active".length())
+  } else if forced_states.hover && string_has_token_at(subject, index, ":hover") {
+    Some(":hover".length())
+  } else if forced_states.focus && string_has_token_at(subject, index, ":focus") {
+    Some(":focus".length())
+  } else {
+    None
+  }
+}
+
+///|
+fn string_has_token_at(s : String, index : Int, token : String) -> Bool {
+  let end = index + token.length()
+  if end > s.length() {
+    return false
+  }
+  for j = 0; j < token.length(); j = j + 1 {
+    if s[index + j] != token[j] {
+      return false
+    }
+  }
+  end == s.length() || !is_css_identifier_char(s[end].to_int().unsafe_to_char())
+}
+
+///|
+fn is_css_identifier_char(c : Char) -> Bool {
+  (c >= 'a' && c <= 'z') ||
+  (c >= 'A' && c <= 'Z') ||
+  (c >= '0' && c <= '9') ||
+  c == '-' ||
+  c == '_'
+}
+
+///|
+fn is_css_ascii_whitespace(c : Char) -> Bool {
+  c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\u{000C}'
 }
 
 ///|

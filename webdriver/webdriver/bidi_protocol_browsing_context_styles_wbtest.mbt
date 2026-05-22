@@ -286,6 +286,48 @@ test "bidi getAllComputedStyles returns selector keyed styles" {
 }
 
 ///|
+test "bidi getComputedStylesWithState accepts hover selector target" {
+  let proto = BidiProtocol::new()
+  ignore(
+    proto.process_message("{\"id\":1,\"method\":\"session.new\",\"params\":{}}"),
+  )
+  ignore(proto.take_messages())
+  let html = "<!DOCTYPE html><html><head><style>.file-table .file-name a { text-decoration: none; } .file-table .file-name a:hover { text-decoration: underline; }</style></head><body><table class='file-table'><tr><td class='file-name'><a href='/README.md'>README.md</a></td></tr></table></body></html>"
+  let navigate_message = "{\"id\":2,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"" +
+    js_test_build_html_data_url(html) +
+    "\",\"wait\":\"complete\"}}"
+  ignore(proto.process_message(navigate_message))
+  ignore(proto.take_messages())
+  ignore(
+    proto.process_message(
+      "{\"id\":3,\"method\":\"browsingContext.getComputedStylesWithState\",\"params\":{\"context\":\"session-1\",\"selector\":\".file-table .file-name a:hover\",\"forcedStates\":[\"hover\"],\"properties\":[\"text-decoration\"]}}",
+    ),
+  )
+  let result = extract_success_result(proto.take_messages())
+  let diff = match result.get("diff") {
+    Some(Array(items)) => items
+    _ => []
+  }
+  assert_eq(diff.length(), 1)
+  let entry = match diff[0] {
+    Object(map) => map
+    _ => {}
+  }
+  match entry.get("property") {
+    Some(String(value)) => assert_eq(value, "text-decoration")
+    _ => assert_true(false)
+  }
+  match entry.get("normal") {
+    Some(String(value)) => assert_eq(value, "none")
+    _ => assert_true(false)
+  }
+  match entry.get("forced") {
+    Some(String(value)) => assert_eq(value, "underline")
+    _ => assert_true(false)
+  }
+}
+
+///|
 test "bidi getCssRuleUsage reports matched and overridden rules" {
   let proto = BidiProtocol::new()
   ignore(

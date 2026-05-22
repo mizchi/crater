@@ -16,6 +16,60 @@ test "discover_computed_styles_with_state detects hover diff" {
 }
 
 ///|
+test "discover_computed_styles_with_state accepts hover selector target" {
+  let html =
+    #|<html><head><style>.footer a { text-decoration: none; } .footer a:hover { text-decoration: underline; }</style></head><body><footer class="footer"><a href="/docs">Docs</a></footer></body></html>
+  let forced = @selector.ForcedPseudoStates::{
+    ..@selector.ForcedPseudoStates::none(),
+    hover: true,
+  }
+  let result = discover_computed_styles_with_state(
+    html,
+    ".footer a:hover",
+    forced,
+    ["text-decoration"],
+  )
+  assert_eq(result.diff.length(), 1)
+  assert_eq(result.diff[0].property, "text-decoration")
+  assert_eq(result.diff[0].normal, "none")
+  assert_eq(result.diff[0].forced, "underline")
+}
+
+///|
+test "forced state target lookup strips only subject pseudo selector" {
+  let forced = @selector.ForcedPseudoStates::{
+    ..@selector.ForcedPseudoStates::none(),
+    hover: true,
+  }
+  assert_eq(
+    forced_state_target_lookup_selector_text(".footer a:hover", forced),
+    ".footer a",
+  )
+  assert_eq(
+    forced_state_target_lookup_selector_text(".nav:hover .item", forced),
+    ".nav:hover .item",
+  )
+  let focus = @selector.ForcedPseudoStates::{
+    ..@selector.ForcedPseudoStates::none(),
+    focus: true,
+  }
+  assert_eq(
+    forced_state_target_lookup_selector_text(".btn:focus-visible", focus),
+    ".btn:focus-visible",
+  )
+  let focus_visible = @selector.ForcedPseudoStates::{
+    ..@selector.ForcedPseudoStates::none(),
+    focus_visible: true,
+  }
+  assert_eq(
+    forced_state_target_lookup_selector_text(
+      ".btn:focus-visible", focus_visible,
+    ),
+    ".btn",
+  )
+}
+
+///|
 test "discover_computed_styles_with_state no diff without hover rule" {
   let html =
     #|<html><head><style>.btn { color: black; }</style></head><body><button class="btn">Click</button></body></html>
