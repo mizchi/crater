@@ -286,6 +286,16 @@ tests {
       "bash -lc 'set -e; test -f painter/paint/glyph/provider_wbtest.mbt; grep -Fq -- \"glyph_from_provider forwards numeric font_weight 500\" painter/paint/glyph/provider_wbtest.mbt; grep -Fq -- \"js_glyph_outline_commands_by_weight\" webdriver/webdriver/bidi_browsing_context_actual_paint.mbt; grep -Fq -- \"resolve_js_glyph_commands_by_weight\" webdriver/webdriver/bidi_browsing_context_actual_paint.mbt; grep -Fq -- \"__craterGlyphOutlineCommandsByWeight\" webdriver/bidi_main/start-with-font.ts; grep -Fq -- \"pickNearestFontWeight\" scripts/font-weight-resolve.ts; grep -Fq -- \"selectWeightCandidates\" scripts/font-weight-resolve.ts; grep -Fq -- \"declaredWeightsForEntry\" scripts/font-weight-resolve.ts; grep -Fq -- \"byWeight: Map<number, FontInstance>\" webdriver/bidi_main/start-with-font.ts; grep -Fq -- \"loadDeclaredExtraWeights\" webdriver/bidi_main/start-with-font.ts'"
   }
   new {
+    name = "paint_text_wrap_preserves_layout_line_count"
+    description =
+      "Painter glyph layout should not introduce extra visual lines when layout has already resolved the text block height."
+    tags { "paint"; "text"; "wrap"; "issue:154" }
+    specRef { "paint.text-wrap-layout-parity" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; grep -Fq -- \"layout_glyph_bitmaps preserves layout line count when glyph metrics drift wider\" painter/paint/glyph/layout_wbtest.mbt; grep -Fq -- \"draw_text_with_glyphs_clipped preserves expected layout line count\" painter/paint/raster/glyph_render_wbtest.mbt; grep -Fq -- \"expected_line_count\" painter/paint/glyph/layout.mbt; grep -Fq -- \"resolve_glyph_text_expected_line_count\" painter/paint/raster/raster_text.mbt'"
+  }
+  new {
     name = "paint_gradient_vrt_fixtures_exist"
     description =
       "tests/paint-vrt-gradients.test.ts exists and covers the five gradient cases (radial, conic, repeating-linear, repeating-radial, linear with explicit stops)."

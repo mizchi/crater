@@ -405,10 +405,10 @@ scenarios {
     id = "paint.text-wrap-layout-parity"
     name = "painter text wrap matches the layout engine"
     description =
-      "Close the gap between the painter's word-level wrap and the layout engine's precise wrap so real-world VRT diffs reflect text correctly. Source: TODO Now (P0)."
-    tags { "paint"; "text"; "wrap"; "todo:now" }
+      "The painter preserves the layout engine's resolved text line count when glyph metrics drift wider than layout metrics. PaintNode rasterization derives an expected line count from the layout height / line-height, and glyph layout relaxes its wrap width only when its own greedy wrap would add extra visual lines. Covered by painter/paint/glyph/layout_wbtest.mbt and painter/paint/raster/glyph_render_wbtest.mbt. See GitHub issue #154."
+    tags { "paint"; "text"; "wrap"; "issue:154"; "todo:now" }
     severity = "critical"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.paint-accuracy" }
   }
   new {

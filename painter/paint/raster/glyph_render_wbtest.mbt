@@ -373,6 +373,44 @@ test "draw_text_with_glyphs_clipped tolerates font-sized metric drift" {
 }
 
 ///|
+test "draw_text_with_glyphs_clipped preserves expected layout line count" {
+  @glyph.clear_glyph_caches()
+  let provider : @glyph.GlyphProvider = {
+    get_glyph: fn(codepoint, _font_size, _is_bold) {
+      let advance = if codepoint == ' '.to_int() { 3.0 } else { 6.0 }
+      (([] : Array[@svg.PathCommand]), advance)
+    },
+    get_kern: fn(_left, _right, _font_size, _is_bold) { 0.0 },
+    get_glyph_by_weight: None,
+    get_kern_by_weight: None,
+    ascent_ratio: 0.8,
+    get_glyph_for_family: None,
+    get_kern_for_family: None,
+    get_glyph_for_family_by_weight: None,
+    get_kern_for_family_by_weight: None,
+    get_ascent_for_family: None,
+  }
+  let fb = Framebuffer::new(96, 64)
+  let palette = DynamicPalette::new()
+  let used_height = draw_text_with_glyphs_clipped(
+    fb,
+    palette,
+    provider,
+    0,
+    0,
+    "AAAA AAAA AAAA",
+    30,
+    @svg.Color::rgb(0, 0, 0),
+    10.0,
+    10.0,
+    false,
+    None,
+    expected_line_count=2,
+  )
+  inspect(used_height, content="20")
+}
+
+///|
 test "draw_text_with_glyphs_clipped antialiases glyphs without clip" {
   @glyph.clear_glyph_caches()
   let provider : @glyph.GlyphProvider = {

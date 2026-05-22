@@ -70,3 +70,25 @@ fn resolve_glyph_text_wrap_width(
     w
   }
 }
+
+///|
+fn resolve_glyph_text_expected_line_count(
+  h : Int,
+  font_size : Double,
+  line_height : Double,
+) -> Int {
+  let single_line_height = if line_height > 0.0 {
+    line_height
+  } else {
+    font_size * 1.2
+  }
+  if h <= 0 || single_line_height <= 0.0 {
+    return 0
+  }
+  let lines = (h.to_double() / single_line_height).round().to_int()
+  if lines > 0 {
+    lines
+  } else {
+    1
+  }
+}

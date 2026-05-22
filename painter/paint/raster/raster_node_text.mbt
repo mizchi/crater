@@ -30,6 +30,11 @@ fn render_node_text_content(
             node.paint.line_height,
             text_content,
           )
+          let expected_line_count = resolve_glyph_text_expected_line_count(
+            h,
+            font_size,
+            node.paint.line_height,
+          )
           let _ = draw_text_with_glyphs_clipped(
             fb,
             palette,
@@ -48,6 +53,7 @@ fn render_node_text_content(
             letter_spacing=node.paint.letter_spacing,
             word_spacing=node.paint.word_spacing,
             font_weight=node.paint.font_weight,
+            expected_line_count~,
           )
         }
         None => {

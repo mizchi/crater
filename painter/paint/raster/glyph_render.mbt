@@ -22,6 +22,7 @@ fn draw_text_with_glyphs_clipped(
   letter_spacing? : Double = 0.0,
   word_spacing? : Double = 0.0,
   font_weight? : Double = 400.0,
+  expected_line_count? : Int = 0,
 ) -> Int {
   let text_opacity = clamp_opacity(opacity) * color.a.to_double() / 255.0
   let (placements, used_height) = @glyph.layout_glyph_bitmaps(
@@ -37,6 +38,7 @@ fn draw_text_with_glyphs_clipped(
     letter_spacing~,
     word_spacing~,
     font_weight~,
+    expected_line_count~,
   )
   let sixel_color = { r: color.r, g: color.g, b: color.b }
   let color_idx = palette.get_or_add(sixel_color)

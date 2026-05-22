@@ -1,6 +1,6 @@
 # TODO
 
-Last organized: 2026-05-20
+Last organized: 2026-05-22
 
 このファイルは pkspec scenario の navigation index と、 scenario に reify していない backlog の置き場。
 
@@ -24,7 +24,6 @@ pkf run spec-check                                          # contract が壊れ
 | `compat.css-values-baseline` | css-values WPT baseline 有効化 | #65, #67 |
 | `compat.css-inline-baseline` | css-inline WPT baseline 有効化 | #65, #66 |
 | `compat.css-filter-effects` | filter-effects 残 failure 潰し | #64 |
-| `paint.text-wrap-layout-parity` | painter / layout の text wrap 一致 | #154 |
 | `paint.text-glyph-metrics` | glyph metrics / AA Chromium parity | #47 |
 
 ## Next (P1) — pkspec scenarios

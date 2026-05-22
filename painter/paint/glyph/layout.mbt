@@ -149,6 +149,7 @@ pub fn layout_glyph_bitmaps(
   letter_spacing? : Double = 0.0,
   word_spacing? : Double = 0.0,
   font_weight? : Double = 400.0,
+  expected_line_count? : Int = 0,
 ) -> (Array[GlyphPlacement], Int) {
   let effective_font_weight = resolve_effective_font_weight(
     is_bold, font_weight,
@@ -284,5 +285,58 @@ pub fn layout_glyph_bitmaps(
       prev_cp = cp
     }
   }
-  (placements, (max_y_seen - y.to_double()).to_int())
+  let used_height = (max_y_seen - y.to_double()).to_int()
+  if expected_line_count > 0 && max_width > 0 && effective_line_height > 0.0 {
+    let actual_lines = (used_height.to_double() / effective_line_height)
+      .ceil()
+      .to_int()
+    if actual_lines > expected_line_count {
+      let mut relaxed_width = max_width
+      let mut best_placements = placements
+      let mut best_used_height = used_height
+      let mut best_lines = actual_lines
+      let mut attempt = 0
+      while attempt < 6 && best_lines > expected_line_count {
+        let proposed = (relaxed_width.to_double() * 1.2 + font_size)
+          .ceil()
+          .to_int()
+        relaxed_width = if proposed > relaxed_width {
+          proposed
+        } else {
+          relaxed_width + 1
+        }
+        let (candidate, candidate_height) = layout_glyph_bitmaps(
+          provider,
+          x,
+          y,
+          text,
+          relaxed_width,
+          font_size,
+          line_height,
+          is_bold,
+          font_family~,
+          letter_spacing~,
+          word_spacing~,
+          font_weight=effective_font_weight,
+        )
+        let candidate_lines = (candidate_height.to_double() /
+          effective_line_height)
+          .ceil()
+          .to_int()
+        if candidate_lines < expected_line_count {
+          break
+        }
+        if candidate_lines < best_lines {
+          best_placements = candidate
+          best_used_height = candidate_height
+          best_lines = candidate_lines
+        }
+        attempt = attempt + 1
+      }
+      if best_lines < actual_lines {
+        return (best_placements, best_used_height)
+      }
+    }
+  }
+  (placements, used_height)
 }

@@ -28,7 +28,7 @@ pub fn is_bold_font_weight(Double) -> Bool
 
 pub fn kern_from_provider(GlyphProvider, Int, Int, Double, Bool, String, Double) -> Double
 
-pub fn layout_glyph_bitmaps(GlyphProvider, Int, Int, String, Int, Double, Double, Bool, font_family? : String, letter_spacing? : Double, word_spacing? : Double, font_weight? : Double) -> (Array[GlyphPlacement], Int)
+pub fn layout_glyph_bitmaps(GlyphProvider, Int, Int, String, Int, Double, Double, Bool, font_family? : String, letter_spacing? : Double, word_spacing? : Double, font_weight? : Double, expected_line_count? : Int) -> (Array[GlyphPlacement], Int)
 
 pub fn measure_word_width(GlyphProvider, String, Double, Bool, font_family? : String, letter_spacing? : Double, word_spacing? : Double, font_weight? : Double) -> Double
 
