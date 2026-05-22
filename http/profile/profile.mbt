@@ -1,11 +1,10 @@
 ///|
-/// Per-session bag of user-agent override, cookie jar, HTTP cache, and
-/// auth state. Bundled so layers above can pass a single Profile value
-/// instead of threading each field separately. P1 keeps the Profile
-/// single per BrowserState; per-userContext partitioning is a P2
-/// scenario.
+/// Per-session bag of HTTP security state: cookie jar, HTTP cache,
+/// authorization state, and CORS preflight cache. Browser emulation
+/// state such as user-agent overrides intentionally lives outside this
+/// package so HTTP credentials and identity spoofing controls do not
+/// share the same mutation surface.
 pub struct Profile {
-  mut user_agent : String?
   mut cookie_jar : @cookie_jar.CookieJar
   http_cache : @cache.MemoryCacheBackend
   auth_state : AuthState
@@ -13,10 +12,9 @@ pub struct Profile {
 }
 
 ///|
-/// Default Profile: jar enabled, no UA override, fresh in-memory cache.
+/// Default Profile: jar enabled and fresh in-memory caches.
 pub fn Profile::default() -> Profile {
   Profile::{
-    user_agent: None,
     cookie_jar: @cookie_jar.CookieJar::new(enabled=true),
     http_cache: @cache.MemoryCacheBackend::new(max_entries=1000),
     auth_state: AuthState::default(),
@@ -25,38 +23,16 @@ pub fn Profile::default() -> Profile {
 }
 
 ///|
-/// Construct a Profile with explicit overrides. WebDriver sessions
-/// use this with `jar_enabled=true` (the default) so login flows
+/// Construct a Profile with explicit HTTP-state overrides. WebDriver
+/// sessions use this with `jar_enabled=true` (the default) so login flows
 /// work without the operator having to opt in.
-pub fn Profile::new(
-  user_agent? : String,
-  jar_enabled? : Bool = true,
-) -> Profile {
+pub fn Profile::new(jar_enabled? : Bool = true) -> Profile {
   Profile::{
-    user_agent,
     cookie_jar: @cookie_jar.CookieJar::new(enabled=jar_enabled),
     http_cache: @cache.MemoryCacheBackend::new(max_entries=1000),
     auth_state: AuthState::default(),
     preflight_cache: @cors.PreflightCache::new(),
   }
-}
-
-///|
-/// Returns the override string when set, else None — the caller
-/// (typically the WebDriver emulation layer) decides what to fall back
-/// to so this sub-package stays free of webdriver-side dependencies.
-pub fn Profile::effective_user_agent(self : Profile) -> String? {
-  self.user_agent
-}
-
-///|
-pub fn Profile::set_user_agent(self : Profile, user_agent : String) -> Unit {
-  self.user_agent = Some(user_agent)
-}
-
-///|
-pub fn Profile::clear_user_agent(self : Profile) -> Unit {
-  self.user_agent = None
 }
 
 ///|

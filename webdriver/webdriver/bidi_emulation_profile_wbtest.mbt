@@ -1,9 +1,7 @@
 ///|
-/// Verifies that BiDi `emulation.setUserAgentOverride` (global form, no
-/// `contexts` / `userContexts`) mirrors the override into the per-session
-/// Profile that BidiEmulationState now carries alongside the legacy
-/// `emulation_user_agent_global` field.
-test "emulation_user_agent_global is mirrored on session profile user agent" {
+/// BiDi `emulation.setUserAgentOverride` resolves through emulation state,
+/// not through the per-session HTTP Profile.
+test "global user agent override is resolved from emulation state" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(
     "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
@@ -13,14 +11,13 @@ test "emulation_user_agent_global is mirrored on session profile user agent" {
     "{\"id\":2,\"method\":\"emulation.setUserAgentOverride\",\"params\":{\"userAgent\":\"UA/test\"}}",
   )
   ignore(proto.take_messages())
-  let profile = proto.profile_for_session("session-1").unwrap()
-  assert_true(profile.effective_user_agent() is Some("UA/test"))
+  inspect(proto.resolve_effective_user_agent("session-1"), content="UA/test")
 }
 
 ///|
-/// Clearing the global override (`userAgent: null`) clears the per-session
-/// profile user-agent as well.
-test "clearing global UA clears session profile user agent" {
+/// Clearing the global override (`userAgent: null`) returns to the runtime
+/// default.
+test "clearing global UA returns runtime default" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(
     "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
@@ -34,8 +31,10 @@ test "clearing global UA clears session profile user agent" {
     "{\"id\":3,\"method\":\"emulation.setUserAgentOverride\",\"params\":{\"userAgent\":null}}",
   )
   ignore(proto.take_messages())
-  let profile = proto.profile_for_session("session-1").unwrap()
-  assert_true(profile.effective_user_agent() is None)
+  assert_true(
+    proto.resolve_effective_user_agent("session-1") ==
+    @browser_domain.default_runtime_user_agent(),
+  )
 }
 
 ///|
@@ -47,11 +46,7 @@ test "session_profiles entry is removed on browsingContext.close" {
     "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
   )
   ignore(proto.take_messages())
-  let _ = proto.process_message(
-    "{\"id\":2,\"method\":\"emulation.setUserAgentOverride\",\"params\":{\"userAgent\":\"UA/test\"}}",
-  )
-  ignore(proto.take_messages())
-  // Confirm entry was created
+  let _ = proto.profile_for_session("session-1").unwrap()
   assert_true(
     proto.emulation_state.session_profiles.get("session-1") is Some(_),
   )
@@ -65,23 +60,17 @@ test "session_profiles entry is removed on browsingContext.close" {
 }
 
 ///|
-/// `resolve_effective_user_agent` falls back to the profile user-agent when
-/// the standalone `emulation_user_agent_global` field is None. This
-/// exercises the fallback chain introduced in this task without going
-/// through a setter that mutates both — useful as a guard for the
-/// option (a) wiring.
-test "resolve_effective_user_agent falls back to profile user agent when global is None" {
+/// A session Profile carries HTTP security state only. Its presence must not
+/// affect user-agent resolution.
+test "resolve_effective_user_agent ignores session profile state" {
   let proto = BidiProtocol::new()
   let _ = proto.process_message(
     "{\"id\":1,\"method\":\"session.new\",\"params\":{}}",
   )
   ignore(proto.take_messages())
-  // Seed only the profile (not the legacy global) — emulates a future
-  // caller that talks to the profile directly.
-  let profile = proto.profile_for_session("session-1").unwrap()
-  profile.set_user_agent("UA/profile-only")
-  inspect(
-    proto.resolve_effective_user_agent("session-1"),
-    content="UA/profile-only",
+  let _ = proto.profile_for_session("session-1").unwrap()
+  assert_true(
+    proto.resolve_effective_user_agent("session-1") ==
+    @browser_domain.default_runtime_user_agent(),
   )
 }

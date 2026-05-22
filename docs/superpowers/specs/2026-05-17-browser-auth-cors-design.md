@@ -1,5 +1,10 @@
 # Browser Auth Layer + CORS Enforcement (Profile-backed)
 
+> Status note: the current API keeps `Profile` as HTTP security state only
+> (`cookie_jar`, `http_cache`, `auth_state`, `preflight_cache`). User-agent
+> overrides are resolved from WebDriver emulation state, not from `Profile`.
+> Older sections below describe the original bundled plan.
+
 ## Overview
 
 Enable form-based login flows driven over WebDriver BiDi by turning Crater's

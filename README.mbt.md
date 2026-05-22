@@ -80,7 +80,7 @@ Each module exposes its public contract through a generated `.mbti` file; CI ens
 
 ## Architecture highlights
 
-- **Profile-backed sessions.** Each BiDi session carries a `Profile { user_agent, cookie_jar, http_cache, auth_state, preflight_cache }`. Cookies, CORS preflight cache, and per-origin Authorization headers all live on the same value, scoped per browsing context.
+- **Profile-backed HTTP state.** Each BiDi session carries a `Profile { cookie_jar, http_cache, auth_state, preflight_cache }`. Cookies, CORS preflight cache, and per-origin Authorization headers live on the same value, scoped per browsing context; user-agent emulation stays in WebDriver state.
 - **Two-stage CORS.** The fetch shim runs spec-faithful `classify_request` -> preflight (`OPTIONS`) -> `validate_actual_response` for cross-origin requests, with a JS-side preflight cache that mirrors the MoonBit `PreflightCache` (same Max-Age clamp, same cache key formula).
 - **Caller-wins header attach.** When the runtime auto-attaches cookies or `Authorization`, it skips if the caller (page script) already supplied that header. Same policy for both.
 - **Async / sync bridge.** WebDriver BiDi handlers are synchronous MoonBit code, but navigation and fetch are async JavaScript. Bridges (`js_navigate_and_send_async`, `js_eval_and_send_async`) let the JS side send BiDi responses via `socket.send` once the promise resolves, instead of the MoonBit handler trying (and failing) to await.

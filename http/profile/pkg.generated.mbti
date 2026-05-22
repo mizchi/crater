@@ -35,22 +35,18 @@ pub fn OriginCredentials::password(Self) -> String
 pub fn OriginCredentials::username(Self) -> String
 
 pub struct Profile {
-  mut user_agent : String?
   mut cookie_jar : @cookie_jar.CookieJar
   http_cache : @cache.MemoryCacheBackend
   auth_state : AuthState
   preflight_cache : @cors.PreflightCache
 }
 pub fn Profile::auth_state(Self) -> AuthState
-pub fn Profile::clear_user_agent(Self) -> Unit
 pub fn Profile::cookie_jar(Self) -> @cookie_jar.CookieJar
 pub fn Profile::default() -> Self
-pub fn Profile::effective_user_agent(Self) -> String?
 pub fn Profile::http_cache(Self) -> @cache.MemoryCacheBackend
-pub fn Profile::new(user_agent? : String, jar_enabled? : Bool) -> Self
+pub fn Profile::new(jar_enabled? : Bool) -> Self
 pub fn Profile::preflight_cache(Self) -> @cors.PreflightCache
 pub fn Profile::set_cookie_jar(Self, @cookie_jar.CookieJar) -> Unit
-pub fn Profile::set_user_agent(Self, String) -> Unit
 
 // Type aliases
 

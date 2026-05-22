@@ -164,20 +164,7 @@ fn BidiProtocol::resolve_effective_user_agent(
       self.emulation_state.emulation_user_agent_global,
     ) {
     Some(user_agent) => user_agent
-    None =>
-      // Option (a) fallback: when no per-context, per-userContext, or
-      // legacy global override is in play, consult the per-session
-      // profile before reaching for the JS runtime default. Lets future
-      // callers seed `Profile` directly without touching the
-      // BiDi global.
-      match self.emulation_state.session_profiles.get(ctx_id) {
-        Some(profile) =>
-          match profile.effective_user_agent() {
-            Some(user_agent) => user_agent
-            None => @browser_domain.default_runtime_user_agent()
-          }
-        None => @browser_domain.default_runtime_user_agent()
-      }
+    None => @browser_domain.default_runtime_user_agent()
   }
 }
 
@@ -546,11 +533,6 @@ fn BidiProtocol::resolve_emulation_set_user_agent_override(
   }
 
   self.emulation_state.emulation_user_agent_global = user_agent
-  // Option (a) mirroring: keep the legacy global field authoritative for
-  // the primary read path, but propagate the value into per-session
-  // profiles so Phase 2+ layers (SameSite / CORS) can resolve through
-  // `Profile` without going back to the BiDi global.
-  self.mirror_global_user_agent_to_session_profiles(user_agent)
   self.refresh_effective_user_agent_for_all_contexts()
   Some(true)
 }

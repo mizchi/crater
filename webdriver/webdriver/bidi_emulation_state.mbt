@@ -4,12 +4,10 @@
 /// Each emulation feature follows the same precedence model:
 /// context override, user-context override, then global override.
 ///
-/// Phase 1 of the browser-auth-cors plan additionally carries a per-session
-/// `@browser_http.Profile` so emulation writes can be mirrored into the
-/// session's profile. This is option (a) from Task 5 — the legacy
-/// `emulation_user_agent_global` field stays as the primary read path; the
-/// profile is the forward-compatible source of truth for later phases
-/// (cookies, auth, CORS).
+/// Per-session `@browser_http.Profile` values carry HTTP security state
+/// only (cookies, auth, CORS/cache). User-agent overrides stay in this
+/// emulation state so identity spoofing controls are separated from HTTP
+/// credential state.
 priv struct BidiEmulationState {
   mut emulation_user_agent_global : String?
   emulation_user_agent_by_context : Map[String, String] // top-level context -> userAgent override
@@ -106,31 +104,6 @@ fn BidiProtocol::profile_for_session(
       let profile = @browser_http.Profile::default()
       self.emulation_state.session_profiles[ctx_id] = profile
       Some(profile)
-    }
-  }
-}
-
-///|
-/// Mirror a global user-agent override into every known session profile.
-/// Called from the `setUserAgentOverride` global branch so the profile
-/// stays in sync with `emulation_user_agent_global`. Skips sessions that
-/// the manager no longer knows about.
-fn BidiProtocol::mirror_global_user_agent_to_session_profiles(
-  self : BidiProtocol,
-  user_agent : String?,
-) -> Unit {
-  // TODO(review): skip this iteration entirely when user_agent is None and
-  // there are no existing session_profiles entries to clear, to avoid the
-  // lazy-alloc side-effect of profile_for_session on a no-op global None set.
-  // See code-review comment on commit 495dffe (Important #2).
-  for ctx_id in self.manager.list_sessions() {
-    match self.profile_for_session(ctx_id) {
-      Some(profile) =>
-        match user_agent {
-          Some(value) => profile.set_user_agent(value)
-          None => profile.clear_user_agent()
-        }
-      None => ()
     }
   }
 }
