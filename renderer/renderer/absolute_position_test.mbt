@@ -619,6 +619,10 @@ test "inline_filter_preserves_abspos_descendant_wpt_like" {
   let abs = cb.children[1]
   inspect(abs.id, content="span#abs")
   inspect(abs.style.position, content="Absolute")
+  // filter on the inline parent must establish an abspos containing block,
+  // so the abspos descendant resolves top: 0 against the filtered span rather
+  // than the outer block (issue #64, filter-cb-abspos-inline-001).
+  inspect(cb.style.has_filter, content="true")
 }
 
 ///|
