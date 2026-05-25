@@ -16,15 +16,14 @@ pub impl Show for SiteContext with output(self, logger) {
 }
 
 ///|
-/// Conservative eTLD+1 extractor. P1 uses a hard-coded "second-to-last
-/// label" heuristic: it correctly handles example.com / *.example.com
-/// vs unrelated.com, treats localhost / IP literals as their own site,
-/// and falls back to CrossSite on parse failure so we never over-attach.
-///
-/// Limitation: not Public Suffix List-aware. `example.co.uk` and
-/// `other.co.uk` would both reduce to `co.uk` and be treated as
-/// same-site. Acceptable for P1 fixture testing; PSL upgrade is tracked
-/// as a separate scenario.
+/// eTLD+1 extractor backed by the curated Public Suffix List in
+/// `http/psl`. Hosts whose TLD appears in the curated PSL subset
+/// (e.g. `co.uk`, `co.jp`, `github.io`) reduce to their PSL-derived
+/// registrable domain; hosts whose TLD is not in the subset fall back
+/// to the simple "last two labels" heuristic for compatibility with
+/// existing fixture tests. localhost and IP literals are returned as
+/// their own site, and malformed origins fall back to CrossSite so
+/// we never over-attach.
 pub fn classify_site_context(
   request_origin : String,
   cookie_domain : String,
@@ -32,8 +31,8 @@ pub fn classify_site_context(
   match parse_host(request_origin) {
     None => CrossSite
     Some(req_host) => {
-      let req_site = registrable_domain(req_host)
-      let cookie_site = registrable_domain(cookie_domain)
+      let req_site = @psl.registrable_domain(req_host)
+      let cookie_site = @psl.registrable_domain(cookie_domain)
       if req_site == cookie_site {
         SameSite
       } else {
@@ -91,30 +90,6 @@ fn truncate_at_any(s : String, stops : Array[Char]) -> String {
   s.unsafe_substring(start=0, end~)
 }
 
-///|
-/// Reduce a host to its registrable domain ("eTLD+1") via the simple
-/// "last two labels" heuristic. localhost and IP literals are returned
-/// as-is so they only match themselves.
-fn registrable_domain(host : String) -> String {
-  // Strip a single trailing dot — FQDN forms like "example.com." are
-  // equivalent to "example.com" for site comparison.
-  let host = if host.has_suffix(".") && host.length() > 1 {
-    host.unsafe_substring(start=0, end=host.length() - 1)
-  } else {
-    host
-  }
-  if host == "localhost" || is_ip_literal(host) {
-    return host
-  }
-  let labels : Array[StringView] = host.split(".").collect()
-  let n = labels.length()
-  if n <= 2 {
-    return host
-  }
-  // last two labels: works for .com / .net / etc.; not PSL-aware but
-  // sufficient for fixture testing — PSL upgrade is a separate scenario.
-  labels[n - 2].to_owned() + "." + labels[n - 1].to_owned()
-}
 
 ///|
 /// Decide whether `cookie` should be attached to a request, given the
@@ -155,34 +130,3 @@ pub fn should_attach_cookie(
   }
 }
 
-///|
-/// IPv4 dotted-quad heuristic plus IPv6 bracketed form. Conservative:
-/// any host that "looks like" an IP is treated as its own site.
-///
-/// Note: octet-range validation (0–255) is deliberately skipped.
-/// Because IP-ish strings only ever match themselves, false positives
-/// (e.g. "999.999.999.999") are safe — they simply won't match any
-/// other host.
-fn is_ip_literal(host : String) -> Bool {
-  if host.has_prefix("[") && host.has_suffix("]") {
-    return true
-  }
-  let parts : Array[StringView] = host.split(".").collect()
-  if parts.length() != 4 {
-    return false
-  }
-  for part in parts {
-    let s = part.to_owned()
-    if s == "" || s.length() > 3 {
-      return false
-    }
-    let chars = s.to_array()
-    for i = 0; i < chars.length(); i = i + 1 {
-      let c = chars[i]
-      if c < '0' || c > '9' {
-        return false
-      }
-    }
-  }
-  true
-}

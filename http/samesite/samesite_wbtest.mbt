@@ -51,6 +51,48 @@ test "classify_site_context: trailing-dot FQDN matches non-dotted form" {
 }
 
 ///|
+test "classify_site_context: PSL distinguishes siblings under co.uk" {
+  // Pre-PSL behaviour collapsed both to "co.uk" and returned SameSite.
+  // With the curated PSL, example.co.uk and other.co.uk are different
+  // registrable domains and must classify as CrossSite.
+  inspect(
+    classify_site_context("https://app.example.co.uk", "other.co.uk"),
+    content="CrossSite",
+  )
+  // Same registrable domain stays SameSite.
+  inspect(
+    classify_site_context("https://app.example.co.uk", "example.co.uk"),
+    content="SameSite",
+  )
+}
+
+///|
+test "classify_site_context: PSL distinguishes siblings under co.jp" {
+  inspect(
+    classify_site_context("https://app.example.co.jp", "other.co.jp"),
+    content="CrossSite",
+  )
+  inspect(
+    classify_site_context("https://app.example.co.jp", "example.co.jp"),
+    content="SameSite",
+  )
+}
+
+///|
+test "classify_site_context: PSL distinguishes siblings under github.io" {
+  // PSL treats github.io as a public suffix, so alice.github.io and
+  // bob.github.io are independent sites.
+  inspect(
+    classify_site_context("https://alice.github.io", "bob.github.io"),
+    content="CrossSite",
+  )
+  inspect(
+    classify_site_context("https://alice.github.io/profile", "alice.github.io"),
+    content="SameSite",
+  )
+}
+
+///|
 /// Build a ParsedCookie via the real Set-Cookie parser so tests exercise
 /// the public surface rather than a private constructor.
 fn test_cookie(
