@@ -325,6 +325,16 @@ tests {
       "bash -lc 'set -e; grep -Fq -- \"pub fn registrable_domain(host : String) -> String\" http/psl/psl.mbt; grep -Fq -- \"@psl.registrable_domain(req_host)\" http/samesite/samesite.mbt; grep -Fq -- \"@psl.registrable_domain(a)\" http/cookie_jar/cookie_jar.mbt; grep -Fq -- \"PSL distinguishes siblings under co.uk\" http/samesite/samesite_wbtest.mbt; grep -Fq -- \"PSL distinguishes siblings under co.jp\" http/samesite/samesite_wbtest.mbt; grep -Fq -- \"PSL distinguishes siblings under github.io\" http/samesite/samesite_wbtest.mbt'"
   }
   new {
+    name = "diagnostic_interactive_forced_state_selector_target"
+    description =
+      "getComputedStylesWithState should resolve selectors whose subject ends in :focus, :active, :focus-visible, or :focus-within without falling back to Chromium."
+    tags { "diagnostic"; "vrt"; "focus"; "active"; "issue:225" }
+    specRef { "diagnostic.interactive-forced-state-selector-target" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; grep -Fq -- \"discover_computed_styles_with_state accepts focus selector target\" dom/css/responsive/computed_styles_wbtest.mbt; grep -Fq -- \"discover_computed_styles_with_state accepts active selector target\" dom/css/responsive/computed_styles_wbtest.mbt; grep -Fq -- \"discover_computed_styles_with_state accepts focus-visible selector target\" dom/css/responsive/computed_styles_wbtest.mbt; grep -Fq -- \"discover_computed_styles_with_state accepts focus-within selector target\" dom/css/responsive/computed_styles_wbtest.mbt; grep -Fq -- \"bidi getComputedStylesWithState accepts focus-visible selector target\" webdriver/webdriver/bidi_protocol_browsing_context_styles_wbtest.mbt'"
+  }
+  new {
     name = "protocol_bidi_content_window_nested_read"
     description =
       "The synthetic iframe contentWindow mirror should read nested property and index chains without accepting method calls or compound RHS expressions."

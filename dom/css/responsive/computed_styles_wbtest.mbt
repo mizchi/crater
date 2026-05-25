@@ -102,6 +102,86 @@ test "discover_computed_styles_with_state focus state" {
 }
 
 ///|
+test "discover_computed_styles_with_state accepts focus selector target" {
+  let html =
+    #|<html><head><style>input.search { border-color: gray; } input.search:focus { border-color: blue; }</style></head><body><input class="search" type="text" /></body></html>
+  let forced = @selector.ForcedPseudoStates::{
+    ..@selector.ForcedPseudoStates::none(),
+    focus: true,
+  }
+  let result = discover_computed_styles_with_state(
+    html,
+    "input.search:focus",
+    forced,
+    ["border-color"],
+  )
+  assert_eq(result.diff.length(), 1)
+  assert_eq(result.diff[0].property, "border-color")
+  assert_eq(result.diff[0].normal, "gray")
+  assert_eq(result.diff[0].forced, "blue")
+}
+
+///|
+test "discover_computed_styles_with_state accepts active selector target" {
+  let html =
+    #|<html><head><style>.toolbar button { color: black; } .toolbar button:active { color: gray; }</style></head><body><div class="toolbar"><button>Press</button></div></body></html>
+  let forced = @selector.ForcedPseudoStates::{
+    ..@selector.ForcedPseudoStates::none(),
+    active: true,
+  }
+  let result = discover_computed_styles_with_state(
+    html,
+    ".toolbar button:active",
+    forced,
+    ["color"],
+  )
+  assert_eq(result.diff.length(), 1)
+  assert_eq(result.diff[0].property, "color")
+  assert_eq(result.diff[0].normal, "black")
+  assert_eq(result.diff[0].forced, "gray")
+}
+
+///|
+test "discover_computed_styles_with_state accepts focus-visible selector target" {
+  let html =
+    #|<html><head><style>.tab { color: black; } .tab:focus-visible { color: blue; }</style></head><body><button class="tab">Tab</button></body></html>
+  let forced = @selector.ForcedPseudoStates::{
+    ..@selector.ForcedPseudoStates::none(),
+    focus_visible: true,
+  }
+  let result = discover_computed_styles_with_state(
+    html,
+    ".tab:focus-visible",
+    forced,
+    ["color"],
+  )
+  assert_eq(result.diff.length(), 1)
+  assert_eq(result.diff[0].property, "color")
+  assert_eq(result.diff[0].normal, "black")
+  assert_eq(result.diff[0].forced, "blue")
+}
+
+///|
+test "discover_computed_styles_with_state accepts focus-within selector target" {
+  let html =
+    #|<html><head><style>.form-group { color: black; } .form-group:focus-within { color: red; }</style></head><body><div class="form-group"><input type="text" /></div></body></html>
+  let forced = @selector.ForcedPseudoStates::{
+    ..@selector.ForcedPseudoStates::none(),
+    focus_within: true,
+  }
+  let result = discover_computed_styles_with_state(
+    html,
+    ".form-group:focus-within",
+    forced,
+    ["color"],
+  )
+  assert_eq(result.diff.length(), 1)
+  assert_eq(result.diff[0].property, "color")
+  assert_eq(result.diff[0].normal, "black")
+  assert_eq(result.diff[0].forced, "red")
+}
+
+///|
 test "discover_computed_styles_with_state multiple properties" {
   let html =
     #|<html><head><style>.card { background: white; color: black; } .card:hover { background: blue; color: white; }</style></head><body><div class="card">hello</div></body></html>
