@@ -1044,7 +1044,11 @@ fn compute_element_style_indexed(
     None => ()
   }
   if establishes_effect_cb {
-    style = { ..style, contain: { ..style.contain, paint: true } }
+    style = {
+      ..style,
+      has_filter: true,
+      contain: { ..style.contain, paint: true },
+    }
   }
 
   // Apply viewport dimensions if root
