@@ -185,6 +185,14 @@ jobs:
 
   wasm-component:
     runs-on: ubuntu-latest
+    # Tracking issue #227: MoonBit 0.1.20260522 nightly broke the
+    # wit-bindgen cabi_realloc -> $moonbit.gc.malloc path, so the
+    # jco-driven test in wasm/test/component.test.mjs crashes on the
+    # first JS->wasm string round-trip. cli.moonbitlang.com only hosts
+    # `latest` and `nightly` channels, so we cannot pin to a known-good
+    # date. Mark the job non-blocking until an upstream fix lands; flip
+    # back to a hard failure once #227 is closed.
+    continue-on-error: true
 
     steps:
       - name: Checkout code
