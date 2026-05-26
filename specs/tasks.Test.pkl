@@ -335,6 +335,16 @@ tests {
       "bash -lc 'set -e; grep -Fq -- \"extract handles nested property chain after contentWindow\" webdriver/webdriver/bidi_iframe_content_window_mirror_wbtest.mbt; grep -Fq -- \"extract handles array index chain after contentWindow\" webdriver/webdriver/bidi_iframe_content_window_mirror_wbtest.mbt; grep -Fq -- \"extract rejects contentWindow method calls\" webdriver/webdriver/bidi_iframe_content_window_mirror_wbtest.mbt; grep -Fq -- \"contentWindow nested property mirror writes parent value\" webdriver/webdriver/bidi_iframe_content_window_mirror_wbtest.mbt; grep -Fq -- \"read_iframe_mirror_bracket_end\" webdriver/webdriver/bidi_iframe_content_window_mirror.mbt; grep -Fq -- \"is_iframe_mirror_rhs_terminator\" webdriver/webdriver/bidi_iframe_content_window_mirror.mbt'"
   }
   new {
+    name = "protocol_bidi_context_state_isolation"
+    description =
+      "session.end, session.resetForTest, and a fresh BidiProtocol instance must each clear the synthetic window.location.href override from a prior script.rememberSyntheticLocationHref, so a follow-up script.evaluate or browsingContext.navigate observes the default baseline rather than leaked state from a previous test."
+    tags { "protocol"; "bidi"; "test-isolation"; "issue:150" }
+    specRef { "bug.bidi.context-state-leaks-across-tests" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; grep -Fq -- \"bidi rememberSyntheticLocationHref does not leak across session.end\" webdriver/webdriver/bidi_protocol_test_isolation_wbtest.mbt; grep -Fq -- \"bidi rememberSyntheticLocationHref is cleared by session.resetForTest\" webdriver/webdriver/bidi_protocol_test_isolation_wbtest.mbt; grep -Fq -- \"bidi independent BidiProtocol instances do not share synthetic location state\" webdriver/webdriver/bidi_protocol_test_isolation_wbtest.mbt'"
+  }
+  new {
     name = "protocol_bidi_async_iframe_cross_evaluate"
     description =
       "script.evaluate should register iframe child contexts when creation and insertion happen in separate evaluate calls."
