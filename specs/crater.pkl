@@ -905,10 +905,10 @@ scenarios {
     id = "bug.bidi.context-state-leaks-across-tests"
     name = "BiDi runtime context state leaks across test sessions"
     description =
-      "Running the existing storage.setCookie + rememberSyntheticLocationHref e2e test changes runtime state such that a subsequent navigate parses HTML correctly, while a standalone form-based test does not. Specifically rememberSyntheticLocationHref appears to leave behind something that makes the next navigate populate document.forms. This is a test-isolation smell that masks bug.bidi.navigate-http-url-not-parsed when the cookie-injection test runs first. Source: PR #138 e2e investigation."
-    tags { "bidi"; "test-isolation"; "bug" }
+      "Running the existing storage.setCookie + rememberSyntheticLocationHref e2e test changes runtime state such that a subsequent navigate parses HTML correctly, while a standalone form-based test does not. Specifically rememberSyntheticLocationHref appears to leave behind something that makes the next navigate populate document.forms. This is a test-isolation smell that masks bug.bidi.navigate-http-url-not-parsed when the cookie-injection test runs first. PR #139 fixed the underlying navigate-parse bug; this scenario pins the isolation contract at the BidiProtocol level — session.end, session.resetForTest, and a fresh BidiProtocol instance must each clear the synthetic window.location.href override from a prior script.rememberSyntheticLocationHref. Covered by webdriver/webdriver/bidi_protocol_test_isolation_wbtest.mbt. Source: PR #138 e2e investigation, GitHub issue #150."
+    tags { "bidi"; "test-isolation"; "bug"; "issue:150" }
     severity = "minor"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.protocol-compat" }
   }
 
