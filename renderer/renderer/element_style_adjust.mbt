@@ -67,6 +67,16 @@ fn inline_style_has_block_child_for_adjustment(
   ctx : RenderContext,
   css_vars : Map[String, String],
 ) -> Bool {
+  // SVG root participates in HTML inline flow as a replaced inline-block
+  // element. Its children (rect, circle, path, …) are SVG-internal
+  // primitives, not HTML block-level boxes, so the generic
+  // "inline-with-block-child becomes block" rule does not apply. Without
+  // this guard, `<h1><svg><rect/></svg>Dashboard</h1>` flips the svg to
+  // display:block and forces the trailing text onto a new line, breaking
+  // inline replaced semantics (paint-vrt svg-intrinsic-inline-replaced).
+  if tag_lower == "svg" {
+    return false
+  }
   style.display == @types.Inline &&
   !is_ruby_internal_tag(tag_lower) &&
   style.position == @types.Static &&

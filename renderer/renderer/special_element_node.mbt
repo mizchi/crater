@@ -751,14 +751,38 @@ fn finalize_special_element_node(
         _ => 150.0
       }
     }
-    let measure = create_image_measure(intrinsic_width, intrinsic_height)
+    // The taffy layout engine treats nodes with a MeasureFunc as leaves
+    // and discards their children at layout time. That is fine for empty
+    // SVGs (where the measure func supplies intrinsic dimensions for
+    // aspect-ratio fallback), but for SVGs whose CSS-resolved style is
+    // inline-block AND that carry SVG-internal layout children (g, rect,
+    // path, …), dropping those children would discard the only thing
+    // worth painting. Skip the measure attachment in that case so layout
+    // recurses into the children. Empty SVGs (icon-style) keep the
+    // measure for intrinsic-size fallback.
+    let has_layout_children = children.length() > 0
+    let attach_measure = !(style.display == @types.InlineBlock &&
+      has_layout_children)
+    if attach_measure {
+      let measure = create_image_measure(intrinsic_width, intrinsic_height)
+      let svg_node = @node.Node::new(node_id, style, children)
+      return @node.Node::with_uid_and_measure(
+        svg_node.id,
+        svg_node.uid,
+        svg_node.style,
+        svg_node.children,
+        Some(measure),
+        svg_node.text,
+        src=Some(inline_svg_data_uri(elem, style, css_vars)),
+      )
+    }
     let svg_node = @node.Node::new(node_id, style, children)
     return @node.Node::with_uid_and_measure(
       svg_node.id,
       svg_node.uid,
       svg_node.style,
       svg_node.children,
-      Some(measure),
+      None,
       svg_node.text,
       src=Some(inline_svg_data_uri(elem, style, css_vars)),
     )
