@@ -38,6 +38,17 @@ fn BidiProtocol::refresh_child_contexts_from_iframes(
 /// apply_effective_viewport_to_runtime_context: evaluate applies it at the
 /// start of the command, and applying it again here would drain deferred
 /// runtime bridges (notably userPromptOpened) too early.
+///
+/// This path also intentionally skips the navigate / load_data_url_content
+/// steps that the explicit-creation paths use. The BiDi runtime serves all
+/// contexts from a single shared globalThis.document, so calling
+/// load_data_url_content for an iframe whose src is "about:blank" routes
+/// through sync_runtime_html("") -> __loadHTML("") -> resetContainer(body),
+/// which would clobber the parent's just-populated DOM (the very DOM that
+/// produced this iframe in the first place). The iframe element survives in
+/// the parent's DOM tree, and BiDi only needs the child-context bookkeeping
+/// so frame-tree queries observe it; explicit navigation paths still
+/// re-enter the heavy variant when the iframe is actually targeted.
 fn BidiProtocol::refresh_child_contexts_from_runtime_iframes_after_eval(
   self : BidiProtocol,
   parent_ctx_id : String,
@@ -47,9 +58,38 @@ fn BidiProtocol::refresh_child_contexts_from_runtime_iframes_after_eval(
   if frame_sources.length() == 0 {
     return
   }
-  self.refresh_child_contexts_from_iframe_sources_with_depth(
-    parent_ctx_id, frame_sources, 0,
-  )
+  self.register_child_contexts_for_iframe_sources(parent_ctx_id, frame_sources)
+}
+
+///|
+/// Lightweight child-context registration: create+emit only.
+/// See refresh_child_contexts_from_runtime_iframes_after_eval for the
+/// rationale on why this path skips navigate/load_data_url_content.
+fn BidiProtocol::register_child_contexts_for_iframe_sources(
+  self : BidiProtocol,
+  parent_ctx_id : String,
+  frame_sources : Array[String],
+) -> Unit {
+  let existing_children = self.context_children.get(parent_ctx_id).unwrap_or([])
+  let user_ctx = self.context_user_context
+    .get(parent_ctx_id)
+    .unwrap_or("default")
+  let mut frame_index = 0
+  for _src in frame_sources {
+    if frame_index < existing_children.length() {
+      frame_index += 1
+      continue
+    }
+    let child_ctx_id = self.create_child_context(parent_ctx_id, user_ctx)
+    self.emit_context_created(
+      child_ctx_id,
+      "tab",
+      "about:blank",
+      None,
+      Some(parent_ctx_id),
+    )
+    frame_index += 1
+  }
 }
 
 ///|
