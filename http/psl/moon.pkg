@@ -1,7 +1,5 @@
 import {
   "moonbitlang/core/string",
-  "mizchi/crater-browser-http/cookie_jar" @cookie_jar,
-  "mizchi/crater-browser-http/psl" @psl,
 }
 
 warnings = "-unused_package"

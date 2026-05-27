@@ -1,0 +1,26 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-browser-http/psl"
+
+// Values
+pub fn is_ip_literal(String) -> Bool
+
+pub fn is_unsplittable_host(String) -> Bool
+
+pub fn normalize_host(String) -> String
+
+pub fn psl_exception_rules() -> Array[String]
+
+pub fn psl_literal_rules() -> Array[String]
+
+pub fn psl_wildcard_rules() -> Array[String]
+
+pub fn registrable_domain(String) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

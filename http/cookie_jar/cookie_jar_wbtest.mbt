@@ -1222,17 +1222,17 @@ test "cookie_same_site: localhost is same-site with localhost" {
 
 ///|
 test "cookie_registrable_domain: two labels" {
-  inspect(cookie_registrable_domain("example.com"), content="example.com")
+  inspect(@psl.registrable_domain("example.com"), content="example.com")
 }
 
 ///|
 test "cookie_registrable_domain: three labels" {
-  inspect(cookie_registrable_domain("sub.example.com"), content="example.com")
+  inspect(@psl.registrable_domain("sub.example.com"), content="example.com")
 }
 
 ///|
 test "cookie_registrable_domain: single label" {
-  inspect(cookie_registrable_domain("localhost"), content="localhost")
+  inspect(@psl.registrable_domain("localhost"), content="localhost")
 }
 
 // ============================================================
@@ -1292,12 +1292,12 @@ test "cookie_jar: trailing-dot same-site not misclassified as cross-site" {
 
 ///|
 test "cookie_registrable_domain: trailing-dot stripped before extraction" {
-  inspect(cookie_registrable_domain("example.com."), content="example.com")
+  inspect(@psl.registrable_domain("example.com."), content="example.com")
 }
 
 ///|
 test "cookie_registrable_domain: sub trailing-dot stripped" {
-  inspect(cookie_registrable_domain("sub.example.com."), content="example.com")
+  inspect(@psl.registrable_domain("sub.example.com."), content="example.com")
 }
 
 ///|

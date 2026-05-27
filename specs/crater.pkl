@@ -761,10 +761,10 @@ scenarios {
     id = "bug.samesite.psl-required"
     name = "SameSite site classification needs Public Suffix List"
     description =
-      "http/samesite/classify_site_context and http/cookie_jar/cookie_registrable_domain both reduce hosts to their last two labels. PSL is not consulted, so eTLD+1 detection over-collapses for multi-level public suffixes (example.co.uk and other.co.uk classify as same-site). Today this only affects Crater test fixtures, but any rollout that drives real cross-site auth traffic must upgrade to a PSL-aware classifier. See PR #131 / #132 security review item I3."
-    tags { "cookies"; "samesite"; "security"; "psl" }
+      "http/samesite/classify_site_context and http/cookie_jar/cookie_same_site previously reduced hosts to their last two labels and over-collapsed multi-level public suffixes (example.co.uk and other.co.uk classified as same-site). The http/psl package now provides a Public Suffix List-aware registrable_domain that implements the publicsuffix.org reference algorithm (longest-match with wildcard and exception support) against a curated subset covering the multi-level suffixes Crater fixtures exercise (co.uk, co.jp, com.au, github.io, vercel.app, …) and falls back to the legacy last-two-labels heuristic for TLDs outside the subset. samesite.classify_site_context and cookie_jar.cookie_same_site both call @psl.registrable_domain. Covered by http/psl/psl_wbtest.mbt and the new sibling-distinction tests in http/samesite/samesite_wbtest.mbt. See PR #131 / #132 security review item I3, GitHub issue #149."
+    tags { "cookies"; "samesite"; "security"; "psl"; "issue:149" }
     severity = "minor"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.dom-compat" }
   }
 

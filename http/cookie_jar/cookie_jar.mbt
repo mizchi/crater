@@ -340,49 +340,19 @@ pub fn CookieJar::get_cookie_header(
 }
 
 ///|
-/// Check if two domains are "same-site" (share the same registrable domain).
-/// Simplified: compares the last two domain labels (no public suffix list).
+/// Check if two domains are "same-site" (share the same registrable
+/// domain). Backed by the curated Public Suffix List in `http/psl`, so
+/// `example.co.uk` and `other.co.uk` correctly classify as different
+/// sites instead of collapsing under the last-two-labels heuristic.
 fn cookie_same_site(domain_a : String, domain_b : String) -> Bool {
   let a = domain_a.to_lower()
   let b = domain_b.to_lower()
   if a == b {
     return true
   }
-  // Extract registrable domain (last 2 labels) — simplified, no PSL
-  let reg_a = cookie_registrable_domain(a)
-  let reg_b = cookie_registrable_domain(b)
+  let reg_a = @psl.registrable_domain(a)
+  let reg_b = @psl.registrable_domain(b)
   reg_a == reg_b && reg_a.length() > 0
-}
-
-///|
-/// Extract registrable domain (last 2 labels). Simplified, no PSL.
-/// "sub.example.com" → "example.com", "example.com" → "example.com"
-fn cookie_registrable_domain(domain : String) -> String {
-  // Strip a single trailing dot — FQDN forms like "example.com." are
-  // equivalent to "example.com" for site comparison.
-  let domain = if domain.has_suffix(".") && domain.length() > 1 {
-    domain.unsafe_substring(start=0, end=domain.length() - 1)
-  } else {
-    domain
-  }
-  let mut last_dot = -1
-  let mut second_last_dot = -1
-  for i = 0; i < domain.length(); i = i + 1 {
-    if domain[i] == '.' {
-      second_last_dot = last_dot
-      last_dot = i
-    }
-  }
-  if last_dot < 0 {
-    // No dots (e.g. "localhost") → domain itself
-    return domain
-  }
-  if second_last_dot < 0 {
-    // One dot (e.g. "example.com") → whole domain
-    return domain
-  }
-  // Two+ dots → take from second_last_dot+1
-  domain[second_last_dot + 1:].to_owned()
 }
 
 ///|
