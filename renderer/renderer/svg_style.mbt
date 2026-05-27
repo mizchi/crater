@@ -214,7 +214,7 @@ fn apply_svg_attributes_to_style(
 
   // Handle SVG circle elements (cx, cy, r) - compute bounding box
   let has_r = attrs.contains("r")
-  if has_r {
+  if has_r && tag == "circle" {
     let cx = match attrs.get("cx") {
       Some(v) => parse_svg_length(v)
       None => 0.0
@@ -241,10 +241,13 @@ fn apply_svg_attributes_to_style(
     }
   }
 
-  // Handle SVG ellipse elements (cx, cy, rx, ry) - compute bounding box
+  // Handle SVG ellipse elements (cx, cy, rx, ry) - compute bounding box.
+  // The rx/ry attributes on <rect> denote rounded-corner radii, not ellipse
+  // dimensions, so gate this branch on tag=="ellipse" to avoid stomping over
+  // rect width/height when only the corner radius is set.
   let has_rx = attrs.contains("rx")
   let has_ry = attrs.contains("ry")
-  if (has_rx || has_ry) && !has_r {
+  if (has_rx || has_ry) && !has_r && tag == "ellipse" {
     let cx = match attrs.get("cx") {
       Some(v) => parse_svg_length(v)
       None => 0.0
