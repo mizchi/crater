@@ -619,6 +619,10 @@ test "inline_filter_preserves_abspos_descendant_wpt_like" {
   let abs = cb.children[1]
   inspect(abs.id, content="span#abs")
   inspect(abs.style.position, content="Absolute")
+  // filter on the inline parent must establish an abspos containing block,
+  // so the abspos descendant resolves top: 0 against the filtered span rather
+  // than the outer block (issue #64, filter-cb-abspos-inline-001).
+  inspect(cb.style.has_filter, content="true")
 }
 
 ///|
@@ -676,6 +680,26 @@ test "backdrop_filter_establishes_fixed_containing_block" {
 
   inspect(container.width, content="200")
   inspect(fixed.width, content="200")
+}
+
+///|
+test "inline_style_attribute_filter_establishes_abspos_cb" {
+  // The inline style attribute path (not a stylesheet rule) must also
+  // surface filter: <fn> through to layout's has_filter flag, so abspos
+  // descendants of an element whose filter lives on style="..." still
+  // resolve their CB against that element.
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<div><span id="cb" style="filter: blur(2px)">text<span id="abs" style="position: absolute; top: 0; left: 0; width: 5px; height: 5px"></span></span></div>
+  let ctx = @renderer.RenderContext::default()
+  let root = @renderer.render_to_node(html_str, ctx)
+  let container = root.children[0]
+  let cb = container.children[0]
+  inspect(cb.id, content="span#cb")
+  inspect(cb.style.has_filter, content="true")
+  let abs = cb.children[1]
+  inspect(abs.id, content="span#abs")
+  inspect(abs.style.position, content="Absolute")
 }
 
 ///|

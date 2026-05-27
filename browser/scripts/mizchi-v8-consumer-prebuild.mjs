@@ -103,7 +103,11 @@ export function platform_link_flags(platform, module_root) {
     case "darwin":
       return `${archive_path} -lc++ -pthread -framework CoreFoundation`
     case "linux":
-      return `${archive_path} -lstdc++ -ldl -pthread -lm`
+      // MoonBit 0.18.0 bundles its own simdutf.o (in $HOME/.moon/lib) that
+      // collides with simdutf in librusty_v8_bridge.a at link time. Use the
+      // BSD-style multiple-defs flag so the linker keeps the first definition
+      // it sees instead of erroring with "multiple definition".
+      return `${archive_path} -Wl,-z,muldefs -lstdc++ -ldl -pthread -lm`
     default:
       throw new Error(
         `mizchi/v8 consumer setup does not support host platform ${platform}`,

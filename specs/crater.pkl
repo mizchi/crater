@@ -559,6 +559,16 @@ scenarios {
     reviewStatus = "approved"
     contributes { "goal.diagnostic-api"; "goal.protocol-compat" }
   }
+  new {
+    id = "diagnostic.interactive-forced-state-selector-target"
+    name = "forced focus active focus-visible focus-within selectors are targetable"
+    description =
+      "getComputedStylesWithState accepts target selectors whose subject ends in :focus, :active, :focus-visible, or :focus-within (e.g. input.search:focus, .toolbar button:active, .tab:focus-visible, .form-group:focus-within). The forced pseudo is stripped only for element lookup, and the requested forced state is applied during cascade evaluation so VRT prescanners can detect interactive-state mutations beyond hover without falling back to Chromium. See GitHub issue #225."
+    tags { "diagnostic"; "vrt"; "focus"; "active"; "issue:225" }
+    severity = "major"
+    reviewStatus = "approved"
+    contributes { "goal.diagnostic-api"; "goal.protocol-compat" }
+  }
 
   // -- CI efficiency --------------------------------------------------------
   new {
