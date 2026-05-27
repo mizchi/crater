@@ -2,6 +2,66 @@
 // Text node construction helpers.
 
 ///|
+/// Collapse internal whitespace (newline/tab/CR and runs of spaces) into a
+/// single space while preserving up to one leading/trailing space so adjacent
+/// inline-level boxes still observe the implicit gap from collapsible
+/// whitespace. Used only for CSS `white-space: normal | nowrap`; preserves the
+/// original text for `pre`, `pre-wrap`, and `pre-line` whose semantics depend
+/// on the segment-break characters.
+fn collapse_inline_whitespace(text : String) -> String {
+  if text.is_empty() {
+    return text
+  }
+  let chars : Array[Char] = []
+  for c in text.iter() {
+    chars.push(c)
+  }
+  let mut leading = false
+  let mut idx = 0
+  while idx < chars.length() && is_collapsible_whitespace_char(chars[idx]) {
+    leading = true
+    idx = idx + 1
+  }
+  let mut trailing = false
+  let mut end_idx = chars.length()
+  while end_idx > idx && is_collapsible_whitespace_char(chars[end_idx - 1]) {
+    trailing = true
+    end_idx = end_idx - 1
+  }
+  let buf = StringBuilder::new()
+  if leading {
+    buf.write_char(' ')
+  }
+  let mut in_ws = false
+  for i = idx; i < end_idx; i = i + 1 {
+    let c = chars[i]
+    if is_collapsible_whitespace_char(c) {
+      if !in_ws {
+        buf.write_char(' ')
+        in_ws = true
+      }
+    } else {
+      buf.write_char(c)
+      in_ws = false
+    }
+  }
+  if trailing {
+    buf.write_char(' ')
+  }
+  buf.to_string()
+}
+
+///|
+fn white_space_preserves_segment_breaks(white_space : @style.WhiteSpace) -> Bool {
+  match white_space {
+    @style.WhiteSpace::Pre
+    | @style.WhiteSpace::PreWrap
+    | @style.WhiteSpace::PreLine => true
+    _ => false
+  }
+}
+
+///|
 /// Create a node for text content with inherited font properties
 fn create_text_node(text : String, parent_style : @style.Style) -> @node.Node {
   let normalized_text = if parent_style.display == @types.TableCell &&
@@ -9,6 +69,20 @@ fn create_text_node(text : String, parent_style : @style.Style) -> @node.Node {
     trim_trailing_collapsible_whitespace(text)
   } else {
     text
+  }
+  // CSS Text 3 §4.1.1: white-space:normal/nowrap collapse all whitespace
+  // sequences (including segment breaks U+000A) into single spaces before
+  // the line-layout / glyph-shaping stage. Without this collapse the painter
+  // sees a leading `\n` token in text like "\n      Dashboard", treats it as
+  // a hard line break, and renders the glyphs one line below the line box.
+  // pre / pre-wrap / pre-line / break-spaces preserve segment breaks per
+  // CSS so they bypass this collapse.
+  let normalized_text = if white_space_preserves_segment_breaks(
+      parent_style.white_space,
+    ) {
+    normalized_text
+  } else {
+    collapse_inline_whitespace(normalized_text)
   }
   let trimmed = trim_collapsible_whitespace_edges(normalized_text)
   let font_size = parent_style.font_size
