@@ -12,6 +12,13 @@ inputs:
     description: just version
     required: false
     default: "1.50.0"
+  moonbit-version:
+    description: >-
+      MoonBit toolchain version. Defaults to "latest"; pin to a specific
+      release tag when the upstream nightly has a regression (see
+      `MOONBIT_INSTALL_VERSION` in cli.moonbitlang.com/install/unix.sh).
+    required: false
+    default: "latest"
   wasm-tools:
     description: Install wasm-tools (true/false)
     required: false
@@ -54,9 +61,12 @@ runs:
 
     - name: Set up MoonBit
       shell: bash
+      env:
+        MOONBIT_INSTALL_VERSION: ${{ inputs.moonbit-version }}
       run: |
         curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
         echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+        echo "moonbit-installed-version=${MOONBIT_INSTALL_VERSION}" >> "$GITHUB_STEP_SUMMARY"
 
     - name: Install wasm-tools
       if: inputs.wasm-tools == 'true'
