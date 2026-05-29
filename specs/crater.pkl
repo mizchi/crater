@@ -642,10 +642,10 @@ scenarios {
     id = "compat.css-ruby-baseline"
     name = "css-ruby WPT module baseline is established"
     description =
-      "Measure and pin a per-module pass-rate baseline for the css-ruby WPT module. Source: TODO Now (P0)."
-    tags { "wpt"; "css"; "baseline"; "todo:now" }
+      "Measure and pin a per-module pass-rate baseline for the css-ruby WPT module. css-ruby is enabled in wpt.json with a dedicated modulePrefixes [\"\"] entry that exposes the full suite (the global includePrefixes filter matches no ruby fixtures), the test count (100), pass count (26), and failure count (74) are pinned in tests/wpt-baselines/css-ruby.env, and scripts/test-wpt-module-baseline.sh fails CI when the count regresses. The 74 baseline failures cluster on ruby annotation (rt) box positioning and ruby-base inline sizing that Crater's inline ruby model does not yet reproduce; closing those gaps is follow-up work. Source: TODO Now (P0), GitHub issue #158."
+    tags { "wpt"; "css"; "baseline"; "todo:now"; "issue:158" }
     severity = "major"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.css-compat" }
   }
 

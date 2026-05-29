@@ -42,10 +42,15 @@
     // Borders. The includePrefixes filter exposes a small set of
     // border-radius / border-shape / border-image fixtures (5 layout
     // comparable). See pkspec compat.css-borders-baseline.
-    "css-borders"
+    "css-borders",
+
+    // Ruby module. The global includePrefixes filter matches no ruby
+    // fixtures, so a dedicated modulePrefixes entry below exposes the
+    // full css-ruby suite to the layout-tree compare runner.
+    // See pkspec compat.css-ruby-baseline.
+    "css-ruby"
 
     // Later: meaningful, but deferred for now.
-    // "css-ruby",           // No fixtures match includePrefixes; needs filter widening.
     // "css-text",           // No fixtures match includePrefixes; needs filter widening.
   ],
   "recursiveModules": [
@@ -53,6 +58,9 @@
     "css-box"
   ],
   "modulePrefixes": {
+    "css-ruby": [
+      ""
+    ],
     "css-logical": [
       "logical-box-",
       "logicalprops-",
