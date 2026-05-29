@@ -293,6 +293,15 @@ jobs:
         continue-on-error: ${{ matrix.soft_fail }}
         run: pnpm exec puppeteer browsers install chrome
 
+      # `puppeteer browsers install` fetches only the Chrome binary, not the
+      # shared libraries headless Chrome needs to launch. Reuse Playwright's
+      # dependency installer (Chromium and Chrome share the same system libs)
+      # so the browser can actually start on the runner. Must run every time
+      # (apt packages are not part of the puppeteer browser cache).
+      - name: Install Chrome system dependencies
+        continue-on-error: ${{ matrix.soft_fail }}
+        run: pnpm exec playwright install-deps chromium
+
       - name: Run WPT CSS shard
         timeout-minutes: 20
         run: |
