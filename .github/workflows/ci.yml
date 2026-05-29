@@ -275,6 +275,22 @@ jobs:
       - name: Build WASM
         run: just build-wasm && just transpile-wasm
 
+      # scripts/wpt-runner.ts drives Chrome via the `puppeteer` package.
+      # Unlike the VRT jobs (which use Playwright), this job needs the
+      # Chrome build that puppeteer expects in ~/.cache/puppeteer. pnpm's
+      # store cache can short-circuit the puppeteer postinstall that would
+      # otherwise fetch it, so install it explicitly.
+      - name: Restore Puppeteer Chrome browser cache
+        id: puppeteer_cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/puppeteer
+          key: puppeteer-chrome-${{ runner.os }}-${{ hashFiles('package.json', 'pnpm-lock.yaml') }}
+
+      - name: Install Puppeteer Chrome browser
+        if: steps.puppeteer_cache.outputs.cache-hit != 'true'
+        run: npx puppeteer browsers install chrome
+
       - name: Run WPT CSS shard
         timeout-minutes: 20
         run: |
