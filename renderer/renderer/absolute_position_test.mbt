@@ -703,6 +703,75 @@ test "inline_style_attribute_filter_establishes_abspos_cb" {
 }
 
 ///|
+test "filter_var_resolving_to_none_does_not_establish_abspos_cb" {
+  // issue #236: filter: var(--fx) where --fx is none must NOT establish an
+  // abspos containing block — it computes to filter: none. Reading the raw
+  // cascaded text ("var(--fx)") used to mis-set has_filter here.
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|#cb { --fx: none; filter: var(--fx); }
+    #|</style>
+    #|<div><span id="cb">text</span></div>
+  let ctx = @renderer.RenderContext::default()
+  let root = @renderer.render_to_node(html_str, ctx)
+  let cb = root.children[0].children[0]
+  inspect(cb.id, content="span#cb")
+  inspect(cb.style.has_filter, content="false")
+}
+
+///|
+test "filter_var_unresolved_does_not_establish_abspos_cb" {
+  // issue #236: filter: var(--undef) with no fallback is an unresolved var,
+  // which computes to the initial value none and must NOT establish the CB.
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|#cb { filter: var(--undef); }
+    #|</style>
+    #|<div><span id="cb">text</span></div>
+  let ctx = @renderer.RenderContext::default()
+  let root = @renderer.render_to_node(html_str, ctx)
+  let cb = root.children[0].children[0]
+  inspect(cb.id, content="span#cb")
+  inspect(cb.style.has_filter, content="false")
+}
+
+///|
+test "filter_var_resolving_to_non_filter_token_does_not_establish_abspos_cb" {
+  // issue #236: filter: var(--fx) where --fx holds a non-filter token is an
+  // invalid filter value, computing to none; it must NOT establish the CB.
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|#cb { --fx: invalid-token; filter: var(--fx); }
+    #|</style>
+    #|<div><span id="cb">text</span></div>
+  let ctx = @renderer.RenderContext::default()
+  let root = @renderer.render_to_node(html_str, ctx)
+  let cb = root.children[0].children[0]
+  inspect(cb.id, content="span#cb")
+  inspect(cb.style.has_filter, content="false")
+}
+
+///|
+test "filter_var_resolving_to_filter_function_establishes_abspos_cb" {
+  // The valid var() case must still establish the CB: filter: var(--fx)
+  // where --fx is a real filter function behaves like a literal filter.
+  let html_str =
+    #|<!DOCTYPE html>
+    #|<style>
+    #|#cb { --fx: blur(2px); filter: var(--fx); }
+    #|</style>
+    #|<div><span id="cb">text</span></div>
+  let ctx = @renderer.RenderContext::default()
+  let root = @renderer.render_to_node(html_str, ctx)
+  let cb = root.children[0].children[0]
+  inspect(cb.id, content="span#cb")
+  inspect(cb.style.has_filter, content="true")
+}
+
+///|
 test "wpt_intrinsic_percent_replaced_019_like_abspos_flex_basis_content_uses_definite_cross_chain" {
   let html_str =
     #|<!DOCTYPE html>
