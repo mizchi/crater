@@ -587,6 +587,53 @@ fn normalize_display_contents_for_unusual_html(
 }
 
 ///|
+/// Whether a `filter` / `backdrop-filter` value establishes a containing
+/// block for absolutely positioned descendants. var() is resolved against the
+/// element's custom properties first. A value that resolves to `none`, to an
+/// empty string (unresolved var with no fallback), or — for var()-bearing
+/// declarations — to a token that is not a filter function list computes to
+/// the initial value `none` and therefore does not establish the CB.
+fn filter_value_establishes_effect_cb(
+  raw_value : String,
+  css_vars : Map[String, String],
+) -> Bool {
+  let had_var = raw_value.contains("var(")
+  let resolved = if had_var {
+    let empty_attributes : Map[String, String] = {}
+    resolve_pseudo_content_value(raw_value, css_vars, empty_attributes)
+  } else {
+    raw_value
+  }
+  let normalized = resolved.to_lower().trim().to_owned()
+  if normalized == "" || normalized == "none" {
+    false
+  } else if had_var {
+    // Only a resolved filter function list (or url() reference) establishes
+    // the CB; a custom property holding a non-filter token computes to none.
+    filter_value_has_function(normalized)
+  } else {
+    // Literal (non-var) values keep the prior permissive behaviour.
+    true
+  }
+}
+
+///|
+/// Whether a lowercased value contains a recognised filter function token.
+fn filter_value_has_function(lowered : String) -> Bool {
+  lowered.contains("blur(") ||
+  lowered.contains("brightness(") ||
+  lowered.contains("contrast(") ||
+  lowered.contains("drop-shadow(") ||
+  lowered.contains("grayscale(") ||
+  lowered.contains("hue-rotate(") ||
+  lowered.contains("invert(") ||
+  lowered.contains("opacity(") ||
+  lowered.contains("saturate(") ||
+  lowered.contains("sepia(") ||
+  lowered.contains("url(")
+}
+
+///|
 /// Compute element style using indexed stylesheets for better performance
 fn compute_element_style_indexed(
   selector_elem : @css.Element,
@@ -1012,28 +1059,27 @@ fn compute_element_style_indexed(
   )
 
   // Effects that establish a containing block for positioned descendants:
-  // filter and backdrop-filter (non-none values).
+  // filter and backdrop-filter (non-none values). var() is resolved against
+  // the element's custom properties first so `filter: var(--x)` that computes
+  // to none / invalid does not mis-establish the containing block.
   let mut establishes_effect_cb = false
   match cascaded {
-    Some(cascaded_values) =>
+    Some(cascaded_values) => {
       match cascaded_values.get_value("filter") {
         Some(value) =>
-          if value.to_lower().trim() != "none" {
+          if filter_value_establishes_effect_cb(value, element_css_vars) {
             establishes_effect_cb = true
           }
         None => ()
       }
-    None => ()
-  }
-  match cascaded {
-    Some(cascaded_values) =>
       match cascaded_values.get_value("backdrop-filter") {
         Some(value) =>
-          if value.to_lower().trim() != "none" {
+          if filter_value_establishes_effect_cb(value, element_css_vars) {
             establishes_effect_cb = true
           }
         None => ()
       }
+    }
     None => ()
   }
   match inline_css {
@@ -1043,12 +1089,18 @@ fn compute_element_style_indexed(
       }
     None => ()
   }
-  if establishes_effect_cb {
-    style = {
-      ..style,
-      has_filter: true,
-      contain: { ..style.contain, paint: true },
-    }
+  // @css sets has_filter from the raw declaration text without resolving
+  // var(), so `filter: var(--x)` computing to none / invalid still flips it
+  // true. Set it authoritatively from the var-aware determination above; this
+  // covers every trigger @css uses (cascaded filter, cascaded backdrop-filter,
+  // and the inline path), so it neither under- nor over-establishes the CB.
+  style = {
+    ..style,
+    has_filter: establishes_effect_cb,
+    contain: {
+      ..style.contain,
+      paint: style.contain.paint || establishes_effect_cb,
+    },
   }
 
   // Apply viewport dimensions if root
