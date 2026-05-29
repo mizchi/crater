@@ -142,6 +142,16 @@ jobs:
       - name: Format check
         run: |
           just fmt
+          # `moon fmt` on the current MoonBit also migrates moon.mod.json ->
+          # moon.mod across every workspace. Adopting that migration would
+          # break the ~43 moon.mod.json references across CI / scripts, so it
+          # is tracked separately (#236) rather than performed here. Undo the
+          # migration artifacts and gate only on real source-format drift.
+          deleted_manifests="$(git ls-files --deleted -- '*moon.mod.json')"
+          if [ -n "$deleted_manifests" ]; then
+            echo "$deleted_manifests" | xargs git checkout --
+          fi
+          git clean -fq -- '*moon.mod' || true
           git diff --exit-code || (echo "Code is not formatted. Run 'just fmt' to fix." && exit 1)
         continue-on-error: true
 
