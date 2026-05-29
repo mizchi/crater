@@ -330,14 +330,11 @@ scenarios {
     id = "compat.css-text-baseline"
     name = "css-text WPT module baseline is established"
     description =
-      "Measure and pin a per-module pass-rate baseline for the css-text WPT module, then close gaps as separate scenarios. Source: TODO Now (P0)."
-    tags { "wpt"; "css"; "baseline"; "todo:now" }
+      "Measure and pin a per-module pass-rate baseline for the css-text WPT module, then close gaps as separate scenarios. css-text is huge (~1867 fixtures across 28 subdirs), so the initial baseline anchors on the text-indent + tab-size properties: wpt.json marks css-text recursive and the modulePrefixes [\"text-indent\", \"tab-size\"] entry exposes only those fixtures. The test count (35), pass count (15), and failure count (20) are pinned in tests/wpt-baselines/css-text.env, and scripts/test-wpt-module-baseline.sh fails CI when the count regresses. The 20 baseline failures involve hanging / each-line text-indent and tab stop width resolution that Crater's inline model does not yet reproduce. Widening to further css-text properties is follow-up work. Source: TODO Now (P0), GitHub issue #153."
+    tags { "wpt"; "css"; "baseline"; "todo:now"; "issue:153" }
     severity = "major"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.css-compat" }
-    openQuestions {
-      "Which css-text subset is in scope before the first wpt-config rollout?"
-    }
   }
   new {
     id = "compat.css-backgrounds-baseline"
@@ -642,10 +639,10 @@ scenarios {
     id = "compat.css-ruby-baseline"
     name = "css-ruby WPT module baseline is established"
     description =
-      "Measure and pin a per-module pass-rate baseline for the css-ruby WPT module. Source: TODO Now (P0)."
-    tags { "wpt"; "css"; "baseline"; "todo:now" }
+      "Measure and pin a per-module pass-rate baseline for the css-ruby WPT module. css-ruby is enabled in wpt.json with a dedicated modulePrefixes [\"\"] entry that exposes the full suite (the global includePrefixes filter matches no ruby fixtures), the test count (100), pass count (26), and failure count (74) are pinned in tests/wpt-baselines/css-ruby.env, and scripts/test-wpt-module-baseline.sh fails CI when the count regresses. The 74 baseline failures cluster on ruby annotation (rt) box positioning and ruby-base inline sizing that Crater's inline ruby model does not yet reproduce; closing those gaps is follow-up work. Source: TODO Now (P0), GitHub issue #158."
+    tags { "wpt"; "css"; "baseline"; "todo:now"; "issue:158" }
     severity = "major"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.css-compat" }
   }
 
