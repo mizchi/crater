@@ -276,28 +276,22 @@ jobs:
         run: just build-wasm && just transpile-wasm
 
       # scripts/wpt-runner.ts drives Chrome via the `puppeteer` package.
-      # Unlike the VRT jobs (which use Playwright), this job needs the
-      # Chrome build that puppeteer expects in ~/.cache/puppeteer. pnpm's
-      # store cache can short-circuit the puppeteer postinstall that would
-      # otherwise fetch it, so install it explicitly.
-      - name: Restore Puppeteer Chrome browser cache
-        id: puppeteer_cache
-        uses: actions/cache@v4
-        continue-on-error: ${{ matrix.soft_fail }}
-        with:
-          path: ~/.cache/puppeteer
-          key: puppeteer-chrome-${{ runner.os }}-${{ hashFiles('package.json', 'pnpm-lock.yaml') }}
-
+      # Unlike the VRT jobs (which use Playwright), this job needs the Chrome
+      # build that puppeteer expects in ~/.cache/puppeteer. pnpm's store cache
+      # can short-circuit the puppeteer postinstall that would otherwise fetch
+      # it, so install it explicitly here. The install is idempotent (it skips
+      # the download when the expected build is already present), so it runs
+      # unconditionally — gating it on an actions/cache hit risks a poisoned
+      # empty-cache entry permanently skipping the install and leaving the
+      # browser missing at launch time.
       - name: Install Puppeteer Chrome browser
-        if: steps.puppeteer_cache.outputs.cache-hit != 'true'
         continue-on-error: ${{ matrix.soft_fail }}
         run: pnpm exec puppeteer browsers install chrome
 
       # `puppeteer browsers install` fetches only the Chrome binary, not the
       # shared libraries headless Chrome needs to launch. Reuse Playwright's
       # dependency installer (Chromium and Chrome share the same system libs)
-      # so the browser can actually start on the runner. Must run every time
-      # (apt packages are not part of the puppeteer browser cache).
+      # so the browser can actually start on the runner.
       - name: Install Chrome system dependencies
         continue-on-error: ${{ matrix.soft_fail }}
         run: pnpm exec playwright install-deps chromium
