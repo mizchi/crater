@@ -445,6 +445,16 @@ tests {
       "bash -lc 'set -e; grep -Fq -- \"\\\"css-color\\\"\" wpt.json; test -f tests/wpt-baselines/css-color.env; grep -Fq -- \"MODULE=css-color\" tests/wpt-baselines/css-color.env; grep -Fq -- \"BASELINE_TOTAL=\" tests/wpt-baselines/css-color.env; grep -Fq -- \"BASELINE_PASSED=\" tests/wpt-baselines/css-color.env; test -x scripts/test-wpt-module-baseline.sh; grep -Fq -- \"tests/wpt-baselines/\\${module}.env\" scripts/test-wpt-module-baseline.sh'"
   }
   new {
+    name = "wpt_css_text_baseline_is_pinned"
+    description =
+      "css-text is enabled in wpt.json (recursive) with a modulePrefixes entry that anchors on text-indent + tab-size, and the per-module baseline file pins the expected pass / fail counts."
+    tags { "wpt"; "css"; "baseline"; "issue:153" }
+    specRef { "compat.css-text-baseline" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; grep -Fq -- \"\\\"css-text\\\"\" wpt.json; test -f tests/wpt-baselines/css-text.env; grep -Fq -- \"MODULE=css-text\" tests/wpt-baselines/css-text.env; grep -Fq -- \"BASELINE_PASSED=15\" tests/wpt-baselines/css-text.env; grep -Fq -- \"BASELINE_FAILED=20\" tests/wpt-baselines/css-text.env'"
+  }
+  new {
     name = "wpt_css_ruby_baseline_is_pinned"
     description =
       "css-ruby is enabled in wpt.json with a dedicated modulePrefixes entry that exposes the full suite, and the per-module baseline file pins the expected pass / fail counts."

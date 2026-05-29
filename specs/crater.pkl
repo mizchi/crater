@@ -330,14 +330,11 @@ scenarios {
     id = "compat.css-text-baseline"
     name = "css-text WPT module baseline is established"
     description =
-      "Measure and pin a per-module pass-rate baseline for the css-text WPT module, then close gaps as separate scenarios. Source: TODO Now (P0)."
-    tags { "wpt"; "css"; "baseline"; "todo:now" }
+      "Measure and pin a per-module pass-rate baseline for the css-text WPT module, then close gaps as separate scenarios. css-text is huge (~1867 fixtures across 28 subdirs), so the initial baseline anchors on the text-indent + tab-size properties: wpt.json marks css-text recursive and the modulePrefixes [\"text-indent\", \"tab-size\"] entry exposes only those fixtures. The test count (35), pass count (15), and failure count (20) are pinned in tests/wpt-baselines/css-text.env, and scripts/test-wpt-module-baseline.sh fails CI when the count regresses. The 20 baseline failures involve hanging / each-line text-indent and tab stop width resolution that Crater's inline model does not yet reproduce. Widening to further css-text properties is follow-up work. Source: TODO Now (P0), GitHub issue #153."
+    tags { "wpt"; "css"; "baseline"; "todo:now"; "issue:153" }
     severity = "major"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.css-compat" }
-    openQuestions {
-      "Which css-text subset is in scope before the first wpt-config rollout?"
-    }
   }
   new {
     id = "compat.css-backgrounds-baseline"
