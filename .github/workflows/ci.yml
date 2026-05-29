@@ -275,26 +275,23 @@ jobs:
       - name: Build WASM
         run: just build-wasm && just transpile-wasm
 
-      # scripts/wpt-runner.ts drives Chrome via the `puppeteer` package.
-      # Unlike the VRT jobs (which use Playwright), this job needs the Chrome
-      # build that puppeteer expects in ~/.cache/puppeteer. pnpm's store cache
-      # can short-circuit the puppeteer postinstall that would otherwise fetch
-      # it, so install it explicitly here. The install is idempotent (it skips
-      # the download when the expected build is already present), so it runs
-      # unconditionally — gating it on an actions/cache hit risks a poisoned
-      # empty-cache entry permanently skipping the install and leaving the
-      # browser missing at launch time.
-      - name: Install Puppeteer Chrome browser
+      # scripts/wpt-runner.ts drives Chrome via the `puppeteer` package, but
+      # `puppeteer browsers install` proved unreliable on the runner. Install
+      # Chromium with Playwright instead — the VRT jobs already depend on this
+      # path, and `--with-deps` brings the system libraries headless Chrome
+      # needs to launch — then point puppeteer at that binary via
+      # PUPPETEER_EXECUTABLE_PATH. Runs unconditionally (no cache gate) so a
+      # poisoned cache entry can never skip it.
+      - name: Install Chromium (Playwright) for the WPT runner
         continue-on-error: ${{ matrix.soft_fail }}
-        run: pnpm exec puppeteer browsers install chrome
+        run: pnpm exec playwright install --with-deps chromium
 
-      # `puppeteer browsers install` fetches only the Chrome binary, not the
-      # shared libraries headless Chrome needs to launch. Reuse Playwright's
-      # dependency installer (Chromium and Chrome share the same system libs)
-      # so the browser can actually start on the runner.
-      - name: Install Chrome system dependencies
+      - name: Point Puppeteer at the Playwright Chromium
         continue-on-error: ${{ matrix.soft_fail }}
-        run: pnpm exec playwright install-deps chromium
+        run: |
+          chrome_path="$(pnpm exec node -e 'console.log(require("playwright").chromium.executablePath())')"
+          echo "Resolved Chromium: ${chrome_path}"
+          echo "PUPPETEER_EXECUTABLE_PATH=${chrome_path}" >> "$GITHUB_ENV"
 
       - name: Run WPT CSS shard
         timeout-minutes: 20
