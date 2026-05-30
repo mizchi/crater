@@ -39,7 +39,6 @@ pkf run spec-check                                          # contract が壊れ
 | `diagnostic.paint-tree-diff` | paint tree diff API | #23 |
 | `diagnostic.css-property-mutation` | CSS property mutation API | #24 |
 | `diagnostic.selector-scoped-render` | selector-scoped rendering API | #25 |
-| `protocol.bidi-computed-style` | BiDi `getComputedStyle()` | #26 |
 | `diagnostic.vrt-prescanner-tracker` | VRT prescanner benchmark tracker | #29 |
 | `ci.parallel-vrt-bottleneck` | VRT shard 並列化 | #44 |
 | `ci.flaker-effectiveness` | flaker quarantine / fixture tighten | #79 |
@@ -58,7 +57,6 @@ pkf run spec-check                                          # contract が壊れ
 | `bug.bidi.navigate-wait-complete-returns-early` | `browsingContext.navigate` wait=complete が JS target で HTML fetch より先に解決 | PR #132 |
 | `bug.runtime.fetch-no-partition-cookies` | runtime `fetch()` が partition cookie を自動付与しない | PR #132 |
 | `bug.runtime.fetch-no-cors-gate` | runtime `fetch()` が `script_fetch_with_cors` を通らない | PR #132 |
-| `diagnostic.css-rule-usage-tracking` | dead CSS rule tracking | #27 |
 | `tui.raster-image-display` | TUI JPEG / PNG / GIF | #16 |
 | `ci.affected-required-check` | affected pkfire の required 化判断 | — |
 | `ci.flaker-vrt-harness-contract` | vrt-harness consumer payload 接続 | — |
