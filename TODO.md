@@ -47,7 +47,6 @@ pkf run spec-check                                          # contract が壊れ
 | `bug.flexbox-min-width-justify` | flexbox min_width + justify-content | #2 |
 | `bug.inline-abspos-width-ahem` | inline abspos width Ahem | #17 |
 | `bug.border-radius-paint` | border-radius pixel diff | #19 |
-| `bug.flexbox-align-items` | align-items 反映 | #22 |
 | `bug.samesite.psl-required` | SameSite eTLD+1 は PSL が必要 (security review I3) | — |
 | `bug.dom.html-form-element-submit-missing` | `HTMLFormElement.submit` / `requestSubmit` 未公開 | PR #132 |
 | `bug.dom.document-forms-missing` | `document.forms` HTMLCollection 未公開 | PR #132 |
