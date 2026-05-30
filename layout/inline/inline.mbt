@@ -1020,6 +1020,25 @@ fn resolve_abs_static_position_in_inline(
 }
 
 ///|
+fn dimension_is_nonzero(d : @types.Dimension) -> Bool {
+  match d {
+    @types.Length(v) => v != 0.0
+    @types.Percent(p) => p != 0.0
+    _ => false
+  }
+}
+
+///|
+/// Whether any margin edge resolves to a non-zero used value. Auto margins on
+/// inline boxes compute to zero, so only explicit lengths / percentages count.
+fn style_has_nonzero_margin(style : @style.Style) -> Bool {
+  dimension_is_nonzero(style.margin.top) ||
+  dimension_is_nonzero(style.margin.bottom) ||
+  dimension_is_nonzero(style.margin.left) ||
+  dimension_is_nonzero(style.margin.right)
+}
+
+///|
 /// Ensure each line box includes the inline formatting strut from parent font metrics.
 /// The strut defines the line box minimum ascent/descent from line-height.
 fn LineBox::ensure_line_strut(
@@ -1032,6 +1051,7 @@ fn LineBox::ensure_line_strut(
   let mut replaced_like_count = 0
   let mut has_text_item = false
   let mut has_br_item = false
+  let mut has_inline_box_item = false
   for item in self.items {
     let child = children[item.index]
     if child.text is Some(_) {
@@ -1043,8 +1063,37 @@ fn LineBox::ensure_line_strut(
     if is_replaced_strut_candidate(child) {
       replaced_like_count = replaced_like_count + 1
     }
+    // A non-replaced, content-less inline box with non-zero border / padding /
+    // margin (e.g. an empty `<span style="border:1px">`) is not an invisible
+    // line box (css-inline-3 §invisible-line-boxes), so it still generates the
+    // inline formatting context strut and its line takes the line-height of the
+    // containing block. A bare empty inline (no box decoration) stays invisible
+    // and contributes no height; inline-block / replaced size themselves.
+    // NB: item.layout carries the resolved border / padding but a zero margin
+    // (the real margin is applied to the fragment after line layout), so the
+    // margin contribution is read from the node's own style instead.
+    let deco = item.layout
+    let has_box_decoration = deco.border.top +
+      deco.border.bottom +
+      deco.border.left +
+      deco.border.right +
+      deco.padding.top +
+      deco.padding.bottom +
+      deco.padding.left +
+      deco.padding.right >
+      0.0 ||
+      style_has_nonzero_margin(child.style)
+    if child.text is None &&
+      child.measure is None &&
+      child.id != "br" &&
+      child.style.display == @types.Inline &&
+      !is_replaced_strut_candidate(child) &&
+      has_box_decoration {
+      has_inline_box_item = true
+    }
   }
-  if has_text_item || (replaced_like_count == 0 && !has_br_item) {
+  if has_text_item ||
+    (replaced_like_count == 0 && !has_br_item && !has_inline_box_item) {
     return ()
   }
   if replaced_like_count > 0 && !has_br_item {
@@ -2128,6 +2177,24 @@ fn compute_inline_child(
       _ =>
         if id_matches_tag(node.id, "source") {
           text_glyph_height_from_style(style) +
+          padding.vertical_sum() +
+          border.vertical_sum()
+        } else if style.display == @types.Inline &&
+          (
+            padding.vertical_sum() +
+            padding.horizontal_sum() +
+            border.vertical_sum() +
+            border.horizontal_sum() >
+            0.0 ||
+            style_has_nonzero_margin(style)
+          ) {
+          // Visible empty inline box (non-zero border / padding / margin, no
+          // content): not an invisible line box (css-inline-3
+          // §invisible-line-boxes), so it generates a line box and its
+          // border-box height is the line-height plus its block-axis
+          // decorations (margin is outside the border box, so it adds no
+          // height itself).
+          line_height_from_style(style) +
           padding.vertical_sum() +
           border.vertical_sum()
         } else {
