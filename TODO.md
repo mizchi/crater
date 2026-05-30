@@ -103,6 +103,23 @@ approved に flip 済の scenario と closed issue。詳細は git history / 各
 - `compat.css-inline-baseline` (#66 fix → baseline 有効化, PR #250)
 - BiDi: auth Phase 2 (#147), async cross-evaluate iframe (#198) — 実装済を確認し close
 - renderSelector の bbox を paint tree 由来に修正 (#253, PR #254)
+- WPT runner の viewport-skeleton バグ修正 (PR #258): 大型 fixture の後半が skeleton 化され height=0 に潰れていた。`renderHtmlToJsonForWpt` を full-document render に変更 → css-overflow 209→229 (+20)、他モジュール回帰なし
+- filter on inline で abs CB 確立 (PR #257, #64 一部): renderer の `establishes_absolute_containing_block` に `has_filter` 追加
+- flaker quarantine `paint-vrt-real-world-ci-latency` を 2026-06-30 へ延長 (PR #256, #79)
+
+## WPT 精度 — 次の高レバレッジ (調査済み 2026-05-30)
+
+skeleton 修正後の soft-fail モジュール pass率 (記録: #29):
+
+| module | pass | 主因 |
+|---|---|---|
+| css-contain | 274/303 | text-measurement 中心 |
+| css-flexbox | 267/289 | text-measurement 中心 |
+| css-display | 57/79 | `display:contents` flex/table の x ドリフト = text-measurement |
+| css-overflow | 229/243 | (skeleton 修正済) 残りは scroll-marker 個別 |
+| css-sizing | 85/94 | — |
+
+- **最大の伸びしろ = WPT runner へのフォント供給** (#47): `wpt-css` runner は実フォント fixture 無し → `char × fontSize × 0.5` 近似 fallback に落ち、browser の実プロポーショナルフォント測定とズレて x が累積ドリフト。crater コードでは直せない。解決は (a) `CRATER_TEXT_FONT_PATH` に NotoSansMono を供給し CI `wpt-css` でロード、(b) テスト側で等幅強制。VRT baseline 全体の再調整を伴う。
 
 ## Maintenance Rules
 
