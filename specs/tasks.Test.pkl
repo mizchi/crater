@@ -665,6 +665,26 @@ tests {
       "bash -lc 'set -e; test -f webdriver/webdriver/bidi_runtime_cookie_parity_wbtest.mbt; grep -Fq -- \"cookie URL filter parity: 10 representative cases\" webdriver/webdriver/bidi_runtime_cookie_parity_wbtest.mbt; grep -Fq -- \"storage_cookie_matches_request_url\" webdriver/webdriver/bidi_runtime_cookie_parity_wbtest.mbt; grep -Fq -- \"__bidiResolveCookies\" webdriver/webdriver/bidi_runtime_cookie_parity_wbtest.mbt; test -f webdriver/webdriver/bidi_storage.mbt; grep -Fq -- \"fn storage_cookie_matches_request_url\" webdriver/webdriver/bidi_storage.mbt; test -f webdriver/webdriver/bidi_runtime_context.mbt; grep -Fq -- \"globalThis.__bidiResolveCookies\" webdriver/webdriver/bidi_runtime_context.mbt'"
   }
   new {
+    name = "bidi_get_computed_styles_exposed"
+    description =
+      "browsingContext.getComputedStyles / getAllComputedStyles / getComputedStylesWithState expose resolved CSS values over BiDi (the +23% computed-style diff signal from the CSS challenge benchmark). Handlers live in bidi_browsing_context_computed_styles.mbt, routed in bidi_protocol_dispatch_browsing_context_rendering.mbt, and exercised by bidi_protocol_browsing_context_styles_wbtest.mbt for selector / sharedId / elementId targets, the selector-keyed batch form, and forced-state (hover / focus-visible) variants."
+    tags { "protocol"; "bidi"; "diagnostic"; "issue:26" }
+    specRef { "protocol.bidi-computed-style" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; test -f webdriver/webdriver/bidi_browsing_context_computed_styles.mbt; grep -Fq -- \"fn BidiProtocol::handle_get_computed_styles\" webdriver/webdriver/bidi_browsing_context_computed_styles.mbt; test -f webdriver/webdriver/bidi_protocol_dispatch_browsing_context_rendering.mbt; grep -Fq -- \"\\\"getComputedStyles\\\" =>\" webdriver/webdriver/bidi_protocol_dispatch_browsing_context_rendering.mbt; grep -Fq -- \"\\\"getAllComputedStyles\\\" =>\" webdriver/webdriver/bidi_protocol_dispatch_browsing_context_rendering.mbt; test -f webdriver/webdriver/bidi_protocol_browsing_context_styles_wbtest.mbt; grep -Fq -- \"bidi getComputedStyles returns live inline styles for selector\" webdriver/webdriver/bidi_protocol_browsing_context_styles_wbtest.mbt; grep -Fq -- \"bidi getAllComputedStyles returns selector keyed styles\" webdriver/webdriver/bidi_protocol_browsing_context_styles_wbtest.mbt'"
+  }
+  new {
+    name = "bidi_get_css_rule_usage_exposed"
+    description =
+      "browsingContext.getCssRuleUsage reports which CSS rules matched, which were overridden by higher specificity, and which were applied no-ops (inherited / initial / same-as-fallback), for dead-CSS detection. Handler in bidi_browsing_context_vrt.mbt, routed in bidi_protocol_dispatch_browsing_context_rendering.mbt, exercised by bidi_protocol_browsing_context_styles_wbtest.mbt."
+    tags { "diagnostic"; "css"; "api"; "issue:27" }
+    specRef { "diagnostic.css-rule-usage-tracking" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; test -f webdriver/webdriver/bidi_browsing_context_vrt.mbt; grep -Fq -- \"fn BidiProtocol::handle_get_css_rule_usage\" webdriver/webdriver/bidi_browsing_context_vrt.mbt; test -f webdriver/webdriver/bidi_protocol_dispatch_browsing_context_rendering.mbt; grep -Fq -- \"\\\"getCssRuleUsage\\\" =>\" webdriver/webdriver/bidi_protocol_dispatch_browsing_context_rendering.mbt; test -f webdriver/webdriver/bidi_protocol_browsing_context_styles_wbtest.mbt; grep -Fq -- \"bidi getCssRuleUsage reports matched and overridden rules\" webdriver/webdriver/bidi_protocol_browsing_context_styles_wbtest.mbt'"
+  }
+  new {
     name = "playwright_synthetic_navigation_url"
     description =
       "CraterBidiPage.page.click drains synthetic navigation after input.performActions, and the pointer runtime routes submit buttons through requestSubmit so form GET updates page.url. Covered by tests/playwright-adapter-user-scenarios.test.ts."

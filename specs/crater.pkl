@@ -540,10 +540,10 @@ scenarios {
     id = "protocol.bidi-computed-style"
     name = "BiDi exposes computed CSS styles"
     description =
-      "Add a BiDi command equivalent to getComputedStyle() so VRT tools can use computed-style diffs (single most impactful detection signal, +23% over pixel-only in the CSS challenge benchmark). See GitHub issue #26."
+      "BiDi commands equivalent to getComputedStyle() so VRT tools can use computed-style diffs (single most impactful detection signal, +23% over pixel-only in the CSS challenge benchmark). browsingContext.getComputedStyles / getAllComputedStyles / getComputedStylesWithState are handled in webdriver/webdriver/bidi_browsing_context_computed_styles.mbt, routed in bidi_protocol_dispatch_browsing_context_rendering.mbt, and covered by bidi_protocol_browsing_context_styles_wbtest.mbt (selector / sharedId / elementId targets, selector-keyed batch, hover / focus-visible forced state). See GitHub issue #26."
     tags { "protocol"; "bidi"; "diagnostic"; "issue:26" }
     severity = "major"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.diagnostic-api"; "goal.protocol-compat" }
   }
   new {
@@ -924,10 +924,10 @@ scenarios {
     id = "diagnostic.css-rule-usage-tracking"
     name = "CSS rule usage tracking identifies dead rules"
     description =
-      "Track which CSS rules are matched and applied during rendering, then report unused or overridden rules. See GitHub issue #27."
+      "Track which CSS rules are matched and applied during rendering, then report unused or overridden rules. browsingContext.getCssRuleUsage (handler in webdriver/webdriver/bidi_browsing_context_vrt.mbt, routed in bidi_protocol_dispatch_browsing_context_rendering.mbt) reports matched / overridden-by-specificity / applied-no-op (inherited, initial, same-as-fallback) rules, covered by bidi_protocol_browsing_context_styles_wbtest.mbt. See GitHub issue #27."
     tags { "diagnostic"; "css"; "api"; "issue:27" }
     severity = "minor"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.diagnostic-api" }
   }
   new {
