@@ -44,7 +44,6 @@ pkf run spec-check                                          # contract が壊れ
 
 | scenario id | 概要 | link |
 |---|---|---|
-| `bug.inline-abspos-width-ahem` | inline abspos width Ahem | #17 |
 | `bug.border-radius-paint` | border-radius pixel diff | #19 |
 | `bug.samesite.psl-required` | SameSite eTLD+1 は PSL が必要 (security review I3) | — |
 | `bug.dom.html-form-element-submit-missing` | `HTMLFormElement.submit` / `requestSubmit` 未公開 | PR #132 |
