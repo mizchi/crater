@@ -55,7 +55,14 @@
     // via the recursive modulePrefixes entry below. Widening to further
     // css-text properties is follow-up work.
     // See pkspec compat.css-text-baseline.
-    "css-text"
+    "css-text",
+
+    // Inline module. The global includePrefixes filter matches no inline
+    // fixtures, so the modulePrefixes entry below exposes the top-level
+    // css-inline suite (empty-span struts, inheritance, crashtests) to the
+    // layout-tree compare runner. Subdirectories (model, parsing,
+    // initial-letter, ...) are follow-up. See pkspec compat.css-inline-baseline.
+    "css-inline"
   ],
   "recursiveModules": [
     "css-align",
@@ -63,6 +70,9 @@
     "css-text"
   ],
   "modulePrefixes": {
+    "css-inline": [
+      ""
+    ],
     "css-ruby": [
       ""
     ],
@@ -116,7 +126,11 @@
       // "break-at-end-"
     ]
   },
-  "knownFailures": [],
+  "knownFailures": [
+    // css-inline crashtest: passes "no crash" in browsers but the layout-tree
+    // compare runner reports a mismatch; tracked as a css-inline residual.
+    "inline-crash.html"
+  ],
   "includePrefixes": [
     "align-", "place-",
     "align-content", "align-items", "align-self",

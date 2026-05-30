@@ -465,6 +465,16 @@ tests {
       "bash -lc 'set -e; grep -Fq -- \"\\\"css-ruby\\\"\" wpt.json; test -f tests/wpt-baselines/css-ruby.env; grep -Fq -- \"MODULE=css-ruby\" tests/wpt-baselines/css-ruby.env; grep -Fq -- \"BASELINE_PASSED=26\" tests/wpt-baselines/css-ruby.env; grep -Fq -- \"BASELINE_FAILED=74\" tests/wpt-baselines/css-ruby.env'"
   }
   new {
+    name = "wpt_css_inline_baseline_is_pinned"
+    description =
+      "css-inline is enabled in wpt.json with a modulePrefixes [\"\"] entry exposing the top-level suite; the per-module baseline file pins 10/11 passing (including the #66 empty-span strut tests) with inline-crash.html quarantined in knownFailures."
+    tags { "wpt"; "css"; "baseline"; "issue:65"; "issue:66" }
+    specRef { "compat.css-inline-baseline" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; grep -Fq -- \"\\\"css-inline\\\"\" wpt.json; grep -Fq -- \"inline-crash.html\" wpt.json; test -f tests/wpt-baselines/css-inline.env; grep -Fq -- \"MODULE=css-inline\" tests/wpt-baselines/css-inline.env; grep -Fq -- \"BASELINE_PASSED=10\" tests/wpt-baselines/css-inline.env; grep -Fq -- \"BASELINE_FAILED=1\" tests/wpt-baselines/css-inline.env'"
+  }
+  new {
     name = "ci_wires_pkfire_affected_with_cache"
     description =
       "The GitHub Actions CI should restore the Pkl cache and compute heavy-gate booleans from pkfire affected output without duplicating core test execution."

@@ -380,10 +380,10 @@ scenarios {
     id = "compat.css-inline-baseline"
     name = "css-inline WPT module baseline is enabled"
     description =
-      "Promote css-inline from manual baseline measurement into wpt-config. See GitHub issue #65 (measurement) and #66 (empty inline span height outlier)."
+      "css-inline is promoted into wpt-config: enabled in wpt.json modules with a modulePrefixes [\"\"] entry exposing the top-level suite, baselined at 10/11 passing in tests/wpt-baselines/css-inline.env (including the #66 empty-span strut tests), with the inline-crash.html crashtest quarantined in knownFailures. Subdirectories (model / parsing / initial-letter / ...) are follow-up. See GitHub issue #65 (measurement) and #66 (empty inline span height outlier)."
     tags { "wpt"; "css"; "baseline"; "issue:65"; "issue:66" }
     severity = "major"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.css-compat" }
   }
   new {
