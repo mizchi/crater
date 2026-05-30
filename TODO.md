@@ -36,8 +36,6 @@ pkf run spec-check                                          # contract が壊れ
 | `paint.real-world-snapshots` | built-in real-world snapshot 3-5 ページ | #161 |
 | `paint.github-residual-diff` | GitHub VRT 残差 (sticky nav / card border / list marker) | #162 |
 | `paint.browser-shell-fixture-expansion` | browser shell fixture を実ページ寄りに | #163 |
-| `diagnostic.paint-tree-diff` | paint tree diff API | #23 |
-| `diagnostic.css-property-mutation` | CSS property mutation API | #24 |
 | `protocol.bidi-computed-style` | BiDi `getComputedStyle()` | #26 |
 | `diagnostic.vrt-prescanner-tracker` | VRT prescanner benchmark tracker | #29 |
 | `ci.parallel-vrt-bottleneck` | VRT shard 並列化 | #44 |
