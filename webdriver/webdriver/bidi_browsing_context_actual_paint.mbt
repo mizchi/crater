@@ -470,6 +470,7 @@ priv struct PaintCaptureFrame {
   palette : @tui_paint_export.DynamicPalette
   timing : @rendering.PaintCaptureTiming
   visual : @tui_paint_export.VisualStats?
+  paint_node : @paint_model.PaintNode
 }
 
 ///|
@@ -766,6 +767,7 @@ fn BidiProtocol::build_actual_paint_frame(
       total_ms: t3 - t0,
     },
     visual,
+    paint_node,
   })
 }
 
@@ -897,61 +899,53 @@ fn BidiProtocol::resolve_capture_paint_data(
 }
 
 ///|
-/// Resolve a selector's border-box rect in the runtime DOM via
-/// getBoundingClientRect. Returns a JSON string `{found, x, y, width, height}`.
-extern "js" fn js_selector_bounding_box(selector : String) -> String =
-  #| (selector) => {
-  #|   try {
-  #|     const doc = globalThis.document;
-  #|     if (!doc || typeof doc.querySelector !== "function") {
-  #|       return JSON.stringify({ found: false });
-  #|     }
-  #|     const el = doc.querySelector(selector);
-  #|     if (!el || typeof el.getBoundingClientRect !== "function") {
-  #|       return JSON.stringify({ found: false });
-  #|     }
-  #|     const r = el.getBoundingClientRect();
-  #|     return JSON.stringify({
-  #|       found: true,
-  #|       x: Number(r.x) || 0,
-  #|       y: Number(r.y) || 0,
-  #|       width: Number(r.width) || 0,
-  #|       height: Number(r.height) || 0,
-  #|     });
-  #|   } catch (e) {
-  #|     return JSON.stringify({ found: false });
-  #|   }
-  #| }
-
-///|
-fn render_selector_floor_to_int(v : Double) -> Int {
-  let t = v.to_int()
-  if v < t.to_double() {
-    t - 1
-  } else {
-    t
+/// Whether a paint node matches a simple `selector`. The selector grammar is
+/// limited to what the renderer's node ids encode (`make_node_id`): a bare tag
+/// (`div`), an id (`#main` / `div#main`), or the element's FIRST class
+/// (`.card` / `div.card`). Compound / descendant / attribute selectors are not
+/// supported because the paint tree only carries one `tag#id`-or-`tag.class`
+/// identifier per node.
+fn paint_node_matches_selector(
+  node : @paint_model.PaintNode,
+  selector : String,
+) -> Bool {
+  let sel = selector.trim().to_owned()
+  if sel == "" {
+    return false
   }
+  // Node id is `tag`, `tag#id`, or `tag.firstClass`.
+  let id = node.id
+  if sel == node.tag || sel == id {
+    return true
+  }
+  if sel.has_prefix("#") {
+    // `#main` matches a node whose id is `<tag>#main`.
+    return id.has_suffix("#" + sel.substring(start=1))
+  }
+  if sel.has_prefix(".") {
+    // `.card` matches a node whose id is `<tag>.card`.
+    return id.has_suffix("." + sel.substring(start=1))
+  }
+  false
 }
 
 ///|
-fn render_selector_ceil_to_int(v : Double) -> Int {
-  let t = v.to_int()
-  if v > t.to_double() {
-    t + 1
-  } else {
-    t
+/// Depth-first search for the first paint node matching `selector`, returning
+/// its document-relative border-box rect.
+fn paint_node_find_rect(
+  node : @paint_model.PaintNode,
+  selector : String,
+) -> (Double, Double, Double, Double)? {
+  if paint_node_matches_selector(node, selector) {
+    return Some((node.x, node.y, node.width, node.height))
   }
-}
-
-///|
-fn render_selector_number_field(
-  obj : Map[String, Json],
-  key : String,
-) -> Double {
-  match obj.get(key) {
-    Some(Number(v, ..)) => v
-    _ => 0.0
+  for child in node.children {
+    match paint_node_find_rect(child, selector) {
+      Some(rect) => return Some(rect)
+      None => ()
+    }
   }
+  None
 }
 
 ///|
@@ -1016,58 +1010,44 @@ fn BidiProtocol::resolve_render_selector(
   }
   set_runtime_context(ctx_id)
   self.apply_effective_viewport_to_runtime_context(ctx_id, ctx_id)
-  // Render the live document only. The bounding box is resolved against the
-  // live runtime DOM (js_selector_bounding_box), so the framebuffer must come
-  // from that same document; a caller-supplied `html` is intentionally not
-  // honored here because it would diverge from the DOM the bbox is measured
-  // against, cropping the wrong region.
-  //
-  // NOTE: this uses the default viewport paint path. A below-the-fold element
-  // is captured because the paint viewport spans the rendered content, but when
-  // the viewport-skeleton optimization is enabled (CRATER_VIEWPORT_SKELETON=1)
-  // below-fold elements are skeletonized and would crop blank. Rendering the
-  // full document unconditionally would fix that but changes the framebuffer
-  // coordinate space (document- vs viewport-relative); deferred until it can be
-  // validated against the VRT suite.
+  // Render the whole live document (origin="document"): this disables
+  // viewport-skeleton culling and produces a full-page, document-relative
+  // framebuffer. The element rect is then resolved from that same paint tree
+  // (paint_node_find_rect) rather than the runtime DOM's getBoundingClientRect
+  // — the runtime rect is computed from inline style only and does not reflect
+  // an element's normal-flow position, so a below-the-fold element would
+  // otherwise report y=0 and crop blank (GitHub issue #253). Sourcing the rect
+  // and the framebuffer from the same paint tree keeps them in one coordinate
+  // space.
   let html = capture_current_paint_html()
   let frame = match
     self.build_actual_paint_frame(
       request_id,
       ctx_id,
       html,
+      origin="document",
       send_errors=true,
       measure_visual=false,
     ) {
     Some(frame) => frame
     None => return None
   }
-  let bbox : Map[String, Json] = match
-    (@json.parse(js_selector_bounding_box(selector)) catch {
-      _ => make_object({})
-    }) {
-    Object(map) => map
-    _ => {}
+  let (bx, by, bw, bh) = match
+    paint_node_find_rect(frame.paint_node, selector) {
+    Some(rect) => rect
+    None => {
+      self.send_error(
+        request_id,
+        "no such node",
+        "selector matched no element: " + selector,
+      )
+      return None
+    }
   }
-  let found = match bbox.get("found") {
-    Some(True) => true
-    _ => false
-  }
-  if !found {
-    self.send_error(
-      request_id,
-      "no such node",
-      "selector matched no element: " + selector,
-    )
-    return None
-  }
-  let bx = render_selector_number_field(bbox, "x")
-  let by = render_selector_number_field(bbox, "y")
-  let bw = render_selector_number_field(bbox, "width")
-  let bh = render_selector_number_field(bbox, "height")
-  let x0 = render_selector_floor_to_int(bx - padding)
-  let y0 = render_selector_floor_to_int(by - padding)
-  let x1 = render_selector_ceil_to_int(bx + bw + padding)
-  let y1 = render_selector_ceil_to_int(by + bh + padding)
+  let x0 = (bx - padding).floor().to_int()
+  let y0 = (by - padding).floor().to_int()
+  let x1 = (bx + bw + padding).ceil().to_int()
+  let y1 = (by + bh + padding).ceil().to_int()
   let cropped = frame.framebuffer.crop(x0, y0, x1 - x0, y1 - y0)
   let data = @tui_paint_export.framebuffer_to_rgba_base64(
     cropped,
