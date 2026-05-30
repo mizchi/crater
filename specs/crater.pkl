@@ -738,10 +738,10 @@ scenarios {
     id = "bug.inline-abspos-width-ahem"
     name = "inline abspos text width matches Ahem"
     description =
-      "Fix inline abspos text width estimation mismatch with Ahem font (position-absolute-in-inline-003/004). See GitHub issue #17."
+      "Inline abspos text width estimation with the Ahem font now matches the browser: css-position WPT tests position-absolute-in-inline-003/004 pass, css-position is a gated wpt.json module, and the tests are no longer in knownFailures. See GitHub issue #17."
     tags { "css"; "inline"; "bug"; "issue:17" }
     severity = "minor"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.css-compat" }
   }
   new {

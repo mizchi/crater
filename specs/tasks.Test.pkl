@@ -735,6 +735,16 @@ tests {
       "bash -lc 'set -e; test -f layout/flex/flex_test.mbt; grep -Fq -- \"flexbox_min_width_justify_and_padding\" layout/flex/flex_test.mbt'"
   }
   new {
+    name = "inline_abspos_width_ahem_passes"
+    description =
+      "css-position WPT tests position-absolute-in-inline-003/004 (inline abspos text width with the Ahem font) pass: css-position is a gated wpt.json module and these tests are no longer quarantined in knownFailures, so the inline text-width estimation matches the browser (#17)."
+    tags { "css"; "inline"; "bug"; "issue:17" }
+    specRef { "bug.inline-abspos-width-ahem" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; test -f wpt/css/css-position/position-absolute-in-inline-003.html; test -f wpt/css/css-position/position-absolute-in-inline-004.html; grep -Fq -- \"\\\"css-position\\\"\" wpt.json; ! grep -q -- \"position-absolute-in-inline\" wpt.json'"
+  }
+  new {
     name = "playwright_synthetic_navigation_url"
     description =
       "CraterBidiPage.page.click drains synthetic navigation after input.performActions, and the pointer runtime routes submit buttons through requestSubmit so form GET updates page.url. Covered by tests/playwright-adapter-user-scenarios.test.ts."
