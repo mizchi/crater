@@ -1020,6 +1020,25 @@ fn resolve_abs_static_position_in_inline(
 }
 
 ///|
+fn dimension_is_nonzero(d : @types.Dimension) -> Bool {
+  match d {
+    @types.Length(v) => v != 0.0
+    @types.Percent(p) => p != 0.0
+    _ => false
+  }
+}
+
+///|
+/// Whether any margin edge resolves to a non-zero used value. Auto margins on
+/// inline boxes compute to zero, so only explicit lengths / percentages count.
+fn style_has_nonzero_margin(style : @style.Style) -> Bool {
+  dimension_is_nonzero(style.margin.top) ||
+  dimension_is_nonzero(style.margin.bottom) ||
+  dimension_is_nonzero(style.margin.left) ||
+  dimension_is_nonzero(style.margin.right)
+}
+
+///|
 /// Ensure each line box includes the inline formatting strut from parent font metrics.
 /// The strut defines the line box minimum ascent/descent from line-height.
 fn LineBox::ensure_line_strut(
@@ -1050,6 +1069,9 @@ fn LineBox::ensure_line_strut(
     // inline formatting context strut and its line takes the line-height of the
     // containing block. A bare empty inline (no box decoration) stays invisible
     // and contributes no height; inline-block / replaced size themselves.
+    // NB: item.layout carries the resolved border / padding but a zero margin
+    // (the real margin is applied to the fragment after line layout), so the
+    // margin contribution is read from the node's own style instead.
     let deco = item.layout
     let has_box_decoration = deco.border.top +
       deco.border.bottom +
@@ -1058,12 +1080,9 @@ fn LineBox::ensure_line_strut(
       deco.padding.top +
       deco.padding.bottom +
       deco.padding.left +
-      deco.padding.right +
-      deco.margin.top +
-      deco.margin.bottom +
-      deco.margin.left +
-      deco.margin.right >
-      0.0
+      deco.padding.right >
+      0.0 ||
+      style_has_nonzero_margin(child.style)
     if child.text is None &&
       child.measure is None &&
       child.id != "br" &&
@@ -2161,15 +2180,20 @@ fn compute_inline_child(
           padding.vertical_sum() +
           border.vertical_sum()
         } else if style.display == @types.Inline &&
-          padding.vertical_sum() +
-          padding.horizontal_sum() +
-          border.vertical_sum() +
-          border.horizontal_sum() >
-          0.0 {
-          // Visible empty inline box (non-zero border / padding, no content):
-          // not an invisible line box (css-inline-3 §invisible-line-boxes), so
-          // it generates a line box and its border-box height is the
-          // line-height plus its block-axis decorations.
+          (
+            padding.vertical_sum() +
+            padding.horizontal_sum() +
+            border.vertical_sum() +
+            border.horizontal_sum() >
+            0.0 ||
+            style_has_nonzero_margin(style)
+          ) {
+          // Visible empty inline box (non-zero border / padding / margin, no
+          // content): not an invisible line box (css-inline-3
+          // §invisible-line-boxes), so it generates a line box and its
+          // border-box height is the line-height plus its block-axis
+          // decorations (margin is outside the border box, so it adds no
+          // height itself).
           line_height_from_style(style) +
           padding.vertical_sum() +
           border.vertical_sum()
