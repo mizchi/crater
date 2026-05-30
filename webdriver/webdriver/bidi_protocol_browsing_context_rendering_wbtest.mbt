@@ -389,3 +389,62 @@ test "bidi captureScreenshotData returns raw png payload" {
   assert_eq(width, 1024)
   assert_eq(height, 768)
 }
+
+///|
+test "bidi renderSelector crops to the selected element" {
+  let proto = BidiProtocol::new()
+  ignore(
+    proto.process_message("{\"id\":1,\"method\":\"session.new\",\"params\":{}}"),
+  )
+  ignore(proto.take_messages())
+  ignore(
+    proto.process_message(
+      "{\"id\":2,\"method\":\"browsingContext.setViewport\",\"params\":{\"context\":\"session-1\",\"viewport\":{\"width\":320,\"height\":240}}}",
+    ),
+  )
+  ignore(proto.take_messages())
+  let html = "<!DOCTYPE html><html><body style='margin:0;background:#ffffff'><div class='target' style='width:120px;height:90px;background:#ff0000'></div></body></html>"
+  let navigate_message = "{\"id\":3,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"" +
+    js_test_build_html_data_url(html) +
+    "\",\"wait\":\"complete\"}}"
+  ignore(proto.process_message(navigate_message))
+  ignore(proto.take_messages())
+  ignore(
+    proto.process_message(
+      "{\"id\":4,\"method\":\"browsingContext.renderSelector\",\"params\":{\"context\":\"session-1\",\"selector\":\".target\"}}",
+    ),
+  )
+  let result = extract_success_result(proto.take_messages())
+  let width = match result.get("width") {
+    Some(Number(value, ..)) => value.to_int()
+    _ => -1
+  }
+  let height = match result.get("height") {
+    Some(Number(value, ..)) => value.to_int()
+    _ => -1
+  }
+  // cropped output matches the element's box, not the full 320x240 viewport
+  assert_eq(width, 120)
+  assert_eq(height, 90)
+  let data = match result.get("data") {
+    Some(String(value)) => value
+    _ => ""
+  }
+  let meta = rgba_meta_from_base64(data, width, 10, 10)
+  match meta.get("length") {
+    Some(Number(value, ..)) => assert_eq(value.to_int(), width * height * 4)
+    _ => assert_true(false)
+  }
+  let bbox = match result.get("boundingBox") {
+    Some(Object(map)) => map
+    _ => {}
+  }
+  match bbox.get("width") {
+    Some(Number(value, ..)) => assert_eq(value.to_int(), 120)
+    _ => assert_true(false)
+  }
+  match bbox.get("height") {
+    Some(Number(value, ..)) => assert_eq(value.to_int(), 90)
+    _ => assert_true(false)
+  }
+}

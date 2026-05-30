@@ -530,10 +530,10 @@ scenarios {
     id = "diagnostic.selector-scoped-render"
     name = "selector-scoped rendering API is exposed"
     description =
-      "Expose an API to render only the subtree matched by a CSS selector for component-level VRT. See GitHub issue #25."
+      "Expose an API to render only the subtree matched by a CSS selector for component-level VRT. browsingContext.renderSelector (handle_render_selector in webdriver/webdriver/bidi_browsing_context_actual_paint.mbt, routed in bidi_protocol_dispatch_browsing_context_rendering.mbt) renders the page, resolves the element's border-box via getBoundingClientRect, and returns the cropped RGBA (Framebuffer::crop, with optional padding) plus the boundingBox. Covered by bidi_protocol_browsing_context_rendering_wbtest.mbt and painter/paint/raster crop unit tests. See GitHub issue #25."
     tags { "diagnostic"; "vrt"; "api"; "issue:25" }
     severity = "major"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.diagnostic-api" }
   }
   new {

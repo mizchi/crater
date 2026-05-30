@@ -22,6 +22,10 @@ fn BidiProtocol::dispatch_browsing_context_rendering(
       self.handle_capture_paint_tree(request.id, request.params)
       true
     }
+    "renderSelector" => {
+      self.handle_render_selector(request.id, request.params)
+      true
+    }
     "getResponsiveBreakpoints" => {
       self.handle_get_responsive_breakpoints(request.id, request.params)
       true

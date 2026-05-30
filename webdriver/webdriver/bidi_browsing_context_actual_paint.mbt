@@ -897,6 +897,188 @@ fn BidiProtocol::resolve_capture_paint_data(
 }
 
 ///|
+/// Resolve a selector's border-box rect in the runtime DOM via
+/// getBoundingClientRect. Returns a JSON string `{found, x, y, width, height}`.
+extern "js" fn js_selector_bounding_box(selector : String) -> String =
+  #| (selector) => {
+  #|   try {
+  #|     const doc = globalThis.document;
+  #|     if (!doc || typeof doc.querySelector !== "function") {
+  #|       return JSON.stringify({ found: false });
+  #|     }
+  #|     const el = doc.querySelector(selector);
+  #|     if (!el || typeof el.getBoundingClientRect !== "function") {
+  #|       return JSON.stringify({ found: false });
+  #|     }
+  #|     const r = el.getBoundingClientRect();
+  #|     return JSON.stringify({
+  #|       found: true,
+  #|       x: Number(r.x) || 0,
+  #|       y: Number(r.y) || 0,
+  #|       width: Number(r.width) || 0,
+  #|       height: Number(r.height) || 0,
+  #|     });
+  #|   } catch (e) {
+  #|     return JSON.stringify({ found: false });
+  #|   }
+  #| }
+
+///|
+fn render_selector_floor_to_int(v : Double) -> Int {
+  let t = v.to_int()
+  if v < t.to_double() {
+    t - 1
+  } else {
+    t
+  }
+}
+
+///|
+fn render_selector_ceil_to_int(v : Double) -> Int {
+  let t = v.to_int()
+  if v > t.to_double() {
+    t + 1
+  } else {
+    t
+  }
+}
+
+///|
+fn render_selector_number_field(
+  obj : Map[String, Json],
+  key : String,
+) -> Double {
+  match obj.get(key) {
+    Some(Number(v, ..)) => v
+    _ => 0.0
+  }
+}
+
+///|
+/// browsingContext.renderSelector: render the page, then return just the
+/// pixels of the element matched by `selector`, cropped (with optional
+/// `padding`) out of the full framebuffer, plus its bounding box. Enables
+/// component-level VRT without cropping a full-page screenshot client-side.
+fn BidiProtocol::handle_render_selector(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Unit {
+  match self.resolve_render_selector(request_id, params) {
+    Some(result) => self.send_success(request_id, Some(result))
+    None => ()
+  }
+}
+
+///|
+fn BidiProtocol::resolve_render_selector(
+  self : BidiProtocol,
+  request_id : Int,
+  params : Json?,
+) -> Json? {
+  let params = match params {
+    Some(Object(map)) => map
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "params must be an object",
+      )
+      return None
+    }
+  }
+  let ctx_id = match params.get("context") {
+    Some(String(id)) => id
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "context must be a string",
+      )
+      return None
+    }
+  }
+  let selector = match params.get("selector") {
+    Some(String(sel)) => sel
+    _ => {
+      self.send_error(
+        request_id, "invalid argument", "selector must be a string",
+      )
+      return None
+    }
+  }
+  let padding = match params.get("padding") {
+    Some(Number(v, ..)) => v
+    _ => 0.0
+  }
+  let _session = match self.manager.get_session(ctx_id) {
+    Some(session) => session
+    None => {
+      self.send_error(request_id, "no such frame", "Unknown context: " + ctx_id)
+      return None
+    }
+  }
+  set_runtime_context(ctx_id)
+  self.apply_effective_viewport_to_runtime_context(ctx_id, ctx_id)
+  let html = match params.get("html") {
+    Some(String(html)) => html
+    _ => capture_current_paint_html()
+  }
+  let frame = match
+    self.build_actual_paint_frame(
+      request_id,
+      ctx_id,
+      html,
+      send_errors=true,
+      measure_visual=false,
+    ) {
+    Some(frame) => frame
+    None => return None
+  }
+  let bbox : Map[String, Json] = match
+    (@json.parse(js_selector_bounding_box(selector)) catch {
+      _ => make_object({})
+    }) {
+    Object(map) => map
+    _ => {}
+  }
+  let found = match bbox.get("found") {
+    Some(True) => true
+    _ => false
+  }
+  if !found {
+    self.send_error(
+      request_id,
+      "no such node",
+      "selector matched no element: " + selector,
+    )
+    return None
+  }
+  let bx = render_selector_number_field(bbox, "x")
+  let by = render_selector_number_field(bbox, "y")
+  let bw = render_selector_number_field(bbox, "width")
+  let bh = render_selector_number_field(bbox, "height")
+  let x0 = render_selector_floor_to_int(bx - padding)
+  let y0 = render_selector_floor_to_int(by - padding)
+  let x1 = render_selector_ceil_to_int(bx + bw + padding)
+  let y1 = render_selector_ceil_to_int(by + bh + padding)
+  let cropped = frame.framebuffer.crop(x0, y0, x1 - x0, y1 - y0)
+  let data = @tui_paint_export.framebuffer_to_rgba_base64(
+    cropped,
+    frame.palette,
+  )
+  let bounding_box : Map[String, Json] = {
+    "x": Json::number(bx),
+    "y": Json::number(by),
+    "width": Json::number(bw),
+    "height": Json::number(bh),
+  }
+  let out : Map[String, Json] = {
+    "width": Json::number(cropped.width.to_double()),
+    "height": Json::number(cropped.height.to_double()),
+    "data": Json::string(data),
+    "boundingBox": make_object(bounding_box),
+  }
+  Some(make_object(out))
+}
+
+///|
 fn BidiProtocol::try_resolve_actual_capture_screenshot_data(
   self : BidiProtocol,
   request_id : Int,
