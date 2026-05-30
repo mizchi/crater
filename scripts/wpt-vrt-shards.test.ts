@@ -56,7 +56,7 @@ describe("CI_WPT_VRT_SHARDS", () => {
     );
   });
 
-  it("splits css-display into two balanced shards", () => {
+  it("splits css-display into three balanced shards", () => {
     const entries = collectWptVrtTests(loadWptVrtConfig()).filter((entry) =>
       entry.moduleName === "css-display"
     );
@@ -67,14 +67,22 @@ describe("CI_WPT_VRT_SHARDS", () => {
     expect(displayShards.map((shard) => shard.name)).toEqual([
       "display-1",
       "display-2",
+      "display-3",
     ]);
 
     const selectedPathsByShard = displayShards.map((shard) =>
       selectEntriesForShard(entries, shard).map((entry) => entry.relativePath)
     );
-    expect(selectedPathsByShard.map((paths) => paths.length)).toEqual([20, 19]);
+    // 39 css-display fixtures split into even thirds (#44).
+    expect(selectedPathsByShard.map((paths) => paths.length)).toEqual([13, 13, 13]);
     expect(selectedPathsByShard[0]).toContain(
-      "css-display/display-contents-details-001.html",
+      "css-display/display-change-iframe.html",
+    );
+    expect(selectedPathsByShard[1]).toContain(
+      "css-display/display-contents-dynamic-before-after-001.html",
+    );
+    expect(selectedPathsByShard[2]).toContain(
+      "css-display/display-contents-dynamic-multicol-001-inline.html",
     );
   });
 
@@ -112,6 +120,7 @@ describe("CI_WPT_VRT_SHARDS", () => {
       "flexbox-3",
       "display-1",
       "display-2",
+      "display-3",
       "box-1",
       "box-2",
       "box-3",

@@ -9,15 +9,19 @@
 //
 // CI #345 showed that moving early flexbox cases around changed VRT outcomes.
 // Keep the first 21 flexbox cases fixed, then split the tail where the current
-// runtime skew lives. Display stays split in half; css-box is split into three
+// runtime skew lives. Display is split into three contiguous shards (#44: it
+// was the ~22m single-shard bottleneck, then ~11m as two halves — three even
+// thirds keep each display shard under the ~10m target enforced by the
+// ci-timing-summary --max-shard-duration-sec gate). css-box is split into three
 // contiguous shards to dilute the heavy leading margin-trim cases.
 
 export const CI_WPT_VRT_SHARDS = Object.freeze([
   { name: "flexbox-1", modules: ["css-flexbox"], offset: 0, limit: 21 },
   { name: "flexbox-2", modules: ["css-flexbox"], offset: 21, limit: 9 },
   { name: "flexbox-3", modules: ["css-flexbox"], offset: 30, limit: 11 },
-  { name: "display-1", modules: ["css-display"], offset: 0, limit: 20 },
-  { name: "display-2", modules: ["css-display"], offset: 20, limit: 19 },
+  { name: "display-1", modules: ["css-display"], offset: 0, limit: 13 },
+  { name: "display-2", modules: ["css-display"], offset: 13, limit: 13 },
+  { name: "display-3", modules: ["css-display"], offset: 26, limit: 13 },
   { name: "box-1", modules: ["css-box"], offset: 0, limit: 10 },
   { name: "box-2", modules: ["css-box"], offset: 10, limit: 10 },
   { name: "box-3", modules: ["css-box"], offset: 20, limit: 8 },
