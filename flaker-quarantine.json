@@ -35,10 +35,10 @@
       "mode": "skip",
       "scope": "environment",
       "owner": "mizchi",
-      "reason": "Actual paint export for the largest real-world snapshots currently exceeds CI latency budget.",
+      "reason": "Actual paint export for the largest real-world snapshots currently exceeds CI latency budget. Extended to 2026-06-30 (aligned with the other paint-vrt entries) per GitHub issue #79: the substantive fix (commit playwright-intro / mdn-wasm-text snapshots and split the slow shard, or speed up capturePaintData) plus an expired-quarantine CI gate are tracked there and not yet done.",
       "condition": "Skip only on CI until capturePaintData latency is reduced or the fixture is split.",
       "introducedAt": "2026-04-14",
-      "expiresAt": "2026-05-31"
+      "expiresAt": "2026-06-30"
     }
   ]
 }
