@@ -948,3 +948,37 @@ test "position relative with negative offset" {
   inspect(inner.x, content="-40")
   inspect(inner.y, content="-20")
 }
+
+///|
+/// Regression (#64): `filter` on an inline element establishes a containing
+/// block for its absolutely-positioned descendants. Previously the renderer's
+/// establishes_absolute_containing_block ignored filter (it only checked
+/// position / containment / transform), so an abspos child with top:0/left:0
+/// was placed relative to an ancestor instead of the filtered inline box.
+test "filter_on_inline_establishes_abs_containing_block" {
+  let html_filter =
+    #|<p>Filler text.</p>
+    #|<div><span id="cb" style="filter: brightness(100%)">corner text<span id="abspos" style="position:absolute; top:0; left:0; width:10px; height:10px"></span></span></div>
+  let html_rel =
+    #|<p>Filler text.</p>
+    #|<div><span id="cb" style="position:relative; filter: brightness(100%)">corner text<span id="abspos" style="position:absolute; top:0; left:0; width:10px; height:10px"></span></span></div>
+  let ctx : @renderer.RenderContext = {
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    root_font_size: 16.0,
+    color_scheme: @css.ColorScheme::Light,
+  }
+  let lf = @renderer.render(html_filter, ctx)
+  let lr = @renderer.render(html_rel, ctx)
+  let cb_f = lf.children[1].children[0]
+  let cb_r = lr.children[1].children[0]
+  let abspos_f = cb_f.children[cb_f.children.length() - 1]
+  let abspos_r = cb_r.children[cb_r.children.length() - 1]
+  // top:0/left:0 relative to #cb -> child lands at the CB origin (0,0), not
+  // pushed up to an ancestor baseline.
+  inspect(abspos_f.x, content="0")
+  inspect(abspos_f.y, content="0")
+  // The filtered CB places the child identically to the relative CB.
+  assert_eq(abspos_f.x, abspos_r.x)
+  assert_eq(abspos_f.y, abspos_r.y)
+}
