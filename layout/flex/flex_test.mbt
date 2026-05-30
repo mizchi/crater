@@ -5256,3 +5256,53 @@ test "row_flex_scroll_list_item_keeps_expected_track_sizes" {
   inspect(layout.children[2].width, content="56")
   inspect(layout.children[2].height, content="24")
 }
+
+///|
+/// Regression (#22): align-items must be reflected in cross-axis layout, so
+/// removing `align-items: center` (reverting to the default `stretch`) changes
+/// where/how flex items are laid out. A pixel diff that found "no change" when
+/// align-items: center was removed indicated this was not applied.
+test "flex_align_items_center_differs_from_default_stretch" {
+  let ds = @style.Style::default()
+  let m = fn(h : Double) -> @layout_types.MeasureFunc {
+    {
+      func: fn(_w, _h) {
+        { min_width: 20.0, max_width: 20.0, min_height: h, max_height: h }
+      },
+    }
+  }
+  let ctx : @layout_types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @layout_types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let mk = fn(align : @types.Alignment?) -> @layout_types.Layout {
+    let c1 = @node.Node::with_measure("c1", ds, m(20.0))
+    let c2 = @node.Node::with_measure("c2", ds, m(40.0))
+    let base = {
+      ..ds,
+      display: @types.Flex,
+      flex_direction: @types.Row,
+      width: @types.Length(100.0),
+    }
+    let style = match align {
+      Some(a) => { ..base, align_items: a }
+      None => base
+    }
+    compute(@node.Node::new("root", style, [c1, c2]), ctx, default_dispatch())
+  }
+  // align-items: center -> the shorter item keeps its content height and is
+  // centered within the 40px line (y = (40-20)/2 = 10).
+  let centered = mk(Some(@types.Center))
+  inspect(centered.children[0].height, content="20")
+  inspect(centered.children[0].y, content="10")
+  // default (align-items: stretch) -> the shorter item stretches to the line
+  // height (40) at the top (y = 0). This is the visible change #22 asks for.
+  let default_stretch = mk(None)
+  inspect(default_stretch.children[0].height, content="40")
+  inspect(default_stretch.children[0].y, content="0")
+}

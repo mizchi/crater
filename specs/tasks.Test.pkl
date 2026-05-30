@@ -715,6 +715,16 @@ tests {
       "bash -lc 'set -e; test -f webdriver/webdriver/bidi_browsing_context_vrt.mbt; grep -Fq -- \"fn BidiProtocol::handle_get_css_rule_usage\" webdriver/webdriver/bidi_browsing_context_vrt.mbt; test -f webdriver/webdriver/bidi_protocol_dispatch_browsing_context_rendering.mbt; grep -Fq -- \"\\\"getCssRuleUsage\\\" =>\" webdriver/webdriver/bidi_protocol_dispatch_browsing_context_rendering.mbt; test -f webdriver/webdriver/bidi_protocol_browsing_context_styles_wbtest.mbt; grep -Fq -- \"bidi getCssRuleUsage reports matched and overridden rules\" webdriver/webdriver/bidi_protocol_browsing_context_styles_wbtest.mbt'"
   }
   new {
+    name = "flexbox_align_items_reflected"
+    description =
+      "align-items on a flex container changes cross-axis layout: with align-items: center a shorter item keeps its content height and is centered in the line, while the default (stretch) sizes it to the line height at the top. layout/flex/flex_test.mbt asserts the two differ, so removing align-items: center produces a real layout change (the pixel-diff gap in #22)."
+    tags { "css"; "flexbox"; "bug"; "issue:22" }
+    specRef { "bug.flexbox-align-items" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; test -f layout/flex/flex_test.mbt; grep -Fq -- \"flex_align_items_center_differs_from_default_stretch\" layout/flex/flex_test.mbt'"
+  }
+  new {
     name = "playwright_synthetic_navigation_url"
     description =
       "CraterBidiPage.page.click drains synthetic navigation after input.performActions, and the pointer runtime routes submit buttons through requestSubmit so form GET updates page.url. Covered by tests/playwright-adapter-user-scenarios.test.ts."
