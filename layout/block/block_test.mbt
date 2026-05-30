@@ -3188,3 +3188,39 @@ test "multicol_single_display_contents_child_uses_descendant_flow_items" {
   inspect(layout.children[0].children[2].x, content="408")
   inspect(layout.children[0].children[2].y, content="0")
 }
+
+///|
+/// Regression (#66): a visible empty inline box (non-zero border, no content)
+/// is not an invisible line box (css-inline-3 §invisible-line-boxes). It
+/// generates a line box, so its own border-box height is the line-height plus
+/// its border (previously it collapsed to just the 2px border).
+test "empty_inline_with_border_gets_line_height_strut" {
+  @dispatch.setup()
+  let default_style = @style.Style::default()
+  let border_1px : @types.Rect[@types.Dimension] = {
+    top: @types.Length(1.0),
+    right: @types.Length(1.0),
+    bottom: @types.Length(1.0),
+    left: @types.Length(1.0),
+  }
+  let empty_span = @node.Node::leaf("span#empty", {
+    ..default_style,
+    display: @types.Inline,
+    border: border_1px,
+  })
+  let root_style = { ..default_style, width: @types.Length(200.0) }
+  let root = @node.Node::new("root", root_style, [empty_span])
+  let ctx : @layout_types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @layout_types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  let span = layout.children[0]
+  // line-height (19.2) + 1px border top + 1px border bottom; previously 2.0
+  inspect(span.height, content="21.2")
+}

@@ -1032,6 +1032,7 @@ fn LineBox::ensure_line_strut(
   let mut replaced_like_count = 0
   let mut has_text_item = false
   let mut has_br_item = false
+  let mut has_inline_box_item = false
   for item in self.items {
     let child = children[item.index]
     if child.text is Some(_) {
@@ -1043,8 +1044,37 @@ fn LineBox::ensure_line_strut(
     if is_replaced_strut_candidate(child) {
       replaced_like_count = replaced_like_count + 1
     }
+    // A non-replaced, content-less inline box with non-zero border / padding /
+    // margin (e.g. an empty `<span style="border:1px">`) is not an invisible
+    // line box (css-inline-3 §invisible-line-boxes), so it still generates the
+    // inline formatting context strut and its line takes the line-height of the
+    // containing block. A bare empty inline (no box decoration) stays invisible
+    // and contributes no height; inline-block / replaced size themselves.
+    let deco = item.layout
+    let has_box_decoration = deco.border.top +
+      deco.border.bottom +
+      deco.border.left +
+      deco.border.right +
+      deco.padding.top +
+      deco.padding.bottom +
+      deco.padding.left +
+      deco.padding.right +
+      deco.margin.top +
+      deco.margin.bottom +
+      deco.margin.left +
+      deco.margin.right >
+      0.0
+    if child.text is None &&
+      child.measure is None &&
+      child.id != "br" &&
+      child.style.display == @types.Inline &&
+      !is_replaced_strut_candidate(child) &&
+      has_box_decoration {
+      has_inline_box_item = true
+    }
   }
-  if has_text_item || (replaced_like_count == 0 && !has_br_item) {
+  if has_text_item ||
+    (replaced_like_count == 0 && !has_br_item && !has_inline_box_item) {
     return ()
   }
   if replaced_like_count > 0 && !has_br_item {
@@ -2128,6 +2158,19 @@ fn compute_inline_child(
       _ =>
         if id_matches_tag(node.id, "source") {
           text_glyph_height_from_style(style) +
+          padding.vertical_sum() +
+          border.vertical_sum()
+        } else if style.display == @types.Inline &&
+          padding.vertical_sum() +
+          padding.horizontal_sum() +
+          border.vertical_sum() +
+          border.horizontal_sum() >
+          0.0 {
+          // Visible empty inline box (non-zero border / padding, no content):
+          // not an invisible line box (css-inline-3 §invisible-line-boxes), so
+          // it generates a line box and its border-box height is the
+          // line-height plus its block-axis decorations.
+          line_height_from_style(style) +
           padding.vertical_sum() +
           border.vertical_sum()
         } else {
