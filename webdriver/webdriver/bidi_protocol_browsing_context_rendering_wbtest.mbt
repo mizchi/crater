@@ -606,3 +606,69 @@ test "bidi mutateStyle rejects style-breaking mutation tokens" {
   }
   assert_eq(layout_changes.length(), 0)
 }
+
+///|
+/// Regression (#253): renderSelector resolves the element rect from the paint
+/// tree (real layout) rather than the runtime DOM's getBoundingClientRect
+/// (inline-style only), so a normal-flow below-the-fold element crops to its
+/// actual pixels instead of a blank top-left region.
+test "bidi renderSelector renders a below-the-fold element" {
+  let proto = BidiProtocol::new()
+  ignore(
+    proto.process_message("{\"id\":1,\"method\":\"session.new\",\"params\":{}}"),
+  )
+  ignore(proto.take_messages())
+  ignore(
+    proto.process_message(
+      "{\"id\":2,\"method\":\"browsingContext.setViewport\",\"params\":{\"context\":\"session-1\",\"viewport\":{\"width\":320,\"height\":240}}}",
+    ),
+  )
+  ignore(proto.take_messages())
+  // The .target sits 2000px down, far outside the 240px-tall viewport.
+  let html = "<!DOCTYPE html><html><body style='margin:0'><div style='height:2000px'></div><div class='target' style='width:100px;height:60px;background:#ff0000'>x</div></body></html>"
+  let navigate_message = "{\"id\":3,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"" +
+    js_test_build_html_data_url(html) +
+    "\",\"wait\":\"complete\"}}"
+  ignore(proto.process_message(navigate_message))
+  ignore(proto.take_messages())
+  ignore(
+    proto.process_message(
+      "{\"id\":4,\"method\":\"browsingContext.renderSelector\",\"params\":{\"context\":\"session-1\",\"selector\":\".target\"}}",
+    ),
+  )
+  let result = extract_success_result(proto.take_messages())
+  let width = match result.get("width") {
+    Some(Number(value, ..)) => value.to_int()
+    _ => -1
+  }
+  let height = match result.get("height") {
+    Some(Number(value, ..)) => value.to_int()
+    _ => -1
+  }
+  assert_eq(width, 100)
+  assert_eq(height, 60)
+  // The bounding box reports the real normal-flow y (2000), not 0.
+  let bbox = match result.get("boundingBox") {
+    Some(Object(map)) => map
+    _ => {}
+  }
+  match bbox.get("y") {
+    Some(Number(y, ..)) => assert_true((y - 2000.0).abs() < 1.0)
+    _ => assert_true(false)
+  }
+  // The element is red; the cropped pixels must contain that red, proving the
+  // below-fold element was rastered (not cropped from a blank region).
+  let data = match result.get("data") {
+    Some(String(value)) => value
+    _ => ""
+  }
+  let meta = rgba_meta_from_base64(data, width, 10, 10)
+  match meta.get("r") {
+    Some(Number(r, ..)) => assert_true(r > 200.0)
+    _ => assert_true(false)
+  }
+  match meta.get("g") {
+    Some(Number(g, ..)) => assert_true(g < 80.0)
+    _ => assert_true(false)
+  }
+}
