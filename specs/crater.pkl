@@ -510,30 +510,30 @@ scenarios {
     id = "diagnostic.paint-tree-diff"
     name = "paint tree diff API is exposed"
     description =
-      "Expose a structured paint-tree diff API so VRT tools can detect CSS changes that produce no pixel diff. See GitHub issue #23."
+      "Expose a structured paint-tree diff API so VRT tools can detect CSS changes that produce no pixel diff. browsingContext.diffPaintTree (handle_diff_paint_tree in webdriver/webdriver/bidi_browsing_context_paint_diff.mbt, routed in bidi_protocol_dispatch_browsing_context_rendering.mbt) renders a baseline and current HTML, matches paint nodes positionally, and returns property `changes` (color / background-color / opacity / font-size / font-weight) and rect `layoutShifts` (dx/dy/dw/dh). Covered by bidi_protocol_browsing_context_rendering_wbtest.mbt. See GitHub issue #23."
     tags { "diagnostic"; "vrt"; "api"; "issue:23" }
     severity = "major"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.diagnostic-api" }
   }
   new {
     id = "diagnostic.css-property-mutation"
     name = "CSS property mutation API is exposed"
     description =
-      "Expose an API that renders a page with specific CSS properties toggled, returning the layout diff. Avoids re-parsing the entire stylesheet for mutation testing. See GitHub issue #24."
+      "Expose an API that renders a page with specific CSS properties toggled, returning the layout diff. browsingContext.mutateStyle (handle_mutate_style in webdriver/webdriver/bidi_browsing_context_paint_diff.mbt, routed in bidi_protocol_dispatch_browsing_context_rendering.mbt) re-renders the live document with the mutations applied as injected !important stylesheet overrides (set / remove), then returns affectedNodes and per-node layoutChanges (before/after rects). Overrides stylesheet-cascade properties; element inline styles need !important-over-inline cascade support to override (tracked separately). Covered by bidi_protocol_browsing_context_rendering_wbtest.mbt. See GitHub issue #24."
     tags { "diagnostic"; "vrt"; "api"; "issue:24" }
     severity = "major"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.diagnostic-api" }
   }
   new {
     id = "diagnostic.selector-scoped-render"
     name = "selector-scoped rendering API is exposed"
     description =
-      "Expose an API to render only the subtree matched by a CSS selector for component-level VRT. See GitHub issue #25."
+      "Expose an API to render only the subtree matched by a CSS selector for component-level VRT. browsingContext.renderSelector (handle_render_selector in webdriver/webdriver/bidi_browsing_context_actual_paint.mbt, routed in bidi_protocol_dispatch_browsing_context_rendering.mbt) renders the page, resolves the element's border-box via getBoundingClientRect, and returns the cropped RGBA (Framebuffer::crop, with optional padding) plus the boundingBox. Covered by bidi_protocol_browsing_context_rendering_wbtest.mbt and painter/paint/raster crop unit tests. See GitHub issue #25."
     tags { "diagnostic"; "vrt"; "api"; "issue:25" }
     severity = "major"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.diagnostic-api" }
   }
   new {

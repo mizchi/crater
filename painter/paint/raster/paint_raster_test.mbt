@@ -644,3 +644,51 @@ test "render_paint_node_to_framebuffer extends blurred box shadow beyond sharp b
   inspect(outside_blur.g < untouched.g, content="true")
   inspect(outside_blur.b < untouched.b, content="true")
 }
+
+///|
+test "framebuffer crop extracts sub-rectangle" {
+  let fb = @raster.Framebuffer::new(4, 3)
+  for i = 0; i < 12; i = i + 1 {
+    fb.pixels[i] = i
+  }
+  let c = fb.crop(1, 1, 2, 2)
+  inspect(c.width, content="2")
+  inspect(c.height, content="2")
+  // y=1 row is [4,5,6,7], y=2 row is [8,9,10,11]; columns [1,3) -> 5,6 / 9,10
+  inspect(c.pixels, content="[5, 6, 9, 10]")
+}
+
+///|
+test "framebuffer crop clamps a rect that overflows the edges" {
+  let fb = @raster.Framebuffer::new(4, 3)
+  for i = 0; i < 12; i = i + 1 {
+    fb.pixels[i] = i
+  }
+  // bottom-right corner, requested larger than remaining space
+  let c = fb.crop(3, 2, 5, 5)
+  inspect(c.width, content="1")
+  inspect(c.height, content="1")
+  inspect(c.pixels, content="[11]")
+}
+
+///|
+test "framebuffer crop clamps negative origin (padding underflow)" {
+  let fb = @raster.Framebuffer::new(4, 3)
+  for i = 0; i < 12; i = i + 1 {
+    fb.pixels[i] = i
+  }
+  // negative origin (e.g. padding pushed x/y below 0) clamps to 0
+  let c = fb.crop(-2, -1, 3, 2)
+  inspect(c.width, content="1")
+  inspect(c.height, content="1")
+  inspect(c.pixels, content="[0]")
+}
+
+///|
+test "framebuffer crop fully outside yields empty" {
+  let fb = @raster.Framebuffer::new(4, 3)
+  let c = fb.crop(10, 10, 2, 2)
+  inspect(c.width, content="0")
+  inspect(c.height, content="0")
+  inspect(c.pixels, content="[]")
+}

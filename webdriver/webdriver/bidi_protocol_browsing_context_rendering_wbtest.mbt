@@ -389,3 +389,189 @@ test "bidi captureScreenshotData returns raw png payload" {
   assert_eq(width, 1024)
   assert_eq(height, 768)
 }
+
+///|
+test "bidi renderSelector crops to the selected element" {
+  let proto = BidiProtocol::new()
+  ignore(
+    proto.process_message("{\"id\":1,\"method\":\"session.new\",\"params\":{}}"),
+  )
+  ignore(proto.take_messages())
+  ignore(
+    proto.process_message(
+      "{\"id\":2,\"method\":\"browsingContext.setViewport\",\"params\":{\"context\":\"session-1\",\"viewport\":{\"width\":320,\"height\":240}}}",
+    ),
+  )
+  ignore(proto.take_messages())
+  let html = "<!DOCTYPE html><html><body style='margin:0;background:#ffffff'><div class='target' style='width:120px;height:90px;background:#ff0000'></div></body></html>"
+  let navigate_message = "{\"id\":3,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"" +
+    js_test_build_html_data_url(html) +
+    "\",\"wait\":\"complete\"}}"
+  ignore(proto.process_message(navigate_message))
+  ignore(proto.take_messages())
+  ignore(
+    proto.process_message(
+      "{\"id\":4,\"method\":\"browsingContext.renderSelector\",\"params\":{\"context\":\"session-1\",\"selector\":\".target\"}}",
+    ),
+  )
+  let result = extract_success_result(proto.take_messages())
+  let width = match result.get("width") {
+    Some(Number(value, ..)) => value.to_int()
+    _ => -1
+  }
+  let height = match result.get("height") {
+    Some(Number(value, ..)) => value.to_int()
+    _ => -1
+  }
+  // cropped output matches the element's box, not the full 320x240 viewport
+  assert_eq(width, 120)
+  assert_eq(height, 90)
+  let data = match result.get("data") {
+    Some(String(value)) => value
+    _ => ""
+  }
+  let meta = rgba_meta_from_base64(data, width, 10, 10)
+  match meta.get("length") {
+    Some(Number(value, ..)) => assert_eq(value.to_int(), width * height * 4)
+    _ => assert_true(false)
+  }
+  let bbox = match result.get("boundingBox") {
+    Some(Object(map)) => map
+    _ => {}
+  }
+  match bbox.get("width") {
+    Some(Number(value, ..)) => assert_eq(value.to_int(), 120)
+    _ => assert_true(false)
+  }
+  match bbox.get("height") {
+    Some(Number(value, ..)) => assert_eq(value.to_int(), 90)
+    _ => assert_true(false)
+  }
+}
+
+///|
+test "bidi diffPaintTree reports layout shift and paint property change" {
+  let proto = BidiProtocol::new()
+  ignore(
+    proto.process_message("{\"id\":1,\"method\":\"session.new\",\"params\":{}}"),
+  )
+  ignore(proto.take_messages())
+  ignore(
+    proto.process_message(
+      "{\"id\":2,\"method\":\"browsingContext.setViewport\",\"params\":{\"context\":\"session-1\",\"viewport\":{\"width\":320,\"height\":240}}}",
+    ),
+  )
+  ignore(proto.take_messages())
+  let baseline = "<!DOCTYPE html><html><body style='margin:0'><div class='box' style='width:120px;height:50px;background:#ff0000'>x</div></body></html>"
+  let current = "<!DOCTYPE html><html><body style='margin:0'><div class='box' style='width:200px;height:50px;background:#00ff00'>x</div></body></html>"
+  let msg = "{\"id\":3,\"method\":\"browsingContext.diffPaintTree\",\"params\":{\"context\":\"session-1\",\"baseline\":{\"html\":\"" +
+    baseline +
+    "\"},\"current\":{\"html\":\"" +
+    current +
+    "\"}}}"
+  ignore(proto.process_message(msg))
+  let result = extract_success_result(proto.take_messages())
+  let shifts = match result.get("layoutShifts") {
+    Some(Array(items)) => items
+    _ => []
+  }
+  // the box widened 120 -> 200, so some node reports dw == 80
+  let mut saw_width_shift = false
+  for shift in shifts {
+    match shift {
+      Object(map) =>
+        match map.get("dw") {
+          Some(Number(v, ..)) =>
+            if (v - 80.0).abs() < 0.5 {
+              saw_width_shift = true
+            }
+          _ => ()
+        }
+      _ => ()
+    }
+  }
+  assert_true(saw_width_shift)
+  let changes = match result.get("changes") {
+    Some(Array(items)) => items
+    _ => []
+  }
+  // background changed red -> green, which a pixel diff at the box would catch
+  // but the structured diff names the property explicitly
+  let mut saw_bg_change = false
+  for change in changes {
+    match change {
+      Object(map) =>
+        match map.get("property") {
+          Some(String("background-color")) => saw_bg_change = true
+          _ => ()
+        }
+      _ => ()
+    }
+  }
+  assert_true(saw_bg_change)
+}
+
+///|
+test "bidi mutateStyle reports affected nodes and layout changes" {
+  let proto = BidiProtocol::new()
+  ignore(
+    proto.process_message("{\"id\":1,\"method\":\"session.new\",\"params\":{}}"),
+  )
+  ignore(proto.take_messages())
+  ignore(
+    proto.process_message(
+      "{\"id\":2,\"method\":\"browsingContext.setViewport\",\"params\":{\"context\":\"session-1\",\"viewport\":{\"width\":320,\"height\":240}}}",
+    ),
+  )
+  ignore(proto.take_messages())
+  let html = "<!DOCTYPE html><html><head><style>.box{width:120px;height:50px}</style></head><body style='margin:0'><div class='box'>x</div></body></html>"
+  let navigate_message = "{\"id\":3,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"" +
+    js_test_build_html_data_url(html) +
+    "\",\"wait\":\"complete\"}}"
+  ignore(proto.process_message(navigate_message))
+  ignore(proto.take_messages())
+  ignore(
+    proto.process_message(
+      "{\"id\":4,\"method\":\"browsingContext.mutateStyle\",\"params\":{\"context\":\"session-1\",\"mutations\":[{\"selector\":\".box\",\"property\":\"width\",\"action\":\"set\",\"value\":\"200px\"}]}}",
+    ),
+  )
+  let result = extract_success_result(proto.take_messages())
+  let affected = match result.get("affectedNodes") {
+    Some(Array(items)) => items
+    _ => []
+  }
+  assert_true(affected.length() > 0)
+  let layout_changes = match result.get("layoutChanges") {
+    Some(Array(items)) => items
+    _ => []
+  }
+  // the box widened 120 -> 200 under the .box{width:200px} mutation
+  let mut saw_box_widen = false
+  for change in layout_changes {
+    match change {
+      Object(map) => {
+        let before_w = match map.get("before") {
+          Some(Object(b)) =>
+            match b.get("width") {
+              Some(Number(v, ..)) => v
+              _ => 0.0
+            }
+          _ => 0.0
+        }
+        let after_w = match map.get("after") {
+          Some(Object(a)) =>
+            match a.get("width") {
+              Some(Number(v, ..)) => v
+              _ => 0.0
+            }
+          _ => 0.0
+        }
+        if (after_w - before_w - 80.0).abs() < 0.5 {
+          saw_box_widen = true
+        }
+      }
+      _ => ()
+    }
+  }
+  assert_true(saw_box_widen)
+}

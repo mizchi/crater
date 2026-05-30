@@ -14,6 +14,49 @@ pub fn Framebuffer::new(width : Int, height : Int) -> Framebuffer {
 }
 
 ///|
+/// Crop a sub-rectangle out of the framebuffer, returning a new framebuffer.
+/// The requested rect is clamped to the source bounds, so an out-of-range or
+/// partially-overlapping rect yields the intersected region (possibly empty).
+/// Used by selector-scoped rendering to return just one element's pixels.
+pub fn Framebuffer::crop(
+  self : Framebuffer,
+  x : Int,
+  y : Int,
+  width : Int,
+  height : Int,
+) -> Framebuffer {
+  let x0 = clamp_index(x, self.width)
+  let y0 = clamp_index(y, self.height)
+  let x1 = clamp_index(x + width, self.width)
+  let y1 = clamp_index(y + height, self.height)
+  let cw = if x1 > x0 { x1 - x0 } else { 0 }
+  let ch = if y1 > y0 { y1 - y0 } else { 0 }
+  if cw == 0 || ch == 0 {
+    return { width: cw, height: ch, pixels: [] }
+  }
+  let pixels : Array[Int] = Array::make(cw * ch, 0)
+  for row = 0; row < ch; row = row + 1 {
+    let src_row = (y0 + row) * self.width + x0
+    let dst_row = row * cw
+    for col = 0; col < cw; col = col + 1 {
+      pixels[dst_row + col] = self.pixels[src_row + col]
+    }
+  }
+  { width: cw, height: ch, pixels }
+}
+
+///|
+fn clamp_index(value : Int, max : Int) -> Int {
+  if value < 0 {
+    0
+  } else if value > max {
+    max
+  } else {
+    value
+  }
+}
+
+///|
 fn Framebuffer::set_pixel(
   self : Framebuffer,
   x : Int,

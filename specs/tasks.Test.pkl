@@ -665,6 +665,36 @@ tests {
       "bash -lc 'set -e; test -f webdriver/webdriver/bidi_runtime_cookie_parity_wbtest.mbt; grep -Fq -- \"cookie URL filter parity: 10 representative cases\" webdriver/webdriver/bidi_runtime_cookie_parity_wbtest.mbt; grep -Fq -- \"storage_cookie_matches_request_url\" webdriver/webdriver/bidi_runtime_cookie_parity_wbtest.mbt; grep -Fq -- \"__bidiResolveCookies\" webdriver/webdriver/bidi_runtime_cookie_parity_wbtest.mbt; test -f webdriver/webdriver/bidi_storage.mbt; grep -Fq -- \"fn storage_cookie_matches_request_url\" webdriver/webdriver/bidi_storage.mbt; test -f webdriver/webdriver/bidi_runtime_context.mbt; grep -Fq -- \"globalThis.__bidiResolveCookies\" webdriver/webdriver/bidi_runtime_context.mbt'"
   }
   new {
+    name = "bidi_render_selector_exposed"
+    description =
+      "browsingContext.renderSelector renders the page, resolves the matched element's bounding box, and returns the cropped RGBA (Framebuffer::crop, optional padding) plus boundingBox. Handler in bidi_browsing_context_actual_paint.mbt, routed in bidi_protocol_dispatch_browsing_context_rendering.mbt, exercised by bidi_protocol_browsing_context_rendering_wbtest.mbt; the crop primitive has unit tests in painter/paint/raster."
+    tags { "diagnostic"; "vrt"; "api"; "issue:25" }
+    specRef { "diagnostic.selector-scoped-render" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; test -f webdriver/webdriver/bidi_browsing_context_actual_paint.mbt; grep -Fq -- \"fn BidiProtocol::handle_render_selector\" webdriver/webdriver/bidi_browsing_context_actual_paint.mbt; grep -Fq -- \"\\\"renderSelector\\\" =>\" webdriver/webdriver/bidi_protocol_dispatch_browsing_context_rendering.mbt; test -f painter/paint/raster/framebuffer.mbt; grep -Fq -- \"pub fn Framebuffer::crop\" painter/paint/raster/framebuffer.mbt; grep -Fq -- \"bidi renderSelector crops to the selected element\" webdriver/webdriver/bidi_protocol_browsing_context_rendering_wbtest.mbt'"
+  }
+  new {
+    name = "bidi_diff_paint_tree_exposed"
+    description =
+      "browsingContext.diffPaintTree renders a baseline and current HTML, matches paint nodes positionally, and returns property changes and rect layoutShifts. Handler in bidi_browsing_context_paint_diff.mbt, routed in bidi_protocol_dispatch_browsing_context_rendering.mbt, exercised by bidi_protocol_browsing_context_rendering_wbtest.mbt."
+    tags { "diagnostic"; "vrt"; "api"; "issue:23" }
+    specRef { "diagnostic.paint-tree-diff" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; test -f webdriver/webdriver/bidi_browsing_context_paint_diff.mbt; grep -Fq -- \"fn BidiProtocol::handle_diff_paint_tree\" webdriver/webdriver/bidi_browsing_context_paint_diff.mbt; grep -Fq -- \"\\\"diffPaintTree\\\" =>\" webdriver/webdriver/bidi_protocol_dispatch_browsing_context_rendering.mbt; grep -Fq -- \"bidi diffPaintTree reports layout shift and paint property change\" webdriver/webdriver/bidi_protocol_browsing_context_rendering_wbtest.mbt'"
+  }
+  new {
+    name = "bidi_mutate_style_exposed"
+    description =
+      "browsingContext.mutateStyle re-renders the live document with CSS mutations applied as injected !important overrides and returns affectedNodes and per-node layoutChanges. Handler in bidi_browsing_context_paint_diff.mbt, routed in bidi_protocol_dispatch_browsing_context_rendering.mbt, exercised by bidi_protocol_browsing_context_rendering_wbtest.mbt."
+    tags { "diagnostic"; "vrt"; "api"; "issue:24" }
+    specRef { "diagnostic.css-property-mutation" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; test -f webdriver/webdriver/bidi_browsing_context_paint_diff.mbt; grep -Fq -- \"fn BidiProtocol::handle_mutate_style\" webdriver/webdriver/bidi_browsing_context_paint_diff.mbt; grep -Fq -- \"\\\"mutateStyle\\\" =>\" webdriver/webdriver/bidi_protocol_dispatch_browsing_context_rendering.mbt; grep -Fq -- \"bidi mutateStyle reports affected nodes and layout changes\" webdriver/webdriver/bidi_protocol_browsing_context_rendering_wbtest.mbt'"
+  }
+  new {
     name = "bidi_get_computed_styles_exposed"
     description =
       "browsingContext.getComputedStyles / getAllComputedStyles / getComputedStylesWithState expose resolved CSS values over BiDi (the +23% computed-style diff signal from the CSS challenge benchmark). Handlers live in bidi_browsing_context_computed_styles.mbt, routed in bidi_protocol_dispatch_browsing_context_rendering.mbt, and exercised by bidi_protocol_browsing_context_styles_wbtest.mbt for selector / sharedId / elementId targets, the selector-keyed batch form, and forced-state (hover / focus-visible) variants."
