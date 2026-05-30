@@ -122,6 +122,7 @@ fn establishes_absolute_containing_block(node : @node.Node) -> Bool {
   positioned ||
   containment_establishes_cb ||
   !style.transform.is_none() ||
+  style.has_filter ||
   is_svg_container_id(node.id)
 }
 
