@@ -725,6 +725,16 @@ tests {
       "bash -lc 'set -e; test -f layout/flex/flex_test.mbt; grep -Fq -- \"flex_align_items_center_differs_from_default_stretch\" layout/flex/flex_test.mbt'"
   }
   new {
+    name = "flexbox_min_width_justify_centers"
+    description =
+      "Flexbox issues from #2 are correct: justify-content: center centers a child when min_width (not width) sizes the container; symmetric horizontal padding stays symmetric on the layout; and horizontal padding does not inflate height. Covered by flexbox_min_width_justify_and_padding in layout/flex/flex_test.mbt."
+    tags { "css"; "flexbox"; "bug"; "issue:2" }
+    specRef { "bug.flexbox-min-width-justify" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; test -f layout/flex/flex_test.mbt; grep -Fq -- \"flexbox_min_width_justify_and_padding\" layout/flex/flex_test.mbt'"
+  }
+  new {
     name = "playwright_synthetic_navigation_url"
     description =
       "CraterBidiPage.page.click drains synthetic navigation after input.performActions, and the pointer runtime routes submit buttons through requestSubmit so form GET updates page.url. Covered by tests/playwright-adapter-user-scenarios.test.ts."

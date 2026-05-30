@@ -728,10 +728,10 @@ scenarios {
     id = "bug.flexbox-min-width-justify"
     name = "flexbox min_width with justify-content centers correctly"
     description =
-      "Fix justify-content: center being a no-op when min_width is used instead of width on flex containers. See GitHub issue #2."
+      "justify-content: center is no longer a no-op when min_width sizes a flex container instead of width: a min_width container takes that size and centers its child. Verified together with the other #2 flexbox issues — symmetric horizontal padding stays symmetric on the layout, and horizontal padding does not inflate height. Covered by flexbox_min_width_justify_and_padding in layout/flex/flex_test.mbt. See GitHub issue #2."
     tags { "css"; "flexbox"; "bug"; "issue:2" }
     severity = "minor"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.css-compat" }
   }
   new {
