@@ -23,12 +23,12 @@ fn default_js_runtime() -> &JsRuntime {
 }
 
 ///|
-impl JsRuntime for NativeStubRuntime with init(self : NativeStubRuntime) -> Unit {
+impl JsRuntime for NativeStubRuntime with fn init(self : NativeStubRuntime) -> Unit {
   let _ = self
 }
 
 ///|
-impl JsRuntime for NativeStubRuntime with execute(
+impl JsRuntime for NativeStubRuntime with fn execute(
   self : NativeStubRuntime,
   context_id : Int,
   dom : @dom.DomTree,
@@ -40,7 +40,7 @@ impl JsRuntime for NativeStubRuntime with execute(
 }
 
 ///|
-impl JsRuntime for NativeStubRuntime with tick(
+impl JsRuntime for NativeStubRuntime with fn tick(
   self : NativeStubRuntime,
   context_id : Int,
   dom : @dom.DomTree,

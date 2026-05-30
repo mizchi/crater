@@ -1,7 +1,7 @@
 import {
-  "mizchi/crater-browser-http/cookie_jar" @cookie_jar,
-  "mizchi/crater-browser-http/cache" @cache,
-  "mizchi/crater-browser-http/cors" @cors,
+  "mizchi/crater-browser-http/cookie_jar",
+  "mizchi/crater-browser-http/cache",
+  "mizchi/crater-browser-http/cors",
 }
 
 warnings = "-unused_package"

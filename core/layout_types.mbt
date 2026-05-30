@@ -82,7 +82,7 @@ pub(all) struct LayoutResult {
 }
 
 ///|
-pub impl Show for LayoutWarning with output(self, logger) {
+pub impl Show for LayoutWarning with fn output(self, logger) {
   let text = match self {
     UnsupportedFloat(id) => "UnsupportedFloat(\{id})"
     UnsupportedPosition(id) => "UnsupportedPosition(\{id})"

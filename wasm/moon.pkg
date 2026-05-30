@@ -1,10 +1,10 @@
 import {
-  "mizchi/crater-wasm/gen/interface/mizchi/crater/accessibility" @accessibility,
-  "mizchi/crater-wasm/gen/interface/mizchi/crater/core" @core,
-  "mizchi/crater-wasm/gen/interface/mizchi/crater/incremental" @incremental,
-  "mizchi/crater-wasm/gen/interface/mizchi/crater/renderer" @renderer,
-  "mizchi/crater-wasm/gen/interface/mizchi/crater/yoga" @yoga,
-  "mizchi/crater-wasm/interface/mizchi/crater/types" @types,
+  "mizchi/crater-wasm/gen/interface/mizchi/crater/accessibility",
+  "mizchi/crater-wasm/gen/interface/mizchi/crater/core",
+  "mizchi/crater-wasm/gen/interface/mizchi/crater/incremental",
+  "mizchi/crater-wasm/gen/interface/mizchi/crater/renderer",
+  "mizchi/crater-wasm/gen/interface/mizchi/crater/yoga",
+  "mizchi/crater-wasm/interface/mizchi/crater/types",
   "mizchi/crater-js" @crater_js,
 }
 

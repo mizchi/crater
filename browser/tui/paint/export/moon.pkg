@@ -1,10 +1,10 @@
 import {
-  "mizchi/crater-painter/paint/raster" @raster,
+  "mizchi/crater-painter/paint/raster",
   "mizchi/crater-browser/tui/paint/plain" @paint_plain,
 }
 
 import {
-  "mizchi/crater-core/node" @node,
+  "mizchi/crater-core/node",
   "mizchi/css/style",
   "mizchi/css/values" @types,
   "mizchi/crater-core" @layout_types,

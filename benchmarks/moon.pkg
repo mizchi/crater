@@ -1,6 +1,6 @@
 import {
   "moonbitlang/core/bench",
-  "mizchi/css" @css,
+  "mizchi/css",
   "mizchi/crater-dom/html",
   "mizchi/crater-renderer/renderer",
   "mizchi/crater-renderer/vrt",
@@ -15,13 +15,13 @@ import {
   "mizchi/crater-browser/tui/paint/export" @tui_paint_export,
   "mizchi/crater-browser/tui/paint/png" @tui_paint_png,
   "mizchi/crater-painter/paint/raster",
-  "mizchi/crater-painter/paint/glyph" @glyph,
+  "mizchi/crater-painter/paint/glyph",
   "mizchi/crater-painter/terminal/sixel",
-  "mizchi/svg" @svg,
+  "mizchi/svg",
 }
 
 import {
-  "mizchi/crater-core/node" @node,
+  "mizchi/crater-core/node",
 } for "wbtest"
 
 supported_targets = "js"

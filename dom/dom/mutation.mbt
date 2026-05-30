@@ -39,7 +39,7 @@ pub struct MutationRecord {
 } derive(Debug)
 
 ///|
-pub impl Show for MutationType with output(self, logger) {
+pub impl Show for MutationType with fn output(self, logger) {
   let name = match self {
     ChildList => "ChildList"
     Attributes => "Attributes"
@@ -50,7 +50,7 @@ pub impl Show for MutationType with output(self, logger) {
 }
 
 ///|
-pub impl Show for MutationRecord with output(self, logger) {
+pub impl Show for MutationRecord with fn output(self, logger) {
   logger.write_string("{type_: \{self.type_}, target: \{self.target}, ")
   logger.write_string("added_nodes: ")
   logger.write_object(to_repr(self.added_nodes))

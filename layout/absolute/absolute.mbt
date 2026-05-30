@@ -8,6 +8,7 @@ pub fn resolve_inset(dim : @types.Dimension, available : Double) -> Double? {
   match dim {
     @types.Length(v) => Some(v)
     @types.Percent(p) => Some(available * p)
+    @types.Calc(px, pct) => Some(available * pct + px)
     @types.Auto => None
     @types.MinContent => None // Inset doesn't use intrinsic sizing
     @types.MaxContent => None
@@ -24,6 +25,7 @@ pub fn resolve_length_dimension(
   match dim {
     @types.Length(v) => v
     @types.Percent(p) => available * p
+    @types.Calc(px, pct) => available * pct + px
     @types.Auto => 0.0
     @types.MinContent => 0.0 // Margin doesn't use intrinsic sizing
     @types.MaxContent => 0.0
@@ -97,6 +99,7 @@ pub fn compute_size_params(
   let initial_width : Double? = match style.width {
     @types.Length(w) => Some(w)
     @types.Percent(p) => Some(area_width * p)
+    @types.Calc(px, pct) => Some(area_width * pct + px)
     @types.Auto =>
       match (inset_left, inset_right) {
         (Some(l), Some(r)) =>
@@ -130,6 +133,7 @@ pub fn compute_size_params(
   let initial_height : Double? = match style.height {
     @types.Length(h) => Some(h)
     @types.Percent(p) => Some(area_height * p)
+    @types.Calc(px, pct) => Some(area_height * pct + px)
     @types.Auto =>
       match (inset_top, inset_bottom) {
         (Some(t), Some(b)) =>
@@ -157,6 +161,7 @@ pub fn compute_size_params(
   let min_width = match style.min_width {
     @types.Length(v) => v
     @types.Percent(p) => area_width * p
+    @types.Calc(px, pct) => area_width * pct + px
     @types.Auto => 0.0
     @types.MinContent => 0.0 // Would need intrinsic calculation
     @types.MaxContent => 0.0
@@ -165,6 +170,7 @@ pub fn compute_size_params(
   let max_width = match style.max_width {
     @types.Length(v) => v
     @types.Percent(p) => area_width * p
+    @types.Calc(px, pct) => area_width * pct + px
     @types.Auto => @double.infinity
     @types.MinContent => @double.infinity // Would need intrinsic calculation
     @types.MaxContent => @double.infinity
@@ -173,6 +179,7 @@ pub fn compute_size_params(
   let min_height = match style.min_height {
     @types.Length(v) => v
     @types.Percent(p) => area_height * p
+    @types.Calc(px, pct) => area_height * pct + px
     @types.Auto => 0.0
     @types.MinContent => 0.0
     @types.MaxContent => 0.0
@@ -181,6 +188,7 @@ pub fn compute_size_params(
   let max_height = match style.max_height {
     @types.Length(v) => v
     @types.Percent(p) => area_height * p
+    @types.Calc(px, pct) => area_height * pct + px
     @types.Auto => @double.infinity
     @types.MinContent => @double.infinity
     @types.MaxContent => @double.infinity
@@ -212,13 +220,13 @@ pub fn compute_size_params(
 pub fn has_dimension_constraint(style : @style.Style, is_width : Bool) -> Bool {
   if is_width {
     match style.width {
-      @types.Length(_) | @types.Percent(_) => return true
+      @types.Length(_) | @types.Percent(_) | @types.Calc(_, _) => return true
       @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
         return true
       _ => ()
     }
     match style.max_width {
-      @types.Length(_) | @types.Percent(_) => true
+      @types.Length(_) | @types.Percent(_) | @types.Calc(_, _) => true
       @types.MinContent | @types.MaxContent | @types.FitContent(_) => true
       @types.Auto =>
         match style.min_width {
@@ -230,13 +238,13 @@ pub fn has_dimension_constraint(style : @style.Style, is_width : Bool) -> Bool {
     }
   } else {
     match style.height {
-      @types.Length(_) | @types.Percent(_) => return true
+      @types.Length(_) | @types.Percent(_) | @types.Calc(_, _) => return true
       @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
         return true
       _ => ()
     }
     match style.max_height {
-      @types.Length(_) | @types.Percent(_) => true
+      @types.Length(_) | @types.Percent(_) | @types.Calc(_, _) => true
       @types.MinContent | @types.MaxContent | @types.FitContent(_) => true
       @types.Auto =>
         match style.min_height {

@@ -99,6 +99,10 @@ fn can_use_cache(node : LayoutNode, constraint : ConstraintSpace) -> Bool {
       let cached_parent = cache.constraint.available_width
       (constraint.parent_width * p - cached_parent).abs() < 0.001
     }
+    @types.Calc(px, p) => {
+      let cached_parent = cache.constraint.available_width
+      (constraint.parent_width * p + px - cached_parent).abs() < 0.001
+    }
     @types.Auto =>
       // Auto depends on available width
       (constraint.available_width - cache.constraint.available_width).abs() <
@@ -119,6 +123,12 @@ fn can_use_cache(node : LayoutNode, constraint : ConstraintSpace) -> Bool {
       // Percent depends on parent height
       match (constraint.parent_height, cache.constraint.available_height) {
         (Some(ph), Some(ch)) => (ph * p - ch).abs() < 0.001
+        (None, None) => true
+        _ => false
+      }
+    @types.Calc(px, p) =>
+      match (constraint.parent_height, cache.constraint.available_height) {
+        (Some(ph), Some(ch)) => (ph * p + px - ch).abs() < 0.001
         (None, None) => true
         _ => false
       }

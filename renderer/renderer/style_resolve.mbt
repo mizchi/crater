@@ -1314,7 +1314,20 @@ fn resolve_axis_mixed_calc_dimension(
   value : String,
   ctx : @css.ComputeContext,
 ) -> @types.Dimension? {
-  if property != "height" && property != "max-height" {
+  if property == "min-width" {
+    return match parse_simple_calc_length_percent_terms(value, ctx) {
+      Some((length_px, percent)) =>
+        if length_px.abs() < 0.0001 || percent.abs() < 0.0001 {
+          None
+        } else {
+          Some(@types.Length(if length_px < 0.0 { 0.0 } else { length_px }))
+        }
+      None => None
+    }
+  }
+  if property != "height" &&
+    property != "min-height" &&
+    property != "max-height" {
     return None
   }
   match parse_simple_calc_length_percent_terms(value, ctx) {
@@ -1363,6 +1376,8 @@ fn apply_css_property_with_viewport(
     Some(dim) =>
       match property {
         "height" => { ..resolved, height: dim }
+        "min-width" => { ..resolved, min_width: dim }
+        "min-height" => { ..resolved, min_height: dim }
         "max-height" => { ..resolved, max_height: dim }
         _ => resolved
       }

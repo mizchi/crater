@@ -31,7 +31,7 @@ pub struct FlushResult {
 } derive(Debug)
 
 ///|
-pub impl Show for FlushResult with output(self, logger) {
+pub impl Show for FlushResult with fn output(self, logger) {
   logger.write_string("{processed: \{self.processed}, ")
   logger.write_string("nodes_affected: \{self.nodes_affected}, ")
   logger.write_string("needs_layout: \{self.needs_layout}}")

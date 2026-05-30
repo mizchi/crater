@@ -49,7 +49,7 @@ fn default_js_runtime() -> &JsRuntime {
 }
 
 ///|
-impl JsRuntime for QuickJsRuntime with init(self : QuickJsRuntime) -> Unit {
+impl JsRuntime for QuickJsRuntime with fn init(self : QuickJsRuntime) -> Unit {
   let _ = self
   if !runtime_state.initialized {
     let success = quickjs_init()
@@ -60,7 +60,7 @@ impl JsRuntime for QuickJsRuntime with init(self : QuickJsRuntime) -> Unit {
 }
 
 ///|
-impl JsRuntime for QuickJsRuntime with execute(
+impl JsRuntime for QuickJsRuntime with fn execute(
   self : QuickJsRuntime,
   context_id : Int,
   dom : @dom.DomTree,
@@ -93,7 +93,7 @@ impl JsRuntime for QuickJsRuntime with execute(
 }
 
 ///|
-impl JsRuntime for QuickJsRuntime with tick(
+impl JsRuntime for QuickJsRuntime with fn tick(
   self : QuickJsRuntime,
   context_id : Int,
   dom : @dom.DomTree,

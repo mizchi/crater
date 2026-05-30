@@ -5,11 +5,11 @@ import {
   "mizchi/crater-painter/paint/traversal" @paint_traversal,
   "mizchi/crater-painter/paint/glyph",
   "mizchi/css/values" @types,
-  "mizchi/svg" @svg,
+  "mizchi/svg",
 }
 
 import {
-  "mizchi/font" @font,
+  "mizchi/font",
 } for "wbtest"
 
 import {

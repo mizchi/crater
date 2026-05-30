@@ -16,7 +16,7 @@ pub(all) enum CorsDecision {
 }
 
 ///|
-pub impl Show for CorsDecision with output(self, logger) {
+pub impl Show for CorsDecision with fn output(self, logger) {
   match self {
     Allow => logger.write_string("Allow")
     PreflightRequired(req) => {
@@ -46,7 +46,7 @@ pub(all) struct PreflightRequest {
 }
 
 ///|
-pub impl Show for PreflightRequest with output(self, logger) {
+pub impl Show for PreflightRequest with fn output(self, logger) {
   logger.write_string("{url: ")
   self.url.output(logger)
   logger.write_string(", origin: ")

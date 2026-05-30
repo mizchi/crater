@@ -2,7 +2,7 @@ import {
   "moonbitlang/core/string",
   "mizchi/css/values" @types,
   "mizchi/crater-layout/tree",
-  "mizchi/css" @css,
+  "mizchi/css",
 }
 
 import {

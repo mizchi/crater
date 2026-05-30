@@ -1,11 +1,11 @@
 import {
-  "mizchi/crater-webdriver-bidi/protocol" @protocol,
+  "mizchi/crater-webdriver-bidi/protocol",
   "mizchi/crater-browser/tui/paint/export" @tui_paint_export,
-  "mizchi/crater-core/node" @node,
+  "mizchi/crater-core/node",
   "mizchi/css/values" @types,
   "mizchi/crater-core" @layout_types,
-  "mizchi/svg" @svg,
-  "mizchi/crater-renderer/vrt" @vrt,
+  "mizchi/svg",
+  "mizchi/crater-renderer/vrt",
   "moonbitlang/core/json",
   "moonbitlang/core/string",
 }

@@ -7,6 +7,7 @@ fn resolve_dimension_to_px(dim : @types.Dimension) -> Double {
   match dim {
     @types.Length(v) => v
     @types.Percent(_) => 0.0 // Percentages are resolved later
+    @types.Calc(px, _) => px // Percent part resolved later; keep px term
     @types.Auto => 0.0
     @types.MinContent => 0.0 // Intrinsic sizing resolved during layout
     @types.MaxContent => 0.0
@@ -26,6 +27,12 @@ fn resolve_dimension_with_percent_basis(
         percent_basis * p
       } else {
         0.0
+      }
+    @types.Calc(px, pct) =>
+      if percent_basis > 0.0 {
+        percent_basis * pct + px
+      } else {
+        px
       }
     @types.Auto => 0.0
     @types.MinContent => 0.0

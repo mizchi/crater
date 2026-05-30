@@ -4,7 +4,7 @@ import {
   "mizchi/crater-layout/tree",
   "mizchi/crater-dom/layout/style_bridge",
   "mizchi/crater-dom/html",
-  "mizchi/css" @css,
+  "mizchi/css",
 }
 
 import {

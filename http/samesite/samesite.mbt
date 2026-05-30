@@ -8,7 +8,7 @@ pub(all) enum SiteContext {
 } derive(Eq)
 
 ///|
-pub impl Show for SiteContext with output(self, logger) {
+pub impl Show for SiteContext with fn output(self, logger) {
   match self {
     SameSite => logger.write_string("SameSite")
     CrossSite => logger.write_string("CrossSite")
@@ -90,7 +90,6 @@ fn truncate_at_any(s : String, stops : Array[Char]) -> String {
   s.unsafe_substring(start=0, end~)
 }
 
-
 ///|
 /// Decide whether `cookie` should be attached to a request, given the
 /// precomputed `site_context` (cookie domain vs request origin) and
@@ -129,4 +128,3 @@ pub fn should_attach_cookie(
       }
   }
 }
-

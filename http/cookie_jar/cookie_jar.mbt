@@ -32,7 +32,7 @@ pub fn CookieJar::new(enabled? : Bool = false) -> CookieJar {
 }
 
 ///|
-pub impl Show for ParsedCookie with output(self, logger) {
+pub impl Show for ParsedCookie with fn output(self, logger) {
   logger.write_string("{name: ")
   self.name.output(logger)
   logger.write_string(", value: ")

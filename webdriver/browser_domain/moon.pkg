@@ -1,5 +1,5 @@
 import {
-  "mizchi/crater-webdriver-bidi/protocol" @protocol,
+  "mizchi/crater-webdriver-bidi/protocol",
   "moonbitlang/core/string",
 }
 

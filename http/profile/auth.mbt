@@ -41,7 +41,7 @@ pub struct AuthState {
 /// Show impl deliberately redacts header values AND credentials; only
 /// origins are rendered. Prevents secret leaks via panic stack traces or
 /// structural debugging.
-pub impl Show for AuthState with output(self, logger) {
+pub impl Show for AuthState with fn output(self, logger) {
   logger.write_string("AuthState{headers=[")
   let origins = self.list_origins()
   for i = 0; i < origins.length(); i = i + 1 {

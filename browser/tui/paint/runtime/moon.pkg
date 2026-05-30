@@ -1,5 +1,5 @@
 import {
-  "mizchi/crater-core/node" @node,
+  "mizchi/crater-core/node",
   "mizchi/crater-painter/paint/scroll" @paint_scroll,
   "mizchi/crater-painter/paint/traversal" @paint_traversal,
   "mizchi/crater-core" @layout_types,

@@ -301,17 +301,17 @@ pub(all) enum FetchResult {
 } derive(Debug)
 
 ///|
-pub impl Show for RequestId with output(self, logger) {
+pub impl Show for RequestId with fn output(self, logger) {
   logger.write_string("RequestId(\{self.0})")
 }
 
 ///|
-pub impl Show for HttpMethod with output(self, logger) {
+pub impl Show for HttpMethod with fn output(self, logger) {
   logger.write_string(self.to_string())
 }
 
 ///|
-pub impl Show for NetworkRequest with output(self, logger) {
+pub impl Show for NetworkRequest with fn output(self, logger) {
   logger.write_string("{id: \{self.id}, url: ")
   logger.write_string("\"")
   logger.write_string(self.url)
@@ -336,7 +336,7 @@ pub impl Show for NetworkRequest with output(self, logger) {
 }
 
 ///|
-pub impl Show for NetworkResponse with output(self, logger) {
+pub impl Show for NetworkResponse with fn output(self, logger) {
   logger.write_string("{request_id: \{self.request_id}, url: ")
   logger.write_string("\"")
   logger.write_string(self.url)
@@ -365,7 +365,7 @@ pub impl Show for NetworkResponse with output(self, logger) {
 }
 
 ///|
-pub impl Show for NetworkEvent with output(self, logger) {
+pub impl Show for NetworkEvent with fn output(self, logger) {
   match self {
     RequestWillBeSent(request) =>
       logger.write_string("RequestWillBeSent(\{request})")
@@ -386,7 +386,7 @@ pub impl Show for NetworkEvent with output(self, logger) {
 }
 
 ///|
-pub impl Show for FetchResult with output(self, logger) {
+pub impl Show for FetchResult with fn output(self, logger) {
   match self {
     Success(response~) => logger.write_string("Success(response=\{response})")
     Redirect(location~, status~) => {

@@ -1958,6 +1958,11 @@ fn compute_inline_child(
             Some(ah) => Some(ah * p)
             None => None
           }
+        @types.Calc(px, pct) =>
+          match available_height {
+            Some(ah) => Some(ah * pct + px)
+            None => Some(px)
+          }
         @types.Auto
         | @types.MinContent
         | @types.MaxContent
@@ -1970,6 +1975,11 @@ fn compute_inline_child(
           w - padding.horizontal_sum() - border.horizontal_sum()
         @types.Percent(p) =>
           available_width * p -
+          padding.horizontal_sum() -
+          border.horizontal_sum()
+        @types.Calc(px, pct) =>
+          available_width * pct +
+          px -
           padding.horizontal_sum() -
           border.horizontal_sum()
         @types.MinContent =>
@@ -2081,6 +2091,11 @@ fn compute_inline_child(
                   padding.vertical_sum() +
                   border.vertical_sum()
               }
+          }
+        @types.Calc(px, pct) =>
+          match available_height {
+            Some(ah) => ah * pct + px
+            None => px
           }
         @types.Auto
         | @types.MinContent

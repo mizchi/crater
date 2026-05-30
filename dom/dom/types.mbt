@@ -340,24 +340,24 @@ pub struct SVGMatrix {
 } derive(Eq, Debug)
 
 ///|
-pub impl Show for NodeId with output(self, logger) {
+pub impl Show for NodeId with fn output(self, logger) {
   logger.write_string("NodeId(\{self.0})")
 }
 
 ///|
-pub impl Show for Rect with output(self, logger) {
+pub impl Show for Rect with fn output(self, logger) {
   logger.write_string(
     "{x: \{self.x}, y: \{self.y}, width: \{self.width}, height: \{self.height}}",
   )
 }
 
 ///|
-pub impl Show for Point with output(self, logger) {
+pub impl Show for Point with fn output(self, logger) {
   logger.write_string("{x: \{self.x}, y: \{self.y}}")
 }
 
 ///|
-pub impl Show for NodeType with output(self, logger) {
+pub impl Show for NodeType with fn output(self, logger) {
   let name = match self {
     Document => "Document"
     DocumentType => "DocumentType"
@@ -371,7 +371,7 @@ pub impl Show for NodeType with output(self, logger) {
 }
 
 ///|
-pub impl Show for NodeInfo with output(self, logger) {
+pub impl Show for NodeInfo with fn output(self, logger) {
   logger.write_string(
     "{node_id: \{self.node_id}, node_type: \{self.node_type}, ",
   )
@@ -387,7 +387,7 @@ pub impl Show for NodeInfo with output(self, logger) {
 }
 
 ///|
-pub impl Show for CoreError with output(self, logger) {
+pub impl Show for CoreError with fn output(self, logger) {
   match self {
     NodeNotFound(node_id~) =>
       logger.write_string("NodeNotFound(node_id=\{node_id})")
@@ -402,7 +402,7 @@ pub impl Show for CoreError with output(self, logger) {
 }
 
 ///|
-pub impl Show for ScrollState with output(self, logger) {
+pub impl Show for ScrollState with fn output(self, logger) {
   logger.write_string("{scroll_left: \{self.scroll_left}, ")
   logger.write_string("scroll_top: \{self.scroll_top}, ")
   logger.write_string("scroll_width: \{self.scroll_width}, ")
@@ -412,19 +412,19 @@ pub impl Show for ScrollState with output(self, logger) {
 }
 
 ///|
-pub impl Show for SVGRect with output(self, logger) {
+pub impl Show for SVGRect with fn output(self, logger) {
   logger.write_string(
     "{x: \{self.x}, y: \{self.y}, width: \{self.width}, height: \{self.height}}",
   )
 }
 
 ///|
-pub impl Show for SVGPoint with output(self, logger) {
+pub impl Show for SVGPoint with fn output(self, logger) {
   logger.write_string("{x: \{self.x}, y: \{self.y}}")
 }
 
 ///|
-pub impl Show for SVGMatrix with output(self, logger) {
+pub impl Show for SVGMatrix with fn output(self, logger) {
   logger.write_string(
     "{a: \{self.a}, b: \{self.b}, c: \{self.c}, d: \{self.d}, ",
   )

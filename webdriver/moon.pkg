@@ -1,7 +1,7 @@
 import {
-  "mizchi/crater-webdriver-bidi/contract" @contract,
-  "mizchi/crater-webdriver-bidi/rpc" @rpc,
-  "mizchi/crater-webdriver-bidi/server" @server,
+  "mizchi/crater-webdriver-bidi/contract",
+  "mizchi/crater-webdriver-bidi/rpc",
+  "mizchi/crater-webdriver-bidi/server",
   "mizchi/crater-webdriver-bidi/webdriver",
 }
 

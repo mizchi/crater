@@ -610,7 +610,7 @@ let element_internals_polyfill_js : String =
   #|})();
 
 ///|
-impl @js.JsRuntime for V8JsRuntime with init(self : V8JsRuntime) -> Unit {
+impl @js.JsRuntime for V8JsRuntime with fn init(self : V8JsRuntime) -> Unit {
   if !self.initialized {
     match @v8.runtime_new() {
       Ok(rt) => {
@@ -629,7 +629,7 @@ impl @js.JsRuntime for V8JsRuntime with init(self : V8JsRuntime) -> Unit {
 }
 
 ///|
-impl @js.JsRuntime for V8JsRuntime with execute(
+impl @js.JsRuntime for V8JsRuntime with fn execute(
   self : V8JsRuntime,
   _context_id : Int,
   dom : @dom.DomTree,
@@ -725,7 +725,7 @@ impl @js.JsRuntime for V8JsRuntime with execute(
 }
 
 ///|
-impl @js.JsRuntime for V8JsRuntime with tick(
+impl @js.JsRuntime for V8JsRuntime with fn tick(
   self : V8JsRuntime,
   _context_id : Int,
   dom : @dom.DomTree,

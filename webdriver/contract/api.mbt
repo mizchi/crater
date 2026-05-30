@@ -159,7 +159,7 @@ pub(all) enum ApiError {
 } derive(Debug)
 
 ///|
-pub impl Show for ApiError with output(self, logger) {
+pub impl Show for ApiError with fn output(self, logger) {
   match self {
     ElementNotFound(selector~) => {
       logger.write_string("ElementNotFound(selector=")
@@ -297,7 +297,7 @@ pub(all) enum ApiMethod {
 } derive(Debug)
 
 ///|
-pub impl Show for ApiMethod with output(self, logger) {
+pub impl Show for ApiMethod with fn output(self, logger) {
   match self {
     NewContext => logger.write_string("NewContext")
     CloseContext(context_id~) => {

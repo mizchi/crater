@@ -6,7 +6,7 @@ pub(all) struct MemoryCacheBackend {
 }
 
 ///|
-pub impl HttpCacheBackend for MemoryCacheBackend with lookup(
+pub impl HttpCacheBackend for MemoryCacheBackend with fn lookup(
   self : MemoryCacheBackend,
   url : String,
 ) -> CacheEntry? {
@@ -14,7 +14,7 @@ pub impl HttpCacheBackend for MemoryCacheBackend with lookup(
 }
 
 ///|
-pub impl HttpCacheBackend for MemoryCacheBackend with store(
+pub impl HttpCacheBackend for MemoryCacheBackend with fn store(
   self : MemoryCacheBackend,
   entry : CacheEntry,
 ) -> Unit {
@@ -37,7 +37,7 @@ pub impl HttpCacheBackend for MemoryCacheBackend with store(
 }
 
 ///|
-pub impl HttpCacheBackend for MemoryCacheBackend with remove(
+pub impl HttpCacheBackend for MemoryCacheBackend with fn remove(
   self : MemoryCacheBackend,
   url : String,
 ) -> Unit {
@@ -45,7 +45,7 @@ pub impl HttpCacheBackend for MemoryCacheBackend with remove(
 }
 
 ///|
-pub impl HttpCacheBackend for MemoryCacheBackend with clear(
+pub impl HttpCacheBackend for MemoryCacheBackend with fn clear(
   self : MemoryCacheBackend,
 ) -> Unit {
   self.entries.clear()

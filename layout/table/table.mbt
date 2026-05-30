@@ -432,6 +432,7 @@ fn resolve_col_width(col : @node.Node, parent_width : Double) -> Double? {
   match col.style.width {
     @types.Length(w) => Some(w)
     @types.Percent(p) => Some(parent_width * p)
+    @types.Calc(px, pct) => Some(parent_width * pct + px)
     _ => None
   }
 }
@@ -1266,6 +1267,10 @@ fn calculate_fixed_column_widths(
             }
             @types.Percent(p) => {
               explicit_widths.push(Some(available_width * p))
+              continue
+            }
+            @types.Calc(px, pct) => {
+              explicit_widths.push(Some(available_width * pct + px))
               continue
             }
             _ => ()
@@ -2792,6 +2797,7 @@ pub fn compute(
     match style.width {
       @types.Length(w) => w
       @types.Percent(p) => parent_width * p
+      @types.Calc(px, pct) => parent_width * pct + px
       @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
         intrinsic_table_width
       @types.Auto => {
@@ -2810,6 +2816,12 @@ pub fn compute(
     // Apply max-width first, then min-width (min takes precedence over max).
     match style.max_width {
       @types.Length(max_w) => if table_width > max_w { table_width = max_w }
+      @types.Calc(px, pct) => {
+        let max_w = parent_width * pct + px
+        if table_width > max_w {
+          table_width = max_w
+        }
+      }
       @types.Percent(p) => {
         let max_w = parent_width * p
         if table_width > max_w {
@@ -2825,6 +2837,12 @@ pub fn compute(
     }
     match style.min_width {
       @types.Length(min_w) => if table_width < min_w { table_width = min_w }
+      @types.Calc(px, pct) => {
+        let min_w = parent_width * pct + px
+        if table_width < min_w {
+          table_width = min_w
+        }
+      }
       @types.Percent(p) => {
         let min_w = parent_width * p
         if table_width < min_w {

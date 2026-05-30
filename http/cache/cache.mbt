@@ -24,7 +24,7 @@ pub fn CacheDirectives::default() -> CacheDirectives {
 }
 
 ///|
-pub impl Show for CacheDirectives with output(self, logger) {
+pub impl Show for CacheDirectives with fn output(self, logger) {
   logger.write_string("{max_age: ")
   logger.write_object(to_repr(self.max_age))
   logger.write_string(", no_cache: ")
@@ -109,10 +109,10 @@ pub(all) struct CacheEntry {
 ///|
 /// Shared cache backend contract used by cached_fetch.
 pub(open) trait HttpCacheBackend {
-  lookup(Self, String) -> CacheEntry?
-  store(Self, CacheEntry) -> Unit
-  remove(Self, String) -> Unit
-  clear(Self) -> Unit
+  fn lookup(Self, String) -> CacheEntry?
+  fn store(Self, CacheEntry) -> Unit
+  fn remove(Self, String) -> Unit
+  fn clear(Self) -> Unit
 }
 
 ///|

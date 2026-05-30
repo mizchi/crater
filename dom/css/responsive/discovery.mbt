@@ -28,7 +28,7 @@ pub struct BreakpointDiscoveryResult {
 } derive(Eq, Debug)
 
 ///|
-pub impl Show for ResponsiveBreakpoint with output(self, logger) {
+pub impl Show for ResponsiveBreakpoint with fn output(self, logger) {
   logger.write_string("{axis: ")
   logger.write_string(self.axis.to_string())
   logger.write_string(", op: ")
@@ -47,7 +47,7 @@ pub impl Show for ResponsiveBreakpoint with output(self, logger) {
 }
 
 ///|
-pub impl Show for BreakpointDiscoveryDiagnostics with output(self, logger) {
+pub impl Show for BreakpointDiscoveryDiagnostics with fn output(self, logger) {
   logger.write_string("{stylesheet_count: ")
   logger.write_string(self.stylesheet_count.to_string())
   logger.write_string(", rule_count: ")
@@ -62,7 +62,7 @@ pub impl Show for BreakpointDiscoveryDiagnostics with output(self, logger) {
 }
 
 ///|
-pub impl Show for BreakpointDiscoveryResult with output(self, logger) {
+pub impl Show for BreakpointDiscoveryResult with fn output(self, logger) {
   logger.write_string("{breakpoints: ")
   logger.write_object(to_repr(self.breakpoints))
   logger.write_string(", diagnostics: ")

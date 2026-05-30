@@ -1,7 +1,7 @@
 import {
   "mizchi/crater-dom/dom",
   "mizchi/crater-browser-runtime" @js,
-  "mizchi/v8" @v8,
+  "mizchi/v8",
 }
 
 supported_targets = "+native"

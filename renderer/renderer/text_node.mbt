@@ -52,7 +52,9 @@ fn collapse_inline_whitespace(text : String) -> String {
 }
 
 ///|
-fn white_space_preserves_segment_breaks(white_space : @style.WhiteSpace) -> Bool {
+fn white_space_preserves_segment_breaks(
+  white_space : @style.WhiteSpace,
+) -> Bool {
   match white_space {
     @style.WhiteSpace::Pre
     | @style.WhiteSpace::PreWrap

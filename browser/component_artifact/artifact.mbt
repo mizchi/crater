@@ -6,7 +6,7 @@ pub(all) enum ArtifactMode {
 } derive(Debug)
 
 ///|
-pub impl Show for ArtifactMode with output(self, logger) {
+pub impl Show for ArtifactMode with fn output(self, logger) {
   match self {
     Layout => logger.write_string("Layout")
     Image => logger.write_string("Image")

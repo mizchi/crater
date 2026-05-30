@@ -205,7 +205,7 @@ pub fn Role::to_string(self : Role) -> String {
 }
 
 ///|
-pub impl Show for Role with output(self, logger) {
+pub impl Show for Role with fn output(self, logger) {
   match self {
     Article => logger.write_string("Article")
     Blockquote => logger.write_string("Blockquote")
@@ -429,7 +429,7 @@ pub fn State::to_string(self : State) -> String {
 }
 
 ///|
-pub impl Show for State with output(self, logger) {
+pub impl Show for State with fn output(self, logger) {
   match self {
     Busy => logger.write_string("Busy")
     Checked => logger.write_string("Checked")

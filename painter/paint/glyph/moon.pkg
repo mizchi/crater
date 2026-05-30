@@ -1,6 +1,6 @@
 import {
-  "mizchi/svg" @svg,
-  "mizchi/font" @font,
+  "mizchi/svg",
+  "mizchi/font",
   "mizchi/font/glyph_provider" @font_provider,
 }
 

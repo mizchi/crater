@@ -71,6 +71,7 @@ fn to_layout_dimension(dimension : @types.Dimension) -> @lt.Dimension {
     @types.MinContent => @lt.MinContent
     @types.MaxContent => @lt.MaxContent
     @types.FitContent(v) => @lt.FitContent(v)
+    @types.Calc(px, _) => @lt.Length(px)
   }
 }
 

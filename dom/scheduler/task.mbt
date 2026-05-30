@@ -178,12 +178,12 @@ pub(all) enum TaskAction {
 } derive(Debug)
 
 ///|
-pub impl Show for TaskId with output(self, logger) {
+pub impl Show for TaskId with fn output(self, logger) {
   logger.write_string("TaskId(\{self.0})")
 }
 
 ///|
-pub impl Show for TaskSource with output(self, logger) {
+pub impl Show for TaskSource with fn output(self, logger) {
   let name = match self {
     DOM => "DOM"
     Styling => "Styling"
@@ -196,7 +196,7 @@ pub impl Show for TaskSource with output(self, logger) {
 }
 
 ///|
-pub impl Show for TaskConstraint with output(self, logger) {
+pub impl Show for TaskConstraint with fn output(self, logger) {
   match self {
     MainThreadOnly => logger.write_string("MainThreadOnly")
     Parallel => logger.write_string("Parallel")
@@ -205,7 +205,7 @@ pub impl Show for TaskConstraint with output(self, logger) {
 }
 
 ///|
-pub impl Show for ResourceType with output(self, logger) {
+pub impl Show for ResourceType with fn output(self, logger) {
   let name = match self {
     Document => "Document"
     Stylesheet => "Stylesheet"
@@ -218,7 +218,7 @@ pub impl Show for ResourceType with output(self, logger) {
 }
 
 ///|
-pub impl Show for TaskState with output(self, logger) {
+pub impl Show for TaskState with fn output(self, logger) {
   match self {
     Pending => logger.write_string("Pending")
     Ready => logger.write_string("Ready")
@@ -236,7 +236,7 @@ pub impl Show for TaskState with output(self, logger) {
 }
 
 ///|
-pub impl Show for TaskAction with output(self, logger) {
+pub impl Show for TaskAction with fn output(self, logger) {
   match self {
     ParseHTMLChunk(html~) => {
       logger.write_string("ParseHTMLChunk(html=")
@@ -275,7 +275,7 @@ pub impl Show for TaskAction with output(self, logger) {
 }
 
 ///|
-pub impl Show for TaskResult with output(self, logger) {
+pub impl Show for TaskResult with fn output(self, logger) {
   match self {
     Success(new_tasks~) =>
       logger.write_string("Success(new_tasks=\{to_repr(new_tasks)})")

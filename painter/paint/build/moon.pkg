@@ -1,7 +1,7 @@
 import {
-  "mizchi/crater-painter/paint/model" @model,
-  "mizchi/crater-painter/paint/scroll" @scroll,
-  "mizchi/crater-painter/paint/traversal" @traversal,
+  "mizchi/crater-painter/paint/model",
+  "mizchi/crater-painter/paint/scroll",
+  "mizchi/crater-painter/paint/traversal",
 }
 
 import {

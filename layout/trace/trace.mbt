@@ -49,7 +49,7 @@ pub(all) struct ComputeOutput {
 } derive(Debug)
 
 ///|
-pub impl Show for DependencyKind with output(self, logger) {
+pub impl Show for DependencyKind with fn output(self, logger) {
   match self {
     ParentWidth => logger.write_string("ParentWidth")
     ParentHeight => logger.write_string("ParentHeight")
@@ -62,12 +62,12 @@ pub impl Show for DependencyKind with output(self, logger) {
 }
 
 ///|
-pub impl Show for Dependency with output(self, logger) {
+pub impl Show for Dependency with fn output(self, logger) {
   logger.write_string("{node_uid: \{self.node_uid}, kind: \{self.kind}}")
 }
 
 ///|
-pub impl Show for ComputeOutput with output(self, logger) {
+pub impl Show for ComputeOutput with fn output(self, logger) {
   logger.write_string(
     "{node_uid: \{self.node_uid}, width: \{self.width}, height: \{self.height}}",
   )

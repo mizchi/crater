@@ -118,7 +118,7 @@ pub fn PaintProperties::from_style(style : @style.Style) -> PaintProperties {
 }
 
 ///|
-pub impl Show for PaintProperties with output(self, logger) {
+pub impl Show for PaintProperties with fn output(self, logger) {
   logger.write_string("PaintProperties { z_index: ")
   self.z_index.output(logger)
   logger.write_string(", visibility: ")
@@ -233,7 +233,7 @@ pub fn PaintNode::new(
 }
 
 ///|
-pub impl Show for PaintNode with output(self, logger) {
+pub impl Show for PaintNode with fn output(self, logger) {
   logger.write_string(self.id)
   logger.write_string(" (")
   self.x.output(logger)

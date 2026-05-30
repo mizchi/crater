@@ -6,7 +6,7 @@ import {
   "mizchi/crater-painter/paint/diff" @paint_diff,
   "mizchi/crater-painter/paint/model" @paint_model,
   "mizchi/crater-painter/paint/scroll" @paint_scroll,
-  "mizchi/svg" @svg,
+  "mizchi/svg",
 }
 
 import {

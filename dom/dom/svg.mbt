@@ -295,18 +295,18 @@ pub struct SVGTransform {
 } derive(Eq, Debug)
 
 ///|
-pub impl Show for GetBBoxOptions with output(self, logger) {
+pub impl Show for GetBBoxOptions with fn output(self, logger) {
   logger.write_string("{fill: \{self.fill}, stroke: \{self.stroke}, ")
   logger.write_string("markers: \{self.markers}, clipped: \{self.clipped}}")
 }
 
 ///|
-pub impl Show for SVGNumber with output(self, logger) {
+pub impl Show for SVGNumber with fn output(self, logger) {
   logger.write_string("{value: \{self.value}}")
 }
 
 ///|
-pub impl Show for SVGLengthType with output(self, logger) {
+pub impl Show for SVGLengthType with fn output(self, logger) {
   let name = match self {
     Unknown => "Unknown"
     Number => "Number"
@@ -324,7 +324,7 @@ pub impl Show for SVGLengthType with output(self, logger) {
 }
 
 ///|
-pub impl Show for SVGLength with output(self, logger) {
+pub impl Show for SVGLength with fn output(self, logger) {
   logger.write_string("{unit_type: \{self.unit_type}, value: \{self.value}, ")
   logger.write_string(
     "value_in_specified_units: \{self.value_in_specified_units}}",
@@ -332,7 +332,7 @@ pub impl Show for SVGLength with output(self, logger) {
 }
 
 ///|
-pub impl Show for SVGAngleType with output(self, logger) {
+pub impl Show for SVGAngleType with fn output(self, logger) {
   let name = match self {
     Unknown => "Unknown"
     Unspecified => "Unspecified"
@@ -345,7 +345,7 @@ pub impl Show for SVGAngleType with output(self, logger) {
 }
 
 ///|
-pub impl Show for SVGAngle with output(self, logger) {
+pub impl Show for SVGAngle with fn output(self, logger) {
   logger.write_string("{unit_type: \{self.unit_type}, value: \{self.value}, ")
   logger.write_string(
     "value_in_specified_units: \{self.value_in_specified_units}}",
@@ -353,7 +353,7 @@ pub impl Show for SVGAngle with output(self, logger) {
 }
 
 ///|
-pub impl Show for SVGTransformType with output(self, logger) {
+pub impl Show for SVGTransformType with fn output(self, logger) {
   let name = match self {
     Unknown => "Unknown"
     Matrix => "Matrix"
@@ -367,7 +367,7 @@ pub impl Show for SVGTransformType with output(self, logger) {
 }
 
 ///|
-pub impl Show for SVGTransform with output(self, logger) {
+pub impl Show for SVGTransform with fn output(self, logger) {
   logger.write_string(
     "{transform_type: \{self.transform_type}, matrix: \{self.matrix}, angle: \{self.angle}}",
   )

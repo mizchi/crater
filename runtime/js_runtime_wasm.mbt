@@ -21,13 +21,13 @@ fn default_js_runtime() -> &JsRuntime {
 }
 
 ///|
-impl JsRuntime for WasmStubRuntime with init(self : WasmStubRuntime) -> Unit {
+impl JsRuntime for WasmStubRuntime with fn init(self : WasmStubRuntime) -> Unit {
   let _ = self
   // Not supported on WASM
 }
 
 ///|
-impl JsRuntime for WasmStubRuntime with execute(
+impl JsRuntime for WasmStubRuntime with fn execute(
   self : WasmStubRuntime,
   context_id : Int,
   dom : @dom.DomTree,
@@ -43,7 +43,7 @@ impl JsRuntime for WasmStubRuntime with execute(
 }
 
 ///|
-impl JsRuntime for WasmStubRuntime with tick(
+impl JsRuntime for WasmStubRuntime with fn tick(
   self : WasmStubRuntime,
   context_id : Int,
   dom : @dom.DomTree,

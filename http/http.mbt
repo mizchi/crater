@@ -20,7 +20,7 @@ pub(all) suberror HttpError {
 }
 
 ///|
-pub impl Show for HttpError with output(self, logger) {
+pub impl Show for HttpError with fn output(self, logger) {
   match self {
     NetworkError(msg) => logger.write_string("NetworkError: " + msg)
     InvalidUrl(url) => logger.write_string("InvalidUrl: " + url)

@@ -27,7 +27,7 @@ pub struct RequiredTestViewportsResult {
 } derive(Eq, Debug)
 
 ///|
-pub impl Show for CssRuleViewportEntry with output(self, logger) {
+pub impl Show for CssRuleViewportEntry with fn output(self, logger) {
   logger.write_string("{selector: ")
   logger.write_string(self.selector.to_string())
   logger.write_string(", properties: ")
@@ -42,14 +42,14 @@ pub impl Show for CssRuleViewportEntry with output(self, logger) {
 }
 
 ///|
-pub impl Show for CssRuleViewportMap with output(self, logger) {
+pub impl Show for CssRuleViewportMap with fn output(self, logger) {
   logger.write_string("{rules: ")
   logger.write_object(to_repr(self.rules))
   logger.write_string("}")
 }
 
 ///|
-pub impl Show for RequiredTestViewport with output(self, logger) {
+pub impl Show for RequiredTestViewport with fn output(self, logger) {
   logger.write_string("{width: ")
   logger.write_string(self.width.to_string())
   logger.write_string(", reason: ")
@@ -58,7 +58,7 @@ pub impl Show for RequiredTestViewport with output(self, logger) {
 }
 
 ///|
-pub impl Show for RequiredTestViewportsResult with output(self, logger) {
+pub impl Show for RequiredTestViewportsResult with fn output(self, logger) {
   logger.write_string("{viewports: ")
   logger.write_object(to_repr(self.viewports))
   logger.write_string("}")

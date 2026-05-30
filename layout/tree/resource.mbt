@@ -7,7 +7,7 @@
 pub(all) struct ResourceId(Int) derive(Eq, Hash, Debug)
 
 ///|
-pub impl Show for ResourceId with output(self, logger) {
+pub impl Show for ResourceId with fn output(self, logger) {
   let ResourceId(id) = self
   logger.write_string("ResourceId(\{id})")
 }

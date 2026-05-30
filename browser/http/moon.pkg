@@ -1,10 +1,10 @@
 import {
   "mizchi/crater-browser-http" @http_impl,
-  "mizchi/crater-browser-http/cache" @cache,
-  "mizchi/crater-browser-http/cookie_jar" @cookie_jar,
-  "mizchi/crater-browser-http/cors" @cors,
-  "mizchi/crater-browser-http/profile" @profile,
-  "mizchi/crater-browser-http/samesite" @samesite,
+  "mizchi/crater-browser-http/cache",
+  "mizchi/crater-browser-http/cookie_jar",
+  "mizchi/crater-browser-http/cors",
+  "mizchi/crater-browser-http/profile",
+  "mizchi/crater-browser-http/samesite",
 }
 
 supported_targets = "js+native+wasm+wasm-gc"

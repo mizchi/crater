@@ -55,7 +55,7 @@ pub(all) enum RpcErrorCode {
 } derive(Debug, Eq)
 
 ///|
-pub impl Show for RpcRequest with output(self, logger) {
+pub impl Show for RpcRequest with fn output(self, logger) {
   logger.write_string("{jsonrpc: ")
   self.jsonrpc.output(logger)
   logger.write_string(", id: ")
@@ -68,7 +68,7 @@ pub impl Show for RpcRequest with output(self, logger) {
 }
 
 ///|
-pub impl Show for RpcId with output(self, logger) {
+pub impl Show for RpcId with fn output(self, logger) {
   match self {
     Num(value) => {
       logger.write_string("Num(")
@@ -85,7 +85,7 @@ pub impl Show for RpcId with output(self, logger) {
 }
 
 ///|
-pub impl Show for RpcResponse with output(self, logger) {
+pub impl Show for RpcResponse with fn output(self, logger) {
   match self {
     Success(id~, result~) => {
       logger.write_string("Success(id=")
@@ -109,7 +109,7 @@ pub impl Show for RpcResponse with output(self, logger) {
 }
 
 ///|
-pub impl Show for RpcErrorCode with output(self, logger) {
+pub impl Show for RpcErrorCode with fn output(self, logger) {
   match self {
     ParseError => logger.write_string("ParseError")
     InvalidRequest => logger.write_string("InvalidRequest")

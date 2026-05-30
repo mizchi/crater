@@ -5,42 +5,42 @@
 /// avoid taking a direct dependency on the layout engine.
 
 ///|
-pub impl @view.LayoutView for LayoutNode with uid(self) {
+pub impl @view.LayoutView for LayoutNode with fn uid(self) {
   self.uid
 }
 
 ///|
-pub impl @view.LayoutView for LayoutNode with computed_x(self) {
+pub impl @view.LayoutView for LayoutNode with fn computed_x(self) {
   self.computed_x
 }
 
 ///|
-pub impl @view.LayoutView for LayoutNode with computed_y(self) {
+pub impl @view.LayoutView for LayoutNode with fn computed_y(self) {
   self.computed_y
 }
 
 ///|
-pub impl @view.LayoutView for LayoutNode with computed_width(self) {
+pub impl @view.LayoutView for LayoutNode with fn computed_width(self) {
   self.computed_width
 }
 
 ///|
-pub impl @view.LayoutView for LayoutNode with computed_height(self) {
+pub impl @view.LayoutView for LayoutNode with fn computed_height(self) {
   self.computed_height
 }
 
 ///|
-pub impl @view.LayoutView for LayoutNode with children(self) {
+pub impl @view.LayoutView for LayoutNode with fn children(self) {
   self.children
 }
 
 ///|
-pub impl @view.LayoutView for LayoutNode with text(self) {
+pub impl @view.LayoutView for LayoutNode with fn text(self) {
   self.text
 }
 
 ///|
-pub impl @view.LayoutView for LayoutNode with resource_state(self) {
+pub impl @view.LayoutView for LayoutNode with fn resource_state(self) {
   match self.intrinsic_state {
     Some(Resolved(..)) => Some(@view.ResourceLoadState::Resolved)
     Some(Pending(..)) => Some(@view.ResourceLoadState::Pending)

@@ -25,12 +25,12 @@ priv struct MockRuntime {
 }
 
 ///|
-impl JsRuntime for MockRuntime with init(self : MockRuntime) -> Unit {
+impl JsRuntime for MockRuntime with fn init(self : MockRuntime) -> Unit {
   self.init_calls.val = self.init_calls.val + 1
 }
 
 ///|
-impl JsRuntime for MockRuntime with execute(
+impl JsRuntime for MockRuntime with fn execute(
   self : MockRuntime,
   context_id : Int,
   dom : @dom.DomTree,
@@ -45,7 +45,7 @@ impl JsRuntime for MockRuntime with execute(
 }
 
 ///|
-impl JsRuntime for MockRuntime with tick(
+impl JsRuntime for MockRuntime with fn tick(
   self : MockRuntime,
   context_id : Int,
   dom : @dom.DomTree,
@@ -63,12 +63,12 @@ priv struct FailRuntime {
 }
 
 ///|
-impl JsRuntime for FailRuntime with init(self : FailRuntime) -> Unit {
+impl JsRuntime for FailRuntime with fn init(self : FailRuntime) -> Unit {
   self.init_calls.val = self.init_calls.val + 1
 }
 
 ///|
-impl JsRuntime for FailRuntime with execute(
+impl JsRuntime for FailRuntime with fn execute(
   self : FailRuntime,
   context_id : Int,
   dom : @dom.DomTree,
@@ -84,7 +84,7 @@ impl JsRuntime for FailRuntime with execute(
 }
 
 ///|
-impl JsRuntime for FailRuntime with tick(
+impl JsRuntime for FailRuntime with fn tick(
   self : FailRuntime,
   context_id : Int,
   dom : @dom.DomTree,

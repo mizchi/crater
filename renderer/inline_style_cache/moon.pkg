@@ -1,5 +1,5 @@
 import {
-  "mizchi/css" @css,
+  "mizchi/css",
   "mizchi/css/style",
   "mizchi/css/values" @types,
 }

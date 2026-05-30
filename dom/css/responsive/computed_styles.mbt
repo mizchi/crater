@@ -31,7 +31,7 @@ pub struct CssRuleUsage {
 let render_custom_states_attr_name = "data-crater-custom-states"
 
 ///|
-pub impl Show for StylePropertyDiff with output(self, logger) {
+pub impl Show for StylePropertyDiff with fn output(self, logger) {
   logger.write_string("{property: ")
   logger.write_string(self.property.to_string())
   logger.write_string(", normal: ")
@@ -42,7 +42,7 @@ pub impl Show for StylePropertyDiff with output(self, logger) {
 }
 
 ///|
-pub impl Show for ComputedStylesWithStateResult with output(self, logger) {
+pub impl Show for ComputedStylesWithStateResult with fn output(self, logger) {
   logger.write_string("{normal: ")
   logger.write_object(to_repr(self.normal))
   logger.write_string(", forced: ")
@@ -53,7 +53,7 @@ pub impl Show for ComputedStylesWithStateResult with output(self, logger) {
 }
 
 ///|
-pub impl Show for CssRuleUsage with output(self, logger) {
+pub impl Show for CssRuleUsage with fn output(self, logger) {
   logger.write_string("{selector: ")
   logger.write_string(self.selector.to_string())
   logger.write_string(", matched: ")

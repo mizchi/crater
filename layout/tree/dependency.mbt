@@ -19,7 +19,7 @@ pub(all) enum DependencyKind {
 } derive(Eq, Debug)
 
 ///|
-pub impl Show for DependencyKind with output(self, logger) {
+pub impl Show for DependencyKind with fn output(self, logger) {
   match self {
     Static => logger.write_string("Static")
     ParentWidth => logger.write_string("ParentWidth")

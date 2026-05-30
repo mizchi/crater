@@ -1,5 +1,5 @@
 import {
-  "mizchi/svg" @svg,
+  "mizchi/svg",
   "mizchi/crater-painter/paint/model" @paint_model,
   "mizchi/crater-painter/paint/raster",
   "mizchi/crater-terminal-protocol/kitty" @kitty_protocol,

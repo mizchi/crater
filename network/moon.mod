@@ -1,0 +1,13 @@
+name = "mizchi/crater-network"
+
+version = "0.18.0"
+
+repository = "https://github.com/mizchi/crater"
+
+license = "Apache-2.0"
+
+readme = "README.md"
+
+description = "WebDriver BiDi synthetic network state and byte/query encoding helpers for crater adapters"
+
+preferred_target = "js"

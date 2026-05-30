@@ -1,7 +1,7 @@
 import {
   "mizchi/crater-core/node" @layout,
-  "mizchi/crater-painter/paint/model" @model,
-  "mizchi/css/style" @style,
+  "mizchi/crater-painter/paint/model",
+  "mizchi/css/style",
   "mizchi/css/values" @types,
   "mizchi/crater-core" @layout_types,
   "moonbitlang/core/math",

@@ -17,6 +17,10 @@ fn resolve_multicol_explicit_width(
       } else {
         None
       }
+    @types.Calc(px, pct) => {
+      let basis = if content_width > 0.0 { content_width } else { parent_width }
+      Some(basis * pct + px)
+    }
     @types.Auto
     | @types.MinContent
     | @types.MaxContent

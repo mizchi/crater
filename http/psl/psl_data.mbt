@@ -22,29 +22,22 @@
 pub fn psl_literal_rules() -> Array[String] {
   [
     // ICANN — second-level country code suffixes
-    "co.uk", "org.uk", "net.uk", "ac.uk", "gov.uk", "nhs.uk", "police.uk",
-     "co.jp", "ad.jp", "ac.jp", "ed.jp", "go.jp", "gr.jp", "lg.jp", "ne.jp",
-     "or.jp",
-     "co.kr", "ac.kr", "go.kr", "or.kr", "ne.kr", "re.kr", "pe.kr",
-     "com.au", "net.au", "org.au", "edu.au", "gov.au", "asn.au", "id.au",
-     "com.br", "net.br", "org.br", "gov.br", "edu.br",
-     "com.cn", "net.cn", "org.cn", "gov.cn", "edu.cn", "ac.cn", "mil.cn",
-     "com.mx", "net.mx", "org.mx", "gob.mx", "edu.mx",
-     "co.nz", "net.nz", "org.nz", "ac.nz", "govt.nz", "school.nz",
-     "co.za", "net.za", "org.za", "gov.za", "edu.za", "ac.za",
-     "co.in", "net.in", "org.in", "gov.in", "ac.in", "edu.in", "ind.in",
-     "com.sg", "net.sg", "org.sg", "gov.sg", "edu.sg",
-     "com.tw", "net.tw", "org.tw", "gov.tw", "edu.tw",
-     "com.hk", "net.hk", "org.hk", "gov.hk", "edu.hk",
-     "co.id", "net.id", "or.id", "go.id", "ac.id",
-     "com.tr", "net.tr", "org.tr", "gov.tr", "edu.tr",
-     "com.ar", "com.pe", "com.co", "com.ec", "com.uy", "com.ve",
-     "co.il", "ac.il", "gov.il", "co.th", "ac.th", "go.th",
-     "co.ma", "co.ke", "co.ug", "co.tz",
-     // PRIVATE — common hosted-app suffixes Crater fixtures may exercise
-     "github.io", "vercel.app", "netlify.app", "pages.dev",
-     "cloudfront.net", "amazonaws.com", "s3.amazonaws.com",
-     "herokuapp.com", "fly.dev", "azurewebsites.net",
+    "co.uk", "org.uk", "net.uk", "ac.uk", "gov.uk", "nhs.uk", "police.uk", "co.jp",
+    "ad.jp", "ac.jp", "ed.jp", "go.jp", "gr.jp", "lg.jp", "ne.jp", "or.jp", "co.kr",
+    "ac.kr", "go.kr", "or.kr", "ne.kr", "re.kr", "pe.kr", "com.au", "net.au", "org.au",
+    "edu.au", "gov.au", "asn.au", "id.au", "com.br", "net.br", "org.br", "gov.br",
+    "edu.br", "com.cn", "net.cn", "org.cn", "gov.cn", "edu.cn", "ac.cn", "mil.cn",
+    "com.mx", "net.mx", "org.mx", "gob.mx", "edu.mx", "co.nz", "net.nz", "org.nz",
+    "ac.nz", "govt.nz", "school.nz", "co.za", "net.za", "org.za", "gov.za", "edu.za",
+    "ac.za", "co.in", "net.in", "org.in", "gov.in", "ac.in", "edu.in", "ind.in",
+    "com.sg", "net.sg", "org.sg", "gov.sg", "edu.sg", "com.tw", "net.tw", "org.tw",
+    "gov.tw", "edu.tw", "com.hk", "net.hk", "org.hk", "gov.hk", "edu.hk", "co.id",
+    "net.id", "or.id", "go.id", "ac.id", "com.tr", "net.tr", "org.tr", "gov.tr",
+    "edu.tr", "com.ar", "com.pe", "com.co", "com.ec", "com.uy", "com.ve", "co.il",
+    "ac.il", "gov.il", "co.th", "ac.th", "go.th", "co.ma", "co.ke", "co.ug", "co.tz",
+    // PRIVATE — common hosted-app suffixes Crater fixtures may exercise
+     "github.io", "vercel.app", "netlify.app", "pages.dev", "cloudfront.net", "amazonaws.com",
+    "s3.amazonaws.com", "herokuapp.com", "fly.dev", "azurewebsites.net",
   ]
 }
 

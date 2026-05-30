@@ -182,7 +182,7 @@ pub(all) struct RenderVariantResult {
 }
 
 ///|
-pub impl Show for CssMutation with output(self, logger) {
+pub impl Show for CssMutation with fn output(self, logger) {
   logger.write_string("{selector: ")
   logger.write_string("\"")
   logger.write_string(self.selector)
@@ -195,7 +195,7 @@ pub impl Show for CssMutation with output(self, logger) {
 }
 
 ///|
-pub impl Show for CssMutationAction with output(self, logger) {
+pub impl Show for CssMutationAction with fn output(self, logger) {
   match self {
     Remove => logger.write_string("Remove")
     Override(value) => {
@@ -209,7 +209,7 @@ pub impl Show for CssMutationAction with output(self, logger) {
 }
 
 ///|
-pub impl Show for RenderVariant with output(self, logger) {
+pub impl Show for RenderVariant with fn output(self, logger) {
   logger.write_string("{id: ")
   logger.write_string("\"")
   logger.write_string(self.id)
@@ -220,7 +220,7 @@ pub impl Show for RenderVariant with output(self, logger) {
 }
 
 ///|
-pub impl Show for RenderVariantResult with output(self, logger) {
+pub impl Show for RenderVariantResult with fn output(self, logger) {
   logger.write_string("{id: ")
   logger.write_string("\"")
   logger.write_string(self.id)

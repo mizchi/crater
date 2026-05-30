@@ -18,7 +18,7 @@ pub suberror JsError {
 }
 
 ///|
-pub impl Show for JsError with output(self, logger) {
+pub impl Show for JsError with fn output(self, logger) {
   match self {
     NotSupported => logger.write_string("JsError::NotSupported")
     ExecutionError(msg) => {
@@ -76,13 +76,13 @@ pub fn JsError::execution_error(msg : String) -> JsError {
 /// JavaScript runtime abstraction
 pub(open) trait JsRuntime {
   /// Initialize runtime if needed (idempotent)
-  init(Self) -> Unit
+  fn init(Self) -> Unit
 
   /// Execute JS against DomTree and return result
-  execute(Self, Int, @dom.DomTree, String, AsyncExecutionMode) -> JsResult raise JsError
+  fn execute(Self, Int, @dom.DomTree, String, AsyncExecutionMode) -> JsResult raise JsError
 
   /// Run one pending async step for an existing context
-  tick(Self, Int, @dom.DomTree) -> JsResult raise JsError
+  fn tick(Self, Int, @dom.DomTree) -> JsResult raise JsError
 }
 
 ///|

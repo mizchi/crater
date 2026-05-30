@@ -19,12 +19,12 @@ pub(all) enum ResourceLoadState {
 /// `mizchi/crater-layout/tree`) is the canonical implementation; tests
 /// and alternative engines can provide their own.
 pub(open) trait LayoutView {
-  uid(Self) -> Int
-  computed_x(Self) -> Double
-  computed_y(Self) -> Double
-  computed_width(Self) -> Double
-  computed_height(Self) -> Double
-  children(Self) -> Array[Self]
-  text(Self) -> String?
-  resource_state(Self) -> ResourceLoadState?
+  fn uid(Self) -> Int
+  fn computed_x(Self) -> Double
+  fn computed_y(Self) -> Double
+  fn computed_width(Self) -> Double
+  fn computed_height(Self) -> Double
+  fn children(Self) -> Array[Self]
+  fn text(Self) -> String?
+  fn resource_state(Self) -> ResourceLoadState?
 }

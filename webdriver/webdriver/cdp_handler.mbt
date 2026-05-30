@@ -285,7 +285,7 @@ pub enum CdpHandlerError {
 } derive(Debug)
 
 ///|
-pub impl Show for CdpHandlerError with output(self, logger) {
+pub impl Show for CdpHandlerError with fn output(self, logger) {
   match self {
     NoSuchElement(selector~) => {
       logger.write_string("NoSuchElement(selector=")

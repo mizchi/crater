@@ -25,7 +25,7 @@ pub(all) struct LayoutShift {
 }
 
 ///|
-pub impl Show for LayoutShift with output(self, logger) {
+pub impl Show for LayoutShift with fn output(self, logger) {
   logger.write_string("LayoutShift { impact: ")
   self.impact_fraction.output(logger)
   logger.write_string(", distance: ")

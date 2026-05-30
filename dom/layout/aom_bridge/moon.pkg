@@ -1,11 +1,11 @@
 import {
-  "mizchi/crater-dom/aom" @aom,
-  "mizchi/crater-dom/html" @html,
+  "mizchi/crater-dom/aom",
+  "mizchi/crater-dom/html",
   "mizchi/crater-layout" @layout,
 }
 
 import {
   "mizchi/css/values" @types,
-  "mizchi/css/style" @style,
+  "mizchi/css/style",
   "mizchi/crater-dom/layout/html_tree" @layout_html_tree,
 } for "test"

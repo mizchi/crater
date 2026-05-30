@@ -42,7 +42,7 @@ pub fn CharCell::styled(
 }
 
 ///|
-pub impl Eq for CharCell with equal(self, other) {
+pub impl Eq for CharCell with fn equal(self, other) {
   self.char == other.char &&
   self.fg == other.fg &&
   self.bg == other.bg &&

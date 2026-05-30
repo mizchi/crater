@@ -202,7 +202,7 @@ pub(all) enum WebDriverCommand {
 } derive(Debug)
 
 ///|
-pub impl Show for WebDriverCommand with output(self, logger) {
+pub impl Show for WebDriverCommand with fn output(self, logger) {
   match self {
     Status => logger.write_string("Status")
     NewSession => logger.write_string("NewSession")

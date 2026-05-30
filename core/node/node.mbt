@@ -153,6 +153,7 @@ pub fn fallback_layout(
     @types.Dimension::MinContent => 0.0
     @types.Dimension::MaxContent => ctx.available_width
     @types.Dimension::FitContent(_) => ctx.available_width
+    @types.Dimension::Calc(px, pct) => ctx.available_width * pct + px
   }
   let height = match node.style.height {
     @types.Dimension::Length(h) => h
@@ -161,6 +162,8 @@ pub fn fallback_layout(
     @types.Dimension::MinContent => 0.0
     @types.Dimension::MaxContent => 0.0
     @types.Dimension::FitContent(_) => 0.0
+    @types.Dimension::Calc(px, pct) =>
+      ctx.available_height.unwrap_or(0.0) * pct + px
   }
   {
     id: node.id,

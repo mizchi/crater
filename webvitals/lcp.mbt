@@ -21,7 +21,7 @@ pub(all) enum LCPElementType {
 } derive(Eq, Debug)
 
 ///|
-pub impl Show for LCPElementType with output(self, logger) {
+pub impl Show for LCPElementType with fn output(self, logger) {
   match self {
     Image(src~) => logger.write_string("Image(src=\{src})")
     BackgroundImage(url~) => logger.write_string("BackgroundImage(url=\{url})")

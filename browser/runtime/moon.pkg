@@ -1,5 +1,5 @@
 import {
   "mizchi/crater-browser-runtime" @runtime_impl,
-  "mizchi/crater-dom/dom" @dom,
-  "mizchi/crater-dom/scheduler" @scheduler,
+  "mizchi/crater-dom/dom",
+  "mizchi/crater-dom/scheduler",
 }

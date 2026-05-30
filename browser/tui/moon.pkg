@@ -1,7 +1,7 @@
 import {
   "mizchi/css/values" @types,
   "mizchi/crater-core" @layout_types,
-  "mizchi/crater-core/node" @node,
+  "mizchi/crater-core/node",
   "mizchi/crater-browser/tui/primitives" @tui_primitives,
   "mizchi/crater-browser/tui/paint/plain" @tui_paint_plain,
   "mizchi/crater-browser/tui/paint/runtime" @tui_paint_runtime,
@@ -15,7 +15,7 @@ import {
 
 import {
   "mizchi/crater-renderer/renderer",
-  "mizchi/css" @css,
+  "mizchi/css",
 } for "test"
 
 warnings = "-unused_package"

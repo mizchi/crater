@@ -1,6 +1,6 @@
 import {
-  "mizchi/css" @css,
-  "mizchi/crater-layout/flex" @flex,
-  "mizchi/crater-core/node" @node,
+  "mizchi/css",
+  "mizchi/crater-layout/flex",
+  "mizchi/crater-core/node",
   "mizchi/crater-core" @layout_types,
 } for "test"

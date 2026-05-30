@@ -1,4 +1,4 @@
 import {
-  "mizchi/crater-wasm/interface/mizchi/crater/types" @types,
+  "mizchi/crater-wasm/interface/mizchi/crater/types",
   "mizchi/crater-js" @crater,
 }

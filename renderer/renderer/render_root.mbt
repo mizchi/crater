@@ -121,6 +121,7 @@ fn resolve_root_available_width(
       let mut doc_width = match style.width {
         @types.Length(v) => v
         @types.Percent(p) => viewport_width * p
+        @types.Calc(px, pct) => viewport_width * pct + px
         @types.Auto
         | @types.MinContent
         | @types.MaxContent
@@ -129,6 +130,7 @@ fn resolve_root_available_width(
       let min_width = match style.min_width {
         @types.Length(v) => v
         @types.Percent(p) => viewport_width * p
+        @types.Calc(px, pct) => viewport_width * pct + px
         @types.Auto
         | @types.MinContent
         | @types.MaxContent
@@ -137,6 +139,7 @@ fn resolve_root_available_width(
       let max_width = match style.max_width {
         @types.Length(v) => v
         @types.Percent(p) => viewport_width * p
+        @types.Calc(px, pct) => viewport_width * pct + px
         @types.Auto
         | @types.MinContent
         | @types.MaxContent

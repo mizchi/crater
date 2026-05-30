@@ -154,7 +154,7 @@ pub(all) enum InputEvent {
 } derive(Debug)
 
 ///|
-pub impl Show for MouseButton with output(self, logger) {
+pub impl Show for MouseButton with fn output(self, logger) {
   let name = match self {
     None => "None"
     Left => "Left"
@@ -167,7 +167,7 @@ pub impl Show for MouseButton with output(self, logger) {
 }
 
 ///|
-pub impl Show for MouseEventType with output(self, logger) {
+pub impl Show for MouseEventType with fn output(self, logger) {
   let name = match self {
     MousePressed => "MousePressed"
     MouseReleased => "MouseReleased"
@@ -178,7 +178,7 @@ pub impl Show for MouseEventType with output(self, logger) {
 }
 
 ///|
-pub impl Show for KeyEventType with output(self, logger) {
+pub impl Show for KeyEventType with fn output(self, logger) {
   let name = match self {
     KeyDown => "KeyDown"
     KeyUp => "KeyUp"
@@ -189,7 +189,7 @@ pub impl Show for KeyEventType with output(self, logger) {
 }
 
 ///|
-pub impl Show for MouseEvent with output(self, logger) {
+pub impl Show for MouseEvent with fn output(self, logger) {
   logger.write_string(
     "{event_type: \{self.event_type}, x: \{self.x}, y: \{self.y}, ",
   )
@@ -201,7 +201,7 @@ pub impl Show for MouseEvent with output(self, logger) {
 }
 
 ///|
-pub impl Show for KeyboardEvent with output(self, logger) {
+pub impl Show for KeyboardEvent with fn output(self, logger) {
   logger.write_string("{event_type: \{self.event_type}, key: ")
   logger.write_string("\"")
   logger.write_string(self.key)
@@ -219,7 +219,7 @@ pub impl Show for KeyboardEvent with output(self, logger) {
 }
 
 ///|
-pub impl Show for InputEvent with output(self, logger) {
+pub impl Show for InputEvent with fn output(self, logger) {
   match self {
     Mouse(event) => logger.write_string("Mouse(\{event})")
     Keyboard(event) => logger.write_string("Keyboard(\{event})")
