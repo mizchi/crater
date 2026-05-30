@@ -575,3 +575,34 @@ test "bidi mutateStyle reports affected nodes and layout changes" {
   }
   assert_true(saw_box_widen)
 }
+
+///|
+/// Regression (#246 review #2): mutateStyle must not let a mutation value break
+/// out of the injected <style> block. A value containing '}' is rejected, so it
+/// cannot mutate unintended nodes.
+test "bidi mutateStyle rejects style-breaking mutation tokens" {
+  let proto = BidiProtocol::new()
+  ignore(
+    proto.process_message("{\"id\":1,\"method\":\"session.new\",\"params\":{}}"),
+  )
+  ignore(proto.take_messages())
+  let html = "<!DOCTYPE html><html><head><style>.box{width:120px;height:50px}</style></head><body style='margin:0'><div class='box'>x</div><div class='other' style='width:30px;height:30px'>y</div></body></html>"
+  let navigate_message = "{\"id\":2,\"method\":\"browsingContext.navigate\",\"params\":{\"context\":\"session-1\",\"url\":\"" +
+    js_test_build_html_data_url(html) +
+    "\",\"wait\":\"complete\"}}"
+  ignore(proto.process_message(navigate_message))
+  ignore(proto.take_messages())
+  // Malicious value tries to close the .box rule and add a rule for .other.
+  ignore(
+    proto.process_message(
+      "{\"id\":3,\"method\":\"browsingContext.mutateStyle\",\"params\":{\"context\":\"session-1\",\"mutations\":[{\"selector\":\".box\",\"property\":\"width\",\"action\":\"set\",\"value\":\"120px} .other{width:300px\"}]}}",
+    ),
+  )
+  let result = extract_success_result(proto.take_messages())
+  // The injection token is rejected, so nothing changes -> no layout changes.
+  let layout_changes = match result.get("layoutChanges") {
+    Some(Array(items)) => items
+    _ => []
+  }
+  assert_eq(layout_changes.length(), 0)
+}

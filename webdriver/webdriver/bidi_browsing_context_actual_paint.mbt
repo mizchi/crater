@@ -1016,10 +1016,20 @@ fn BidiProtocol::resolve_render_selector(
   }
   set_runtime_context(ctx_id)
   self.apply_effective_viewport_to_runtime_context(ctx_id, ctx_id)
-  let html = match params.get("html") {
-    Some(String(html)) => html
-    _ => capture_current_paint_html()
-  }
+  // Render the live document only. The bounding box is resolved against the
+  // live runtime DOM (js_selector_bounding_box), so the framebuffer must come
+  // from that same document; a caller-supplied `html` is intentionally not
+  // honored here because it would diverge from the DOM the bbox is measured
+  // against, cropping the wrong region.
+  //
+  // NOTE: this uses the default viewport paint path. A below-the-fold element
+  // is captured because the paint viewport spans the rendered content, but when
+  // the viewport-skeleton optimization is enabled (CRATER_VIEWPORT_SKELETON=1)
+  // below-fold elements are skeletonized and would crop blank. Rendering the
+  // full document unconditionally would fix that but changes the framebuffer
+  // coordinate space (document- vs viewport-relative); deferred until it can be
+  // validated against the VRT suite.
+  let html = capture_current_paint_html()
   let frame = match
     self.build_actual_paint_frame(
       request_id,

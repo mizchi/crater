@@ -268,10 +268,35 @@ fn paint_diff_string_field(map : Map[String, Json], key : String) -> String {
 }
 
 ///|
+/// Reject tokens that could break out of the injected `<style>` rule or
+/// element. The mutation selector / property / value are concatenated raw into
+/// `<sel>{<prop>:<val> !important;}`, so any of `{ } ; < > \` (or a control
+/// character) in a token could terminate the rule, the declaration, or the
+/// style element and mutate unintended nodes / inject markup. Legitimate CSS
+/// values (`12px 24px`, `rgb(0, 0, 0)`, `red`) contain none of these, so
+/// rejecting them is safe.
+fn mutation_token_is_safe(token : String) -> Bool {
+  for c in token {
+    if c == '{' ||
+      c == '}' ||
+      c == ';' ||
+      c == '<' ||
+      c == '>' ||
+      c == '\\' ||
+      c.to_int() < 0x20 {
+      return false
+    }
+  }
+  true
+}
+
+///|
 /// Build a `<style>` block of `!important` overrides from the mutation list.
 /// `action: "set"` writes the given value; `action: "remove"` resets the
 /// property to its initial value (an approximation of removal that matches
 /// real removal for the layout-affecting properties this API targets).
+/// Mutations whose selector / property / value contain CSS-breaking tokens are
+/// skipped so they cannot escape the injected stylesheet.
 fn build_mutation_override_css(mutations : Array[Json]) -> String {
   let buf = StringBuilder::new()
   buf.write_string("<style>")
@@ -286,12 +311,16 @@ fn build_mutation_override_css(mutations : Array[Json]) -> String {
           } else {
             "initial"
           }
-          buf.write_string(selector)
-          buf.write_string("{")
-          buf.write_string(property)
-          buf.write_string(":")
-          buf.write_string(value)
-          buf.write_string(" !important;}")
+          if mutation_token_is_safe(selector) &&
+            mutation_token_is_safe(property) &&
+            mutation_token_is_safe(value) {
+            buf.write_string(selector)
+            buf.write_string("{")
+            buf.write_string(property)
+            buf.write_string(":")
+            buf.write_string(value)
+            buf.write_string(" !important;}")
+          }
         }
       }
       _ => ()
