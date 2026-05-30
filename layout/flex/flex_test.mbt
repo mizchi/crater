@@ -5306,3 +5306,66 @@ test "flex_align_items_center_differs_from_default_stretch" {
   inspect(default_stretch.children[0].height, content="40")
   inspect(default_stretch.children[0].y, content="0")
 }
+
+///|
+/// Regression (#2): three flexbox issues reported at v0.2.0, now correct.
+test "flexbox_min_width_justify_and_padding" {
+  let ds = @style.Style::default()
+  let tm : @layout_types.MeasureFunc = {
+    func: fn(_w, _h) {
+      { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0 }
+    },
+  }
+  let ctx : @layout_types.LayoutContext = {
+    available_width: 50.0,
+    available_height: Some(600.0),
+    sizing_mode: @layout_types.Definite,
+    viewport_width: 50.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  // Issue 1: min_width (not width) + justify-content: center still centers.
+  // Container takes min_width (200); the 20-wide child centers at (200-20)/2.
+  let c1 = @node.Node::with_measure("c1", ds, tm)
+  let r1 = @node.Node::new(
+    "r1",
+    {
+      ..ds,
+      display: @types.Flex,
+      flex_direction: @types.Row,
+      min_width: @types.Length(200.0),
+      justify_content: @types.Center,
+    },
+    [c1],
+  )
+  let l1 = compute(r1, ctx, default_dispatch())
+  inspect(l1.width, content="200")
+  inspect(l1.children[0].x, content="90")
+  // Issue 2: symmetric horizontal padding stays symmetric on the layout.
+  let pad2 : @types.Rect[@types.Dimension] = {
+    top: @types.Length(0.0),
+    right: @types.Length(2.0),
+    bottom: @types.Length(0.0),
+    left: @types.Length(2.0),
+  }
+  let c2 = @node.Node::with_measure("c2", ds, tm)
+  let r2 = @node.Node::new(
+    "r2",
+    { ..ds, display: @types.Flex, flex_direction: @types.Row, padding: pad2 },
+    [c2],
+  )
+  let l2 = compute(r2, ctx, default_dispatch())
+  inspect(l2.padding.left, content="2")
+  inspect(l2.padding.right, content="2")
+  // Issue 3: horizontal padding does not inflate height.
+  let c3 = @node.Node::with_measure("c3", ds, tm)
+  let r3 = @node.Node::new(
+    "r3",
+    { ..ds, display: @types.Flex, flex_direction: @types.Row },
+    [c3],
+  )
+  let l3 = compute(r3, ctx, default_dispatch())
+  inspect(l2.height, content="10")
+  inspect(l3.height, content="10")
+}
