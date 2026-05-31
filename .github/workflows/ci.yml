@@ -291,9 +291,23 @@ jobs:
       # Chromium with Playwright instead — the VRT jobs already depend on this
       # path, and `--with-deps` brings the system libraries headless Chrome
       # needs to launch — then point puppeteer at that binary via
-      # PUPPETEER_EXECUTABLE_PATH. Runs unconditionally (no cache gate) so a
-      # poisoned cache entry can never skip it.
+      # PUPPETEER_EXECUTABLE_PATH.
+      #
+      # Restore the browser binary from cache and only download on a miss, the
+      # same pattern the playwright-bidi and paint-vrt jobs use. The strict
+      # (soft_fail: false) shards previously ran the download unconditionally on
+      # every run; the bare `playwright install` network path stalled past all
+      # three retry attempts and failed the gate even though nothing in the PR
+      # touched CSS. Caching removes that per-run network dependency.
+      - name: Restore Playwright Chromium browser cache
+        id: wpt_css_playwright_cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('package.json', 'pnpm-lock.yaml') }}
+
       - name: Install Chromium (Playwright) for the WPT runner
+        if: steps.wpt_css_playwright_cache.outputs.cache-hit != 'true'
         continue-on-error: ${{ matrix.soft_fail }}
         timeout-minutes: 25
         run: bash scripts/ci/install-playwright-chromium.sh
