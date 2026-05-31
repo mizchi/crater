@@ -82,8 +82,8 @@ pub fn ScriptExecutor::tick(Self) -> Bool raise JsError
 
 // Traits
 pub(open) trait JsRuntime {
-  init(Self) -> Unit
-  execute(Self, Int, @dom.DomTree, String, AsyncExecutionMode) -> JsResult raise JsError
-  tick(Self, Int, @dom.DomTree) -> JsResult raise JsError
+  fn init(Self) -> Unit
+  fn execute(Self, Int, @dom.DomTree, String, AsyncExecutionMode) -> JsResult raise JsError
+  fn tick(Self, Int, @dom.DomTree) -> JsResult raise JsError
 }
 
