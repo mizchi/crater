@@ -998,26 +998,39 @@ fn compute_element_style_indexed(
         }
       }
 
-      // Apply remaining cascaded values
+      // Apply remaining cascaded values.
+      // CascadedValues::each iterates in hash-map order, which does not
+      // preserve CSS source order. Shorthand/longhand interplay (e.g.
+      // `border: solid 10px` in one rule and `border-left-width: 100px` in a
+      // higher-specificity rule) requires applying declarations in source
+      // order, otherwise the shorthand can clobber the longhand. Collect and
+      // sort by source_order before applying, matching @css's own
+      // regular_declarations_in_source_order.
+      let remaining_decls : Array[(String, @css.Declaration)] = []
       cascaded_values.each(fn(prop, decl) {
         if prop == "font" || prop == "font-size" || prop == "line-height" {
           ()
         } else {
-          match decl.value {
-            @css.PropertyValue::Value(value) =>
-              style = apply_css_property_with_viewport(
-                style,
-                prop,
-                value,
-                ctx.viewport_width,
-                ctx.viewport_height,
-                element_css_vars,
-                parent_style,
-              )
-            _ => ()
-          }
+          remaining_decls.push((prop, decl))
         }
       })
+      remaining_decls.sort_by(fn(a, b) { a.1.source_order - b.1.source_order })
+      for entry in remaining_decls {
+        let (prop, decl) = entry
+        match decl.value {
+          @css.PropertyValue::Value(value) =>
+            style = apply_css_property_with_viewport(
+              style,
+              prop,
+              value,
+              ctx.viewport_width,
+              ctx.viewport_height,
+              element_css_vars,
+              parent_style,
+            )
+          _ => ()
+        }
+      }
     }
     None => ()
   }

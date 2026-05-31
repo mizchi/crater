@@ -102,3 +102,26 @@ test "visually hidden element should be skipped" {
   inspect(a_node.style.width, content="Length(1)")
   inspect(a_node.style.height, content="Length(1)")
 }
+
+///|
+/// Regression (#68): stylesheet declarations must be applied in CSS source
+/// order, so a higher-specificity `border-left-width` longhand overrides an
+/// earlier `border` shorthand instead of being clobbered by it. Crater used to
+/// apply cascaded values in hash-map order (CascadedValues::each), which lost
+/// source order for shorthand/longhand interplay.
+test "stylesheet border longhand overrides shorthand in source order" {
+  let html =
+    #|<style>.test { width: 200px; height: 100px; border: solid 10px; } #g { border-left-width: 100px; }</style>
+    #|<div id="g" class="test">x</div>
+  let ctx : @renderer.RenderContext = {
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    root_font_size: 16.0,
+    color_scheme: @css.ColorScheme::Light,
+  }
+  let d = @renderer.render(html, ctx).children[0]
+  // border-box width = 200 content + 100 left border + 10 right border = 310
+  inspect(d.border.left, content="100")
+  inspect(d.border.right, content="10")
+  inspect(d.width, content="310")
+}
