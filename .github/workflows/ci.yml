@@ -105,15 +105,15 @@ jobs:
         uses: ./.github/actions/moon-prefetch
         with:
           manifests: |
-            js/moon.mod.json
-            browser/moon.mod.json
-            browser/native/moon.mod.json
-            wasm/moon.mod.json
+            js/moon.mod
+            browser/moon.mod
+            browser/native/moon.mod
+            wasm/moon.mod
 
       - name: Prefetch rusty_v8 source binding
         uses: ./.github/actions/rusty-v8-prefetch
         with:
-          cache-extra-key: ${{ hashFiles('browser/native/moon.mod.json', 'webdriver/moon.mod.json') }}
+          cache-extra-key: ${{ hashFiles('browser/native/moon.mod', 'webdriver/moon.mod') }}
 
       - name: Check code
         run: just check
@@ -179,7 +179,7 @@ jobs:
         uses: ./.github/actions/moon-prefetch
         with:
           manifests: |
-            js/moon.mod.json
+            js/moon.mod
 
       - name: Build js package
         run: pnpm run build
@@ -211,7 +211,7 @@ jobs:
         uses: ./.github/actions/moon-prefetch
         with:
           manifests: |
-            wasm/moon.mod.json
+            wasm/moon.mod
 
       # Tracking issue #227: MoonBit 0.1.20260522 nightly broke the
       # wit-bindgen cabi_realloc -> $moonbit.gc.malloc path, so the
@@ -280,7 +280,7 @@ jobs:
         uses: ./.github/actions/moon-prefetch
         with:
           manifests: |
-            wasm/moon.mod.json
+            wasm/moon.mod
 
       - name: Build WASM
         run: just build-wasm && just transpile-wasm
@@ -340,7 +340,7 @@ jobs:
         uses: ./.github/actions/moon-prefetch
         with:
           manifests: |
-            browser/moon.mod.json
+            browser/moon.mod
 
       - name: Run WPT DOM shard
         run: |
@@ -440,14 +440,14 @@ jobs:
         uses: ./.github/actions/moon-prefetch
         with:
           manifests: |
-            browser/moon.mod.json
-            webdriver/moon.mod.json
-            testing/moon.mod.json
+            browser/moon.mod
+            webdriver/moon.mod
+            testing/moon.mod
 
       - name: Prefetch rusty_v8 source binding
         uses: ./.github/actions/rusty-v8-prefetch
         with:
-          cache-extra-key: ${{ hashFiles('browser/native/moon.mod.json', 'webdriver/moon.mod.json') }}
+          cache-extra-key: ${{ hashFiles('browser/native/moon.mod', 'webdriver/moon.mod') }}
 
       - name: Build BiDi server
         run: |
@@ -528,13 +528,13 @@ jobs:
         uses: ./.github/actions/moon-prefetch
         with:
           manifests: |
-            browser/moon.mod.json
-            webdriver/moon.mod.json
+            browser/moon.mod
+            webdriver/moon.mod
 
       - name: Prefetch rusty_v8 source binding
         uses: ./.github/actions/rusty-v8-prefetch
         with:
-          cache-extra-key: ${{ hashFiles('browser/native/moon.mod.json', 'webdriver/moon.mod.json') }}
+          cache-extra-key: ${{ hashFiles('browser/native/moon.mod', 'webdriver/moon.mod') }}
 
       - name: Build BiDi server
         run: bash scripts/ci/run-moon-step.sh bidi-build moon -C webdriver build bidi_main --target js --release -j 1
@@ -770,13 +770,13 @@ jobs:
         uses: ./.github/actions/moon-prefetch
         with:
           manifests: |
-            browser/moon.mod.json
-            webdriver/moon.mod.json
+            browser/moon.mod
+            webdriver/moon.mod
 
       - name: Prefetch rusty_v8 source binding
         uses: ./.github/actions/rusty-v8-prefetch
         with:
-          cache-extra-key: ${{ hashFiles('browser/native/moon.mod.json', 'webdriver/moon.mod.json') }}
+          cache-extra-key: ${{ hashFiles('browser/native/moon.mod', 'webdriver/moon.mod') }}
 
       - name: Build BiDi server
         run: bash scripts/ci/run-moon-step.sh bidi-build moon -C webdriver build bidi_main --target js --release -j 1
@@ -1024,13 +1024,13 @@ jobs:
         uses: ./.github/actions/moon-prefetch
         with:
           manifests: |
-            browser/moon.mod.json
-            webdriver/moon.mod.json
+            browser/moon.mod
+            webdriver/moon.mod
 
       - name: Prefetch rusty_v8 source binding
         uses: ./.github/actions/rusty-v8-prefetch
         with:
-          cache-extra-key: ${{ hashFiles('browser/native/moon.mod.json', 'webdriver/moon.mod.json') }}
+          cache-extra-key: ${{ hashFiles('browser/native/moon.mod', 'webdriver/moon.mod') }}
 
       - name: Build BiDi server
         run: bash scripts/ci/run-moon-step.sh bidi-build moon -C webdriver build bidi_main --target js --release -j 1
