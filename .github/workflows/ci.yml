@@ -230,6 +230,7 @@ jobs:
   wpt-css-tests:
     name: wpt-css (${{ matrix.name }})
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     needs: [wasm-component, affected]
     if: >-
       always()
@@ -294,7 +295,8 @@ jobs:
       # poisoned cache entry can never skip it.
       - name: Install Chromium (Playwright) for the WPT runner
         continue-on-error: ${{ matrix.soft_fail }}
-        run: pnpm exec playwright install --with-deps chromium
+        timeout-minutes: 25
+        run: bash scripts/ci/install-playwright-chromium.sh
 
       - name: Point Puppeteer at the Playwright Chromium
         continue-on-error: ${{ matrix.soft_fail }}
@@ -498,6 +500,7 @@ jobs:
 
   playwright-bidi-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
 
     steps:
       - name: Checkout code
@@ -522,7 +525,8 @@ jobs:
 
       - name: Install Playwright Chromium browser
         if: steps.playwright_bidi_playwright_cache.outputs.cache-hit != 'true'
-        run: pnpm exec playwright install --with-deps chromium
+        timeout-minutes: 25
+        run: bash scripts/ci/install-playwright-chromium.sh
 
       - name: Prefetch MoonBit dependencies
         uses: ./.github/actions/moon-prefetch
@@ -683,6 +687,7 @@ jobs:
   playwright-paint-vrt:
     name: paint-vrt (${{ matrix.name }})
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     needs: [affected]
     if: >-
       always()
@@ -761,7 +766,8 @@ jobs:
 
       - name: Install Playwright browsers for VRT
         if: steps.paint_vrt_playwright_cache.outputs.cache-hit != 'true'
-        run: pnpm exec playwright install --with-deps chromium
+        timeout-minutes: 25
+        run: bash scripts/ci/install-playwright-chromium.sh
 
       - name: Install compatible fonts for VRT
         run: bash scripts/ci/install-compatible-fonts.sh
@@ -982,6 +988,7 @@ jobs:
   playwright-wpt-vrt:
     name: wpt-vrt (${{ matrix.name }})
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     needs: wpt-vrt-matrix
     strategy:
       fail-fast: false
@@ -1015,7 +1022,8 @@ jobs:
 
       - name: Install Playwright browsers for VRT
         if: steps.wpt_vrt_playwright_cache.outputs.cache-hit != 'true'
-        run: pnpm exec playwright install --with-deps chromium
+        timeout-minutes: 25
+        run: bash scripts/ci/install-playwright-chromium.sh
 
       - name: Install compatible fonts for VRT
         run: bash scripts/ci/install-compatible-fonts.sh

@@ -87,6 +87,7 @@ jobs:
     needs: batch-plan
     if: ${{ fromJson(needs.batch-plan.outputs.matrix).include[0] != null }}
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.batch-plan.outputs.matrix) }}
@@ -152,7 +153,8 @@ jobs:
         working-directory: metric-ci
 
       - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps chromium
+        timeout-minutes: 25
+        run: bash scripts/ci/install-playwright-chromium.sh
 
       - name: Update MoonBit dependencies
         run: |
