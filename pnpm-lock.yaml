@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      pngjs:
+        specifier: ^7.0.0
+        version: 7.0.0
       puppeteer:
         specifier: ^24.40.0
         version: 24.40.0(typescript@6.0.3)

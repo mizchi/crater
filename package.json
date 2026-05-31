@@ -43,6 +43,7 @@
     "test:website": "playwright test tests/website-loading.test.ts tests/browser-user-scenarios.test.ts"
   },
   "dependencies": {
+    "pngjs": "^7.0.0",
     "puppeteer": "^24.40.0"
   },
   "devDependencies": {
