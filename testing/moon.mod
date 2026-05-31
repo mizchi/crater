@@ -7,7 +7,7 @@ import {
   "mizchi/crater-browser@0.18.0",
   "mizchi/crater-browser-native@0.18.0",
   "mizchi/crater-browser-runtime@0.18.0",
-  "mizchi/css@0.4.1",
+  "mizchi/css@0.4.2",
   "mizchi/crater-dom@0.18.0",
   "mizchi/crater-layout@0.18.0",
 }
