@@ -10,7 +10,6 @@ import {
   "mizchi/crater-layout@0.18.0",
   "mizchi/crater-painter@0.18.0",
   "mizchi/crater-renderer@0.18.0",
-  "mizchi/crater-terminal-image-cache@0.18.0",
 }
 
 readme = "README.md"
