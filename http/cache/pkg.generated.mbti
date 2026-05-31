@@ -60,9 +60,9 @@ pub impl HttpCacheBackend for MemoryCacheBackend
 
 // Traits
 pub(open) trait HttpCacheBackend {
-  lookup(Self, String) -> CacheEntry?
-  store(Self, CacheEntry) -> Unit
-  remove(Self, String) -> Unit
-  clear(Self) -> Unit
+  fn lookup(Self, String) -> CacheEntry?
+  fn store(Self, CacheEntry) -> Unit
+  fn remove(Self, String) -> Unit
+  fn clear(Self) -> Unit
 }
 

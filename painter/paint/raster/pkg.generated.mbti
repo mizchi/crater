@@ -69,6 +69,7 @@ pub struct Framebuffer {
   height : Int
   pixels : Array[Int]
 }
+pub fn Framebuffer::crop(Self, Int, Int, Int, Int) -> Self
 pub fn Framebuffer::draw_char(Self, Int, Int, Char, Int, Int) -> Int
 pub fn Framebuffer::draw_text(Self, Int, Int, String, Int, Int, Int) -> Int
 pub fn Framebuffer::fill_rect(Self, Int, Int, Int, Int, Int) -> Unit
