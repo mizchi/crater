@@ -6,7 +6,7 @@ import {
   "mizchi/crater-core@0.18.0",
   "mizchi/crater-aomx@0.18.0",
   "mizchi/crater-dom@0.18.0",
-  "mizchi/css@0.4.4",
+  "mizchi/css@0.4.5",
   "mizchi/crater-layout@0.18.0",
   "mizchi/crater-painter@0.18.0",
   "mizchi/crater-renderer@0.18.0",
