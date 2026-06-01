@@ -104,22 +104,22 @@ approved に flip 済の scenario と closed issue。詳細は git history / 各
 - BiDi: auth Phase 2 (#147), async cross-evaluate iframe (#198) — 実装済を確認し close
 - renderSelector の bbox を paint tree 由来に修正 (#253, PR #254)
 - WPT runner の viewport-skeleton バグ修正 (PR #258): 大型 fixture の後半が skeleton 化され height=0 に潰れていた。`renderHtmlToJsonForWpt` を full-document render に変更 → css-overflow 209→229 (+20)、他モジュール回帰なし
+- WPT runner のテキスト計測を Tinos フォント実測化 (#47, PR #267): `char × 0.5` 近似 → opentype.js 実グリフ advance。css-flexbox 261→272 / css-contain 274→282 / css-display 57→64 / css-overflow 229→232。baseline 固定済 (`compat.css-{flexbox,contain,display,overflow}-baseline`)
 - filter on inline で abs CB 確立 (PR #257, #64 一部): renderer の `establishes_absolute_containing_block` に `has_filter` 追加
 - flaker quarantine `paint-vrt-real-world-ci-latency` を 2026-06-30 へ延長 (PR #256, #79)
 
-## WPT 精度 — 次の高レバレッジ (調査済み 2026-05-30)
+## WPT 精度 — 次の高レバレッジ (更新: 2026-06-01)
 
-skeleton 修正後の soft-fail モジュール pass率 (記録: #29):
+- **フォント供給は解決済** (#47, PR #267): `wpt-css` runner の `char × fontSize × 0.5` 近似 fallback を opentype.js による実グリフ advance 計測に置換。`CRATER_TEXT_FONT_PATH`/`loadFont` は死んだ経路で、実レバーは `globalThis.__craterMeasureTextIntrinsic` だった。Chromium の既定フォントは Times New Roman なのでメトリック互換の Tinos (OFL) を vendoring (`tests/wpt-fonts/`) — advance 誤差 33% → 0.3%。NotoSansMono (等幅) は既定の比例フォントと不一致で逆効果だったため不採用。
+- 改善後の soft-fail モジュール pass率を per-module baseline に固定 (PR #267 由来、`compat.css-*-baseline` scenario / `tests/wpt-baselines/*.env`):
 
-| module | pass | 主因 |
+| module | pass (before → pinned) | 残りの主因 |
 |---|---|---|
-| css-contain | 274/303 | text-measurement 中心 |
-| css-flexbox | 267/289 | text-measurement 中心 |
-| css-display | 57/79 | `display:contents` flex/table の x ドリフト = text-measurement |
-| css-overflow | 229/243 | (skeleton 修正済) 残りは scroll-marker 個別 |
-| css-sizing | 85/94 | — |
-
-- **最大の伸びしろ = WPT runner へのフォント供給** (#47): `wpt-css` runner は実フォント fixture 無し → `char × fontSize × 0.5` 近似 fallback に落ち、browser の実プロポーショナルフォント測定とズレて x が累積ドリフト。crater コードでは直せない。解決は (a) `CRATER_TEXT_FONT_PATH` に NotoSansMono を供給し CI `wpt-css` でロード、(b) テスト側で等幅強制。VRT baseline 全体の再調整を伴う。
+| css-flexbox | 261 → **272/289** | 非テキスト layout 残差 |
+| css-contain | 274 → **282/303** | 非テキスト layout 残差 |
+| css-display | 57 → **64/79** | 非テキスト layout 残差 |
+| css-overflow | 229 → **232/243** | scroll-marker 個別 |
+| css-sizing | 85/94 (変化なし) | — |
 
 ## Maintenance Rules
 
