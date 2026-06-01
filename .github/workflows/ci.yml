@@ -305,6 +305,12 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-${{ runner.os }}-${{ hashFiles('package.json', 'pnpm-lock.yaml') }}
+          # Fall back to the most recent Chromium cache when only unrelated deps
+          # change (e.g. a new devDependency). A partial restore reuses the
+          # existing browser so `playwright install` is a fast verify instead of
+          # a fresh multi-hundred-MB download that stalls the strict gates.
+          restore-keys: |
+            playwright-chromium-${{ runner.os }}-
 
       - name: Install Chromium (Playwright) for the WPT runner
         if: steps.wpt_css_playwright_cache.outputs.cache-hit != 'true'
@@ -536,6 +542,9 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-${{ runner.os }}-${{ hashFiles('package.json', 'pnpm-lock.yaml') }}
+          # Reuse the most recent Chromium cache when unrelated deps change.
+          restore-keys: |
+            playwright-chromium-${{ runner.os }}-
 
       - name: Install Playwright Chromium browser
         if: steps.playwright_bidi_playwright_cache.outputs.cache-hit != 'true'
@@ -751,6 +760,9 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-${{ runner.os }}-${{ hashFiles('package.json', 'pnpm-lock.yaml') }}
+          # Reuse the most recent Chromium cache when unrelated deps change.
+          restore-keys: |
+            playwright-chromium-${{ runner.os }}-
 
       - name: Validate installed metric-ci CLI package
         id: metric_ci_package
@@ -1033,6 +1045,9 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-${{ runner.os }}-${{ hashFiles('package.json', 'pnpm-lock.yaml') }}
+          # Reuse the most recent Chromium cache when unrelated deps change.
+          restore-keys: |
+            playwright-chromium-${{ runner.os }}-
 
       - name: Install Playwright browsers for VRT
         if: steps.wpt_vrt_playwright_cache.outputs.cache-hit != 'true'
