@@ -51,6 +51,7 @@
     "@mizchi/flaker": "0.12.6",
     "@playwright/test": "^1.59.1",
     "@types/ws": "^8.18.1",
+    "opentype.js": "^2.0.0",
     "pixelmatch": "^7.1.0",
     "playwright": "^1.59.1",
     "preact": "^10.29.1",
