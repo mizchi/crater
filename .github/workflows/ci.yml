@@ -312,8 +312,12 @@ jobs:
           restore-keys: |
             playwright-chromium-${{ runner.os }}-
 
+      - name: Detect cached Chromium browser
+        id: wpt_css_chromium_present
+        run: echo "present=$(bash scripts/ci/chromium-cache-present.sh)" >> "$GITHUB_OUTPUT"
+
       - name: Install Chromium (Playwright) for the WPT runner
-        if: steps.wpt_css_playwright_cache.outputs.cache-hit != 'true'
+        if: steps.wpt_css_chromium_present.outputs.present != 'true'
         continue-on-error: ${{ matrix.soft_fail }}
         timeout-minutes: 25
         run: bash scripts/ci/install-playwright-chromium.sh
@@ -546,8 +550,12 @@ jobs:
           restore-keys: |
             playwright-chromium-${{ runner.os }}-
 
+      - name: Detect cached Chromium browser
+        id: playwright_bidi_chromium_present
+        run: echo "present=$(bash scripts/ci/chromium-cache-present.sh)" >> "$GITHUB_OUTPUT"
+
       - name: Install Playwright Chromium browser
-        if: steps.playwright_bidi_playwright_cache.outputs.cache-hit != 'true'
+        if: steps.playwright_bidi_chromium_present.outputs.present != 'true'
         timeout-minutes: 25
         run: bash scripts/ci/install-playwright-chromium.sh
 
@@ -790,8 +798,12 @@ jobs:
         run: pnpm run build
         working-directory: metric-ci
 
+      - name: Detect cached Chromium browser
+        id: paint_vrt_chromium_present
+        run: echo "present=$(bash scripts/ci/chromium-cache-present.sh)" >> "$GITHUB_OUTPUT"
+
       - name: Install Playwright browsers for VRT
-        if: steps.paint_vrt_playwright_cache.outputs.cache-hit != 'true'
+        if: steps.paint_vrt_chromium_present.outputs.present != 'true'
         timeout-minutes: 25
         run: bash scripts/ci/install-playwright-chromium.sh
 
@@ -1049,8 +1061,12 @@ jobs:
           restore-keys: |
             playwright-chromium-${{ runner.os }}-
 
+      - name: Detect cached Chromium browser
+        id: wpt_vrt_chromium_present
+        run: echo "present=$(bash scripts/ci/chromium-cache-present.sh)" >> "$GITHUB_OUTPUT"
+
       - name: Install Playwright browsers for VRT
-        if: steps.wpt_vrt_playwright_cache.outputs.cache-hit != 'true'
+        if: steps.wpt_vrt_chromium_present.outputs.present != 'true'
         timeout-minutes: 25
         run: bash scripts/ci/install-playwright-chromium.sh
 
