@@ -78,6 +78,12 @@ interface CliOptions {
   jsonOutput?: string;
 }
 
+interface WptCompatModuleResult {
+  passed: number;
+  failed: number;
+  total: number;
+}
+
 interface WptCompatShardReport {
   schemaVersion: 1;
   suite: 'wpt-css';
@@ -89,6 +95,10 @@ interface WptCompatShardReport {
   passRate: number;
   generatedAt: string;
   workers: number;
+  // Per-module breakdown, populated when the shard is invoked with module-name
+  // arguments. Consumed by scripts/check-wpt-baselines.mjs to enforce the
+  // per-module tests/wpt-baselines/<module>.env floors without an extra run.
+  modules?: Record<string, WptCompatModuleResult>;
 }
 
 type RenderHtmlToJsonFn = (html: string, width: number, height: number) => string;
@@ -2413,11 +2423,28 @@ function writeShardReport(
   args: string[],
   workers: number,
   passed: number,
-  failed: number
+  failed: number,
+  results: (TestResult | undefined)[] = [],
+  moduleLabels: string[] = []
 ): void {
   if (!jsonOutput) return;
   const total = passed + failed;
   const target = args.length === 0 ? 'all' : args.join(' ');
+
+  let modules: Record<string, WptCompatModuleResult> | undefined;
+  if (moduleLabels.length > 0) {
+    const byModule: Record<string, WptCompatModuleResult> = {};
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i];
+      const moduleName = moduleLabels[i];
+      if (!result || !moduleName) continue;
+      const bucket = (byModule[moduleName] ??= { passed: 0, failed: 0, total: 0 });
+      if (result.passed) bucket.passed++;
+      else bucket.failed++;
+      bucket.total++;
+    }
+    if (Object.keys(byModule).length > 0) modules = byModule;
+  }
 
   const report: WptCompatShardReport = {
     schemaVersion: 1,
@@ -2430,6 +2457,7 @@ function writeShardReport(
     passRate: total > 0 ? passed / total : 0,
     generatedAt: new Date().toISOString(),
     workers,
+    ...(modules ? { modules } : {}),
   };
 
   fs.mkdirSync(path.dirname(jsonOutput), { recursive: true });
@@ -2703,18 +2731,24 @@ async function main(): Promise<void> {
     return;
   }
 
-  // Collect test files
+  // Collect test files. htmlFileModules is kept index-parallel to htmlFiles so
+  // the shard report can attribute each result back to its module.
   let htmlFiles: string[] = [];
+  const htmlFileModules: string[] = [];
 
   if (args[0] === '--all') {
     for (const mod of CSS_MODULES) {
-      htmlFiles.push(...getTestFiles(mod));
+      const files = getTestFiles(mod);
+      htmlFiles.push(...files);
+      for (const _ of files) htmlFileModules.push(mod);
     }
   } else {
     for (const arg of args) {
       if (CSS_MODULES.includes(arg)) {
         // Module name
-        htmlFiles.push(...getTestFiles(arg));
+        const files = getTestFiles(arg);
+        htmlFiles.push(...files);
+        for (const _ of files) htmlFileModules.push(arg);
       } else if (arg.includes('*')) {
         // Glob pattern
         const dir = path.dirname(arg);
@@ -2723,10 +2757,12 @@ async function main(): Promise<void> {
             .filter(f => f.endsWith('.html'))
             .map(f => path.join(dir, f));
           htmlFiles.push(...files);
+          for (const _ of files) htmlFileModules.push(path.basename(dir));
         }
       } else if (fs.existsSync(arg)) {
         // Direct file path
         htmlFiles.push(arg);
+        htmlFileModules.push(path.basename(path.dirname(arg)));
       }
     }
   }
@@ -2782,7 +2818,15 @@ async function main(): Promise<void> {
     }
   }
 
-  writeShardReport(cliOptions.jsonOutput, args, cliOptions.workers, passed, failed);
+  writeShardReport(
+    cliOptions.jsonOutput,
+    args,
+    cliOptions.workers,
+    passed,
+    failed,
+    results,
+    htmlFileModules,
+  );
   console.log(`Summary: ${passed} passed, ${failed} failed (${knownFailureResults.length} known)`);
   process.exit(unexpectedFailures.length > 0 ? 1 : 0);
 }

@@ -336,6 +336,19 @@ jobs:
           npx tsx scripts/wpt-runner.ts ${{ matrix.modules }} --workers 4 --json "wpt-reports/wpt-css-${{ matrix.name }}.json"
         continue-on-error: ${{ matrix.soft_fail }}
 
+      # Enforce the per-module tests/wpt-baselines/<module>.env floors against
+      # this shard's report. Runs even for soft_fail shards (which the runner
+      # step lets pass), so a regression below a pinned module's baseline still
+      # fails the job. No-ops for shards whose modules have no baseline file.
+      - name: Enforce per-module WPT baselines
+        run: |
+          report="wpt-reports/wpt-css-${{ matrix.name }}.json"
+          if [ -f "$report" ]; then
+            node scripts/check-wpt-baselines.mjs "$report"
+          else
+            echo "No shard report at $report; skipping baseline enforcement."
+          fi
+
       - name: Upload WPT CSS shard report
         if: always()
         uses: actions/upload-artifact@v6
