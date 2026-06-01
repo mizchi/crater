@@ -25,6 +25,7 @@ import {
   stripQueryAndHash,
 } from './wpt-html-utils.ts';
 import { createTextIntrinsicFnFromMeasureText } from './text-intrinsic.ts';
+import { createVendoredFontMeasure } from './wpt-font-measure.ts';
 
 export {
   callTextIntrinsicFn,
@@ -724,28 +725,33 @@ async function configureExternalIntrinsicProviders(): Promise<void> {
 
   const textModule = await importFirstAvailable(textSpecifiers);
   const textFn = resolveTextIntrinsicFn(textModule);
+  // Default: measure real glyph advances against the vendored Tinos font, which
+  // is metric-compatible with Chromium's default (Times New Roman). Setting
+  // CRATER_FALLBACK_ADVANCE_RATIO opts back into the legacy ratio heuristic.
+  const legacyRatioRequested = process.env.CRATER_FALLBACK_ADVANCE_RATIO !== undefined;
   const fallbackAdvanceRatio = Number(process.env.CRATER_FALLBACK_ADVANCE_RATIO ?? '0.5');
   const fallbackSingleWordSlope = Number(process.env.CRATER_FALLBACK_ADVANCE_SLOPE ?? '0');
+  const legacyMeasureText = (text: string, fontSize: number, fontFamily: string) => {
+    const isAhem = fontFamily.toLowerCase().includes('ahem');
+    const effectiveSize = fontSize > 0 ? fontSize : 16;
+    const trimmed = text.trim();
+    const isShortSingleToken = trimmed.length > 0 &&
+      trimmed.length <= 6 &&
+      !/\s/.test(trimmed);
+    const isUppercaseToken = /^[A-Z0-9]+$/.test(trimmed);
+    const tokenAdvanceRatio = isAhem
+      ? 1
+      : isUppercaseToken && trimmed.length >= 5
+      ? Math.max(fallbackAdvanceRatio, 0.625)
+      : fallbackAdvanceRatio;
+    const scale = isShortSingleToken
+      ? 1 + Math.max(0, effectiveSize - 16) * fallbackSingleWordSlope
+      : 1;
+    const clampedScale = Math.min(scale, 1.3);
+    return text.length * effectiveSize * tokenAdvanceRatio * clampedScale;
+  };
   const fallbackTextFn = createTextIntrinsicFnFromMeasureText(
-    (text: string, fontSize: number, fontFamily: string) => {
-      const isAhem = fontFamily.toLowerCase().includes('ahem');
-      const effectiveSize = fontSize > 0 ? fontSize : 16;
-      const trimmed = text.trim();
-      const isShortSingleToken = trimmed.length > 0 &&
-        trimmed.length <= 6 &&
-        !/\s/.test(trimmed);
-      const isUppercaseToken = /^[A-Z0-9]+$/.test(trimmed);
-      const tokenAdvanceRatio = isAhem
-        ? 1
-        : isUppercaseToken && trimmed.length >= 5
-        ? Math.max(fallbackAdvanceRatio, 0.625)
-        : fallbackAdvanceRatio;
-      const scale = isShortSingleToken
-        ? 1 + Math.max(0, effectiveSize - 16) * fallbackSingleWordSlope
-        : 1;
-      const clampedScale = Math.min(scale, 1.3);
-      return text.length * effectiveSize * tokenAdvanceRatio * clampedScale;
-    },
+    legacyRatioRequested ? legacyMeasureText : createVendoredFontMeasure(),
   );
   if (textFn) {
     globalThis.__craterMeasureTextIntrinsic = textFn;
