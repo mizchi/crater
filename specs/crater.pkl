@@ -645,6 +645,46 @@ scenarios {
     reviewStatus = "approved"
     contributes { "goal.css-compat" }
   }
+  new {
+    id = "compat.css-flexbox-baseline"
+    name = "css-flexbox WPT module baseline is established"
+    description =
+      "Pin a per-module pass-rate baseline for the css-flexbox WPT module. css-flexbox is enabled in wpt.json, the test count (289), pass count (272), and failure count (17) are pinned in tests/wpt-baselines/css-flexbox.env, and the shard report is checked by scripts/check-wpt-baselines.mjs in the CI \"Enforce per-module WPT baselines\" step (reusing the soft-fail shard run), failing the wpt-css job when the pass count regresses. The baseline was lifted from 261 to 272 passing by the Tinos font-metric text measurement (PR #267); the remaining 17 failures are non-text layout residuals tracked as follow-up. Source: PR #267."
+    tags { "wpt"; "css"; "baseline" }
+    severity = "major"
+    reviewStatus = "approved"
+    contributes { "goal.css-compat" }
+  }
+  new {
+    id = "compat.css-contain-baseline"
+    name = "css-contain WPT module baseline is established"
+    description =
+      "Pin a per-module pass-rate baseline for the css-contain WPT module. css-contain is enabled in wpt.json, the test count (303), pass count (282), and failure count (21) are pinned in tests/wpt-baselines/css-contain.env, and the shard report is checked by scripts/check-wpt-baselines.mjs in the CI \"Enforce per-module WPT baselines\" step (reusing the soft-fail shard run), failing the wpt-css job when the pass count regresses. The baseline was lifted from 274 to 282 passing by the Tinos font-metric text measurement (PR #267); the remaining 21 failures are non-text layout residuals tracked as follow-up. Source: PR #267."
+    tags { "wpt"; "css"; "baseline" }
+    severity = "major"
+    reviewStatus = "approved"
+    contributes { "goal.css-compat" }
+  }
+  new {
+    id = "compat.css-display-baseline"
+    name = "css-display WPT module baseline is established"
+    description =
+      "Pin a per-module pass-rate baseline for the css-display WPT module. css-display is enabled in wpt.json, the test count (79), pass count (64), and failure count (15) are pinned in tests/wpt-baselines/css-display.env, and the shard report is checked by scripts/check-wpt-baselines.mjs in the CI \"Enforce per-module WPT baselines\" step (reusing the soft-fail shard run), failing the wpt-css job when the pass count regresses. The baseline was lifted from 57 to 64 passing by the Tinos font-metric text measurement (PR #267); the remaining 15 failures are non-text layout residuals tracked as follow-up. Source: PR #267."
+    tags { "wpt"; "css"; "baseline" }
+    severity = "major"
+    reviewStatus = "approved"
+    contributes { "goal.css-compat" }
+  }
+  new {
+    id = "compat.css-overflow-baseline"
+    name = "css-overflow WPT module baseline is established"
+    description =
+      "Pin a per-module pass-rate baseline for the css-overflow WPT module. css-overflow is enabled in wpt.json, the test count (243), pass count (232), and failure count (11) are pinned in tests/wpt-baselines/css-overflow.env, and the shard report is checked by scripts/check-wpt-baselines.mjs in the CI \"Enforce per-module WPT baselines\" step (reusing the soft-fail shard run), failing the wpt-css job when the pass count regresses. The baseline was lifted from 229 to 232 passing by the Tinos font-metric text measurement (PR #267); the remaining 11 failures are non-text layout residuals tracked as follow-up. Source: PR #267."
+    tags { "wpt"; "css"; "baseline" }
+    severity = "major"
+    reviewStatus = "approved"
+    contributes { "goal.css-compat" }
+  }
 
   // -- Browser shell controls (TODO Next) ------------------------------------
   new {

@@ -475,6 +475,46 @@ tests {
       "bash -lc 'set -e; grep -Fq -- \"\\\"css-inline\\\"\" wpt.json; grep -Fq -- \"inline-crash.html\" wpt.json; test -f tests/wpt-baselines/css-inline.env; grep -Fq -- \"MODULE=css-inline\" tests/wpt-baselines/css-inline.env; grep -Fq -- \"BASELINE_PASSED=10\" tests/wpt-baselines/css-inline.env; grep -Fq -- \"BASELINE_FAILED=1\" tests/wpt-baselines/css-inline.env'"
   }
   new {
+    name = "wpt_css_flexbox_baseline_is_pinned"
+    description =
+      "css-flexbox is enabled in wpt.json and the per-module baseline file pins the pass / fail counts lifted by the Tinos font-metric text measurement (PR #267); scripts/test-wpt-module-baseline.sh enforces no regression."
+    tags { "wpt"; "css"; "baseline" }
+    specRef { "compat.css-flexbox-baseline" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; grep -Fq -- \"\\\"css-flexbox\\\"\" wpt.json; test -f tests/wpt-baselines/css-flexbox.env; grep -Fq -- \"MODULE=css-flexbox\" tests/wpt-baselines/css-flexbox.env; grep -Fq -- \"BASELINE_PASSED=272\" tests/wpt-baselines/css-flexbox.env; grep -Fq -- \"BASELINE_FAILED=17\" tests/wpt-baselines/css-flexbox.env; test -f scripts/check-wpt-baselines.mjs; grep -Fq -- \"Enforce per-module WPT baselines\" .github/workflows/ci.yml; grep -Fq -- \"css-flexbox\" .github/workflows/ci.yml'"
+  }
+  new {
+    name = "wpt_css_contain_baseline_is_pinned"
+    description =
+      "css-contain is enabled in wpt.json and the per-module baseline file pins the pass / fail counts lifted by the Tinos font-metric text measurement (PR #267); scripts/test-wpt-module-baseline.sh enforces no regression."
+    tags { "wpt"; "css"; "baseline" }
+    specRef { "compat.css-contain-baseline" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; grep -Fq -- \"\\\"css-contain\\\"\" wpt.json; test -f tests/wpt-baselines/css-contain.env; grep -Fq -- \"MODULE=css-contain\" tests/wpt-baselines/css-contain.env; grep -Fq -- \"BASELINE_PASSED=282\" tests/wpt-baselines/css-contain.env; grep -Fq -- \"BASELINE_FAILED=21\" tests/wpt-baselines/css-contain.env; test -f scripts/check-wpt-baselines.mjs; grep -Fq -- \"Enforce per-module WPT baselines\" .github/workflows/ci.yml; grep -Fq -- \"css-contain\" .github/workflows/ci.yml'"
+  }
+  new {
+    name = "wpt_css_display_baseline_is_pinned"
+    description =
+      "css-display is enabled in wpt.json and the per-module baseline file pins the pass / fail counts lifted by the Tinos font-metric text measurement (PR #267); scripts/test-wpt-module-baseline.sh enforces no regression."
+    tags { "wpt"; "css"; "baseline" }
+    specRef { "compat.css-display-baseline" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; grep -Fq -- \"\\\"css-display\\\"\" wpt.json; test -f tests/wpt-baselines/css-display.env; grep -Fq -- \"MODULE=css-display\" tests/wpt-baselines/css-display.env; grep -Fq -- \"BASELINE_PASSED=64\" tests/wpt-baselines/css-display.env; grep -Fq -- \"BASELINE_FAILED=15\" tests/wpt-baselines/css-display.env; test -f scripts/check-wpt-baselines.mjs; grep -Fq -- \"Enforce per-module WPT baselines\" .github/workflows/ci.yml; grep -Fq -- \"css-display\" .github/workflows/ci.yml'"
+  }
+  new {
+    name = "wpt_css_overflow_baseline_is_pinned"
+    description =
+      "css-overflow is enabled in wpt.json and the per-module baseline file pins the pass / fail counts lifted by the Tinos font-metric text measurement (PR #267); scripts/test-wpt-module-baseline.sh enforces no regression."
+    tags { "wpt"; "css"; "baseline" }
+    specRef { "compat.css-overflow-baseline" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; grep -Fq -- \"\\\"css-overflow\\\"\" wpt.json; test -f tests/wpt-baselines/css-overflow.env; grep -Fq -- \"MODULE=css-overflow\" tests/wpt-baselines/css-overflow.env; grep -Fq -- \"BASELINE_PASSED=232\" tests/wpt-baselines/css-overflow.env; grep -Fq -- \"BASELINE_FAILED=11\" tests/wpt-baselines/css-overflow.env; test -f scripts/check-wpt-baselines.mjs; grep -Fq -- \"Enforce per-module WPT baselines\" .github/workflows/ci.yml; grep -Fq -- \"css-overflow\" .github/workflows/ci.yml'"
+  }
+  new {
     name = "ci_wires_pkfire_affected_with_cache"
     description =
       "The GitHub Actions CI should restore the Pkl cache and compute heavy-gate booleans from pkfire affected output without duplicating core test execution."
