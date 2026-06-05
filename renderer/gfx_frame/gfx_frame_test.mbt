@@ -110,3 +110,37 @@ test "with_clip intersects the clip rectangle and drives dst_region" {
     ),
   )
 }
+
+///|
+test "with_opacity scales the emitted color alpha" {
+  let frame = test_frame(10, 10).with_opacity(0.5)
+  let commands = []
+  append_rect_fill(
+    commands,
+    frame,
+    RectFill2D::new(
+      x=0.0,
+      y=0.0,
+      w=10.0,
+      h=10.0,
+      color=to_gfx_color(@types.Color::rgb(0, 0, 0)),
+    ),
+  )
+  // opaque black -> alpha 255 * 0.5 = 127
+  inspect(commands[0].uniform_dwords, content="[0, 0, 0, 127]")
+  // opacity multiplies: 0.5 * 0.5 = 0.25 -> alpha 63
+  let dimmer = frame.with_opacity(0.5)
+  let c2 = []
+  append_rect_fill(
+    c2,
+    dimmer,
+    RectFill2D::new(
+      x=0.0,
+      y=0.0,
+      w=10.0,
+      h=10.0,
+      color=to_gfx_color(@types.Color::rgb(0, 0, 0)),
+    ),
+  )
+  inspect(c2[0].uniform_dwords, content="[0, 0, 0, 63]")
+}

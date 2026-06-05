@@ -32,6 +32,7 @@ pub(all) struct RenderFrame2D {
   clip_y : Int
   clip_w : Int
   clip_h : Int
+  opacity : Double
 }
 
 ///|
@@ -47,6 +48,7 @@ pub fn RenderFrame2D::new(
   clip_y? : Int = 0,
   clip_w? : Int = -1,
   clip_h? : Int = -1,
+  opacity? : Double = 1.0,
 ) -> RenderFrame2D {
   // A negative clip extent means "no clip": default to the full frame.
   let cw = if clip_w < 0 { screen_w } else { clip_w }
@@ -63,7 +65,20 @@ pub fn RenderFrame2D::new(
     clip_y,
     clip_w: cw,
     clip_h: ch,
+    opacity,
   }
+}
+
+///|
+/// Derive a frame whose opacity is multiplied by `factor` (clamped to
+/// 0..1). Used to push a CSS opacity group multiplier onto an element and
+/// its descendants.
+pub fn RenderFrame2D::with_opacity(
+  self : RenderFrame2D,
+  factor : Double,
+) -> RenderFrame2D {
+  let f = if factor < 0.0 { 0.0 } else if factor > 1.0 { 1.0 } else { factor }
+  { ..self, opacity: self.opacity * f }
 }
 
 ///|
@@ -274,6 +289,12 @@ pub fn new_primitive_command(
   color : @gfx.Color,
   src_image_ids? : Array[Int] = [],
 ) -> @gfx.DrawTrianglesCommand {
+  // Modulate the color's alpha by the frame opacity (CSS group opacity).
+  let effective = if frame.opacity >= 1.0 {
+    color
+  } else {
+    { ..color, a: color.a * frame.opacity }
+  }
   @gfx.new_draw_triangles_command(
     frame.dst,
     frame.shader,
@@ -285,7 +306,7 @@ pub fn new_primitive_command(
     vertex_data,
     indices,
     src_image_ids,
-    color_to_uniform_dwords(color),
+    color_to_uniform_dwords(effective),
   )
 }
 

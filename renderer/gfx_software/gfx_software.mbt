@@ -147,6 +147,24 @@ fn edge_function(
 }
 
 ///|
+/// Whether the directed edge a -> b is a top or left edge for a
+/// winding-normalized (interior w >= 0) triangle. A shared edge is
+/// traversed in opposite directions by the two adjacent triangles, so
+/// exactly one of them sees it as top-left.
+fn edge_is_top_left(ax : Double, ay : Double, bx : Double, by : Double) -> Bool {
+  let dx = bx - ax
+  let dy = by - ay
+  dy > 0.0 || (dy == 0.0 && dx < 0.0)
+}
+
+///|
+/// Coverage test for one edge: strictly inside, or exactly on a top-left
+/// edge (the half-open fill rule).
+fn edge_ok(w : Double, top_left : Bool) -> Bool {
+  w > 0.0 || (w == 0.0 && top_left)
+}
+
+///|
 fn fmin3(a : Double, b : Double, c : Double) -> Double {
   let ab = if a < b { a } else { b }
   if ab < c {
@@ -218,6 +236,26 @@ fn SoftwareDriver::rasterize(
     if area == 0.0 {
       continue
     }
+    // Normalize winding so interior points satisfy w >= 0, then apply a
+    // top-left fill rule: shared edges (e.g. a quad's split diagonal) are
+    // half-open so each pixel is covered by exactly one triangle. Without
+    // this, pixel centers lying exactly on the diagonal double-blend, which
+    // is visible for translucent fills.
+    let ax = x0
+    let ay = y0
+    let mut bx = x1
+    let mut by = y1
+    let mut cx = x2
+    let mut cy = y2
+    if area < 0.0 {
+      bx = x2
+      by = y2
+      cx = x1
+      cy = y1
+    }
+    let tl0 = edge_is_top_left(bx, by, cx, cy)
+    let tl1 = edge_is_top_left(cx, cy, ax, ay)
+    let tl2 = edge_is_top_left(ax, ay, bx, by)
     // Intersect the triangle bounding box with the framebuffer and the
     // scissor; skip the triangle entirely when the intersection is empty.
     let lo_x = clamp_int(scissor_x0, 0, self.width)
@@ -237,13 +275,12 @@ fn SoftwareDriver::rasterize(
     }
     for py in min_y..<=max_y {
       for px in min_x..<=max_x {
-        let cx = px.to_double() + 0.5
-        let cy = py.to_double() + 0.5
-        let w0 = edge_function(x1, y1, x2, y2, cx, cy)
-        let w1 = edge_function(x2, y2, x0, y0, cx, cy)
-        let w2 = edge_function(x0, y0, x1, y1, cx, cy)
-        let inside = (w0 >= 0.0 && w1 >= 0.0 && w2 >= 0.0) ||
-          (w0 <= 0.0 && w1 <= 0.0 && w2 <= 0.0)
+        let pcx = px.to_double() + 0.5
+        let pcy = py.to_double() + 0.5
+        let w0 = edge_function(bx, by, cx, cy, pcx, pcy)
+        let w1 = edge_function(cx, cy, ax, ay, pcx, pcy)
+        let w2 = edge_function(ax, ay, bx, by, pcx, pcy)
+        let inside = edge_ok(w0, tl0) && edge_ok(w1, tl1) && edge_ok(w2, tl2)
         if inside {
           self.blend_pixel(px, py, sr, sg, sb, sa, command.blend)
         }

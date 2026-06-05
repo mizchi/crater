@@ -136,3 +136,40 @@ test "render_paint_tree drives a null graphics backend end-to-end" {
   // without raising.
   render_paint_tree(driver, tree)
 }
+
+///|
+test "node opacity dims the emitted fill and propagates to children" {
+  let frame = test_frame(10, 10)
+  let child = @paint_model.PaintNode::new(
+    "child",
+    "div",
+    0.0,
+    0.0,
+    10.0,
+    10.0,
+    {
+      ..@paint_model.PaintProperties::default(),
+      background_color: @types.Color::rgb(0, 0, 0),
+    },
+    [],
+  )
+  let parent = @paint_model.PaintNode::new(
+    "parent",
+    "div",
+    0.0,
+    0.0,
+    10.0,
+    10.0,
+    {
+      ..@paint_model.PaintProperties::default(),
+      background_color: @types.Color::rgb(0, 0, 0),
+      opacity: 0.5,
+    },
+    [child],
+  )
+  let commands = collect_paint_commands(frame, parent)
+  // parent + child fills, both dimmed by the parent's 0.5 group opacity
+  inspect(commands.length(), content="2")
+  inspect(commands[0].uniform_dwords, content="[0, 0, 0, 127]")
+  inspect(commands[1].uniform_dwords, content="[0, 0, 0, 127]")
+}

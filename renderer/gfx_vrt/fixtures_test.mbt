@@ -202,3 +202,26 @@ test "image vrt: overflow hidden clips the oversized child" {
     ),
   )
 }
+
+///|
+test "image vrt: element opacity dims to grey over white" {
+  let html =
+    #|<html><body style="margin:0;background:#ffffff">
+    #|<div style="width:8px;height:8px;background:#ffffff"></div>
+    #|<div style="position:absolute;left:0;top:0;width:8px;height:8px;background:#000000;opacity:0.5"></div>
+    #|</body></html>
+  inspect(
+    render_ascii(html, 8.0, 8.0),
+    content=(
+      #|========
+      #|========
+      #|========
+      #|========
+      #|========
+      #|========
+      #|========
+      #|========
+      #|
+    ),
+  )
+}

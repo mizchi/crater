@@ -61,10 +61,12 @@ pub(all) struct RenderFrame2D {
   clip_y : Int
   clip_w : Int
   clip_h : Int
+  opacity : Double
 }
 pub fn RenderFrame2D::dst_region(Self, index_count? : Int) -> @gfx.DstRegion
-pub fn RenderFrame2D::new(dst~ : @gfx.ImageHandle, shader~ : @gfx.ShaderHandle, screen_w~ : Int, screen_h~ : Int, pipeline_id? : Int, uniform_hash? : Int, blend? : @gfx.BlendMode, clip_x? : Int, clip_y? : Int, clip_w? : Int, clip_h? : Int) -> Self
+pub fn RenderFrame2D::new(dst~ : @gfx.ImageHandle, shader~ : @gfx.ShaderHandle, screen_w~ : Int, screen_h~ : Int, pipeline_id? : Int, uniform_hash? : Int, blend? : @gfx.BlendMode, clip_x? : Int, clip_y? : Int, clip_w? : Int, clip_h? : Int, opacity? : Double) -> Self
 pub fn RenderFrame2D::with_clip(Self, Int, Int, Int, Int) -> Self
+pub fn RenderFrame2D::with_opacity(Self, Double) -> Self
 
 // Type aliases
 
