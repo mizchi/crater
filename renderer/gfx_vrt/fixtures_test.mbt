@@ -225,3 +225,29 @@ test "image vrt: element opacity dims to grey over white" {
     ),
   )
 }
+
+///|
+test "image vrt: border-radius rounds the corners" {
+  let html =
+    #|<html><body style="margin:0;background:#ffffff">
+    #|<div style="width:12px;height:12px;background:#000000;border-radius:4px"></div>
+    #|</body></html>
+  inspect(
+    render_ascii(html, 12.0, 12.0),
+    content=(
+      #|  @@@@@@@@  
+      #| @@@@@@@@@@ 
+      #|@@@@@@@@@@@@
+      #|@@@@@@@@@@@@
+      #|@@@@@@@@@@@@
+      #|@@@@@@@@@@@@
+      #|@@@@@@@@@@@@
+      #|@@@@@@@@@@@@
+      #|@@@@@@@@@@@@
+      #|@@@@@@@@@@@@
+      #| @@@@@@@@@@ 
+      #|  @@@@@@@@  
+      #|
+    ),
+  )
+}

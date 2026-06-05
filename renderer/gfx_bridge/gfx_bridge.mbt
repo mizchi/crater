@@ -23,7 +23,47 @@ pub using @gfx_frame {type RenderFrame2D, type RectFill2D, type RectOutline2D}
 // ---------------------------------------------------------------------------
 
 ///|
-/// Append the node's background fill, if it has a visible one.
+/// Append the node's non-inset box shadows as hard-edged offset + spread
+/// fills, painted before the box so the element sits on top. Blur is not
+/// modeled (a deterministic hard shadow); the shadow follows the offset and
+/// spread but stays rectangular.
+pub fn append_paint_node_shadows(
+  commands : Array[@gfx.DrawTrianglesCommand],
+  frame : RenderFrame2D,
+  node : @paint_model.PaintNode,
+) -> Unit {
+  if node.width <= 0.0 || node.height <= 0.0 {
+    return
+  }
+  for shadow in node.paint.box_shadows {
+    if shadow.inset || shadow.color.is_transparent() {
+      continue
+    }
+    let spread = shadow.spread_radius
+    let sx = node.x + shadow.offset_x - spread
+    let sy = node.y + shadow.offset_y - spread
+    let sw = node.width + spread * 2.0
+    let sh = node.height + spread * 2.0
+    if sw <= 0.0 || sh <= 0.0 {
+      continue
+    }
+    @gfx_frame.append_rect_fill(
+      commands,
+      frame,
+      @gfx_frame.RectFill2D::new(
+        x=sx,
+        y=sy,
+        w=sw,
+        h=sh,
+        color=@gfx_frame.to_gfx_color(shadow.color),
+      ),
+    )
+  }
+}
+
+///|
+/// Append the node's background fill, if it has a visible one. When any
+/// border radius is set, the fill is emitted as a rounded rectangle.
 pub fn append_paint_node_background(
   commands : Array[@gfx.DrawTrianglesCommand],
   frame : RenderFrame2D,
@@ -33,17 +73,30 @@ pub fn append_paint_node_background(
   if bg.is_transparent() || node.width <= 0.0 || node.height <= 0.0 {
     return
   }
-  @gfx_frame.append_rect_fill(
-    commands,
-    frame,
-    @gfx_frame.RectFill2D::new(
-      x=node.x,
-      y=node.y,
-      w=node.width,
-      h=node.height,
-      color=@gfx_frame.to_gfx_color(bg),
-    ),
+  let p = node.paint
+  let rect = @gfx_frame.RectFill2D::new(
+    x=node.x,
+    y=node.y,
+    w=node.width,
+    h=node.height,
+    color=@gfx_frame.to_gfx_color(bg),
   )
+  if p.border_top_left_radius > 0.0 ||
+    p.border_top_right_radius > 0.0 ||
+    p.border_bottom_right_radius > 0.0 ||
+    p.border_bottom_left_radius > 0.0 {
+    @gfx_frame.append_rounded_rect_fill(
+      commands,
+      frame,
+      rect,
+      radius_tl=p.border_top_left_radius,
+      radius_tr=p.border_top_right_radius,
+      radius_br=p.border_bottom_right_radius,
+      radius_bl=p.border_bottom_left_radius,
+    )
+  } else {
+    @gfx_frame.append_rect_fill(commands, frame, rect)
+  }
 }
 
 ///|
@@ -181,6 +234,7 @@ pub fn append_paint_node(
   frame : RenderFrame2D,
   node : @paint_model.PaintNode,
 ) -> Unit {
+  append_paint_node_shadows(commands, frame, node)
   append_paint_node_background(commands, frame, node)
   append_paint_node_borders(commands, frame, node)
 }
@@ -211,6 +265,7 @@ pub fn collect_paint_commands(
   // its children.
   fn visit(node : @paint_model.PaintNode, frame : RenderFrame2D) -> Unit {
     let node_frame = frame.with_opacity(node.paint.opacity)
+    append_paint_node_shadows(commands, node_frame, node)
     append_paint_node_background(commands, node_frame, node)
     append_paint_node_borders(commands, node_frame, node)
     match resolve_image {

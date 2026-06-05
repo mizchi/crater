@@ -288,12 +288,17 @@ pub fn new_primitive_command(
   indices : Array[Int],
   color : @gfx.Color,
   src_image_ids? : Array[Int] = [],
+  extra_uniforms? : Array[Int] = [],
 ) -> @gfx.DrawTrianglesCommand {
   // Modulate the color's alpha by the frame opacity (CSS group opacity).
   let effective = if frame.opacity >= 1.0 {
     color
   } else {
     { ..color, a: color.a * frame.opacity }
+  }
+  let uniforms = color_to_uniform_dwords(effective)
+  for value in extra_uniforms {
+    uniforms.push(value)
   }
   @gfx.new_draw_triangles_command(
     frame.dst,
@@ -306,7 +311,7 @@ pub fn new_primitive_command(
     vertex_data,
     indices,
     src_image_ids,
-    color_to_uniform_dwords(effective),
+    uniforms,
   )
 }
 
@@ -347,6 +352,50 @@ pub fn append_rect_fill(
     frame.screen_h.to_double(),
   )
   commands.push(new_primitive_command(frame, vertices, indices, rect.color))
+}
+
+///|
+/// Lower a solid rounded-rectangle fill. The per-corner radii and the rect
+/// (pixel space) are packed into the command's uniforms after the four
+/// color channels (`[r, g, b, a, r_tl, r_tr, r_br, r_bl, x, y, w, h]`), so a
+/// backend's "shader" can carve the corners. gfx_software honors this; other
+/// backends that ignore the extra uniforms fall back to a square fill.
+pub fn append_rounded_rect_fill(
+  commands : Array[@gfx.DrawTrianglesCommand],
+  frame : RenderFrame2D,
+  rect : RectFill2D,
+  radius_tl~ : Double,
+  radius_tr~ : Double,
+  radius_br~ : Double,
+  radius_bl~ : Double,
+) -> Unit {
+  let (vertices, indices) = ndc_rect_fill_vertices(
+    rect.x,
+    rect.y,
+    rect.w,
+    rect.h,
+    frame.screen_w.to_double(),
+    frame.screen_h.to_double(),
+  )
+  let extra = [
+    radius_tl.to_int(),
+    radius_tr.to_int(),
+    radius_br.to_int(),
+    radius_bl.to_int(),
+    rect.x.to_int(),
+    rect.y.to_int(),
+    rect.w.to_int(),
+    rect.h.to_int(),
+  ]
+  commands.push(
+    new_primitive_command(
+      frame,
+      vertices,
+      indices,
+      rect.color,
+      extra_uniforms=extra,
+    ),
+  )
 }
 
 ///|

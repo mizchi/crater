@@ -100,6 +100,14 @@ const FIXTURES = [
 <div style="position:absolute;left:0;top:0;width:8px;height:8px;background:#000000;opacity:0.5"></div>
 </body></html>`,
   },
+  {
+    name: "border-radius",
+    width: 12,
+    height: 12,
+    html: `<html><body style="margin:0;background:#ffffff">
+<div style="width:12px;height:12px;background:#000000;border-radius:4px"></div>
+</body></html>`,
+  },
 ];
 
 async function loadCrater() {

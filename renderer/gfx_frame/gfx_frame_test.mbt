@@ -144,3 +144,29 @@ test "with_opacity scales the emitted color alpha" {
   )
   inspect(c2[0].uniform_dwords, content="[0, 0, 0, 63]")
 }
+
+///|
+test "append_rounded_rect_fill packs corner radii into the uniforms" {
+  let frame = test_frame(8, 8)
+  let commands = []
+  append_rounded_rect_fill(
+    commands,
+    frame,
+    RectFill2D::new(
+      x=0.0,
+      y=0.0,
+      w=8.0,
+      h=8.0,
+      color=to_gfx_color(@types.Color::rgb(0, 0, 0)),
+    ),
+    radius_tl=4.0,
+    radius_tr=3.0,
+    radius_br=2.0,
+    radius_bl=1.0,
+  )
+  // [r, g, b, a, r_tl, r_tr, r_br, r_bl, x, y, w, h]
+  inspect(
+    commands[0].uniform_dwords,
+    content="[0, 0, 0, 255, 4, 3, 2, 1, 0, 0, 8, 8]",
+  )
+}
