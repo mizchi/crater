@@ -4,6 +4,7 @@ package "mizchi/crater-renderer"
 import {
   "mizchi/crater-painter/paint/diff",
   "mizchi/crater-painter/paint/model",
+  "mizchi/crater-renderer/gfx_vrt",
   "mizchi/crater-renderer/renderer",
   "mizchi/crater-renderer/vrt",
   "mizchi/css/values",
@@ -20,6 +21,8 @@ pub fn prepare_vrt_page_with_prepared_external_css(String, @values.Size[Double],
 
 pub fn render_html_batch_variants(String, @values.Size[Double], Array[@vrt.RenderVariant]) -> Array[@vrt.RenderVariantResult]
 
+pub fn render_html_to_image(String, @values.Size[Double]) -> @gfx_vrt.RenderedImage
+
 pub fn render_html_to_paint_tree(String, @values.Size[Double]) -> @model.PaintNode
 
 pub fn render_html_to_paint_tree_json(String, @values.Size[Double]) -> String
@@ -27,6 +30,8 @@ pub fn render_html_to_paint_tree_json(String, @values.Size[Double]) -> String
 pub fn render_html_to_paint_tree_with_external_css(String, @values.Size[Double], Array[String]) -> @model.PaintNode
 
 pub fn render_html_to_paint_tree_with_prepared_external_css(String, @values.Size[Double], @renderer.PreparedExternalCss) -> @model.PaintNode
+
+pub fn render_paint_tree_to_image(@model.PaintNode, Int, Int) -> @gfx_vrt.RenderedImage
 
 pub fn render_prepared_vrt_page_to_paint_tree(@vrt.PreparedVrtPage) -> @model.PaintNode
 
@@ -48,6 +53,8 @@ pub using @vrt {type PreparedVrtPage}
 pub using @vrt {type RenderVariant}
 
 pub using @vrt {type RenderVariantResult}
+
+pub using @gfx_vrt {type RenderedImage}
 
 // Traits
 

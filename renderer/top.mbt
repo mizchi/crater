@@ -102,3 +102,28 @@ pub fn render_html_batch_variants(
 ) -> Array[RenderVariantResult] {
   @vrt.render_html_batch_variants(html, viewport, variants)
 }
+
+///|
+pub using @gfx_vrt {type RenderedImage}
+
+///|
+/// Render an HTML document to an RGBA image at `viewport` via the gfx
+/// software backend (image VRT). Companion to `render_html_to_paint_tree`,
+/// which compares geometry; this compares pixels.
+pub fn render_html_to_image(
+  html : String,
+  viewport : @types.Size[Double],
+) -> RenderedImage {
+  @gfx_vrt.render_html_to_image(html, viewport)
+}
+
+///|
+/// Render a paint tree to an RGBA image of the given size via the gfx
+/// software backend.
+pub fn render_paint_tree_to_image(
+  root : @paint_model.PaintNode,
+  width : Int,
+  height : Int,
+) -> RenderedImage {
+  @gfx_vrt.render_paint_tree_to_image(root, width, height)
+}

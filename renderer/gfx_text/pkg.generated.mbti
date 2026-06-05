@@ -1,0 +1,46 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-renderer/gfx_text"
+
+import {
+  "mizchi/crater-painter/paint/glyph",
+  "mizchi/crater-renderer/gfx_frame",
+  "mizchi/gfx",
+}
+
+// Values
+pub fn atlas_to_commands(@gfx_frame.RenderFrame2D, GlyphAtlas, @gfx.Color) -> Array[@gfx.DrawTrianglesCommand]
+
+pub fn build_glyph_atlas(Array[@glyph.GlyphPlacement], @gfx.ImageHandle) -> GlyphAtlas
+
+pub fn glyph_placements_to_atlas_commands(@gfx_frame.RenderFrame2D, Array[@glyph.GlyphPlacement], @gfx.Color, @gfx.ImageHandle) -> (GlyphAtlas, Array[@gfx.DrawTrianglesCommand])
+
+pub fn glyph_placements_to_commands(@gfx_frame.RenderFrame2D, Array[@glyph.GlyphPlacement], @gfx.Color) -> Array[@gfx.DrawTrianglesCommand]
+
+pub fn text_run_commands(@gfx_frame.RenderFrame2D, @glyph.GlyphProvider, String, Int, Int, Double, @gfx.Color, max_width? : Int, line_height? : Double, is_bold? : Bool, font_family? : String, letter_spacing? : Double, word_spacing? : Double, font_weight? : Double) -> Array[@gfx.DrawTrianglesCommand]
+
+// Errors
+
+// Types and methods
+pub(all) struct GlyphAtlas {
+  width : Int
+  height : Int
+  coverage : Array[Int]
+  image : @gfx.ImageHandle
+  entries : Array[GlyphAtlasEntry]
+}
+
+pub(all) struct GlyphAtlasEntry {
+  x : Double
+  y : Double
+  w : Double
+  h : Double
+  u0 : Double
+  v0 : Double
+  u1 : Double
+  v1 : Double
+}
+
+// Type aliases
+
+// Traits
+

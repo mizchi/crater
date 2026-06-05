@@ -1,0 +1,42 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-renderer/gfx_bridge"
+
+import {
+  "mizchi/crater-painter/paint/glyph",
+  "mizchi/crater-painter/paint/model",
+  "mizchi/crater-renderer/gfx_frame",
+  "mizchi/gfx",
+}
+
+// Values
+pub fn append_paint_node(Array[@gfx.DrawTrianglesCommand], @gfx_frame.RenderFrame2D, @model.PaintNode) -> Unit
+
+pub fn append_paint_node_background(Array[@gfx.DrawTrianglesCommand], @gfx_frame.RenderFrame2D, @model.PaintNode) -> Unit
+
+pub fn append_paint_node_borders(Array[@gfx.DrawTrianglesCommand], @gfx_frame.RenderFrame2D, @model.PaintNode) -> Unit
+
+pub fn append_paint_node_image(Array[@gfx.DrawTrianglesCommand], @gfx_frame.RenderFrame2D, @model.PaintNode, (String) -> @gfx.ImageHandle?) -> Unit
+
+pub fn append_paint_node_text(Array[@gfx.DrawTrianglesCommand], @gfx_frame.RenderFrame2D, @model.PaintNode, @glyph.GlyphProvider) -> Unit
+
+pub fn collect_paint_commands(@gfx_frame.RenderFrame2D, @model.PaintNode, glyph_provider? : @glyph.GlyphProvider, resolve_image? : (String) -> @gfx.ImageHandle?) -> Array[@gfx.DrawTrianglesCommand]
+
+pub fn default_fill_shader_source() -> String
+
+pub fn[Q : @gfx.CommandQueue] enqueue_paint_tree(Q, @gfx_frame.RenderFrame2D, @model.PaintNode, glyph_provider? : @glyph.GlyphProvider, resolve_image? : (String) -> @gfx.ImageHandle?) -> Unit
+
+pub fn[D : @gfx.GraphicsDriver] render_paint_tree(D, @model.PaintNode, clear_color? : @gfx.Color, present? : Bool) -> Unit raise
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+pub using @gfx_frame {type RectFill2D}
+
+pub using @gfx_frame {type RectOutline2D}
+
+pub using @gfx_frame {type RenderFrame2D}
+
+// Traits
+

@@ -66,6 +66,26 @@ export function renderHtmlToJson(html: string, width: number, height: number): s
 export function renderHtmlToPaintTree(html: string, width: number, height: number): string;
 
 /**
+ * Render HTML to a base64-encoded PNG via the gfx software backend (image VRT).
+ * Companion to renderHtmlToPaintTree (geometry); this returns true-color pixels.
+ * @param html - HTML string with inline styles
+ * @param width - Viewport width in pixels
+ * @param height - Viewport height in pixels
+ * @returns base64-encoded PNG (RGBA, 8-bit)
+ */
+export function renderHtmlToImagePngBase64(html: string, width: number, height: number): string;
+
+/**
+ * Render HTML to a flat RGBA pixel buffer (row-major, four 0..255 channels per
+ * pixel) via the gfx software backend.
+ * @param html - HTML string with inline styles
+ * @param width - Viewport width in pixels
+ * @param height - Viewport height in pixels
+ * @returns flat array of length width*height*4
+ */
+export function renderHtmlToImageRgba(html: string, width: number, height: number): number[];
+
+/**
  * Render HTML to Sixel graphics string
  * @param html - HTML string with inline styles
  * @param width - Viewport width in pixels

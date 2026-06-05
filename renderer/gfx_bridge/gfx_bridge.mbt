@@ -1,0 +1,287 @@
+///|
+/// Paint-tree assembler for crater's gfx-backed renderer.
+///
+/// This is crater's analogue of kagura's `mizchi/renderer2d`: the single
+/// "assembler" layer that composes the wiring units into a stream of
+/// `@gfx.DrawTrianglesCommand`s for any `GraphicsDriver` backend (null /
+/// WebGL / WebGPU / native). It walks a `@paint_model.PaintNode` tree and
+/// dispatches each node to the matching unit:
+///
+/// - box background / borders -> `gfx_frame` rect primitives
+/// - text runs                -> `gfx_text` (glyph layout + quads)
+/// - replaced images (`src`)  -> `gfx_image` (textured quads)
+///
+/// The shared 2D primitives, frame context and color helpers live in
+/// `gfx_frame` and are re-exported here so consumers only import the
+/// assembler.
+
+///|
+pub using @gfx_frame {type RenderFrame2D, type RectFill2D, type RectOutline2D}
+
+// ---------------------------------------------------------------------------
+// Per-node lowering
+// ---------------------------------------------------------------------------
+
+///|
+/// Append the node's background fill, if it has a visible one.
+pub fn append_paint_node_background(
+  commands : Array[@gfx.DrawTrianglesCommand],
+  frame : RenderFrame2D,
+  node : @paint_model.PaintNode,
+) -> Unit {
+  let bg = node.paint.background_color
+  if bg.is_transparent() || node.width <= 0.0 || node.height <= 0.0 {
+    return
+  }
+  @gfx_frame.append_rect_fill(
+    commands,
+    frame,
+    @gfx_frame.RectFill2D::new(
+      x=node.x,
+      y=node.y,
+      w=node.width,
+      h=node.height,
+      color=@gfx_frame.to_gfx_color(bg),
+    ),
+  )
+}
+
+///|
+/// Append the node's borders as up to four edge fills. Each side carries
+/// its own width and color (the CSS box model), so they are emitted as
+/// individual edge fills rather than a single uniform outline.
+pub fn append_paint_node_borders(
+  commands : Array[@gfx.DrawTrianglesCommand],
+  frame : RenderFrame2D,
+  node : @paint_model.PaintNode,
+) -> Unit {
+  let p = node.paint
+  let x = node.x
+  let y = node.y
+  let w = node.width
+  let h = node.height
+  fn edge(
+    width : Double,
+    color : @types.Color,
+    ex : Double,
+    ey : Double,
+    ew : Double,
+    eh : Double,
+  ) -> Unit {
+    if width > 0.0 && !color.is_transparent() && ew > 0.0 && eh > 0.0 {
+      @gfx_frame.append_rect_fill(
+        commands,
+        frame,
+        @gfx_frame.RectFill2D::new(
+          x=ex,
+          y=ey,
+          w=ew,
+          h=eh,
+          color=@gfx_frame.to_gfx_color(color),
+        ),
+      )
+    }
+  }
+
+  edge(p.border_top_width, p.border_top_color, x, y, w, p.border_top_width)
+  edge(
+    p.border_bottom_width,
+    p.border_bottom_color,
+    x,
+    y + h - p.border_bottom_width,
+    w,
+    p.border_bottom_width,
+  )
+  edge(p.border_left_width, p.border_left_color, x, y, p.border_left_width, h)
+  edge(
+    p.border_right_width,
+    p.border_right_color,
+    x + w - p.border_right_width,
+    y,
+    p.border_right_width,
+    h,
+  )
+}
+
+///|
+/// Append the node's replaced image (`src`) as a textured quad, resolving
+/// the source string to an `@gfx.ImageHandle` via `resolve_image`.
+pub fn append_paint_node_image(
+  commands : Array[@gfx.DrawTrianglesCommand],
+  frame : RenderFrame2D,
+  node : @paint_model.PaintNode,
+  resolve_image : (String) -> @gfx.ImageHandle?,
+) -> Unit {
+  match node.src {
+    Some(src) =>
+      match resolve_image(src) {
+        Some(image) =>
+          @gfx_image.append_image_quad(
+            commands,
+            frame,
+            @gfx_image.ImageQuad2D::new(
+              x=node.x,
+              y=node.y,
+              w=node.width,
+              h=node.height,
+              image~,
+            ),
+          )
+        None => ()
+      }
+    None => ()
+  }
+}
+
+///|
+/// Append the node's text run, laying it out with `provider` and filling
+/// each glyph ink box with the node's text color.
+pub fn append_paint_node_text(
+  commands : Array[@gfx.DrawTrianglesCommand],
+  frame : RenderFrame2D,
+  node : @paint_model.PaintNode,
+  provider : @glyph.GlyphProvider,
+) -> Unit {
+  match node.text {
+    Some(text) => {
+      if text.length() == 0 {
+        return
+      }
+      let p = node.paint
+      let cmds = @gfx_text.text_run_commands(
+        frame,
+        provider,
+        text,
+        node.x.to_int(),
+        node.y.to_int(),
+        p.font_size,
+        @gfx_frame.to_gfx_color(p.color),
+        max_width=node.width.to_int(),
+        line_height=p.line_height,
+        is_bold=p.is_bold,
+        font_family=p.font_family,
+        letter_spacing=p.letter_spacing,
+        word_spacing=p.word_spacing,
+        font_weight=p.font_weight,
+      )
+      for cmd in cmds {
+        commands.push(cmd)
+      }
+    }
+    None => ()
+  }
+}
+
+///|
+/// Append a single node's box paint (background then borders). Text and
+/// images need extra inputs (a glyph provider / image resolver) and are
+/// lowered by the tree walk.
+pub fn append_paint_node(
+  commands : Array[@gfx.DrawTrianglesCommand],
+  frame : RenderFrame2D,
+  node : @paint_model.PaintNode,
+) -> Unit {
+  append_paint_node_background(commands, frame, node)
+  append_paint_node_borders(commands, frame, node)
+}
+
+// ---------------------------------------------------------------------------
+// Tree walk
+// ---------------------------------------------------------------------------
+
+///|
+/// Walk the paint tree in paint order (a node's box before its children)
+/// and collect all draw commands.
+///
+/// Text is lowered when `glyph_provider` is supplied; replaced images are
+/// lowered when `resolve_image` is supplied. Background and borders are
+/// always lowered.
+pub fn collect_paint_commands(
+  frame : RenderFrame2D,
+  root : @paint_model.PaintNode,
+  glyph_provider? : @glyph.GlyphProvider,
+  resolve_image? : (String) -> @gfx.ImageHandle?,
+) -> Array[@gfx.DrawTrianglesCommand] {
+  let commands : Array[@gfx.DrawTrianglesCommand] = []
+  fn visit(node : @paint_model.PaintNode) -> Unit {
+    append_paint_node_background(commands, frame, node)
+    append_paint_node_borders(commands, frame, node)
+    match resolve_image {
+      Some(resolve) => append_paint_node_image(commands, frame, node, resolve)
+      None => ()
+    }
+    match glyph_provider {
+      Some(provider) => append_paint_node_text(commands, frame, node, provider)
+      None => ()
+    }
+    for child in node.children {
+      visit(child)
+    }
+  }
+
+  visit(root)
+  commands
+}
+
+///|
+/// Enqueue every command for the paint tree into a command queue, letting
+/// the queue merge compatible draws.
+pub fn[Q : @gfx.CommandQueue] enqueue_paint_tree(
+  queue : Q,
+  frame : RenderFrame2D,
+  root : @paint_model.PaintNode,
+  glyph_provider? : @glyph.GlyphProvider,
+  resolve_image? : (String) -> @gfx.ImageHandle?,
+) -> Unit {
+  for
+    cmd in collect_paint_commands(frame, root, glyph_provider?, resolve_image?) {
+    queue.enqueue_draw_triangles(cmd)
+  }
+}
+
+// ---------------------------------------------------------------------------
+// End-to-end driver entry point
+// ---------------------------------------------------------------------------
+
+///|
+/// Placeholder fill shader source handed to the driver. Real backends
+/// substitute their own builtin solid-color / textured program; the null
+/// driver only needs a stable, non-empty source string.
+pub fn default_fill_shader_source() -> String {
+  "// crater gfx_bridge: solid color / textured fill\n" +
+  "// frag = uniform color (rgba u8x4) * sampled texel"
+}
+
+///|
+/// Drive a `GraphicsDriver` backend end-to-end from a paint tree:
+/// initialize, allocate the destination image and fill shader, build a
+/// `RenderFrame2D` sized from the root box, lower the tree into a queue,
+/// then flush a single render pass.
+///
+/// Text is lowered automatically when a glyph provider has been configured
+/// globally (`@glyph.get_glyph_provider()`).
+pub fn[D : @gfx.GraphicsDriver] render_paint_tree(
+  driver : D,
+  root : @paint_model.PaintNode,
+  clear_color? : @gfx.Color = @gfx.new_color(1.0, 1.0, 1.0, 1.0),
+  present? : Bool = false,
+) -> Unit raise {
+  driver.initialize()
+  let width = if root.width > 0.0 { root.width.to_int() } else { 1 }
+  let height = if root.height > 0.0 { root.height.to_int() } else { 1 }
+  let dst = driver.new_image(width, height)
+  let shader = driver.new_shader(default_fill_shader_source())
+  let frame = @gfx_frame.RenderFrame2D::new(
+    dst~,
+    shader~,
+    screen_w=width,
+    screen_h=height,
+  )
+  let queue = @gfx.new_simple_command_queue()
+  match @glyph.get_glyph_provider() {
+    Some(provider) =>
+      enqueue_paint_tree(queue, frame, root, glyph_provider=provider)
+    None => enqueue_paint_tree(queue, frame, root)
+  }
+  @gfx.flush_commands(driver, queue, present, clear_color~)
+}

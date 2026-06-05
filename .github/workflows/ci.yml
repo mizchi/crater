@@ -189,6 +189,10 @@ jobs:
         run: pnpm test
         working-directory: js
 
+      - name: Run image VRT (PNG baselines)
+        run: node scripts/image-vrt.mjs
+        working-directory: js
+
       - name: Build playground
         run: pnpm run build
         working-directory: js/playground

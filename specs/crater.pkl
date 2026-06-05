@@ -428,6 +428,16 @@ scenarios {
     reviewStatus = "draft"
     contributes { "goal.paint-accuracy" }
   }
+  new {
+    id = "paint.gfx-image-vrt"
+    name = "gfx software backend renders paint trees to pixels for image VRT"
+    description =
+      "crater assembles a gfx-backed renderer from kagura-style wiring units (gfx_frame / gfx_image / gfx_text / gfx_bridge over mizchi/gfx) plus a CPU software GraphicsDriver (gfx_software). render_html_to_image / render_paint_tree_to_image drive the existing VRT paint tree through the assembler onto the software backend, producing an RGBA framebuffer and a deterministic ASCII snapshot. This adds a pixel-level image VRT layer on top of the geometry-level paint-tree VRT, runnable under moon test via just test-gfx-vrt. Covered by renderer/gfx_vrt/fixtures_test.mbt. Source: gfx-mbt / kagura renderer module reuse."
+    tags { "paint"; "vrt"; "gfx" }
+    severity = "minor"
+    reviewStatus = "draft"
+    contributes { "goal.paint-accuracy" }
+  }
 
   // -- DOM compatibility: Web Components residuals ---------------------------
   new {

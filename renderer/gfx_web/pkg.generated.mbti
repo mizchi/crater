@@ -1,0 +1,34 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-renderer/gfx_web"
+
+import {
+  "mizchi/gfx",
+}
+
+// Values
+pub fn install_capture_hooks() -> CaptureSink
+
+pub fn reset_hooks() -> Unit
+
+pub fn webgl_driver(Int, Int, opaque_id? : Int, device_scale? : Double, options? : @gfx.GraphicsBackendOptions) -> @gfx.StubGraphicsDriver
+
+pub fn webgpu_driver(Int, Int, opaque_id? : Int, device_scale? : Double, options? : @gfx.GraphicsBackendOptions) -> @gfx.StubGraphicsDriver
+
+// Errors
+
+// Types and methods
+pub struct CaptureSink {
+  mut initialized : Bool
+  mut begin_count : Int
+  mut end_count : Int
+  mut resize_count : Int
+  mut last_present : Bool
+  draws : Array[@gfx.DrawTrianglesCommand]
+}
+pub fn CaptureSink::draw_count(Self) -> Int
+pub fn CaptureSink::draws(Self) -> Array[@gfx.DrawTrianglesCommand]
+
+// Type aliases
+
+// Traits
+

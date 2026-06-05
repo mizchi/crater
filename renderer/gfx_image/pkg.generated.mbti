@@ -1,0 +1,30 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-renderer/gfx_image"
+
+import {
+  "mizchi/crater-renderer/gfx_frame",
+  "mizchi/gfx",
+}
+
+// Values
+pub fn append_image_quad(Array[@gfx.DrawTrianglesCommand], @gfx_frame.RenderFrame2D, ImageQuad2D) -> Unit
+
+pub fn image_quad_command(@gfx_frame.RenderFrame2D, Double, Double, Double, Double, @gfx.ImageHandle, tint? : @gfx.Color) -> @gfx.DrawTrianglesCommand
+
+// Errors
+
+// Types and methods
+pub(all) struct ImageQuad2D {
+  x : Double
+  y : Double
+  w : Double
+  h : Double
+  image : @gfx.ImageHandle
+  tint : @gfx.Color
+}
+pub fn ImageQuad2D::new(x~ : Double, y~ : Double, w~ : Double, h~ : Double, image~ : @gfx.ImageHandle, tint? : @gfx.Color) -> Self
+
+// Type aliases
+
+// Traits
+

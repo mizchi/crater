@@ -1,0 +1,13 @@
+import {
+  "mizchi/gfx",
+  "mizchi/crater-renderer/gfx_frame",
+  "mizchi/crater-renderer/gfx_image",
+  "mizchi/crater-renderer/gfx_text",
+  "mizchi/crater-painter/paint/model" @paint_model,
+  "mizchi/crater-painter/paint/glyph",
+  "mizchi/css/values" @types,
+}
+
+import {
+  "mizchi/crater-renderer/gfx_software",
+} for "test"

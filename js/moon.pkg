@@ -1,5 +1,6 @@
 import {
   "mizchi/crater-renderer/renderer",
+  "mizchi/crater-renderer/gfx_vrt",
   "mizchi/crater-renderer/terminal" @renderer_terminal,
   "mizchi/crater-aomx/arc90",
   "mizchi/crater-painter/paint",
@@ -21,6 +22,8 @@ options(
         "renderHtml",
         "renderHtmlToJson",
         "renderHtmlToPaintTree",
+        "renderHtmlToImagePngBase64",
+        "renderHtmlToImageRgba",
         "renderHtmlToSixel",
         "renderHtmlToSixelWithStyles",
         "createTree",
@@ -123,4 +126,5 @@ options(
       ],
     },
   },
+  targets: { "png_image.mbt": [ "js" ], "png_image_test.mbt": [ "js" ] },
 )
