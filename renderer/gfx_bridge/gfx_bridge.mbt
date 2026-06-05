@@ -203,7 +203,11 @@ pub fn collect_paint_commands(
   resolve_image? : (String) -> @gfx.ImageHandle?,
 ) -> Array[@gfx.DrawTrianglesCommand] {
   let commands : Array[@gfx.DrawTrianglesCommand] = []
-  fn visit(node : @paint_model.PaintNode) -> Unit {
+  // `frame` carries the active clip (scissor). A node's own box/borders are
+  // clipped by its ancestors; if the node clips its content
+  // (overflow: hidden/clip/scroll), its children inherit the intersection
+  // of the active clip and the node's clip rectangle.
+  fn visit(node : @paint_model.PaintNode, frame : RenderFrame2D) -> Unit {
     append_paint_node_background(commands, frame, node)
     append_paint_node_borders(commands, frame, node)
     match resolve_image {
@@ -214,12 +218,21 @@ pub fn collect_paint_commands(
       Some(provider) => append_paint_node_text(commands, frame, node, provider)
       None => ()
     }
+    let child_frame = if node.clips_content() {
+      match node.get_clip_rect() {
+        Some((cx, cy, cw, ch)) =>
+          frame.with_clip(cx.to_int(), cy.to_int(), cw.to_int(), ch.to_int())
+        None => frame
+      }
+    } else {
+      frame
+    }
     for child in node.children {
-      visit(child)
+      visit(child, child_frame)
     }
   }
 
-  visit(root)
+  visit(root, frame)
   commands
 }
 

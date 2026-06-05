@@ -16,8 +16,10 @@
 
 ///|
 /// Per-frame rendering context: the destination image, fill shader, target
-/// size (used for the pixel -> NDC transform) and blend mode shared by the
-/// commands emitted into the frame.
+/// size (used for the pixel -> NDC transform), blend mode, and a pixel-space
+/// clip (scissor) rectangle shared by the commands emitted into the frame.
+/// The clip is carried on each command's `dst_region`; backends that honor
+/// `dst_region` (e.g. gfx_software) treat it as a scissor.
 pub(all) struct RenderFrame2D {
   dst : @gfx.ImageHandle
   shader : @gfx.ShaderHandle
@@ -26,6 +28,10 @@ pub(all) struct RenderFrame2D {
   pipeline_id : Int
   uniform_hash : Int
   blend : @gfx.BlendMode
+  clip_x : Int
+  clip_y : Int
+  clip_w : Int
+  clip_h : Int
 }
 
 ///|
@@ -37,14 +43,66 @@ pub fn RenderFrame2D::new(
   pipeline_id? : Int = 0,
   uniform_hash? : Int = 0,
   blend? : @gfx.BlendMode = @gfx.BlendMode::Alpha,
+  clip_x? : Int = 0,
+  clip_y? : Int = 0,
+  clip_w? : Int = -1,
+  clip_h? : Int = -1,
 ) -> RenderFrame2D {
-  { dst, shader, screen_w, screen_h, pipeline_id, uniform_hash, blend }
+  // A negative clip extent means "no clip": default to the full frame.
+  let cw = if clip_w < 0 { screen_w } else { clip_w }
+  let ch = if clip_h < 0 { screen_h } else { clip_h }
+  {
+    dst,
+    shader,
+    screen_w,
+    screen_h,
+    pipeline_id,
+    uniform_hash,
+    blend,
+    clip_x,
+    clip_y,
+    clip_w: cw,
+    clip_h: ch,
+  }
 }
 
 ///|
-/// The full-frame destination region (6 indices = one quad).
-pub fn RenderFrame2D::dst_region(self : RenderFrame2D) -> @gfx.DstRegion {
-  @gfx.new_dst_region(0, 0, self.screen_w, self.screen_h, 6)
+/// Derive a frame with its clip rectangle intersected with `(x, y, w, h)`
+/// (pixel space). Used to push an overflow/clip boundary onto descendants.
+pub fn RenderFrame2D::with_clip(
+  self : RenderFrame2D,
+  x : Int,
+  y : Int,
+  w : Int,
+  h : Int,
+) -> RenderFrame2D {
+  let x0 = if x > self.clip_x { x } else { self.clip_x }
+  let y0 = if y > self.clip_y { y } else { self.clip_y }
+  let x1a = x + w
+  let x1b = self.clip_x + self.clip_w
+  let x1 = if x1a < x1b { x1a } else { x1b }
+  let y1a = y + h
+  let y1b = self.clip_y + self.clip_h
+  let y1 = if y1a < y1b { y1a } else { y1b }
+  let cw = if x1 > x0 { x1 - x0 } else { 0 }
+  let ch = if y1 > y0 { y1 - y0 } else { 0 }
+  { ..self, clip_x: x0, clip_y: y0, clip_w: cw, clip_h: ch }
+}
+
+///|
+/// The frame's clip rectangle as a destination region (`index_count`
+/// indices). Defaults to the full frame.
+pub fn RenderFrame2D::dst_region(
+  self : RenderFrame2D,
+  index_count? : Int = 6,
+) -> @gfx.DstRegion {
+  @gfx.new_dst_region(
+    self.clip_x,
+    self.clip_y,
+    self.clip_w,
+    self.clip_h,
+    index_count,
+  )
 }
 
 // ---------------------------------------------------------------------------
@@ -219,15 +277,7 @@ pub fn new_primitive_command(
   @gfx.new_draw_triangles_command(
     frame.dst,
     frame.shader,
-    [
-      @gfx.new_dst_region(
-        0,
-        0,
-        frame.screen_w,
-        frame.screen_h,
-        indices.length(),
-      ),
-    ],
+    [frame.dst_region(index_count=indices.length())],
     0,
     frame.pipeline_id,
     frame.uniform_hash,

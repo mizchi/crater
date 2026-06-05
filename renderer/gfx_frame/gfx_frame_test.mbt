@@ -83,3 +83,30 @@ test "append_rect_outline emits four edge quads in one command" {
   // 4 edges * 6 indices
   inspect(commands[0].indices.length(), content="24")
 }
+
+///|
+test "with_clip intersects the clip rectangle and drives dst_region" {
+  let frame = test_frame(100, 100)
+  // default clip is the full frame
+  inspect(
+    frame.dst_region(),
+    content=(
+      #|{ x: 0, y: 0, width: 100, height: 100, index_count: 6 }
+    ),
+  )
+  let clipped = frame.with_clip(10, 20, 40, 40)
+  inspect(
+    clipped.dst_region(),
+    content=(
+      #|{ x: 10, y: 20, width: 40, height: 40, index_count: 6 }
+    ),
+  )
+  // intersecting again keeps the overlap only
+  let inner = clipped.with_clip(30, 0, 40, 30)
+  inspect(
+    inner.dst_region(),
+    content=(
+      #|{ x: 30, y: 20, width: 20, height: 10, index_count: 6 }
+    ),
+  )
+}
