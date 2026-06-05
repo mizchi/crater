@@ -1,0 +1,30 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-renderer/gfx_bridge"
+
+import {
+  "mizchi/crater-painter/paint/model",
+  "mizchi/css/values",
+  "mizchi/gfx",
+}
+
+// Values
+pub fn collect_fill_commands(@model.PaintNode, @gfx.ImageHandle, @gfx.ShaderHandle) -> Array[@gfx.DrawTrianglesCommand]
+
+pub fn default_fill_shader_source() -> String
+
+pub fn[Q : @gfx.CommandQueue] enqueue_paint_tree(Q, @model.PaintNode, @gfx.ImageHandle, @gfx.ShaderHandle) -> Unit
+
+pub fn paint_node_fill_command(@model.PaintNode, @gfx.ImageHandle, @gfx.ShaderHandle) -> @gfx.DrawTrianglesCommand?
+
+pub fn[D : @gfx.GraphicsDriver] render_paint_tree(D, @model.PaintNode, clear_color? : @gfx.Color, present? : Bool) -> Unit raise
+
+pub fn to_gfx_color(@values.Color) -> @gfx.Color
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+
