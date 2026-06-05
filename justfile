@@ -67,6 +67,14 @@ test-gfx-vrt:
 test-gfx-vrt-update:
     moon test -p gfx_vrt --target js --update
 
+# Browser-free PNG image VRT: render fixtures and diff against baselines
+test-image-vrt:
+    cd js && moon build --target js --release && node scripts/image-vrt.mjs
+
+# Re-baseline the PNG image-VRT fixtures
+test-image-vrt-update:
+    cd js && moon build --target js --release && node scripts/image-vrt.mjs --update
+
 # Run native-target tests for a specific browser/native package
 test-pkg-native pkg:
     moon -C browser/native test -p {{pkg}} --target native -j 1
