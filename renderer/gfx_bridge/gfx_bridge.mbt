@@ -201,7 +201,7 @@ pub fn append_paint_node_text(
         return
       }
       let p = node.paint
-      let cmds = @gfx_text.text_run_commands(
+      let cmds = @gfx_text.text_run_coverage_commands(
         frame,
         provider,
         text,

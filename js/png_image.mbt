@@ -151,3 +151,18 @@ pub fn renderTextToImagePngBase64(
   let image = @gfx_vrt.render_text_to_image(text, width, height, scale~)
   rgba_to_png_base64_js(image.width, image.height, image.pixels)
 }
+
+///|
+/// Install a TrueType/OpenType font (raw bytes as 0..255 ints) as the
+/// global glyph provider, so HTML text renders real glyph shapes through
+/// the gfx pipeline. Returns false if the font could not be parsed.
+pub fn setFontProviderFromBytes(data : Array[Int]) -> Bool {
+  let bytes = Bytes::from_array(data.map(fn(i) { (i & 0xff).to_byte() }))
+  match @glyph.glyph_provider_from_bytes(bytes) {
+    Some(provider) => {
+      @glyph.set_glyph_provider(provider)
+      true
+    }
+    None => false
+  }
+}

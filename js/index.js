@@ -6,6 +6,7 @@ export {
   renderHtmlToImagePngBase64,
   renderHtmlToImageRgba,
   renderTextToImagePngBase64,
+  setFontProviderFromBytes,
   renderHtmlToSixel,
   renderHtmlToSixelWithStyles,
   // Incremental API
