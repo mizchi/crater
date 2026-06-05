@@ -165,9 +165,16 @@ fn edge_ok(w : Double, top_left : Bool) -> Bool {
 }
 
 ///|
-/// Whether a pixel center falls outside a rounded rectangle's corner arc,
-/// given the shape uniforms `[_, _, _, _, r_tl, r_tr, r_br, r_bl, x, y, w, h]`.
-fn rounded_corner_clipped(pcx : Double, pcy : Double, u : Array[Int]) -> Bool {
+/// Anti-aliased coverage (0..1) of a pixel center against a rounded
+/// rectangle's corner arcs, from the shape uniforms
+/// `[_, _, _, _, r_tl, r_tr, r_br, r_bl, x, y, w, h]`. Pixels outside any
+/// corner region have full coverage; inside a corner, coverage falls off
+/// over a ~1px band along the arc (matching a signed-distance edge).
+fn rounded_corner_coverage(
+  pcx : Double,
+  pcy : Double,
+  u : Array[Int],
+) -> Double {
   let rtl = u[4].to_double()
   let rtr = u[5].to_double()
   let rbr = u[6].to_double()
@@ -176,25 +183,33 @@ fn rounded_corner_clipped(pcx : Double, pcy : Double, u : Array[Int]) -> Bool {
   let y = u[9].to_double()
   let w = u[10].to_double()
   let h = u[11].to_double()
-  fn outside(cx : Double, cy : Double, r : Double) -> Bool {
+  fn cov(cx : Double, cy : Double, r : Double) -> Double {
     let dx = pcx - cx
     let dy = pcy - cy
-    dx * dx + dy * dy > r * r
+    let dist = (dx * dx + dy * dy).sqrt()
+    let c = r - dist + 0.5
+    if c < 0.0 {
+      0.0
+    } else if c > 1.0 {
+      1.0
+    } else {
+      c
+    }
   }
 
   if rtl > 0.0 && pcx < x + rtl && pcy < y + rtl {
-    return outside(x + rtl, y + rtl, rtl)
+    return cov(x + rtl, y + rtl, rtl)
   }
   if rtr > 0.0 && pcx > x + w - rtr && pcy < y + rtr {
-    return outside(x + w - rtr, y + rtr, rtr)
+    return cov(x + w - rtr, y + rtr, rtr)
   }
   if rbr > 0.0 && pcx > x + w - rbr && pcy > y + h - rbr {
-    return outside(x + w - rbr, y + h - rbr, rbr)
+    return cov(x + w - rbr, y + h - rbr, rbr)
   }
   if rbl > 0.0 && pcx < x + rbl && pcy > y + h - rbl {
-    return outside(x + rbl, y + h - rbl, rbl)
+    return cov(x + rbl, y + h - rbl, rbl)
   }
-  false
+  1.0
 }
 
 ///|
@@ -318,8 +333,16 @@ fn SoftwareDriver::rasterize(
         let w1 = edge_function(cx, cy, ax, ay, pcx, pcy)
         let w2 = edge_function(ax, ay, bx, by, pcx, pcy)
         let inside = edge_ok(w0, tl0) && edge_ok(w1, tl1) && edge_ok(w2, tl2)
-        if inside && !(rounded && rounded_corner_clipped(pcx, pcy, u)) {
-          self.blend_pixel(px, py, sr, sg, sb, sa, command.blend)
+        if inside {
+          let coverage = if rounded {
+            rounded_corner_coverage(pcx, pcy, u)
+          } else {
+            1.0
+          }
+          if coverage > 0.0 {
+            let a = (sa.to_double() * coverage).to_int()
+            self.blend_pixel(px, py, sr, sg, sb, a, command.blend)
+          }
         }
       }
     }

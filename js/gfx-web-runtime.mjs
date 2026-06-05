@@ -35,28 +35,32 @@ fn vs_main(@location(0) ndc : vec2<f32>, @location(1) uv : vec2<f32>) -> VSOut {
   return out;
 }
 
-fn corner_clip(p : vec2<f32>) -> bool {
+fn arc_cov(p : vec2<f32>, c : vec2<f32>, r : f32) -> f32 {
+  return clamp(r - distance(p, c) + 0.5, 0.0, 1.0);
+}
+
+fn corner_coverage(p : vec2<f32>) -> f32 {
   let x = u.rect.x; let y = u.rect.y; let w = u.rect.z; let h = u.rect.w;
-  // top-left
   if (u.radii.x > 0.0 && p.x < x + u.radii.x && p.y < y + u.radii.x) {
-    return distance(p, vec2<f32>(x + u.radii.x, y + u.radii.x)) > u.radii.x;
+    return arc_cov(p, vec2<f32>(x + u.radii.x, y + u.radii.x), u.radii.x);
   }
   if (u.radii.y > 0.0 && p.x > x + w - u.radii.y && p.y < y + u.radii.y) {
-    return distance(p, vec2<f32>(x + w - u.radii.y, y + u.radii.y)) > u.radii.y;
+    return arc_cov(p, vec2<f32>(x + w - u.radii.y, y + u.radii.y), u.radii.y);
   }
   if (u.radii.z > 0.0 && p.x > x + w - u.radii.z && p.y > y + h - u.radii.z) {
-    return distance(p, vec2<f32>(x + w - u.radii.z, y + h - u.radii.z)) > u.radii.z;
+    return arc_cov(p, vec2<f32>(x + w - u.radii.z, y + h - u.radii.z), u.radii.z);
   }
   if (u.radii.w > 0.0 && p.x < x + u.radii.w && p.y > y + h - u.radii.w) {
-    return distance(p, vec2<f32>(x + u.radii.w, y + h - u.radii.w)) > u.radii.w;
+    return arc_cov(p, vec2<f32>(x + u.radii.w, y + h - u.radii.w), u.radii.w);
   }
-  return false;
+  return 1.0;
 }
 
 @fragment
 fn fs_main(in : VSOut) -> @location(0) vec4<f32> {
-  if (u.flags.x > 0.5 && corner_clip(in.frag)) { discard; }
-  return u.color;
+  var cov = 1.0;
+  if (u.flags.x > 0.5) { cov = corner_coverage(in.frag); }
+  return vec4<f32>(u.color.rgb, u.color.a * cov);
 }
 `;
 
@@ -132,20 +136,29 @@ class CpuBackend {
             (w1 > 0 || (w1 === 0 && tl1)) &&
             (w2 > 0 || (w2 === 0 && tl2));
           if (!inside) continue;
-          if (rounded && this.#cornerClipped(pcx, pcy, uniforms)) continue;
-          this.blend(px, py, sr, sg, sb, sa, blend);
+          let a = sa;
+          if (rounded) {
+            const cov = this.#cornerCoverage(pcx, pcy, uniforms);
+            if (cov <= 0) continue;
+            // Match gfx_software: round alpha to an integer before blending.
+            a = Math.trunc(sa * cov);
+          }
+          this.blend(px, py, sr, sg, sb, a, blend);
         }
       }
     }
   }
-  #cornerClipped(pcx, pcy, u) {
+  #cornerCoverage(pcx, pcy, u) {
     const rtl = u[4], rtr = u[5], rbr = u[6], rbl = u[7], x = u[8], y = u[9], w = u[10], h = u[11];
-    const out = (cx, cy, r) => (pcx - cx) ** 2 + (pcy - cy) ** 2 > r * r;
-    if (rtl > 0 && pcx < x + rtl && pcy < y + rtl) return out(x + rtl, y + rtl, rtl);
-    if (rtr > 0 && pcx > x + w - rtr && pcy < y + rtr) return out(x + w - rtr, y + rtr, rtr);
-    if (rbr > 0 && pcx > x + w - rbr && pcy > y + h - rbr) return out(x + w - rbr, y + h - rbr, rbr);
-    if (rbl > 0 && pcx < x + rbl && pcy > y + h - rbl) return out(x + rbl, y + h - rbl, rbl);
-    return false;
+    const cov = (cx, cy, r) => {
+      const c = r - Math.hypot(pcx - cx, pcy - cy) + 0.5;
+      return c < 0 ? 0 : c > 1 ? 1 : c;
+    };
+    if (rtl > 0 && pcx < x + rtl && pcy < y + rtl) return cov(x + rtl, y + rtl, rtl);
+    if (rtr > 0 && pcx > x + w - rtr && pcy < y + rtr) return cov(x + w - rtr, y + rtr, rtr);
+    if (rbr > 0 && pcx > x + w - rbr && pcy > y + h - rbr) return cov(x + w - rbr, y + h - rbr, rbr);
+    if (rbl > 0 && pcx < x + rbl && pcy > y + h - rbl) return cov(x + rbl, y + h - rbl, rbl);
+    return 1;
   }
   readPixels() { return Array.from(this.pixels); }
 }

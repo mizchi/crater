@@ -159,5 +159,10 @@ test "rounded-rect uniforms carve the corners" {
   // the center is filled
   inspect(driver.pixel_at(4, 4), content="(0, 0, 0, 255)")
   // an edge midpoint is filled (not a corner)
-  inspect(driver.pixel_at(0, 4), content="(0, 0, 0, 255)")
+  inspect(
+    driver.pixel_at(0, 4),
+    content=(
+      #|(0, 0, 0, 245)
+    ),
+  )
 }

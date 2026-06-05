@@ -64,7 +64,7 @@ const FIXTURES = [
   { name: "nested", w: 60, h: 60, maxDiffPct: 0.5, html: wrap(`<div style="width:50px;height:50px;background:#222"><div style="width:20px;height:20px;background:#dd4"></div></div>`) },
   { name: "flex-row", w: 90, h: 30, maxDiffPct: 0.5, html: wrap(`<div style="display:flex"><div style="width:30px;height:30px;background:#c33"></div><div style="width:30px;height:30px;background:#3a5"></div><div style="width:30px;height:30px;background:#35c"></div></div>`) },
   // rounded corners differ only by anti-aliasing
-  { name: "rounded", w: 60, h: 60, maxDiffPct: 6, html: wrap(`<div style="width:40px;height:40px;background:#000;border-radius:12px"></div>`) },
+  { name: "rounded", w: 60, h: 60, maxDiffPct: 2, html: wrap(`<div style="width:40px;height:40px;background:#000;border-radius:12px"></div>`) },
 ];
 
 async function main() {
