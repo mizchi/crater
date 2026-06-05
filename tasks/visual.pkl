@@ -41,8 +41,29 @@ testVisual: pkfire.Task = new {
   deps { testVrt; testWptVrt }
 }
 
+testImageVrt: pkfire.Task = new {
+  name = "test-image-vrt"
+  description = "Run the browser-free PNG image-VRT baseline check"
+  visibility = "internal"
+  cmd = "just test-image-vrt"
+  inputs {
+    "renderer/gfx_frame/**/*.mbt"
+    "renderer/gfx_image/**/*.mbt"
+    "renderer/gfx_text/**/*.mbt"
+    "renderer/gfx_bridge/**/*.mbt"
+    "renderer/gfx_software/**/*.mbt"
+    "renderer/gfx_vrt/**/*.mbt"
+    "renderer/**/moon.pkg"
+    "js/png_image.mbt"
+    "js/moon.pkg"
+    "js/scripts/image-vrt.mjs"
+    "js/test/image-vrt/baselines/**"
+  }
+}
+
 tasks: Listing<pkfire.Task> = new {
   testVrt
   testWptVrt
   testVisual
+  testImageVrt
 }

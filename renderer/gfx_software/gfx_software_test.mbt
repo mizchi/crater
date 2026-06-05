@@ -87,3 +87,40 @@ test "read_pixels returns the requested RGBA region" {
     content="Some([0, 0, 255, 255, 0, 0, 255, 255, 0, 0, 255, 255, 0, 0, 255, 255])",
   )
 }
+
+///|
+test "draw is scissored to the command's destination region" {
+  let driver = SoftwareDriver::new(4, 4)
+  driver.initialize()
+  let dst = @gfx.GraphicsDriver::new_image(driver, 4, 4)
+  let shader = @gfx.GraphicsDriver::new_shader(driver, "s")
+  @gfx.GraphicsDriver::begin(
+    driver,
+    @gfx.new_render_pass_desc(@gfx.new_color(0.0, 0.0, 0.0, 1.0), true),
+  )
+  // Full-frame red quad, but the destination region only covers the left
+  // two columns (x:0,w:2).
+  let command = @gfx.new_draw_triangles_command(
+    dst,
+    shader,
+    [@gfx.new_dst_region(0, 0, 2, 4, 6)],
+    0,
+    0,
+    0,
+    @gfx.BlendMode::Copy,
+    [
+      -1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0, -1.0, 1.0, 1.0, -1.0, -1.0, 0.0,
+      1.0,
+    ],
+    [0, 1, 2, 2, 3, 0],
+    [],
+    [255, 0, 0, 255],
+  )
+  @gfx.GraphicsDriver::draw_triangles(driver, command)
+  @gfx.GraphicsDriver::end(driver, false)
+  // left columns red, right columns remain the clear color
+  inspect(driver.pixel_at(0, 0), content="(255, 0, 0, 255)")
+  inspect(driver.pixel_at(1, 3), content="(255, 0, 0, 255)")
+  inspect(driver.pixel_at(2, 0), content="(0, 0, 0, 255)")
+  inspect(driver.pixel_at(3, 3), content="(0, 0, 0, 255)")
+}

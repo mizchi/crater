@@ -170,3 +170,35 @@ test "image vrt: translucent box alpha-blends over white" {
     ),
   )
 }
+
+///|
+test "image vrt: overflow hidden clips the oversized child" {
+  let html =
+    #|<html><body style="margin:0">
+    #|<div style="overflow:hidden;width:8px;height:8px;background:#cccccc">
+    #|<div style="width:16px;height:16px;background:#000000"></div>
+    #|</div>
+    #|</body></html>
+  inspect(
+    render_ascii(html, 16.0, 16.0),
+    content=(
+      #|@@@@@@@@        
+      #|@@@@@@@@        
+      #|@@@@@@@@        
+      #|@@@@@@@@        
+      #|@@@@@@@@        
+      #|@@@@@@@@        
+      #|@@@@@@@@        
+      #|@@@@@@@@        
+      #|                
+      #|                
+      #|                
+      #|                
+      #|                
+      #|                
+      #|                
+      #|                
+      #|
+    ),
+  )
+}

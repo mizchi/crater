@@ -193,6 +193,14 @@ fn SoftwareDriver::rasterize(
   let sg = if u.length() > 1 { u[1] } else { 0 }
   let sb = if u.length() > 2 { u[2] } else { 0 }
   let sa = if u.length() > 3 { u[3] } else { 255 }
+  // Scissor: honor the command's destination region as a clip rectangle.
+  let (scissor_x0, scissor_y0, scissor_x1, scissor_y1) = if command.dst_regions.length() >
+    0 {
+    let r = command.dst_regions[0]
+    (r.x, r.y, r.x + r.width, r.y + r.height)
+  } else {
+    (0, 0, self.width, self.height)
+  }
   let stride = 4
   let mut t = 0
   while t + 2 < indices.length() {
@@ -210,10 +218,23 @@ fn SoftwareDriver::rasterize(
     if area == 0.0 {
       continue
     }
-    let min_x = clamp_int(fmin3(x0, x1, x2).to_int(), 0, self.width - 1)
-    let max_x = clamp_int(fmax3(x0, x1, x2).to_int(), 0, self.width - 1)
-    let min_y = clamp_int(fmin3(y0, y1, y2).to_int(), 0, self.height - 1)
-    let max_y = clamp_int(fmax3(y0, y1, y2).to_int(), 0, self.height - 1)
+    // Intersect the triangle bounding box with the framebuffer and the
+    // scissor; skip the triangle entirely when the intersection is empty.
+    let lo_x = clamp_int(scissor_x0, 0, self.width)
+    let hi_x = clamp_int(scissor_x1, 0, self.width) - 1
+    let lo_y = clamp_int(scissor_y0, 0, self.height)
+    let hi_y = clamp_int(scissor_y1, 0, self.height) - 1
+    let tri_min_x = fmin3(x0, x1, x2).to_int()
+    let tri_max_x = fmax3(x0, x1, x2).to_int()
+    let tri_min_y = fmin3(y0, y1, y2).to_int()
+    let tri_max_y = fmax3(y0, y1, y2).to_int()
+    let min_x = if tri_min_x > lo_x { tri_min_x } else { lo_x }
+    let max_x = if tri_max_x < hi_x { tri_max_x } else { hi_x }
+    let min_y = if tri_min_y > lo_y { tri_min_y } else { lo_y }
+    let max_y = if tri_max_y < hi_y { tri_max_y } else { hi_y }
+    if min_x > max_x || min_y > max_y {
+      continue
+    }
     for py in min_y..<=max_y {
       for px in min_x..<=max_x {
         let cx = px.to_double() + 0.5

@@ -81,6 +81,16 @@ const FIXTURES = [
 <div style="position:absolute;left:0;top:0;width:16px;height:8px;background:rgba(0,0,0,0.5)"></div>
 </body></html>`,
   },
+  {
+    name: "overflow-clip",
+    width: 16,
+    height: 16,
+    html: `<html><body style="margin:0">
+<div style="overflow:hidden;width:8px;height:8px;background:#cccccc">
+<div style="width:16px;height:16px;background:#000000"></div>
+</div>
+</body></html>`,
+  },
 ];
 
 async function loadCrater() {

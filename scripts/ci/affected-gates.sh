@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Decide which heavy CI gates need to run based on `pkf affected`.
-# Writes gate booleans (wpt_css, wpt_dom, wpt_webdriver, paint_vrt, wpt_vrt)
-# to $GITHUB_OUTPUT and prints a summary to stdout.
+# Writes gate booleans (wpt_css, wpt_dom, wpt_webdriver, paint_vrt, wpt_vrt,
+# gfx_vrt) to $GITHUB_OUTPUT and prints a summary to stdout.
 #
 # Falls back to running everything when:
 # - the event is `schedule` (nightly runs the full matrix)
@@ -20,7 +20,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-gates=(wpt_css wpt_dom wpt_webdriver paint_vrt wpt_vrt)
+gates=(wpt_css wpt_dom wpt_webdriver paint_vrt wpt_vrt gfx_vrt)
 
 emit_all_true() {
   local reason="$1"
@@ -64,7 +64,7 @@ set +e
 plan="$(pkf affected \
   "${affected_args[@]}" \
   --dry-run \
-  test-wpt-css test-wpt-dom test-wpt-webdriver test-vrt test-wpt-vrt 2>&1)"
+  test-wpt-css test-wpt-dom test-wpt-webdriver test-vrt test-wpt-vrt test-image-vrt 2>&1)"
 status=$?
 set -e
 echo "${plan}"
@@ -85,6 +85,7 @@ declare -A task_for=(
   [wpt_webdriver]=test-wpt-webdriver
   [paint_vrt]=test-vrt
   [wpt_vrt]=test-wpt-vrt
+  [gfx_vrt]=test-image-vrt
 )
 
 for gate in "${gates[@]}"; do
