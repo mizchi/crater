@@ -1,0 +1,22 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-renderer/gfx_text"
+
+import {
+  "mizchi/crater-painter/paint/glyph",
+  "mizchi/crater-renderer/gfx_frame",
+  "mizchi/gfx",
+}
+
+// Values
+pub fn glyph_placements_to_commands(@gfx_frame.RenderFrame2D, Array[@glyph.GlyphPlacement], @gfx.Color) -> Array[@gfx.DrawTrianglesCommand]
+
+pub fn text_run_commands(@gfx_frame.RenderFrame2D, @glyph.GlyphProvider, String, Int, Int, Double, @gfx.Color, max_width? : Int, line_height? : Double, is_bold? : Bool, font_family? : String, letter_spacing? : Double, word_spacing? : Double, font_weight? : Double) -> Array[@gfx.DrawTrianglesCommand]
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

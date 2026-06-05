@@ -1,0 +1,331 @@
+///|
+/// Shared 2D framing primitives for crater's gfx-backed renderer.
+///
+/// This is the base wiring unit that the image / text / assembler packages
+/// all build on, mirroring the role of kagura's renderer2d primitive
+/// helpers. It depends only on `mizchi/gfx` (the graphics contract) and
+/// `mizchi/css/values` (for color conversion), keeping the surface minimal.
+///
+/// All geometry is lowered from CSS pixel space to normalized device
+/// coordinates (NDC): x in [-1, 1] rightward, y in [-1, 1] with the origin
+/// at the top-left of the frame.
+
+// ---------------------------------------------------------------------------
+// Frame context
+// ---------------------------------------------------------------------------
+
+///|
+/// Per-frame rendering context: the destination image, fill shader, target
+/// size (used for the pixel -> NDC transform) and blend mode shared by the
+/// commands emitted into the frame.
+pub(all) struct RenderFrame2D {
+  dst : @gfx.ImageHandle
+  shader : @gfx.ShaderHandle
+  screen_w : Int
+  screen_h : Int
+  pipeline_id : Int
+  uniform_hash : Int
+  blend : @gfx.BlendMode
+}
+
+///|
+pub fn RenderFrame2D::new(
+  dst~ : @gfx.ImageHandle,
+  shader~ : @gfx.ShaderHandle,
+  screen_w~ : Int,
+  screen_h~ : Int,
+  pipeline_id? : Int = 0,
+  uniform_hash? : Int = 0,
+  blend? : @gfx.BlendMode = @gfx.BlendMode::Alpha,
+) -> RenderFrame2D {
+  { dst, shader, screen_w, screen_h, pipeline_id, uniform_hash, blend }
+}
+
+///|
+/// The full-frame destination region (6 indices = one quad).
+pub fn RenderFrame2D::dst_region(self : RenderFrame2D) -> @gfx.DstRegion {
+  @gfx.new_dst_region(0, 0, self.screen_w, self.screen_h, 6)
+}
+
+// ---------------------------------------------------------------------------
+// Color
+// ---------------------------------------------------------------------------
+
+///|
+/// Convert a crater css color (`r`/`g`/`b` in 0..255, `a` in 0..1) into a
+/// `@gfx.Color` (all channels normalized to 0..1).
+pub fn to_gfx_color(c : @types.Color) -> @gfx.Color {
+  @gfx.new_color(
+    c.r.to_double() / 255.0,
+    c.g.to_double() / 255.0,
+    c.b.to_double() / 255.0,
+    c.a,
+  )
+}
+
+///|
+/// Pack a `@gfx.Color` into the uniform dword stream as four 0..255
+/// channels (r, g, b, a), matching the renderer2d convention.
+pub fn color_to_uniform_dwords(color : @gfx.Color) -> Array[Int] {
+  [
+    (color.r * 255.0).to_int(),
+    (color.g * 255.0).to_int(),
+    (color.b * 255.0).to_int(),
+    (color.a * 255.0).to_int(),
+  ]
+}
+
+// ---------------------------------------------------------------------------
+// Geometry helpers (axis-aligned, dependency-free)
+// ---------------------------------------------------------------------------
+
+///|
+/// Triangle indices for a single quad (two triangles).
+pub fn quad_fill_indices() -> Array[Int] {
+  [0, 1, 2, 2, 3, 0]
+}
+
+///|
+/// Transform interleaved pixel-space vertices (x, y, u, v per vertex) into
+/// NDC: x in [-1, 1] rightward, y in [-1, 1] with the origin at top-left.
+pub fn pixel_to_ndc_vertices(
+  vertices : Array[Double],
+  screen_w : Double,
+  screen_h : Double,
+) -> Array[Double] {
+  let out : Array[Double] = []
+  let mut i = 0
+  while i < vertices.length() {
+    let px = vertices[i]
+    let py = vertices[i + 1]
+    let u = vertices[i + 2]
+    let v = vertices[i + 3]
+    out.push(px / screen_w * 2.0 - 1.0)
+    out.push(1.0 - py / screen_h * 2.0)
+    out.push(u)
+    out.push(v)
+    i = i + 4
+  }
+  out
+}
+
+///|
+/// Interleaved NDC vertices (x, y, u, v) for a filled axis-aligned rect.
+/// The uv coordinates span the unit square so textured backends can sample
+/// an image or glyph atlas over the quad.
+pub fn ndc_rect_vertices(
+  px : Double,
+  py : Double,
+  pw : Double,
+  ph : Double,
+  screen_w : Double,
+  screen_h : Double,
+  u0? : Double = 0.0,
+  v0? : Double = 0.0,
+  u1? : Double = 1.0,
+  v1? : Double = 1.0,
+) -> (Array[Double], Array[Int]) {
+  let x0 = px / screen_w * 2.0 - 1.0
+  let y0 = 1.0 - py / screen_h * 2.0
+  let x1 = (px + pw) / screen_w * 2.0 - 1.0
+  let y1 = 1.0 - (py + ph) / screen_h * 2.0
+  let vertices = [
+    x0, y0, u0, v0, x1, y0, u1, v0, x1, y1, u1, v1, x0, y1, u0, v1,
+  ]
+  (vertices, quad_fill_indices())
+}
+
+///|
+/// Interleaved NDC vertices (x, y, u, v) for a filled axis-aligned rect
+/// spanning the full unit uv square.
+pub fn ndc_rect_fill_vertices(
+  px : Double,
+  py : Double,
+  pw : Double,
+  ph : Double,
+  screen_w : Double,
+  screen_h : Double,
+) -> (Array[Double], Array[Int]) {
+  ndc_rect_vertices(px, py, pw, ph, screen_w, screen_h)
+}
+
+///|
+/// Pixel-space vertices for an axis-aligned rectangle outline, emitted as
+/// four edge quads (top, bottom, left, right) of `line_width`. CSS borders
+/// are axis-aligned, so no rotated line geometry (and no vector
+/// dependency) is needed.
+pub fn rect_outline_vertices(
+  x : Double,
+  y : Double,
+  w : Double,
+  h : Double,
+  line_width : Double,
+) -> (Array[Double], Array[Int]) {
+  let all_vertices : Array[Double] = []
+  let all_indices : Array[Int] = []
+  let edges = [
+    (x, y, w, line_width), // top
+    (x, y + h - line_width, w, line_width), // bottom
+    (x, y, line_width, h), // left
+    (x + w - line_width, y, line_width, h), // right
+  ]
+  let mut base = 0
+  for edge in edges {
+    let (ex, ey, ew, eh) = edge
+    let verts = [
+      ex,
+      ey,
+      0.0,
+      0.0,
+      ex + ew,
+      ey,
+      1.0,
+      0.0,
+      ex + ew,
+      ey + eh,
+      1.0,
+      1.0,
+      ex,
+      ey + eh,
+      0.0,
+      1.0,
+    ]
+    for value in verts {
+      all_vertices.push(value)
+    }
+    for idx in quad_fill_indices() {
+      all_indices.push(idx + base)
+    }
+    base = base + 4
+  }
+  (all_vertices, all_indices)
+}
+
+// ---------------------------------------------------------------------------
+// Draw command builder + primitives
+// ---------------------------------------------------------------------------
+
+///|
+/// Core command builder: wrap NDC vertex data + indices for `frame` into a
+/// single `@gfx.DrawTrianglesCommand`, with `color` packed as uniforms and
+/// optional `src_image_ids` for textured draws (images / glyph atlases).
+pub fn new_primitive_command(
+  frame : RenderFrame2D,
+  vertex_data : Array[Double],
+  indices : Array[Int],
+  color : @gfx.Color,
+  src_image_ids? : Array[Int] = [],
+) -> @gfx.DrawTrianglesCommand {
+  @gfx.new_draw_triangles_command(
+    frame.dst,
+    frame.shader,
+    [
+      @gfx.new_dst_region(
+        0,
+        0,
+        frame.screen_w,
+        frame.screen_h,
+        indices.length(),
+      ),
+    ],
+    0,
+    frame.pipeline_id,
+    frame.uniform_hash,
+    frame.blend,
+    vertex_data,
+    indices,
+    src_image_ids,
+    color_to_uniform_dwords(color),
+  )
+}
+
+///|
+/// A solid-color filled rectangle in pixel space (e.g. a background box).
+pub(all) struct RectFill2D {
+  x : Double
+  y : Double
+  w : Double
+  h : Double
+  color : @gfx.Color
+}
+
+///|
+pub fn RectFill2D::new(
+  x~ : Double,
+  y~ : Double,
+  w~ : Double,
+  h~ : Double,
+  color~ : @gfx.Color,
+) -> RectFill2D {
+  { x, y, w, h, color }
+}
+
+///|
+/// Lower a `RectFill2D` into the command list (one quad).
+pub fn append_rect_fill(
+  commands : Array[@gfx.DrawTrianglesCommand],
+  frame : RenderFrame2D,
+  rect : RectFill2D,
+) -> Unit {
+  let (vertices, indices) = ndc_rect_fill_vertices(
+    rect.x,
+    rect.y,
+    rect.w,
+    rect.h,
+    frame.screen_w.to_double(),
+    frame.screen_h.to_double(),
+  )
+  commands.push(new_primitive_command(frame, vertices, indices, rect.color))
+}
+
+///|
+/// A uniform-width, single-color rectangle outline in pixel space.
+pub(all) struct RectOutline2D {
+  x : Double
+  y : Double
+  w : Double
+  h : Double
+  line_width : Double
+  color : @gfx.Color
+}
+
+///|
+pub fn RectOutline2D::new(
+  x~ : Double,
+  y~ : Double,
+  w~ : Double,
+  h~ : Double,
+  line_width? : Double = 1.0,
+  color~ : @gfx.Color,
+) -> RectOutline2D {
+  { x, y, w, h, line_width, color }
+}
+
+///|
+/// Lower a `RectOutline2D` into the command list (four edge quads in one
+/// command).
+pub fn append_rect_outline(
+  commands : Array[@gfx.DrawTrianglesCommand],
+  frame : RenderFrame2D,
+  rect : RectOutline2D,
+) -> Unit {
+  let (vertices, indices) = rect_outline_vertices(
+    rect.x,
+    rect.y,
+    rect.w,
+    rect.h,
+    rect.line_width,
+  )
+  commands.push(
+    new_primitive_command(
+      frame,
+      pixel_to_ndc_vertices(
+        vertices,
+        frame.screen_w.to_double(),
+        frame.screen_h.to_double(),
+      ),
+      indices,
+      rect.color,
+    ),
+  )
+}

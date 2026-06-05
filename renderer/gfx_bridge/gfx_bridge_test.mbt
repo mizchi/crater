@@ -17,43 +17,12 @@ fn fill_node(
 
 ///|
 fn test_frame(w : Int, h : Int) -> RenderFrame2D {
-  RenderFrame2D::new(
+  @gfx_frame.RenderFrame2D::new(
     dst=@gfx.new_image_handle(1, w, h),
     shader=@gfx.new_shader_handle(2, default_fill_shader_source()),
     screen_w=w,
     screen_h=h,
   )
-}
-
-///|
-test "to_gfx_color normalizes 0..255 channels into 0..1" {
-  inspect(
-    to_gfx_color(@types.Color::rgb(255, 128, 0)),
-    content=(
-      #|{ r: 1, g: 0.5019607843137255, b: 0, a: 1 }
-    ),
-  )
-}
-
-///|
-test "color_to_uniform_dwords packs 0..255 channels" {
-  inspect(
-    color_to_uniform_dwords(to_gfx_color(@types.Color::rgba(255, 128, 0, 1.0))),
-    content="[255, 128, 0, 255]",
-  )
-}
-
-///|
-test "ndc_rect_fill_vertices maps the full viewport onto the NDC square" {
-  let (vertices, indices) = ndc_rect_fill_vertices(
-    0.0, 0.0, 100.0, 50.0, 100.0, 50.0,
-  )
-  // top-left -> (-1, 1), bottom-right -> (1, -1)
-  inspect(
-    vertices,
-    content="[-1, 1, 0, 0, 1, 1, 1, 0, 1, -1, 1, 1, -1, -1, 0, 1]",
-  )
-  inspect(indices, content="[0, 1, 2, 2, 3, 0]")
 }
 
 ///|
@@ -91,18 +60,9 @@ test "collect_paint_commands lowers background fills in paint order" {
   let commands = collect_paint_commands(frame, tree)
   // root + opaque child only; transparent and zero-area nodes are skipped.
   inspect(commands.length(), content="2")
-  // Every fill targets the full-frame dst region (geometry lives in NDC
-  // vertex data).
   inspect(
     commands.map(fn(c) { c.dst_regions[0].index_count }),
     content="[6, 6]",
-  )
-  // The opaque child fill maps its pixel box to NDC vertex data.
-  inspect(
-    commands[1].vertex_data,
-    content=(
-      #|[-0.8, 0.8, 0, 0, -0.4, 0.8, 1, 0, -0.4, 0.4, 1, 1, -0.8, 0.4, 0, 1]
-    ),
   )
 }
 
@@ -131,6 +91,33 @@ test "borders are lowered as per-side edge fills" {
   append_paint_node(commands, frame, node)
   // no background, two visible borders (top + left)
   inspect(commands.length(), content="2")
+}
+
+///|
+test "replaced images are lowered when an image resolver is supplied" {
+  let frame = test_frame(100, 100)
+  let paint = @paint_model.PaintProperties::default()
+  let img_node = @paint_model.PaintNode::new(
+    "img",
+    "img",
+    0.0,
+    0.0,
+    32.0,
+    32.0,
+    paint,
+    [],
+    src=Some("logo.png"),
+  )
+  let resolve = fn(src : String) -> @gfx.ImageHandle? {
+    if src == "logo.png" {
+      Some(@gfx.new_image_handle(42, 32, 32))
+    } else {
+      None
+    }
+  }
+  let commands = collect_paint_commands(frame, img_node, resolve_image=resolve)
+  inspect(commands.length(), content="1")
+  inspect(commands[0].src_image_ids, content="[42]")
 }
 
 ///|

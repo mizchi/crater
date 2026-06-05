@@ -1,0 +1,4 @@
+import {
+  "mizchi/gfx",
+  "mizchi/css/values" @types,
+}

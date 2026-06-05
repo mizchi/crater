@@ -2,77 +2,41 @@
 package "mizchi/crater-renderer/gfx_bridge"
 
 import {
+  "mizchi/crater-painter/paint/glyph",
   "mizchi/crater-painter/paint/model",
-  "mizchi/css/values",
+  "mizchi/crater-renderer/gfx_frame",
   "mizchi/gfx",
 }
 
 // Values
-pub fn append_paint_node(Array[@gfx.DrawTrianglesCommand], RenderFrame2D, @model.PaintNode) -> Unit
+pub fn append_paint_node(Array[@gfx.DrawTrianglesCommand], @gfx_frame.RenderFrame2D, @model.PaintNode) -> Unit
 
-pub fn append_paint_node_background(Array[@gfx.DrawTrianglesCommand], RenderFrame2D, @model.PaintNode) -> Unit
+pub fn append_paint_node_background(Array[@gfx.DrawTrianglesCommand], @gfx_frame.RenderFrame2D, @model.PaintNode) -> Unit
 
-pub fn append_paint_node_borders(Array[@gfx.DrawTrianglesCommand], RenderFrame2D, @model.PaintNode) -> Unit
+pub fn append_paint_node_borders(Array[@gfx.DrawTrianglesCommand], @gfx_frame.RenderFrame2D, @model.PaintNode) -> Unit
 
-pub fn append_rect_fill(Array[@gfx.DrawTrianglesCommand], RenderFrame2D, RectFill2D) -> Unit
+pub fn append_paint_node_image(Array[@gfx.DrawTrianglesCommand], @gfx_frame.RenderFrame2D, @model.PaintNode, (String) -> @gfx.ImageHandle?) -> Unit
 
-pub fn append_rect_outline(Array[@gfx.DrawTrianglesCommand], RenderFrame2D, RectOutline2D) -> Unit
+pub fn append_paint_node_text(Array[@gfx.DrawTrianglesCommand], @gfx_frame.RenderFrame2D, @model.PaintNode, @glyph.GlyphProvider) -> Unit
 
-pub fn collect_paint_commands(RenderFrame2D, @model.PaintNode) -> Array[@gfx.DrawTrianglesCommand]
-
-pub fn color_to_uniform_dwords(@gfx.Color) -> Array[Int]
+pub fn collect_paint_commands(@gfx_frame.RenderFrame2D, @model.PaintNode, glyph_provider? : @glyph.GlyphProvider, resolve_image? : (String) -> @gfx.ImageHandle?) -> Array[@gfx.DrawTrianglesCommand]
 
 pub fn default_fill_shader_source() -> String
 
-pub fn[Q : @gfx.CommandQueue] enqueue_paint_tree(Q, RenderFrame2D, @model.PaintNode) -> Unit
-
-pub fn ndc_rect_fill_vertices(Double, Double, Double, Double, Double, Double) -> (Array[Double], Array[Int])
-
-pub fn pixel_to_ndc_vertices(Array[Double], Double, Double) -> Array[Double]
-
-pub fn quad_fill_indices() -> Array[Int]
-
-pub fn rect_outline_vertices(Double, Double, Double, Double, Double) -> (Array[Double], Array[Int])
+pub fn[Q : @gfx.CommandQueue] enqueue_paint_tree(Q, @gfx_frame.RenderFrame2D, @model.PaintNode, glyph_provider? : @glyph.GlyphProvider, resolve_image? : (String) -> @gfx.ImageHandle?) -> Unit
 
 pub fn[D : @gfx.GraphicsDriver] render_paint_tree(D, @model.PaintNode, clear_color? : @gfx.Color, present? : Bool) -> Unit raise
-
-pub fn to_gfx_color(@values.Color) -> @gfx.Color
 
 // Errors
 
 // Types and methods
-pub(all) struct RectFill2D {
-  x : Double
-  y : Double
-  w : Double
-  h : Double
-  color : @gfx.Color
-}
-pub fn RectFill2D::new(x~ : Double, y~ : Double, w~ : Double, h~ : Double, color~ : @gfx.Color) -> Self
-
-pub(all) struct RectOutline2D {
-  x : Double
-  y : Double
-  w : Double
-  h : Double
-  line_width : Double
-  color : @gfx.Color
-}
-pub fn RectOutline2D::new(x~ : Double, y~ : Double, w~ : Double, h~ : Double, line_width? : Double, color~ : @gfx.Color) -> Self
-
-pub(all) struct RenderFrame2D {
-  dst : @gfx.ImageHandle
-  shader : @gfx.ShaderHandle
-  screen_w : Int
-  screen_h : Int
-  pipeline_id : Int
-  uniform_hash : Int
-  blend : @gfx.BlendMode
-}
-pub fn RenderFrame2D::dst_region(Self) -> @gfx.DstRegion
-pub fn RenderFrame2D::new(dst~ : @gfx.ImageHandle, shader~ : @gfx.ShaderHandle, screen_w~ : Int, screen_h~ : Int, pipeline_id? : Int, uniform_hash? : Int, blend? : @gfx.BlendMode) -> Self
 
 // Type aliases
+pub using @gfx_frame {type RectFill2D}
+
+pub using @gfx_frame {type RectOutline2D}
+
+pub using @gfx_frame {type RenderFrame2D}
 
 // Traits
 
