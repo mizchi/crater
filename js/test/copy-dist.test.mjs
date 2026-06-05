@@ -75,6 +75,7 @@ test("copyDist falls back to workspace root build output", (t) => {
   touch(path.join(tempRoot, "index.d.ts"), "index-types")
   touch(path.join(tempRoot, "wasm.js"), "wasm")
   touch(path.join(tempRoot, "wasm.d.ts"), "wasm-types")
+  touch(path.join(tempRoot, "gfx-web-runtime.mjs"), "runtime")
 
   copyDist(tempRoot)
 

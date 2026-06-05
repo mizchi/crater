@@ -166,3 +166,37 @@ pub fn setFontProviderFromBytes(data : Array[Int]) -> Bool {
     None => false
   }
 }
+
+///|
+/// Render HTML to a flat RGBA pixel buffer by driving crater's assembler
+/// onto the gfx **web** backend (WebGPU/WebGL stub driver + the JS runtime
+/// at globalThis.__craterGfxWeb). This is the same path a real WebGPU
+/// device uses; the JS runtime rasterizes (CPU today, GPU when available).
+pub fn renderHtmlViaWebBackendRgba(
+  html : String,
+  width : Int,
+  height : Int,
+) -> Array[Int] {
+  @gfx_web.install_js_web_backend()
+  let driver = @gfx_web.webgpu_driver(width, height)
+  let root = @renderer_vrt.render_html_to_paint_tree(
+    html,
+    @types.Size::new(width.to_double(), height.to_double()),
+  )
+  @gfx_bridge.render_paint_tree(driver, root) catch {
+    _ => ()
+  }
+  @gfx_web.web_backend_read_pixels()
+}
+
+///|
+/// Render HTML to a base64 PNG via the gfx web backend (see
+/// `renderHtmlViaWebBackendRgba`).
+pub fn renderHtmlViaWebBackendPngBase64(
+  html : String,
+  width : Int,
+  height : Int,
+) -> String {
+  let pixels = renderHtmlViaWebBackendRgba(html, width, height)
+  rgba_to_png_base64_js(width, height, pixels)
+}
