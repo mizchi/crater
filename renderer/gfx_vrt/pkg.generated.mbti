@@ -1,0 +1,28 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-renderer/gfx_vrt"
+
+import {
+  "mizchi/crater-painter/paint/model",
+  "mizchi/css/values",
+}
+
+// Values
+pub fn render_html_to_image(String, @values.Size[Double]) -> RenderedImage
+
+pub fn render_paint_tree_to_image(@model.PaintNode, Int, Int) -> RenderedImage
+
+// Errors
+
+// Types and methods
+pub(all) struct RenderedImage {
+  width : Int
+  height : Int
+  pixels : Array[Int]
+}
+pub fn RenderedImage::pixel_at(Self, Int, Int) -> (Int, Int, Int, Int)
+pub fn RenderedImage::to_ascii(Self) -> String
+
+// Type aliases
+
+// Traits
+

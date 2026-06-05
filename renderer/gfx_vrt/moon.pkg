@@ -1,0 +1,8 @@
+import {
+  "mizchi/gfx",
+  "mizchi/crater-renderer/gfx_bridge",
+  "mizchi/crater-renderer/gfx_software",
+  "mizchi/crater-renderer/vrt",
+  "mizchi/crater-painter/paint/model" @paint_model,
+  "mizchi/css/values" @types,
+}
