@@ -33,7 +33,8 @@
     "prepublishOnly": "npm run build",
     "test": "node --test 'test/**/*.test.mjs'",
     "test:image-vrt": "node scripts/image-vrt.mjs",
-    "test:image-vrt:update": "node scripts/image-vrt.mjs --update"
+    "test:image-vrt:update": "node scripts/image-vrt.mjs --update",
+    "test:webgpu-e2e": "node scripts/webgpu-e2e.mjs"
   },
   "keywords": [
     "css",

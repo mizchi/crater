@@ -75,6 +75,11 @@ test-image-vrt:
 test-image-vrt-update:
     cd js && moon build --target js --release && node scripts/image-vrt.mjs --update
 
+# Real-browser E2E for the gfx web backend (WebGPU when the browser has it,
+# else CPU); asserts in-browser pixels and GPU==CPU. Skips if no browser.
+test-webgpu-e2e:
+    cd js && npm run build && node scripts/webgpu-e2e.mjs
+
 # Run native-target tests for a specific browser/native package
 test-pkg-native pkg:
     moon -C browser/native test -p {{pkg}} --target native -j 1

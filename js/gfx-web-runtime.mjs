@@ -281,7 +281,7 @@ export class WebGPUBackend {
   readPixels() { return []; }
   async readPixelsAsync() {
     const bytesPerRow = Math.ceil((this.width * 4) / 256) * 256;
-    const readback = this.device.createBuffer({ size: bytesPerRow * this.height, usage: 0x01 /* MAP_READ */ | 0x04 /* COPY_DST */ });
+    const readback = this.device.createBuffer({ size: bytesPerRow * this.height, usage: 0x01 /* MAP_READ */ | 0x08 /* COPY_DST */ });
     const enc = this.device.createCommandEncoder();
     enc.copyTextureToBuffer(
       { texture: this.target },

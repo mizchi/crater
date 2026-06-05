@@ -57,6 +57,8 @@ testImageVrt: pkfire.Task = new {
     "js/png_image.mbt"
     "js/moon.pkg"
     "js/scripts/image-vrt.mjs"
+    "js/gfx-web-runtime.mjs"
+    "js/scripts/webgpu-e2e.mjs"
     "js/test/image-vrt/baselines/**"
   }
 }
