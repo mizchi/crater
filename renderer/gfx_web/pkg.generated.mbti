@@ -8,7 +8,11 @@ import {
 // Values
 pub fn install_capture_hooks() -> CaptureSink
 
+pub fn install_js_web_backend() -> Unit
+
 pub fn reset_hooks() -> Unit
+
+pub fn web_backend_read_pixels() -> Array[Int]
 
 pub fn webgl_driver(Int, Int, opaque_id? : Int, device_scale? : Double, options? : @gfx.GraphicsBackendOptions) -> @gfx.StubGraphicsDriver
 

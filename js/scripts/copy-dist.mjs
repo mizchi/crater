@@ -34,7 +34,7 @@ export function copyDist(cwd = process.cwd()) {
     path.join(distDir, "crater.wasm"),
   )
 
-  for (const filename of ["index.js", "index.d.ts", "wasm.js", "wasm.d.ts"]) {
+  for (const filename of ["index.js", "index.d.ts", "wasm.js", "wasm.d.ts", "gfx-web-runtime.mjs"]) {
     fs.copyFileSync(path.join(cwd, filename), path.join(distDir, filename))
   }
 }

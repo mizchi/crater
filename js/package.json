@@ -17,6 +17,7 @@
       "import": "./dist/wasm.js",
       "default": "./dist/wasm.js"
     },
+    "./gfx-web-runtime": "./dist/gfx-web-runtime.mjs",
     "./crater.wasm": "./dist/crater.wasm"
   },
   "bin": {

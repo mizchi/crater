@@ -97,6 +97,17 @@ export function renderHtmlToImageRgba(html: string, width: number, height: numbe
 export function renderTextToImagePngBase64(text: string, width: number, height: number, scale: number): string;
 
 /**
+ * Render HTML to a flat RGBA pixel buffer by driving crater's assembler onto
+ * the gfx web backend (WebGPU/WebGL stub driver + the JS runtime at
+ * globalThis.__craterGfxWeb). Install a runtime first, e.g.
+ * `import { installDefaultRuntime } from "@mizchi/crater/gfx-web-runtime"`.
+ */
+export function renderHtmlViaWebBackendRgba(html: string, width: number, height: number): number[];
+
+/** Like renderHtmlViaWebBackendRgba, returning a base64 PNG. */
+export function renderHtmlViaWebBackendPngBase64(html: string, width: number, height: number): string;
+
+/**
  * Install a TrueType/OpenType font (raw bytes as 0..255 ints) as the global
  * glyph provider, so subsequent renderHtmlToImage* calls render real glyph
  * shapes for text. Returns false if the font could not be parsed.

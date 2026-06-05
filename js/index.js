@@ -6,6 +6,8 @@ export {
   renderHtmlToImagePngBase64,
   renderHtmlToImageRgba,
   renderTextToImagePngBase64,
+  renderHtmlViaWebBackendRgba,
+  renderHtmlViaWebBackendPngBase64,
   setFontProviderFromBytes,
   renderHtmlToSixel,
   renderHtmlToSixelWithStyles,
