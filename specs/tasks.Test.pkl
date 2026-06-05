@@ -305,6 +305,16 @@ tests {
       "bash -lc 'set -e; grep -Fq -- \"layout_glyph_bitmaps preserves layout line count when glyph metrics drift wider\" painter/paint/glyph/layout_wbtest.mbt; grep -Fq -- \"draw_text_with_glyphs_clipped preserves expected layout line count\" painter/paint/raster/glyph_render_wbtest.mbt; grep -Fq -- \"expected_line_count\" painter/paint/glyph/layout.mbt; grep -Fq -- \"resolve_glyph_text_expected_line_count\" painter/paint/raster/raster_text.mbt'"
   }
   new {
+    name = "paint_gfx_image_vrt_renders_to_pixels"
+    description =
+      "The gfx-backed renderer assembles a paint tree into pixels via the gfx_bridge assembler and the gfx_software CPU backend. render_html_to_image / render_paint_tree_to_image expose an RGBA framebuffer and a deterministic ASCII snapshot, and the browser-free PNG image-VRT runner diffs rendered fixtures against committed baselines. overflow clipping is honored through the dst_region scissor."
+    tags { "paint"; "vrt"; "gfx" }
+    specRef { "paint.gfx-image-vrt" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; grep -Fq -- \"pub fn render_html_to_image\" renderer/gfx_vrt/gfx_vrt.mbt; grep -Fq -- \"pub fn render_paint_tree_to_image\" renderer/gfx_vrt/gfx_vrt.mbt; grep -Fq -- \"image vrt: overflow hidden clips the oversized child\" renderer/gfx_vrt/fixtures_test.mbt; grep -Fq -- \"pub fn[D : @gfx.GraphicsDriver] render_paint_tree\" renderer/gfx_bridge/gfx_bridge.mbt; grep -Fq -- \"pub impl @gfx.GraphicsDriver for SoftwareDriver\" renderer/gfx_software/gfx_software.mbt; test -f js/scripts/image-vrt.mjs; test -f js/test/image-vrt/baselines/overflow-clip.png'"
+  }
+  new {
     name = "diagnostic_hover_forced_state_selector_target"
     description =
       "getComputedStylesWithState should resolve selectors that include forced user-action pseudo-classes without falling back to Chromium."
