@@ -1,0 +1,98 @@
+#!/usr/bin/env node
+// Accuracy gate: render fixtures with crater (software backend) and with
+// real Chromium (Playwright screenshot), and assert crater is close enough
+// to the browser to be useful as an E2E / VRT oracle. Axis-aligned content
+// is expected to match pixel-for-pixel; rounded corners differ only by
+// anti-aliasing. Skips gracefully when no browser is available.
+import zlib from "node:zlib";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+async function loadChromium() {
+  try { return (await import("playwright")).chromium; }
+  catch {
+    const { createRequire } = await import("node:module");
+    const require = createRequire(import.meta.url);
+    for (const c of [resolve(__dirname, "../node_modules/playwright"), resolve(__dirname, "../../node_modules/playwright"), "/opt/node22/lib/node_modules/playwright"]) {
+      try { return require(c).chromium; } catch {}
+    }
+    return null;
+  }
+}
+
+function paeth(a, b, c) { const p = a + b - c, pa = Math.abs(p - a), pb = Math.abs(p - b), pc = Math.abs(p - c); return pa <= pb && pa <= pc ? a : pb <= pc ? b : c; }
+function decodePng(buf) {
+  let pos = 8, w = 0, h = 0, ct = 6; const idat = [];
+  while (pos < buf.length) {
+    const len = buf.readUInt32BE(pos); const type = buf.toString("ascii", pos + 4, pos + 8); const data = buf.subarray(pos + 8, pos + 8 + len);
+    if (type === "IHDR") { w = data.readUInt32BE(0); h = data.readUInt32BE(4); ct = data[9]; }
+    else if (type === "IDAT") idat.push(data); else if (type === "IEND") break;
+    pos += 12 + len;
+  }
+  const raw = zlib.inflateSync(Buffer.concat(idat));
+  const ch = ct === 6 ? 4 : ct === 2 ? 3 : 1, stride = w * ch, out = Buffer.alloc(h * stride);
+  let rp = 0;
+  for (let y = 0; y < h; y++) {
+    const f = raw[rp++];
+    for (let x = 0; x < stride; x++) {
+      const v = raw[rp++];
+      const a = x >= ch ? out[y * stride + x - ch] : 0, b = y > 0 ? out[(y - 1) * stride + x] : 0, c = x >= ch && y > 0 ? out[(y - 1) * stride + x - ch] : 0;
+      let val; switch (f) { case 1: val = v + a; break; case 2: val = v + b; break; case 3: val = v + ((a + b) >> 1); break; case 4: val = v + paeth(a, b, c); break; default: val = v; }
+      out[y * stride + x] = val & 0xff;
+    }
+  }
+  const rgba = new Array(w * h * 4);
+  for (let i = 0; i < w * h; i++) { rgba[i * 4] = out[i * ch]; rgba[i * 4 + 1] = out[i * ch + (ch > 1 ? 1 : 0)]; rgba[i * 4 + 2] = out[i * ch + (ch > 2 ? 2 : 0)]; rgba[i * 4 + 3] = ch === 4 ? out[i * ch + 3] : 255; }
+  return { w, h, rgba };
+}
+function compare(a, b) {
+  let max = 0, diff = 0; const n = a.length / 4;
+  for (let i = 0; i < a.length; i += 4) {
+    let d = 0; for (let k = 0; k < 3; k++) d = Math.max(d, Math.abs(a[i + k] - b[i + k]));
+    if (d > max) max = d; if (d > 16) diff++;
+  }
+  return { max, diffPx: diff, total: n, diffPct: (100 * diff / n) };
+}
+
+const wrap = (inner) => `<!doctype html><html><head><style>html,body{margin:0;padding:0}</style></head><body>${inner}</body></html>`;
+const FIXTURES = [
+  { name: "solid", w: 80, h: 60, maxDiffPct: 0.5, html: wrap(`<div style="width:60px;height:40px;background:rgb(51,102,204)"></div>`) },
+  { name: "two-boxes", w: 80, h: 60, maxDiffPct: 0.5, html: wrap(`<div style="width:40px;height:20px;background:#c33"></div><div style="width:40px;height:20px;background:#3a5"></div>`) },
+  { name: "border", w: 60, h: 50, maxDiffPct: 0.5, html: wrap(`<div style="width:40px;height:30px;border:4px solid #2244cc;background:#ffee88;box-sizing:border-box"></div>`) },
+  { name: "nested", w: 60, h: 60, maxDiffPct: 0.5, html: wrap(`<div style="width:50px;height:50px;background:#222"><div style="width:20px;height:20px;background:#dd4"></div></div>`) },
+  { name: "flex-row", w: 90, h: 30, maxDiffPct: 0.5, html: wrap(`<div style="display:flex"><div style="width:30px;height:30px;background:#c33"></div><div style="width:30px;height:30px;background:#3a5"></div><div style="width:30px;height:30px;background:#35c"></div></div>`) },
+  // rounded corners differ only by anti-aliasing
+  { name: "rounded", w: 60, h: 60, maxDiffPct: 6, html: wrap(`<div style="width:40px;height:40px;background:#000;border-radius:12px"></div>`) },
+];
+
+async function main() {
+  const chromium = await loadChromium();
+  if (!chromium) { console.error("skip: playwright unavailable"); return; }
+  const m = await import("../dist/index.js");
+  let browser;
+  try { browser = await chromium.launch({ args: ["--no-sandbox", "--force-device-scale-factor=1", "--hide-scrollbars"] }); }
+  catch (e) { console.error("skip: could not launch chromium —", e.message); return; }
+  let failures = 0;
+  try {
+    const page = await browser.newPage({ deviceScaleFactor: 1 });
+    for (const fx of FIXTURES) {
+      const crater = m.renderHtmlToImageRgba(fx.html, fx.w, fx.h);
+      await page.setViewportSize({ width: fx.w, height: fx.h });
+      await page.setContent(fx.html, { waitUntil: "load" });
+      const png = await page.screenshot({ clip: { x: 0, y: 0, width: fx.w, height: fx.h } });
+      const chrome = decodePng(png);
+      const c = compare(crater, chrome.rgba);
+      const ok = c.diffPct <= fx.maxDiffPct;
+      console.error(`${ok ? "ok  " : "FAIL"} ${fx.name.padEnd(10)} diffPct=${c.diffPct.toFixed(2)}% (<= ${fx.maxDiffPct}%) maxCh=${c.max}`);
+      if (!ok) failures++;
+    }
+  } finally {
+    await browser.close();
+  }
+  if (failures > 0) { console.error(`\n${failures} fixture(s) exceeded the Chromium accuracy tolerance.`); process.exit(1); }
+  console.error("crater matches Chromium within tolerance.");
+}
+
+main().catch((e) => { console.error(e); process.exit(1); });

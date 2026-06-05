@@ -49,7 +49,7 @@ pub fn render_paint_tree_to_image(
 ) -> RenderedImage {
   let driver = @gfx_software.SoftwareDriver::new(width, height)
   // The software backend never actually raises; keep the public API total.
-  @gfx_bridge.render_paint_tree(driver, root) catch {
+  @gfx_bridge.render_paint_tree(driver, root, width~, height~) catch {
     _ => ()
   }
   let pixels = try {

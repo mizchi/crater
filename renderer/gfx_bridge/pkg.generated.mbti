@@ -27,7 +27,7 @@ pub fn default_fill_shader_source() -> String
 
 pub fn[Q : @gfx.CommandQueue] enqueue_paint_tree(Q, @gfx_frame.RenderFrame2D, @model.PaintNode, glyph_provider? : @glyph.GlyphProvider, resolve_image? : (String) -> @gfx.ImageHandle?) -> Unit
 
-pub fn[D : @gfx.GraphicsDriver] render_paint_tree(D, @model.PaintNode, clear_color? : @gfx.Color, present? : Bool) -> Unit raise
+pub fn[D : @gfx.GraphicsDriver] render_paint_tree(D, @model.PaintNode, clear_color? : @gfx.Color, present? : Bool, width? : Int, height? : Int) -> Unit raise
 
 // Errors
 

@@ -343,10 +343,28 @@ pub fn[D : @gfx.GraphicsDriver] render_paint_tree(
   root : @paint_model.PaintNode,
   clear_color? : @gfx.Color = @gfx.new_color(1.0, 1.0, 1.0, 1.0),
   present? : Bool = false,
+  width? : Int = -1,
+  height? : Int = -1,
 ) -> Unit raise {
   driver.initialize()
-  let width = if root.width > 0.0 { root.width.to_int() } else { 1 }
-  let height = if root.height > 0.0 { root.height.to_int() } else { 1 }
+  // The frame's NDC normalization must match the destination framebuffer.
+  // Default to the root box, but callers that render into a fixed-size
+  // surface (e.g. a viewport taller than the content) pass it explicitly so
+  // pixel coordinates map 1:1 instead of being scaled by surface/root.
+  let width = if width > 0 {
+    width
+  } else if root.width > 0.0 {
+    root.width.to_int()
+  } else {
+    1
+  }
+  let height = if height > 0 {
+    height
+  } else if root.height > 0.0 {
+    root.height.to_int()
+  } else {
+    1
+  }
   let dst = driver.new_image(width, height)
   let shader = driver.new_shader(default_fill_shader_source())
   let frame = @gfx_frame.RenderFrame2D::new(

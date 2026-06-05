@@ -75,6 +75,10 @@ test-image-vrt:
 test-image-vrt-update:
     cd js && moon build --target js --release && node scripts/image-vrt.mjs --update
 
+# Accuracy gate: crater pixels vs real Chromium (skips if no browser)
+test-accuracy:
+    cd js && npm run build && node scripts/accuracy.mjs
+
 # Real-browser E2E for the gfx web backend (WebGPU when the browser has it,
 # else CPU); asserts in-browser pixels and GPU==CPU. Skips if no browser.
 test-webgpu-e2e:
