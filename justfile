@@ -59,6 +59,14 @@ test-wasm-mbt:
 test-pkg-js pkg:
     moon test -p {{pkg}} --target js
 
+# Run the image-VRT suite (paint tree -> gfx software backend -> pixels)
+test-gfx-vrt:
+    moon test -p gfx_vrt --target js
+
+# Re-baseline the image-VRT snapshots after an intentional pixel change
+test-gfx-vrt-update:
+    moon test -p gfx_vrt --target js --update
+
 # Run native-target tests for a specific browser/native package
 test-pkg-native pkg:
     moon -C browser/native test -p {{pkg}} --target native -j 1
