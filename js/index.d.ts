@@ -86,6 +86,17 @@ export function renderHtmlToImagePngBase64(html: string, width: number, height: 
 export function renderHtmlToImageRgba(html: string, width: number, height: number): number[];
 
 /**
+ * Render text to a base64-encoded PNG using the built-in 5x7 bitmap font
+ * (black on white) via the gfx software backend.
+ * @param text - The text to render (space, 0-9, A-Z; lowercase folds to upper)
+ * @param width - Image width in pixels
+ * @param height - Image height in pixels
+ * @param scale - Pixel size of each font cell
+ * @returns base64-encoded PNG (RGBA, 8-bit)
+ */
+export function renderTextToImagePngBase64(text: string, width: number, height: number, scale: number): string;
+
+/**
  * Render HTML to Sixel graphics string
  * @param html - HTML string with inline styles
  * @param width - Viewport width in pixels

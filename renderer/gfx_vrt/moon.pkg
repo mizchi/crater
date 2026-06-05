@@ -1,5 +1,7 @@
 import {
   "mizchi/gfx",
+  "mizchi/crater-renderer/gfx_frame",
+  "mizchi/crater-renderer/gfx_text",
   "mizchi/crater-renderer/gfx_bridge",
   "mizchi/crater-renderer/gfx_software",
   "mizchi/crater-renderer/vrt",

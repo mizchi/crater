@@ -124,3 +124,40 @@ test "draw is scissored to the command's destination region" {
   inspect(driver.pixel_at(2, 0), content="(0, 0, 0, 255)")
   inspect(driver.pixel_at(3, 3), content="(0, 0, 0, 255)")
 }
+
+///|
+test "rounded-rect uniforms carve the corners" {
+  let driver = SoftwareDriver::new(8, 8)
+  driver.initialize()
+  let dst = @gfx.GraphicsDriver::new_image(driver, 8, 8)
+  let shader = @gfx.GraphicsDriver::new_shader(driver, "s")
+  @gfx.GraphicsDriver::begin(
+    driver,
+    @gfx.new_render_pass_desc(@gfx.new_color(1.0, 1.0, 1.0, 1.0), true),
+  )
+  // full-frame black quad with a radius-4 round on all corners
+  let command = @gfx.new_draw_triangles_command(
+    dst,
+    shader,
+    [@gfx.new_dst_region(0, 0, 8, 8, 6)],
+    0,
+    0,
+    0,
+    @gfx.BlendMode::Copy,
+    [
+      -1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0, -1.0, 1.0, 1.0, -1.0, -1.0, 0.0,
+      1.0,
+    ],
+    [0, 1, 2, 2, 3, 0],
+    [],
+    [0, 0, 0, 255, 4, 4, 4, 4, 0, 0, 8, 8],
+  )
+  @gfx.GraphicsDriver::draw_triangles(driver, command)
+  @gfx.GraphicsDriver::end(driver, false)
+  // the top-left corner pixel is carved away (still the clear color)
+  inspect(driver.pixel_at(0, 0), content="(255, 255, 255, 255)")
+  // the center is filled
+  inspect(driver.pixel_at(4, 4), content="(0, 0, 0, 255)")
+  // an edge midpoint is filled (not a corner)
+  inspect(driver.pixel_at(0, 4), content="(0, 0, 0, 255)")
+}

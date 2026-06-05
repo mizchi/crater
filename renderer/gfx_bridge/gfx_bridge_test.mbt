@@ -136,3 +136,102 @@ test "render_paint_tree drives a null graphics backend end-to-end" {
   // without raising.
   render_paint_tree(driver, tree)
 }
+
+///|
+test "node opacity dims the emitted fill and propagates to children" {
+  let frame = test_frame(10, 10)
+  let child = @paint_model.PaintNode::new(
+    "child",
+    "div",
+    0.0,
+    0.0,
+    10.0,
+    10.0,
+    {
+      ..@paint_model.PaintProperties::default(),
+      background_color: @types.Color::rgb(0, 0, 0),
+    },
+    [],
+  )
+  let parent = @paint_model.PaintNode::new(
+    "parent",
+    "div",
+    0.0,
+    0.0,
+    10.0,
+    10.0,
+    {
+      ..@paint_model.PaintProperties::default(),
+      background_color: @types.Color::rgb(0, 0, 0),
+      opacity: 0.5,
+    },
+    [child],
+  )
+  let commands = collect_paint_commands(frame, parent)
+  // parent + child fills, both dimmed by the parent's 0.5 group opacity
+  inspect(commands.length(), content="2")
+  inspect(commands[0].uniform_dwords, content="[0, 0, 0, 127]")
+  inspect(commands[1].uniform_dwords, content="[0, 0, 0, 127]")
+}
+
+///|
+test "box shadow is lowered as a fill before the background" {
+  let frame = test_frame(16, 16)
+  let shadow = @style.BoxShadow::new(
+    false,
+    3.0,
+    3.0,
+    0.0,
+    0.0,
+    @types.Color::rgb(170, 170, 170),
+  )
+  let node = @paint_model.PaintNode::new(
+    "box",
+    "div",
+    0.0,
+    0.0,
+    6.0,
+    6.0,
+    {
+      ..@paint_model.PaintProperties::default(),
+      background_color: @types.Color::rgb(0, 0, 0),
+      box_shadows: [shadow],
+    },
+    [],
+  )
+  let commands = collect_paint_commands(frame, node)
+  // shadow fill, then background fill
+  inspect(commands.length(), content="2")
+  // shadow is grey and painted first
+  inspect(commands[0].uniform_dwords, content="[170, 170, 170, 255]")
+  inspect(commands[1].uniform_dwords, content="[0, 0, 0, 255]")
+}
+
+///|
+test "border radius lowers the background as a rounded fill" {
+  let frame = test_frame(8, 8)
+  let node = @paint_model.PaintNode::new(
+    "box",
+    "div",
+    0.0,
+    0.0,
+    8.0,
+    8.0,
+    {
+      ..@paint_model.PaintProperties::default(),
+      background_color: @types.Color::rgb(0, 0, 0),
+      border_top_left_radius: 3.0,
+      border_top_right_radius: 3.0,
+      border_bottom_right_radius: 3.0,
+      border_bottom_left_radius: 3.0,
+    },
+    [],
+  )
+  let commands = collect_paint_commands(frame, node)
+  inspect(commands.length(), content="1")
+  // rounded: shape uniforms appended after the colour
+  inspect(
+    commands[0].uniform_dwords,
+    content="[0, 0, 0, 255, 3, 3, 3, 3, 0, 0, 8, 8]",
+  )
+}

@@ -202,3 +202,52 @@ test "image vrt: overflow hidden clips the oversized child" {
     ),
   )
 }
+
+///|
+test "image vrt: element opacity dims to grey over white" {
+  let html =
+    #|<html><body style="margin:0;background:#ffffff">
+    #|<div style="width:8px;height:8px;background:#ffffff"></div>
+    #|<div style="position:absolute;left:0;top:0;width:8px;height:8px;background:#000000;opacity:0.5"></div>
+    #|</body></html>
+  inspect(
+    render_ascii(html, 8.0, 8.0),
+    content=(
+      #|========
+      #|========
+      #|========
+      #|========
+      #|========
+      #|========
+      #|========
+      #|========
+      #|
+    ),
+  )
+}
+
+///|
+test "image vrt: border-radius rounds the corners" {
+  let html =
+    #|<html><body style="margin:0;background:#ffffff">
+    #|<div style="width:12px;height:12px;background:#000000;border-radius:4px"></div>
+    #|</body></html>
+  inspect(
+    render_ascii(html, 12.0, 12.0),
+    content=(
+      #|  @@@@@@@@  
+      #| @@@@@@@@@@ 
+      #|@@@@@@@@@@@@
+      #|@@@@@@@@@@@@
+      #|@@@@@@@@@@@@
+      #|@@@@@@@@@@@@
+      #|@@@@@@@@@@@@
+      #|@@@@@@@@@@@@
+      #|@@@@@@@@@@@@
+      #|@@@@@@@@@@@@
+      #| @@@@@@@@@@ 
+      #|  @@@@@@@@  
+      #|
+    ),
+  )
+}

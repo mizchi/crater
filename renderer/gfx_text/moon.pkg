@@ -3,3 +3,7 @@ import {
   "mizchi/crater-renderer/gfx_frame",
   "mizchi/crater-painter/paint/glyph",
 }
+
+import {
+  "mizchi/crater-renderer/gfx_software",
+} for "test"
