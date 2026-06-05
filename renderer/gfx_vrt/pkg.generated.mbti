@@ -11,6 +11,8 @@ pub fn render_html_to_image(String, @values.Size[Double]) -> RenderedImage
 
 pub fn render_paint_tree_to_image(@model.PaintNode, Int, Int) -> RenderedImage
 
+pub fn render_text_to_image(String, Int, Int, x? : Int, y? : Int, scale? : Int) -> RenderedImage
+
 // Errors
 
 // Types and methods

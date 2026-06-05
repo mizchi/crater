@@ -10,6 +10,12 @@ import {
 // Values
 pub fn atlas_to_commands(@gfx_frame.RenderFrame2D, GlyphAtlas, @gfx.Color) -> Array[@gfx.DrawTrianglesCommand]
 
+pub let bitmap_glyph_h : Int
+
+pub let bitmap_glyph_w : Int
+
+pub fn bitmap_text_commands(@gfx_frame.RenderFrame2D, String, Int, Int, Int, @gfx.Color) -> Array[@gfx.DrawTrianglesCommand]
+
 pub fn build_glyph_atlas(Array[@glyph.GlyphPlacement], @gfx.ImageHandle) -> GlyphAtlas
 
 pub fn glyph_placements_to_atlas_commands(@gfx_frame.RenderFrame2D, Array[@glyph.GlyphPlacement], @gfx.Color, @gfx.ImageHandle) -> (GlyphAtlas, Array[@gfx.DrawTrianglesCommand])

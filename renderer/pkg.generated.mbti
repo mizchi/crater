@@ -37,6 +37,8 @@ pub fn render_prepared_vrt_page_to_paint_tree(@vrt.PreparedVrtPage) -> @model.Pa
 
 pub fn render_prepared_vrt_page_to_paint_tree_json(@vrt.PreparedVrtPage) -> String
 
+pub fn render_text_to_image(String, Int, Int, x? : Int, y? : Int, scale? : Int) -> @gfx_vrt.RenderedImage
+
 // Errors
 
 // Types and methods

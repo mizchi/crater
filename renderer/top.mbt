@@ -127,3 +127,17 @@ pub fn render_paint_tree_to_image(
 ) -> RenderedImage {
   @gfx_vrt.render_paint_tree_to_image(root, width, height)
 }
+
+///|
+/// Render text to an RGBA image with the built-in 5x7 bitmap font (black on
+/// white) via the gfx software backend. Self-contained: needs no font file.
+pub fn render_text_to_image(
+  text : String,
+  width : Int,
+  height : Int,
+  x? : Int = 0,
+  y? : Int = 0,
+  scale? : Int = 1,
+) -> RenderedImage {
+  @gfx_vrt.render_text_to_image(text, width, height, x~, y~, scale~)
+}

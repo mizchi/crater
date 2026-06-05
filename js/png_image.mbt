@@ -137,3 +137,17 @@ pub fn renderHtmlToImageRgba(
     @types.Size::new(width.to_double(), height.to_double()),
   ).pixels
 }
+
+///|
+/// Render text to a base64-encoded PNG using the built-in 5x7 bitmap font
+/// (black on white) via the gfx software backend. `scale` is the pixel size
+/// of each font cell.
+pub fn renderTextToImagePngBase64(
+  text : String,
+  width : Int,
+  height : Int,
+  scale : Int,
+) -> String {
+  let image = @gfx_vrt.render_text_to_image(text, width, height, scale~)
+  rgba_to_png_base64_js(image.width, image.height, image.pixels)
+}

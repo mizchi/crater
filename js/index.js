@@ -5,6 +5,7 @@ export {
   renderHtmlToPaintTree,
   renderHtmlToImagePngBase64,
   renderHtmlToImageRgba,
+  renderTextToImagePngBase64,
   renderHtmlToSixel,
   renderHtmlToSixelWithStyles,
   // Incremental API

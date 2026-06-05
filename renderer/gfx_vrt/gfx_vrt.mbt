@@ -105,3 +105,53 @@ pub fn RenderedImage::to_ascii(self : RenderedImage) -> String {
   }
   buf.to_string()
 }
+
+///|
+/// Render `text` to an RGBA image with the built-in 5x7 bitmap font (black
+/// on white) via the software backend. `scale` is the pixel size of each
+/// font cell. A self-contained text-to-pixels path that needs no external
+/// font.
+pub fn render_text_to_image(
+  text : String,
+  width : Int,
+  height : Int,
+  x? : Int = 0,
+  y? : Int = 0,
+  scale? : Int = 1,
+) -> RenderedImage {
+  let driver = @gfx_software.SoftwareDriver::new(width, height)
+  let pixels = try {
+    @gfx.GraphicsDriver::initialize(driver)
+    let dst = @gfx.GraphicsDriver::new_image(driver, width, height)
+    let shader = @gfx.GraphicsDriver::new_shader(driver, "s")
+    @gfx.GraphicsDriver::begin(
+      driver,
+      @gfx.new_render_pass_desc(@gfx.new_color(1.0, 1.0, 1.0, 1.0), true),
+    )
+    let frame = @gfx_frame.RenderFrame2D::new(
+      dst~,
+      shader~,
+      screen_w=width,
+      screen_h=height,
+    )
+    for
+      cmd in @gfx_text.bitmap_text_commands(
+        frame,
+        text,
+        x,
+        y,
+        scale,
+        @gfx.new_color(0.0, 0.0, 0.0, 1.0),
+      ) {
+      @gfx.GraphicsDriver::draw_triangles(driver, cmd)
+    }
+    @gfx.GraphicsDriver::end(driver, false)
+    match @gfx.GraphicsDriver::read_pixels(driver, 0, 0, width, height) {
+      Some(p) => p
+      None => Array::make(width * height * 4, 0)
+    }
+  } catch {
+    _ => Array::make(width * height * 4, 0)
+  }
+  { width, height, pixels }
+}

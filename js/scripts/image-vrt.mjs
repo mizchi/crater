@@ -108,6 +108,13 @@ const FIXTURES = [
 <div style="width:12px;height:12px;background:#000000;border-radius:4px"></div>
 </body></html>`,
   },
+  {
+    name: "bitmap-text",
+    width: 36,
+    height: 7,
+    scale: 1,
+    text: "CRATER",
+  },
 ];
 
 async function loadCrater() {
@@ -207,7 +214,9 @@ mkdirSync(BASELINE_DIR, { recursive: true });
 
 let failures = 0;
 for (const fx of FIXTURES) {
-  const b64 = crater.renderHtmlToImagePngBase64(fx.html, fx.width, fx.height);
+  const b64 = fx.text !== undefined
+    ? crater.renderTextToImagePngBase64(fx.text, fx.width, fx.height, fx.scale ?? 1)
+    : crater.renderHtmlToImagePngBase64(fx.html, fx.width, fx.height);
   const png = Buffer.from(b64, "base64");
   const baselinePath = join(BASELINE_DIR, `${fx.name}.png`);
   if (update) {

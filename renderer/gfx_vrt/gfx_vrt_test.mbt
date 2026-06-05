@@ -78,3 +78,21 @@ test "render_html_to_image rasterizes a styled box through the VRT pipeline" {
   // the red box paints the top-left pixel
   inspect(image.pixel_at(0, 0), content="(255, 0, 0, 255)")
 }
+
+///|
+test "render_text_to_image draws legible bitmap text" {
+  // "CRATER" at scale 1: 6 glyphs * 6 cells = 36 wide, 7 tall
+  inspect(
+    render_text_to_image("CRATER", 36, 7).to_ascii(),
+    content=(
+      #| @@@  @@@@   @@@  @@@@@ @@@@@ @@@@  
+      #|@   @ @   @ @   @   @   @     @   @ 
+      #|@     @   @ @   @   @   @     @   @ 
+      #|@     @@@@  @@@@@   @   @@@@  @@@@  
+      #|@     @ @   @   @   @   @     @ @   
+      #|@   @ @  @  @   @   @   @     @  @  
+      #| @@@  @   @ @   @   @   @@@@@ @   @ 
+      #|
+    ),
+  )
+}
