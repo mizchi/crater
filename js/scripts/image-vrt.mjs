@@ -115,6 +115,13 @@ const FIXTURES = [
     scale: 1,
     text: "CRATER",
   },
+  {
+    name: "real-font-av",
+    width: 28,
+    height: 20,
+    needsFont: true,
+    html: `<html><body style="margin:0;background:#ffffff"><div style="font-size:16px;color:#000000">AV</div></body></html>`,
+  },
 ];
 
 async function loadCrater() {
@@ -212,8 +219,22 @@ const update = process.argv.includes("--update");
 const crater = await loadCrater();
 mkdirSync(BASELINE_DIR, { recursive: true });
 
+// Install the vendored test font so the real-font fixtures render actual
+// glyphs. If it can't be loaded, those fixtures are skipped (not failed).
+let fontLoaded = false;
+try {
+  const fontBytes = readFileSync(resolve(__dirname, "../test/fonts/minimal-kern.ttf"));
+  fontLoaded = crater.setFontProviderFromBytes(Array.from(fontBytes)) === true;
+} catch {
+  fontLoaded = false;
+}
+
 let failures = 0;
 for (const fx of FIXTURES) {
+  if (fx.needsFont && !fontLoaded) {
+    console.error(`skip ${fx.name} (font not available)`);
+    continue;
+  }
   const b64 = fx.text !== undefined
     ? crater.renderTextToImagePngBase64(fx.text, fx.width, fx.height, fx.scale ?? 1)
     : crater.renderHtmlToImagePngBase64(fx.html, fx.width, fx.height);
