@@ -26,10 +26,12 @@ struct Uniforms {
 struct VSOut { @builtin(position) pos : vec4<f32>, @location(0) frag : vec2<f32> };
 
 @vertex
-fn vs_main(@location(0) ndc : vec2<f32>, @location(1) frag : vec2<f32>) -> VSOut {
+fn vs_main(@location(0) ndc : vec2<f32>, @location(1) uv : vec2<f32>) -> VSOut {
   var out : VSOut;
   out.pos = vec4<f32>(ndc, 0.0, 1.0);
-  out.frag = frag;
+  // Reconstruct the pixel-space position from the unit uv and the rect so
+  // the fragment stage can test the rounded corners.
+  out.frag = u.rect.xy + uv * u.rect.zw;
   return out;
 }
 
@@ -157,6 +159,155 @@ export function installDefaultRuntime() {
   if (!globalThis.__craterGfxWeb) {
     globalThis.__craterGfxWeb = new CpuBackend();
   }
+  return globalThis.__craterGfxWeb;
+}
+
+// ---- WebGPU backend ------------------------------------------------------
+
+// Build the uniform buffer bytes (64) crater's FILL_WGSL expects:
+// color(vec4) | radii(vec4) | rect(vec4) | flags(vec4).
+function packUniforms(uniforms) {
+  const f = new Float32Array(16);
+  f[0] = (uniforms[0] | 0) / 255;
+  f[1] = (uniforms[1] | 0) / 255;
+  f[2] = (uniforms[2] | 0) / 255;
+  f[3] = (uniforms.length > 3 ? uniforms[3] | 0 : 255) / 255;
+  const rounded = uniforms.length >= 12 && (uniforms[4] || uniforms[5] || uniforms[6] || uniforms[7]);
+  if (rounded) {
+    f[4] = uniforms[4]; f[5] = uniforms[5]; f[6] = uniforms[6]; f[7] = uniforms[7];
+    f[8] = uniforms[8]; f[9] = uniforms[9]; f[10] = uniforms[10]; f[11] = uniforms[11];
+    f[12] = 1;
+  }
+  return f;
+}
+
+/**
+ * A WebGPU-backed host: submits crater's command stream to a real GPU
+ * device using FILL_WGSL. Rendering/submit is synchronous-record (begin /
+ * draw / end); pixel readback is asynchronous (readPixelsAsync), since
+ * WebGPU buffer mapping is async. Plug it in with installWebGPURuntime(device).
+ */
+export class WebGPUBackend {
+  constructor(device, format = "rgba8unorm") {
+    this.device = device;
+    this.format = format;
+    this.pipeline = null;
+    this.layout = null;
+  }
+  #ensurePipeline() {
+    if (this.pipeline) return;
+    const module = this.device.createShaderModule({ code: FILL_WGSL });
+    this.layout = this.device.createBindGroupLayout({
+      entries: [{ binding: 0, visibility: 3 /* VERTEX|FRAGMENT */, buffer: { type: "uniform" } }],
+    });
+    const pipelineLayout = this.device.createPipelineLayout({ bindGroupLayouts: [this.layout] });
+    this.pipeline = this.device.createRenderPipeline({
+      layout: pipelineLayout,
+      vertex: {
+        module,
+        entryPoint: "vs_main",
+        buffers: [{
+          arrayStride: 16,
+          attributes: [
+            { shaderLocation: 0, offset: 0, format: "float32x2" },
+            { shaderLocation: 1, offset: 8, format: "float32x2" },
+          ],
+        }],
+      },
+      fragment: {
+        module,
+        entryPoint: "fs_main",
+        targets: [{
+          format: this.format,
+          blend: {
+            color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
+            alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" },
+          },
+        }],
+      },
+      primitive: { topology: "triangle-list" },
+    });
+  }
+  init(width, height) {
+    this.width = width;
+    this.height = height;
+    this.#ensurePipeline();
+    this.target = this.device.createTexture({
+      size: [width, height],
+      format: this.format,
+      usage: 0x10 /* RENDER_ATTACHMENT */ | 0x01 /* COPY_SRC */,
+    });
+    return true;
+  }
+  begin(clear) {
+    const [r, g, b, a] = clear ?? [0, 0, 0, 255];
+    this.encoder = this.device.createCommandEncoder();
+    this.pass = this.encoder.beginRenderPass({
+      colorAttachments: [{
+        view: this.target.createView(),
+        clearValue: { r: r / 255, g: g / 255, b: b / 255, a: a / 255 },
+        loadOp: "clear",
+        storeOp: "store",
+      }],
+    });
+    this.pass.setPipeline(this.pipeline);
+  }
+  draw({ vertexData, indices, uniforms, dstRegion }) {
+    const device = this.device;
+    const vb = device.createBuffer({ size: vertexData.length * 4, usage: 0x20 /* VERTEX */ | 0x08 /* COPY_DST */ });
+    device.queue.writeBuffer(vb, 0, new Float32Array(vertexData));
+    const ib = device.createBuffer({ size: indices.length * 4, usage: 0x10 /* INDEX */ | 0x08, });
+    device.queue.writeBuffer(ib, 0, new Uint32Array(indices));
+    const ub = device.createBuffer({ size: 64, usage: 0x40 /* UNIFORM */ | 0x08 });
+    device.queue.writeBuffer(ub, 0, packUniforms(uniforms));
+    const bindGroup = device.createBindGroup({ layout: this.layout, entries: [{ binding: 0, resource: { buffer: ub } }] });
+    if (dstRegion) {
+      const [rx, ry, rw, rh] = dstRegion;
+      const x = Math.max(0, rx), y = Math.max(0, ry);
+      const w = Math.max(0, Math.min(this.width, rx + rw) - x);
+      const h = Math.max(0, Math.min(this.height, ry + rh) - y);
+      this.pass.setScissorRect(x, y, w, h);
+    }
+    this.pass.setVertexBuffer(0, vb);
+    this.pass.setIndexBuffer(ib, "uint32");
+    this.pass.setBindGroup(0, bindGroup);
+    this.pass.drawIndexed(indices.length);
+  }
+  end() {
+    this.pass.end();
+    this.device.queue.submit([this.encoder.finish()]);
+  }
+  // WebGPU readback is async; the sync hook interface cannot use it.
+  readPixels() { return []; }
+  async readPixelsAsync() {
+    const bytesPerRow = Math.ceil((this.width * 4) / 256) * 256;
+    const readback = this.device.createBuffer({ size: bytesPerRow * this.height, usage: 0x01 /* MAP_READ */ | 0x04 /* COPY_DST */ });
+    const enc = this.device.createCommandEncoder();
+    enc.copyTextureToBuffer(
+      { texture: this.target },
+      { buffer: readback, bytesPerRow, rowsPerImage: this.height },
+      [this.width, this.height],
+    );
+    this.device.queue.submit([enc.finish()]);
+    await readback.mapAsync(0x01);
+    const mapped = new Uint8Array(readback.getMappedRange());
+    const out = new Array(this.width * this.height * 4);
+    for (let y = 0; y < this.height; y++) {
+      for (let x = 0; x < this.width * 4; x++) {
+        out[y * this.width * 4 + x] = mapped[y * bytesPerRow + x];
+      }
+    }
+    readback.unmap?.();
+    return out;
+  }
+}
+
+/**
+ * Install a WebGPU-backed host runtime that submits to `device`. The host
+ * (browser / Deno / node-webgpu) provides the GPUDevice and target format.
+ */
+export function installWebGPURuntime(device, format = "rgba8unorm") {
+  globalThis.__craterGfxWeb = new WebGPUBackend(device, format);
   return globalThis.__craterGfxWeb;
 }
 
