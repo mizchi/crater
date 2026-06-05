@@ -24,6 +24,7 @@ jobs:
       wpt_webdriver: ${{ steps.gates.outputs.wpt_webdriver }}
       paint_vrt: ${{ steps.gates.outputs.paint_vrt }}
       wpt_vrt: ${{ steps.gates.outputs.wpt_vrt }}
+      gfx_vrt: ${{ steps.gates.outputs.gfx_vrt }}
 
     steps:
       - name: Checkout code
@@ -165,6 +166,11 @@ jobs:
 
   js-package:
     runs-on: ubuntu-latest
+    needs: [affected]
+    # Always build/test the js package; the image-VRT step below is the only
+    # part gated on `affected`, so keep the job running even when the
+    # `affected` job is skipped (e.g. on schedule).
+    if: ${{ !cancelled() }}
 
     steps:
       - name: Checkout code
@@ -190,6 +196,7 @@ jobs:
         working-directory: js
 
       - name: Run image VRT (PNG baselines)
+        if: ${{ github.event_name == 'schedule' || needs.affected.outputs.gfx_vrt == 'true' }}
         run: node scripts/image-vrt.mjs
         working-directory: js
 

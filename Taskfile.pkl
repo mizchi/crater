@@ -114,6 +114,14 @@ workflowTests {
     }
   }
   new {
+    name = "image vrt baseline change runs the image-vrt gate"
+    changed { "js/test/image-vrt/baselines/overflow-clip.png" }
+    direct { visual.testImageVrt.name }
+    tasks {
+      visual.testImageVrt.name
+    }
+  }
+  new {
     name = "component bench baseline change runs bench gate"
     changed { "benchmarks/tests/component-vrt-bench-baseline.json" }
     direct {
