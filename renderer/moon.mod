@@ -9,6 +9,7 @@ import {
   "mizchi/crater-layout@0.18.0",
   "mizchi/crater-painter@0.18.0",
   "mizchi/gfx@0.1.0",
+  "mizchi/svg@0.2.1",
   "moonbitlang/async@0.19.0",
 }
 

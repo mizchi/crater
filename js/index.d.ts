@@ -97,6 +97,14 @@ export function renderHtmlToImageRgba(html: string, width: number, height: numbe
 export function renderTextToImagePngBase64(text: string, width: number, height: number, scale: number): string;
 
 /**
+ * Install a TrueType/OpenType font (raw bytes as 0..255 ints) as the global
+ * glyph provider, so subsequent renderHtmlToImage* calls render real glyph
+ * shapes for text. Returns false if the font could not be parsed.
+ * @param data - the font file bytes as an array of 0..255 integers
+ */
+export function setFontProviderFromBytes(data: number[]): boolean;
+
+/**
  * Render HTML to Sixel graphics string
  * @param html - HTML string with inline styles
  * @param width - Viewport width in pixels
