@@ -3,6 +3,8 @@ export {
   renderHtml,
   renderHtmlToJson,
   renderHtmlToPaintTree,
+  renderHtmlToImagePngBase64,
+  renderHtmlToImageRgba,
   renderHtmlToSixel,
   renderHtmlToSixelWithStyles,
   // Incremental API
