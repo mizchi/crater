@@ -48,6 +48,39 @@ const FIXTURES = [
 </div>
 </body></html>`,
   },
+  {
+    name: "grid-2x2",
+    width: 16,
+    height: 12,
+    html: `<html><body style="margin:0">
+<div style="display:grid;grid-template-columns:8px 8px;grid-template-rows:6px 6px;width:16px;height:12px">
+<div style="background:#000000"></div>
+<div style="background:#555555"></div>
+<div style="background:#aaaaaa"></div>
+<div style="background:#ffffff"></div>
+</div>
+</body></html>`,
+  },
+  {
+    name: "abspos-overlap",
+    width: 16,
+    height: 12,
+    html: `<html><body style="margin:0">
+<div style="position:relative;width:16px;height:12px;background:#eeeeee">
+<div style="position:absolute;left:2px;top:2px;width:8px;height:6px;background:#000000"></div>
+<div style="position:absolute;left:6px;top:4px;width:8px;height:6px;background:#888888"></div>
+</div>
+</body></html>`,
+  },
+  {
+    name: "alpha-blend",
+    width: 16,
+    height: 8,
+    html: `<html><body style="margin:0;background:#ffffff">
+<div style="width:16px;height:8px;background:#ffffff"></div>
+<div style="position:absolute;left:0;top:0;width:16px;height:8px;background:rgba(0,0,0,0.5)"></div>
+</body></html>`,
+  },
 ];
 
 async function loadCrater() {
