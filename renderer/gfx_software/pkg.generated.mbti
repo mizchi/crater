@@ -1,0 +1,27 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-renderer/gfx_software"
+
+import {
+  "mizchi/gfx",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub struct SoftwareDriver {
+  mut width : Int
+  mut height : Int
+  mut pixels : Array[Int]
+  mut next_id : Int
+  mut initialized : Bool
+}
+pub fn SoftwareDriver::new(Int, Int) -> Self
+pub fn SoftwareDriver::pixel_at(Self, Int, Int) -> (Int, Int, Int, Int)
+pub impl @gfx.GraphicsDriver for SoftwareDriver
+
+// Type aliases
+
+// Traits
+

@@ -7,3 +7,7 @@ import {
   "mizchi/crater-painter/paint/glyph",
   "mizchi/css/values" @types,
 }
+
+import {
+  "mizchi/crater-renderer/gfx_software",
+} for "test"
