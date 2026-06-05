@@ -5,6 +5,7 @@
 // is expected to match pixel-for-pixel; rounded corners differ only by
 // anti-aliasing. Skips gracefully when no browser is available.
 import zlib from "node:zlib";
+import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -65,7 +66,22 @@ const FIXTURES = [
   { name: "flex-row", w: 90, h: 30, maxDiffPct: 0.5, html: wrap(`<div style="display:flex"><div style="width:30px;height:30px;background:#c33"></div><div style="width:30px;height:30px;background:#3a5"></div><div style="width:30px;height:30px;background:#35c"></div></div>`) },
   // rounded corners differ only by anti-aliasing
   { name: "rounded", w: 60, h: 60, maxDiffPct: 2, html: wrap(`<div style="width:40px;height:40px;background:#000;border-radius:12px"></div>`) },
+  // Text: same font in both. Positioning/shape match; the residual is the
+  // sub-pixel AA difference between crater's glyph rasterizer and the
+  // browser's (FreeType) -- an inherent rasterizer floor, not a layout gap.
+  // The tolerance still catches positioning / font-loading regressions
+  // (those spike well past it).
+  { name: "text-av", w: 40, h: 28, maxDiffPct: 18, font: "test/fonts/minimal-kern.ttf", text: "AV", size: 24 },
 ];
+
+// Build the HTML for a text fixture; the same markup renders in crater (via
+// the globally-installed font provider) and Chromium (via @font-face).
+function textHtml(fontB64, text, size) {
+  return `<!doctype html><html><head><style>` +
+    `@font-face{font-family:tf;src:url(data:font/ttf;base64,${fontB64})}` +
+    `html,body{margin:0;padding:0}div{font-family:tf;font-size:${size}px;color:#000}` +
+    `</style></head><body><div>${text}</div></body></html>`;
+}
 
 async function main() {
   const chromium = await loadChromium();
@@ -78,9 +94,18 @@ async function main() {
   try {
     const page = await browser.newPage({ deviceScaleFactor: 1 });
     for (const fx of FIXTURES) {
-      const crater = m.renderHtmlToImageRgba(fx.html, fx.w, fx.h);
+      let html = fx.html;
+      if (fx.font) {
+        // Install the same font in crater and embed it via @font-face for
+        // Chromium so both rasterize identical glyph outlines.
+        const bytes = readFileSync(resolve(__dirname, "..", fx.font));
+        m.setFontProviderFromBytes(Array.from(bytes));
+        html = textHtml(bytes.toString("base64"), fx.text, fx.size);
+      }
+      const crater = m.renderHtmlToImageRgba(html, fx.w, fx.h);
       await page.setViewportSize({ width: fx.w, height: fx.h });
-      await page.setContent(fx.html, { waitUntil: "load" });
+      await page.setContent(html, { waitUntil: "load" });
+      if (fx.font) await page.evaluate(() => document.fonts.ready);
       const png = await page.screenshot({ clip: { x: 0, y: 0, width: fx.w, height: fx.h } });
       const chrome = decodePng(png);
       const c = compare(crater, chrome.rgba);
