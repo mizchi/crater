@@ -13,13 +13,14 @@
 
 // WGSL the WebGPU path uses: a solid / rounded-rect fill whose colour and
 // shape come from the same uniforms crater packs
-// ([r,g,b,a, r_tl,r_tr,r_br,r_bl, x,y,w,h]).
+// ([r,g,b,a, rx_tl,ry_tl, rx_tr,ry_tr, rx_br,ry_br, rx_bl,ry_bl, x,y,w,h]).
 export const FILL_WGSL = `
 struct Uniforms {
-  color : vec4<f32>,
-  radii : vec4<f32>,   // r_tl, r_tr, r_br, r_bl
-  rect  : vec4<f32>,   // x, y, w, h (pixels)
-  flags : vec4<f32>,   // flags.x: rounded (1) or plain (0)
+  color  : vec4<f32>,
+  radii0 : vec4<f32>,  // rx_tl, ry_tl, rx_tr, ry_tr
+  radii1 : vec4<f32>,  // rx_br, ry_br, rx_bl, ry_bl
+  rect   : vec4<f32>,  // x, y, w, h (pixels)
+  flags  : vec4<f32>,  // flags.x: rounded (1) or plain (0)
 };
 @group(0) @binding(0) var<uniform> u : Uniforms;
 
@@ -35,23 +36,38 @@ fn vs_main(@location(0) ndc : vec2<f32>, @location(1) uv : vec2<f32>) -> VSOut {
   return out;
 }
 
-fn arc_cov(p : vec2<f32>, c : vec2<f32>, r : f32) -> f32 {
-  return clamp(r - distance(p, c) + 0.5, 0.0, 1.0);
+// Coverage of an axis-aligned elliptical corner centred at c with radii r;
+// the signed distance to the ellipse (positive inside) is approximated as
+// -f / |grad f| for f = (d/r)^2 - 1, softened over a 1px band. Reduces to the
+// circular case when r.x == r.y.
+fn arc_cov(p : vec2<f32>, c : vec2<f32>, r : vec2<f32>) -> f32 {
+  let d = p - c;
+  if (abs(r.x - r.y) < 0.001) {
+    return clamp(r.x - length(d) + 0.5, 0.0, 1.0);
+  }
+  let n = d / r;
+  let g = d / (r * r);
+  let glen = 2.0 * length(g);
+  if (glen < 1e-6) { return 1.0; }
+  let signed_inside = (1.0 - dot(n, n)) / glen;
+  return clamp(signed_inside + 0.5, 0.0, 1.0);
 }
 
 fn corner_coverage(p : vec2<f32>) -> f32 {
   let x = u.rect.x; let y = u.rect.y; let w = u.rect.z; let h = u.rect.w;
-  if (u.radii.x > 0.0 && p.x < x + u.radii.x && p.y < y + u.radii.x) {
-    return arc_cov(p, vec2<f32>(x + u.radii.x, y + u.radii.x), u.radii.x);
+  let tl = u.radii0.xy; let tr = u.radii0.zw;
+  let br = u.radii1.xy; let bl = u.radii1.zw;
+  if (tl.x > 0.0 && tl.y > 0.0 && p.x < x + tl.x && p.y < y + tl.y) {
+    return arc_cov(p, vec2<f32>(x + tl.x, y + tl.y), tl);
   }
-  if (u.radii.y > 0.0 && p.x > x + w - u.radii.y && p.y < y + u.radii.y) {
-    return arc_cov(p, vec2<f32>(x + w - u.radii.y, y + u.radii.y), u.radii.y);
+  if (tr.x > 0.0 && tr.y > 0.0 && p.x > x + w - tr.x && p.y < y + tr.y) {
+    return arc_cov(p, vec2<f32>(x + w - tr.x, y + tr.y), tr);
   }
-  if (u.radii.z > 0.0 && p.x > x + w - u.radii.z && p.y > y + h - u.radii.z) {
-    return arc_cov(p, vec2<f32>(x + w - u.radii.z, y + h - u.radii.z), u.radii.z);
+  if (br.x > 0.0 && br.y > 0.0 && p.x > x + w - br.x && p.y > y + h - br.y) {
+    return arc_cov(p, vec2<f32>(x + w - br.x, y + h - br.y), br);
   }
-  if (u.radii.w > 0.0 && p.x < x + u.radii.w && p.y > y + h - u.radii.w) {
-    return arc_cov(p, vec2<f32>(x + u.radii.w, y + h - u.radii.w), u.radii.w);
+  if (bl.x > 0.0 && bl.y > 0.0 && p.x < x + bl.x && p.y > y + h - bl.y) {
+    return arc_cov(p, vec2<f32>(x + bl.x, y + h - bl.y), bl);
   }
   return 1.0;
 }
@@ -105,7 +121,7 @@ class CpuBackend {
   }
   draw({ vertexData, indices, uniforms, blend, dstRegion }) {
     const sr = uniforms[0] | 0, sg = uniforms[1] | 0, sb = uniforms[2] | 0, sa = uniforms.length > 3 ? uniforms[3] | 0 : 255;
-    const rounded = uniforms.length >= 12 && (uniforms[4] || uniforms[5] || uniforms[6] || uniforms[7]);
+    const rounded = uniforms.length >= 16 && (uniforms[4] || uniforms[5] || uniforms[6] || uniforms[7] || uniforms[8] || uniforms[9] || uniforms[10] || uniforms[11]);
     const [rx, ry, rw, rh] = dstRegion ?? [0, 0, this.width, this.height];
     const sx0 = Math.max(0, rx), sx1 = Math.min(this.width, rx + rw) - 1;
     const sy0 = Math.max(0, ry), sy1 = Math.min(this.height, ry + rh) - 1;
@@ -149,15 +165,29 @@ class CpuBackend {
     }
   }
   #cornerCoverage(pcx, pcy, u) {
-    const rtl = u[4], rtr = u[5], rbr = u[6], rbl = u[7], x = u[8], y = u[9], w = u[10], h = u[11];
-    const cov = (cx, cy, r) => {
-      const c = r - Math.hypot(pcx - cx, pcy - cy) + 0.5;
+    const rxtl = u[4], rytl = u[5], rxtr = u[6], rytr = u[7];
+    const rxbr = u[8], rybr = u[9], rxbl = u[10], rybl = u[11];
+    const x = u[12], y = u[13], w = u[14], h = u[15];
+    // Elliptical corner coverage (see FILL_WGSL arc_cov): signed distance to
+    // the ellipse boundary approximated as -f / |grad f|, softened over 1px.
+    const cov = (cx, cy, rx, ry) => {
+      const dx = pcx - cx, dy = pcy - cy;
+      let c;
+      if (Math.abs(rx - ry) < 0.001) {
+        c = rx - Math.hypot(dx, dy) + 0.5;
+      } else {
+        const nx = dx / rx, ny = dy / ry;
+        const gx = dx / (rx * rx), gy = dy / (ry * ry);
+        const glen = 2 * Math.hypot(gx, gy);
+        if (glen < 1e-6) return 1;
+        c = (1 - (nx * nx + ny * ny)) / glen + 0.5;
+      }
       return c < 0 ? 0 : c > 1 ? 1 : c;
     };
-    if (rtl > 0 && pcx < x + rtl && pcy < y + rtl) return cov(x + rtl, y + rtl, rtl);
-    if (rtr > 0 && pcx > x + w - rtr && pcy < y + rtr) return cov(x + w - rtr, y + rtr, rtr);
-    if (rbr > 0 && pcx > x + w - rbr && pcy > y + h - rbr) return cov(x + w - rbr, y + h - rbr, rbr);
-    if (rbl > 0 && pcx < x + rbl && pcy > y + h - rbl) return cov(x + rbl, y + h - rbl, rbl);
+    if (rxtl > 0 && rytl > 0 && pcx < x + rxtl && pcy < y + rytl) return cov(x + rxtl, y + rytl, rxtl, rytl);
+    if (rxtr > 0 && rytr > 0 && pcx > x + w - rxtr && pcy < y + rytr) return cov(x + w - rxtr, y + rytr, rxtr, rytr);
+    if (rxbr > 0 && rybr > 0 && pcx > x + w - rxbr && pcy > y + h - rybr) return cov(x + w - rxbr, y + h - rybr, rxbr, rybr);
+    if (rxbl > 0 && rybl > 0 && pcx < x + rxbl && pcy > y + h - rybl) return cov(x + rxbl, y + h - rybl, rxbl, rybl);
     return 1;
   }
   readPixels() { return Array.from(this.pixels); }
@@ -177,19 +207,21 @@ export function installDefaultRuntime() {
 
 // ---- WebGPU backend ------------------------------------------------------
 
-// Build the uniform buffer bytes (64) crater's FILL_WGSL expects:
-// color(vec4) | radii(vec4) | rect(vec4) | flags(vec4).
+// Build the uniform buffer bytes (80) crater's FILL_WGSL expects:
+// color(vec4) | radii0(vec4) | radii1(vec4) | rect(vec4) | flags(vec4).
 function packUniforms(uniforms) {
-  const f = new Float32Array(16);
+  const f = new Float32Array(20);
   f[0] = (uniforms[0] | 0) / 255;
   f[1] = (uniforms[1] | 0) / 255;
   f[2] = (uniforms[2] | 0) / 255;
   f[3] = (uniforms.length > 3 ? uniforms[3] | 0 : 255) / 255;
-  const rounded = uniforms.length >= 12 && (uniforms[4] || uniforms[5] || uniforms[6] || uniforms[7]);
+  const rounded = uniforms.length >= 16 && (uniforms[4] || uniforms[5] || uniforms[6] || uniforms[7] || uniforms[8] || uniforms[9] || uniforms[10] || uniforms[11]);
   if (rounded) {
-    f[4] = uniforms[4]; f[5] = uniforms[5]; f[6] = uniforms[6]; f[7] = uniforms[7];
-    f[8] = uniforms[8]; f[9] = uniforms[9]; f[10] = uniforms[10]; f[11] = uniforms[11];
-    f[12] = 1;
+    // radii0 (rx_tl,ry_tl,rx_tr,ry_tr), radii1 (rx_br,ry_br,rx_bl,ry_bl)
+    for (let i = 4; i < 12; i++) f[i] = uniforms[i];
+    // rect (x,y,w,h)
+    f[12] = uniforms[12]; f[13] = uniforms[13]; f[14] = uniforms[14]; f[15] = uniforms[15];
+    f[16] = 1;
   }
   return f;
 }
@@ -271,7 +303,7 @@ export class WebGPUBackend {
     device.queue.writeBuffer(vb, 0, new Float32Array(vertexData));
     const ib = device.createBuffer({ size: indices.length * 4, usage: 0x10 /* INDEX */ | 0x08, });
     device.queue.writeBuffer(ib, 0, new Uint32Array(indices));
-    const ub = device.createBuffer({ size: 64, usage: 0x40 /* UNIFORM */ | 0x08 });
+    const ub = device.createBuffer({ size: 80, usage: 0x40 /* UNIFORM */ | 0x08 });
     device.queue.writeBuffer(ub, 0, packUniforms(uniforms));
     const bindGroup = device.createBindGroup({ layout: this.layout, entries: [{ binding: 0, resource: { buffer: ub } }] });
     if (dstRegion) {

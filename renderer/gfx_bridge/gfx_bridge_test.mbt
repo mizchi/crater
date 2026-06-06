@@ -232,6 +232,8 @@ test "border radius lowers the background as a rounded fill" {
   // rounded: shape uniforms appended after the colour
   inspect(
     commands[0].uniform_dwords,
-    content="[0, 0, 0, 255, 3, 3, 3, 3, 0, 0, 8, 8]",
+    content=(
+      #|[0, 0, 0, 255, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 8, 8]
+    ),
   )
 }

@@ -99,26 +99,43 @@ pub fn append_paint_node_background(
     h=node.height,
     color=@gfx_frame.to_gfx_color(bg),
   )
-  // Resolve border radii to pixels: a negative value encodes a percentage of
-  // the reference dimension (-0.5 = 50%), matching the raster path. Each
-  // corner is clamped to half the shorter side, so `border-radius: 50%`
-  // becomes a full circle / ellipse.
-  let min_dim = if node.width < node.height { node.width } else { node.height }
-  let max_r = min_dim / 2.0
-  fn resolve_radius(v : Double) -> Double {
-    let px = if v < 0.0 { -v * min_dim } else { v }
-    if px > max_r {
-      max_r
-    } else {
-      px
-    }
+  // Resolve each corner to an (rx, ry) pixel pair. A negative stored value
+  // encodes a percentage (-0.5 = 50%); the horizontal radius is a fraction of
+  // the width and the vertical of the height, each clamped to half that side.
+  // `border-radius: 50%` on a non-square box thus becomes a true ellipse, not
+  // a pill.
+  let half_w = node.width / 2.0
+  let half_h = node.height / 2.0
+  fn resolve_pair(v : Double) -> (Double, Double) {
+    let rx = if v < 0.0 { -v * node.width } else { v }
+    let ry = if v < 0.0 { -v * node.height } else { v }
+    (
+      if rx > half_w {
+        half_w
+      } else {
+        rx
+      },
+      if ry > half_h {
+        half_h
+      } else {
+        ry
+      },
+    )
   }
 
-  let tl = resolve_radius(p.border_top_left_radius)
-  let tr = resolve_radius(p.border_top_right_radius)
-  let br = resolve_radius(p.border_bottom_right_radius)
-  let bl = resolve_radius(p.border_bottom_left_radius)
-  if tl > 0.0 || tr > 0.0 || br > 0.0 || bl > 0.0 {
+  let tl = resolve_pair(p.border_top_left_radius)
+  let tr = resolve_pair(p.border_top_right_radius)
+  let br = resolve_pair(p.border_bottom_right_radius)
+  let bl = resolve_pair(p.border_bottom_left_radius)
+  let has_radius = tl.0 > 0.0 ||
+    tl.1 > 0.0 ||
+    tr.0 > 0.0 ||
+    tr.1 > 0.0 ||
+    br.0 > 0.0 ||
+    br.1 > 0.0 ||
+    bl.0 > 0.0 ||
+    bl.1 > 0.0
+  if has_radius {
     @gfx_frame.append_rounded_rect_fill(
       commands,
       frame,

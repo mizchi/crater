@@ -167,27 +167,50 @@ fn edge_ok(w : Double, top_left : Bool) -> Bool {
 ///|
 /// Anti-aliased coverage (0..1) of a pixel center against a rounded
 /// rectangle's corner arcs, from the shape uniforms
-/// `[_, _, _, _, r_tl, r_tr, r_br, r_bl, x, y, w, h]`. Pixels outside any
-/// corner region have full coverage; inside a corner, coverage falls off
-/// over a ~1px band along the arc (matching a signed-distance edge).
+/// `[_, _, _, _, rx_tl, ry_tl, rx_tr, ry_tr, rx_br, ry_br, rx_bl, ry_bl, x, y, w, h]`.
+/// Pixels outside any corner region have full coverage; inside a corner,
+/// coverage falls off over a ~1px band along the (elliptical) arc, matching a
+/// signed-distance edge.
 fn rounded_corner_coverage(
   pcx : Double,
   pcy : Double,
   u : Array[Int],
 ) -> Double {
-  let rtl = u[4].to_double()
-  let rtr = u[5].to_double()
-  let rbr = u[6].to_double()
-  let rbl = u[7].to_double()
-  let x = u[8].to_double()
-  let y = u[9].to_double()
-  let w = u[10].to_double()
-  let h = u[11].to_double()
-  fn cov(cx : Double, cy : Double, r : Double) -> Double {
+  let rx_tl = u[4].to_double()
+  let ry_tl = u[5].to_double()
+  let rx_tr = u[6].to_double()
+  let ry_tr = u[7].to_double()
+  let rx_br = u[8].to_double()
+  let ry_br = u[9].to_double()
+  let rx_bl = u[10].to_double()
+  let ry_bl = u[11].to_double()
+  let x = u[12].to_double()
+  let y = u[13].to_double()
+  let w = u[14].to_double()
+  let h = u[15].to_double()
+  // Coverage of an axis-aligned elliptical corner centered at (cx, cy) with
+  // radii (rx, ry): approximate the signed distance to the ellipse boundary
+  // (positive inside) as -f / |grad f| for f = (dx/rx)^2 + (dy/ry)^2 - 1, then
+  // soften over a 1px band. Reduces to the circular `r - dist` case when
+  // rx == ry.
+  fn cov(cx : Double, cy : Double, rx : Double, ry : Double) -> Double {
     let dx = pcx - cx
     let dy = pcy - cy
-    let dist = (dx * dx + dy * dy).sqrt()
-    let c = r - dist + 0.5
+    let c = if (rx - ry).abs() < 0.001 {
+      // Circular corner: exact distance to the arc.
+      rx - (dx * dx + dy * dy).sqrt() + 0.5
+    } else {
+      // Elliptical corner: approximate signed distance to the boundary.
+      let nx = dx / rx
+      let ny = dy / ry
+      let gx = dx / (rx * rx)
+      let gy = dy / (ry * ry)
+      let glen = 2.0 * (gx * gx + gy * gy).sqrt()
+      if glen < 0.000001 {
+        return 1.0
+      }
+      (1.0 - (nx * nx + ny * ny)) / glen + 0.5
+    }
     if c < 0.0 {
       0.0
     } else if c > 1.0 {
@@ -197,17 +220,17 @@ fn rounded_corner_coverage(
     }
   }
 
-  if rtl > 0.0 && pcx < x + rtl && pcy < y + rtl {
-    return cov(x + rtl, y + rtl, rtl)
+  if rx_tl > 0.0 && ry_tl > 0.0 && pcx < x + rx_tl && pcy < y + ry_tl {
+    return cov(x + rx_tl, y + ry_tl, rx_tl, ry_tl)
   }
-  if rtr > 0.0 && pcx > x + w - rtr && pcy < y + rtr {
-    return cov(x + w - rtr, y + rtr, rtr)
+  if rx_tr > 0.0 && ry_tr > 0.0 && pcx > x + w - rx_tr && pcy < y + ry_tr {
+    return cov(x + w - rx_tr, y + ry_tr, rx_tr, ry_tr)
   }
-  if rbr > 0.0 && pcx > x + w - rbr && pcy > y + h - rbr {
-    return cov(x + w - rbr, y + h - rbr, rbr)
+  if rx_br > 0.0 && ry_br > 0.0 && pcx > x + w - rx_br && pcy > y + h - ry_br {
+    return cov(x + w - rx_br, y + h - ry_br, rx_br, ry_br)
   }
-  if rbl > 0.0 && pcx < x + rbl && pcy > y + h - rbl {
-    return cov(x + rbl, y + h - rbl, rbl)
+  if rx_bl > 0.0 && ry_bl > 0.0 && pcx < x + rx_bl && pcy > y + h - ry_bl {
+    return cov(x + rx_bl, y + h - ry_bl, rx_bl, ry_bl)
   }
   1.0
 }
@@ -260,9 +283,18 @@ fn SoftwareDriver::rasterize(
   let sb = if u.length() > 2 { u[2] } else { 0 }
   let sa = if u.length() > 3 { u[3] } else { 255 }
   // Optional rounded-rect shape uniforms (packed after the color):
-  //   [r,g,b,a, r_tl, r_tr, r_br, r_bl, x, y, w, h]
-  let rounded = u.length() >= 12 &&
-    (u[4] > 0 || u[5] > 0 || u[6] > 0 || u[7] > 0)
+  //   [r,g,b,a, rx_tl,ry_tl, rx_tr,ry_tr, rx_br,ry_br, rx_bl,ry_bl, x,y,w,h]
+  let rounded = u.length() >= 16 &&
+    (
+      u[4] > 0 ||
+      u[5] > 0 ||
+      u[6] > 0 ||
+      u[7] > 0 ||
+      u[8] > 0 ||
+      u[9] > 0 ||
+      u[10] > 0 ||
+      u[11] > 0
+    )
   // Scissor: honor the command's destination region as a clip rectangle.
   let (scissor_x0, scissor_y0, scissor_x1, scissor_y1) = if command.dst_regions.length() >
     0 {

@@ -355,19 +355,21 @@ pub fn append_rect_fill(
 }
 
 ///|
-/// Lower a solid rounded-rectangle fill. The per-corner radii and the rect
-/// (pixel space) are packed into the command's uniforms after the four
-/// color channels (`[r, g, b, a, r_tl, r_tr, r_br, r_bl, x, y, w, h]`), so a
-/// backend's "shader" can carve the corners. gfx_software honors this; other
-/// backends that ignore the extra uniforms fall back to a square fill.
+/// Lower a solid rounded-rectangle fill. Each corner carries an independent
+/// `(rx, ry)` radius pair (equal components give a circular corner, unequal an
+/// elliptical one). The radii and the rect (pixel space) are packed into the
+/// command's uniforms after the four color channels
+/// (`[r, g, b, a, rx_tl, ry_tl, rx_tr, ry_tr, rx_br, ry_br, rx_bl, ry_bl, x, y, w, h]`),
+/// so a backend's "shader" can carve the corners. gfx_software honors this;
+/// other backends that ignore the extra uniforms fall back to a square fill.
 pub fn append_rounded_rect_fill(
   commands : Array[@gfx.DrawTrianglesCommand],
   frame : RenderFrame2D,
   rect : RectFill2D,
-  radius_tl~ : Double,
-  radius_tr~ : Double,
-  radius_br~ : Double,
-  radius_bl~ : Double,
+  radius_tl~ : (Double, Double),
+  radius_tr~ : (Double, Double),
+  radius_br~ : (Double, Double),
+  radius_bl~ : (Double, Double),
 ) -> Unit {
   let (vertices, indices) = ndc_rect_fill_vertices(
     rect.x,
@@ -377,11 +379,19 @@ pub fn append_rounded_rect_fill(
     frame.screen_w.to_double(),
     frame.screen_h.to_double(),
   )
+  let (rx_tl, ry_tl) = radius_tl
+  let (rx_tr, ry_tr) = radius_tr
+  let (rx_br, ry_br) = radius_br
+  let (rx_bl, ry_bl) = radius_bl
   let extra = [
-    radius_tl.to_int(),
-    radius_tr.to_int(),
-    radius_br.to_int(),
-    radius_bl.to_int(),
+    rx_tl.to_int(),
+    ry_tl.to_int(),
+    rx_tr.to_int(),
+    ry_tr.to_int(),
+    rx_br.to_int(),
+    ry_br.to_int(),
+    rx_bl.to_int(),
+    ry_bl.to_int(),
     rect.x.to_int(),
     rect.y.to_int(),
     rect.w.to_int(),

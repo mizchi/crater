@@ -84,6 +84,9 @@ const FIXTURES = [
   // border-radius:50% on a square resolves the percentage to a full circle;
   // the residual is the curved-edge anti-aliasing.
   { name: "circle", w: 48, h: 48, maxDiffPct: 3, html: wrap(`<div style="width:40px;height:40px;background:#06c;border-radius:50%"></div>`) },
+  // border-radius:50% on a non-square box is a true ellipse (per-corner rx/ry
+  // resolved against width/height), not a pill.
+  { name: "ellipse", w: 60, h: 40, maxDiffPct: 3, html: wrap(`<div style="width:48px;height:28px;background:#000;border-radius:50%"></div>`) },
   // transform: rotate fills the box's actual rotated quad (a diamond); the
   // residual is the hard-edged polygon vs the browser's edge anti-aliasing.
   { name: "rotate-45", w: 60, h: 60, maxDiffPct: 4, html: wrap(`<div style="width:24px;height:24px;background:#000;transform:rotate(45deg);margin:12px"></div>`) },

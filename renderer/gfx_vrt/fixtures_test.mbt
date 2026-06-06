@@ -352,6 +352,34 @@ test "image vrt: border-radius 50pct paints a circle" {
 }
 
 ///|
+// `border-radius: 50%` on a non-square box resolves the horizontal radius
+// against the width and the vertical against the height, painting a true
+// ellipse (wider than tall here) rather than a pill. Regression guard for the
+// per-corner (rx, ry) uniform layout.
+test "image vrt: border-radius 50pct on a wide box paints an ellipse" {
+  let html =
+    #|<html><body style="margin:0">
+    #|<div style="width:20px;height:10px;background:#000000;border-radius:50%"></div>
+    #|</body></html>
+  inspect(
+    render_ascii(html, 20.0, 10.0),
+    content=(
+      #|    .=*#%@@%#*=.    
+      #|  -#@@@@@@@@@@@@#-  
+      #| +@@@@@@@@@@@@@@@@+ 
+      #|=@@@@@@@@@@@@@@@@@@=
+      #|%@@@@@@@@@@@@@@@@@@%
+      #|%@@@@@@@@@@@@@@@@@@%
+      #|=@@@@@@@@@@@@@@@@@@=
+      #| +@@@@@@@@@@@@@@@@+ 
+      #|  -#@@@@@@@@@@@@#-  
+      #|    .=*#%@@%#*=.    
+      #|
+    ),
+  )
+}
+
+///|
 test "image vrt: border-radius rounds the corners" {
   let html =
     #|<html><body style="margin:0;background:#ffffff">
