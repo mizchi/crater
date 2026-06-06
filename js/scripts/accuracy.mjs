@@ -64,6 +64,13 @@ const FIXTURES = [
   { name: "border", w: 60, h: 50, maxDiffPct: 0.5, html: wrap(`<div style="width:40px;height:30px;border:4px solid #2244cc;background:#ffee88;box-sizing:border-box"></div>`) },
   { name: "nested", w: 60, h: 60, maxDiffPct: 0.5, html: wrap(`<div style="width:50px;height:50px;background:#222"><div style="width:20px;height:20px;background:#dd4"></div></div>`) },
   { name: "flex-row", w: 90, h: 30, maxDiffPct: 0.5, html: wrap(`<div style="display:flex"><div style="width:30px;height:30px;background:#c33"></div><div style="width:30px;height:30px;background:#3a5"></div><div style="width:30px;height:30px;background:#35c"></div></div>`) },
+  // A first child's top margin collapses through the body and shifts the box
+  // down; the renderer must translate nodes by their accumulated ancestor
+  // offset (paint coords are parent-relative), not paint them at the origin.
+  { name: "margin-top", w: 60, h: 50, maxDiffPct: 0.5, html: wrap(`<div style="width:30px;height:20px;background:#39c;margin:10px"></div>`) },
+  // box-shadow is a hard offset rect; its only Chromium delta was the same
+  // dropped-margin offset, so this pins both at once.
+  { name: "box-shadow", w: 60, h: 50, maxDiffPct: 0.5, html: wrap(`<div style="width:24px;height:24px;background:#000;box-shadow:4px 4px 0 #888;margin:6px"></div>`) },
   // rounded corners differ only by anti-aliasing
   { name: "rounded", w: 60, h: 60, maxDiffPct: 2, html: wrap(`<div style="width:40px;height:40px;background:#000;border-radius:12px"></div>`) },
   // Text: same font in both. Positioning/shape match; the residual is the

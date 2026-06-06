@@ -227,6 +227,37 @@ test "image vrt: element opacity dims to grey over white" {
 }
 
 ///|
+// A first in-flow child's top margin collapses through the (margin:0) body
+// and shifts the body box down in the viewport. The renderer must translate
+// each node by its accumulated ancestor offset (paint coordinates are
+// parent-relative), so the box paints below the blank margin band rather than
+// flush to the top. Regression guard for the offset-accumulation fix.
+test "image vrt: first-child top margin shifts content down" {
+  let html =
+    #|<html><body style="margin:0">
+    #|<div style="width:16px;height:4px;background:#000000;margin-top:4px"></div>
+    #|</body></html>
+  inspect(
+    render_ascii(html, 16.0, 12.0),
+    content=(
+      #|                
+      #|                
+      #|                
+      #|                
+      #|@@@@@@@@@@@@@@@@
+      #|@@@@@@@@@@@@@@@@
+      #|@@@@@@@@@@@@@@@@
+      #|@@@@@@@@@@@@@@@@
+      #|                
+      #|                
+      #|                
+      #|                
+      #|
+    ),
+  )
+}
+
+///|
 test "image vrt: border-radius rounds the corners" {
   let html =
     #|<html><body style="margin:0;background:#ffffff">

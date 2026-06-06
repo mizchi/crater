@@ -263,23 +263,36 @@ pub fn collect_paint_commands(
   // inherited by children. A node that clips its content
   // (overflow: hidden/clip/scroll) additionally intersects the clip onto
   // its children.
-  fn visit(node : @paint_model.PaintNode, frame : RenderFrame2D) -> Unit {
+  // PaintNode coordinates are relative to the parent (the same convention the
+  // raster consumer accumulates with `parent_x + node.x`). Thread the absolute
+  // ancestor offset down the walk and translate each node into framebuffer
+  // space before painting; otherwise any non-zero parent origin (e.g. a body
+  // shifted down by a first-child's collapsed top margin) is dropped.
+  fn visit(
+    node : @paint_model.PaintNode,
+    frame : RenderFrame2D,
+    off_x : Double,
+    off_y : Double,
+  ) -> Unit {
+    let abs_x = off_x + node.x
+    let abs_y = off_y + node.y
+    let pnode = { ..node, x: abs_x, y: abs_y }
     let node_frame = frame.with_opacity(node.paint.opacity)
-    append_paint_node_shadows(commands, node_frame, node)
-    append_paint_node_background(commands, node_frame, node)
-    append_paint_node_borders(commands, node_frame, node)
+    append_paint_node_shadows(commands, node_frame, pnode)
+    append_paint_node_background(commands, node_frame, pnode)
+    append_paint_node_borders(commands, node_frame, pnode)
     match resolve_image {
       Some(resolve) =>
-        append_paint_node_image(commands, node_frame, node, resolve)
+        append_paint_node_image(commands, node_frame, pnode, resolve)
       None => ()
     }
     match glyph_provider {
       Some(provider) =>
-        append_paint_node_text(commands, node_frame, node, provider)
+        append_paint_node_text(commands, node_frame, pnode, provider)
       None => ()
     }
     let child_frame = if node.clips_content() {
-      match node.get_clip_rect() {
+      match pnode.get_clip_rect() {
         Some((cx, cy, cw, ch)) =>
           node_frame.with_clip(
             cx.to_int(),
@@ -293,11 +306,11 @@ pub fn collect_paint_commands(
       node_frame
     }
     for child in node.children {
-      visit(child, child_frame)
+      visit(child, child_frame, abs_x, abs_y)
     }
   }
 
-  visit(root, frame)
+  visit(root, frame, 0.0, 0.0)
   commands
 }
 
