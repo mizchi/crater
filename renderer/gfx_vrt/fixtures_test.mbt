@@ -322,6 +322,36 @@ test "image vrt: rotate 45deg paints a diamond" {
 }
 
 ///|
+// `border-radius: 50%` on a square box resolves the percentage against the
+// box dimension (negative-encoded radius -> min_dim/2) and paints a full
+// circle, not the bounding square. Regression guard for percentage radius
+// resolution.
+test "image vrt: border-radius 50pct paints a circle" {
+  let html =
+    #|<html><body style="margin:0">
+    #|<div style="width:12px;height:12px;background:#000000;border-radius:50%"></div>
+    #|</body></html>
+  inspect(
+    render_ascii(html, 12.0, 12.0),
+    content=(
+      #|   =#%%#=   
+      #| .#@@@@@@#. 
+      #| #@@@@@@@@# 
+      #|=@@@@@@@@@@=
+      #|#@@@@@@@@@@#
+      #|%@@@@@@@@@@%
+      #|%@@@@@@@@@@%
+      #|#@@@@@@@@@@#
+      #|=@@@@@@@@@@=
+      #| #@@@@@@@@# 
+      #| .#@@@@@@#. 
+      #|   =#%%#=   
+      #|
+    ),
+  )
+}
+
+///|
 test "image vrt: border-radius rounds the corners" {
   let html =
     #|<html><body style="margin:0;background:#ffffff">

@@ -99,18 +99,34 @@ pub fn append_paint_node_background(
     h=node.height,
     color=@gfx_frame.to_gfx_color(bg),
   )
-  if p.border_top_left_radius > 0.0 ||
-    p.border_top_right_radius > 0.0 ||
-    p.border_bottom_right_radius > 0.0 ||
-    p.border_bottom_left_radius > 0.0 {
+  // Resolve border radii to pixels: a negative value encodes a percentage of
+  // the reference dimension (-0.5 = 50%), matching the raster path. Each
+  // corner is clamped to half the shorter side, so `border-radius: 50%`
+  // becomes a full circle / ellipse.
+  let min_dim = if node.width < node.height { node.width } else { node.height }
+  let max_r = min_dim / 2.0
+  fn resolve_radius(v : Double) -> Double {
+    let px = if v < 0.0 { -v * min_dim } else { v }
+    if px > max_r {
+      max_r
+    } else {
+      px
+    }
+  }
+
+  let tl = resolve_radius(p.border_top_left_radius)
+  let tr = resolve_radius(p.border_top_right_radius)
+  let br = resolve_radius(p.border_bottom_right_radius)
+  let bl = resolve_radius(p.border_bottom_left_radius)
+  if tl > 0.0 || tr > 0.0 || br > 0.0 || bl > 0.0 {
     @gfx_frame.append_rounded_rect_fill(
       commands,
       frame,
       rect,
-      radius_tl=p.border_top_left_radius,
-      radius_tr=p.border_top_right_radius,
-      radius_br=p.border_bottom_right_radius,
-      radius_bl=p.border_bottom_left_radius,
+      radius_tl=tl,
+      radius_tr=tr,
+      radius_br=br,
+      radius_bl=bl,
     )
   } else {
     @gfx_frame.append_rect_fill(commands, frame, rect)
