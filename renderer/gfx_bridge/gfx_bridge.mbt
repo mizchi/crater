@@ -236,6 +236,7 @@ pub fn append_paint_node(
 ) -> Unit {
   append_paint_node_shadows(commands, frame, node)
   append_paint_node_background(commands, frame, node)
+  append_paint_node_gradient(commands, frame, node)
   append_paint_node_borders(commands, frame, node)
 }
 
@@ -280,6 +281,7 @@ pub fn collect_paint_commands(
     let node_frame = frame.with_opacity(node.paint.opacity)
     append_paint_node_shadows(commands, node_frame, pnode)
     append_paint_node_background(commands, node_frame, pnode)
+    append_paint_node_gradient(commands, node_frame, pnode)
     append_paint_node_borders(commands, node_frame, pnode)
     match resolve_image {
       Some(resolve) =>

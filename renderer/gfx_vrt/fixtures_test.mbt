@@ -258,6 +258,31 @@ test "image vrt: first-child top margin shifts content down" {
 }
 
 ///|
+// An axis-aligned (`to bottom`) linear gradient is lowered as 1px solid
+// strips perpendicular to the gradient axis, ramping black -> white down the
+// box. Regression guard for gradient background lowering.
+test "image vrt: vertical linear gradient ramps top to bottom" {
+  let html =
+    #|<html><body style="margin:0">
+    #|<div style="width:8px;height:8px;background:linear-gradient(to bottom,#000000,#ffffff)"></div>
+    #|</body></html>
+  inspect(
+    render_ascii(html, 8.0, 8.0),
+    content=(
+      #|@@@@@@@@
+      #|########
+      #|********
+      #|++++++++
+      #|========
+      #|--------
+      #|::::::::
+      #|........
+      #|
+    ),
+  )
+}
+
+///|
 test "image vrt: border-radius rounds the corners" {
   let html =
     #|<html><body style="margin:0;background:#ffffff">

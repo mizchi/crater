@@ -71,6 +71,14 @@ const FIXTURES = [
   // box-shadow is a hard offset rect; its only Chromium delta was the same
   // dropped-margin offset, so this pins both at once.
   { name: "box-shadow", w: 60, h: 50, maxDiffPct: 0.5, html: wrap(`<div style="width:24px;height:24px;background:#000;box-shadow:4px 4px 0 #888;margin:6px"></div>`) },
+  // Axis-aligned linear gradients lower to 1px solid strips along the axis and
+  // match the browser pixel-for-pixel (the few-LSB delta is gradient colour
+  // interpolation rounding, well under the per-channel threshold).
+  { name: "grad-horiz", w: 60, h: 40, maxDiffPct: 0.5, html: wrap(`<div style="width:40px;height:24px;background:linear-gradient(90deg,#f00,#00f)"></div>`) },
+  { name: "grad-vert", w: 40, h: 60, maxDiffPct: 0.5, html: wrap(`<div style="width:24px;height:40px;background:linear-gradient(to bottom,#000,#0a0,#fff)"></div>`) },
+  // A diagonal gradient is tiled with rotated bands clipped to the box; the
+  // residual is the hard band-seam AA vs the browser's smooth interpolation.
+  { name: "grad-diag", w: 60, h: 60, maxDiffPct: 4, html: wrap(`<div style="width:40px;height:40px;background:linear-gradient(45deg,#000,#fff)"></div>`) },
   // rounded corners differ only by anti-aliasing
   { name: "rounded", w: 60, h: 60, maxDiffPct: 2, html: wrap(`<div style="width:40px;height:40px;background:#000;border-radius:12px"></div>`) },
   // Text: same font in both. Positioning/shape match; the residual is the
