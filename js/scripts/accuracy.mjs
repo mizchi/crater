@@ -81,6 +81,9 @@ const FIXTURES = [
   { name: "grad-diag", w: 60, h: 60, maxDiffPct: 4, html: wrap(`<div style="width:40px;height:40px;background:linear-gradient(45deg,#000,#fff)"></div>`) },
   // rounded corners differ only by anti-aliasing
   { name: "rounded", w: 60, h: 60, maxDiffPct: 2, html: wrap(`<div style="width:40px;height:40px;background:#000;border-radius:12px"></div>`) },
+  // transform: rotate fills the box's actual rotated quad (a diamond); the
+  // residual is the hard-edged polygon vs the browser's edge anti-aliasing.
+  { name: "rotate-45", w: 60, h: 60, maxDiffPct: 4, html: wrap(`<div style="width:24px;height:24px;background:#000;transform:rotate(45deg);margin:12px"></div>`) },
   // Text: same font in both. Positioning/shape match; the residual is the
   // sub-pixel AA difference between crater's glyph rasterizer and the
   // browser's (FreeType) -- an inherent rasterizer floor, not a layout gap.

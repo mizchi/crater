@@ -399,6 +399,43 @@ pub fn append_rounded_rect_fill(
 }
 
 ///|
+/// Lower a solid-color convex polygon fill from absolute pixel-space points
+/// (triangulated as a fan). Used for transformed (rotated / skewed) boxes
+/// whose visual shape is no longer an axis-aligned rectangle. Points with
+/// fewer than three vertices are ignored.
+pub fn append_polygon_fill(
+  commands : Array[@gfx.DrawTrianglesCommand],
+  frame : RenderFrame2D,
+  points : Array[(Double, Double)],
+  color : @gfx.Color,
+) -> Unit {
+  if points.length() < 3 {
+    return
+  }
+  let pixel_vertices : Array[Double] = []
+  for point in points {
+    let (px, py) = point
+    pixel_vertices.push(px)
+    pixel_vertices.push(py)
+    pixel_vertices.push(0.0)
+    pixel_vertices.push(0.0)
+  }
+  let vertices = pixel_to_ndc_vertices(
+    pixel_vertices,
+    frame.screen_w.to_double(),
+    frame.screen_h.to_double(),
+  )
+  // Triangle fan: (0, i, i+1) for i in 1..n-1.
+  let indices : Array[Int] = []
+  for i = 1; i < points.length() - 1; i = i + 1 {
+    indices.push(0)
+    indices.push(i)
+    indices.push(i + 1)
+  }
+  commands.push(new_primitive_command(frame, vertices, indices, color))
+}
+
+///|
 /// A uniform-width, single-color rectangle outline in pixel space.
 pub(all) struct RectOutline2D {
   x : Double

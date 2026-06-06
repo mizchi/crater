@@ -283,6 +283,45 @@ test "image vrt: vertical linear gradient ramps top to bottom" {
 }
 
 ///|
+// A 45deg rotation paints the box as its actual rotated quad (a diamond),
+// filled from the node's visual polygon, rather than its axis-aligned bounding
+// box. Regression guard for transform: rotate lowering.
+test "image vrt: rotate 45deg paints a diamond" {
+  let html =
+    #|<html><body style="margin:0">
+    #|<div style="width:10px;height:10px;background:#000000;transform:rotate(45deg);margin:3px"></div>
+    #|</body></html>
+  inspect(
+    render_ascii(html, 22.0, 22.0),
+    content=(
+      #|                      
+      #|       @@             
+      #|      @@@@            
+      #|     @@@@@@           
+      #|    @@@@@@@@          
+      #|   @@@@@@@@@@         
+      #|  @@@@@@@@@@@@        
+      #| @@@@@@@@@@@@@@       
+      #| @@@@@@@@@@@@@@       
+      #|  @@@@@@@@@@@@        
+      #|   @@@@@@@@@@         
+      #|    @@@@@@@@          
+      #|     @@@@@@           
+      #|      @@@@            
+      #|       @@             
+      #|                      
+      #|                      
+      #|                      
+      #|                      
+      #|                      
+      #|                      
+      #|                      
+      #|
+    ),
+  )
+}
+
+///|
 test "image vrt: border-radius rounds the corners" {
   let html =
     #|<html><body style="margin:0;background:#ffffff">

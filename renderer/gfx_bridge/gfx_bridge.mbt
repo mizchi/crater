@@ -74,6 +74,24 @@ pub fn append_paint_node_background(
     return
   }
   let p = node.paint
+  // A transformed (rotated / skewed) box paints as its visual polygon -- the
+  // node's `visual_polygon` holds the corners in coordinates local to the
+  // paint box (its axis-aligned bounding box). Fill that shape directly rather
+  // than the bounding rectangle.
+  if node.visual_polygon.length() >= 3 {
+    let abs_points : Array[(Double, Double)] = []
+    for point in node.visual_polygon {
+      let (lx, ly) = point
+      abs_points.push((node.x + lx, node.y + ly))
+    }
+    @gfx_frame.append_polygon_fill(
+      commands,
+      frame,
+      abs_points,
+      @gfx_frame.to_gfx_color(bg),
+    )
+    return
+  }
   let rect = @gfx_frame.RectFill2D::new(
     x=node.x,
     y=node.y,
@@ -108,6 +126,12 @@ pub fn append_paint_node_borders(
   frame : RenderFrame2D,
   node : @paint_model.PaintNode,
 ) -> Unit {
+  // Borders on a transformed box would need the edges rotated with the shape;
+  // drawing axis-aligned edges around the bounding box bleeds outside the
+  // rotated fill, so skip them rather than paint artifacts.
+  if node.visual_polygon.length() >= 3 {
+    return
+  }
   let p = node.paint
   let x = node.x
   let y = node.y
