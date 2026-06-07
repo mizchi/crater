@@ -21,7 +21,7 @@ pkf run spec-check                                          # contract が壊れ
 | scenario id | 概要 | link | 状態 |
 |---|---|---|---|
 | `compat.css-images-baseline` | css-images WPT baseline 有効化 | #65, #68 | border longhand cascade は 0.4.4 で fix (#261)。残 blocker は `sibling-index()` 未実装のみ。baseline env 未作成 |
-| `compat.css-values-baseline` | css-values WPT baseline 有効化 | #65, #67 | mixed `calc()` は 0.4.2 で fix (#260) — block 系 4 test (`calc-{max,min}-width-block-*`) pass。残りは calc 無関係の `<table border>` (HTML 属性) 幅 bug。baseline env 未作成 |
+| `compat.css-values-baseline` | css-values WPT baseline 有効化 | #65, #281 | mixed `calc()` は 0.4.2 で fix (#260, #67 close) — block 系 4 test (`calc-{max,min}-width-block-*`) pass。残りは calc 無関係の `<table border>` (HTML 属性) 幅 bug → #281。baseline env 未作成 |
 | `compat.css-filter-effects` | filter-effects 残 failure 潰し | #64 | 一部済: `has_filter` CB 確立は landed。残りは inline filter CB のジオメトリ + backdrop-filter/SVG subregion (paint側) |
 | `paint.text-glyph-metrics` | glyph metrics / AA Chromium parity | #47 | `mizchi/kagura` blocker 解消: gfx-mbt 実フォント描画 (#276/#277) + Chromium-parity 形状 (#279) landed。残りは曲線/グリフエッジ AA parity + Luna VRT 再計測 |
 
