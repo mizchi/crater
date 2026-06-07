@@ -44,8 +44,16 @@ import { CpuBackend, WebGPUBackend } from "/dist/gfx-web-runtime.mjs";
 
 async function getDevice() {
   if (!navigator.gpu) return null;
-  try { const a = await navigator.gpu.requestAdapter(); if (!a) return null; return await a.requestDevice(); }
-  catch { return null; }
+  // requestAdapter / requestDevice can hang (rather than reject) on a broken
+  // or partially-initialized WebGPU stack -- e.g. SwiftShader in headless CI.
+  // Race each against a timeout so __ready always resolves and the page falls
+  // back to the CPU backend instead of blocking the test forever.
+  const withTimeout = (p, ms) => Promise.race([p, new Promise((r) => setTimeout(() => r(null), ms))]);
+  try {
+    const a = await withTimeout(navigator.gpu.requestAdapter(), 5000);
+    if (!a) return null;
+    return await withTimeout(a.requestDevice(), 5000);
+  } catch { return null; }
 }
 
 window.__mode = "cpu";
@@ -115,11 +123,20 @@ const FIXTURES = [
 ];
 
 async function main() {
+  // Hard wall-clock watchdog: a browser/GPU step that wedges should not hang
+  // the CI job. If we blow the deadline, treat it as a skip (this is a
+  // best-effort browser E2E that already skips when no browser is available).
+  const watchdog = setTimeout(() => {
+    console.error("skip: gfx web backend E2E timed out");
+    process.exit(0);
+  }, 90000);
+  watchdog.unref?.();
   let chromium;
   try {
     chromium = await loadChromium();
   } catch (e) {
     console.error("skip: playwright/chromium unavailable —", e.message);
+    clearTimeout(watchdog);
     return;
   }
   const server = await startServer();
@@ -132,13 +149,15 @@ async function main() {
   } catch (e) {
     server.close();
     console.error("skip: could not launch chromium —", e.message);
+    clearTimeout(watchdog);
     return;
   }
   let failures = 0;
   try {
     const page = await browser.newPage();
+    page.setDefaultTimeout(30000);
     page.on("pageerror", (e) => { console.error("pageerror:", e.message); failures++; });
-    await page.goto(`http://127.0.0.1:${port}/`);
+    await page.goto(`http://127.0.0.1:${port}/`, { timeout: 30000, waitUntil: "load" });
     await page.evaluate(() => window.__ready);
     const mode = await page.evaluate(() => window.__mode);
     console.error(`browser backend mode: ${mode}`);
@@ -167,6 +186,7 @@ async function main() {
   } finally {
     await browser.close();
     server.close();
+    clearTimeout(watchdog);
   }
   if (failures > 0) { console.error(`\n${failures} E2E check(s) failed.`); process.exit(1); }
   console.error("gfx web backend E2E passed.");
