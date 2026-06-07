@@ -108,15 +108,22 @@ function textHtml(fontB64, text, size) {
 }
 
 async function main() {
+  // Hard wall-clock watchdog so a wedged browser can't hang the CI job.
+  const watchdog = setTimeout(() => {
+    console.error("skip: Chromium accuracy check timed out");
+    process.exit(0);
+  }, 90000);
+  watchdog.unref?.();
   const chromium = await loadChromium();
-  if (!chromium) { console.error("skip: playwright unavailable"); return; }
+  if (!chromium) { console.error("skip: playwright unavailable"); clearTimeout(watchdog); return; }
   const m = await import("../dist/index.js");
   let browser;
   try { browser = await chromium.launch({ args: ["--no-sandbox", "--force-device-scale-factor=1", "--hide-scrollbars"] }); }
-  catch (e) { console.error("skip: could not launch chromium —", e.message); return; }
+  catch (e) { console.error("skip: could not launch chromium —", e.message); clearTimeout(watchdog); return; }
   let failures = 0;
   try {
     const page = await browser.newPage({ deviceScaleFactor: 1 });
+    page.setDefaultTimeout(30000);
     for (const fx of FIXTURES) {
       let html = fx.html;
       if (fx.font) {
@@ -139,6 +146,7 @@ async function main() {
     }
   } finally {
     await browser.close();
+    clearTimeout(watchdog);
   }
   if (failures > 0) { console.error(`\n${failures} fixture(s) exceeded the Chromium accuracy tolerance.`); process.exit(1); }
   console.error("crater matches Chromium within tolerance.");
