@@ -6775,8 +6775,22 @@ fn compute_with_collapse(
           }
         None => content_height // Default to end of flow content
       }
+      // When this block does not itself establish the containing block for its
+      // absolute children (it is static / non-positioned) and has no definite
+      // height, the real containing block is an ancestor — ultimately the
+      // initial containing block (the viewport). Resolve percentage heights /
+      // top+bottom insets against the viewport height in that case, mirroring
+      // the fixed-child fallback below. (CSS 2.1 §10.1: the ICB has the
+      // viewport's dimensions.)
+      let abs_container_height = if box_height > 0.0 ||
+        establishes_abs_containing_block(style, style.display) {
+        box_height
+      } else {
+        ctx.viewport_height
+      }
       let abs_layout = layout_absolute_child(
-        child, box_width, box_height, border, padding, static_y, warnings, dispatch,
+        child, box_width, abs_container_height, border, padding, static_y, warnings,
+        dispatch,
       )
       layout_map[i] = abs_layout
     }

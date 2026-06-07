@@ -487,12 +487,12 @@ tests {
   new {
     name = "wpt_css_values_baseline_is_pinned"
     description =
-      "css-values is enabled in wpt.json with a modulePrefixes [\"calc-\"] entry exposing the layout-gradeable calc() subset; the per-module baseline file pins 32/46 passing, unblocked by the mixed calc() support in mizchi/css 0.4.2 (issue #67) and the fixed-table column-width expansion (issue #281)."
+      "css-values is enabled in wpt.json with a modulePrefixes [\"calc-\"] entry exposing the layout-gradeable calc() subset; the per-module baseline file pins 34/46 passing, unblocked by the mixed calc() support in mizchi/css 0.4.2 (issue #67) and the fixed-table column-width expansion (issue #281)."
     tags { "wpt"; "css"; "baseline"; "issue:67"; "issue:281" }
     specRef { "compat.css-values-baseline" }
     workdir = ".."
     cmd =
-      "bash -lc 'set -e; grep -Fq -- \"\\\"css-values\\\"\" wpt.json; test -f tests/wpt-baselines/css-values.env; grep -Fq -- \"MODULE=css-values\" tests/wpt-baselines/css-values.env; grep -Fq -- \"BASELINE_PASSED=32\" tests/wpt-baselines/css-values.env; grep -Fq -- \"BASELINE_FAILED=14\" tests/wpt-baselines/css-values.env'"
+      "bash -lc 'set -e; grep -Fq -- \"\\\"css-values\\\"\" wpt.json; test -f tests/wpt-baselines/css-values.env; grep -Fq -- \"MODULE=css-values\" tests/wpt-baselines/css-values.env; grep -Fq -- \"BASELINE_PASSED=34\" tests/wpt-baselines/css-values.env; grep -Fq -- \"BASELINE_FAILED=12\" tests/wpt-baselines/css-values.env'"
   }
   new {
     name = "wpt_css_flexbox_baseline_is_pinned"

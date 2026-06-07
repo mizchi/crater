@@ -370,7 +370,7 @@ scenarios {
     id = "compat.css-values-baseline"
     name = "css-values WPT module baseline is enabled"
     description =
-      "Promote css-values into wpt-config via a modulePrefixes [\"calc-\"] entry exposing the layout-gradeable calc() subset, pinned at 32/46 in tests/wpt-baselines/css-values.env. Unblocked by mixed calc() support in mizchi/css 0.4.2 (issue #67) and the fixed-table column-width expansion (issue #281). See GitHub issue #65 (measurement)."
+      "Promote css-values into wpt-config via a modulePrefixes [\"calc-\"] entry exposing the layout-gradeable calc() subset, pinned at 34/46 in tests/wpt-baselines/css-values.env. Unblocked by mixed calc() support in mizchi/css 0.4.2 (issue #67), the fixed-table column-width expansion (issue #281), and abspos percentage-height-vs-ICB (issue #282). See GitHub issue #65 (measurement)."
     tags { "wpt"; "css"; "baseline"; "issue:65"; "issue:67"; "issue:281" }
     severity = "major"
     reviewStatus = "approved"
