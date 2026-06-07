@@ -15,6 +15,8 @@ pub fn append_paint_node_background(Array[@gfx.DrawTrianglesCommand], @gfx_frame
 
 pub fn append_paint_node_borders(Array[@gfx.DrawTrianglesCommand], @gfx_frame.RenderFrame2D, @model.PaintNode) -> Unit
 
+pub fn append_paint_node_gradient(Array[@gfx.DrawTrianglesCommand], @gfx_frame.RenderFrame2D, @model.PaintNode) -> Unit
+
 pub fn append_paint_node_image(Array[@gfx.DrawTrianglesCommand], @gfx_frame.RenderFrame2D, @model.PaintNode, (String) -> @gfx.ImageHandle?) -> Unit
 
 pub fn append_paint_node_shadows(Array[@gfx.DrawTrianglesCommand], @gfx_frame.RenderFrame2D, @model.PaintNode) -> Unit
@@ -27,7 +29,7 @@ pub fn default_fill_shader_source() -> String
 
 pub fn[Q : @gfx.CommandQueue] enqueue_paint_tree(Q, @gfx_frame.RenderFrame2D, @model.PaintNode, glyph_provider? : @glyph.GlyphProvider, resolve_image? : (String) -> @gfx.ImageHandle?) -> Unit
 
-pub fn[D : @gfx.GraphicsDriver] render_paint_tree(D, @model.PaintNode, clear_color? : @gfx.Color, present? : Bool) -> Unit raise
+pub fn[D : @gfx.GraphicsDriver] render_paint_tree(D, @model.PaintNode, clear_color? : @gfx.Color, present? : Bool, width? : Int, height? : Int) -> Unit raise
 
 // Errors
 

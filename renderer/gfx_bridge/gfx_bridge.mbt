@@ -74,6 +74,24 @@ pub fn append_paint_node_background(
     return
   }
   let p = node.paint
+  // A transformed (rotated / skewed) box paints as its visual polygon -- the
+  // node's `visual_polygon` holds the corners in coordinates local to the
+  // paint box (its axis-aligned bounding box). Fill that shape directly rather
+  // than the bounding rectangle.
+  if node.visual_polygon.length() >= 3 {
+    let abs_points : Array[(Double, Double)] = []
+    for point in node.visual_polygon {
+      let (lx, ly) = point
+      abs_points.push((node.x + lx, node.y + ly))
+    }
+    @gfx_frame.append_polygon_fill(
+      commands,
+      frame,
+      abs_points,
+      @gfx_frame.to_gfx_color(bg),
+    )
+    return
+  }
   let rect = @gfx_frame.RectFill2D::new(
     x=node.x,
     y=node.y,
@@ -81,18 +99,51 @@ pub fn append_paint_node_background(
     h=node.height,
     color=@gfx_frame.to_gfx_color(bg),
   )
-  if p.border_top_left_radius > 0.0 ||
-    p.border_top_right_radius > 0.0 ||
-    p.border_bottom_right_radius > 0.0 ||
-    p.border_bottom_left_radius > 0.0 {
+  // Resolve each corner to an (rx, ry) pixel pair. A negative stored value
+  // encodes a percentage (-0.5 = 50%); the horizontal radius is a fraction of
+  // the width and the vertical of the height, each clamped to half that side.
+  // `border-radius: 50%` on a non-square box thus becomes a true ellipse, not
+  // a pill.
+  let half_w = node.width / 2.0
+  let half_h = node.height / 2.0
+  fn resolve_pair(v : Double) -> (Double, Double) {
+    let rx = if v < 0.0 { -v * node.width } else { v }
+    let ry = if v < 0.0 { -v * node.height } else { v }
+    (
+      if rx > half_w {
+        half_w
+      } else {
+        rx
+      },
+      if ry > half_h {
+        half_h
+      } else {
+        ry
+      },
+    )
+  }
+
+  let tl = resolve_pair(p.border_top_left_radius)
+  let tr = resolve_pair(p.border_top_right_radius)
+  let br = resolve_pair(p.border_bottom_right_radius)
+  let bl = resolve_pair(p.border_bottom_left_radius)
+  let has_radius = tl.0 > 0.0 ||
+    tl.1 > 0.0 ||
+    tr.0 > 0.0 ||
+    tr.1 > 0.0 ||
+    br.0 > 0.0 ||
+    br.1 > 0.0 ||
+    bl.0 > 0.0 ||
+    bl.1 > 0.0
+  if has_radius {
     @gfx_frame.append_rounded_rect_fill(
       commands,
       frame,
       rect,
-      radius_tl=p.border_top_left_radius,
-      radius_tr=p.border_top_right_radius,
-      radius_br=p.border_bottom_right_radius,
-      radius_bl=p.border_bottom_left_radius,
+      radius_tl=tl,
+      radius_tr=tr,
+      radius_br=br,
+      radius_bl=bl,
     )
   } else {
     @gfx_frame.append_rect_fill(commands, frame, rect)
@@ -108,6 +159,12 @@ pub fn append_paint_node_borders(
   frame : RenderFrame2D,
   node : @paint_model.PaintNode,
 ) -> Unit {
+  // Borders on a transformed box would need the edges rotated with the shape;
+  // drawing axis-aligned edges around the bounding box bleeds outside the
+  // rotated fill, so skip them rather than paint artifacts.
+  if node.visual_polygon.length() >= 3 {
+    return
+  }
   let p = node.paint
   let x = node.x
   let y = node.y
@@ -236,6 +293,7 @@ pub fn append_paint_node(
 ) -> Unit {
   append_paint_node_shadows(commands, frame, node)
   append_paint_node_background(commands, frame, node)
+  append_paint_node_gradient(commands, frame, node)
   append_paint_node_borders(commands, frame, node)
 }
 
@@ -263,23 +321,37 @@ pub fn collect_paint_commands(
   // inherited by children. A node that clips its content
   // (overflow: hidden/clip/scroll) additionally intersects the clip onto
   // its children.
-  fn visit(node : @paint_model.PaintNode, frame : RenderFrame2D) -> Unit {
+  // PaintNode coordinates are relative to the parent (the same convention the
+  // raster consumer accumulates with `parent_x + node.x`). Thread the absolute
+  // ancestor offset down the walk and translate each node into framebuffer
+  // space before painting; otherwise any non-zero parent origin (e.g. a body
+  // shifted down by a first-child's collapsed top margin) is dropped.
+  fn visit(
+    node : @paint_model.PaintNode,
+    frame : RenderFrame2D,
+    off_x : Double,
+    off_y : Double,
+  ) -> Unit {
+    let abs_x = off_x + node.x
+    let abs_y = off_y + node.y
+    let pnode = { ..node, x: abs_x, y: abs_y }
     let node_frame = frame.with_opacity(node.paint.opacity)
-    append_paint_node_shadows(commands, node_frame, node)
-    append_paint_node_background(commands, node_frame, node)
-    append_paint_node_borders(commands, node_frame, node)
+    append_paint_node_shadows(commands, node_frame, pnode)
+    append_paint_node_background(commands, node_frame, pnode)
+    append_paint_node_gradient(commands, node_frame, pnode)
+    append_paint_node_borders(commands, node_frame, pnode)
     match resolve_image {
       Some(resolve) =>
-        append_paint_node_image(commands, node_frame, node, resolve)
+        append_paint_node_image(commands, node_frame, pnode, resolve)
       None => ()
     }
     match glyph_provider {
       Some(provider) =>
-        append_paint_node_text(commands, node_frame, node, provider)
+        append_paint_node_text(commands, node_frame, pnode, provider)
       None => ()
     }
     let child_frame = if node.clips_content() {
-      match node.get_clip_rect() {
+      match pnode.get_clip_rect() {
         Some((cx, cy, cw, ch)) =>
           node_frame.with_clip(
             cx.to_int(),
@@ -293,11 +365,11 @@ pub fn collect_paint_commands(
       node_frame
     }
     for child in node.children {
-      visit(child, child_frame)
+      visit(child, child_frame, abs_x, abs_y)
     }
   }
 
-  visit(root, frame)
+  visit(root, frame, 0.0, 0.0)
   commands
 }
 
@@ -343,10 +415,28 @@ pub fn[D : @gfx.GraphicsDriver] render_paint_tree(
   root : @paint_model.PaintNode,
   clear_color? : @gfx.Color = @gfx.new_color(1.0, 1.0, 1.0, 1.0),
   present? : Bool = false,
+  width? : Int = -1,
+  height? : Int = -1,
 ) -> Unit raise {
   driver.initialize()
-  let width = if root.width > 0.0 { root.width.to_int() } else { 1 }
-  let height = if root.height > 0.0 { root.height.to_int() } else { 1 }
+  // The frame's NDC normalization must match the destination framebuffer.
+  // Default to the root box, but callers that render into a fixed-size
+  // surface (e.g. a viewport taller than the content) pass it explicitly so
+  // pixel coordinates map 1:1 instead of being scaled by surface/root.
+  let width = if width > 0 {
+    width
+  } else if root.width > 0.0 {
+    root.width.to_int()
+  } else {
+    1
+  }
+  let height = if height > 0 {
+    height
+  } else if root.height > 0.0 {
+    root.height.to_int()
+  } else {
+    1
+  }
   let dst = driver.new_image(width, height)
   let shader = driver.new_shader(default_fill_shader_source())
   let frame = @gfx_frame.RenderFrame2D::new(

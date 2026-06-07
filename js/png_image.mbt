@@ -183,7 +183,7 @@ pub fn renderHtmlViaWebBackendRgba(
     html,
     @types.Size::new(width.to_double(), height.to_double()),
   )
-  @gfx_bridge.render_paint_tree(driver, root) catch {
+  @gfx_bridge.render_paint_tree(driver, root, width~, height~) catch {
     _ => ()
   }
   @gfx_web.web_backend_read_pixels()

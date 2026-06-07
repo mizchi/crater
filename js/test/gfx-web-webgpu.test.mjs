@@ -60,8 +60,8 @@ test("WebGPU backend translates commands to GPU operations", () => {
 
   // plain red fill
   be.draw({ vertexData: QUAD, indices: IDX, uniforms: [255, 0, 0, 255], dstRegion: [0, 0, 4, 4] });
-  // rounded fill: [r,g,b,a, radii..., x,y,w,h]
-  be.draw({ vertexData: QUAD, indices: IDX, uniforms: [0, 0, 0, 255, 2, 2, 2, 2, 0, 0, 4, 4], dstRegion: [0, 0, 4, 4] });
+  // rounded fill: [r,g,b,a, rx_tl,ry_tl,rx_tr,ry_tr,rx_br,ry_br,rx_bl,ry_bl, x,y,w,h]
+  be.draw({ vertexData: QUAD, indices: IDX, uniforms: [0, 0, 0, 255, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 4, 4], dstRegion: [0, 0, 4, 4] });
   be.end();
 
   assert.equal(rec.draws.length, 2, "one drawIndexed per command");
@@ -69,11 +69,11 @@ test("WebGPU backend translates commands to GPU operations", () => {
   assert.equal(rec.submits, 1, "submitted once");
   assert.deepEqual(rec.scissors[0], [0, 0, 4, 4], "scissor rect");
 
-  // uniform buffers (size 64): assert colour + rounded flag
+  // uniform buffers (size 80): assert colour + rounded flag
   const uniforms = rec.writes.filter((w) => (w.usage & 0x40) !== 0).map((w) => w.data);
   assert.equal(uniforms.length, 2, "two uniform writes");
   assert.deepEqual(Array.from(uniforms[0].slice(0, 4)), [1, 0, 0, 1], "red colour");
-  assert.equal(uniforms[1][12], 1, "rounded flag set");
+  assert.equal(uniforms[1][16], 1, "rounded flag set");
   assert.deepEqual(Array.from(uniforms[1].slice(4, 8)), [2, 2, 2, 2], "corner radii");
 });
 

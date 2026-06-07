@@ -74,6 +74,13 @@ fn SoftwareDriver::clear(self : SoftwareDriver, color : @gfx.Color) -> Unit {
   let g = channel_u8(color.g)
   let b = channel_u8(color.b)
   let a = channel_u8(color.a)
+  // The common clears (opaque white, transparent black) have all four channels
+  // equal, so the whole buffer is one value: fill it in a single pass instead
+  // of four stores per pixel.
+  if r == g && g == b && b == a {
+    self.pixels.fill(r)
+    return
+  }
   let count = self.width * self.height
   for i in 0..<count {
     let base = i * 4
@@ -165,36 +172,74 @@ fn edge_ok(w : Double, top_left : Bool) -> Bool {
 }
 
 ///|
-/// Whether a pixel center falls outside a rounded rectangle's corner arc,
-/// given the shape uniforms `[_, _, _, _, r_tl, r_tr, r_br, r_bl, x, y, w, h]`.
-fn rounded_corner_clipped(pcx : Double, pcy : Double, u : Array[Int]) -> Bool {
-  let rtl = u[4].to_double()
-  let rtr = u[5].to_double()
-  let rbr = u[6].to_double()
-  let rbl = u[7].to_double()
-  let x = u[8].to_double()
-  let y = u[9].to_double()
-  let w = u[10].to_double()
-  let h = u[11].to_double()
-  fn outside(cx : Double, cy : Double, r : Double) -> Bool {
+/// Anti-aliased coverage (0..1) of a pixel center against a rounded
+/// rectangle's corner arcs, from the shape uniforms
+/// `[_, _, _, _, rx_tl, ry_tl, rx_tr, ry_tr, rx_br, ry_br, rx_bl, ry_bl, x, y, w, h]`.
+/// Pixels outside any corner region have full coverage; inside a corner,
+/// coverage falls off over a ~1px band along the (elliptical) arc, matching a
+/// signed-distance edge.
+fn rounded_corner_coverage(
+  pcx : Double,
+  pcy : Double,
+  u : Array[Int],
+) -> Double {
+  let rx_tl = u[4].to_double()
+  let ry_tl = u[5].to_double()
+  let rx_tr = u[6].to_double()
+  let ry_tr = u[7].to_double()
+  let rx_br = u[8].to_double()
+  let ry_br = u[9].to_double()
+  let rx_bl = u[10].to_double()
+  let ry_bl = u[11].to_double()
+  let x = u[12].to_double()
+  let y = u[13].to_double()
+  let w = u[14].to_double()
+  let h = u[15].to_double()
+  // Coverage of an axis-aligned elliptical corner centered at (cx, cy) with
+  // radii (rx, ry): approximate the signed distance to the ellipse boundary
+  // (positive inside) as -f / |grad f| for f = (dx/rx)^2 + (dy/ry)^2 - 1, then
+  // soften over a 1px band. Reduces to the circular `r - dist` case when
+  // rx == ry.
+  fn cov(cx : Double, cy : Double, rx : Double, ry : Double) -> Double {
     let dx = pcx - cx
     let dy = pcy - cy
-    dx * dx + dy * dy > r * r
+    let c = if (rx - ry).abs() < 0.001 {
+      // Circular corner: exact distance to the arc.
+      rx - (dx * dx + dy * dy).sqrt() + 0.5
+    } else {
+      // Elliptical corner: approximate signed distance to the boundary.
+      let nx = dx / rx
+      let ny = dy / ry
+      let gx = dx / (rx * rx)
+      let gy = dy / (ry * ry)
+      let glen = 2.0 * (gx * gx + gy * gy).sqrt()
+      if glen < 0.000001 {
+        return 1.0
+      }
+      (1.0 - (nx * nx + ny * ny)) / glen + 0.5
+    }
+    if c < 0.0 {
+      0.0
+    } else if c > 1.0 {
+      1.0
+    } else {
+      c
+    }
   }
 
-  if rtl > 0.0 && pcx < x + rtl && pcy < y + rtl {
-    return outside(x + rtl, y + rtl, rtl)
+  if rx_tl > 0.0 && ry_tl > 0.0 && pcx < x + rx_tl && pcy < y + ry_tl {
+    return cov(x + rx_tl, y + ry_tl, rx_tl, ry_tl)
   }
-  if rtr > 0.0 && pcx > x + w - rtr && pcy < y + rtr {
-    return outside(x + w - rtr, y + rtr, rtr)
+  if rx_tr > 0.0 && ry_tr > 0.0 && pcx > x + w - rx_tr && pcy < y + ry_tr {
+    return cov(x + w - rx_tr, y + ry_tr, rx_tr, ry_tr)
   }
-  if rbr > 0.0 && pcx > x + w - rbr && pcy > y + h - rbr {
-    return outside(x + w - rbr, y + h - rbr, rbr)
+  if rx_br > 0.0 && ry_br > 0.0 && pcx > x + w - rx_br && pcy > y + h - ry_br {
+    return cov(x + w - rx_br, y + h - ry_br, rx_br, ry_br)
   }
-  if rbl > 0.0 && pcx < x + rbl && pcy > y + h - rbl {
-    return outside(x + rbl, y + h - rbl, rbl)
+  if rx_bl > 0.0 && ry_bl > 0.0 && pcx < x + rx_bl && pcy > y + h - ry_bl {
+    return cov(x + rx_bl, y + h - ry_bl, rx_bl, ry_bl)
   }
-  false
+  1.0
 }
 
 ///|
@@ -229,6 +274,17 @@ fn clamp_int(value : Int, lo : Int, hi : Int) -> Int {
 }
 
 ///|
+/// Smallest integer >= v (for v >= 0, the pixel-space domain here).
+fn ceil_to_int(v : Double) -> Int {
+  let truncated = v.to_int()
+  if truncated.to_double() < v {
+    truncated + 1
+  } else {
+    truncated
+  }
+}
+
+///|
 /// Rasterize one draw command into the framebuffer. Vertices are
 /// interleaved (x, y, u, v) in NDC; the fill color is read from the
 /// command's uniform dwords (four 0..255 channels). Textured commands fall
@@ -245,9 +301,18 @@ fn SoftwareDriver::rasterize(
   let sb = if u.length() > 2 { u[2] } else { 0 }
   let sa = if u.length() > 3 { u[3] } else { 255 }
   // Optional rounded-rect shape uniforms (packed after the color):
-  //   [r,g,b,a, r_tl, r_tr, r_br, r_bl, x, y, w, h]
-  let rounded = u.length() >= 12 &&
-    (u[4] > 0 || u[5] > 0 || u[6] > 0 || u[7] > 0)
+  //   [r,g,b,a, rx_tl,ry_tl, rx_tr,ry_tr, rx_br,ry_br, rx_bl,ry_bl, x,y,w,h]
+  let rounded = u.length() >= 16 &&
+    (
+      u[4] > 0 ||
+      u[5] > 0 ||
+      u[6] > 0 ||
+      u[7] > 0 ||
+      u[8] > 0 ||
+      u[9] > 0 ||
+      u[10] > 0 ||
+      u[11] > 0
+    )
   // Scissor: honor the command's destination region as a clip rectangle.
   let (scissor_x0, scissor_y0, scissor_x1, scissor_y1) = if command.dst_regions.length() >
     0 {
@@ -257,6 +322,124 @@ fn SoftwareDriver::rasterize(
     (0, 0, self.width, self.height)
   }
   let stride = 4
+  // Fast path: a single axis-aligned rectangle (the common case for
+  // backgrounds, borders, gradient strips, and rounded boxes) covers a
+  // contiguous pixel span, so the per-pixel edge-function test is pure
+  // overhead. Detect it and fill the span directly. For rounded rects only the
+  // top/bottom corner-radius row bands need per-pixel coverage; the middle
+  // rows are fully covered. Bit-identical to the general path (same
+  // pixel-center + top-left fill rule).
+  if indices.length() == 6 {
+    // bbox over the referenced vertices, in pixel space
+    let p0x = ndc_x_to_pixel(verts[indices[0] * stride], self.width)
+    let p0y = ndc_y_to_pixel(verts[indices[0] * stride + 1], self.height)
+    let mut rminx = p0x
+    let mut rmaxx = p0x
+    let mut rminy = p0y
+    let mut rmaxy = p0y
+    for k in 1..<indices.length() {
+      let vi = indices[k]
+      let vx = ndc_x_to_pixel(verts[vi * stride], self.width)
+      let vy = ndc_y_to_pixel(verts[vi * stride + 1], self.height)
+      if vx < rminx {
+        rminx = vx
+      }
+      if vx > rmaxx {
+        rmaxx = vx
+      }
+      if vy < rminy {
+        rminy = vy
+      }
+      if vy > rmaxy {
+        rmaxy = vy
+      }
+    }
+    // Axis-aligned iff every referenced vertex sits on a bbox corner.
+    let eps = 0.0001
+    let mut axis_aligned = rmaxx - rminx > eps && rmaxy - rminy > eps
+    if axis_aligned {
+      for k in 0..<indices.length() {
+        let vi = indices[k]
+        let vx = ndc_x_to_pixel(verts[vi * stride], self.width)
+        let vy = ndc_y_to_pixel(verts[vi * stride + 1], self.height)
+        let on_x = (vx - rminx).abs() < eps || (vx - rmaxx).abs() < eps
+        let on_y = (vy - rminy).abs() < eps || (vy - rmaxy).abs() < eps
+        if !(on_x && on_y) {
+          axis_aligned = false
+          break
+        }
+      }
+    }
+    if axis_aligned {
+      // Pixel `px` is covered iff its center px+0.5 lies in [rminx, rmaxx)
+      // (left/top edge inclusive, right/bottom exclusive: the top-left rule).
+      let lo_x = clamp_int(scissor_x0, 0, self.width)
+      let hi_x = clamp_int(scissor_x1, 0, self.width)
+      let lo_y = clamp_int(scissor_y0, 0, self.height)
+      let hi_y = clamp_int(scissor_y1, 0, self.height)
+      let fx0 = clamp_int(ceil_to_int(rminx - 0.5), lo_x, hi_x)
+      let fx1 = clamp_int(ceil_to_int(rmaxx - 0.5), lo_x, hi_x)
+      let fy0 = clamp_int(ceil_to_int(rminy - 0.5), lo_y, hi_y)
+      let fy1 = clamp_int(ceil_to_int(rmaxy - 0.5), lo_y, hi_y)
+      // Full-coverage row span (no corner cuts it): direct write / blend.
+      fn fill_row(py : Int) -> Unit {
+        if sa >= 255 {
+          // Opaque: the result is the source colour for every blend mode.
+          let row = py * self.width
+          for px in fx0..<fx1 {
+            let base = (row + px) * 4
+            self.pixels[base] = sr
+            self.pixels[base + 1] = sg
+            self.pixels[base + 2] = sb
+            self.pixels[base + 3] = 255
+          }
+        } else {
+          for px in fx0..<fx1 {
+            self.blend_pixel(px, py, sr, sg, sb, sa, command.blend)
+          }
+        }
+      }
+
+      // Corner-band row: per-pixel rounded coverage across the span.
+      fn coverage_row(py : Int) -> Unit {
+        let pcy = py.to_double() + 0.5
+        for px in fx0..<fx1 {
+          let pcx = px.to_double() + 0.5
+          let cov = rounded_corner_coverage(pcx, pcy, u)
+          if cov > 0.0 {
+            let a = (sa.to_double() * cov).to_int()
+            self.blend_pixel(px, py, sr, sg, sb, a, command.blend)
+          }
+        }
+      }
+
+      if fx1 > fx0 && fy1 > fy0 {
+        if !rounded {
+          for py in fy0..<fy1 {
+            fill_row(py)
+          }
+        } else {
+          // Rows outside [inner_y0, inner_y1) intersect a corner radius and
+          // need per-pixel coverage; the rest are fully covered.
+          let uy = u[13].to_double()
+          let uh = u[15].to_double()
+          let max_top = (if u[5] > u[7] { u[5] } else { u[7] }).to_double()
+          let max_bot = (if u[9] > u[11] { u[9] } else { u[11] }).to_double()
+          let inner_y0 = uy + max_top
+          let inner_y1 = uy + uh - max_bot
+          for py in fy0..<fy1 {
+            let pcy = py.to_double() + 0.5
+            if pcy >= inner_y0 && pcy < inner_y1 {
+              fill_row(py)
+            } else {
+              coverage_row(py)
+            }
+          }
+        }
+      }
+      return
+    }
+  }
   let mut t = 0
   while t + 2 < indices.length() {
     let i0 = indices[t]
@@ -318,8 +501,16 @@ fn SoftwareDriver::rasterize(
         let w1 = edge_function(cx, cy, ax, ay, pcx, pcy)
         let w2 = edge_function(ax, ay, bx, by, pcx, pcy)
         let inside = edge_ok(w0, tl0) && edge_ok(w1, tl1) && edge_ok(w2, tl2)
-        if inside && !(rounded && rounded_corner_clipped(pcx, pcy, u)) {
-          self.blend_pixel(px, py, sr, sg, sb, sa, command.blend)
+        if inside {
+          let coverage = if rounded {
+            rounded_corner_coverage(pcx, pcy, u)
+          } else {
+            1.0
+          }
+          if coverage > 0.0 {
+            let a = (sa.to_double() * coverage).to_int()
+            self.blend_pixel(px, py, sr, sg, sb, a, command.blend)
+          }
         }
       }
     }
@@ -400,6 +591,11 @@ pub impl @gfx.GraphicsDriver for SoftwareDriver with fn read_pixels(
   let read_h = if y + height > self.height { self.height - y } else { height }
   if x < 0 || y < 0 || read_w <= 0 || read_h <= 0 {
     return None
+  }
+  // Full-frame readback (the common case): one bulk copy instead of a
+  // per-pixel gather.
+  if x == 0 && y == 0 && read_w == self.width && read_h == self.height {
+    return Some(self.pixels.copy())
   }
   let out = Array::make(read_w * read_h * 4, 0)
   for row in 0..<read_h {

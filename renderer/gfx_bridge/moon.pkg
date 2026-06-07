@@ -6,6 +6,7 @@ import {
   "mizchi/crater-painter/paint/model" @paint_model,
   "mizchi/crater-painter/paint/glyph",
   "mizchi/css/values" @types,
+  "moonbitlang/core/math",
 }
 
 import {

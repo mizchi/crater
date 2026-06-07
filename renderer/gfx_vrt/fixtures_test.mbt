@@ -227,6 +227,159 @@ test "image vrt: element opacity dims to grey over white" {
 }
 
 ///|
+// A first in-flow child's top margin collapses through the (margin:0) body
+// and shifts the body box down in the viewport. The renderer must translate
+// each node by its accumulated ancestor offset (paint coordinates are
+// parent-relative), so the box paints below the blank margin band rather than
+// flush to the top. Regression guard for the offset-accumulation fix.
+test "image vrt: first-child top margin shifts content down" {
+  let html =
+    #|<html><body style="margin:0">
+    #|<div style="width:16px;height:4px;background:#000000;margin-top:4px"></div>
+    #|</body></html>
+  inspect(
+    render_ascii(html, 16.0, 12.0),
+    content=(
+      #|                
+      #|                
+      #|                
+      #|                
+      #|@@@@@@@@@@@@@@@@
+      #|@@@@@@@@@@@@@@@@
+      #|@@@@@@@@@@@@@@@@
+      #|@@@@@@@@@@@@@@@@
+      #|                
+      #|                
+      #|                
+      #|                
+      #|
+    ),
+  )
+}
+
+///|
+// An axis-aligned (`to bottom`) linear gradient is lowered as 1px solid
+// strips perpendicular to the gradient axis, ramping black -> white down the
+// box. Regression guard for gradient background lowering.
+test "image vrt: vertical linear gradient ramps top to bottom" {
+  let html =
+    #|<html><body style="margin:0">
+    #|<div style="width:8px;height:8px;background:linear-gradient(to bottom,#000000,#ffffff)"></div>
+    #|</body></html>
+  inspect(
+    render_ascii(html, 8.0, 8.0),
+    content=(
+      #|@@@@@@@@
+      #|########
+      #|********
+      #|++++++++
+      #|========
+      #|--------
+      #|::::::::
+      #|........
+      #|
+    ),
+  )
+}
+
+///|
+// A 45deg rotation paints the box as its actual rotated quad (a diamond),
+// filled from the node's visual polygon, rather than its axis-aligned bounding
+// box. Regression guard for transform: rotate lowering.
+test "image vrt: rotate 45deg paints a diamond" {
+  let html =
+    #|<html><body style="margin:0">
+    #|<div style="width:10px;height:10px;background:#000000;transform:rotate(45deg);margin:3px"></div>
+    #|</body></html>
+  inspect(
+    render_ascii(html, 22.0, 22.0),
+    content=(
+      #|                      
+      #|       @@             
+      #|      @@@@            
+      #|     @@@@@@           
+      #|    @@@@@@@@          
+      #|   @@@@@@@@@@         
+      #|  @@@@@@@@@@@@        
+      #| @@@@@@@@@@@@@@       
+      #| @@@@@@@@@@@@@@       
+      #|  @@@@@@@@@@@@        
+      #|   @@@@@@@@@@         
+      #|    @@@@@@@@          
+      #|     @@@@@@           
+      #|      @@@@            
+      #|       @@             
+      #|                      
+      #|                      
+      #|                      
+      #|                      
+      #|                      
+      #|                      
+      #|                      
+      #|
+    ),
+  )
+}
+
+///|
+// `border-radius: 50%` on a square box resolves the percentage against the
+// box dimension (negative-encoded radius -> min_dim/2) and paints a full
+// circle, not the bounding square. Regression guard for percentage radius
+// resolution.
+test "image vrt: border-radius 50pct paints a circle" {
+  let html =
+    #|<html><body style="margin:0">
+    #|<div style="width:12px;height:12px;background:#000000;border-radius:50%"></div>
+    #|</body></html>
+  inspect(
+    render_ascii(html, 12.0, 12.0),
+    content=(
+      #|   =#%%#=   
+      #| .#@@@@@@#. 
+      #| #@@@@@@@@# 
+      #|=@@@@@@@@@@=
+      #|#@@@@@@@@@@#
+      #|%@@@@@@@@@@%
+      #|%@@@@@@@@@@%
+      #|#@@@@@@@@@@#
+      #|=@@@@@@@@@@=
+      #| #@@@@@@@@# 
+      #| .#@@@@@@#. 
+      #|   =#%%#=   
+      #|
+    ),
+  )
+}
+
+///|
+// `border-radius: 50%` on a non-square box resolves the horizontal radius
+// against the width and the vertical against the height, painting a true
+// ellipse (wider than tall here) rather than a pill. Regression guard for the
+// per-corner (rx, ry) uniform layout.
+test "image vrt: border-radius 50pct on a wide box paints an ellipse" {
+  let html =
+    #|<html><body style="margin:0">
+    #|<div style="width:20px;height:10px;background:#000000;border-radius:50%"></div>
+    #|</body></html>
+  inspect(
+    render_ascii(html, 20.0, 10.0),
+    content=(
+      #|    .=*#%@@%#*=.    
+      #|  -#@@@@@@@@@@@@#-  
+      #| +@@@@@@@@@@@@@@@@+ 
+      #|=@@@@@@@@@@@@@@@@@@=
+      #|%@@@@@@@@@@@@@@@@@@%
+      #|%@@@@@@@@@@@@@@@@@@%
+      #|=@@@@@@@@@@@@@@@@@@=
+      #| +@@@@@@@@@@@@@@@@+ 
+      #|  -#@@@@@@@@@@@@#-  
+      #|    .=*#%@@%#*=.    
+      #|
+    ),
+  )
+}
+
+///|
 test "image vrt: border-radius rounds the corners" {
   let html =
     #|<html><body style="margin:0;background:#ffffff">
@@ -235,18 +388,18 @@ test "image vrt: border-radius rounds the corners" {
   inspect(
     render_ascii(html, 12.0, 12.0),
     content=(
-      #|  @@@@@@@@  
-      #| @@@@@@@@@@ 
+      #| .*%@@@@%*. 
+      #|.%@@@@@@@@%.
+      #|*@@@@@@@@@@*
+      #|%@@@@@@@@@@%
       #|@@@@@@@@@@@@
       #|@@@@@@@@@@@@
       #|@@@@@@@@@@@@
       #|@@@@@@@@@@@@
-      #|@@@@@@@@@@@@
-      #|@@@@@@@@@@@@
-      #|@@@@@@@@@@@@
-      #|@@@@@@@@@@@@
-      #| @@@@@@@@@@ 
-      #|  @@@@@@@@  
+      #|%@@@@@@@@@@%
+      #|*@@@@@@@@@@*
+      #|.%@@@@@@@@%.
+      #| .*%@@@@%*. 
       #|
     ),
   )

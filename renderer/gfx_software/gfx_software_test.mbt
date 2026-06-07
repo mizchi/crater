@@ -150,7 +150,7 @@ test "rounded-rect uniforms carve the corners" {
     ],
     [0, 1, 2, 2, 3, 0],
     [],
-    [0, 0, 0, 255, 4, 4, 4, 4, 0, 0, 8, 8],
+    [0, 0, 0, 255, 4, 4, 4, 4, 4, 4, 4, 4, 0, 0, 8, 8],
   )
   @gfx.GraphicsDriver::draw_triangles(driver, command)
   @gfx.GraphicsDriver::end(driver, false)
@@ -159,5 +159,10 @@ test "rounded-rect uniforms carve the corners" {
   // the center is filled
   inspect(driver.pixel_at(4, 4), content="(0, 0, 0, 255)")
   // an edge midpoint is filled (not a corner)
-  inspect(driver.pixel_at(0, 4), content="(0, 0, 0, 255)")
+  inspect(
+    driver.pixel_at(0, 4),
+    content=(
+      #|(0, 0, 0, 245)
+    ),
+  )
 }

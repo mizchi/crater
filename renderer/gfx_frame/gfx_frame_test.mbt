@@ -159,14 +159,14 @@ test "append_rounded_rect_fill packs corner radii into the uniforms" {
       h=8.0,
       color=to_gfx_color(@types.Color::rgb(0, 0, 0)),
     ),
-    radius_tl=4.0,
-    radius_tr=3.0,
-    radius_br=2.0,
-    radius_bl=1.0,
+    radius_tl=(4.0, 4.0),
+    radius_tr=(3.0, 2.0),
+    radius_br=(2.0, 2.0),
+    radius_bl=(1.0, 1.0),
   )
-  // [r, g, b, a, r_tl, r_tr, r_br, r_bl, x, y, w, h]
+  // [r, g, b, a, rx_tl, ry_tl, rx_tr, ry_tr, rx_br, ry_br, rx_bl, ry_bl, x, y, w, h]
   inspect(
     commands[0].uniform_dwords,
-    content="[0, 0, 0, 255, 4, 3, 2, 1, 0, 0, 8, 8]",
+    content="[0, 0, 0, 255, 4, 4, 3, 2, 2, 2, 1, 1, 0, 0, 8, 8]",
   )
 }

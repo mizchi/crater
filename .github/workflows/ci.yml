@@ -200,6 +200,23 @@ jobs:
         run: node scripts/image-vrt.mjs
         working-directory: js
 
+      # Real-browser E2E for the gfx web backend. Renders in Chromium and,
+      # when WebGPU is available, asserts GPU output matches the CPU runtime.
+      # The script skips gracefully if a browser can't be launched.
+      - name: Run gfx web backend E2E (browser)
+        if: ${{ github.event_name == 'schedule' || needs.affected.outputs.gfx_vrt == 'true' }}
+        run: |
+          pnpm exec playwright install chromium || true
+          node scripts/webgpu-e2e.mjs
+        working-directory: js
+
+      # Accuracy gate: crater's rendered pixels vs real Chromium. Catches
+      # rendering-fidelity regressions; skips if no browser is available.
+      - name: Check Chromium rendering accuracy
+        if: ${{ github.event_name == 'schedule' || needs.affected.outputs.gfx_vrt == 'true' }}
+        run: node scripts/accuracy.mjs
+        working-directory: js
+
       - name: Build playground
         run: pnpm run build
         working-directory: js/playground

@@ -856,3 +856,33 @@ Notes:
 
 - The simple long text, inline link, block paragraph, and whitespace sibling probes are roughly linear at these sizes.
 - `mdn-wasm-text` has a large 1k -> 2k step, then scales close to 2x per 2x budget. This points to a content-shape threshold rather than a broad O(n^2) pattern in the synthetic cases above.
+
+## gfx Rasterization (CPU software backend, 800x600)
+
+The gfx-backed renderer (`gfx_bridge` assembler -> `gfx_software` CPU
+rasterizer -> RGBA pixels). Unlike the CSS-bound full-render pipeline, this
+phase is dominated by per-pixel rasterization, not style computation.
+
+| Benchmark | Before | After |
+|-----------|--------|-------|
+| `gfx_render_html_to_image_dashboard` (end-to-end) | 118.97 ms | ~57 ms |
+| `gfx_phase_rasterize_dashboard` (paint tree -> pixels) | 90.73 ms | ~41 ms |
+| `gfx_phase_rasterize_grid` | 47.27 ms | ~29 ms |
+| `gfx_phase_rasterize_cards` (rounded backgrounds) | 79.13 ms | ~40 ms |
+
+Optimizations (all bit-identical to the general path):
+
+1. **Axis-aligned rect fast path.** An axis-aligned rectangle (the common case
+   for backgrounds, borders, gradient strips, and rounded boxes) fills a
+   contiguous pixel span, so the per-pixel edge-function test is pure overhead.
+   `SoftwareDriver::rasterize` (and the JS `CpuBackend`) detect that case and
+   fill the span directly, with an opaque straight-write path. For rounded
+   rects, only the top/bottom corner-radius row bands run per-pixel coverage;
+   the middle rows are fully covered and filled directly.
+2. **Framebuffer overhead.** Profiling showed there is essentially *no*
+   overdraw (a dashboard covers ~0.58x of the framebuffer; an empty grid writes
+   0 pixels yet still cost ~34 ms). The fixed cost is the per-frame buffer:
+   allocate + clear + read back ~1.9M ints. `clear()` now fills the buffer in a
+   single pass for the common uniform clears (opaque white / transparent
+   black), and full-frame `read_pixels` does one bulk copy instead of a
+   per-pixel gather.
