@@ -74,6 +74,13 @@ fn SoftwareDriver::clear(self : SoftwareDriver, color : @gfx.Color) -> Unit {
   let g = channel_u8(color.g)
   let b = channel_u8(color.b)
   let a = channel_u8(color.a)
+  // The common clears (opaque white, transparent black) have all four channels
+  // equal, so the whole buffer is one value: fill it in a single pass instead
+  // of four stores per pixel.
+  if r == g && g == b && b == a {
+    self.pixels.fill(r)
+    return
+  }
   let count = self.width * self.height
   for i in 0..<count {
     let base = i * 4
@@ -584,6 +591,11 @@ pub impl @gfx.GraphicsDriver for SoftwareDriver with fn read_pixels(
   let read_h = if y + height > self.height { self.height - y } else { height }
   if x < 0 || y < 0 || read_w <= 0 || read_h <= 0 {
     return None
+  }
+  // Full-frame readback (the common case): one bulk copy instead of a
+  // per-pixel gather.
+  if x == 0 && y == 0 && read_w == self.width && read_h == self.height {
+    return Some(self.pixels.copy())
   }
   let out = Array::make(read_w * read_h * 4, 0)
   for row in 0..<read_h {

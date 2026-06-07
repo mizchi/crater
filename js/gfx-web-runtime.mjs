@@ -100,6 +100,9 @@ class CpuBackend {
   begin(clear) {
     if (!clear) return;
     const [r, g, b, a] = clear;
+    // Common clears (opaque white, transparent black) are uniform: fill in one
+    // pass instead of four stores per pixel.
+    if (r === g && g === b && b === a) { this.pixels.fill(r); return; }
     for (let i = 0; i < this.width * this.height; i++) {
       const o = i * 4;
       this.pixels[o] = r; this.pixels[o + 1] = g; this.pixels[o + 2] = b; this.pixels[o + 3] = a;
