@@ -856,3 +856,22 @@ Notes:
 
 - The simple long text, inline link, block paragraph, and whitespace sibling probes are roughly linear at these sizes.
 - `mdn-wasm-text` has a large 1k -> 2k step, then scales close to 2x per 2x budget. This points to a content-shape threshold rather than a broad O(n^2) pattern in the synthetic cases above.
+
+## gfx Rasterization (CPU software backend, 800x600)
+
+The gfx-backed renderer (`gfx_bridge` assembler -> `gfx_software` CPU
+rasterizer -> RGBA pixels). Unlike the CSS-bound full-render pipeline, this
+phase is dominated by per-pixel rasterization, not style computation.
+
+| Benchmark | Before | After |
+|-----------|--------|-------|
+| `gfx_render_html_to_image_dashboard` (end-to-end) | 118.97 ms | ~88 ms |
+| `gfx_phase_rasterize_dashboard` (paint tree -> pixels) | 90.73 ms | ~57 ms |
+| `gfx_phase_rasterize_grid` | 47.27 ms | ~36 ms |
+| `gfx_phase_rasterize_cards` | 79.13 ms | ~61 ms |
+
+Optimization: an axis-aligned, non-rounded rectangle (the common case for
+backgrounds, borders, and gradient strips) fills a contiguous pixel span, so
+the per-pixel edge-function test is pure overhead. `SoftwareDriver::rasterize`
+(and the JS `CpuBackend`) detect that case and fill the span directly, with an
+opaque straight-write path. Bit-identical to the general triangle path.

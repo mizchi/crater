@@ -17,6 +17,7 @@ import {
   "mizchi/crater-painter/paint/raster",
   "mizchi/crater-painter/paint/glyph",
   "mizchi/crater-painter/terminal/sixel",
+  "mizchi/crater-renderer/gfx_vrt",
   "mizchi/svg",
 }
 
