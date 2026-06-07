@@ -867,11 +867,13 @@ phase is dominated by per-pixel rasterization, not style computation.
 |-----------|--------|-------|
 | `gfx_render_html_to_image_dashboard` (end-to-end) | 118.97 ms | ~88 ms |
 | `gfx_phase_rasterize_dashboard` (paint tree -> pixels) | 90.73 ms | ~57 ms |
-| `gfx_phase_rasterize_grid` | 47.27 ms | ~36 ms |
-| `gfx_phase_rasterize_cards` | 79.13 ms | ~61 ms |
+| `gfx_phase_rasterize_grid` | 47.27 ms | ~34 ms |
+| `gfx_phase_rasterize_cards` (rounded backgrounds) | 79.13 ms | ~43 ms |
 
-Optimization: an axis-aligned, non-rounded rectangle (the common case for
-backgrounds, borders, and gradient strips) fills a contiguous pixel span, so
+Optimization: an axis-aligned rectangle (the common case for backgrounds,
+borders, gradient strips, and rounded boxes) fills a contiguous pixel span, so
 the per-pixel edge-function test is pure overhead. `SoftwareDriver::rasterize`
 (and the JS `CpuBackend`) detect that case and fill the span directly, with an
-opaque straight-write path. Bit-identical to the general triangle path.
+opaque straight-write path. For rounded rects, only the top/bottom
+corner-radius row bands run per-pixel coverage; the middle rows are fully
+covered and filled directly. Bit-identical to the general triangle path.

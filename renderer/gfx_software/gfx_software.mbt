@@ -315,12 +315,14 @@ fn SoftwareDriver::rasterize(
     (0, 0, self.width, self.height)
   }
   let stride = 4
-  // Fast path: a single axis-aligned, non-rounded rectangle (the common case
-  // for backgrounds, borders, and gradient strips) covers a contiguous pixel
-  // span, so the per-pixel edge-function test is pure overhead. Detect it and
-  // fill the span directly. This is bit-identical to the general path: it
-  // reproduces the same pixel-center + top-left fill rule.
-  if !rounded && indices.length() == 6 {
+  // Fast path: a single axis-aligned rectangle (the common case for
+  // backgrounds, borders, gradient strips, and rounded boxes) covers a
+  // contiguous pixel span, so the per-pixel edge-function test is pure
+  // overhead. Detect it and fill the span directly. For rounded rects only the
+  // top/bottom corner-radius row bands need per-pixel coverage; the middle
+  // rows are fully covered. Bit-identical to the general path (same
+  // pixel-center + top-left fill rule).
+  if indices.length() == 6 {
     // bbox over the referenced vertices, in pixel space
     let p0x = ndc_x_to_pixel(verts[indices[0] * stride], self.width)
     let p0y = ndc_y_to_pixel(verts[indices[0] * stride + 1], self.height)
@@ -372,24 +374,58 @@ fn SoftwareDriver::rasterize(
       let fx1 = clamp_int(ceil_to_int(rmaxx - 0.5), lo_x, hi_x)
       let fy0 = clamp_int(ceil_to_int(rminy - 0.5), lo_y, hi_y)
       let fy1 = clamp_int(ceil_to_int(rmaxy - 0.5), lo_y, hi_y)
-      if fx1 > fx0 && fy1 > fy0 {
+      // Full-coverage row span (no corner cuts it): direct write / blend.
+      fn fill_row(py : Int) -> Unit {
         if sa >= 255 {
-          // Opaque: the result is the source colour for every blend mode, so
-          // write straight into the framebuffer.
-          for py in fy0..<fy1 {
-            let row = py * self.width
-            for px in fx0..<fx1 {
-              let base = (row + px) * 4
-              self.pixels[base] = sr
-              self.pixels[base + 1] = sg
-              self.pixels[base + 2] = sb
-              self.pixels[base + 3] = 255
-            }
+          // Opaque: the result is the source colour for every blend mode.
+          let row = py * self.width
+          for px in fx0..<fx1 {
+            let base = (row + px) * 4
+            self.pixels[base] = sr
+            self.pixels[base + 1] = sg
+            self.pixels[base + 2] = sb
+            self.pixels[base + 3] = 255
           }
         } else {
+          for px in fx0..<fx1 {
+            self.blend_pixel(px, py, sr, sg, sb, sa, command.blend)
+          }
+        }
+      }
+
+      // Corner-band row: per-pixel rounded coverage across the span.
+      fn coverage_row(py : Int) -> Unit {
+        let pcy = py.to_double() + 0.5
+        for px in fx0..<fx1 {
+          let pcx = px.to_double() + 0.5
+          let cov = rounded_corner_coverage(pcx, pcy, u)
+          if cov > 0.0 {
+            let a = (sa.to_double() * cov).to_int()
+            self.blend_pixel(px, py, sr, sg, sb, a, command.blend)
+          }
+        }
+      }
+
+      if fx1 > fx0 && fy1 > fy0 {
+        if !rounded {
           for py in fy0..<fy1 {
-            for px in fx0..<fx1 {
-              self.blend_pixel(px, py, sr, sg, sb, sa, command.blend)
+            fill_row(py)
+          }
+        } else {
+          // Rows outside [inner_y0, inner_y1) intersect a corner radius and
+          // need per-pixel coverage; the rest are fully covered.
+          let uy = u[13].to_double()
+          let uh = u[15].to_double()
+          let max_top = (if u[5] > u[7] { u[5] } else { u[7] }).to_double()
+          let max_bot = (if u[9] > u[11] { u[9] } else { u[11] }).to_double()
+          let inner_y0 = uy + max_top
+          let inner_y1 = uy + uh - max_bot
+          for py in fy0..<fy1 {
+            let pcy = py.to_double() + 0.5
+            if pcy >= inner_y0 && pcy < inner_y1 {
+              fill_row(py)
+            } else {
+              coverage_row(py)
             }
           }
         }

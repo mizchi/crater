@@ -126,10 +126,11 @@ class CpuBackend {
     const sx0 = Math.max(0, rx), sx1 = Math.min(this.width, rx + rw) - 1;
     const sy0 = Math.max(0, ry), sy1 = Math.min(this.height, ry + rh) - 1;
     const toPx = (ndcx, ndcy) => [(ndcx + 1) * 0.5 * this.width, (1 - ndcy) * 0.5 * this.height];
-    // Fast path: a single axis-aligned non-rounded rectangle (backgrounds,
-    // borders, gradient strips) fills a contiguous span; skip the per-pixel
-    // edge test. Bit-identical to the general path (same pixel-center rule).
-    if (!rounded && indices.length === 6) {
+    // Fast path: a single axis-aligned rectangle (backgrounds, borders,
+    // gradient strips, rounded boxes) fills a contiguous span; skip the
+    // per-pixel edge test. For rounded rects only the corner-radius row bands
+    // need per-pixel coverage. Bit-identical to the general path.
+    if (indices.length === 6) {
       let rminx = Infinity, rmaxx = -Infinity, rminy = Infinity, rmaxy = -Infinity;
       for (let k = 0; k < 6; k++) {
         const vi = indices[k];
@@ -150,17 +151,35 @@ class CpuBackend {
         const ceil = (v) => { const t = Math.trunc(v); return t < v ? t + 1 : t; };
         const fx0 = Math.max(sx0, ceil(rminx - 0.5)), fx1 = Math.min(sx1 + 1, ceil(rmaxx - 0.5));
         const fy0 = Math.max(sy0, ceil(rminy - 0.5)), fy1 = Math.min(sy1 + 1, ceil(rmaxy - 0.5));
-        if (fx1 > fx0 && fy1 > fy0) {
+        const fillRow = (py) => {
           if (sa >= 255) {
-            for (let py = fy0; py < fy1; py++) {
-              const row = py * this.width;
-              for (let px = fx0; px < fx1; px++) {
-                const o = (row + px) * 4;
-                this.pixels[o] = sr; this.pixels[o + 1] = sg; this.pixels[o + 2] = sb; this.pixels[o + 3] = 255;
-              }
+            const row = py * this.width;
+            for (let px = fx0; px < fx1; px++) {
+              const o = (row + px) * 4;
+              this.pixels[o] = sr; this.pixels[o + 1] = sg; this.pixels[o + 2] = sb; this.pixels[o + 3] = 255;
             }
           } else {
-            for (let py = fy0; py < fy1; py++) for (let px = fx0; px < fx1; px++) this.blend(px, py, sr, sg, sb, sa, blend);
+            for (let px = fx0; px < fx1; px++) this.blend(px, py, sr, sg, sb, sa, blend);
+          }
+        };
+        const coverageRow = (py) => {
+          const pcy = py + 0.5;
+          for (let px = fx0; px < fx1; px++) {
+            const cov = this.#cornerCoverage(px + 0.5, pcy, uniforms);
+            if (cov > 0) this.blend(px, py, sr, sg, sb, Math.trunc(sa * cov), blend);
+          }
+        };
+        if (fx1 > fx0 && fy1 > fy0) {
+          if (!rounded) {
+            for (let py = fy0; py < fy1; py++) fillRow(py);
+          } else {
+            const uy = uniforms[13], uh = uniforms[15];
+            const innerY0 = uy + Math.max(uniforms[5], uniforms[7]);
+            const innerY1 = uy + uh - Math.max(uniforms[9], uniforms[11]);
+            for (let py = fy0; py < fy1; py++) {
+              const pcy = py + 0.5;
+              if (pcy >= innerY0 && pcy < innerY1) fillRow(py); else coverageRow(py);
+            }
           }
         }
         return;
