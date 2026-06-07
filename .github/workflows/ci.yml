@@ -171,6 +171,9 @@ jobs:
     # part gated on `affected`, so keep the job running even when the
     # `affected` job is skipped (e.g. on schedule).
     if: ${{ !cancelled() }}
+    # Bound the whole job: the browser gates below must never wedge it for the
+    # 6h GitHub default (a bare `playwright install` once hung it indefinitely).
+    timeout-minutes: 25
 
     steps:
       - name: Checkout code
@@ -200,20 +203,44 @@ jobs:
         run: node scripts/image-vrt.mjs
         working-directory: js
 
+      # The browser gates below need Playwright's Chromium. A bare
+      # `playwright install chromium` wedges in its post-download extract phase
+      # on these runners (see scripts/ci/install-playwright-chromium.sh), so
+      # restore the browser from cache and install only on a miss via the
+      # curl/unzip bypass -- the same pattern the WPT / paint-vrt jobs use.
+      - name: Restore Playwright Chromium browser cache
+        if: ${{ github.event_name == 'schedule' || needs.affected.outputs.gfx_vrt == 'true' }}
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('package.json', 'pnpm-lock.yaml') }}
+          restore-keys: |
+            playwright-chromium-${{ runner.os }}-
+
+      - name: Detect cached Chromium browser
+        if: ${{ github.event_name == 'schedule' || needs.affected.outputs.gfx_vrt == 'true' }}
+        id: js_chromium_present
+        run: echo "present=$(bash scripts/ci/chromium-cache-present.sh)" >> "$GITHUB_OUTPUT"
+
+      - name: Install Chromium (Playwright) for the browser gates
+        if: ${{ (github.event_name == 'schedule' || needs.affected.outputs.gfx_vrt == 'true') && steps.js_chromium_present.outputs.present != 'true' }}
+        timeout-minutes: 25
+        run: bash scripts/ci/install-playwright-chromium.sh
+
       # Real-browser E2E for the gfx web backend. Renders in Chromium and,
       # when WebGPU is available, asserts GPU output matches the CPU runtime.
-      # The script skips gracefully if a browser can't be launched.
+      # The script skips gracefully (and self-times-out) if the browser wedges.
       - name: Run gfx web backend E2E (browser)
         if: ${{ github.event_name == 'schedule' || needs.affected.outputs.gfx_vrt == 'true' }}
-        run: |
-          pnpm exec playwright install chromium || true
-          node scripts/webgpu-e2e.mjs
+        timeout-minutes: 10
+        run: node scripts/webgpu-e2e.mjs
         working-directory: js
 
       # Accuracy gate: crater's rendered pixels vs real Chromium. Catches
       # rendering-fidelity regressions; skips if no browser is available.
       - name: Check Chromium rendering accuracy
         if: ${{ github.event_name == 'schedule' || needs.affected.outputs.gfx_vrt == 'true' }}
+        timeout-minutes: 10
         run: node scripts/accuracy.mjs
         working-directory: js
 
