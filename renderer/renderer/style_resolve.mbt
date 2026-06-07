@@ -890,8 +890,11 @@ fn compute_element_style_indexed(
   if selector_elem.tag_name.to_lower() == "table" {
     match selector_elem.get_attribute("border") {
       Some(border_value) => {
+        // HTML presentational hint: a bare (`<table border>`) or non-integer
+        // value maps to a 1px border; an explicit number uses that width, and
+        // `border="0"` parses to 0 and leaves the table without a border.
         let n = @string.parse_double(border_value.to_string()) catch {
-          _ => 0.0
+          _ => 1.0
         }
         if n > 0.0 {
           let bw = @types.Dimension::Length(n)
