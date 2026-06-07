@@ -47,9 +47,6 @@ This is a [MoonBit](https://docs.moonbitlang.com) project.
   use `moon coverage analyze > uncovered.log` to see which parts of your code
   are not covered by tests.
 
-- agent-todo.md has some small tasks that are easy for AI to pick up, agent is
-  welcome to finish the tasks and check the box when you are done
-
 ## Test System
 
 ### WPT (Web Platform Tests)
