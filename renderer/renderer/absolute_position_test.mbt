@@ -982,3 +982,41 @@ test "filter_on_inline_establishes_abs_containing_block" {
   assert_eq(abspos_f.x, abspos_r.x)
   assert_eq(abspos_f.y, abspos_r.y)
 }
+
+///|
+/// Regression: an absolutely-positioned box with no positioned ancestor is
+/// sized against the initial containing block (the viewport), so height:100%
+/// resolves to the viewport height rather than collapsing to 0. Previously the
+/// percentage height was resolved against the static parent's auto (0) height.
+test "absolute_percentage_height_resolves_against_icb" {
+  let html =
+    #|<style>html, body { margin: 0; padding: 0; }</style>
+    #|<div id="outer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></div>
+  let ctx : @renderer.RenderContext = {
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    root_font_size: 16.0,
+    color_scheme: @css.ColorScheme::Light,
+  }
+  let layout = @renderer.render(html, ctx)
+  fn find_outer(n : @layout_types.Layout) -> @layout_types.Layout? {
+    if n.id.has_suffix("#outer") {
+      return Some(n)
+    }
+    for child in n.children {
+      match find_outer(child) {
+        Some(found) => return Some(found)
+        None => ()
+      }
+    }
+    None
+  }
+
+  match find_outer(layout) {
+    Some(outer) => {
+      inspect(outer.width, content="800")
+      inspect(outer.height, content="600")
+    }
+    None => inspect(false, content="#outer not found")
+  }
+}

@@ -1393,3 +1393,56 @@ test "table percent column consumes remaining width after fixed sibling" {
   inspect(second_layout.x, content="94")
   inspect(second_layout.width, content="6")
 }
+
+///|
+/// Regression: a `table-layout: fixed` table whose first-row column widths sum
+/// to more than its specified `width` grows to fit the columns (CSS 2.1
+/// §17.5.2.1: used width is the greater of `width` and the column-width sum).
+/// Before the fix the table stayed clamped at `width` and its cells overflowed.
+test "table-layout fixed grows to fit columns wider than width" {
+  let cell_w300_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableCell,
+    width: @types.Length(300.0),
+    height: @types.Length(50.0),
+  }
+  let cell_w100_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableCell,
+    width: @types.Length(100.0),
+    height: @types.Length(50.0),
+  }
+  let row_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.TableRow,
+  }
+  let table_style : @style.Style = {
+    ..@style.Style::default(),
+    display: @types.Table,
+    table_layout: @style.TableLayout::Fixed,
+    width: @types.Length(200.0),
+    border_spacing: 0.0,
+  }
+  let cell1 = @node.Node::new("cell1", cell_w300_style, [])
+  let cell2 = @node.Node::new("cell2", cell_w100_style, [])
+  let row1 = @node.Node::new("row1", row_style, [cell1, cell2])
+  let table = @node.Node::new("table", table_style, [row1])
+  let ctx : @layout_types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @layout_types.Definite,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  @dispatch.setup()
+  let layout = @dispatch.compute_layout(table, ctx)
+
+  // Table grows from 200 to 400 (300 + 100) to contain its columns.
+  inspect(layout.width, content="400")
+  let row_layout = layout.children[0]
+  inspect(row_layout.children[0].width, content="300")
+  inspect(row_layout.children[1].x, content="300")
+  inspect(row_layout.children[1].width, content="100")
+}

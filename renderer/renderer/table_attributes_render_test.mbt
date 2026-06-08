@@ -147,3 +147,64 @@ test "table width=85% constrains content within 85% of viewport" {
     ),
   )
 }
+
+///|
+/// HTML presentational hint: a bare `<table border>` (empty value) maps to a 1px
+/// border, while `border="0"` leaves the table without one.
+test "bare_table_border_attribute_maps_to_one_pixel" {
+  fn find_table(n : @node.Node) -> @node.Node? {
+    if n.id.has_prefix("table") {
+      return Some(n)
+    }
+    for child in n.children {
+      match find_table(child) {
+        Some(found) => return Some(found)
+        None => ()
+      }
+    }
+    None
+  }
+
+  fn table_border_top(html : String) -> @types.Dimension {
+    let ctx = @renderer.RenderContext::default()
+    let node = @renderer.render_to_node(html, ctx)
+    match find_table(node) {
+      Some(table) => table.style.border.top
+      None => @types.Auto
+    }
+  }
+
+  // Bare attribute → 1px on every side.
+  inspect(
+    table_border_top(
+      (
+        #|<table border><tr><td>x</td></tr></table>
+      ),
+    ),
+    content=(
+      #|Length(1)
+    ),
+  )
+  // Explicit zero → no border.
+  inspect(
+    table_border_top(
+      (
+        #|<table border="0"><tr><td>x</td></tr></table>
+      ),
+    ),
+    content=(
+      #|Length(0)
+    ),
+  )
+  // Explicit numeric value is used verbatim.
+  inspect(
+    table_border_top(
+      (
+        #|<table border="3"><tr><td>x</td></tr></table>
+      ),
+    ),
+    content=(
+      #|Length(3)
+    ),
+  )
+}

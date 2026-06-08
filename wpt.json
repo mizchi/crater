@@ -62,7 +62,16 @@
     // css-inline suite (empty-span struts, inheritance, crashtests) to the
     // layout-tree compare runner. Subdirectories (model, parsing,
     // initial-letter, ...) are follow-up. See pkspec compat.css-inline-baseline.
-    "css-inline"
+    "css-inline",
+
+    // Values & units module. The huge suite is mostly testharness
+    // computed-value tests; the modulePrefixes entry below exposes the
+    // layout-comparable calc() fixtures (sizing, offsets, margins, table,
+    // text-indent, ...) to the layout-tree compare runner. Unblocked by the
+    // mixed calc() support in mizchi/css 0.4.2 (issue #67) and the
+    // fixed-table column-width expansion fix (issue #281).
+    // See pkspec compat.css-values-baseline.
+    "css-values"
   ],
   "recursiveModules": [
     "css-align",
@@ -70,6 +79,9 @@
     "css-text"
   ],
   "modulePrefixes": {
+    "css-values": [
+      "calc-"
+    ],
     "css-inline": [
       ""
     ],

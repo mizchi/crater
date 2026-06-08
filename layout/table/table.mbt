@@ -1315,6 +1315,62 @@ fn calculate_fixed_column_widths(
 }
 
 ///|
+/// Minimum content width of a fixed-layout table per CSS 2.1 §17.5.2.1: the used
+/// table width is the greater of the specified `width` and the sum of the
+/// columns' widths (from `<col>` or the first row) plus the inter-column and edge
+/// cell spacing, so a fixed table grows to fit columns wider than its own
+/// `width`. Cell widths are already stored border-box (content + padding +
+/// border), matching the column widths used by `calculate_fixed_column_widths`.
+/// Percentage column widths resolve against the table width itself and so are
+/// excluded here (they cannot force the table to grow beyond its own width);
+/// auto columns contribute nothing to the minimum.
+fn fixed_layout_natural_content_width(
+  first_row : @node.Node?,
+  num_columns : Int,
+  border_spacing : Double,
+  col_widths : Array[Double?],
+  collapsed_columns : Array[Bool],
+) -> Double {
+  if num_columns == 0 {
+    return 0.0
+  }
+  let cells = match first_row {
+    Some(row) => get_row_cells(row)
+    None => []
+  }
+  let mut total = 0.0
+  for i = 0; i < num_columns; i = i + 1 {
+    if is_collapsed_column(collapsed_columns, i) {
+      continue
+    }
+    // Column width: <col> width takes priority, then the first row's cell width.
+    let col_explicit = if i < col_widths.length() {
+      col_widths[i]
+    } else {
+      None
+    }
+    let width = match col_explicit {
+      Some(w) => Some(w)
+      None =>
+        if i < cells.length() {
+          match cells[i].style.width {
+            @types.Length(w) => Some(w)
+            @types.Calc(px, _) => Some(px)
+            _ => None
+          }
+        } else {
+          None
+        }
+    }
+    match width {
+      Some(w) => total = total + w
+      None => ()
+    }
+  }
+  total + border_spacing * (num_columns + 1).to_double()
+}
+
+///|
 /// Calculate column widths based on content and col element specifications
 /// Phase 2: Content-based width calculation with col support
 fn calculate_column_widths(
@@ -2867,11 +2923,26 @@ pub fn compute(
       _ => true
     }
     let is_fixed_layout = style.table_layout == @style.TableLayout::Fixed
-    // Auto-layout tables cannot be narrower than their intrinsic minimum width,
-    // even when max-width is tighter than the intrinsic minimum.
-    if !is_fixed_layout &&
-      should_enforce_intrinsic_min_width &&
+    if is_fixed_layout {
+      // Fixed layout (CSS 2.1 §17.5.2.1): the used table width is the greater of
+      // the specified width and the sum of the columns' widths plus spacing, so a
+      // fixed table grows to fit columns wider than its own `width`.
+      let fixed_natural_width = fixed_layout_natural_content_width(
+          get_first_visual_row(node),
+          num_columns,
+          border_spacing_x,
+          col_widths,
+          collapsed_columns,
+        ) +
+        padding.horizontal_sum() +
+        inner_border.horizontal_sum()
+      if table_width < fixed_natural_width {
+        table_width = fixed_natural_width
+      }
+    } else if should_enforce_intrinsic_min_width &&
       table_width < intrinsic_table_width {
+      // Auto-layout tables cannot be narrower than their intrinsic minimum width,
+      // even when max-width is tighter than the intrinsic minimum.
       table_width = intrinsic_table_width
     }
   }
