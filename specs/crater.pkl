@@ -360,10 +360,10 @@ scenarios {
     id = "compat.css-images-baseline"
     name = "css-images WPT module baseline is enabled"
     description =
-      "Promote css-images from manual baseline measurement (currently 93% pass) into wpt-config. See GitHub issue #65 for measurement scope and #68 for the gradient-with-border outlier."
+      "css-images is promoted into wpt-config: enabled in wpt.json modules with a modulePrefixes [\"\"] entry exposing the top-level suite (gradients, object-fit / object-position / object-view-box, cross-fade) to the layout-tree compare runner, baselined at 312/322 passing in tests/wpt-baselines/css-images.env. The two #68 outliers (gradients-with-border box-sizing, sibling-index() support) are fixed; the 10 known failures are separate residuals (body/root height-collapse vs viewport default, contain-intrinsic-size with object-fit, object-view-box on canvas / writing-mode). Subdirectories are follow-up. See GitHub issue #65 (measurement) and #68 (gradient-with-border / sibling-index outliers)."
     tags { "wpt"; "css"; "baseline"; "issue:65"; "issue:68" }
     severity = "major"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.css-compat" }
   }
   new {

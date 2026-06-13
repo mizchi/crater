@@ -71,7 +71,18 @@
     // mixed calc() support in mizchi/css 0.4.2 (issue #67) and the
     // fixed-table column-width expansion fix (issue #281).
     // See pkspec compat.css-values-baseline.
-    "css-values"
+    "css-values",
+
+    // Images module. The modulePrefixes [""] entry below exposes the
+    // top-level css-images suite (gradients, object-fit / object-position,
+    // object-view-box, cross-fade) to the layout-tree compare runner;
+    // isScriptHarnessTest filters out the testharness computed-value tests.
+    // Gradient painting is layout-trivial, so the pass rate measures
+    // replaced-element sizing robustness. The #68 outliers (gradients-with-
+    // border box-sizing, sibling-index() support) are fixed. Subdirectories
+    // (gradient / image-set / animation / image-orientation / parsing) are
+    // follow-up. See pkspec compat.css-images-baseline and issues #65 / #68.
+    "css-images"
   ],
   "recursiveModules": [
     "css-align",
@@ -81,6 +92,9 @@
   "modulePrefixes": {
     "css-values": [
       "calc-"
+    ],
+    "css-images": [
+      ""
     ],
     "css-inline": [
       ""

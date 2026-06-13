@@ -16,11 +16,10 @@ pkf run spec-check                                          # contract が壊れ
 
 ## Now (P0) — pkspec scenarios
 
-`compat.css-inline-baseline` は完了 (PR #250 / 10-of-11)。`mizchi/css` の上流 blocker は 0.4.x で解消済 (#260/#261)。残りは crater 内部の個別 bug + paint 側。
+`compat.css-inline-baseline` (PR #250 / 10-of-11)、`compat.css-values-baseline` (calc subset 34/46)、`compat.css-images-baseline` (top-level 312/322、#68 の gradient-with-border / sibling-index outlier は解消) は完了。`mizchi/css` の上流 blocker は 0.4.x で解消済 (#260/#261)。残りは crater 内部の個別 bug + paint 側。
 
 | scenario id | 概要 | link | 状態 |
 |---|---|---|---|
-| `compat.css-images-baseline` | css-images WPT baseline 有効化 | #65, #68 | border longhand cascade は 0.4.4 で fix (#261)。残 blocker は `sibling-index()` 未実装のみ。baseline env 未作成 |
 | `compat.css-filter-effects` | filter-effects 残 failure 潰し | #64 | 一部済: `has_filter` CB 確立は landed。残りは inline filter CB のジオメトリ + backdrop-filter/SVG subregion (paint側) |
 | `paint.text-glyph-metrics` | glyph metrics / AA Chromium parity | #47 | `mizchi/kagura` blocker 解消: gfx-mbt 実フォント描画 (#276/#277) + Chromium-parity 形状 (#279) landed。残りは曲線/グリフエッジ AA parity + Luna VRT 再計測 |
 
