@@ -505,6 +505,16 @@ tests {
       "bash -lc 'set -e; grep -Fq -- \"\\\"css-images\\\"\" wpt.json; test -f tests/wpt-baselines/css-images.env; grep -Fq -- \"MODULE=css-images\" tests/wpt-baselines/css-images.env; grep -Fq -- \"BASELINE_PASSED=312\" tests/wpt-baselines/css-images.env; grep -Fq -- \"BASELINE_FAILED=10\" tests/wpt-baselines/css-images.env'"
   }
   new {
+    name = "wpt_filter_effects_baseline_is_pinned"
+    description =
+      "filter-effects is enabled in wpt.json; the per-module baseline file pins 114/122 passing (including the filter-cb-abspos-inline triplet recovered by issue #64's group-1 abs-pos containing-block fix), with the 8 paint-side residuals (backdrop-filter geometry, 3D perspective transform, SVG filter subregion) enumerated in the baseline NOTE."
+    tags { "wpt"; "css"; "baseline"; "issue:64" }
+    specRef { "compat.filter-effects-baseline" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; grep -Fq -- \"\\\"filter-effects\\\"\" wpt.json; test -f tests/wpt-baselines/filter-effects.env; grep -Fq -- \"MODULE=filter-effects\" tests/wpt-baselines/filter-effects.env; grep -Fq -- \"BASELINE_PASSED=114\" tests/wpt-baselines/filter-effects.env; grep -Fq -- \"BASELINE_FAILED=8\" tests/wpt-baselines/filter-effects.env'"
+  }
+  new {
     name = "wpt_css_flexbox_baseline_is_pinned"
     description =
       "css-flexbox is enabled in wpt.json and the per-module baseline file pins the pass / fail counts lifted by the Tinos font-metric text measurement (PR #267); scripts/test-wpt-module-baseline.sh enforces no regression."

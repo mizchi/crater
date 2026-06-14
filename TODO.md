@@ -20,7 +20,7 @@ pkf run spec-check                                          # contract が壊れ
 
 | scenario id | 概要 | link | 状態 |
 |---|---|---|---|
-| `compat.css-filter-effects` | filter-effects 残 failure 潰し | #64 | 一部済: `has_filter` CB 確立は landed。残りは inline filter CB のジオメトリ + backdrop-filter/SVG subregion (paint側) |
+| `compat.css-filter-effects` | filter-effects 残 failure 潰し | #64 | group-1 (`has_filter` abs-pos CB) landed・確認済 (114/122)。floor を `compat.filter-effects-baseline` で pin。残 8 件は全て paint 側 (backdrop-filter geometry / 3D perspective transform / SVG filter subregion) |
 | `paint.text-glyph-metrics` | glyph metrics / AA Chromium parity | #47 | `mizchi/kagura` blocker 解消: gfx-mbt 実フォント描画 (#276/#277) + Chromium-parity 形状 (#279) landed。残りは曲線/グリフエッジ AA parity + Luna VRT 再計測 |
 
 ## Next (P1) — pkspec scenarios

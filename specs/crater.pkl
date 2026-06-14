@@ -396,6 +396,16 @@ scenarios {
     reviewStatus = "draft"
     contributes { "goal.css-compat" }
   }
+  new {
+    id = "compat.filter-effects-baseline"
+    name = "filter-effects WPT module baseline is pinned"
+    description =
+      "Pin a per-module no-regression baseline for the filter-effects WPT module. filter-effects is enabled in wpt.json with the global includePrefixes filter; the test count (122), pass count (114), and failure count (8) are pinned in tests/wpt-baselines/filter-effects.env and enforced by scripts/check-wpt-baselines.mjs. 114/122 includes the filter-cb-abspos-inline triplet recovered by issue #64's group-1 fix (filter establishes an abs-pos containing block). The 8 failures are the paint-side residuals #64 scopes out of layout containment (backdrop-filter geometry, 3D perspective transform sizing under backdrop-filter, SVG filter subregion translate); closing them is paint-side follow-up tracked in issue #64. See GitHub issue #64."
+    tags { "wpt"; "css"; "baseline"; "filter"; "issue:64" }
+    severity = "major"
+    reviewStatus = "approved"
+    contributes { "goal.css-compat" }
+  }
 
   // -- Paint accuracy: text wrap, font weight, glyph metrics -----------------
   new {
