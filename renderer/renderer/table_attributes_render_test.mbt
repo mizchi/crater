@@ -208,3 +208,62 @@ test "bare_table_border_attribute_maps_to_one_pixel" {
     ),
   )
 }
+
+///|
+/// A `<table border>` also gives every cell an implied 1px border, regardless
+/// of the table border width. `border="0"` leaves the cells borderless.
+test "table_border_attribute_adds_one_pixel_cell_border" {
+  fn cell_border_top(html : String) -> @types.Dimension {
+    let ctx = @renderer.RenderContext::default()
+    let node = @renderer.render_to_node(html, ctx)
+    match find_node_by_tag_id(node, "td") {
+      Some(cell) => cell.style.border.top
+      None => @types.Auto
+    }
+  }
+
+  // Bare attribute → 1px on every cell, independent of the table border value.
+  inspect(
+    cell_border_top(
+      (
+        #|<table border><tr><td>x</td></tr></table>
+      ),
+    ),
+    content=(
+      #|Length(1)
+    ),
+  )
+  // A thick table border still implies only a 1px cell border.
+  inspect(
+    cell_border_top(
+      (
+        #|<table border="5"><tr><td>x</td></tr></table>
+      ),
+    ),
+    content=(
+      #|Length(1)
+    ),
+  )
+  // Explicit zero → no cell border.
+  inspect(
+    cell_border_top(
+      (
+        #|<table border="0"><tr><td>x</td></tr></table>
+      ),
+    ),
+    content=(
+      #|Length(0)
+    ),
+  )
+  // No border attribute → no implied cell border.
+  inspect(
+    cell_border_top(
+      (
+        #|<table><tr><td>x</td></tr></table>
+      ),
+    ),
+    content=(
+      #|Length(0)
+    ),
+  )
+}

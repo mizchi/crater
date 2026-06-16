@@ -634,6 +634,30 @@ fn filter_value_has_function(lowered : String) -> Bool {
 }
 
 ///|
+/// Walk up the ancestor chain to the nearest `<table>` and report whether it
+/// carries a non-zero HTML `border` presentational attribute. A bare or
+/// non-integer `border` counts as a (1px) border; `border="0"` does not.
+fn table_ancestor_has_border(elem : @css.Element) -> Bool {
+  match elem.parent {
+    Some(ancestor) =>
+      if ancestor.tag_name.to_lower() == "table" {
+        match ancestor.get_attribute("border") {
+          Some(border_value) => {
+            let n = @string.parse_double(border_value.to_string()) catch {
+              _ => 1.0
+            }
+            n > 0.0
+          }
+          None => false
+        }
+      } else {
+        table_ancestor_has_border(ancestor)
+      }
+    None => false
+  }
+}
+
+///|
 /// Compute element style using indexed stylesheets for better performance
 fn compute_element_style_indexed(
   selector_elem : @css.Element,
@@ -911,6 +935,27 @@ fn compute_element_style_indexed(
         }
       }
       None => ()
+    }
+  }
+  // A `<table border>` presentational hint also implies a 1px border on every
+  // cell, independent of the table's own border width (Chromium maps the bare
+  // attribute to a thin inset border on each `<td>`/`<th>`). Walk up to the
+  // nearest table ancestor and, if it carries a non-zero `border`, give the
+  // cell the implied 1px border.
+  let cell_tag = selector_elem.tag_name.to_lower()
+  if cell_tag == "td" || cell_tag == "th" {
+    if table_ancestor_has_border(selector_elem) {
+      let bw = @types.Dimension::Length(1.0)
+      style = {
+        ..style,
+        border: { top: bw, right: bw, bottom: bw, left: bw },
+        border_style: {
+          top: @style.BorderStyle::Solid,
+          right: @style.BorderStyle::Solid,
+          bottom: @style.BorderStyle::Solid,
+          left: @style.BorderStyle::Solid,
+        },
+      }
     }
   }
 
