@@ -28,7 +28,7 @@ pkf run spec-check                                          # contract が壊れ
 
 | scenario id | 概要 | link | 状態 |
 |---|---|---|---|
-| `compat.web-components-shadow-selectors` | `:host` 複合 / `::slotted` / `:host-context` | #155 | crater 内部・着手可 |
+| `compat.web-components-shadow-selectors` | `:host` 複合 / `::slotted` / `:host-context` | #155 (umbrella) → #285 / #286 | 分割済: スタイリング経路 #285 は upstream mizchi/css マッチャ API 依存でブロック。DOM query 経路 #286 は crater 単独で着手可。slot 割当 API (assignedNodes/Elements/assignedSlot) は landed |
 | `compat.web-components-element-internals` | closed shadow / declarative SD / form-associated | #156 | crater 内部 |
 | `compat.browser-shell-form-controls` | select popup / blur change / IME / caret | #159 | crater 内部 |
 | `compat.native-form-control-appearance` | select / button native appearance 方針 | #160 | 方針判断含む |
