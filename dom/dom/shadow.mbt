@@ -338,3 +338,124 @@ fn DomTree::get_assigned_nodes_for_slot(
     Err(_) => []
   }
 }
+
+///|
+/// Whether a node is a slottable (only elements and text nodes can be assigned
+/// to a slot).
+fn DomTree::is_slottable(self : DomTree, node : NodeId) -> Bool {
+  match self.nodes.get(node.to_int()) {
+    Some(n) => n.node_type == Element || n.node_type == Text
+    None => false
+  }
+}
+
+///|
+/// Find the shadow host of the shadow tree that contains `node`, or `None` when
+/// `node` is not inside a shadow tree. Climbs the node's tree scope to its
+/// shadow root and returns that root's host.
+fn DomTree::shadow_host_of(self : DomTree, node : NodeId) -> NodeId? {
+  let root_id = self.get_root_node_internal(node.to_int())
+  match self.nodes.get(root_id) {
+    Some(root) if root.node_type == ShadowRoot =>
+      root.host_id.map(NodeId::from_int)
+    _ => None
+  }
+}
+
+///|
+/// Slottables actually assigned to `slot`, in tree order, without fallback
+/// content. Empty when `slot` is not a slot element, is outside a shadow tree,
+/// or has no assigned nodes.
+fn DomTree::slot_assigned_nodes_raw(
+  self : DomTree,
+  slot : NodeId,
+) -> Array[NodeId] {
+  guard self.is_slot_element(slot) else { return [] }
+  match self.shadow_host_of(slot) {
+    Some(host) => {
+      let assigned : Array[NodeId] = []
+      match self.get_children(host) {
+        Ok(children) =>
+          for child in children {
+            if self.is_slottable(child) {
+              match self.get_assigned_slot_for_light_node(host, child) {
+                Some(target) if target == slot => assigned.push(child)
+                _ => ()
+              }
+            }
+          }
+        Err(_) => ()
+      }
+      assigned
+    }
+    None => []
+  }
+}
+
+///|
+/// `HTMLSlotElement.assignedNodes()`. Returns the slottable nodes (elements and
+/// text) assigned to `slot`, in tree order.
+///
+/// With `flatten`, an empty assignment falls back to the slot's own children
+/// (its default content), and any assigned slot is recursively replaced by its
+/// own flattened assigned nodes — matching `assignedNodes({ flatten: true })`.
+pub fn DomTree::slot_assigned_nodes(
+  self : DomTree,
+  slot : NodeId,
+  flatten? : Bool = false,
+) -> Array[NodeId] {
+  guard self.is_slot_element(slot) else { return [] }
+  let assigned = self.slot_assigned_nodes_raw(slot)
+  if !flatten {
+    return assigned
+  }
+  let source = if assigned.is_empty() {
+    match self.get_children(slot) {
+      Ok(children) => children
+      Err(_) => []
+    }
+  } else {
+    assigned
+  }
+  let flattened : Array[NodeId] = []
+  for n in source {
+    if self.is_slot_element(n) {
+      for m in self.slot_assigned_nodes(n, flatten=true) {
+        flattened.push(m)
+      }
+    } else {
+      flattened.push(n)
+    }
+  }
+  flattened
+}
+
+///|
+/// `HTMLSlotElement.assignedElements()`. Like `slot_assigned_nodes` but
+/// filtered to element nodes.
+pub fn DomTree::slot_assigned_elements(
+  self : DomTree,
+  slot : NodeId,
+  flatten? : Bool = false,
+) -> Array[NodeId] {
+  let result : Array[NodeId] = []
+  for n in self.slot_assigned_nodes(slot, flatten~) {
+    match self.nodes.get(n.to_int()) {
+      Some(node) if node.node_type == Element => result.push(n)
+      _ => ()
+    }
+  }
+  result
+}
+
+///|
+/// `Node.assignedSlot`. Returns the slot that `node` is assigned to, or `None`
+/// when `node` is not a slottable assigned to a slot in its parent host's
+/// shadow tree.
+pub fn DomTree::assigned_slot(self : DomTree, node : NodeId) -> NodeId? {
+  guard self.is_slottable(node) else { return None }
+  match self.get_parent(node) {
+    Ok(Some(parent)) => self.get_assigned_slot_for_light_node(parent, node)
+    _ => None
+  }
+}

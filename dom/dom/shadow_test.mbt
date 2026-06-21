@@ -129,3 +129,75 @@ test "DomTree get_composed_children falls back through nested slots" {
   inspect(inner_children.length(), content="1")
   inspect(inner_children[0].to_int(), content="7")
 }
+
+///|
+test "DomTree slot assignment API: assignedNodes / assignedElements / assignedSlot" {
+  let tree = DomTree::new()
+  let doc = tree.get_document()
+  let html = tree.create_element("html")
+  let body = tree.create_element("body")
+  let host = tree.create_element("div")
+  let shadow = tree.attach_shadow(host, "open").unwrap()
+  // Shadow tree: a default slot, a named slot, and an unfilled slot whose
+  // children are fallback content.
+  let default_slot = tree.create_element("slot")
+  let named_slot = tree.create_element("slot")
+  let empty_slot = tree.create_element("slot")
+  let fallback = tree.create_element("b")
+
+  // Light DOM: an element + a text node go to the default slot, an element
+  // with slot="label" goes to the named slot.
+  let plain = tree.create_element("span")
+  let plain_text = tree.create_text("hi")
+  let named = tree.create_element("em")
+
+  let _ = tree.append_child(doc, html)
+  let _ = tree.append_child(html, body)
+  let _ = tree.append_child(body, host)
+  let _ = tree.append_child(shadow, default_slot)
+  let _ = tree.set_attribute(named_slot, "name", "label")
+  let _ = tree.append_child(shadow, named_slot)
+  let _ = tree.set_attribute(empty_slot, "name", "empty")
+  let _ = tree.append_child(empty_slot, fallback)
+  let _ = tree.append_child(shadow, empty_slot)
+  let _ = tree.append_child(host, plain)
+  let _ = tree.append_child(host, plain_text)
+  let _ = tree.set_attribute(named, "slot", "label")
+  let _ = tree.append_child(host, named)
+
+  // assignedNodes(default) → [plain, plain_text] in tree order.
+  let default_nodes = tree.slot_assigned_nodes(default_slot)
+  inspect(default_nodes.length(), content="2")
+  inspect(default_nodes[0].to_int() == plain.to_int(), content="true")
+  inspect(default_nodes[1].to_int() == plain_text.to_int(), content="true")
+
+  // assignedElements(default) drops the text node.
+  let default_elems = tree.slot_assigned_elements(default_slot)
+  inspect(default_elems.length(), content="1")
+  inspect(default_elems[0].to_int() == plain.to_int(), content="true")
+
+  // assignedNodes(named) → [named].
+  let named_nodes = tree.slot_assigned_nodes(named_slot)
+  inspect(named_nodes.length(), content="1")
+  inspect(named_nodes[0].to_int() == named.to_int(), content="true")
+
+  // An unfilled slot has no assigned nodes; with flatten it yields its
+  // fallback content.
+  inspect(tree.slot_assigned_nodes(empty_slot).length(), content="0")
+  let empty_flat = tree.slot_assigned_nodes(empty_slot, flatten=true)
+  inspect(empty_flat.length(), content="1")
+  inspect(empty_flat[0].to_int() == fallback.to_int(), content="true")
+
+  // assignedSlot points each light node at the slot it lands in.
+  inspect(
+    tree.assigned_slot(plain).map(NodeId::to_int) == Some(default_slot.to_int()),
+    content="true",
+  )
+  inspect(
+    tree.assigned_slot(named).map(NodeId::to_int) == Some(named_slot.to_int()),
+    content="true",
+  )
+  // A node with no matching slot, and a non-slot element, have no assignment.
+  inspect(tree.assigned_slot(host) is None, content="true")
+  inspect(tree.slot_assigned_nodes(plain).length(), content="0")
+}

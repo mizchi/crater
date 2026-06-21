@@ -51,6 +51,7 @@ pub struct DomTree {
   mutations : MutationQueue
 }
 pub fn DomTree::append_child(Self, NodeId, NodeId) -> Result[Unit, CoreError]
+pub fn DomTree::assigned_slot(Self, NodeId) -> NodeId?
 pub fn DomTree::attach_existing_shadow_root(Self, NodeId, NodeId, String) -> Result[Unit, CoreError]
 pub fn DomTree::attach_existing_shadow_root_with_init(Self, NodeId, NodeId, ShadowRootInit) -> Result[Unit, CoreError]
 pub fn DomTree::attach_shadow(Self, NodeId, String) -> Result[NodeId, CoreError]
@@ -103,6 +104,8 @@ pub fn DomTree::set_custom_states(Self, NodeId, Array[String]) -> Result[Unit, C
 pub fn DomTree::set_focus(Self, NodeId?) -> Unit
 pub fn DomTree::set_form_associated_state(Self, NodeId, String?, String?) -> Result[Unit, CoreError]
 pub fn DomTree::set_text_content(Self, NodeId, String) -> Result[Unit, CoreError]
+pub fn DomTree::slot_assigned_elements(Self, NodeId, flatten? : Bool) -> Array[NodeId]
+pub fn DomTree::slot_assigned_nodes(Self, NodeId, flatten? : Bool) -> Array[NodeId]
 
 pub struct FlushResult {
   processed : Int
