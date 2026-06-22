@@ -686,6 +686,25 @@ fn compute_element_style_indexed(
   } else {
     None
   }
+  apply_cascaded_to_style(
+    cascaded, selector_elem, inline_css, is_root, ctx, parent_style, css_vars,
+  )
+}
+
+///|
+/// Fold a cascaded value set (document or, later, shadow-scoped) together with
+/// inline styles and inherited context into a concrete `@style.Style`. Split
+/// out of `compute_element_style_indexed` so a DomTree-driven shadow cascade can
+/// reuse the exact same post-cascade pipeline (#285).
+fn apply_cascaded_to_style(
+  cascaded : @css.CascadedValues?,
+  selector_elem : @css.Element,
+  inline_css : String?,
+  is_root : Bool,
+  ctx : RenderContext,
+  parent_style : @style.Style?,
+  css_vars : Map[String, String],
+) -> @style.Style {
   let element_css_vars = clone_string_map(css_vars)
   collect_cascaded_custom_properties(cascaded, element_css_vars)
   collect_inline_custom_properties(inline_css, element_css_vars)
