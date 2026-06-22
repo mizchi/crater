@@ -1,8 +1,8 @@
 ///|
 /// Compound selector support for querySelector / querySelectorAll (#286).
-/// The matcher handles a type/universal selector combined with #id, .class and
-/// [attr] simple selectors; combinators and pseudo-classes are intentionally
-/// not matched yet.
+/// Parsing and matching are delegated to `mizchi/css/selector`, so the queried
+/// subtree is projected into selector elements and tested against the parsed
+/// selector list.
 test "query_selector_all matches compound selectors" {
   let tree = DomTree::new()
   let doc = tree.get_document()
@@ -51,11 +51,34 @@ test "query_selector_all matches compound selectors" {
   inspect(q(".foob"), content="")
   inspect(q(".fo"), content="")
 
-  // Combinators and pseudo-classes are not handled yet → no match (no
-  // mis-parse).
-  inspect(q("div span"), content="")
-  inspect(q("div > span"), content="")
+  // Selector lists (comma-separated).
+  inspect(q("span, input"), content="2,3")
+
+  // Combinators (delegated to the css selector matcher).
+  inspect(q("div span"), content="2") // descendant
+  inspect(q("div > span"), content="2") // child
+  inspect(q("span + input"), content="3") // next-sibling
+  inspect(q("span ~ input"), content="3") // subsequent-sibling
+  inspect(q("div > input"), content="3")
+
+  // Attribute operators.
+  inspect(q("[class~=foo]"), content="2,3")
+  inspect(q("[type^=te]"), content="3")
+
+  // Structural pseudo-classes (div and span are each a first child).
+  inspect(q(":first-child"), content="1,2")
+  inspect(q("input:last-child"), content="3")
+  inspect(q("input:nth-child(2)"), content="3")
+
+  // State pseudo-classes have no live state → no match (but parse cleanly).
   inspect(q("span:hover"), content="")
+
+  // An unparseable selector is reported as an error rather than matching.
+  match tree.query_selector_all(doc, "::::") {
+    Ok(_) => fail("expected invalid selector error")
+    Err(InvalidOperation(message=_)) => inspect(true, content="true")
+    Err(err) => fail("\{err}")
+  }
 }
 
 ///|
