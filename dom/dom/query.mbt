@@ -1,8 +1,10 @@
 ///|
 /// Query Selector Implementation
 ///
-/// Simple CSS selector support for querying DOM nodes.
-/// Supports: tag names, #id, .class, [attr], [attr=value]
+/// CSS selector support for querying DOM nodes. Handles a single compound
+/// selector: a type / universal selector combined with `#id`, `.class`, and
+/// `[attr]` / `[attr=value]` simple selectors. Combinators and pseudo-classes
+/// are not handled yet (tracked in #286).
 
 ///|
 /// Query selector (simple CSS selector support)
@@ -63,46 +65,185 @@ fn DomTree::query_recursive(
 }
 
 ///|
-/// Check if node matches selector (simplified)
+/// Check whether `node` matches a single compound selector.
+///
+/// Supports a type / universal selector combined with any number of `#id`,
+/// `.class`, and `[attr]` / `[attr=value]` simple selectors, e.g.
+/// `div.foo#bar[type=text]`. Combinators (descendant / child / sibling) and
+/// pseudo-classes / pseudo-elements are not handled here yet — they need
+/// traversal or shadow context (tracked in #286) — so a selector containing
+/// them matches nothing rather than being mis-parsed.
 fn matches_selector(node : DomNode, selector : String) -> Bool {
   // Only match elements
   guard node.node_type == Element else { return false }
-  // Simple selector matching
-  if selector.has_prefix("#") {
-    // ID selector
-    let id = selector.unsafe_substring(start=1, end=selector.length())
-    node.attributes.get("id") == Some(id)
-  } else if selector.has_prefix(".") {
-    // Class selector
-    let class_name = selector.unsafe_substring(start=1, end=selector.length())
-    match node.attributes.get("class") {
-      Some(classes) => classes.contains(class_name)
+  let sel = selector.trim().to_owned()
+  guard sel.length() > 0 else { return false }
+  if has_combinator(sel) || sel.contains(":") {
+    return false
+  }
+  match parse_compound(sel) {
+    Some(tokens) => {
+      for token in tokens {
+        if !matches_simple(node, token) {
+          return false
+        }
+      }
+      true
+    }
+    None => false
+  }
+}
+
+///|
+fn is_whitespace_char(c : Char) -> Bool {
+  c == ' ' || c == '\t' || c == '\n' || c == '\r'
+}
+
+///|
+/// Whether the selector contains a combinator (` `, `>`, `+`, `~`) outside an
+/// attribute `[...]` block.
+fn has_combinator(sel : String) -> Bool {
+  let chars = sel.to_array()
+  let mut depth = 0
+  for ch in chars {
+    if ch == '[' {
+      depth = depth + 1
+    } else if ch == ']' {
+      if depth > 0 {
+        depth = depth - 1
+      }
+    } else if depth == 0 && (ch == ' ' || ch == '>' || ch == '+' || ch == '~') {
+      return true
+    }
+  }
+  false
+}
+
+///|
+/// Split a compound selector into its simple-selector tokens, each keeping its
+/// leading marker (`#id`, `.class`, `[attr...]`) plus an optional leading type.
+/// Returns None on malformed input (e.g. an unterminated `[`).
+fn parse_compound(sel : String) -> Array[String]? {
+  let chars = sel.to_array()
+  let n = chars.length()
+  let tokens : Array[String] = []
+  let mut i = 0
+  // Leading type / universal selector (up to the first marker).
+  let type_buf = StringBuilder::new()
+  while i < n && chars[i] != '#' && chars[i] != '.' && chars[i] != '[' {
+    type_buf.write_char(chars[i])
+    i = i + 1
+  }
+  let type_part = type_buf.to_string()
+  if type_part.length() > 0 {
+    tokens.push(type_part)
+  }
+  while i < n {
+    let marker = chars[i]
+    if marker == '#' || marker == '.' {
+      let buf = StringBuilder::new()
+      buf.write_char(marker)
+      i = i + 1
+      while i < n && chars[i] != '#' && chars[i] != '.' && chars[i] != '[' {
+        buf.write_char(chars[i])
+        i = i + 1
+      }
+      tokens.push(buf.to_string())
+    } else if marker == '[' {
+      let buf = StringBuilder::new()
+      buf.write_char('[')
+      i = i + 1
+      while i < n && chars[i] != ']' {
+        buf.write_char(chars[i])
+        i = i + 1
+      }
+      if i >= n {
+        return None
+      }
+      buf.write_char(']')
+      i = i + 1
+      tokens.push(buf.to_string())
+    } else {
+      return None
+    }
+  }
+  if tokens.is_empty() {
+    None
+  } else {
+    Some(tokens)
+  }
+}
+
+///|
+/// Match one simple-selector token (`*`, `#id`, `.class`, `[attr...]`, or a
+/// bare type) against a node.
+fn matches_simple(node : DomNode, token : String) -> Bool {
+  if token == "*" {
+    return true
+  }
+  if token.has_prefix("#") {
+    let id = token.unsafe_substring(start=1, end=token.length())
+    return node.attributes.get("id") == Some(id)
+  }
+  if token.has_prefix(".") {
+    let class_name = token.unsafe_substring(start=1, end=token.length())
+    return match node.attributes.get("class") {
+      Some(classes) => class_list_contains(classes, class_name)
       None => false
     }
-  } else if selector.has_prefix("[") && selector.has_suffix("]") {
-    // Attribute selector (simple: [attr] or [attr=value])
-    let inner = selector.unsafe_substring(start=1, end=selector.length() - 1)
-    if inner.contains("=") {
-      match split_once(inner, '=') {
-        Some((attr, value)) => {
-          let clean_value = value.trim().to_owned()
-          let clean_value = if clean_value.has_prefix("\"") &&
-            clean_value.has_suffix("\"") {
-            clean_value.unsafe_substring(start=1, end=clean_value.length() - 1)
-          } else {
-            clean_value
-          }
-          node.attributes.get(attr.trim().to_owned()) == Some(clean_value)
+  }
+  if token.has_prefix("[") && token.has_suffix("]") {
+    let inner = token.unsafe_substring(start=1, end=token.length() - 1)
+    return matches_attribute_expr(node, inner)
+  }
+  // Type selector (case-insensitive).
+  node.tag_name.to_lower() == token.to_lower()
+}
+
+///|
+/// Match an attribute selector body (`attr` or `attr=value`, optional quotes).
+fn matches_attribute_expr(node : DomNode, inner : String) -> Bool {
+  if inner.contains("=") {
+    match split_once(inner, '=') {
+      Some((attr, value)) => {
+        let clean_value = value.trim().to_owned()
+        let clean_value = if clean_value.has_prefix("\"") &&
+          clean_value.has_suffix("\"") {
+          clean_value.unsafe_substring(start=1, end=clean_value.length() - 1)
+        } else {
+          clean_value
         }
-        None => false
+        node.attributes.get(attr.trim().to_owned()) == Some(clean_value)
       }
-    } else {
-      node.attributes.contains(inner)
+      None => false
     }
   } else {
-    // Tag name selector
-    node.tag_name.to_lower() == selector.to_lower()
+    node.attributes.contains(inner.trim().to_owned())
   }
+}
+
+///|
+/// Whitespace-separated class-list membership (so `.foo` does not match
+/// `class="foobar"`).
+fn class_list_contains(classes : String, name : String) -> Bool {
+  guard name.length() > 0 else { return false }
+  let chars = classes.to_array()
+  let n = chars.length()
+  let mut i = 0
+  while i < n {
+    while i < n && is_whitespace_char(chars[i]) {
+      i = i + 1
+    }
+    let buf = StringBuilder::new()
+    while i < n && !is_whitespace_char(chars[i]) {
+      buf.write_char(chars[i])
+      i = i + 1
+    }
+    if buf.to_string() == name {
+      return true
+    }
+  }
+  false
 }
 
 ///|
