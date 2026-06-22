@@ -3,6 +3,7 @@ package "mizchi/crater-dom/dom"
 
 import {
   "mizchi/css/cascade",
+  "mizchi/css/selector",
   "moonbitlang/core/debug",
 }
 
@@ -96,6 +97,7 @@ pub fn DomTree::insert_before(Self, NodeId, NodeId, NodeId?) -> Result[Unit, Cor
 pub fn DomTree::is_slot_element(Self, NodeId) -> Bool
 pub fn DomTree::matches_shadow_scoped(Self, NodeId, String, NodeId) -> Result[Bool, CoreError]
 pub fn DomTree::new() -> Self
+pub fn DomTree::node_to_selector_element(Self, NodeId) -> @selector.Element?
 pub fn DomTree::pending_mutation_count(Self) -> Int
 pub fn DomTree::query_selector(Self, NodeId, String) -> Result[NodeId?, CoreError]
 pub fn DomTree::query_selector_all(Self, NodeId, String) -> Result[Array[NodeId], CoreError]

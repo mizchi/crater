@@ -127,6 +127,25 @@ fn DomTree::best_shadow_match_specificity(
 }
 
 ///|
+/// Project an element node into a standalone `@selector.Element` (carrying its
+/// own tag / id / classes / attributes and element-sibling index/count, with no
+/// ancestor chain). `None` for non-element nodes. This is the same type the
+/// renderer's cascade consumes (`@css.Element` re-exports `@selector.Element`),
+/// so a shadow-tree node can be styled through the renderer pipeline.
+pub fn DomTree::node_to_selector_element(
+  self : DomTree,
+  id : NodeId,
+) -> @selector.Element? {
+  match self.nodes.get(id.to_int()) {
+    Some(node) if node.node_type == Element => {
+      let (index, count) = self.element_sibling_position(id.to_int())
+      Some(dom_node_to_selector_element(node, None, None, index, count))
+    }
+    _ => None
+  }
+}
+
+///|
 /// Cascade the shadow rules that apply to `target` (host is `host`) into the
 /// winning `@cascade.CascadedValues`, resolving specificity / source order via
 /// the shared `@css.cascade_declarations`.
