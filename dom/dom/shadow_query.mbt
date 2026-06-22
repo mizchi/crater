@@ -81,11 +81,7 @@ fn DomTree::find_step_match(
       match self.light_parent_id(current) {
         Some(p) =>
           if self.is_shadow_root(p) {
-            if host_step && self.compound_matches_scoped(host, compound, host) {
-              Some(host)
-            } else {
-              None
-            }
+            self.host_boundary_match(host_step, compound, host)
           } else if self.compound_matches_scoped(p, compound, host) {
             Some(p)
           } else {
@@ -93,29 +89,21 @@ fn DomTree::find_step_match(
           }
         None => None
       }
-    @selector.Combinator::Descendant => {
-      let mut anc = self.light_parent_id(current)
-      let mut result : NodeId? = None
-      let mut walking = true
-      while walking {
-        match anc {
-          Some(a) =>
-            if self.is_shadow_root(a) {
-              if host_step && self.compound_matches_scoped(host, compound, host) {
-                result = Some(host)
-              }
-              walking = false
-            } else if self.compound_matches_scoped(a, compound, host) {
-              result = Some(a)
-              walking = false
-            } else {
-              anc = self.light_parent_id(a)
-            }
-          None => walking = false
-        }
+    @selector.Combinator::Descendant =>
+      // Walk light ancestors within the shadow tree; the chain stops at the
+      // shadow root (which has no light parent), then `:host` can cross it.
+      match
+        first_in_chain(
+          self.light_parent_id(current),
+          fn(n) { self.light_parent_id(n) },
+          fn(a) {
+            !self.is_shadow_root(a) &&
+            self.compound_matches_scoped(a, compound, host)
+          },
+        ) {
+        Some(a) => Some(a)
+        None => self.host_boundary_match(host_step, compound, host)
       }
-      result
-    }
     @selector.Combinator::NextSibling =>
       match self.prev_element_sibling(current) {
         Some(s) =>
@@ -126,23 +114,43 @@ fn DomTree::find_step_match(
           }
         None => None
       }
-    @selector.Combinator::SubsequentSibling => {
-      let mut sibling = self.prev_element_sibling(current)
-      let mut result : NodeId? = None
-      let mut walking = true
-      while walking {
-        match sibling {
-          Some(s) =>
-            if self.compound_matches_scoped(s, compound, host) {
-              result = Some(s)
-              walking = false
-            } else {
-              sibling = self.prev_element_sibling(s)
-            }
-          None => walking = false
-        }
-      }
-      result
+    @selector.Combinator::SubsequentSibling =>
+      first_in_chain(
+        self.prev_element_sibling(current),
+        fn(s) { self.prev_element_sibling(s) },
+        fn(s) { self.compound_matches_scoped(s, compound, host) },
+      )
+  }
+}
+
+///|
+/// Cross the shadow-root boundary: a `:host` family step matched against an
+/// element whose parent is the shadow root resolves to the host itself.
+fn DomTree::host_boundary_match(
+  self : DomTree,
+  host_step : Bool,
+  compound : @selector.CompoundSelector,
+  host : NodeId,
+) -> NodeId? {
+  if host_step && self.compound_matches_scoped(host, compound, host) {
+    Some(host)
+  } else {
+    None
+  }
+}
+
+///|
+/// Return the first node reachable from `start` by repeatedly applying `next`
+/// that satisfies `pred`, or `None` when the chain is exhausted.
+fn first_in_chain(
+  start : NodeId?,
+  next : (NodeId) -> NodeId?,
+  pred : (NodeId) -> Bool,
+) -> NodeId? {
+  for cur = start {
+    match cur {
+      Some(n) => if pred(n) { break Some(n) } else { continue next(n) }
+      None => break None
     }
   }
 }
@@ -204,24 +212,11 @@ fn DomTree::matches_host_pseudo(
   match pc {
     @selector.PseudoClass::Host => true
     @selector.PseudoClass::HostFunc(c) => self.compound_matches_plain(host, c)
-    @selector.PseudoClass::HostContextFunc(c) => {
-      let mut cur : NodeId? = Some(host)
-      let mut walking = true
-      let mut found = false
-      while walking {
-        match cur {
-          Some(n) =>
-            if self.compound_matches_plain(n, c) {
-              found = true
-              walking = false
-            } else {
-              cur = self.light_parent_id(n)
-            }
-          None => walking = false
-        }
-      }
-      found
-    }
+    @selector.PseudoClass::HostContextFunc(c) =>
+      first_in_chain(Some(host), fn(n) { self.light_parent_id(n) }, fn(n) {
+        self.compound_matches_plain(n, c)
+      })
+      is Some(_)
     _ => false
   }
 }
@@ -305,31 +300,19 @@ fn DomTree::is_shadow_root(self : DomTree, id : NodeId) -> Bool {
 ///|
 /// The previous element sibling of `id` (skipping text/comment nodes).
 fn DomTree::prev_element_sibling(self : DomTree, id : NodeId) -> NodeId? {
-  match self.nodes.get(id.to_int()) {
-    Some(node) =>
-      match node.parent_id {
-        Some(pid) =>
-          match self.nodes.get(pid) {
-            Some(parent) => {
-              let mut prev : NodeId? = None
-              for child_id in parent.children {
-                if child_id == id.to_int() {
-                  break
-                }
-                match self.nodes.get(child_id) {
-                  Some(child) if child.node_type == Element =>
-                    prev = Some(NodeId::from_int(child_id))
-                  _ => ()
-                }
-              }
-              prev
-            }
-            None => None
-          }
-        None => None
-      }
-    None => None
+  guard self.nodes.get(id.to_int()) is Some(node) else { return None }
+  guard node.parent_id is Some(pid) else { return None }
+  guard self.nodes.get(pid) is Some(parent) else { return None }
+  let mut prev : NodeId? = None
+  for child_id in parent.children {
+    if child_id == id.to_int() {
+      break
+    }
+    if self.nodes.get(child_id) is Some(child) && child.node_type == Element {
+      prev = Some(NodeId::from_int(child_id))
+    }
   }
+  prev
 }
 
 ///|
@@ -339,35 +322,22 @@ fn DomTree::element_sibling_position(
   self : DomTree,
   node_id : Int,
 ) -> (Int, Int) {
-  match self.nodes.get(node_id) {
-    Some(node) =>
-      match node.parent_id {
-        Some(pid) =>
-          match self.nodes.get(pid) {
-            Some(parent) => {
-              let mut index = 0
-              let mut count = 0
-              for child_id in parent.children {
-                match self.nodes.get(child_id) {
-                  Some(child) if child.node_type == Element => {
-                    count = count + 1
-                    if child_id == node_id {
-                      index = count
-                    }
-                  }
-                  _ => ()
-                }
-              }
-              if index == 0 {
-                (1, 1)
-              } else {
-                (index, count)
-              }
-            }
-            None => (1, 1)
-          }
-        None => (1, 1)
+  guard self.nodes.get(node_id) is Some(node) else { return (1, 1) }
+  guard node.parent_id is Some(pid) else { return (1, 1) }
+  guard self.nodes.get(pid) is Some(parent) else { return (1, 1) }
+  let mut index = 0
+  let mut count = 0
+  for child_id in parent.children {
+    if self.nodes.get(child_id) is Some(child) && child.node_type == Element {
+      count = count + 1
+      if child_id == node_id {
+        index = count
       }
-    None => (1, 1)
+    }
+  }
+  if index == 0 {
+    (1, 1)
+  } else {
+    (index, count)
   }
 }
