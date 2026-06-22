@@ -30,6 +30,8 @@ pub fn compute_shadow_element_style(@dom.DomTree, @dom.NodeId, Array[@cascade.CS
 
 pub fn compute_shadow_tree_styles(@dom.DomTree, @dom.NodeId, RenderContext, @style.Style?) -> Map[Int, @style.Style]
 
+pub fn compute_slotted_styles(@dom.DomTree, @dom.NodeId, RenderContext, @style.Style?) -> Map[Int, @style.Style]
+
 pub fn element_to_node(@html.Element, @style.Style?) -> @node.Node
 
 pub fn get_content_height(String, Int, Int) -> Int
