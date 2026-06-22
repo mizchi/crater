@@ -1,6 +1,8 @@
 import {
   "moonbitlang/core/math",
   "mizchi/css/selector",
+  "mizchi/css",
+  "mizchi/css/cascade",
 }
 
 warnings = "-6"

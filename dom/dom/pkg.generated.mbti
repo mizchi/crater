@@ -2,6 +2,7 @@
 package "mizchi/crater-dom/dom"
 
 import {
+  "mizchi/css/cascade",
   "moonbitlang/core/debug",
 }
 
@@ -57,6 +58,7 @@ pub fn DomTree::attach_existing_shadow_root_with_init(Self, NodeId, NodeId, Shad
 pub fn DomTree::attach_shadow(Self, NodeId, String) -> Result[NodeId, CoreError]
 pub fn DomTree::attach_shadow_with_init(Self, NodeId, ShadowRootInit) -> Result[NodeId, CoreError]
 pub fn DomTree::clear_mutations(Self) -> Unit
+pub fn DomTree::collect_shadow_matched_declarations(Self, NodeId, Array[@cascade.CSSRule], NodeId) -> Array[@cascade.Declaration]
 pub fn DomTree::create_comment(Self, String) -> NodeId
 pub fn DomTree::create_document_fragment(Self) -> NodeId
 pub fn DomTree::create_element(Self, String) -> NodeId
@@ -105,6 +107,8 @@ pub fn DomTree::set_custom_states(Self, NodeId, Array[String]) -> Result[Unit, C
 pub fn DomTree::set_focus(Self, NodeId?) -> Unit
 pub fn DomTree::set_form_associated_state(Self, NodeId, String?, String?) -> Result[Unit, CoreError]
 pub fn DomTree::set_text_content(Self, NodeId, String) -> Result[Unit, CoreError]
+pub fn DomTree::shadow_cascaded_values(Self, NodeId, Array[@cascade.CSSRule], NodeId) -> @cascade.CascadedValues
+pub fn DomTree::shadow_stylesheet_rules(Self, NodeId) -> Array[@cascade.CSSRule]
 pub fn DomTree::slot_assigned_elements(Self, NodeId, flatten? : Bool) -> Array[NodeId]
 pub fn DomTree::slot_assigned_nodes(Self, NodeId, flatten? : Bool) -> Array[NodeId]
 
