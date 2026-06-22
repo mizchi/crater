@@ -1,12 +1,19 @@
 ///|
 /// Query Selector Implementation
 ///
-/// Simple CSS selector support for querying DOM nodes.
-/// Supports: tag names, #id, .class, [attr], [attr=value]
+/// CSS selector matching for DOM queries. Parsing and matching are delegated to
+/// `mizchi/css/selector`: each candidate element in the queried subtree is
+/// projected into a `@selector.Element` (with parent / previous-sibling /
+/// sibling-index wiring) and tested with `@selector.matches_selector_list`.
+/// This reuses the selector grammar and matcher — selector lists, combinators,
+/// attribute operators and structural pseudo-classes — without duplicating it.
+///
+/// Scoping note: matching is restricted to the queried subtree (the root's
+/// ancestors are not consulted) and the context node itself is never returned,
+/// per `querySelectorAll` semantics.
 
 ///|
-/// Query selector (simple CSS selector support)
-/// Returns first matching node
+/// Query selector — returns the first matching node in document order.
 pub fn DomTree::query_selector(
   self : DomTree,
   root : NodeId,
@@ -24,103 +31,152 @@ pub fn DomTree::query_selector(
 }
 
 ///|
-/// Query selector all
-/// Returns all matching nodes
+/// Query selector all — returns every matching node in document order.
 pub fn DomTree::query_selector_all(
   self : DomTree,
   root : NodeId,
   selector : String,
 ) -> Result[Array[NodeId], CoreError] {
   let root_id = root.to_int()
-  match self.nodes.get(root_id) {
-    None => Err(NodeNotFound(node_id=root))
-    Some(_) => {
-      let results : Array[NodeId] = []
-      self.query_recursive(root_id, selector, results)
-      Ok(results)
-    }
+  guard self.nodes.get(root_id) is Some(_) else {
+    return Err(NodeNotFound(node_id=root))
   }
+  let list = match @selector.parse_selector_list_text(selector) {
+    Some(list) => list
+    None =>
+      return Err(InvalidOperation(message="invalid selector: \{selector}"))
+  }
+  let results : Array[NodeId] = []
+  let _ = self.query_match_node(root_id, None, 1, 1, None, true, list, results)
+  Ok(results)
 }
 
 ///|
-/// Recursive query helper
-fn DomTree::query_recursive(
+/// Project the node at `node_id` into a `@selector.Element`, test it against
+/// `list` (unless it is the scope root), then recurse into its element
+/// children. Returns the built element so the caller can thread it as the
+/// parent / previous-sibling of the next node. Non-element nodes are not tested
+/// but still propagate scope to their element children.
+fn DomTree::query_match_node(
   self : DomTree,
   node_id : Int,
-  selector : String,
+  parent_sel : @selector.Element?,
+  sibling_index : Int,
+  sibling_count : Int,
+  prev_sel : @selector.Element?,
+  is_root : Bool,
+  list : @selector.SelectorList,
   results : Array[NodeId],
-) -> Unit {
+) -> @selector.Element? {
   let node = self.nodes.get(node_id)
-  guard node is Some(node) else { return }
-  // Check if this node matches
-  if matches_selector(node, selector) {
-    results.push(NodeId(node_id))
-  }
-  // Recurse into children
-  for child_id in node.children {
-    self.query_recursive(child_id, selector, results)
-  }
-}
-
-///|
-/// Check if node matches selector (simplified)
-fn matches_selector(node : DomNode, selector : String) -> Bool {
-  // Only match elements
-  guard node.node_type == Element else { return false }
-  // Simple selector matching
-  if selector.has_prefix("#") {
-    // ID selector
-    let id = selector.unsafe_substring(start=1, end=selector.length())
-    node.attributes.get("id") == Some(id)
-  } else if selector.has_prefix(".") {
-    // Class selector
-    let class_name = selector.unsafe_substring(start=1, end=selector.length())
-    match node.attributes.get("class") {
-      Some(classes) => classes.contains(class_name)
-      None => false
+  guard node is Some(node) else { return None }
+  let my_sel : @selector.Element? = if node.node_type == Element {
+    let element = dom_node_to_selector_element(
+      node, parent_sel, prev_sel, sibling_index, sibling_count,
+    )
+    if !is_root && @selector.matches_selector_list(element, list) {
+      results.push(NodeId(node_id))
     }
-  } else if selector.has_prefix("[") && selector.has_suffix("]") {
-    // Attribute selector (simple: [attr] or [attr=value])
-    let inner = selector.unsafe_substring(start=1, end=selector.length() - 1)
-    if inner.contains("=") {
-      match split_once(inner, '=') {
-        Some((attr, value)) => {
-          let clean_value = value.trim().to_owned()
-          let clean_value = if clean_value.has_prefix("\"") &&
-            clean_value.has_suffix("\"") {
-            clean_value.unsafe_substring(start=1, end=clean_value.length() - 1)
-          } else {
-            clean_value
-          }
-          node.attributes.get(attr.trim().to_owned()) == Some(clean_value)
-        }
-        None => false
-      }
-    } else {
-      node.attributes.contains(inner)
-    }
+    Some(element)
   } else {
-    // Tag name selector
-    node.tag_name.to_lower() == selector.to_lower()
+    None
+  }
+  // Element children inherit this element as their parent; a non-element node
+  // (document / shadow root) passes the inherited scope through unchanged.
+  let child_parent = match my_sel {
+    Some(_) => my_sel
+    None => parent_sel
+  }
+  let element_children : Array[Int] = []
+  for child_id in node.children {
+    match self.nodes.get(child_id) {
+      Some(child) if child.node_type == Element =>
+        element_children.push(child_id)
+      _ => ()
+    }
+  }
+  let count = element_children.length()
+  let mut prev : @selector.Element? = None
+  for i, child_id in element_children {
+    let child_sel = self.query_match_node(
+      child_id,
+      child_parent,
+      i + 1,
+      count,
+      prev,
+      false,
+      list,
+      results,
+    )
+    prev = child_sel
+  }
+  my_sel
+}
+
+///|
+/// Build a `@selector.Element` view of a DOM node, wiring the parent and
+/// previous-sibling links and the element-based sibling index/count that the
+/// selector matcher uses for combinators and structural pseudo-classes.
+fn dom_node_to_selector_element(
+  node : DomNode,
+  parent : @selector.Element?,
+  prev_sibling : @selector.Element?,
+  sibling_index : Int,
+  sibling_count : Int,
+) -> @selector.Element {
+  let classes : Array[String] = []
+  match node.attributes.get("class") {
+    Some(value) =>
+      for part in split_whitespace(value) {
+        classes.push(part)
+      }
+    None => ()
+  }
+  let attributes : Array[@selector.Attribute] = []
+  node.attributes.each(fn(name, value) {
+    attributes.push(@selector.Attribute::{ name, value })
+  })
+  {
+    tag_name: node.tag_name,
+    id: node.attributes.get("id"),
+    classes,
+    attributes,
+    custom_states: node.custom_states.copy(),
+    parent,
+    prev_sibling,
+    next_sibling: None,
+    children: [],
+    sibling_index,
+    sibling_count,
   }
 }
 
 ///|
-/// Split string on first occurrence of character
-fn split_once(s : String, c : Char) -> (String, String)? {
+fn is_whitespace_char(c : Char) -> Bool {
+  c == ' ' || c == '\t' || c == '\n' || c == '\r'
+}
+
+///|
+/// Split a string on ASCII whitespace, dropping empty segments (used for the
+/// `class` attribute's token list).
+fn split_whitespace(s : String) -> Array[String] {
   let chars = s.to_array()
-  for i, ch in chars {
-    if ch == c {
-      let before = StringBuilder::new()
-      let after = StringBuilder::new()
-      for j = 0; j < i; j = j + 1 {
-        before.write_char(chars[j])
-      }
-      for j = i + 1; j < chars.length(); j = j + 1 {
-        after.write_char(chars[j])
-      }
-      return Some((before.to_string(), after.to_string()))
+  let n = chars.length()
+  let tokens : Array[String] = []
+  let mut i = 0
+  while i < n {
+    while i < n && is_whitespace_char(chars[i]) {
+      i = i + 1
+    }
+    let buf = StringBuilder::new()
+    while i < n && !is_whitespace_char(chars[i]) {
+      buf.write_char(chars[i])
+      i = i + 1
+    }
+    let token = buf.to_string()
+    if token.length() > 0 {
+      tokens.push(token)
     }
   }
-  None
+  tokens
 }

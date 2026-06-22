@@ -208,3 +208,100 @@ test "bare_table_border_attribute_maps_to_one_pixel" {
     ),
   )
 }
+
+///|
+/// A `<table border>` also gives every cell an implied 1px border, regardless
+/// of the table border width. `border="0"` leaves the cells borderless.
+test "table_border_attribute_adds_one_pixel_cell_border" {
+  fn cell_border_top(html : String) -> @types.Dimension {
+    let ctx = @renderer.RenderContext::default()
+    let node = @renderer.render_to_node(html, ctx)
+    match find_node_by_tag_id(node, "td") {
+      Some(cell) => cell.style.border.top
+      None => @types.Auto
+    }
+  }
+
+  // Bare attribute → 1px on every cell, independent of the table border value.
+  inspect(
+    cell_border_top(
+      (
+        #|<table border><tr><td>x</td></tr></table>
+      ),
+    ),
+    content=(
+      #|Length(1)
+    ),
+  )
+  // A thick table border still implies only a 1px cell border.
+  inspect(
+    cell_border_top(
+      (
+        #|<table border="5"><tr><td>x</td></tr></table>
+      ),
+    ),
+    content=(
+      #|Length(1)
+    ),
+  )
+  // Explicit zero → no cell border.
+  inspect(
+    cell_border_top(
+      (
+        #|<table border="0"><tr><td>x</td></tr></table>
+      ),
+    ),
+    content=(
+      #|Length(0)
+    ),
+  )
+  // No border attribute → no implied cell border.
+  inspect(
+    cell_border_top(
+      (
+        #|<table><tr><td>x</td></tr></table>
+      ),
+    ),
+    content=(
+      #|Length(0)
+    ),
+  )
+}
+
+///|
+/// End-to-end parity for issue #281: the first table of WPT
+/// `calc-width-table-fixed-1.html`. A `table-layout: fixed` table grows to fit
+/// columns wider than its specified `width`, and the `<table border>`
+/// presentational hint adds a 1px border to the table box *and* every cell, so
+/// the used table width matches Chromium's 610px (vs the bare `width: 500px`).
+/// The per-property border tests above don't pin this resulting geometry.
+test "table_border_fixed_layout_width_matches_browser_281" {
+  let html =
+    #|<!DOCTYPE HTML>
+    #|<style>table { table-layout: fixed; width: 500px; border-spacing: 0 }</style>
+    #|<table border>
+    #|  <tr>
+    #|    <td style="width: calc(500px)">x</td>
+    #|    <td style="width: 100px">y</td>
+    #|</table>
+  let layout = @renderer.render(html, @renderer.RenderContext::default())
+  fn find_table(l : @layout_types.Layout) -> @layout_types.Layout? {
+    if l.id.has_prefix("table") {
+      return Some(l)
+    }
+    for c in l.children {
+      match find_table(c) {
+        Some(found) => return Some(found)
+        None => ()
+      }
+    }
+    None
+  }
+
+  match find_table(layout) {
+    // calc(500px) + 100px columns (border-box) = 608 content, + 1px table
+    // border each side = 610, matching Chromium.
+    Some(table) => inspect(table.width, content="610")
+    None => fail("table layout box not found")
+  }
+}

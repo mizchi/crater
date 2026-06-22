@@ -390,8 +390,8 @@ scenarios {
     id = "compat.css-filter-effects"
     name = "filter-effects WPT pass rate is closed out"
     description =
-      "Drive the filter-effects WPT module from 98/106 to full pass. Implementing filter as an abs-pos containing block clears the bulk of failures. See GitHub issue #64."
-    tags { "wpt"; "css"; "filter"; "issue:64"; "todo:now" }
+      "Drive the filter-effects WPT module to full pass. The abs-pos containing-block group (filter establishes a CB for absolute/fixed descendants) is closed out in GitHub issue #64 (PR #257 + regression guards). The residual is paint-side: backdrop-filter geometry and SVG filter subregion, tracked in GitHub issue #284."
+    tags { "wpt"; "css"; "filter"; "issue:284"; "todo:now" }
     severity = "major"
     reviewStatus = "draft"
     contributes { "goal.css-compat" }
