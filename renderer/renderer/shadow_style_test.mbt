@@ -92,3 +92,39 @@ test "compute_shadow_tree_styles threads inheritance across the boundary" {
   let host_style = styles.get(host.to_int()).unwrap()
   inspect(host_style.color == leaf_style.color, content="true")
 }
+
+///|
+test "compute_slotted_styles applies ::slotted rules to assigned light nodes" {
+  let tree = @dom.DomTree::new()
+  let doc = tree.get_document()
+  let host = tree.create_element("div")
+  let _ = tree.append_child(doc, host)
+  let shadow = tree.attach_shadow(host, "open").unwrap()
+  let style = tree.create_element("style")
+  let _ = tree.set_text_content(
+    style, "::slotted(.tag) { color: rgb(1, 2, 3) }",
+  )
+  let _ = tree.append_child(shadow, style)
+  let slot = tree.create_element("slot")
+  let _ = tree.append_child(shadow, slot)
+  // Light children of the host are distributed to the default slot.
+  let tagged = tree.create_element("span")
+  let _ = tree.set_attribute(tagged, "class", "tag")
+  let _ = tree.append_child(host, tagged)
+  let plain = tree.create_element("span")
+  let _ = tree.append_child(host, plain)
+  let styles = compute_slotted_styles(
+    tree,
+    host,
+    RenderContext::default(),
+    None,
+  )
+
+  // Both light children are slotted, so both receive an entry.
+  inspect(styles.size(), content="2")
+
+  // Only .tag matches ::slotted(.tag): its color differs from the plain node's.
+  let tagged_style = styles.get(tagged.to_int()).unwrap()
+  let plain_style = styles.get(plain.to_int()).unwrap()
+  inspect(tagged_style.color == plain_style.color, content="false")
+}

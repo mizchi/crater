@@ -106,3 +106,42 @@ fn style_shadow_subtree(
     style_shadow_subtree(tree, host, rules, child, child_style, ctx, styles)
   }
 }
+
+///|
+/// Compute the shadow-scoped `@style.Style` contribution for the host's slotted
+/// light children, keyed by node id. A light child assigned to a slot in the
+/// host's shadow tree is matched against that shadow's `::slotted(...)` rules
+/// (via `compute_shadow_element_style`, PR 3) and inherits from `host_style`
+/// (its light-DOM parent context).
+///
+/// Only element light children that are actually assigned to a slot are
+/// included; non-slotted children and non-elements are skipped. This is the
+/// shadow-side contribution only — a slotted node's document/light styles come
+/// from the light tree and are merged by the (deferred) composed-tree walk.
+/// Returns an empty map when `host` has no shadow root.
+pub fn compute_slotted_styles(
+  tree : @dom.DomTree,
+  host : @dom.NodeId,
+  ctx : RenderContext,
+  host_style : @style.Style?,
+) -> Map[Int, @style.Style] {
+  let styles : Map[Int, @style.Style] = {}
+  let shadow_root = match tree.get_shadow_root(host) {
+    Ok(Some(root)) => root
+    _ => return styles
+  }
+  let rules = tree.shadow_stylesheet_rules(shadow_root)
+  let light_children = match tree.get_children(host) {
+    Ok(children) => children
+    Err(_) => return styles
+  }
+  for child in light_children {
+    guard tree.node_to_selector_element(child) is Some(_) else { continue }
+    guard tree.assigned_slot(child) is Some(_) else { continue }
+    let child_style = compute_shadow_element_style(
+      tree, host, rules, child, ctx, host_style,
+    )
+    styles[child.to_int()] = child_style
+  }
+  styles
+}
