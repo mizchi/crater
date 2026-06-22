@@ -38,3 +38,71 @@ pub fn compute_shadow_element_style(
     css_vars,
   )
 }
+
+///|
+/// Compute `@style.Style` for the shadow host and every element in its shadow
+/// tree, keyed by node id (`NodeId::to_int`). The host is styled by its `:host`
+/// rules and inherits from `host_parent_style` (its light-DOM context); each
+/// shadow node inherits from its parent's computed style, threading inheritance
+/// across the shadow boundary (host -> top-level shadow nodes -> descendants).
+///
+/// `<style>` elements and non-element nodes are skipped. Returns an empty map
+/// when `host` has no shadow root. Slotted light nodes are styled from the light
+/// tree, not here.
+pub fn compute_shadow_tree_styles(
+  tree : @dom.DomTree,
+  host : @dom.NodeId,
+  ctx : RenderContext,
+  host_parent_style : @style.Style?,
+) -> Map[Int, @style.Style] {
+  let styles : Map[Int, @style.Style] = {}
+  let shadow_root = match tree.get_shadow_root(host) {
+    Ok(Some(root)) => root
+    _ => return styles
+  }
+  let rules = tree.shadow_stylesheet_rules(shadow_root)
+  let host_style = compute_shadow_element_style(
+    tree, host, rules, host, ctx, host_parent_style,
+  )
+  styles[host.to_int()] = host_style
+  style_shadow_subtree(tree, host, rules, shadow_root, host_style, ctx, styles)
+  styles
+}
+
+///|
+/// Recursively style the element children of `parent_node`, each inheriting
+/// from `parent_style`, accumulating into `styles`.
+fn style_shadow_subtree(
+  tree : @dom.DomTree,
+  host : @dom.NodeId,
+  rules : Array[@css.CSSRule],
+  parent_node : @dom.NodeId,
+  parent_style : @style.Style,
+  ctx : RenderContext,
+  styles : Map[Int, @style.Style],
+) -> Unit {
+  let children = match tree.get_children(parent_node) {
+    Ok(children) => children
+    Err(_) => return
+  }
+  for child in children {
+    let tag = match tree.get_tag_name(child) {
+      Ok(tag) => tag.to_lower()
+      Err(_) => ""
+    }
+    if tag == "style" {
+      continue
+    }
+    guard tree.node_to_selector_element(child) is Some(_) else { continue }
+    let child_style = compute_shadow_element_style(
+      tree,
+      host,
+      rules,
+      child,
+      ctx,
+      Some(parent_style),
+    )
+    styles[child.to_int()] = child_style
+    style_shadow_subtree(tree, host, rules, child, child_style, ctx, styles)
+  }
+}
