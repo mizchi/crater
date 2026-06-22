@@ -92,6 +92,7 @@ pub fn DomTree::has_pending_mutations(Self) -> Bool
 pub fn DomTree::has_shadow_roots(Self) -> Bool
 pub fn DomTree::insert_before(Self, NodeId, NodeId, NodeId?) -> Result[Unit, CoreError]
 pub fn DomTree::is_slot_element(Self, NodeId) -> Bool
+pub fn DomTree::matches_shadow_scoped(Self, NodeId, String, NodeId) -> Result[Bool, CoreError]
 pub fn DomTree::new() -> Self
 pub fn DomTree::pending_mutation_count(Self) -> Int
 pub fn DomTree::query_selector(Self, NodeId, String) -> Result[NodeId?, CoreError]
