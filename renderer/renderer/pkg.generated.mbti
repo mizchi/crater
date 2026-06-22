@@ -24,6 +24,8 @@ pub fn clear_image_intrinsic_size_provider() -> Unit
 
 pub fn clear_text_metrics_provider() -> Unit
 
+pub fn compute_composed_shadow_styles(@dom.DomTree, RenderContext) -> Map[Int, @style.Style]
+
 pub fn compute_layout_from_render_root(@node.Node, PreparedRenderDocument, RenderContext) -> @crater-core.Layout
 
 pub fn compute_shadow_element_style(@dom.DomTree, @dom.NodeId, Array[@cascade.CSSRule], @dom.NodeId, RenderContext, @style.Style?) -> @style.Style
