@@ -439,10 +439,9 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       set(v) { this._parent = v; },
   #|       configurable: true
   #|     });
-  #|     Object.defineProperty(Node.prototype, 'assignedSlot', {
-  #|       get() { return getAssignedSlotForNode(this); },
-  #|       configurable: true
-  #|     });
+  #|     // assignedSlot belongs to the Slottable mixin (Element + Text), not all
+  #|     // Nodes; it is defined on Element.prototype / Text.prototype by the host
+  #|     // harness so comment / PI / document nodes do not expose it.
   #|     Object.defineProperty(Node.prototype, 'parentElement', {
   #|       get() {
   #|         const p = this.parentNode;
@@ -4189,6 +4188,17 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|         return false;
   #|       });
   #|       return found;
+  #|     }
+  #|     // Public Slottable.assignedSlot: like getAssignedSlotForNode, but a slot
+  #|     // inside a closed shadow tree is not observable from the light tree, so it
+  #|     // reports null. The internal helper stays closed-agnostic because the slot
+  #|     // still has assigned nodes from inside its own (closed) tree.
+  #|     function getAssignedSlotPublic(node) {
+  #|       const parent = node && node._parent;
+  #|       if (parent && parent._shadowRoot && parent._shadowRoot.mode === 'closed') {
+  #|         return null;
+  #|       }
+  #|       return getAssignedSlotForNode(node);
   #|     }
   #|     function getAssignedSlotForNode(node) {
   #|       if (!node) return null;

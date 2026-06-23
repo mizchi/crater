@@ -260,6 +260,13 @@ function createTestHarness() {
       if (Object.getPrototypeOf(Text.prototype) !== CharacterData.prototype) {
         Object.setPrototypeOf(Text.prototype, CharacterData.prototype);
       }
+      // assignedSlot is part of the Slottable mixin (Element + Text only).
+      if (typeof getAssignedSlotPublic === 'function' && !('assignedSlot' in Text.prototype)) {
+        Object.defineProperty(Text.prototype, 'assignedSlot', {
+          get() { return getAssignedSlotPublic(this); },
+          configurable: true,
+        });
+      }
     }
 
     if (typeof Comment !== 'undefined' && Comment.prototype) {
@@ -272,6 +279,15 @@ function createTestHarness() {
     function Element() {}
     Element.prototype = Object.create(Node.prototype);
     Element.prototype.constructor = Element;
+    // assignedSlot is part of the Slottable mixin (Element + Text only), not all
+    // Nodes, so it lives on Element.prototype / Text.prototype rather than
+    // Node.prototype (keeping it off comment / PI / document nodes).
+    if (typeof getAssignedSlotPublic === 'function' && !('assignedSlot' in Element.prototype)) {
+      Object.defineProperty(Element.prototype, 'assignedSlot', {
+        get() { return getAssignedSlotPublic(this); },
+        configurable: true,
+      });
+    }
     // Shadow DOM interface surface on Element.prototype. Instances carry their
     // own shadowRoot/attachShadow from the mock DOM; these make the members
     // visible on the interface prototype (per the Element interface) and
@@ -1541,6 +1557,7 @@ const SHADOW_TESTS = [
   'Element-interface-shadowRoot-attribute.html',
   'Element-interface-attachShadow.html',
   'HTMLSlotElement-interface.html',
+  'Slottable-mixin.html',
   'Node-prototype-cloneNode.html',
   'slotchange.html',
   'slotchange-event.html',
