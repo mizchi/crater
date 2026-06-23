@@ -117,6 +117,18 @@ fn DomTree::query_match_node(
 /// Build a `@selector.Element` view of a DOM node, wiring the parent and
 /// previous-sibling links and the element-based sibling index/count that the
 /// selector matcher uses for combinators and structural pseudo-classes.
+/// Shared read-only empties for projected `@selector.Element` fields, so each
+/// per-query node projection does not allocate fresh empty arrays. The selector
+/// matcher only reads these fields; `children` is never populated by the query.
+let empty_selector_strings : Array[String] = []
+
+///|
+let empty_selector_attrs : Array[@selector.Attribute] = []
+
+///|
+let empty_selector_children : Array[@selector.Element] = []
+
+///|
 fn dom_node_to_selector_element(
   node : DomNode,
   parent : @selector.Element?,
@@ -124,28 +136,36 @@ fn dom_node_to_selector_element(
   sibling_index : Int,
   sibling_count : Int,
 ) -> @selector.Element {
-  let classes : Array[String] = []
-  match node.attributes.get("class") {
-    Some(value) =>
-      for part in split_whitespace(value) {
-        classes.push(part)
-      }
-    None => ()
+  let classes : Array[String] = match node.attributes.get("class") {
+    Some(value) => split_whitespace(value)
+    None => empty_selector_strings
   }
-  let attributes : Array[@selector.Attribute] = []
-  node.attributes.each(fn(name, value) {
-    attributes.push(@selector.Attribute::{ name, value })
-  })
+  let attributes : Array[@selector.Attribute] = if node.attributes.is_empty() {
+    empty_selector_attrs
+  } else {
+    let attrs = []
+    node.attributes.each(fn(name, value) {
+      attrs.push(@selector.Attribute::{ name, value })
+    })
+    attrs
+  }
+  // The projection is transient and read-only, so the node's custom_states can
+  // be aliased (an empty set is shared) instead of copied.
+  let custom_states = if node.custom_states.is_empty() {
+    empty_selector_strings
+  } else {
+    node.custom_states
+  }
   {
     tag_name: node.tag_name,
     id: node.attributes.get("id"),
     classes,
     attributes,
-    custom_states: node.custom_states.copy(),
+    custom_states,
     parent,
     prev_sibling,
     next_sibling: None,
-    children: [],
+    children: empty_selector_children,
     sibling_index,
     sibling_count,
   }
