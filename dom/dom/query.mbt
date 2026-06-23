@@ -152,30 +152,29 @@ fn dom_node_to_selector_element(
 }
 
 ///|
-fn is_whitespace_char(c : Char) -> Bool {
-  c == ' ' || c == '\t' || c == '\n' || c == '\r'
+fn is_whitespace_code(code : Int) -> Bool {
+  code == 32 || code == 9 || code == 10 || code == 13
 }
 
 ///|
 /// Split a string on ASCII whitespace, dropping empty segments (used for the
-/// `class` attribute's token list).
+/// `class` attribute's token list). Index-scans the input and slices each token
+/// instead of materializing a char array (`to_array`) and a `StringBuilder` per
+/// token, which dominated allocation in `querySelectorAll` node projection.
 fn split_whitespace(s : String) -> Array[String] {
-  let chars = s.to_array()
-  let n = chars.length()
+  let n = s.length()
   let tokens : Array[String] = []
   let mut i = 0
   while i < n {
-    while i < n && is_whitespace_char(chars[i]) {
+    while i < n && is_whitespace_code(s[i].to_int()) {
       i = i + 1
     }
-    let buf = StringBuilder::new()
-    while i < n && !is_whitespace_char(chars[i]) {
-      buf.write_char(chars[i])
+    let start = i
+    while i < n && !is_whitespace_code(s[i].to_int()) {
       i = i + 1
     }
-    let token = buf.to_string()
-    if token.length() > 0 {
-      tokens.push(token)
+    if i > start {
+      tokens.push(s[start:i].to_owned())
     }
   }
   tokens
