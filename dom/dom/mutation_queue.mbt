@@ -17,6 +17,10 @@ pub struct MutationQueue {
   mut is_flushing : Bool
   /// Records that arrived during flush (processed in next batch)
   mut deferred : Array[MutationRecord]
+  /// Whether mutations are recorded at all. Recording exists solely to feed the
+  /// incremental-layout bridge; a standalone tree (querySelector, one-shot build)
+  /// has no consumer, so recording is off by default and enabled by that bridge.
+  mut recording : Bool
 }
 
 ///|
@@ -40,7 +44,20 @@ pub impl Show for FlushResult with fn output(self, logger) {
 ///|
 /// Create a new empty mutation queue
 pub fn MutationQueue::new() -> MutationQueue {
-  { records: [], dirty_nodes: {}, is_flushing: false, deferred: [] }
+  {
+    records: [],
+    dirty_nodes: {},
+    is_flushing: false,
+    deferred: [],
+    recording: false,
+  }
+}
+
+///|
+/// Enable or disable mutation recording. When disabled (the default), `push` is a
+/// no-op, so building a tree with no mutation consumer allocates no records.
+pub fn MutationQueue::set_recording(self : MutationQueue, on : Bool) -> Unit {
+  self.recording = on
 }
 
 ///|
@@ -49,12 +66,67 @@ pub fn MutationQueue::push(
   self : MutationQueue,
   record : MutationRecord,
 ) -> Unit {
+  if !self.recording {
+    return
+  }
   if self.is_flushing {
     // Queue for next batch to avoid mutation during iteration
     self.deferred.push(record)
   } else {
     self.records.push(record)
     self.dirty_nodes[record.target.to_int()] = true
+  }
+}
+
+///|
+/// Build and queue a child-list "added" record only when recording, so the
+/// record and its single-element array allocate nothing on standalone trees.
+pub fn MutationQueue::record_child_added(
+  self : MutationQueue,
+  target : NodeId,
+  child : NodeId,
+) -> Unit {
+  if self.recording {
+    self.push(MutationRecord::child_list(target, added=[child]))
+  }
+}
+
+///|
+/// Build and queue a child-list "removed" record only when recording.
+pub fn MutationQueue::record_child_removed(
+  self : MutationQueue,
+  target : NodeId,
+  child : NodeId,
+) -> Unit {
+  if self.recording {
+    self.push(MutationRecord::child_list(target, removed=[child]))
+  }
+}
+
+///|
+/// Build and queue an attribute-change record only when recording.
+pub fn MutationQueue::record_attribute(
+  self : MutationQueue,
+  target : NodeId,
+  name : String,
+  old_value? : String? = None,
+  new_value? : String? = None,
+) -> Unit {
+  if self.recording {
+    self.push(MutationRecord::attribute(target, name, old_value~, new_value~))
+  }
+}
+
+///|
+/// Build and queue a character-data record only when recording.
+pub fn MutationQueue::record_character_data(
+  self : MutationQueue,
+  target : NodeId,
+  old_value? : String? = None,
+  new_value? : String? = None,
+) -> Unit {
+  if self.recording {
+    self.push(MutationRecord::character_data(target, old_value~, new_value~))
   }
 }
 

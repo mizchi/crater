@@ -30,6 +30,9 @@ pub fn Document::new(
   viewport_height : Double,
 ) -> Document {
   let dom = @dom.DomTree::new()
+  // The incremental-layout bridge consumes mutations, so record them on the
+  // trees it owns (recording is off by default for standalone trees).
+  dom.set_mutation_recording(true)
   // Create a minimal root @tree.LayoutNode
   let root_layout = @tree.LayoutNode::create_with_id("root")
   root_layout.style.width = @types.Percent(1.0)

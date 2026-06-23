@@ -188,10 +188,9 @@ pub fn DomTree::append_child(
                 Some(i) => {
                   let _ = old_parent.children.remove(i)
                   // Record removal from old parent
-                  self.mutations.push(
-                    MutationRecord::child_list(NodeId(old_parent_id), removed=[
-                      child,
-                    ]),
+                  self.mutations.record_child_removed(
+                    NodeId(old_parent_id),
+                    child,
                   )
                 }
                 None => ()
@@ -206,7 +205,7 @@ pub fn DomTree::append_child(
       // Add to new parent's children
       p.children.push(child_id)
       // Record mutation
-      self.mutations.push(MutationRecord::child_list(parent, added=[child]))
+      self.mutations.record_child_added(parent, child)
       // Invalidate layout cache
       self.invalidate_layout(parent_id)
       Ok(())
@@ -242,10 +241,9 @@ pub fn DomTree::insert_before(
                     Some(i) => {
                       let _ = old_parent.children.remove(i)
                       // Record removal from old parent
-                      self.mutations.push(
-                        MutationRecord::child_list(NodeId(old_parent_id), removed=[
-                          child,
-                        ]),
+                      self.mutations.record_child_removed(
+                        NodeId(old_parent_id),
+                        child,
                       )
                     }
                     None => ()
@@ -270,7 +268,7 @@ pub fn DomTree::insert_before(
             None => p.children.push(child_id) // No reference, append
           }
           // Record mutation
-          self.mutations.push(MutationRecord::child_list(parent, added=[child]))
+          self.mutations.record_child_added(parent, child)
           self.invalidate_layout(parent_id)
           Ok(())
         }
@@ -295,9 +293,7 @@ pub fn DomTree::remove_child(
           let _ = p.children.remove(i)
           c.parent_id = None
           // Record mutation
-          self.mutations.push(
-            MutationRecord::child_list(parent, removed=[child]),
-          )
+          self.mutations.record_child_removed(parent, child)
           self.invalidate_layout(parent_id)
           Ok(())
         }
@@ -327,8 +323,11 @@ pub fn DomTree::set_attribute(
       let old_value = n.attributes.get(name)
       n.attributes[name] = value
       // Record mutation
-      self.mutations.push(
-        MutationRecord::attribute(node, name, old_value~, new_value=Some(value)),
+      self.mutations.record_attribute(
+        node,
+        name,
+        old_value~,
+        new_value=Some(value),
       )
       self.invalidate_layout(id)
       Ok(())
@@ -364,9 +363,7 @@ pub fn DomTree::remove_attribute(
       let old_value = n.attributes.get(name)
       n.attributes.remove(name)
       // Record mutation
-      self.mutations.push(
-        MutationRecord::attribute(node, name, old_value~, new_value=None),
-      )
+      self.mutations.record_attribute(node, name, old_value~)
       self.invalidate_layout(id)
       Ok(())
     }
@@ -552,21 +549,17 @@ pub fn DomTree::set_text_content(
           let old_value = n.text_content
           n.text_content = content
           // Record mutation
-          self.mutations.push(
-            MutationRecord::character_data(
-              node,
-              old_value=Some(old_value),
-              new_value=Some(content),
-            ),
+          self.mutations.record_character_data(
+            node,
+            old_value=Some(old_value),
+            new_value=Some(content),
           )
         }
         _ => {
           // For elements, remove all children and add text node
           // Record removal of existing children
           for child_id in n.children {
-            self.mutations.push(
-              MutationRecord::child_list(node, removed=[NodeId(child_id)]),
-            )
+            self.mutations.record_child_removed(node, NodeId(child_id))
           }
           n.children.clear()
           let text_node = self.create_text(content)
@@ -739,6 +732,14 @@ pub fn DomTree::get_focus(self : DomTree) -> NodeId? {
 // =============================================================================
 // Mutation Queue API
 // =============================================================================
+
+///|
+/// Enable or disable mutation recording. Off by default: records exist only to
+/// feed the incremental-layout bridge, so a standalone tree (querySelector /
+/// one-shot build) records nothing. The bridge enables it on the trees it owns.
+pub fn DomTree::set_mutation_recording(self : DomTree, on : Bool) -> Unit {
+  self.mutations.set_recording(on)
+}
 
 ///|
 /// Check if there are pending mutations

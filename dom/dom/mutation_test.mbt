@@ -55,6 +55,7 @@ test "MutationRecord::affects_layout detects layout properties" {
 ///|
 test "MutationQueue basic operations" {
   let queue = MutationQueue::new()
+  queue.set_recording(true)
   inspect(queue.is_empty(), content="true")
   let target = NodeId::from_int(1)
   queue.push(MutationRecord::style_change(target, ["width"]))
@@ -67,6 +68,7 @@ test "MutationQueue basic operations" {
 ///|
 test "MutationQueue flush returns optimized records" {
   let queue = MutationQueue::new()
+  queue.set_recording(true)
   let target = NodeId::from_int(1)
 
   // Add multiple style changes to same node
@@ -88,6 +90,7 @@ test "MutationQueue flush returns optimized records" {
 ///|
 test "MutationQueue merges add/remove pairs" {
   let queue = MutationQueue::new()
+  queue.set_recording(true)
   let parent = NodeId::from_int(1)
   let child = NodeId::from_int(2)
 
@@ -112,6 +115,7 @@ test "MutationQueue merges add/remove pairs" {
 ///|
 test "MutationQueue handles deferred mutations during flush" {
   let queue = MutationQueue::new()
+  queue.set_recording(true)
   let target = NodeId::from_int(1)
   queue.push(MutationRecord::style_change(target, ["width"]))
 
@@ -129,6 +133,7 @@ test "MutationQueue handles deferred mutations during flush" {
 ///|
 test "DomTree records append_child mutations" {
   let tree = DomTree::new()
+  tree.set_mutation_recording(true)
   let doc = tree.get_document()
   let div = tree.create_element("div")
   inspect(tree.has_pending_mutations(), content="false")
@@ -149,6 +154,7 @@ test "DomTree records append_child mutations" {
 ///|
 test "DomTree records remove_child mutations" {
   let tree = DomTree::new()
+  tree.set_mutation_recording(true)
   let doc = tree.get_document()
   let div = tree.create_element("div")
   let _ = tree.append_child(doc, div)
@@ -166,6 +172,7 @@ test "DomTree records remove_child mutations" {
 ///|
 test "DomTree records set_attribute mutations" {
   let tree = DomTree::new()
+  tree.set_mutation_recording(true)
   let doc = tree.get_document()
   let div = tree.create_element("div")
   let _ = tree.append_child(doc, div)
@@ -183,6 +190,7 @@ test "DomTree records set_attribute mutations" {
 ///|
 test "DomTree records attribute update with old value" {
   let tree = DomTree::new()
+  tree.set_mutation_recording(true)
   let doc = tree.get_document()
   let div = tree.create_element("div")
   let _ = tree.append_child(doc, div)
@@ -198,6 +206,7 @@ test "DomTree records attribute update with old value" {
 ///|
 test "DomTree records set_text_content mutations for text nodes" {
   let tree = DomTree::new()
+  tree.set_mutation_recording(true)
   let text = tree.create_text("hello")
   tree.clear_mutations()
   let _ = tree.set_text_content(text, "world")
@@ -212,6 +221,7 @@ test "DomTree records set_text_content mutations for text nodes" {
 ///|
 test "DomTree batches multiple mutations" {
   let tree = DomTree::new()
+  tree.set_mutation_recording(true)
   let doc = tree.get_document()
 
   // Create and append multiple elements
@@ -241,6 +251,7 @@ test "DomTree batches multiple mutations" {
 ///|
 test "DomTree move child records both removal and addition" {
   let tree = DomTree::new()
+  tree.set_mutation_recording(true)
   let doc = tree.get_document()
   let parent1 = tree.create_element("div")
   let parent2 = tree.create_element("div")
