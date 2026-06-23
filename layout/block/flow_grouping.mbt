@@ -33,7 +33,7 @@ fn has_mixed_inline_block_content(flow_nodes : Array[@node.Node]) -> Bool {
 
 ///|
 fn is_inline_group_participant(node : @node.Node) -> Bool {
-  if node.id == "br" || node.id.has_prefix("#text") {
+  if node.id == "br" || @node.str_has_prefix(node.id, "#text") {
     return true
   }
   if @inline.is_inline_level(node.style.display) {
@@ -62,7 +62,7 @@ fn contents_is_inline_flow(node : @node.Node) -> Bool {
     if child.style.display == @types.Display::None {
       continue
     }
-    if child.id == "br" || child.id.has_prefix("#text") {
+    if child.id == "br" || @node.str_has_prefix(child.id, "#text") {
       has_inline = true
       continue
     }
@@ -98,7 +98,7 @@ fn should_establish_ifc_with_contents(children : Array[@node.Node]) -> Bool {
     if child.style.display == @types.Display::None {
       continue
     }
-    if child.id == "br" || child.id.has_prefix("#text") {
+    if child.id == "br" || @node.str_has_prefix(child.id, "#text") {
       has_inline = true
       continue
     }

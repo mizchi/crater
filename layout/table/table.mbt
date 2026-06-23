@@ -237,7 +237,7 @@ fn has_percent_size_for_table_intrinsic(node : @node.Node) -> Bool {
 
 ///|
 fn is_whitespace_only_table_text_node(node : @node.Node) -> Bool {
-  if !node.id.has_prefix("#text") {
+  if !@node.str_has_prefix(node.id, "#text") {
     return false
   }
   match node.text {
@@ -496,7 +496,7 @@ fn get_first_visual_row(table_node : @node.Node) -> @node.Node? {
 ///|
 /// Table row model ignores direct whitespace text children.
 fn is_ignorable_table_text_node(node : @node.Node) -> Bool {
-  if !node.id.has_prefix("#text") {
+  if !@node.str_has_prefix(node.id, "#text") {
     return false
   }
   match node.text {
@@ -596,7 +596,7 @@ fn normalize_row_group_rows(row_group : @node.Node) -> Array[@node.Node] {
 
 ///|
 fn is_inline_intrinsic_child(node : @node.Node) -> Bool {
-  if node.id == "br" || node.id.has_prefix("#text") {
+  if node.id == "br" || @node.str_has_prefix(node.id, "#text") {
     return true
   }
   if node.style.display == @types.Contents {
@@ -1124,7 +1124,7 @@ fn calculate_intrinsic_column_widths(
       // an otherwise-empty spacer <tr>) must not inflate a real column's
       // intrinsic width — their content is layout noise, not the column's
       // max-content. Skip their contribution to column widths.
-      if cell.id.has_prefix("__anon-table-cell-") && span == 1 {
+      if @node.str_has_prefix(cell.id, "__anon-table-cell-") && span == 1 {
         col_index = col_index + raw_colspan
         continue
       }
@@ -1597,7 +1597,7 @@ fn child_layout_extent_bounds(
   let mut bottom = 0.0
   let mut saw_box = false
   for child in children {
-    if child.id.has_prefix("#text") {
+    if @node.str_has_prefix(child.id, "#text") {
       continue
     }
     if table_layouts_only && !is_table_container_layout_id(child.id) {
@@ -1622,7 +1622,9 @@ fn child_layout_extent_bounds(
 
 ///|
 fn is_table_container_layout_id(id : String) -> Bool {
-  id == "table" || id.has_prefix("table#") || id.has_prefix("table.")
+  id == "table" ||
+  @node.str_has_prefix(id, "table#") ||
+  @node.str_has_prefix(id, "table.")
 }
 
 ///|
@@ -2088,7 +2090,7 @@ fn layout_row(
   }
   let row_children : Array[@layout_types.Layout] = []
   for layout in final_cell_layouts {
-    if layout.id.has_prefix("__anon-table-cell-") {
+    if @node.str_has_prefix(layout.id, "__anon-table-cell-") {
       for anon_child in layout.children {
         row_children.push({
           ..anon_child,
@@ -3518,7 +3520,7 @@ pub fn compute(
           group_y = group_y + row_advance
           // Track max row width for consistent group width
           max_row_width = max(max_row_width, row_layout.width)
-          if row.id.has_prefix("__anon-table-rowgrp-row-") {
+          if @node.str_has_prefix(row.id, "__anon-table-rowgrp-row-") {
             for anon_child in row_layout.children {
               group_layouts.push({
                 ..anon_child,
@@ -3877,7 +3879,7 @@ pub fn compute(
     let is_cell_box = inside_cell ||
       layout.id == "td" ||
       layout.id == "th" ||
-      layout.id.has_prefix("__anon-table-cell-")
+      @node.str_has_prefix(layout.id, "__anon-table-cell-")
     let keeps_descendant_negative_offsets = overflow_creates_scroll_container(
         layout.overflow_x,
       ) ||

@@ -553,7 +553,7 @@ fn id_matches_tag(node_id : String, tag : String) -> Bool {
 
 ///|
 fn is_whitespace_text_node(node : @node.Node) -> Bool {
-  if !node.id.has_prefix("#text") {
+  if !@node.str_has_prefix(node.id, "#text") {
     return false
   }
   match node.text {
@@ -603,7 +603,7 @@ fn has_inflow_block_descendant(node : @node.Node) -> Bool {
       child.style.position == @types.Fixed {
       continue
     }
-    if child.id == "br" || child.id.has_prefix("#text") {
+    if child.id == "br" || @node.str_has_prefix(child.id, "#text") {
       continue
     }
     if child.style.display == @types.Contents {
@@ -688,10 +688,10 @@ fn inline_atomic_box_ignores_descendant_block_breaks(
 
 ///|
 fn is_generated_pseudo_text_only(node : @node.Node) -> Bool {
-  if node.id.has_prefix("#text") {
+  if @node.str_has_prefix(node.id, "#text") {
     return true
   }
-  if !node.id.has_prefix("#pseudo::") {
+  if !@node.str_has_prefix(node.id, "#pseudo::") {
     return false
   }
   for child in node.children {
@@ -852,7 +852,7 @@ fn inline_source_children_only_contribute_floats(
       child.style.position == @types.Fixed {
       continue
     }
-    if child.id.has_prefix("#text") {
+    if @node.str_has_prefix(child.id, "#text") {
       match child.text {
         Some(text) =>
           if !is_whitespace_text_node(child) && !text.is_empty() {
@@ -1433,7 +1433,7 @@ pub fn compute_ifc(
       let raw = font_size * ascender_ratio
       let br_baseline = if raw > 0.0 { raw } else { 0.0 }
       br_baseline + child_layout.padding.top + child_layout.border.top
-    } else if child.id.has_prefix("#text") {
+    } else if @node.str_has_prefix(child.id, "#text") {
       // Text node: use baseline synthesis that includes half-leading.
       @baseline.compute_node_baseline(child, child_layout.height)
     } else if child.style.contain.size &&
@@ -1683,7 +1683,7 @@ pub fn compute_ifc(
       if child.id == "br" && item_index > 0 {
         let prev_item = line.items[item_index - 1]
         let prev_child = children[prev_item.index]
-        if prev_child.id.has_prefix("#text") {
+        if @node.str_has_prefix(prev_child.id, "#text") {
           match layout_map.get(prev_item.index) {
             Some(prev_layout) => {
               let wrap_width = if prev_layout.width > 0.0 {
@@ -2067,7 +2067,7 @@ fn compute_inline_child(
       }
       let text_like_vertical_auto_width = style.writing_mode.is_vertical() &&
         style.width == @types.Auto &&
-        node.id.has_prefix("#text")
+        @node.str_has_prefix(node.id, "#text")
       let width = if text_like_vertical_auto_width {
         constrained.max_width +
         padding.horizontal_sum() +
@@ -2142,7 +2142,8 @@ fn compute_inline_child(
         }
         _ => ()
       }
-      if node.id.has_prefix("#text") && !style.writing_mode.is_vertical() {
+      if @node.str_has_prefix(node.id, "#text") &&
+        !style.writing_mode.is_vertical() {
         match estimate_wrapped_text_metrics(node, content_width) {
           Some(metrics) if metrics.line_count > 1 &&
             metrics.max_line_width > 0.0 => {
@@ -2707,7 +2708,7 @@ fn compute_inline_child(
     // A taller non-text child (e.g. larger font span) does NOT count as text wrap.
     let mut has_text_wrap = false
     for child_layout in children {
-      if child_layout.id.has_prefix("#text") {
+      if @node.str_has_prefix(child_layout.id, "#text") {
         let text_single_line = line_height_from_style(style)
         if child_layout.height > text_single_line + 0.01 {
           has_text_wrap = true
@@ -2968,7 +2969,7 @@ pub fn should_establish_ifc(children : Array[@node.Node]) -> Bool {
     if child.style.display == @types.Display::None {
       continue
     }
-    if child.id == "br" || child.id.has_prefix("#text") {
+    if child.id == "br" || @node.str_has_prefix(child.id, "#text") {
       has_inline = true
       continue
     }

@@ -13,6 +13,8 @@ pub fn get_layout_dispatcher() -> LayoutDispatchFunc?
 
 pub fn set_layout_dispatcher(LayoutDispatchFunc) -> Unit
 
+pub fn str_has_prefix(String, String) -> Bool
+
 // Errors
 
 // Types and methods

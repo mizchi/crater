@@ -398,7 +398,7 @@ fn is_inline_flow_participant(node : @node.Node, style : @style.Style) -> Bool {
     }
   }
   node.id == "br" ||
-  node.id.has_prefix("#text") ||
+  @node.str_has_prefix(node.id, "#text") ||
   (
     @inline.is_inline_level(style.display) &&
     (
@@ -545,7 +545,7 @@ fn has_prior_multicol_column_content(
     if style.column_span == @style.ColumnSpan::All {
       continue
     }
-    if node.id.has_prefix("legend") {
+    if @node.str_has_prefix(node.id, "legend") {
       continue
     }
     return true
@@ -1531,7 +1531,7 @@ fn process_multicol_flow_child(
   let leading_legend_height = if i > 0 {
     match (flow_nodes.get(0), flow_children.get(0)) {
       (Some(first_node), Some(first_child)) =>
-        if first_node.id.has_prefix("legend") {
+        if @node.str_has_prefix(first_node.id, "legend") {
           first_child.layout.height
         } else {
           0.0

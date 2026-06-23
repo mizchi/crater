@@ -33,7 +33,7 @@ fn infer_baseline_height(node : @node.Node, fallback_height : Double) -> Double 
     @types.Length(h) => h
     @types.Percent(p) => fallback_height * p
     _ =>
-      if node.id.has_prefix("#text") {
+      if @node.str_has_prefix(node.id, "#text") {
         if node.style.line_height > 0.0 {
           node.style.line_height
         } else if node.style.font_size > 0.0 {
@@ -110,27 +110,27 @@ fn is_no_principal_table_internal_display(display : @types.Display) -> Bool {
 ///|
 fn is_ruby_internal_no_principal(node_id : String) -> Bool {
   node_id == "rb" ||
-  node_id.has_prefix("rb#") ||
+  @node.str_has_prefix(node_id, "rb#") ||
   node_id == "rbc" ||
-  node_id.has_prefix("rbc#") ||
+  @node.str_has_prefix(node_id, "rbc#") ||
   node_id == "rt" ||
-  node_id.has_prefix("rt#") ||
+  @node.str_has_prefix(node_id, "rt#") ||
   node_id == "rtc" ||
-  node_id.has_prefix("rtc#")
+  @node.str_has_prefix(node_id, "rtc#")
 }
 
 ///|
 fn is_fieldset_node_id(node_id : String) -> Bool {
   node_id == "fieldset" ||
-  node_id.has_prefix("fieldset#") ||
-  node_id.has_prefix("fieldset.")
+  @node.str_has_prefix(node_id, "fieldset#") ||
+  @node.str_has_prefix(node_id, "fieldset.")
 }
 
 ///|
 fn is_legend_node_id(node_id : String) -> Bool {
   node_id == "legend" ||
-  node_id.has_prefix("legend#") ||
-  node_id.has_prefix("legend.")
+  @node.str_has_prefix(node_id, "legend#") ||
+  @node.str_has_prefix(node_id, "legend.")
 }
 
 ///|
@@ -226,7 +226,7 @@ pub fn compute_node_baseline(node : @node.Node, node_height : Double) -> Double 
   if children.length() == 0 {
     // For text nodes, baseline is ascent + half leading.
     // For other leaf nodes (like images), baseline is the bottom of the box.
-    if node.id.has_prefix("#text") {
+    if @node.str_has_prefix(node.id, "#text") {
       return text_baseline_from_style(style)
     }
     return node_height
