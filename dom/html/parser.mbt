@@ -883,8 +883,14 @@ pub fn parse_document(html : String) -> Document {
 
 ///|
 /// Remove noscript content for resource extraction in scripting-enabled mode.
+///
+/// Lowercase once and use the native (allocation-free) substring search to skip
+/// the rebuild entirely for documents without a `<noscript>` element (the common
+/// case). The manual char-by-char `find_substring` scan this replaces allocated
+/// per character on the wasm backend and dominated parse allocation.
 fn strip_noscript_blocks(html : String) -> String {
   let lower = html.to_lower()
+  guard lower.contains("<noscript") else { return html }
   let mut pos = 0
   let buf = StringBuilder::new()
   while pos < html.length() {
