@@ -4271,6 +4271,21 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       shadowRoot.setHTMLUnsafe = function(value) {
   #|         setUnsafeHtmlForNode(this, value);
   #|       };
+  #|       Object.defineProperty(shadowRoot, 'styleSheets', {
+  #|         get() {
+  #|           const sheets = [];
+  #|           traverseTree(this, (node) => {
+  #|             if (node && node._nodeType === 1 &&
+  #|                 String(node._tagName || '').toLowerCase() === 'style') {
+  #|               const s = node.sheet;
+  #|               if (s) sheets.push(s);
+  #|             }
+  #|           });
+  #|           sheets.item = function(i) { return this[i] || null; };
+  #|           return sheets;
+  #|         },
+  #|         configurable: true
+  #|       });
   #|       return shadowRoot;
   #|     }
   #|     function ElementInternals(host) {
@@ -4820,6 +4835,33 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|     function HTMLStyleElement() {}
   #|     HTMLStyleElement.prototype = Object.create(HTMLElement.prototype);
   #|     HTMLStyleElement.prototype.constructor = HTMLStyleElement;
+  #|     Object.defineProperty(HTMLStyleElement.prototype, 'sheet', {
+  #|       get() {
+  #|         const root = getRootNodePublic(this, { composed: true });
+  #|         if (!root || __craterGetNodeType(root) !== 9) return null;
+  #|         if (!this._cssomSheet) {
+  #|           const owner = this;
+  #|           this._cssomSheet = {
+  #|             type: 'text/css',
+  #|             ownerNode: owner,
+  #|             ownerRule: null,
+  #|             parentStyleSheet: null,
+  #|             href: null,
+  #|             title: null,
+  #|             disabled: false,
+  #|             media: { length: 0, mediaText: '', item() { return null; } },
+  #|             cssRules: [],
+  #|             get rules() { return this.cssRules; },
+  #|             insertRule() { return 0; },
+  #|             deleteRule() {},
+  #|             replaceSync() {},
+  #|             replace() { return Promise.resolve(this); },
+  #|           };
+  #|         }
+  #|         return this._cssomSheet;
+  #|       },
+  #|       configurable: true
+  #|     });
   #|
   #|     function HTMLTableElement() {}
   #|     HTMLTableElement.prototype = Object.create(HTMLElement.prototype);

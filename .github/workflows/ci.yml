@@ -442,6 +442,7 @@ jobs:
           status=0
           npx tsx scripts/wpt-dom-runner.ts --dom --json "wpt-reports/wpt-dom-dom.json" || status=1
           npx tsx scripts/wpt-dom-runner.ts --svg --json "wpt-reports/wpt-dom-svg.json" || status=1
+          npx tsx scripts/wpt-dom-runner.ts --shadow --json "wpt-reports/wpt-dom-shadow.json" || status=1
           exit $status
         continue-on-error: true
 
