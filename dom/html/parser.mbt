@@ -185,14 +185,13 @@ fn Parser::consume(self : Parser) -> Char? {
 
 ///|
 fn Parser::skip_whitespace(self : Parser) -> Unit {
-  while !self.is_eof() {
-    match self.peek() {
-      Some(c) if is_whitespace(c) => {
-        let _ = self.consume()
-      }
-      _ => break
-    }
+  let input = self.input
+  let len = self.len
+  let mut p = self.pos
+  while p < len && is_whitespace(input[p].to_int().unsafe_to_char()) {
+    p = p + 1
   }
+  self.pos = p
 }
 
 ///|
@@ -311,33 +310,33 @@ fn is_name_char(c : Char) -> Bool {
 
 ///|
 fn Parser::consume_name(self : Parser) -> String {
-  let buf = StringBuilder::new()
-  while !self.is_eof() {
-    match self.peek() {
-      Some(c) if is_name_char(c) => {
-        buf.write_char(c)
-        let _ = self.consume()
-      }
-      _ => break
-    }
+  let input = self.input
+  let len = self.len
+  let start = self.pos
+  let mut p = start
+  while p < len && is_name_char(input[p].to_int().unsafe_to_char()) {
+    p = p + 1
   }
-  buf.to_string()
+  self.pos = p
+  if p == start {
+    ""
+  } else {
+    input[start:p].to_owned()
+  }
 }
 
 ///|
 fn Parser::consume_until(self : Parser, end_char : Char) -> String {
-  let buf = StringBuilder::new()
-  while !self.is_eof() {
-    match self.peek() {
-      Some(c) if c == end_char => break
-      Some(c) => {
-        buf.write_char(c)
-        let _ = self.consume()
-      }
-      None => break
-    }
+  let input = self.input
+  let len = self.len
+  let end_code = end_char.to_int()
+  let start = self.pos
+  let mut p = start
+  while p < len && input[p].to_int() != end_code {
+    p = p + 1
   }
-  buf.to_string()
+  self.pos = p
+  input[start:p].to_owned()
 }
 
 ///|
