@@ -108,6 +108,7 @@ pub fn DomTree::set_cached_rect(Self, NodeId, Rect) -> Unit
 pub fn DomTree::set_custom_states(Self, NodeId, Array[String]) -> Result[Unit, CoreError]
 pub fn DomTree::set_focus(Self, NodeId?) -> Unit
 pub fn DomTree::set_form_associated_state(Self, NodeId, String?, String?) -> Result[Unit, CoreError]
+pub fn DomTree::set_mutation_recording(Self, Bool) -> Unit
 pub fn DomTree::set_text_content(Self, NodeId, String) -> Result[Unit, CoreError]
 pub fn DomTree::shadow_cascaded_values(Self, NodeId, Array[@cascade.CSSRule], NodeId) -> @cascade.CascadedValues
 pub fn DomTree::shadow_query_selector(Self, NodeId, String) -> Result[NodeId?, CoreError]
@@ -138,6 +139,7 @@ pub struct MutationQueue {
   dirty_nodes : Map[Int, Bool]
   mut is_flushing : Bool
   mut deferred : Array[MutationRecord]
+  mut recording : Bool
 }
 pub fn MutationQueue::clear(Self) -> Unit
 pub fn MutationQueue::flush(Self) -> (Array[MutationRecord], FlushResult)
@@ -148,6 +150,11 @@ pub fn MutationQueue::length(Self) -> Int
 pub fn MutationQueue::new() -> Self
 pub fn MutationQueue::optimize(Self) -> Array[MutationRecord]
 pub fn MutationQueue::push(Self, MutationRecord) -> Unit
+pub fn MutationQueue::record_attribute(Self, NodeId, String, old_value? : String?, new_value? : String?) -> Unit
+pub fn MutationQueue::record_character_data(Self, NodeId, old_value? : String?, new_value? : String?) -> Unit
+pub fn MutationQueue::record_child_added(Self, NodeId, NodeId) -> Unit
+pub fn MutationQueue::record_child_removed(Self, NodeId, NodeId) -> Unit
+pub fn MutationQueue::set_recording(Self, Bool) -> Unit
 
 pub struct MutationRecord {
   type_ : MutationType
