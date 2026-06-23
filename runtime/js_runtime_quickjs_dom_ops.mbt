@@ -44,36 +44,35 @@ fn parse_dom_ops(json : String) -> Array[DomOp] {
   let ops : Array[DomOp] = []
   // Find domOps array
   let pattern = "\"domOps\":["
-  match json.find(pattern) {
-    Some(start) => {
-      let array_start = start + pattern.length()
-      // Simple JSON array of objects parser
-      let chars = json.to_array()
-      let mut i = array_start
-      let mut depth = 0
-      let mut obj_start = -1
-      while i < chars.length() {
-        let c = chars[i]
-        if c == '{' {
-          if depth == 0 {
-            obj_start = i
-          }
-          depth = depth + 1
-        } else if c == '}' {
-          depth = depth - 1
-          if depth == 0 && obj_start >= 0 {
-            let obj_json = json.unsafe_substring(start=obj_start, end=i + 1)
-            let op = parse_single_dom_op(obj_json)
-            ops.push(op)
-            obj_start = -1
-          }
-        } else if c == ']' && depth == 0 {
-          break
-        }
-        i = i + 1
+  let pstart = json_index_of(json, pattern, 0)
+  if pstart < 0 {
+    return ops
+  }
+  let array_start = pstart + pattern.length()
+  // Simple JSON array of objects parser
+  let len = json.length()
+  let mut i = array_start
+  let mut depth = 0
+  let mut obj_start = -1
+  while i < len {
+    let c = json[i].to_int()
+    if c == 123 {
+      if depth == 0 {
+        obj_start = i
       }
+      depth = depth + 1
+    } else if c == 125 {
+      depth = depth - 1
+      if depth == 0 && obj_start >= 0 {
+        let obj_json = json.unsafe_substring(start=obj_start, end=i + 1)
+        let op = parse_single_dom_op(obj_json)
+        ops.push(op)
+        obj_start = -1
+      }
+    } else if c == 93 && depth == 0 {
+      break
     }
-    None => ()
+    i = i + 1
   }
   ops
 }
@@ -81,64 +80,117 @@ fn parse_dom_ops(json : String) -> Array[DomOp] {
 ///|
 /// Parse a single DOM operation object
 fn parse_single_dom_op(json : String) -> DomOp {
+  // Single pass over one char-array snapshot. The previous form re-scanned the
+  // object once per field (14 String::find / to_array calls), which dominated
+  // DOM-ops parse allocation.
+  let chars = json.to_array()
+  let len = chars.length()
+  let mut op = ""
+  let mut id = 0
+  let mut parent_id = 0
+  let mut child_id = 0
+  let mut ref_id = 0
+  let mut tag_name = ""
+  let mut text = ""
+  let mut name = ""
+  let mut value = ""
+  let mut has_name = false
+  let mut has_value = false
+  let mut delegates_focus = false
+  let mut slot_assignment = ""
+  let mut clonable = false
+  let mut serializable = false
+  let mut i = 0
+  while i < len {
+    if chars[i] != '"' {
+      i = i + 1
+      continue
+    }
+    // Read key.
+    let ks = i + 1
+    let mut ke = ks
+    while ke < len && chars[ke] != '"' {
+      ke = ke + 1
+    }
+    let key = String::from_array(chars[ks:ke])
+    i = ke + 1
+    // Advance past the ':' separator and whitespace to the value.
+    while i < len && chars[i] != ':' {
+      i = i + 1
+    }
+    i = i + 1
+    while i < len && chars[i] == ' ' {
+      i = i + 1
+    }
+    if i >= len {
+      break
+    }
+    let vc = chars[i]
+    if vc == '"' {
+      // String value (honoring escaped quotes).
+      let vs = i + 1
+      let mut ve = vs
+      while ve < len && !(chars[ve] == '"' && chars[ve - 1] != '\\') {
+        ve = ve + 1
+      }
+      let val = unescape_json_string(String::from_array(chars[vs:ve]))
+      i = ve + 1
+      match key {
+        "op" => op = val
+        "tagName" => tag_name = val
+        "text" => text = val
+        "name" => name = val
+        "value" => value = val
+        "slotAssignment" => slot_assignment = val
+        _ => ()
+      }
+    } else if vc == 't' || vc == 'f' {
+      let b = vc == 't'
+      while i < len && chars[i] != ',' && chars[i] != '}' {
+        i = i + 1
+      }
+      match key {
+        "hasName" => has_name = b
+        "hasValue" => has_value = b
+        "delegatesFocus" => delegates_focus = b
+        "clonable" => clonable = b
+        "serializable" => serializable = b
+        _ => ()
+      }
+    } else {
+      // Numeric value.
+      let vs = i
+      while i < len && ((chars[i] >= '0' && chars[i] <= '9') || chars[i] == '-') {
+        i = i + 1
+      }
+      let n = @string.parse_int(String::from_array(chars[vs:i])) catch {
+        _ => 0
+      }
+      match key {
+        "id" => id = n
+        "parentId" => parent_id = n
+        "childId" => child_id = n
+        "refId" => ref_id = n
+        _ => ()
+      }
+    }
+  }
   {
-    op: extract_json_field(json, "op"),
-    id: parse_int_field(json, "id"),
-    parent_id: parse_int_field(json, "parentId"),
-    child_id: parse_int_field(json, "childId"),
-    ref_id: parse_int_field(json, "refId"),
-    tag_name: extract_json_field(json, "tagName"),
-    text: extract_json_field(json, "text"),
-    name: extract_json_field(json, "name"),
-    value: extract_json_field(json, "value"),
-    has_name: parse_bool_field(json, "hasName"),
-    has_value: parse_bool_field(json, "hasValue"),
-    delegates_focus: parse_bool_field(json, "delegatesFocus"),
-    slot_assignment: extract_json_field(json, "slotAssignment"),
-    clonable: parse_bool_field(json, "clonable"),
-    serializable: parse_bool_field(json, "serializable"),
-  }
-}
-
-///|
-fn parse_bool_field(json : String, field : String) -> Bool {
-  let pattern = "\"" + field + "\":"
-  match json.find(pattern) {
-    Some(start) => {
-      let value_start = start + pattern.length()
-      let remaining = json.unsafe_substring(
-        start=value_start,
-        end=json.length(),
-      )
-      remaining.has_prefix("true")
-    }
-    None => false
-  }
-}
-
-///|
-/// Parse integer field from JSON
-fn parse_int_field(json : String, field : String) -> Int {
-  let pattern = "\"" + field + "\":"
-  match json.find(pattern) {
-    Some(start) => {
-      let value_start = start + pattern.length()
-      let chars = json.to_array()
-      let mut end = value_start
-      while end < chars.length() &&
-            ((chars[end] >= '0' && chars[end] <= '9') || chars[end] == '-') {
-        end = end + 1
-      }
-      if end > value_start {
-        let num_str = json.unsafe_substring(start=value_start, end~)
-        @string.parse_int(num_str) catch {
-          _ => 0
-        }
-      } else {
-        0
-      }
-    }
-    None => 0
+    op,
+    id,
+    parent_id,
+    child_id,
+    ref_id,
+    tag_name,
+    text,
+    name,
+    value,
+    has_name,
+    has_value,
+    delegates_focus,
+    slot_assignment,
+    clonable,
+    serializable,
   }
 }
 
@@ -343,21 +395,43 @@ fn apply_dom_ops(dom : @dom.DomTree, ops : Array[DomOp]) -> Unit {
 /// Extract string field from JSON
 fn extract_json_field(json : String, field : String) -> String {
   let pattern = "\"" + field + "\":\""
-  match json.find(pattern) {
-    Some(start) => {
-      let value_start = start + pattern.length()
-      let chars = json.to_array()
-      let mut end = value_start
-      while end < chars.length() {
-        if chars[end] == '"' && (end == value_start || chars[end - 1] != '\\') {
-          break
-        }
-        end = end + 1
-      }
-      unescape_json_string(json.unsafe_substring(start=value_start, end~))
-    }
-    None => ""
+  let start = json_index_of(json, pattern, 0)
+  if start < 0 {
+    return ""
   }
+  let value_start = start + pattern.length()
+  let len = json.length()
+  let mut end = value_start
+  while end < len {
+    if json[end].to_int() == 34 &&
+      (end == value_start || json[end - 1].to_int() != 92) {
+      break
+    }
+    end = end + 1
+  }
+  unescape_json_string(json.unsafe_substring(start=value_start, end~))
+}
+
+///|
+/// Allocation-free substring index search (naive). `String::find` uses
+/// Boyer-Moore-Horspool and allocates an ~850-byte skip table per call; the
+/// DOM-ops parser calls it ~8 times per op, which dominated parse allocation.
+fn json_index_of(s : String, needle : String, from : Int) -> Int {
+  let slen = s.length()
+  let nlen = needle.length()
+  if nlen == 0 || from + nlen > slen {
+    return -1
+  }
+  for i = from; i <= slen - nlen; i = i + 1 {
+    let mut k = 0
+    while k < nlen && s[i + k].to_int() == needle[k].to_int() {
+      k = k + 1
+    }
+    if k == nlen {
+      return i
+    }
+  }
+  -1
 }
 
 ///|
@@ -446,34 +520,33 @@ fn parse_json_hex4(c0 : Char, c1 : Char, c2 : Char, c3 : Char) -> Int? {
 /// Extract string array from JSON
 fn extract_json_array(json : String, field : String) -> Array[String] {
   let pattern = "\"" + field + "\":["
-  match json.find(pattern) {
-    Some(start) => {
-      let array_start = start + pattern.length()
-      let chars = json.to_array()
-      let result : Array[String] = []
-      let mut i = array_start
-      while i < chars.length() && chars[i] != ']' {
-        if chars[i] == '"' {
-          let str_start = i + 1
-          let mut str_end = str_start
-          while str_end < chars.length() {
-            if chars[str_end] == '"' && chars[str_end - 1] != '\\' {
-              break
-            }
-            str_end = str_end + 1
-          }
-          result.push(
-            unescape_json_string(
-              json.unsafe_substring(start=str_start, end=str_end),
-            ),
-          )
-          i = str_end + 1
-        } else {
-          i = i + 1
-        }
-      }
-      result
-    }
-    None => []
+  let start = json_index_of(json, pattern, 0)
+  if start < 0 {
+    return []
   }
+  let array_start = start + pattern.length()
+  let len = json.length()
+  let result : Array[String] = []
+  let mut i = array_start
+  while i < len && json[i].to_int() != 93 {
+    if json[i].to_int() == 34 {
+      let str_start = i + 1
+      let mut str_end = str_start
+      while str_end < len {
+        if json[str_end].to_int() == 34 && json[str_end - 1].to_int() != 92 {
+          break
+        }
+        str_end = str_end + 1
+      }
+      result.push(
+        unescape_json_string(
+          json.unsafe_substring(start=str_start, end=str_end),
+        ),
+      )
+      i = str_end + 1
+    } else {
+      i = i + 1
+    }
+  }
+  result
 }
