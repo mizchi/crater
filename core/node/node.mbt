@@ -182,3 +182,24 @@ pub fn fallback_layout(
     text: node.text,
   }
 }
+
+///|
+/// Allocation-free prefix test. `String::has_prefix` in core uses Boyer-Moore-
+/// Horspool and allocates a skip table per call; layout calls it per node (text
+/// detection via `id.has_prefix("#text")`), which made it the single largest
+/// allocation site in the render pipeline. This compares the prefix directly.
+pub fn str_has_prefix(s : String, prefix : String) -> Bool {
+  let plen = prefix.length()
+  if plen == 0 {
+    return true
+  }
+  if s.length() < plen {
+    return false
+  }
+  for i = 0; i < plen; i = i + 1 {
+    if s[i].to_int() != prefix[i].to_int() {
+      return false
+    }
+  }
+  true
+}

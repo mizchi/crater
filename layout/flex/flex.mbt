@@ -583,7 +583,7 @@ fn estimate_flex_text_intrinsic_main_size(
   node : @node.Node,
   is_row : Bool,
 ) -> Double? {
-  if !node.id.has_prefix("#text") {
+  if !@node.str_has_prefix(node.id, "#text") {
     return None
   }
   if !flex_whitespace_collapses(node.style) {
@@ -641,7 +641,7 @@ fn estimate_flex_text_min_main_size(
   node : @node.Node,
   is_row : Bool,
 ) -> Double? {
-  if !node.id.has_prefix("#text") {
+  if !@node.str_has_prefix(node.id, "#text") {
     return None
   }
   if !flex_whitespace_collapses(node.style) {
@@ -711,7 +711,8 @@ priv struct FlattenedChild {
 
 ///|
 fn is_collapsible_flex_text_node(node : @node.Node) -> Bool {
-  node.id.has_prefix("#text") && flex_whitespace_collapses(node.style)
+  @node.str_has_prefix(node.id, "#text") &&
+  flex_whitespace_collapses(node.style)
 }
 
 ///|
@@ -1039,7 +1040,7 @@ fn is_generated_pseudo_contents_text_item(item : FlattenedChild) -> Bool {
     return false
   }
   let ancestor = item.contents_ancestors[0]
-  ancestor.id.has_prefix("#pseudo::") &&
+  @node.str_has_prefix(ancestor.id, "#pseudo::") &&
   ancestor.style.display == @types.Contents
 }
 
@@ -1402,8 +1403,8 @@ fn first_row_flex_line_baseline_override(
 ///|
 fn is_fieldset_flex_item(node : @node.Node) -> Bool {
   node.id == "fieldset" ||
-  node.id.has_prefix("fieldset#") ||
-  node.id.has_prefix("fieldset.")
+  @node.str_has_prefix(node.id, "fieldset#") ||
+  @node.str_has_prefix(node.id, "fieldset.")
 }
 
 ///|
@@ -1449,7 +1450,7 @@ fn resolve_flex_item_cross_alignment(
 
 ///|
 fn uses_svg_default_intrinsic_box(node : @node.Node) -> Bool {
-  if !node.id.has_prefix("svg") {
+  if !@node.str_has_prefix(node.id, "svg") {
     return false
   }
   match (node.style.width, node.style.height) {
@@ -1461,7 +1462,7 @@ fn uses_svg_default_intrinsic_box(node : @node.Node) -> Bool {
 
 ///|
 fn uses_svg_auto_viewbox_box(node : @node.Node) -> Bool {
-  node.id.has_prefix("svg") &&
+  @node.str_has_prefix(node.id, "svg") &&
   node.children.length() == 0 &&
   node.measure is Some(_) &&
   node.style.width == @types.Auto &&

@@ -285,7 +285,7 @@ fn is_table_run_whitespace_char(c : Char) -> Bool {
 
 ///|
 fn is_whitespace_only_table_run_text(node : @node.Node) -> Bool {
-  if !node.id.has_prefix("#text") {
+  if !@node.str_has_prefix(node.id, "#text") {
     return false
   }
   match node.text {
@@ -318,7 +318,7 @@ fn white_space_collapses_edges(white_space : @style.WhiteSpace) -> Bool {
 
 ///|
 fn text_ends_with_collapsible_flow_whitespace(node : @node.Node) -> Bool {
-  if !node.id.has_prefix("#text") ||
+  if !@node.str_has_prefix(node.id, "#text") ||
     !white_space_collapses_edges(node.style.white_space) {
     return false
   }
@@ -339,7 +339,7 @@ fn text_ends_with_collapsible_flow_whitespace(node : @node.Node) -> Bool {
 
 ///|
 fn is_whitespace_only_flow_text(node : @node.Node) -> Bool {
-  if !node.id.has_prefix("#text") {
+  if !@node.str_has_prefix(node.id, "#text") {
     return false
   }
   match node.text {
@@ -357,7 +357,7 @@ fn is_whitespace_only_flow_text(node : @node.Node) -> Bool {
 
 ///|
 fn flow_whitespace_contains_line_break(node : @node.Node) -> Bool {
-  if !node.id.has_prefix("#text") {
+  if !@node.str_has_prefix(node.id, "#text") {
     return false
   }
   match node.text {
@@ -405,7 +405,7 @@ fn participates_inline_for_flow_whitespace(node : @node.Node) -> Bool {
     @types.Float::Left | @types.Float::Right => return false
     @types.Float::None => ()
   }
-  if node.id.has_prefix("#text") {
+  if @node.str_has_prefix(node.id, "#text") {
     match node.text {
       Some(text) => {
         for c in text.iter() {
@@ -4802,10 +4802,11 @@ fn compute_with_collapse(
     )
     // fieldset legend overlays the top border line instead of participating in
     // normal block-flow vertical positioning.
-    if !style.writing_mode.is_vertical() && node.id.has_prefix("fieldset") {
+    if !style.writing_mode.is_vertical() &&
+      @node.str_has_prefix(node.id, "fieldset") {
       for i = 0; i < node.children.length(); i = i + 1 {
         let child = node.children[i]
-        if child.id.has_prefix("legend") {
+        if @node.str_has_prefix(child.id, "legend") {
           match layout_map.get(i) {
             Some(legend_layout) => {
               let overlay = (border.top - legend_layout.height) / 2.0
@@ -5105,7 +5106,7 @@ fn compute_with_collapse(
     !use_ifc &&
     !has_mixed &&
     !has_non_flow_children &&
-    !node.id.has_prefix("fieldset") &&
+    !@node.str_has_prefix(node.id, "fieldset") &&
     float_nodes.length() == 0 &&
     flow_nodes.length() == node.children.length() &&
     flow_children.length() == flow_nodes.length()
@@ -5528,7 +5529,7 @@ fn compute_with_collapse(
     for i = 0; i < flow_nodes.length() && i < flow_styles.length(); i = i + 1 {
       let child_node = flow_nodes[i]
       let child_style = flow_styles[i]
-      if child_node.id == "br" || child_node.id.has_prefix("#text") {
+      if child_node.id == "br" || @node.str_has_prefix(child_node.id, "#text") {
         continue
       }
       if !is_inline_flow_participant(child_node, child_style) {
@@ -5713,7 +5714,7 @@ fn compute_with_collapse(
     let is_inline_float_only_wrapper = !is_vertical_writing &&
       @inline.is_inline_level(child_style.display) &&
       child_node.id != "br" &&
-      !child_node.id.has_prefix("#text") &&
+      !@node.str_has_prefix(child_node.id, "#text") &&
       source_children_only_contribute_floats(child_node.children)
     let participates_in_inline_run = enable_float_inline_run &&
       (
@@ -6233,8 +6234,8 @@ fn compute_with_collapse(
     }
     let is_first_legend_in_fieldset = !is_vertical_writing &&
       i == 0 &&
-      node.id.has_prefix("fieldset") &&
-      child_layout.id.has_prefix("legend")
+      @node.str_has_prefix(node.id, "fieldset") &&
+      @node.str_has_prefix(child_layout.id, "legend")
     let legend_border_overlay_y = if is_first_legend_in_fieldset {
       let overlay = (border.top - child_layout.height) / 2.0
       if overlay > 0.0 {

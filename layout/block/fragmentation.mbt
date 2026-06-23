@@ -622,7 +622,7 @@ fn source_children_only_contribute_floats(children : Array[@node.Node]) -> Bool 
       child.style.position == @types.Fixed {
       continue
     }
-    if child.id.has_prefix("#text") {
+    if @node.str_has_prefix(child.id, "#text") {
       match child.text {
         Some(text) =>
           if !is_whitespace_only_flow_text(child) && !text.is_empty() {
