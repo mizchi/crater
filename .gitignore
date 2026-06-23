@@ -71,7 +71,8 @@ test-results/
 trace.json
 browser/jsbidi/trace.json
 .playwright-mcp/
-.claude/
+.claude/*
+!.claude/skills/
 .flaker/
 .tornado/
 .bidi-ws-url
