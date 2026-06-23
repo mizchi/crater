@@ -47,6 +47,11 @@ struct DomNode {
   mut shadow_serializable : Bool
   /// For elements: computed style cache
   mut cached_rect : Rect?
+  /// Cached selector projection of this node's class list and attribute array,
+  /// computed lazily and invalidated when attributes change. Lets querySelector
+  /// reuse them across queries instead of re-splitting / rebuilding per query.
+  mut sel_classes : Array[String]?
+  mut sel_attrs : Array[@selector.Attribute]?
 }
 
 ///|
@@ -73,6 +78,8 @@ fn DomNode::new(
     shadow_clonable: false,
     shadow_serializable: false,
     cached_rect: None,
+    sel_classes: None,
+    sel_attrs: None,
   }
 }
 
@@ -322,6 +329,8 @@ pub fn DomTree::set_attribute(
     Some(n) => {
       let old_value = n.attributes.get(name)
       n.attributes[name] = value
+      n.sel_classes = None
+      n.sel_attrs = None
       // Record mutation
       self.mutations.record_attribute(
         node,
@@ -362,6 +371,8 @@ pub fn DomTree::remove_attribute(
     Some(n) => {
       let old_value = n.attributes.get(name)
       n.attributes.remove(name)
+      n.sel_classes = None
+      n.sel_attrs = None
       // Record mutation
       self.mutations.record_attribute(node, name, old_value~)
       self.invalidate_layout(id)
