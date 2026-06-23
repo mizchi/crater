@@ -4163,17 +4163,13 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       if (!slotElement) return [];
   #|       const shadowRoot = getEnclosingShadowRoot(slotElement);
   #|       if (!shadowRoot || !shadowRoot.host) {
-  #|         return slotElement._children ? slotElement._children.slice() : [];
+  #|         return [];
   #|       }
   #|       if (isManualSlotAssignmentRoot(shadowRoot)) {
-  #|         const manualAssigned = getManualAssignedNodesForSlot(slotElement);
-  #|         if (manualAssigned.length > 0) return manualAssigned;
-  #|         return slotElement._children ? slotElement._children.slice() : [];
+  #|         return getManualAssignedNodesForSlot(slotElement);
   #|       }
   #|       const hostChildren = getChildNodesArray(shadowRoot.host);
-  #|       const assigned = hostChildren.filter((node) => getAssignedSlotForNode(node) === slotElement);
-  #|       if (assigned.length > 0) return assigned;
-  #|       return slotElement._children ? slotElement._children.slice() : [];
+  #|       return hostChildren.filter((node) => getAssignedSlotForNode(node) === slotElement);
   #|     }
   #|     function findFirstSlotForName(shadowRoot, slotName) {
   #|       if (!shadowRoot) return null;
@@ -4216,7 +4212,12 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       return findFirstSlotForName(parent._shadowRoot, getSlotNameForLightNode(node));
   #|     }
   #|     function getFlattenedAssignedNodesForSlot(slotElement) {
-  #|       const nodes = getAssignedNodesForSlot(slotElement);
+  #|       let nodes = getAssignedNodesForSlot(slotElement);
+  #|       // A slot with no assigned nodes flattens to its fallback content (its
+  #|       // own children), with nested slots flattened recursively.
+  #|       if (nodes.length === 0 && slotElement && slotElement._children) {
+  #|         nodes = slotElement._children.slice();
+  #|       }
   #|       const flattened = [];
   #|       for (const node of nodes) {
   #|         if (isSlotElementNode(node)) {
