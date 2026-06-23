@@ -461,6 +461,16 @@ scenarios {
     contributes { "goal.dom-compat" }
   }
   new {
+    id = "compat.shadow-query-selector"
+    name = "Shadow-root querySelector resolves compounds and combinators with host scoping"
+    description =
+      "DomTree::shadow_query_selector / shadow_query_selector_all query inside a shadow root with the full mizchi/css compound + combinator matcher and route shadow-scoping pseudos through DomTree::matches_shadow_scoped so :host() and :host-context() resolve against the host. Candidates are the shadow tree's element descendants in document order; nested shadow roots are not crossed and a bare :host matches nothing, matching querySelector semantics. ::slotted is a styling pseudo-element and is out of scope. Source: GitHub issue #286."
+    tags { "dom"; "shadow"; "selectors"; "query"; "issue:286" }
+    severity = "major"
+    reviewStatus = "approved"
+    contributes { "goal.dom-compat" }
+  }
+  new {
     id = "compat.web-components-element-internals"
     name = "Web Components advanced surface is covered"
     description =

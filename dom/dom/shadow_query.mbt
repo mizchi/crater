@@ -10,8 +10,12 @@
 /// slot assignment) or, for ordinary compounds, delegated back to
 /// `@selector.matches_complex`.
 ///
-/// This is the matching primitive a shadow-tree style cascade will use; it is
-/// not wired into `querySelector` because `:host` does not match there per spec.
+/// This is the matching primitive the shadow-tree style cascade uses (#285) and
+/// the shadow-scoped `query_selector` (`shadow_query.mbt`, #286) uses for
+/// shadow-root queries. A shadow-root query only considers the shadow tree's own
+/// descendants, so a bare `:host` selector still matches nothing (the host is
+/// not a descendant, matching browser `querySelector` semantics), while
+/// `:host(...) x` / `:host-context(...) x` combinators resolve through the host.
 
 ///|
 /// Match `subject` against `selector` as authored inside the shadow tree whose
@@ -34,12 +38,25 @@ pub fn DomTree::matches_shadow_scoped(
     None =>
       return Err(InvalidOperation(message="invalid selector: \{selector}"))
   }
+  Ok(self.matches_shadow_scoped_list(subject, list, host))
+}
+
+///|
+/// Match `subject` against an already-parsed selector `list` in the shadow scope
+/// whose host is `host`. Shared by the string entry point and the shadow-scoped
+/// `query_selector` walk so a query parses the selector once, not per candidate.
+fn DomTree::matches_shadow_scoped_list(
+  self : DomTree,
+  subject : NodeId,
+  list : @selector.SelectorList,
+  host : NodeId,
+) -> Bool {
   for cs in list.selectors {
     if self.complex_matches_scoped(subject, cs, host) {
-      return Ok(true)
+      return true
     }
   }
-  Ok(false)
+  false
 }
 
 ///|
