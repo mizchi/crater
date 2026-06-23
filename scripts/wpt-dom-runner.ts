@@ -1539,7 +1539,9 @@ function getTestFilesByCategory(category: string): string[] {
 const SHADOW_TESTS = [
   'ShadowRoot-interface.html',
   'Element-interface-shadowRoot-attribute.html',
+  'Element-interface-attachShadow.html',
   'HTMLSlotElement-interface.html',
+  'Node-prototype-cloneNode.html',
   'slotchange.html',
   'slotchange-event.html',
   'imperative-slot-api-slotchange.html',

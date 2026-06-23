@@ -4271,6 +4271,9 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       shadowRoot.setHTMLUnsafe = function(value) {
   #|         setUnsafeHtmlForNode(this, value);
   #|       };
+  #|       shadowRoot.cloneNode = function() {
+  #|         throw new DOMException('A ShadowRoot node cannot be cloned', 'NotSupportedError');
+  #|       };
   #|       Object.defineProperty(shadowRoot, 'styleSheets', {
   #|         get() {
   #|           const sheets = [];
@@ -6382,6 +6385,12 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|           const mode = init && init.mode;
   #|           if (mode !== 'open' && mode !== 'closed') {
   #|             throw new TypeError("Failed to execute 'attachShadow' on 'Element': mode must be 'open' or 'closed'");
+  #|           }
+  #|           const hostTag = String(this._tagName || '').toLowerCase();
+  #|           const shadowAllowedHosts = ['article', 'aside', 'blockquote', 'body', 'div', 'footer', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'header', 'main', 'nav', 'p', 'section', 'span'];
+  #|           const isCustomElementName = hostTag.indexOf('-') !== -1;
+  #|           if (!isCustomElementName && shadowAllowedHosts.indexOf(hostTag) === -1) {
+  #|             throw new DOMException("Failed to execute 'attachShadow' on 'Element': The '" + hostTag + "' element does not support attachShadow", 'NotSupportedError');
   #|           }
   #|           if (this._shadowRoot) {
   #|             throw new DOMException('The element already hosts a shadow tree', 'NotSupportedError');
