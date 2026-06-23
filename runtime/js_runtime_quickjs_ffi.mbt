@@ -4790,21 +4790,28 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       return this.assignedNodes(options).filter((node) => node && node._nodeType === 1);
   #|     };
   #|     HTMLSlotElement.prototype.assign = function() {
-  #|       const shadowRoot = getEnclosingShadowRoot(this);
-  #|       if (!isManualSlotAssignmentRoot(shadowRoot)) {
-  #|         throw new DOMException('Manual slot assignment requires slotAssignment="manual"', 'NotAllowedError');
+  #|       // WebIDL: assign((Element or Text)... nodes) — argument type errors are
+  #|       // reported before any slot-state checks.
+  #|       const assignArgs = [];
+  #|       for (let i = 0; i < arguments.length; i++) {
+  #|         const node = arguments[i];
+  #|         const nodeType = isNodeLike(node) ? __craterGetNodeType(node) : 0;
+  #|         if (nodeType !== 1 && nodeType !== 3) {
+  #|           throw new TypeError("Failed to execute 'assign' on 'HTMLSlotElement': parameter " + (i + 1) + " is not of type 'Element' or 'Text'");
+  #|         }
+  #|         assignArgs.push(node);
   #|       }
+  #|       // Per spec, assign() records the manually assigned nodes regardless of
+  #|       // the slot's shadow mode or whether the nodes are currently in the host
+  #|       // tree; assignedNodes() reflects them only while applicable (manual
+  #|       // shadow + node is a host child), computed dynamically downstream.
   #|       const nextAssigned = [];
   #|       const nextSet = new Set();
   #|       const affectedSlots = new Set([this]);
-  #|       for (let i = 0; i < arguments.length; i++) {
-  #|         const node = arguments[i];
-  #|         if (!isNodeLike(node)) {
-  #|           throw new TypeError("Failed to execute 'assign' on 'HTMLSlotElement': parameter is not of type Node");
-  #|         }
+  #|       for (let i = 0; i < assignArgs.length; i++) {
+  #|         const node = assignArgs[i];
   #|         const nodeType = __craterGetNodeType(node);
   #|         if (nodeType !== 1 && nodeType !== 3) continue;
-  #|         if (!shadowRoot.host || node._parent !== shadowRoot.host) continue;
   #|         if (nextSet.has(node)) continue;
   #|         const previousSlot = node.__manualAssignedSlot || null;
   #|         if (previousSlot && previousSlot !== this) {
@@ -6399,7 +6406,13 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|           if (hasDefinitionDisabledFeature(definition, 'shadow')) {
   #|             throw new DOMException('Shadow root creation is disabled for this custom element', 'NotSupportedError');
   #|           }
-  #|           const slotAssignment = init && init.slotAssignment === 'manual' ? 'manual' : 'named';
+  #|           let slotAssignment = 'named';
+  #|           if (init && init.slotAssignment !== undefined) {
+  #|             if (init.slotAssignment !== 'named' && init.slotAssignment !== 'manual') {
+  #|               throw new TypeError("Failed to execute 'attachShadow' on 'Element': slotAssignment must be 'named' or 'manual'");
+  #|             }
+  #|             slotAssignment = init.slotAssignment;
+  #|           }
   #|           const shadowId = nodeIdCounter++;
   #|           domOps.push({ op: 'createDocumentFragment', id: shadowId });
   #|           domOps.push({

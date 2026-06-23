@@ -1544,6 +1544,7 @@ const SHADOW_TESTS = [
   'Node-prototype-cloneNode.html',
   'slotchange.html',
   'slotchange-event.html',
+  'imperative-slot-api.html',
   'imperative-slot-api-slotchange.html',
   'imperative-slot-fallback-clear.html',
   'event-inside-shadow-tree.html',
