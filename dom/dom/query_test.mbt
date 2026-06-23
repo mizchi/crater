@@ -109,3 +109,33 @@ test "query_selector returns first match in document order" {
     Err(err) => fail("\{err}")
   }
 }
+
+///|
+/// The cached selector projection (class list / attribute array on each node)
+/// must be invalidated when attributes change, so repeated queries reflect
+/// mutations rather than returning stale matches.
+test "query_selector projection cache invalidates on attribute change" {
+  let tree = DomTree::new()
+  let doc = tree.get_document()
+  let el = tree.create_element("div")
+  let _ = tree.set_attribute(el, "class", "foo")
+  let _ = tree.append_child(doc, el)
+
+  // Warm the cache, then change the class.
+  inspect(tree.query_selector_all(doc, ".foo").unwrap().length(), content="1")
+  inspect(tree.query_selector_all(doc, ".bar").unwrap().length(), content="0")
+  let _ = tree.set_attribute(el, "class", "bar")
+  inspect(tree.query_selector_all(doc, ".foo").unwrap().length(), content="0")
+  inspect(tree.query_selector_all(doc, ".bar").unwrap().length(), content="1")
+
+  // Removing the class attribute clears the class match.
+  let _ = tree.remove_attribute(el, "class")
+  inspect(tree.query_selector_all(doc, ".bar").unwrap().length(), content="0")
+
+  // A newly added attribute is visible to attribute selectors.
+  let _ = tree.set_attribute(el, "data-x", "1")
+  inspect(
+    tree.query_selector_all(doc, "[data-x]").unwrap().length(),
+    content="1",
+  )
+}

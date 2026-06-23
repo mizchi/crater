@@ -136,18 +136,34 @@ fn dom_node_to_selector_element(
   sibling_index : Int,
   sibling_count : Int,
 ) -> @selector.Element {
-  let classes : Array[String] = match node.attributes.get("class") {
-    Some(value) => split_whitespace(value)
-    None => empty_selector_strings
+  // Reuse the parsed class list / attribute array across queries; both are
+  // invalidated when the node's attributes change.
+  let classes : Array[String] = match node.sel_classes {
+    Some(cached) => cached
+    None => {
+      let computed = match node.attributes.get("class") {
+        Some(value) => split_whitespace(value)
+        None => empty_selector_strings
+      }
+      node.sel_classes = Some(computed)
+      computed
+    }
   }
-  let attributes : Array[@selector.Attribute] = if node.attributes.is_empty() {
-    empty_selector_attrs
-  } else {
-    let attrs = []
-    node.attributes.each(fn(name, value) {
-      attrs.push(@selector.Attribute::{ name, value })
-    })
-    attrs
+  let attributes : Array[@selector.Attribute] = match node.sel_attrs {
+    Some(cached) => cached
+    None => {
+      let computed : Array[@selector.Attribute] = if node.attributes.is_empty() {
+        empty_selector_attrs
+      } else {
+        let attrs = []
+        node.attributes.each(fn(name, value) {
+          attrs.push(@selector.Attribute::{ name, value })
+        })
+        attrs
+      }
+      node.sel_attrs = Some(computed)
+      computed
+    }
   }
   // The projection is transient and read-only, so the node's custom_states can
   // be aliased (an empty set is shared) instead of copied.
