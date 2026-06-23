@@ -844,4 +844,14 @@ tests {
     cmd =
       "bash -lc 'set -e; grep -Fq -- \"pub fn compute_shadow_element_style\" renderer/renderer/shadow_style.mbt; grep -Fq -- \"pub fn compute_shadow_tree_styles\" renderer/renderer/shadow_style.mbt; grep -Fq -- \"pub fn compute_slotted_styles\" renderer/renderer/shadow_style.mbt; grep -Fq -- \"pub fn compute_composed_shadow_styles\" renderer/renderer/composed_shadow_style.mbt; grep -Fq -- \"compute_shadow_element_style applies :host and inner rules to Style\" renderer/renderer/shadow_style_test.mbt; grep -Fq -- \"compute_slotted_styles applies ::slotted rules to assigned light nodes\" renderer/renderer/shadow_style_test.mbt; grep -Fq -- \"compute_composed_shadow_styles composes nested shadow and slotted nodes\" renderer/renderer/composed_shadow_style_test.mbt'"
   }
+  new {
+    name = "shadow_query_selector_resolves_compounds_and_host_scoping"
+    description =
+      "DomTree::shadow_query_selector / shadow_query_selector_all query inside a shadow root with the mizchi/css compound + combinator matcher and resolve :host() / :host-context() through matches_shadow_scoped, scoping to the shadow tree's descendants without crossing nested shadow roots (#286)."
+    tags { "dom"; "shadow"; "selectors"; "query"; "issue:286" }
+    specRef { "compat.shadow-query-selector" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; grep -Fq -- \"pub fn DomTree::shadow_query_selector_all\" dom/dom/shadow_query_selector.mbt; grep -Fq -- \"pub fn DomTree::shadow_query_selector(\" dom/dom/shadow_query_selector.mbt; grep -Fq -- \"shadow_query_selector handles compounds, combinators, and :host scoping\" dom/dom/shadow_query_selector_test.mbt; grep -Fq -- \"shadow_query_selector does not cross into nested shadow roots\" dom/dom/shadow_query_selector_test.mbt; grep -Fq -- \"shadow_query_selector rejects non-shadow-root scope and invalid selector\" dom/dom/shadow_query_selector_test.mbt'"
+  }
 }
