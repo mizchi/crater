@@ -6233,7 +6233,7 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|                 domOps.push({ op: 'appendChild', parentId: id, childId: clonedChild._mockId });
   #|               }
   #|             }
-  #|             if (isDeep && el._shadowRoot && el._shadowRoot.clonable && typeof clone.attachShadow === 'function' && !clone._shadowRoot) {
+  #|             if (el._shadowRoot && el._shadowRoot.clonable && typeof clone.attachShadow === 'function' && !clone._shadowRoot) {
   #|               const clonedShadow = clone.attachShadow({
   #|                 mode: el._shadowRoot.mode || 'open',
   #|                 delegatesFocus: !!el._shadowRoot.delegatesFocus,
