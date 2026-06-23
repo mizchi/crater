@@ -1531,6 +1531,37 @@ function getTestFilesByCategory(category: string): string[] {
   return files;
 }
 
+// Curated wpt/shadow-dom allowlist: DOM-level shadow tests that pass fully
+// against Crater's mock DOM (interface surface, slot assignment, slotchange,
+// composed events). Layout/paint/crash files in wpt/shadow-dom are excluded
+// because the DOM runner cannot meaningfully execute them. Keep this in sync as
+// coverage grows.
+const SHADOW_TESTS = [
+  'ShadowRoot-interface.html',
+  'Element-interface-shadowRoot-attribute.html',
+  'HTMLSlotElement-interface.html',
+  'slotchange.html',
+  'slotchange-event.html',
+  'imperative-slot-api-slotchange.html',
+  'imperative-slot-fallback-clear.html',
+  'event-inside-shadow-tree.html',
+  'event-composed.html',
+  'event-composed-path-after-dom-mutation.html',
+  'Document-prototype-currentScript.html',
+  'getElementById-dynamic-001.html',
+  'getElementById-dynamic-002.html',
+  'scroll-to-the-fragment-in-shadow-tree.html',
+  'assign-slottables-after-removing-shadow-tree-from-document.html',
+  'historical.html',
+];
+
+function getShadowTestFiles(): string[] {
+  const dir = path.join(process.cwd(), 'wpt/shadow-dom');
+  return SHADOW_TESTS.map((name) => path.join(dir, name)).filter((f) =>
+    fs.existsSync(f),
+  );
+}
+
 // List available tests
 function listTests(): void {
   console.log('Available test categories:\n');
@@ -1576,6 +1607,7 @@ function detectTarget(args: string[]): string {
   if (args.includes('--all')) return 'all';
   if (args.includes('--dom')) return 'dom';
   if (args.includes('--svg')) return 'svg';
+  if (args.includes('--shadow')) return 'shadow';
   if (args.length === 0) return 'all';
   return args.join(' ');
 }
@@ -1617,6 +1649,7 @@ async function main(): Promise<void> {
     console.log('  npx tsx scripts/wpt-dom-runner.ts --all       # Run all tests');
     console.log('  npx tsx scripts/wpt-dom-runner.ts --dom       # Run DOM tests only');
     console.log('  npx tsx scripts/wpt-dom-runner.ts --svg       # Run SVG tests only');
+    console.log('  npx tsx scripts/wpt-dom-runner.ts --shadow    # Run curated shadow-dom tests');
     console.log('  npx tsx scripts/wpt-dom-runner.ts --dom --json .wpt-reports/wpt-dom-dom.json');
     console.log('  npx tsx scripts/wpt-dom-runner.ts Document-*  # Run tests matching pattern');
     return;
@@ -1636,6 +1669,8 @@ async function main(): Promise<void> {
     testFiles = getTestFilesByCategory('svg');
   } else if (args[0] === '--dom') {
     testFiles = getTestFilesByCategory('dom');
+  } else if (args[0] === '--shadow') {
+    testFiles = getShadowTestFiles();
   } else {
     for (const arg of args) {
       if (arg.includes('*')) {

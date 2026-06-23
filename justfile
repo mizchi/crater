@@ -242,6 +242,10 @@ wpt-dom-report target report *args:
 wpt-svg:
     npx tsx scripts/wpt-dom-runner.ts --svg
 
+# Run curated WPT shadow-dom tests
+wpt-dom-shadow:
+    npx tsx scripts/wpt-dom-runner.ts --shadow
+
 # List available WPT DOM tests
 wpt-dom-list:
     npx tsx scripts/wpt-dom-runner.ts --list
