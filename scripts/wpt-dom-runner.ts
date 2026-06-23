@@ -272,6 +272,26 @@ function createTestHarness() {
     function Element() {}
     Element.prototype = Object.create(Node.prototype);
     Element.prototype.constructor = Element;
+    // Shadow DOM interface surface on Element.prototype. Instances carry their
+    // own shadowRoot/attachShadow from the mock DOM; these make the members
+    // visible on the interface prototype (per the Element interface) and
+    // delegate to the instance implementation when reached via the prototype.
+    if (!('shadowRoot' in Element.prototype)) {
+      Object.defineProperty(Element.prototype, 'shadowRoot', {
+        get() {
+          return this._shadowRootMode === 'closed' ? null : (this._shadowRoot || null);
+        },
+        configurable: true,
+      });
+    }
+    if (typeof Element.prototype.attachShadow !== 'function') {
+      Element.prototype.attachShadow = function attachShadow(init) {
+        if (typeof this.attachShadow === 'function' && this.attachShadow !== Element.prototype.attachShadow) {
+          return this.attachShadow(init);
+        }
+        throw new TypeError("Failed to execute 'attachShadow' on 'Element': unsupported target");
+      };
+    }
 
     // HTMLElement and subclasses are defined in mockDomCode
     // Just ensure prototype chain is correct
@@ -305,6 +325,14 @@ function createTestHarness() {
     } else if (DocumentFragment.prototype && Object.getPrototypeOf(DocumentFragment.prototype) !== Node.prototype) {
       Object.setPrototypeOf(DocumentFragment.prototype, Node.prototype);
     }
+
+    // ShadowRoot interface: inherits DocumentFragment, not constructable.
+    function ShadowRoot() {
+      throw new TypeError('Illegal constructor');
+    }
+    ShadowRoot.prototype = Object.create(DocumentFragment.prototype);
+    ShadowRoot.prototype.constructor = ShadowRoot;
+    if (typeof globalThis !== 'undefined') globalThis.ShadowRoot = ShadowRoot;
 
     function DocumentType() {}
     DocumentType.prototype = Object.create(Node.prototype);
@@ -344,6 +372,18 @@ function createTestHarness() {
       Object.setPrototypeOf(frag, DocumentFragment.prototype);
       return frag;
     };
+
+    // Shadow roots are created via decorateShadowRoot(createMockDocumentFragment(...));
+    // re-parent them onto ShadowRoot.prototype so "shadow instanceof ShadowRoot"
+    // (and inheritance from DocumentFragment) holds.
+    if (typeof decorateShadowRoot === 'function') {
+      const _origDecorateShadowRoot = decorateShadowRoot;
+      decorateShadowRoot = function(frag) {
+        const shadow = _origDecorateShadowRoot(frag);
+        Object.setPrototypeOf(shadow, ShadowRoot.prototype);
+        return shadow;
+      };
+    }
 
     const _origCreateMockProcessingInstruction = createMockProcessingInstruction;
     createMockProcessingInstruction = function(target, data, mockId) {

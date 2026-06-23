@@ -6337,12 +6337,17 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|           return this._shadowRoot || null;
   #|         },
   #|         attachShadow(init) {
-  #|           if (this._shadowRoot) throw new Error('Already has shadow root');
+  #|           const mode = init && init.mode;
+  #|           if (mode !== 'open' && mode !== 'closed') {
+  #|             throw new TypeError("Failed to execute 'attachShadow' on 'Element': mode must be 'open' or 'closed'");
+  #|           }
+  #|           if (this._shadowRoot) {
+  #|             throw new DOMException('The element already hosts a shadow tree', 'NotSupportedError');
+  #|           }
   #|           const definition = this.__customElementDefinition || null;
   #|           if (hasDefinitionDisabledFeature(definition, 'shadow')) {
   #|             throw new DOMException('Shadow root creation is disabled for this custom element', 'NotSupportedError');
   #|           }
-  #|           const mode = String((init && init.mode) || 'open');
   #|           const slotAssignment = init && init.slotAssignment === 'manual' ? 'manual' : 'named';
   #|           const shadowId = nodeIdCounter++;
   #|           domOps.push({ op: 'createDocumentFragment', id: shadowId });
