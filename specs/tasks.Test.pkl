@@ -834,4 +834,14 @@ tests {
     cmd =
       "bash -lc 'set -e; test -f tests/playwright-adapter-user-scenarios.test.ts; grep -Fq -- \"form input remains actionable when ancestor computed display is stale\" tests/playwright-adapter-user-scenarios.test.ts; grep -Fq -- \"hasInlineDisplayNone\" webdriver/playwright/adapter.ts; grep -Fq -- \"targetHasRenderedBox\" webdriver/playwright/adapter.ts; grep -Fq -- \"style.display === \\\"none\\\" && !targetHasRenderedBox\" webdriver/playwright/adapter.ts'"
   }
+  new {
+    name = "shadow_static_styling_applies_scoped_rules"
+    description =
+      "A shadow root's <style> rules reach shadow-tree content via shadow-scoped matching and the shared post-cascade pipeline: compute_shadow_element_style folds DomTree::shadow_cascaded_values through apply_cascaded_to_style; compute_shadow_tree_styles and compute_slotted_styles style the subtree and ::slotted light nodes; compute_composed_shadow_styles walks a whole DomTree and composes hosts, slotted nodes, and nested shadow roots into one style map (#285)."
+    tags { "dom"; "shadow"; "styling"; "render"; "issue:285" }
+    specRef { "compat.shadow-static-styling" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; grep -Fq -- \"pub fn compute_shadow_element_style\" renderer/renderer/shadow_style.mbt; grep -Fq -- \"pub fn compute_shadow_tree_styles\" renderer/renderer/shadow_style.mbt; grep -Fq -- \"pub fn compute_slotted_styles\" renderer/renderer/shadow_style.mbt; grep -Fq -- \"pub fn compute_composed_shadow_styles\" renderer/renderer/composed_shadow_style.mbt; grep -Fq -- \"compute_shadow_element_style applies :host and inner rules to Style\" renderer/renderer/shadow_style_test.mbt; grep -Fq -- \"compute_slotted_styles applies ::slotted rules to assigned light nodes\" renderer/renderer/shadow_style_test.mbt; grep -Fq -- \"compute_composed_shadow_styles composes nested shadow and slotted nodes\" renderer/renderer/composed_shadow_style_test.mbt'"
+  }
 }

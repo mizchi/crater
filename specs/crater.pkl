@@ -457,7 +457,7 @@ scenarios {
       "Apply a shadow root's <style> rules to shadow-tree content (host, slotted, and inner nodes) using DomTree::matches_shadow_scoped for :host / :host() / :host-context() / ::slotted(), feeding matched declarations through @css.cascade_declarations into cascaded values without changing upstream @css.cascade. Builds on the matcher in dom/dom/shadow_query.mbt. Source: GitHub issue #285."
     tags { "dom"; "shadow"; "selectors"; "styling"; "render"; "issue:285" }
     severity = "major"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.dom-compat" }
   }
   new {
