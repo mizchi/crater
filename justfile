@@ -230,6 +230,11 @@ wpt-update-readme:
 calc-diff *args:
     npx tsx scripts/calc-layout-diff.ts {{args}}
 
+# Aggregate Crater-vs-Chromium layout match rate on real-world snapshots
+# (github-mizchi, example-com). No args measures all; pass a snapshot name.
+match-rate *args:
+    npx tsx scripts/real-world-match-rate.ts {{args}}
+
 # === WPT DOM Tests ===
 
 # Run WPT DOM tests (single file or pattern)
