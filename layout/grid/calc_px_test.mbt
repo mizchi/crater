@@ -47,3 +47,28 @@ test "grid_max_width_calc_includes_px" {
   let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
   inspect(layout.width, content="230")
 }
+
+///|
+/// Regression: max-width must not shrink a grid below its min-content. A fixed
+/// 700px track keeps its size and the item overflows the clamped container,
+/// rather than being squeezed down to the container content box.
+test "grid_max_width_does_not_shrink_fixed_track" {
+  let default_style = @style.Style::default()
+  let root_style = {
+    ..default_style,
+    display: @types.Grid,
+    width: @types.Auto,
+    height: @types.Length(40.0),
+    max_width: @types.Calc(30.0, 0.25),
+    grid_template_columns: [@types.TrackSizingFunction::Length(700.0)],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
+  }
+  let root = @node.Node::new("root", root_style, [
+    @node.Node::leaf("cell", default_style),
+  ])
+  let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
+  // Container clamped to max-width: 25% * 800 + 30 = 230.
+  inspect(layout.width, content="230")
+  // Item keeps the fixed 700px track and overflows (not shrunk to 230).
+  inspect(layout.children[0].width, content="700")
+}

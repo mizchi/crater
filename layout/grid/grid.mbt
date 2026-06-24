@@ -2120,11 +2120,34 @@ fn compute_grid_layout_internal(
     } else {
       col_start == 0 && col_end == column_tracks.length()
     }
+    // A narrower container (e.g. clamped by max-width below the track total)
+    // must not shrink an item below the size of its non-stretchable (fixed)
+    // tracks; those keep their size and overflow. Only the stretchable portion
+    // of the span may collapse to fit the container content box.
+    let inline_tracks = if is_vertical_writing {
+      row_tracks
+    } else {
+      column_tracks
+    }
+    let (inline_span_start, inline_span_end) = if is_vertical_writing {
+      (row_start, row_end)
+    } else {
+      (col_start, col_end)
+    }
+    let mut stretchable_span_width = 0.0
+    for t = inline_span_start
+        t < inline_span_end && t < inline_tracks.length()
+        t = t + 1 {
+      if inline_tracks[t].stretchable {
+        stretchable_span_width = stretchable_span_width + inline_tracks[t].size
+      }
+    }
+    let non_stretchable_floor = item_width - stretchable_span_width
     let item_width_for_layout = if width_is_auto &&
       spans_entire_inline_axis &&
       item_x <= 0.0 &&
       item_width > content_box_width {
-      content_box_width
+      max(content_box_width, non_stretchable_floor)
     } else {
       item_width
     }
