@@ -1238,10 +1238,13 @@ fn compute_grid_layout_internal(
     @types.Percent(p) => max(p * available_width, min_width)
     @types.Auto => min_width
     @types.MinContent | @types.MaxContent | @types.FitContent(_) => min_width
-    @types.Calc(_, p) => max(p * available_width, min_width)
+    @types.Calc(px, p) => max(available_width * p + px, min_width)
     @types.MathFn(__mop, __mterms) => {
-      let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
-      max(p * available_width, min_width)
+      let resolved = @types.apply_math_op(
+        __mop,
+        __mterms.map(fn(__t) { available_width * __t.1 + __t.0 }),
+      )
+      max(resolved, min_width)
     }
   }
   let resolved_max_width = match style.max_width {
@@ -1250,11 +1253,12 @@ fn compute_grid_layout_internal(
     @types.Auto => 1.0e10
     @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
       @double.infinity
-    @types.Calc(_, p) => p * available_width
-    @types.MathFn(__mop, __mterms) => {
-      let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
-      p * available_width
-    }
+    @types.Calc(px, p) => available_width * p + px
+    @types.MathFn(__mop, __mterms) =>
+      @types.apply_math_op(
+        __mop,
+        __mterms.map(fn(__t) { available_width * __t.1 + __t.0 }),
+      )
   }
   let has_fit_content_percent_for_width = if is_vertical_writing {
     has_fit_content_percent_rows
@@ -1383,10 +1387,13 @@ fn compute_grid_layout_internal(
       padding_bottom +
       border_top +
       border_bottom
-    @types.Calc(_, p) => max(p * available_height, min_height)
+    @types.Calc(px, p) => max(available_height * p + px, min_height)
     @types.MathFn(__mop, __mterms) => {
-      let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
-      max(p * available_height, min_height)
+      let resolved = @types.apply_math_op(
+        __mop,
+        __mterms.map(fn(__t) { available_height * __t.1 + __t.0 }),
+      )
+      max(resolved, min_height)
     }
   }
   let resolved_max_height = match style.max_height {
@@ -1400,11 +1407,12 @@ fn compute_grid_layout_internal(
       padding_bottom +
       border_top +
       border_bottom
-    @types.Calc(_, p) => p * available_height
-    @types.MathFn(__mop, __mterms) => {
-      let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
-      p * available_height
-    }
+    @types.Calc(px, p) => available_height * p + px
+    @types.MathFn(__mop, __mterms) =>
+      @types.apply_math_op(
+        __mop,
+        __mterms.map(fn(__t) { available_height * __t.1 + __t.0 }),
+      )
   }
   let container_width = if width_is_auto {
     // Block-level Grid in Definite sizing mode expands to fill available width
@@ -2324,20 +2332,21 @@ fn resolve_intrinsic_dimension(
       }
     @types.Auto => 0.0
     @types.MinContent | @types.MaxContent | @types.FitContent(_) => 0.0
-    @types.Calc(_, p) =>
+    @types.Calc(px, p) =>
       if is_extrinsically_definite {
-        available * p
+        available * p + px
       } else {
         0.0
       }
-    @types.MathFn(__mop, __mterms) => {
-      let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+    @types.MathFn(__mop, __mterms) =>
       if is_extrinsically_definite {
-        available * p
+        @types.apply_math_op(
+          __mop,
+          __mterms.map(fn(__t) { available * __t.1 + __t.0 }),
+        )
       } else {
         0.0
       }
-    }
   }
 }
 
@@ -3424,11 +3433,12 @@ fn calculate_item_intrinsic_sizes(
       @types.Percent(p) => p * container_width
       @types.Auto => 0.0
       @types.MinContent | @types.MaxContent | @types.FitContent(_) => 0.0
-      @types.Calc(_, p) => p * container_width
-      @types.MathFn(__mop, __mterms) => {
-        let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
-        p * container_width
-      }
+      @types.Calc(px, p) => container_width * p + px
+      @types.MathFn(__mop, __mterms) =>
+        @types.apply_math_op(
+          __mop,
+          __mterms.map(fn(__t) { container_width * __t.1 + __t.0 }),
+        )
     }
     let style_max_width = match child.style.max_width {
       @types.Length(v) => v
@@ -3436,11 +3446,12 @@ fn calculate_item_intrinsic_sizes(
       @types.Auto => 1.0e10
       @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
         @double.infinity
-      @types.Calc(_, p) => p * container_width
-      @types.MathFn(__mop, __mterms) => {
-        let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
-        p * container_width
-      }
+      @types.Calc(px, p) => container_width * p + px
+      @types.MathFn(__mop, __mterms) =>
+        @types.apply_math_op(
+          __mop,
+          __mterms.map(fn(__t) { container_width * __t.1 + __t.0 }),
+        )
     }
     // Effective minimum is max of style min_width and box_size
     let effective_min = max(style_min_width, box_size)
@@ -3889,20 +3900,21 @@ fn calculate_item_intrinsic_sizes(
         }
       @types.Auto => 0.0
       @types.MinContent | @types.MaxContent | @types.FitContent(_) => 0.0
-      @types.Calc(_, p) =>
+      @types.Calc(px, p) =>
         if container_height > 0.0 {
-          p * container_height
+          container_height * p + px
         } else {
           0.0
         }
-      @types.MathFn(__mop, __mterms) => {
-        let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+      @types.MathFn(__mop, __mterms) =>
         if container_height > 0.0 {
-          p * container_height
+          @types.apply_math_op(
+            __mop,
+            __mterms.map(fn(__t) { container_height * __t.1 + __t.0 }),
+          )
         } else {
           0.0
         }
-      }
     }
     let style_max_height = match child.style.max_height {
       @types.Length(v) => v
@@ -3915,20 +3927,21 @@ fn calculate_item_intrinsic_sizes(
       @types.Auto => 1.0e10
       @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
         @double.infinity
-      @types.Calc(_, p) =>
+      @types.Calc(px, p) =>
         if container_height > 0.0 {
-          p * container_height
+          container_height * p + px
         } else {
           @double.infinity
         }
-      @types.MathFn(__mop, __mterms) => {
-        let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+      @types.MathFn(__mop, __mterms) =>
         if container_height > 0.0 {
-          p * container_height
+          @types.apply_math_op(
+            __mop,
+            __mterms.map(fn(__t) { container_height * __t.1 + __t.0 }),
+          )
         } else {
           @double.infinity
         }
-      }
     }
     // Effective minimum is max of style min_height and box_size
     let effective_min = max(style_min_height, box_size)

@@ -1354,14 +1354,12 @@ fn column_flex_percent_margin_baseline_delta(
             }
             delta = match child.style.margin.top {
               @types.Percent(p) => inline_context * p
-              @types.Calc(_, p) => inline_context * p
-              @types.MathFn(__mop, __mterms) => {
-                let p = @types.apply_math_op(
+              @types.Calc(px, p) => inline_context * p + px
+              @types.MathFn(__mop, __mterms) =>
+                @types.apply_math_op(
                   __mop,
-                  __mterms.map(fn(__t) { __t.1 }),
+                  __mterms.map(fn(__t) { inline_context * __t.1 + __t.0 }),
                 )
-                inline_context * p
-              }
               _ => 0.0
             }
             break
@@ -1398,11 +1396,12 @@ fn first_row_flex_line_baseline_override(
     let child_main_base = match child.style.width {
       @types.Length(w) => w
       @types.Percent(p) => main_size * p
-      @types.Calc(_, p) => main_size * p
-      @types.MathFn(__mop, __mterms) => {
-        let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
-        main_size * p
-      }
+      @types.Calc(px, p) => main_size * p + px
+      @types.MathFn(__mop, __mterms) =>
+        @types.apply_math_op(
+          __mop,
+          __mterms.map(fn(__t) { main_size * __t.1 + __t.0 }),
+        )
       _ => 0.0
     }
     let child_main = child_main_base +
@@ -1415,11 +1414,12 @@ fn first_row_flex_line_baseline_override(
       let child_cross = match child.style.height {
         @types.Length(h) => h
         @types.Percent(p) => cross_size * p
-        @types.Calc(_, p) => cross_size * p
-        @types.MathFn(__mop, __mterms) => {
-          let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
-          cross_size * p
-        }
+        @types.Calc(px, p) => cross_size * p + px
+        @types.MathFn(__mop, __mterms) =>
+          @types.apply_math_op(
+            __mop,
+            __mterms.map(fn(__t) { cross_size * __t.1 + __t.0 }),
+          )
         _ => cross_size
       }
       return Some(@baseline.compute_node_baseline(child, child_cross))
@@ -2092,21 +2092,22 @@ fn compute_intrinsic_main_size(
                           Some(cross) => Some(cross * p)
                           None => None
                         }
-                      @types.Calc(_, p) =>
+                      @types.Calc(px, p) =>
                         match available_cross {
-                          Some(cross) => Some(cross * p)
+                          Some(cross) => Some(cross * p + px)
                           None => None
                         }
-                      @types.MathFn(__mop, __mterms) => {
-                        let p = @types.apply_math_op(
-                          __mop,
-                          __mterms.map(fn(__t) { __t.1 }),
-                        )
+                      @types.MathFn(__mop, __mterms) =>
                         match available_cross {
-                          Some(cross) => Some(cross * p)
+                          Some(cross) =>
+                            Some(
+                              @types.apply_math_op(
+                                __mop,
+                                __mterms.map(fn(__t) { cross * __t.1 + __t.0 }),
+                              ),
+                            )
                           None => None
                         }
-                      }
                       _ => None
                     }
                     let max_h = match style.max_height {
@@ -2116,21 +2117,22 @@ fn compute_intrinsic_main_size(
                           Some(cross) => Some(cross * p)
                           None => None
                         }
-                      @types.Calc(_, p) =>
+                      @types.Calc(px, p) =>
                         match available_cross {
-                          Some(cross) => Some(cross * p)
+                          Some(cross) => Some(cross * p + px)
                           None => None
                         }
-                      @types.MathFn(__mop, __mterms) => {
-                        let p = @types.apply_math_op(
-                          __mop,
-                          __mterms.map(fn(__t) { __t.1 }),
-                        )
+                      @types.MathFn(__mop, __mterms) =>
                         match available_cross {
-                          Some(cross) => Some(cross * p)
+                          Some(cross) =>
+                            Some(
+                              @types.apply_math_op(
+                                __mop,
+                                __mterms.map(fn(__t) { cross * __t.1 + __t.0 }),
+                              ),
+                            )
                           None => None
                         }
-                      }
                       _ => None
                     }
                     match min_h {
@@ -3204,24 +3206,27 @@ fn compute_intrinsic_flex_main_size(
                 child, true, intrinsic_cross_for_child, cache, dispatch,
               )
             }
-          @types.Calc(_, p) =>
+          @types.Calc(px, p) =>
             if has_definite_inline {
-              content_width_for_children * p
+              content_width_for_children * p + px
             } else {
               compute_intrinsic_main_size(
                 child, true, intrinsic_cross_for_child, cache, dispatch,
               )
             }
-          @types.MathFn(__mop, __mterms) => {
-            let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+          @types.MathFn(__mop, __mterms) =>
             if has_definite_inline {
-              content_width_for_children * p
+              @types.apply_math_op(
+                __mop,
+                __mterms.map(fn(__t) {
+                  content_width_for_children * __t.1 + __t.0
+                }),
+              )
             } else {
               compute_intrinsic_main_size(
                 child, true, intrinsic_cross_for_child, cache, dispatch,
               )
             }
-          }
           @types.Auto =>
             match child_style.width {
               @types.Length(w) => w
@@ -3233,27 +3238,27 @@ fn compute_intrinsic_flex_main_size(
                     child, true, intrinsic_cross_for_child, cache, dispatch,
                   )
                 }
-              @types.Calc(_, p) =>
+              @types.Calc(px, p) =>
                 if has_definite_inline {
-                  content_width_for_children * p
+                  content_width_for_children * p + px
                 } else {
                   compute_intrinsic_main_size(
                     child, true, intrinsic_cross_for_child, cache, dispatch,
                   )
                 }
-              @types.MathFn(__mop, __mterms) => {
-                let p = @types.apply_math_op(
-                  __mop,
-                  __mterms.map(fn(__t) { __t.1 }),
-                )
+              @types.MathFn(__mop, __mterms) =>
                 if has_definite_inline {
-                  content_width_for_children * p
+                  @types.apply_math_op(
+                    __mop,
+                    __mterms.map(fn(__t) {
+                      content_width_for_children * __t.1 + __t.0
+                    }),
+                  )
                 } else {
                   compute_intrinsic_main_size(
                     child, true, intrinsic_cross_for_child, cache, dispatch,
                   )
                 }
-              }
               @types.Auto =>
                 compute_intrinsic_main_size(
                   child, true, intrinsic_cross_for_child, cache, dispatch,
@@ -3278,22 +3283,25 @@ fn compute_intrinsic_flex_main_size(
                 effective_width = v
               }
             }
-          @types.Calc(_, p) =>
+          @types.Calc(px, p) =>
             if has_definite_inline {
-              let v = content_width_for_children * p
+              let v = content_width_for_children * p + px
               if effective_width > v {
                 effective_width = v
               }
             }
-          @types.MathFn(__mop, __mterms) => {
-            let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+          @types.MathFn(__mop, __mterms) =>
             if has_definite_inline {
-              let v = content_width_for_children * p
+              let v = @types.apply_math_op(
+                __mop,
+                __mterms.map(fn(__t) {
+                  content_width_for_children * __t.1 + __t.0
+                }),
+              )
               if effective_width > v {
                 effective_width = v
               }
             }
-          }
           @types.Auto
           | @types.MinContent
           | @types.MaxContent
@@ -3308,22 +3316,25 @@ fn compute_intrinsic_flex_main_size(
                 effective_width = v
               }
             }
-          @types.Calc(_, p) =>
+          @types.Calc(px, p) =>
             if has_definite_inline {
-              let v = content_width_for_children * p
+              let v = content_width_for_children * p + px
               if effective_width < v {
                 effective_width = v
               }
             }
-          @types.MathFn(__mop, __mterms) => {
-            let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+          @types.MathFn(__mop, __mterms) =>
             if has_definite_inline {
-              let v = content_width_for_children * p
+              let v = @types.apply_math_op(
+                __mop,
+                __mterms.map(fn(__t) {
+                  content_width_for_children * __t.1 + __t.0
+                }),
+              )
               if effective_width < v {
                 effective_width = v
               }
             }
-          }
           @types.Auto
           | @types.MinContent
           | @types.MaxContent
@@ -3465,18 +3476,22 @@ fn compute_intrinsic_flex_main_size(
               Some(ac) => Some(ac * p)
               None => None
             }
-          @types.Calc(_, p) =>
+          @types.Calc(px, p) =>
             match available_cross {
-              Some(ac) => Some(ac * p)
+              Some(ac) => Some(ac * p + px)
               None => None
             }
-          @types.MathFn(__mop, __mterms) => {
-            let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+          @types.MathFn(__mop, __mterms) =>
             match available_cross {
-              Some(ac) => Some(ac * p)
+              Some(ac) =>
+                Some(
+                  @types.apply_math_op(
+                    __mop,
+                    __mterms.map(fn(__t) { ac * __t.1 + __t.0 }),
+                  ),
+                )
               None => None
             }
-          }
           @types.Auto => available_cross
           @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
             available_cross
@@ -3530,9 +3545,10 @@ fn compute_intrinsic_flex_main_size(
               child_margin.left +
               child_margin.right
             }
-          @types.Calc(_, p) =>
+          @types.Calc(px, p) =>
             if has_definite_inline {
               content_width_for_children * p +
+              px +
               child_margin.left +
               child_margin.right
             } else {
@@ -3540,10 +3556,14 @@ fn compute_intrinsic_flex_main_size(
               child_margin.left +
               child_margin.right
             }
-          @types.MathFn(__mop, __mterms) => {
-            let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+          @types.MathFn(__mop, __mterms) =>
             if has_definite_inline {
-              content_width_for_children * p +
+              @types.apply_math_op(
+                __mop,
+                __mterms.map(fn(__t) {
+                  content_width_for_children * __t.1 + __t.0
+                }),
+              ) +
               child_margin.left +
               child_margin.right
             } else {
@@ -3551,7 +3571,6 @@ fn compute_intrinsic_flex_main_size(
               child_margin.left +
               child_margin.right
             }
-          }
           @types.Auto =>
             compute_intrinsic_main_size(child, true, None, cache, dispatch) +
             child_margin.left +
@@ -3628,9 +3647,10 @@ fn compute_intrinsic_flex_main_size(
               child_margin.left +
               child_margin.right
             }
-          @types.Calc(_, p) =>
+          @types.Calc(px, p) =>
             if has_definite_inline {
               content_width_for_children * p +
+              px +
               child_margin.left +
               child_margin.right
             } else {
@@ -3638,10 +3658,14 @@ fn compute_intrinsic_flex_main_size(
               child_margin.left +
               child_margin.right
             }
-          @types.MathFn(__mop, __mterms) => {
-            let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+          @types.MathFn(__mop, __mterms) =>
             if has_definite_inline {
-              content_width_for_children * p +
+              @types.apply_math_op(
+                __mop,
+                __mterms.map(fn(__t) {
+                  content_width_for_children * __t.1 + __t.0
+                }),
+              ) +
               child_margin.left +
               child_margin.right
             } else {
@@ -3649,7 +3673,6 @@ fn compute_intrinsic_flex_main_size(
               child_margin.left +
               child_margin.right
             }
-          }
           @types.Auto =>
             compute_intrinsic_main_size(child, true, None, cache, dispatch) +
             child_margin.left +
@@ -3822,21 +3845,22 @@ fn compute_intrinsic_block_main_size(
                 Some(cross) => Some(cross * p)
                 None => None
               }
-            @types.Calc(_, p) =>
+            @types.Calc(px, p) =>
               match available_cross {
-                Some(cross) => Some(cross * p)
+                Some(cross) => Some(cross * p + px)
                 None => None
               }
-            @types.MathFn(__mop, __mterms) => {
-              let p = @types.apply_math_op(
-                __mop,
-                __mterms.map(fn(__t) { __t.1 }),
-              )
+            @types.MathFn(__mop, __mterms) =>
               match available_cross {
-                Some(cross) => Some(cross * p)
+                Some(cross) =>
+                  Some(
+                    @types.apply_math_op(
+                      __mop,
+                      __mterms.map(fn(__t) { cross * __t.1 + __t.0 }),
+                    ),
+                  )
                 None => None
               }
-            }
             @types.Auto
             | @types.MinContent
             | @types.MaxContent
