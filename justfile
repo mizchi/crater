@@ -224,6 +224,12 @@ wpt-css-report module report *args:
 wpt-update-readme:
     npx tsx scripts/update-wpt-readme.ts
 
+# Diff CSS math (calc/min/max/clamp) layout vs Chromium.
+# No args runs the built-in fixture matrix; pass an HTML file to diff one page.
+# Non-zero exit on any mismatch, so it doubles as a CI gate.
+calc-diff *args:
+    npx tsx scripts/calc-layout-diff.ts {{args}}
+
 # === WPT DOM Tests ===
 
 # Run WPT DOM tests (single file or pattern)
