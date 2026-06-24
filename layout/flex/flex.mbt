@@ -5604,12 +5604,12 @@ fn compute_internal(
             }
           }
         }
-      @types.Calc(_, p) =>
+      @types.Calc(px, p) =>
         if is_row {
-          content_width * p
+          content_width * p + px
         } else {
           match content_height {
-            Some(ch) => ch * p
+            Some(ch) => ch * p + px
             None => {
               // Percentage of indefinite dimension resolves to content size
               // Compute intrinsic height from children.
@@ -5629,13 +5629,19 @@ fn compute_internal(
             }
           }
         }
-      @types.MathFn(__mop, __mterms) => {
-        let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+      @types.MathFn(__mop, __mterms) =>
         if is_row {
-          content_width * p
+          @types.apply_math_op(
+            __mop,
+            __mterms.map(fn(__t) { content_width * __t.1 + __t.0 }),
+          )
         } else {
           match content_height {
-            Some(ch) => ch * p
+            Some(ch) =>
+              @types.apply_math_op(
+                __mop,
+                __mterms.map(fn(__t) { ch * __t.1 + __t.0 }),
+              )
             None => {
               // Percentage of indefinite dimension resolves to content size
               // Compute intrinsic height from children.
@@ -5655,20 +5661,17 @@ fn compute_internal(
             }
           }
         }
-      }
       @types.Auto =>
         if is_row {
           match child_style.width {
             @types.Length(w) => w
             @types.Percent(p) => content_width * p
-            @types.Calc(_, p) => content_width * p
-            @types.MathFn(__mop, __mterms) => {
-              let p = @types.apply_math_op(
+            @types.Calc(px, p) => content_width * p + px
+            @types.MathFn(__mop, __mterms) =>
+              @types.apply_math_op(
                 __mop,
-                __mterms.map(fn(__t) { __t.1 }),
+                __mterms.map(fn(__t) { content_width * __t.1 + __t.0 }),
               )
-              content_width * p
-            }
             @types.Auto =>
               // Try to use aspect_ratio if cross dimension is known
               match (child_style.aspect_ratio, explicit_cross) {
