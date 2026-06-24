@@ -6253,11 +6253,11 @@ fn compute_internal(
         @types.Length(v) => v
         @types.Percent(p) => content_width * p
         @types.Calc(px, pct) => content_width * pct + px
-        @types.MathFn(__mop, __mterms) => {
-          let px = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
-          let pct = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
-          content_width * pct + px
-        }
+        @types.MathFn(__mop, __mterms) =>
+          @types.apply_math_op(
+            __mop,
+            __mterms.map(fn(__t) { content_width * __t.1 + __t.0 }),
+          )
         @types.Auto => 1.0e10 // Effectively infinity
         @types.MaxContent => {
           // Calculate intrinsic width for max-width constraint
@@ -9095,16 +9095,17 @@ fn compute_internal(
                 total_main + padding.vertical_sum() + border.vertical_sum()
               }
           }
-        @types.MathFn(__mop, __mterms) => {
-          let px = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
-          let pct = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+        @types.MathFn(__mop, __mterms) =>
           match ctx.available_height {
             Some(ah) =>
               if use_available_width &&
                 ctx.sizing_mode == @layout_types.Definite {
                 ah
               } else {
-                parent_height * pct + px
+                @types.apply_math_op(
+                  __mop,
+                  __mterms.map(fn(__t) { parent_height * __t.1 + __t.0 }),
+                )
               }
             None =>
               if suppress_auto_block_size {
@@ -9138,7 +9139,6 @@ fn compute_internal(
                 total_main + padding.vertical_sum() + border.vertical_sum()
               }
           }
-        }
         @types.Auto =>
           if suppress_auto_block_size {
             padding.vertical_sum() + border.vertical_sum()

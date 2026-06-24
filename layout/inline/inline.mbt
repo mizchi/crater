@@ -1963,14 +1963,18 @@ fn compute_inline_child(
             Some(ah) => Some(ah * pct + px)
             None => Some(px)
           }
-        @types.MathFn(__mop, __mterms) => {
-          let px = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
-          let pct = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+        @types.MathFn(__mop, __mterms) =>
           match available_height {
-            Some(ah) => Some(ah * pct + px)
-            None => Some(px)
+            Some(ah) =>
+              Some(
+                @types.apply_math_op(
+                  __mop,
+                  __mterms.map(fn(__t) { ah * __t.1 + __t.0 }),
+                ),
+              )
+            None =>
+              Some(@types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 })))
           }
-        }
         @types.Auto
         | @types.MinContent
         | @types.MaxContent
@@ -1990,14 +1994,13 @@ fn compute_inline_child(
           px -
           padding.horizontal_sum() -
           border.horizontal_sum()
-        @types.MathFn(__mop, __mterms) => {
-          let px = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
-          let pct = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
-          available_width * pct +
-          px -
+        @types.MathFn(__mop, __mterms) =>
+          @types.apply_math_op(
+            __mop,
+            __mterms.map(fn(__t) { available_width * __t.1 + __t.0 }),
+          ) -
           padding.horizontal_sum() -
           border.horizontal_sum()
-        }
         @types.MinContent =>
           if suppress_inline_intrinsic {
             style.contained_intrinsic_width_fallback()
@@ -2113,14 +2116,15 @@ fn compute_inline_child(
             Some(ah) => ah * pct + px
             None => px
           }
-        @types.MathFn(__mop, __mterms) => {
-          let px = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
-          let pct = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+        @types.MathFn(__mop, __mterms) =>
           match available_height {
-            Some(ah) => ah * pct + px
-            None => px
+            Some(ah) =>
+              @types.apply_math_op(
+                __mop,
+                __mterms.map(fn(__t) { ah * __t.1 + __t.0 }),
+              )
+            None => @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
           }
-        }
         @types.Auto
         | @types.MinContent
         | @types.MaxContent

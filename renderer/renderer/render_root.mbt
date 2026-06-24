@@ -122,11 +122,11 @@ fn resolve_root_available_width(
         @types.Length(v) => v
         @types.Percent(p) => viewport_width * p
         @types.Calc(px, pct) => viewport_width * pct + px
-        @types.MathFn(__mop, __mterms) => {
-          let px = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
-          let pct = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
-          viewport_width * pct + px
-        }
+        @types.MathFn(__mop, __mterms) =>
+          @types.apply_math_op(
+            __mop,
+            __mterms.map(fn(__t) { viewport_width * __t.1 + __t.0 }),
+          )
         @types.Auto
         | @types.MinContent
         | @types.MaxContent
@@ -136,11 +136,11 @@ fn resolve_root_available_width(
         @types.Length(v) => v
         @types.Percent(p) => viewport_width * p
         @types.Calc(px, pct) => viewport_width * pct + px
-        @types.MathFn(__mop, __mterms) => {
-          let px = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
-          let pct = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
-          viewport_width * pct + px
-        }
+        @types.MathFn(__mop, __mterms) =>
+          @types.apply_math_op(
+            __mop,
+            __mterms.map(fn(__t) { viewport_width * __t.1 + __t.0 }),
+          )
         @types.Auto
         | @types.MinContent
         | @types.MaxContent
@@ -150,11 +150,11 @@ fn resolve_root_available_width(
         @types.Length(v) => v
         @types.Percent(p) => viewport_width * p
         @types.Calc(px, pct) => viewport_width * pct + px
-        @types.MathFn(__mop, __mterms) => {
-          let px = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
-          let pct = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
-          viewport_width * pct + px
-        }
+        @types.MathFn(__mop, __mterms) =>
+          @types.apply_math_op(
+            __mop,
+            __mterms.map(fn(__t) { viewport_width * __t.1 + __t.0 }),
+          )
         @types.Auto
         | @types.MinContent
         | @types.MaxContent

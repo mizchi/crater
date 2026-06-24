@@ -1941,9 +1941,7 @@ fn apply_content_driven_height_constraints(
           }
         }
       }
-    @types.MathFn(__mop, __mterms) => {
-      let px = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
-      let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+    @types.MathFn(__mop, __mterms) =>
       match parent_height_opt {
         Some(parent_height) => {
           let basis = if parent_height > 0.0 {
@@ -1951,19 +1949,24 @@ fn apply_content_driven_height_constraints(
           } else {
             height_percent_basis
           }
-          let min_h = basis * p + px
+          let min_h = @types.apply_math_op(
+            __mop,
+            __mterms.map(fn(__t) { basis * __t.1 + __t.0 }),
+          )
           if resolved < min_h {
             resolved = min_h
           }
         }
         None => {
-          let min_h = height_percent_basis * p + px
+          let min_h = @types.apply_math_op(
+            __mop,
+            __mterms.map(fn(__t) { height_percent_basis * __t.1 + __t.0 }),
+          )
           if resolved < min_h {
             resolved = min_h
           }
         }
       }
-    }
     @types.MaxContent | @types.MinContent => {
       let intrinsic_height = if style.suppresses_intrinsic_height() {
         content_height_for_auto + padding.vertical_sum() + border.vertical_sum()
@@ -2010,9 +2013,7 @@ fn apply_content_driven_height_constraints(
           }
         }
       }
-    @types.MathFn(__mop, __mterms) => {
-      let px = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
-      let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+    @types.MathFn(__mop, __mterms) =>
       match parent_height_opt {
         Some(parent_height) => {
           let basis = if parent_height > 0.0 {
@@ -2020,19 +2021,24 @@ fn apply_content_driven_height_constraints(
           } else {
             height_percent_basis
           }
-          let max_h = basis * p + px
+          let max_h = @types.apply_math_op(
+            __mop,
+            __mterms.map(fn(__t) { basis * __t.1 + __t.0 }),
+          )
           if resolved > max_h {
             resolved = max_h
           }
         }
         None => {
-          let max_h = height_percent_basis * p + px
+          let max_h = @types.apply_math_op(
+            __mop,
+            __mterms.map(fn(__t) { height_percent_basis * __t.1 + __t.0 }),
+          )
           if resolved > max_h {
             resolved = max_h
           }
         }
       }
-    }
     @types.MaxContent | @types.MinContent => {
       let intrinsic_height = if style.suppresses_intrinsic_height() {
         content_height_for_auto + padding.vertical_sum() + border.vertical_sum()
@@ -2085,14 +2091,15 @@ fn apply_block_height_constraints(
       }
     }
     @types.MathFn(__mop, __mterms) => {
-      let px = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
-      let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
       let basis = if parent_height > 0.0 {
         parent_height
       } else {
         height_percent_basis
       }
-      let min_h = basis * p + px
+      let min_h = @types.apply_math_op(
+        __mop,
+        __mterms.map(fn(__t) { basis * __t.1 + __t.0 }),
+      )
       if resolved < min_h {
         resolved = min_h
       }
@@ -2127,14 +2134,15 @@ fn apply_block_height_constraints(
       }
     }
     @types.MathFn(__mop, __mterms) => {
-      let px = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
-      let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
       let basis = if parent_height > 0.0 {
         parent_height
       } else {
         height_percent_basis
       }
-      let max_h = basis * p + px
+      let max_h = @types.apply_math_op(
+        __mop,
+        __mterms.map(fn(__t) { basis * __t.1 + __t.0 }),
+      )
       if resolved > max_h {
         resolved = max_h
       }
@@ -3416,9 +3424,10 @@ fn compute_with_collapse(
       }
     }
     @types.MathFn(__mop, __mterms) => {
-      let px = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
-      let pct = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
-      let max_content_w = parent_width * pct + px
+      let max_content_w = @types.apply_math_op(
+        __mop,
+        __mterms.map(fn(__t) { parent_width * __t.1 + __t.0 }),
+      )
       let max_box_w = if style.box_sizing == @types.BorderBox {
         max_content_w
       } else {
@@ -3501,9 +3510,10 @@ fn compute_with_collapse(
       }
     }
     @types.MathFn(__mop, __mterms) => {
-      let px = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
-      let pct = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
-      let min_content_w = parent_width * pct + px
+      let min_content_w = @types.apply_math_op(
+        __mop,
+        __mterms.map(fn(__t) { parent_width * __t.1 + __t.0 }),
+      )
       let min_box_w = if style.box_sizing == @types.BorderBox {
         min_content_w
       } else {
