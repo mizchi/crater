@@ -482,6 +482,12 @@ fn TreeBuilder::handle_in_body_end_tag(
       self.pop_until(tag)
     }
     "form" => {
+      // A stray "</form>" with no form in scope is a parse error and must be
+      // ignored; otherwise pop_until below would clear the whole open-elements
+      // stack (dropping body content).
+      if !self.has_element_in_scope("form") {
+        return
+      }
       self.generate_implied_end_tags()
       self.pop_until("form")
     }
