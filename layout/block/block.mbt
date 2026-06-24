@@ -2346,8 +2346,8 @@ fn try_layout_empty_block_leaf_with_definite_height(
         resolved + padding.horizontal_sum() + border.horizontal_sum()
       }
     }
-    @types.Calc(_, p) => {
-      let resolved = available_width * p
+    @types.Calc(px, pct) => {
+      let resolved = available_width * pct + px
       if style.box_sizing == @types.BorderBox {
         resolved
       } else {
@@ -2355,8 +2355,10 @@ fn try_layout_empty_block_leaf_with_definite_height(
       }
     }
     @types.MathFn(__mop, __mterms) => {
-      let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
-      let resolved = available_width * p
+      let resolved = @types.apply_math_op(
+        __mop,
+        __mterms.map(fn(__t) { available_width * __t.1 + __t.0 }),
+      )
       if style.box_sizing == @types.BorderBox {
         resolved
       } else {
@@ -2385,10 +2387,10 @@ fn try_layout_empty_block_leaf_with_definite_height(
         }
         None => return None
       }
-    @types.Calc(_, p) =>
+    @types.Calc(px, pct) =>
       match available_height {
         Some(parent_height) => {
-          let resolved = parent_height * p
+          let resolved = parent_height * pct + px
           if style.box_sizing == @types.BorderBox {
             resolved
           } else {
@@ -2397,11 +2399,13 @@ fn try_layout_empty_block_leaf_with_definite_height(
         }
         None => return None
       }
-    @types.MathFn(__mop, __mterms) => {
-      let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+    @types.MathFn(__mop, __mterms) =>
       match available_height {
         Some(parent_height) => {
-          let resolved = parent_height * p
+          let resolved = @types.apply_math_op(
+            __mop,
+            __mterms.map(fn(__t) { parent_height * __t.1 + __t.0 }),
+          )
           if style.box_sizing == @types.BorderBox {
             resolved
           } else {
@@ -2410,7 +2414,6 @@ fn try_layout_empty_block_leaf_with_definite_height(
         }
         None => return None
       }
-    }
     _ => return None
   }
   let min_box_width = padding.horizontal_sum() + border.horizontal_sum()
@@ -3366,11 +3369,12 @@ fn compute_with_collapse(
             @layout_types.MaxContent => w
           }
         @types.Percent(p) => parent_width * p
-        @types.Calc(_, p) => parent_width * p
-        @types.MathFn(__mop, __mterms) => {
-          let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
-          parent_width * p
-        }
+        @types.Calc(px, pct) => parent_width * pct + px
+        @types.MathFn(__mop, __mterms) =>
+          @types.apply_math_op(
+            __mop,
+            __mterms.map(fn(__t) { parent_width * __t.1 + __t.0 }),
+          )
         @types.Auto =>
           if use_max_content {
             // Will be computed from content - use parent_width as initial value for children
@@ -3607,13 +3611,13 @@ fn compute_with_collapse(
             _ => None
           }
       }
-    @types.Calc(_, p) =>
+    @types.Calc(px, pct) =>
       match parent_height_opt {
         Some(ph) =>
           if style.box_sizing == @types.BorderBox {
-            Some(ph * p - padding.vertical_sum() - border.vertical_sum())
+            Some(ph * pct + px - padding.vertical_sum() - border.vertical_sum())
           } else {
-            Some(ph * p)
+            Some(ph * pct + px)
           }
         None =>
           // Percentage height in an indefinite containing block behaves like auto.
@@ -3634,15 +3638,19 @@ fn compute_with_collapse(
             _ => None
           }
       }
-    @types.MathFn(__mop, __mterms) => {
-      let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+    @types.MathFn(__mop, __mterms) =>
       match parent_height_opt {
-        Some(ph) =>
+        Some(ph) => {
+          let resolved = @types.apply_math_op(
+            __mop,
+            __mterms.map(fn(__t) { ph * __t.1 + __t.0 }),
+          )
           if style.box_sizing == @types.BorderBox {
-            Some(ph * p - padding.vertical_sum() - border.vertical_sum())
+            Some(resolved - padding.vertical_sum() - border.vertical_sum())
           } else {
-            Some(ph * p)
+            Some(resolved)
           }
+        }
         None =>
           // Percentage height in an indefinite containing block behaves like auto.
           // If max-height is definite, use that constrained content height so
@@ -3662,7 +3670,6 @@ fn compute_with_collapse(
             _ => None
           }
       }
-    }
     @types.Auto =>
       if ctx.stretch_height {
         match ctx.available_height {
