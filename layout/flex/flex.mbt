@@ -7343,15 +7343,17 @@ fn compute_internal(
             final_main = v
           }
         }
-        @types.Calc(_, p) => {
-          let v = content_width * p
+        @types.Calc(px, p) => {
+          let v = content_width * p + px
           if final_main > v {
             final_main = v
           }
         }
         @types.MathFn(__mop, __mterms) => {
-          let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
-          let v = content_width * p
+          let v = @types.apply_math_op(
+            __mop,
+            __mterms.map(fn(__t) { content_width * __t.1 + __t.0 }),
+          )
           if final_main > v {
             final_main = v
           }
@@ -7385,28 +7387,29 @@ fn compute_internal(
             }
             None => ()
           }
-        @types.Calc(_, p) =>
+        @types.Calc(px, p) =>
           match content_height {
             Some(ch) => {
-              let v = ch * p
+              let v = ch * p + px
               if final_main > v {
                 final_main = v
               }
             }
             None => ()
           }
-        @types.MathFn(__mop, __mterms) => {
-          let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+        @types.MathFn(__mop, __mterms) =>
           match content_height {
             Some(ch) => {
-              let v = ch * p
+              let v = @types.apply_math_op(
+                __mop,
+                __mterms.map(fn(__t) { ch * __t.1 + __t.0 }),
+              )
               if final_main > v {
                 final_main = v
               }
             }
             None => ()
           }
-        }
         @types.Auto => ()
         @types.MinContent | @types.MaxContent | @types.FitContent(_) => ()
       }
