@@ -21,6 +21,12 @@ fn resolve_multicol_explicit_width(
       let basis = if content_width > 0.0 { content_width } else { parent_width }
       Some(basis * pct + px)
     }
+    @types.MathFn(__mop, __mterms) => {
+      let px = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
+      let pct = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+      let basis = if content_width > 0.0 { content_width } else { parent_width }
+      Some(basis * pct + px)
+    }
     @types.Auto
     | @types.MinContent
     | @types.MaxContent

@@ -9,6 +9,11 @@ pub fn resolve_inset(dim : @types.Dimension, available : Double) -> Double? {
     @types.Length(v) => Some(v)
     @types.Percent(p) => Some(available * p)
     @types.Calc(px, pct) => Some(available * pct + px)
+    @types.MathFn(__mop, __mterms) => {
+      let px = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
+      let pct = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+      Some(available * pct + px)
+    }
     @types.Auto => None
     @types.MinContent => None // Inset doesn't use intrinsic sizing
     @types.MaxContent => None
@@ -26,6 +31,11 @@ pub fn resolve_length_dimension(
     @types.Length(v) => v
     @types.Percent(p) => available * p
     @types.Calc(px, pct) => available * pct + px
+    @types.MathFn(__mop, __mterms) => {
+      let px = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
+      let pct = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+      available * pct + px
+    }
     @types.Auto => 0.0
     @types.MinContent => 0.0 // Margin doesn't use intrinsic sizing
     @types.MaxContent => 0.0
@@ -100,6 +110,11 @@ pub fn compute_size_params(
     @types.Length(w) => Some(w)
     @types.Percent(p) => Some(area_width * p)
     @types.Calc(px, pct) => Some(area_width * pct + px)
+    @types.MathFn(__mop, __mterms) => {
+      let px = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
+      let pct = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+      Some(area_width * pct + px)
+    }
     @types.Auto =>
       match (inset_left, inset_right) {
         (Some(l), Some(r)) =>
@@ -134,6 +149,11 @@ pub fn compute_size_params(
     @types.Length(h) => Some(h)
     @types.Percent(p) => Some(area_height * p)
     @types.Calc(px, pct) => Some(area_height * pct + px)
+    @types.MathFn(__mop, __mterms) => {
+      let px = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
+      let pct = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+      Some(area_height * pct + px)
+    }
     @types.Auto =>
       match (inset_top, inset_bottom) {
         (Some(t), Some(b)) =>
@@ -162,6 +182,11 @@ pub fn compute_size_params(
     @types.Length(v) => v
     @types.Percent(p) => area_width * p
     @types.Calc(px, pct) => area_width * pct + px
+    @types.MathFn(__mop, __mterms) => {
+      let px = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
+      let pct = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+      area_width * pct + px
+    }
     @types.Auto => 0.0
     @types.MinContent => 0.0 // Would need intrinsic calculation
     @types.MaxContent => 0.0
@@ -171,6 +196,11 @@ pub fn compute_size_params(
     @types.Length(v) => v
     @types.Percent(p) => area_width * p
     @types.Calc(px, pct) => area_width * pct + px
+    @types.MathFn(__mop, __mterms) => {
+      let px = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
+      let pct = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+      area_width * pct + px
+    }
     @types.Auto => @double.infinity
     @types.MinContent => @double.infinity // Would need intrinsic calculation
     @types.MaxContent => @double.infinity
@@ -180,6 +210,11 @@ pub fn compute_size_params(
     @types.Length(v) => v
     @types.Percent(p) => area_height * p
     @types.Calc(px, pct) => area_height * pct + px
+    @types.MathFn(__mop, __mterms) => {
+      let px = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
+      let pct = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+      area_height * pct + px
+    }
     @types.Auto => 0.0
     @types.MinContent => 0.0
     @types.MaxContent => 0.0
@@ -189,6 +224,11 @@ pub fn compute_size_params(
     @types.Length(v) => v
     @types.Percent(p) => area_height * p
     @types.Calc(px, pct) => area_height * pct + px
+    @types.MathFn(__mop, __mterms) => {
+      let px = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
+      let pct = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+      area_height * pct + px
+    }
     @types.Auto => @double.infinity
     @types.MinContent => @double.infinity
     @types.MaxContent => @double.infinity
@@ -226,7 +266,10 @@ pub fn has_dimension_constraint(style : @style.Style, is_width : Bool) -> Bool {
       _ => ()
     }
     match style.max_width {
-      @types.Length(_) | @types.Percent(_) | @types.Calc(_, _) => true
+      @types.Length(_)
+      | @types.Percent(_)
+      | @types.Calc(_, _)
+      | @types.MathFn(_, _) => true
       @types.MinContent | @types.MaxContent | @types.FitContent(_) => true
       @types.Auto =>
         match style.min_width {
@@ -244,7 +287,10 @@ pub fn has_dimension_constraint(style : @style.Style, is_width : Bool) -> Bool {
       _ => ()
     }
     match style.max_height {
-      @types.Length(_) | @types.Percent(_) | @types.Calc(_, _) => true
+      @types.Length(_)
+      | @types.Percent(_)
+      | @types.Calc(_, _)
+      | @types.MathFn(_, _) => true
       @types.MinContent | @types.MaxContent | @types.FitContent(_) => true
       @types.Auto =>
         match style.min_height {

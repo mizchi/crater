@@ -103,6 +103,12 @@ fn can_use_cache(node : LayoutNode, constraint : ConstraintSpace) -> Bool {
       let cached_parent = cache.constraint.available_width
       (constraint.parent_width * p + px - cached_parent).abs() < 0.001
     }
+    @types.MathFn(__mop, __mterms) => {
+      let px = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
+      let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+      let cached_parent = cache.constraint.available_width
+      (constraint.parent_width * p + px - cached_parent).abs() < 0.001
+    }
     @types.Auto =>
       // Auto depends on available width
       (constraint.available_width - cache.constraint.available_width).abs() <
@@ -132,6 +138,15 @@ fn can_use_cache(node : LayoutNode, constraint : ConstraintSpace) -> Bool {
         (None, None) => true
         _ => false
       }
+    @types.MathFn(__mop, __mterms) => {
+      let px = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
+      let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+      match (constraint.parent_height, cache.constraint.available_height) {
+        (Some(ph), Some(ch)) => (ph * p + px - ch).abs() < 0.001
+        (None, None) => true
+        _ => false
+      }
+    }
     @types.Auto =>
       // Auto may depend on available height
       match (constraint.available_height, cache.constraint.available_height) {

@@ -433,6 +433,11 @@ fn resolve_col_width(col : @node.Node, parent_width : Double) -> Double? {
     @types.Length(w) => Some(w)
     @types.Percent(p) => Some(parent_width * p)
     @types.Calc(px, pct) => Some(parent_width * pct + px)
+    @types.MathFn(__mop, __mterms) => {
+      let px = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
+      let pct = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+      Some(parent_width * pct + px)
+    }
     _ => None
   }
 }
@@ -1273,6 +1278,18 @@ fn calculate_fixed_column_widths(
               explicit_widths.push(Some(available_width * pct + px))
               continue
             }
+            @types.MathFn(__mop, __mterms) => {
+              let px = @types.apply_math_op(
+                __mop,
+                __mterms.map(fn(__t) { __t.0 }),
+              )
+              let pct = @types.apply_math_op(
+                __mop,
+                __mterms.map(fn(__t) { __t.1 }),
+              )
+              explicit_widths.push(Some(available_width * pct + px))
+              continue
+            }
             _ => ()
           }
         }
@@ -1356,6 +1373,13 @@ fn fixed_layout_natural_content_width(
           match cells[i].style.width {
             @types.Length(w) => Some(w)
             @types.Calc(px, _) => Some(px)
+            @types.MathFn(__mop, __mterms) => {
+              let px = @types.apply_math_op(
+                __mop,
+                __mterms.map(fn(__t) { __t.0 }),
+              )
+              Some(px)
+            }
             _ => None
           }
         } else {
@@ -2856,6 +2880,11 @@ pub fn compute(
       @types.Length(w) => w
       @types.Percent(p) => parent_width * p
       @types.Calc(px, pct) => parent_width * pct + px
+      @types.MathFn(__mop, __mterms) => {
+        let px = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
+        let pct = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+        parent_width * pct + px
+      }
       @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
         intrinsic_table_width
       @types.Auto => {
@@ -2880,6 +2909,14 @@ pub fn compute(
           table_width = max_w
         }
       }
+      @types.MathFn(__mop, __mterms) => {
+        let px = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
+        let pct = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+        let max_w = parent_width * pct + px
+        if table_width > max_w {
+          table_width = max_w
+        }
+      }
       @types.Percent(p) => {
         let max_w = parent_width * p
         if table_width > max_w {
@@ -2896,6 +2933,14 @@ pub fn compute(
     match style.min_width {
       @types.Length(min_w) => if table_width < min_w { table_width = min_w }
       @types.Calc(px, pct) => {
+        let min_w = parent_width * pct + px
+        if table_width < min_w {
+          table_width = min_w
+        }
+      }
+      @types.MathFn(__mop, __mterms) => {
+        let px = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
+        let pct = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
         let min_w = parent_width * pct + px
         if table_width < min_w {
           table_width = min_w

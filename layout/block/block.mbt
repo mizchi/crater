@@ -38,6 +38,7 @@ fn resolve_dimension_intrinsic(dim : @types.Dimension) -> Double {
     @types.Length(v) => v
     @types.Percent(_) => 0.0 // Percentages resolve to 0 in intrinsic sizing
     @types.Calc(_, _) => 0.0 // Percentages resolve to 0 in intrinsic sizing
+    @types.MathFn(_, _) => 0.0 // Percentages resolve to 0 in intrinsic sizing
     @types.Auto => 0.0
     @types.MinContent | @types.MaxContent | @types.FitContent(_) => 0.0
   }
@@ -1258,6 +1259,21 @@ fn calculate_children_max_content_width(
         } else {
           child_min_box
         }
+      @types.MathFn(__mop, __mterms) => {
+        let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+        if child_style.writing_mode.is_vertical() &&
+          child.children.length() == 0 {
+          match child.measure {
+            Some(mf) => {
+              let intrinsic = (mf.func)(0.0, 0.0)
+              @types.max(intrinsic.max_width * p + child_min_box, child_min_box)
+            }
+            None => child_min_box
+          }
+        } else {
+          child_min_box
+        }
+      }
       @types.Auto =>
         if child_suppress_intrinsic_inline {
           child_style.contained_intrinsic_width_fallback() + child_min_box
@@ -1475,6 +1491,10 @@ fn calculate_children_min_content_width(
           if width_is_inline_axis && resolved > 0.0 {
             resolved = 0.0
           }
+        @types.MathFn(__mop, __mterms) =>
+          if width_is_inline_axis && resolved > 0.0 {
+            resolved = 0.0
+          }
         @types.MinContent =>
           if resolved > intrinsic_min_width {
             resolved = intrinsic_min_width
@@ -1493,6 +1513,10 @@ fn calculate_children_min_content_width(
             resolved = 0.0
           }
         @types.Calc(_, _) =>
+          if width_is_inline_axis && resolved < 0.0 {
+            resolved = 0.0
+          }
+        @types.MathFn(__mop, __mterms) =>
           if width_is_inline_axis && resolved < 0.0 {
             resolved = 0.0
           }
@@ -1544,6 +1568,21 @@ fn calculate_children_min_content_width(
         } else {
           child_min_box
         }
+      @types.MathFn(__mop, __mterms) => {
+        let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+        if child_style.writing_mode.is_vertical() &&
+          child.children.length() == 0 {
+          match child.measure {
+            Some(mf) => {
+              let intrinsic = (mf.func)(0.0, 0.0)
+              @types.max(intrinsic.min_width * p + child_min_box, child_min_box)
+            }
+            None => child_min_box
+          }
+        } else {
+          child_min_box
+        }
+      }
       @types.Auto =>
         match (child_style.aspect_ratio, child_style.height) {
           (Some(ratio), @types.Length(h)) if ratio > 0.0 =>
@@ -1761,6 +1800,7 @@ fn calculate_children_max_content_height(
       @types.Length(h) => @types.max(h, child_min_box)
       @types.Percent(_) => child_min_box
       @types.Calc(_, _) => child_min_box
+      @types.MathFn(_, _) => child_min_box
       @types.Auto =>
         match child.measure {
           Some(mf) => {
@@ -1813,6 +1853,16 @@ fn resolve_box_height_from_style(
           padding.vertical_sum() +
           border.vertical_sum()
       }
+    @types.MathFn(__mop, __mterms) => {
+      let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+      match parent_height_opt {
+        Some(ph) => ph * p
+        None =>
+          content_height_for_auto +
+          padding.vertical_sum() +
+          border.vertical_sum()
+      }
+    }
     @types.Auto =>
       match style.aspect_ratio {
         Some(ratio) =>
@@ -1891,6 +1941,29 @@ fn apply_content_driven_height_constraints(
           }
         }
       }
+    @types.MathFn(__mop, __mterms) => {
+      let px = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
+      let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+      match parent_height_opt {
+        Some(parent_height) => {
+          let basis = if parent_height > 0.0 {
+            parent_height
+          } else {
+            height_percent_basis
+          }
+          let min_h = basis * p + px
+          if resolved < min_h {
+            resolved = min_h
+          }
+        }
+        None => {
+          let min_h = height_percent_basis * p + px
+          if resolved < min_h {
+            resolved = min_h
+          }
+        }
+      }
+    }
     @types.MaxContent | @types.MinContent => {
       let intrinsic_height = if style.suppresses_intrinsic_height() {
         content_height_for_auto + padding.vertical_sum() + border.vertical_sum()
@@ -1937,6 +2010,29 @@ fn apply_content_driven_height_constraints(
           }
         }
       }
+    @types.MathFn(__mop, __mterms) => {
+      let px = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
+      let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+      match parent_height_opt {
+        Some(parent_height) => {
+          let basis = if parent_height > 0.0 {
+            parent_height
+          } else {
+            height_percent_basis
+          }
+          let max_h = basis * p + px
+          if resolved > max_h {
+            resolved = max_h
+          }
+        }
+        None => {
+          let max_h = height_percent_basis * p + px
+          if resolved > max_h {
+            resolved = max_h
+          }
+        }
+      }
+    }
     @types.MaxContent | @types.MinContent => {
       let intrinsic_height = if style.suppresses_intrinsic_height() {
         content_height_for_auto + padding.vertical_sum() + border.vertical_sum()
@@ -1988,6 +2084,19 @@ fn apply_block_height_constraints(
         resolved = min_h
       }
     }
+    @types.MathFn(__mop, __mterms) => {
+      let px = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
+      let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+      let basis = if parent_height > 0.0 {
+        parent_height
+      } else {
+        height_percent_basis
+      }
+      let min_h = basis * p + px
+      if resolved < min_h {
+        resolved = min_h
+      }
+    }
     @types.MinContent | @types.MaxContent | @types.FitContent(_) => {
       let min_h = content_height_for_auto +
         padding.vertical_sum() +
@@ -2007,6 +2116,19 @@ fn apply_block_height_constraints(
       }
     }
     @types.Calc(px, p) => {
+      let basis = if parent_height > 0.0 {
+        parent_height
+      } else {
+        height_percent_basis
+      }
+      let max_h = basis * p + px
+      if resolved > max_h {
+        resolved = max_h
+      }
+    }
+    @types.MathFn(__mop, __mterms) => {
+      let px = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
+      let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
       let basis = if parent_height > 0.0 {
         parent_height
       } else {
@@ -2081,6 +2203,15 @@ fn adjust_auto_width_from_height_constrained_aspect_ratio(
               new_width
             }
           }
+          @types.MathFn(__mop, __mterms) => {
+            let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+            let max_w = parent_width * p
+            if new_width > max_w {
+              max_w
+            } else {
+              new_width
+            }
+          }
           @types.Auto
           | @types.MinContent
           | @types.MaxContent
@@ -2102,6 +2233,15 @@ fn adjust_auto_width_from_height_constrained_aspect_ratio(
             }
           }
           @types.Calc(_, p) => {
+            let min_w = parent_width * p
+            if new_width < min_w {
+              min_w
+            } else {
+              new_width
+            }
+          }
+          @types.MathFn(__mop, __mterms) => {
+            let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
             let min_w = parent_width * p
             if new_width < min_w {
               min_w
@@ -2138,6 +2278,7 @@ fn try_layout_empty_block_leaf_with_definite_height(
     @types.Length(_) => true
     @types.Percent(_) => available_height is Some(_)
     @types.Calc(_, _) => available_height is Some(_)
+    @types.MathFn(_, _) => available_height is Some(_)
     _ => false
   }
   if sizing_mode != @layout_types.Definite ||
@@ -2205,6 +2346,15 @@ fn try_layout_empty_block_leaf_with_definite_height(
         resolved + padding.horizontal_sum() + border.horizontal_sum()
       }
     }
+    @types.MathFn(__mop, __mterms) => {
+      let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+      let resolved = available_width * p
+      if style.box_sizing == @types.BorderBox {
+        resolved
+      } else {
+        resolved + padding.horizontal_sum() + border.horizontal_sum()
+      }
+    }
     @types.Auto => available_width - margin.horizontal_sum()
     _ => return None
   }
@@ -2239,6 +2389,20 @@ fn try_layout_empty_block_leaf_with_definite_height(
         }
         None => return None
       }
+    @types.MathFn(__mop, __mterms) => {
+      let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+      match available_height {
+        Some(parent_height) => {
+          let resolved = parent_height * p
+          if style.box_sizing == @types.BorderBox {
+            resolved
+          } else {
+            resolved + padding.vertical_sum() + border.vertical_sum()
+          }
+        }
+        None => return None
+      }
+    }
     _ => return None
   }
   let min_box_width = padding.horizontal_sum() + border.horizontal_sum()
@@ -2812,6 +2976,7 @@ fn compute_with_collapse(
           @types.Length(_) => true
           @types.Percent(_) => parent_height_opt is Some(_)
           @types.Calc(_, _) => parent_height_opt is Some(_)
+          @types.MathFn(_, _) => parent_height_opt is Some(_)
           _ => false
         }
         let width_is_definite = match style.width {
@@ -2830,6 +2995,13 @@ fn compute_with_collapse(
               Some(ph) => ph * p
               None => 0.0
             }
+          @types.MathFn(__mop, __mterms) => {
+            let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+            match parent_height_opt {
+              Some(ph) => ph * p
+              None => 0.0
+            }
+          }
           _ => 0.0
         }
 
@@ -2840,6 +3012,10 @@ fn compute_with_collapse(
           @types.Length(w) => Some(w)
           @types.Percent(p) => Some(parent_width * p)
           @types.Calc(_, p) => Some(parent_width * p)
+          @types.MathFn(__mop, __mterms) => {
+            let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+            Some(parent_width * p)
+          }
           @types.Auto =>
             // If aspect_ratio is set and height is definite, use None to let aspect_ratio calculate
             if ratio_for_auto is Some(_) &&
@@ -2905,6 +3081,18 @@ fn compute_with_collapse(
                   border.vertical_sum(),
                 )
             }
+          @types.MathFn(__mop, __mterms) => {
+            let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+            match parent_height_opt {
+              Some(ph) => Some(ph * p)
+              None =>
+                Some(
+                  intrinsic_height +
+                  padding.vertical_sum() +
+                  border.vertical_sum(),
+                )
+            }
+          }
           @types.Auto =>
             // If aspect_ratio is set and width is definite, use None to let aspect_ratio calculate
             if ratio_for_auto is Some(_) &&
@@ -3171,6 +3359,10 @@ fn compute_with_collapse(
           }
         @types.Percent(p) => parent_width * p
         @types.Calc(_, p) => parent_width * p
+        @types.MathFn(__mop, __mterms) => {
+          let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+          parent_width * p
+        }
         @types.Auto =>
           if use_max_content {
             // Will be computed from content - use parent_width as initial value for children
@@ -3213,6 +3405,19 @@ fn compute_with_collapse(
       }
     }
     @types.Calc(px, pct) => {
+      let max_content_w = parent_width * pct + px
+      let max_box_w = if style.box_sizing == @types.BorderBox {
+        max_content_w
+      } else {
+        max_content_w + padding.horizontal_sum() + border.horizontal_sum()
+      }
+      if box_width > max_box_w {
+        box_width = max_box_w
+      }
+    }
+    @types.MathFn(__mop, __mterms) => {
+      let px = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
+      let pct = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
       let max_content_w = parent_width * pct + px
       let max_box_w = if style.box_sizing == @types.BorderBox {
         max_content_w
@@ -3285,6 +3490,19 @@ fn compute_with_collapse(
       }
     }
     @types.Calc(px, pct) => {
+      let min_content_w = parent_width * pct + px
+      let min_box_w = if style.box_sizing == @types.BorderBox {
+        min_content_w
+      } else {
+        min_content_w + padding.horizontal_sum() + border.horizontal_sum()
+      }
+      if box_width < min_box_w {
+        box_width = min_box_w
+      }
+    }
+    @types.MathFn(__mop, __mterms) => {
+      let px = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
+      let pct = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
       let min_content_w = parent_width * pct + px
       let min_box_w = if style.box_sizing == @types.BorderBox {
         min_content_w
@@ -3406,6 +3624,35 @@ fn compute_with_collapse(
             _ => None
           }
       }
+    @types.MathFn(__mop, __mterms) => {
+      let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+      match parent_height_opt {
+        Some(ph) =>
+          if style.box_sizing == @types.BorderBox {
+            Some(ph * p - padding.vertical_sum() - border.vertical_sum())
+          } else {
+            Some(ph * p)
+          }
+        None =>
+          // Percentage height in an indefinite containing block behaves like auto.
+          // If max-height is definite, use that constrained content height so
+          // descendants with percentage heights can resolve against the used size.
+          match style.max_height {
+            @types.Length(max_h) =>
+              if style.box_sizing == @types.BorderBox {
+                Some(
+                  @types.max(
+                    0.0,
+                    max_h - padding.vertical_sum() - border.vertical_sum(),
+                  ),
+                )
+              } else {
+                Some(@types.max(0.0, max_h))
+              }
+            _ => None
+          }
+      }
+    }
     @types.Auto =>
       if ctx.stretch_height {
         match ctx.available_height {
@@ -3594,6 +3841,7 @@ fn compute_with_collapse(
           @types.Length(l) => l
           @types.Percent(_) => 0.0
           @types.Calc(_, _) => 0.0
+          @types.MathFn(_, _) => 0.0
           @types.Auto
           | @types.MinContent
           | @types.MaxContent
@@ -3603,6 +3851,7 @@ fn compute_with_collapse(
           @types.Length(r) => r
           @types.Percent(_) => 0.0
           @types.Calc(_, _) => 0.0
+          @types.MathFn(_, _) => 0.0
           @types.Auto
           | @types.MinContent
           | @types.MaxContent
@@ -3617,6 +3866,7 @@ fn compute_with_collapse(
           @types.Length(l) => l
           @types.Percent(_) => 0.0
           @types.Calc(_, _) => 0.0
+          @types.MathFn(_, _) => 0.0
           @types.Auto
           | @types.MinContent
           | @types.MaxContent
@@ -3626,6 +3876,7 @@ fn compute_with_collapse(
           @types.Length(r) => r
           @types.Percent(_) => 0.0
           @types.Calc(_, _) => 0.0
+          @types.MathFn(_, _) => 0.0
           @types.Auto
           | @types.MinContent
           | @types.MaxContent
@@ -3760,6 +4011,17 @@ fn compute_with_collapse(
                           Some(parent_content_h * height_p)
                         None => None
                       }
+                    @types.MathFn(__mop, __mterms) => {
+                      let height_p = @types.apply_math_op(
+                        __mop,
+                        __mterms.map(fn(__t) { __t.1 }),
+                      )
+                      match child_available_height {
+                        Some(parent_content_h) =>
+                          Some(parent_content_h * height_p)
+                        None => None
+                      }
+                    }
                     @types.Auto
                     | @types.MinContent
                     | @types.MaxContent
@@ -3893,6 +4155,17 @@ fn compute_with_collapse(
                           Some(parent_content_h * height_p)
                         None => None
                       }
+                    @types.MathFn(__mop, __mterms) => {
+                      let height_p = @types.apply_math_op(
+                        __mop,
+                        __mterms.map(fn(__t) { __t.1 }),
+                      )
+                      match child_available_height {
+                        Some(parent_content_h) =>
+                          Some(parent_content_h * height_p)
+                        None => None
+                      }
+                    }
                     @types.Auto
                     | @types.MinContent
                     | @types.MaxContent
@@ -3994,6 +4267,152 @@ fn compute_with_collapse(
             } else {
               child_min_box // At minimum, padding+border
             }
+          @types.MathFn(__mop, __mterms) => {
+            let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+            if child_style.writing_mode.is_vertical() &&
+              child.children.length() == 0 {
+              match child.measure {
+                Some(mf) => {
+                  let intrinsic = (mf.func)(0.0, 0.0)
+                  @types.max(
+                    intrinsic.max_width * p + child_min_box,
+                    child_min_box,
+                  )
+                }
+                None => child_min_box
+              }
+            } else if child.children.length() == 0 {
+              let measured_aspect_width : Double? = match
+                (child.measure, child_style.aspect_ratio) {
+                (Some(mf), Some(ratio)) if ratio > 0.0 => {
+                  let intrinsic = (mf.func)(0.0, 0.0)
+                  let resolved_height : Double? = match child_style.height {
+                    @types.Length(h) => Some(h)
+                    @types.Percent(height_p) =>
+                      match child_available_height {
+                        Some(parent_content_h) =>
+                          Some(parent_content_h * height_p)
+                        None => None
+                      }
+                    @types.Calc(_, height_p) =>
+                      match child_available_height {
+                        Some(parent_content_h) =>
+                          Some(parent_content_h * height_p)
+                        None => None
+                      }
+                    @types.MathFn(__mop, __mterms) => {
+                      let height_p = @types.apply_math_op(
+                        __mop,
+                        __mterms.map(fn(__t) { __t.1 }),
+                      )
+                      match child_available_height {
+                        Some(parent_content_h) =>
+                          Some(parent_content_h * height_p)
+                        None => None
+                      }
+                    }
+                    @types.Auto
+                    | @types.MinContent
+                    | @types.MaxContent
+                    | @types.FitContent(_) => {
+                      let min_h = match child_style.min_height {
+                        @types.Length(h) => h
+                        @types.Percent(height_p) =>
+                          match child_available_height {
+                            Some(parent_content_h) =>
+                              parent_content_h * height_p
+                            None => 0.0
+                          }
+                        _ => 0.0
+                      }
+                      let max_h = match child_style.max_height {
+                        @types.Length(h) => h
+                        @types.Percent(height_p) =>
+                          match child_available_height {
+                            Some(parent_content_h) =>
+                              parent_content_h * height_p
+                            None => @double.infinity
+                          }
+                        _ => @double.infinity
+                      }
+                      if max_h < @double.infinity || min_h > 0.0 {
+                        Some(
+                          @types.clamp(
+                            intrinsic.max_height +
+                            child_padding_v +
+                            child_border.vertical_sum(),
+                            min_h,
+                            max_h,
+                          ),
+                        )
+                      } else {
+                        None
+                      }
+                    }
+                  }
+                  match resolved_height {
+                    Some(h) =>
+                      Some(
+                        calc_aspect_width(
+                          ratio,
+                          h,
+                          child_style.box_sizing,
+                          child_padding_v,
+                          child_border.vertical_sum(),
+                          child_padding_left + child_padding_right,
+                          child_border.horizontal_sum(),
+                          child_min_box,
+                        ),
+                      )
+                    None => None
+                  }
+                }
+                _ => None
+              }
+              match measured_aspect_width {
+                Some(w) => @types.max(w, child_min_box)
+                None =>
+                  if has_intrinsic_width_constraint {
+                    match child_recursive_intrinsic_width {
+                      Some(recursive_w) => recursive_w
+                      None => child_min_box
+                    }
+                  } else if has_percent_sized_replaced_descendant(child) {
+                    match child_available_height {
+                      Some(h) =>
+                        @types.max(h * p + child_min_box, child_min_box)
+                      None =>
+                        if child.children.length() == 0 {
+                          child_min_box
+                        } else {
+                          let recursive_w = compute_recursive_child_width()
+                          @types.max(recursive_w, child_min_box)
+                        }
+                    }
+                  } else {
+                    child_min_box
+                  }
+              }
+            } else if has_intrinsic_width_constraint {
+              match child_recursive_intrinsic_width {
+                Some(recursive_w) => recursive_w
+                None => child_min_box
+              }
+            } else if has_percent_sized_replaced_descendant(child) {
+              match child_available_height {
+                Some(h) => @types.max(h * p + child_min_box, child_min_box)
+                None =>
+                  if child.children.length() == 0 {
+                    child_min_box
+                  } else {
+                    let recursive_w = compute_recursive_child_width()
+                    @types.max(recursive_w, child_min_box)
+                  }
+              }
+            } else {
+              child_min_box // At minimum, padding+border
+            }
+          }
           @types.Auto =>
             // For width:auto, check if aspect-ratio can determine width from height
             // This applies to both MeasureFunc elements (canvas, img) and regular elements
@@ -4147,6 +4566,7 @@ fn compute_with_collapse(
           @types.Length(l) => l
           @types.Percent(_) => 0.0
           @types.Calc(_, _) => 0.0
+          @types.MathFn(_, _) => 0.0
           @types.Auto
           | @types.MinContent
           | @types.MaxContent
@@ -4156,6 +4576,7 @@ fn compute_with_collapse(
           @types.Length(r) => r
           @types.Percent(_) => 0.0
           @types.Calc(_, _) => 0.0
+          @types.MathFn(_, _) => 0.0
           @types.Auto
           | @types.MinContent
           | @types.MaxContent
@@ -4166,6 +4587,7 @@ fn compute_with_collapse(
           @types.Length(l) => l
           @types.Percent(_) => 0.0
           @types.Calc(_, _) => 0.0
+          @types.MathFn(_, _) => 0.0
           @types.Auto
           | @types.MinContent
           | @types.MaxContent
@@ -4175,6 +4597,7 @@ fn compute_with_collapse(
           @types.Length(r) => r
           @types.Percent(_) => 0.0
           @types.Calc(_, _) => 0.0
+          @types.MathFn(_, _) => 0.0
           @types.Auto
           | @types.MinContent
           | @types.MaxContent
@@ -4248,6 +4671,7 @@ fn compute_with_collapse(
           @types.Length(w) => @types.max(w, child_min_box)
           @types.Percent(_) => child_min_box
           @types.Calc(_, _) => child_min_box
+          @types.MathFn(_, _) => child_min_box
           @types.Auto =>
             match (child_style.aspect_ratio, child_style.height) {
               (Some(ratio), @types.Length(h)) if ratio > 0.0 =>
@@ -4390,6 +4814,13 @@ fn compute_with_collapse(
           box_width = max_w
         }
       }
+      @types.MathFn(__mop, __mterms) => {
+        let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+        let max_w = parent_width * p
+        if box_width > max_w {
+          box_width = max_w
+        }
+      }
       @types.MaxContent | @types.FitContent(_) => {
         let intrinsic_width = intrinsic_max_width_for_constraints
         if box_width > intrinsic_width {
@@ -4413,6 +4844,13 @@ fn compute_with_collapse(
         }
       }
       @types.Calc(_, p) => {
+        let min_w = parent_width * p
+        if box_width < min_w {
+          box_width = min_w
+        }
+      }
+      @types.MathFn(__mop, __mterms) => {
+        let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
         let min_w = parent_width * p
         if box_width < min_w {
           box_width = min_w
@@ -5275,6 +5713,7 @@ fn compute_with_collapse(
         // Keep parent content height as the percentage basis.
         // The float node itself resolves its own percentage height later.
         child_available_height
+      @types.MathFn(_, _) => child_available_height
       _ =>
         match child_available_height {
           Some(_) => child_available_height
@@ -5359,6 +5798,10 @@ fn compute_with_collapse(
       @types.Length(w) => w
       @types.Percent(p) => actual_child_available_width * p
       @types.Calc(_, p) => actual_child_available_width * p
+      @types.MathFn(__mop, __mterms) => {
+        let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+        actual_child_available_width * p
+      }
       @types.Auto => {
         let preferred_max = compute_float_keyword_width(@types.MaxContent)
         let mut preferred_min = compute_float_keyword_width(@types.MinContent)
@@ -6956,6 +7399,10 @@ fn resolve_fixed_inset_offset(
     @types.Length(v) => v
     @types.Percent(p) => available * p
     @types.Calc(_, p) => available * p
+    @types.MathFn(__mop, __mterms) => {
+      let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+      available * p
+    }
     _ => 0.0
   }
 }
@@ -7143,12 +7590,26 @@ fn layout_absolute_child(
             match child.style.height {
               @types.Percent(p) => p > 0.0
               @types.Calc(_, p) => p > 0.0
+              @types.MathFn(__mop, __mterms) => {
+                let p = @types.apply_math_op(
+                  __mop,
+                  __mterms.map(fn(__t) { __t.1 }),
+                )
+                p > 0.0
+              }
               _ => false
             }
           } else {
             match child.style.width {
               @types.Percent(p) => p > 0.0
               @types.Calc(_, p) => p > 0.0
+              @types.MathFn(__mop, __mterms) => {
+                let p = @types.apply_math_op(
+                  __mop,
+                  __mterms.map(fn(__t) { __t.1 }),
+                )
+                p > 0.0
+              }
               _ => false
             }
           }
@@ -7688,6 +8149,10 @@ fn compute_nested(
       @types.Length(w) => w
       @types.Percent(p) => available_width * p
       @types.Calc(_, p) => available_width * p
+      @types.MathFn(__mop, __mterms) => {
+        let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+        available_width * p
+      }
       @types.Auto =>
         match intrinsic {
           Some(intr) =>
@@ -7709,6 +8174,13 @@ fn compute_nested(
           Some(ah) => ah * p
           None => padding.vertical_sum() + border.vertical_sum()
         }
+      @types.MathFn(__mop, __mterms) => {
+        let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+        match available_height {
+          Some(ah) => ah * p
+          None => padding.vertical_sum() + border.vertical_sum()
+        }
+      }
       @types.Auto =>
         match intrinsic {
           Some(intr) =>
@@ -7810,6 +8282,7 @@ fn compute_nested_intrinsic(
       @types.Length(w) => w
       @types.Percent(_) => 0.0 // Percentage resolves to 0 in intrinsic sizing
       @types.Calc(_, _) => 0.0 // Percentage resolves to 0 in intrinsic sizing
+      @types.MathFn(_, _) => 0.0 // Percentage resolves to 0 in intrinsic sizing
       @types.Auto =>
         match intrinsic {
           Some(intr) =>
@@ -7841,6 +8314,13 @@ fn compute_nested_intrinsic(
           Some(ah) => ah * p
           None => padding.vertical_sum() + border.vertical_sum()
         }
+      @types.MathFn(__mop, __mterms) => {
+        let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+        match available_height {
+          Some(ah) => ah * p
+          None => padding.vertical_sum() + border.vertical_sum()
+        }
+      }
       @types.Auto =>
         match intrinsic {
           Some(intr) =>
