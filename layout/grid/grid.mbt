@@ -666,13 +666,17 @@ fn compute_grid_layout_internal(
     resolve_dimension(style.height, available_height, 0.0)
   }
 
-  // Expand repeat() in templates early (needed for correct column/row counts)
-  let (expanded_columns, auto_fit_columns) = expand_track_templates(
+  // Expand repeat() in templates early (needed for correct column/row counts).
+  // Line names are expanded in lockstep so named-line placement stays aligned
+  // after a repeat and picks up names declared inside repeat(...).
+  let (expanded_columns, auto_fit_columns, expanded_column_line_names) = expand_track_templates(
     style.grid_template_columns,
+    style.grid_template_column_line_names,
     container_width_for_expansion,
   )
-  let (expanded_rows, auto_fit_rows) = expand_track_templates(
+  let (expanded_rows, auto_fit_rows, expanded_row_line_names) = expand_track_templates(
     style.grid_template_rows,
+    style.grid_template_row_line_names,
     container_height_for_expansion,
   )
   let mut has_fit_content_percent_columns = false
@@ -702,8 +706,8 @@ fn compute_grid_layout_internal(
     explicit_row_count,
     style.grid_auto_flow,
     grid_areas,
-    style.grid_template_column_line_names,
-    style.grid_template_row_line_names,
+    expanded_column_line_names,
+    expanded_row_line_names,
   )
 
   // Calculate implicit track range needed
@@ -4027,11 +4031,40 @@ fn single_to_track(
 }
 
 ///|
-/// Expand repeat() in track templates
+/// Concatenate two grid line-name lists into a fresh array.
+fn merge_line_names(a : Array[String], b : Array[String]) -> Array[String] {
+  let r : Array[String] = []
+  for n in a {
+    r.push(n)
+  }
+  for n in b {
+    r.push(n)
+  }
+  r
+}
+
+///|
+/// Line names at grid line `i` of `names`, or an empty list when out of range.
+fn line_names_at(names : Array[Array[String]], i : Int) -> Array[String] {
+  if i >= 0 && i < names.length() {
+    names[i]
+  } else {
+    []
+  }
+}
+
+///|
+/// Expand repeat() in track templates. `line_names` is the template's per-grid-
+/// line name list (length = templates + 1, with each `repeat()` counting as one
+/// track); it is expanded in lockstep with the tracks so named-line placement
+/// stays aligned after a repeat and picks up the line names declared *inside*
+/// `repeat(...)`. At a repetition boundary the trailing names of one repetition
+/// merge with the leading names of the next, per CSS Grid.
 fn expand_track_templates(
   templates : Array[@types.TrackSizingFunction],
+  line_names : Array[Array[String]],
   available_size : Double,
-) -> (Array[@types.TrackSizingFunction], Array[Bool]) {
+) -> (Array[@types.TrackSizingFunction], Array[Bool], Array[Array[String]]) {
   // First, calculate fixed track sizes (non-repeat tracks)
   let mut fixed_size = 0.0
   for i = 0; i < templates.length(); i = i + 1 {
@@ -4049,9 +4082,13 @@ fn expand_track_templates(
   let remaining_size = available_size - fixed_size
   let result : Array[@types.TrackSizingFunction] = []
   let auto_fit_mask : Array[Bool] = []
+  let expanded_names : Array[Array[String]] = []
+  // Names carried onto the next grid line (top-level line before the current
+  // track, or the trailing names of the previous repetition).
+  let mut pending = line_names_at(line_names, 0)
   for i = 0; i < templates.length(); i = i + 1 {
     match templates[i] {
-      @types.Repeat(repeat_count, tracks, _) => {
+      @types.Repeat(repeat_count, tracks, repeat_names) => {
         let repetitions = match repeat_count {
           @types.Count(n) => n
           @types.AutoFill => {
@@ -4087,21 +4124,41 @@ fn expand_track_templates(
           @types.AutoFit => true
           _ => false
         }
-        // Expand the tracks
+        // Expand the tracks, interleaving the repeat's internal line names.
         for r = 0; r < repetitions; r = r + 1 {
           for t = 0; t < tracks.length(); t = t + 1 {
+            let line = if t == 0 {
+              // Leading repeat names merge with whatever is pending (top-level
+              // names before the repeat, or the previous repetition's trailing).
+              merge_line_names(pending, line_names_at(repeat_names, 0))
+            } else {
+              line_names_at(repeat_names, t)
+            }
+            expanded_names.push(line)
             result.push(single_to_track(tracks[t]))
             auto_fit_mask.push(is_auto_fit)
+            if t == 0 {
+              pending = []
+            }
           }
+          // Trailing names of this repetition become pending for the next line.
+          pending = line_names_at(repeat_names, tracks.length())
         }
+        // Merge the last repetition's trailing names with the top-level names
+        // that follow the repeat.
+        pending = merge_line_names(pending, line_names_at(line_names, i + 1))
       }
       other => {
+        expanded_names.push(pending)
         result.push(other)
         auto_fit_mask.push(false)
+        pending = line_names_at(line_names, i + 1)
       }
     }
   }
-  (result, auto_fit_mask)
+  // Final grid line.
+  expanded_names.push(pending)
+  (result, auto_fit_mask, expanded_names)
 }
 
 ///|
@@ -4838,11 +4895,15 @@ fn place_grid_items(
 
     // Check if item has explicit Line positioning
     let has_explicit_column = match style.grid_column.start {
-      @types.GridPlacement::Line(_) | @types.GridPlacement::Named(_) => true
+      @types.GridPlacement::Line(_)
+      | @types.GridPlacement::Named(_)
+      | @types.GridPlacement::NamedLine(_, _) => true
       _ => false
     }
     let has_explicit_row = match style.grid_row.start {
-      @types.GridPlacement::Line(_) | @types.GridPlacement::Named(_) => true
+      @types.GridPlacement::Line(_)
+      | @types.GridPlacement::Named(_)
+      | @types.GridPlacement::NamedLine(_, _) => true
       _ => false
     }
 
@@ -4918,11 +4979,15 @@ fn place_grid_items(
       continue
     }
     let has_explicit_column = match style.grid_column.start {
-      @types.GridPlacement::Line(_) | @types.GridPlacement::Named(_) => true
+      @types.GridPlacement::Line(_)
+      | @types.GridPlacement::Named(_)
+      | @types.GridPlacement::NamedLine(_, _) => true
       _ => false
     }
     let has_explicit_row = match style.grid_row.start {
-      @types.GridPlacement::Line(_) | @types.GridPlacement::Named(_) => true
+      @types.GridPlacement::Line(_)
+      | @types.GridPlacement::Named(_)
+      | @types.GridPlacement::NamedLine(_, _) => true
       _ => false
     }
     if has_explicit_column || !has_explicit_row {
@@ -4975,11 +5040,15 @@ fn place_grid_items(
 
     // Skip items already placed in Pass 2/3
     let has_explicit_column = match style.grid_column.start {
-      @types.GridPlacement::Line(_) | @types.GridPlacement::Named(_) => true
+      @types.GridPlacement::Line(_)
+      | @types.GridPlacement::Named(_)
+      | @types.GridPlacement::NamedLine(_, _) => true
       _ => false
     }
     let has_explicit_row = match style.grid_row.start {
-      @types.GridPlacement::Line(_) | @types.GridPlacement::Named(_) => true
+      @types.GridPlacement::Line(_)
+      | @types.GridPlacement::Named(_)
+      | @types.GridPlacement::NamedLine(_, _) => true
       _ => false
     }
     if has_explicit_row {
@@ -5134,17 +5203,27 @@ fn resolve_line_placement(
     line.end,
     line_names,
   )
+  // `Named` (`sidebar`) and `NamedLine` (`col 2`) both resolve to a concrete
+  // 1-based line via @computed; substitute the resolved line number.
   let eff_start : @types.GridPlacement = match (line.start, named_start) {
-    (@types.GridPlacement::Named(_), Some(n)) => @types.GridPlacement::Line(n)
+    (@types.GridPlacement::Named(_), Some(n))
+    | (@types.GridPlacement::NamedLine(_, _), Some(n)) =>
+      @types.GridPlacement::Line(n)
     _ => line.start
   }
   let eff_end : @types.GridPlacement = match (line.end, named_end) {
-    (@types.GridPlacement::Named(_), Some(n)) => @types.GridPlacement::Line(n)
+    (@types.GridPlacement::Named(_), Some(n))
+    | (@types.GridPlacement::NamedLine(_, _), Some(n)) =>
+      @types.GridPlacement::Line(n)
     _ => line.end
   }
   let start = match eff_start {
     @types.GridPlacement::Auto => auto_position
-    @types.GridPlacement::Named(_) => auto_position // unresolved name
+    // Unresolved named placements fall back to auto.
+    @types.GridPlacement::Named(_) | @types.GridPlacement::NamedLine(_, _) =>
+      auto_position
+    // `span N name` not resolvable here; approximate as auto start.
+    @types.GridPlacement::SpanNamed(_, _) => auto_position
     @types.GridPlacement::Line(n) =>
       if n > 0 {
         n - 1 // Convert 1-indexed to 0-indexed
@@ -5162,7 +5241,8 @@ fn resolve_line_placement(
   }
   let end = match eff_end {
     @types.GridPlacement::Auto => start + 1
-    @types.GridPlacement::Named(_) => start + 1 // unresolved name
+    @types.GridPlacement::Named(_) | @types.GridPlacement::NamedLine(_, _) =>
+      start + 1 // unresolved name
     @types.GridPlacement::Line(n) =>
       if n > 0 {
         n - 1
@@ -5172,6 +5252,9 @@ fn resolve_line_placement(
         start + 1
       }
     @types.GridPlacement::Span(s) => start + s
+    // `span N name`: approximate by spanning N tracks (proper named-line span
+    // resolution would need the start position relative to the line names).
+    @types.GridPlacement::SpanNamed(s, _) => start + s
   }
 
   // Handle span in start position
@@ -6929,6 +7012,9 @@ fn resolve_absolute_grid_line(
         Some(offset)
       }
     @types.GridPlacement::Span(_) => None // Span without explicit end defaults to Auto
-    @types.GridPlacement::Named(_) => None // Named lines not resolved for abspos
+    // Named / named-line / named-span placements are not resolved for abspos.
+    @types.GridPlacement::Named(_)
+    | @types.GridPlacement::NamedLine(_, _)
+    | @types.GridPlacement::SpanNamed(_, _) => None
   }
 }

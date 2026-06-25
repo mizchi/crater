@@ -111,3 +111,76 @@ test "grid named-line placement" {
   inspect(layout.children[0].width, content="240")
   inspect(layout.children[0].x, content="0")
 }
+
+///|
+// css 0.5.9 carries the line names declared inside repeat() in the third field
+// of Repeat. expand_track_templates expands them in lockstep with the tracks so
+// `repeat(3, [col] 100px)` yields a "col" line before every repetition; an item
+// placed by `grid-column: col 2 / col 3` (GridPlacement::NamedLine) lands on the
+// 2nd/3rd "col" line — track index 1, x=100, width=100.
+test "grid repeat() internal line names place by NamedLine" {
+  let default_style = @style.Style::default()
+  let root_style = {
+    ..default_style,
+    display: @types.Grid,
+    width: @types.Length(1000.0),
+    height: @types.Length(100.0),
+    grid_template_columns: [
+      @types.Repeat(
+        @types.Count(3),
+        [@types.SingleTrackSizing::Length(100.0)],
+        [["col"], []],
+      ),
+    ],
+    // Top-level line names: the repeat counts as one track (two empty lines).
+    grid_template_column_line_names: [[], []],
+  }
+  let item = @node.Node::leaf("item", {
+    ..default_style,
+    grid_column: {
+      start: @types.GridPlacement::NamedLine(2, "col"),
+      end: @types.GridPlacement::NamedLine(3, "col"),
+    },
+    height: @types.Length(20.0),
+  })
+  let root = @node.Node::new("root", root_style, [item])
+  let layout = compute_grid_layout(root, 1000.0, 600.0, default_dispatch())
+  inspect(layout.children[0].x, content="100")
+  inspect(layout.children[0].width, content="100")
+}
+
+///|
+// A named line declared *after* a repeat() must stay aligned with the expanded
+// track count: `[s] 200px [m] repeat(2, 100px) [e]` puts "e" on the final line
+// (x=400). An item at `grid-column: m / e` spans from x=200 to x=400.
+test "grid named line after repeat stays aligned" {
+  let default_style = @style.Style::default()
+  let root_style = {
+    ..default_style,
+    display: @types.Grid,
+    width: @types.Length(1000.0),
+    height: @types.Length(100.0),
+    grid_template_columns: [
+      @types.TrackSizingFunction::Length(200.0),
+      @types.Repeat(
+        @types.Count(2),
+        [@types.SingleTrackSizing::Length(100.0)],
+        [[], []],
+      ),
+    ],
+    // [s] 200px [m] repeat(...) [e] — the repeat occupies one top-level slot.
+    grid_template_column_line_names: [["s"], ["m"], ["e"]],
+  }
+  let item = @node.Node::leaf("item", {
+    ..default_style,
+    grid_column: {
+      start: @types.GridPlacement::Named("m"),
+      end: @types.GridPlacement::Named("e"),
+    },
+    height: @types.Length(20.0),
+  })
+  let root = @node.Node::new("root", root_style, [item])
+  let layout = compute_grid_layout(root, 1000.0, 600.0, default_dispatch())
+  inspect(layout.children[0].x, content="200")
+  inspect(layout.children[0].width, content="200")
+}
