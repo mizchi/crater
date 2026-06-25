@@ -188,3 +188,28 @@ test "Wikipedia actual @media print block does not leak to screen" {
   inspect(nav.id, content="nav#menu")
   assert_true(nav.style.display != @types.Display::None)
 }
+
+///|
+// Rules inside @layer must be applied (the parser doesn't understand @layer, so
+// the renderer flattens `@layer name { ... }` before parsing). Modern CSS
+// frameworks (Primer/Tailwind/Bootstrap) put base resets inside @layer.
+test "CSS @layer rules are applied (flattened)" {
+  let html =
+    #|<html><head><style>
+    #|@layer primer-base { #boxed { display: none; } }
+    #|@layer a { @layer b { #nested { display: none; } } }
+    #|@layer ordering, more;
+    #|#plain { display: none; }
+    #|</style></head>
+    #|<body>
+    #|<div id="boxed">layered</div>
+    #|<div id="nested">nested layer</div>
+    #|<div id="plain">plain</div>
+    #|</body></html>
+  let ctx = @renderer.RenderContext::default()
+  let node = @renderer.render_to_node(html, ctx)
+  inspect(node.children[0].id, content="div#boxed")
+  inspect(node.children[0].style.display, content="None")
+  inspect(node.children[1].style.display, content="None")
+  inspect(node.children[2].style.display, content="None")
+}
