@@ -141,6 +141,60 @@ export function normalizeRoot(node: Box): Box {
   return { ...node, x: 0, y: 0 };
 }
 
+/** Tag name from a node id like "div#foo", "span.bar", or "div". */
+export function tagOf(node: Box): string {
+  return String(node.id).split(/[#.]/)[0] || '';
+}
+
+/**
+ * Count visible (non-text) elements by tag. Alignment-free, so unlike the
+ * parallel-walk browserOnly/craterOnly counts it measures content *coverage*
+ * (which elements rendered at all) without being skewed by structural drift.
+ */
+export function tagHistogram(root: Box): Map<string, number> {
+  const hist = new Map<string, number>();
+  const visit = (n: Box): void => {
+    if (!String(n.id).startsWith('#text') && ((n.width ?? 0) >= 1 || (n.height ?? 0) >= 1)) {
+      const t = tagOf(n);
+      hist.set(t, (hist.get(t) ?? 0) + 1);
+    }
+    for (const c of n.children ?? []) visit(c);
+  };
+  visit(root);
+  return hist;
+}
+
+export interface Coverage {
+  browserTotal: number;
+  craterTotal: number;
+  /** craterTotal / browserTotal, clamped to [0, 1]. */
+  ratio: number;
+  /** Tags where the browser rendered more elements than Crater, worst first. */
+  deficits: Array<{ tag: string; browser: number; crater: number }>;
+}
+
+/** Compare visible element coverage between the two trees, tag by tag. */
+export function coverage(browser: Box, crater: Box): Coverage {
+  const bh = tagHistogram(browser);
+  const ch = tagHistogram(crater);
+  let browserTotal = 0;
+  let craterTotal = 0;
+  for (const n of bh.values()) browserTotal += n;
+  for (const n of ch.values()) craterTotal += n;
+  const deficits: Coverage['deficits'] = [];
+  for (const [tag, b] of bh) {
+    const c = ch.get(tag) ?? 0;
+    if (b > c) deficits.push({ tag, browser: b, crater: c });
+  }
+  deficits.sort((p, q) => q.browser - q.crater - (p.browser - p.crater));
+  return {
+    browserTotal,
+    craterTotal,
+    ratio: browserTotal > 0 ? Math.min(1, craterTotal / browserTotal) : 1,
+    deficits,
+  };
+}
+
 export function summarize(name: string, stats: MatchStats): SnapshotReport {
   return {
     name,
@@ -213,6 +267,7 @@ async function main(): Promise<void> {
   const names = nameArg ? [nameArg] : listRealWorldSnapshotNames();
   const render = await loadCraterRenderer();
   const reports: SnapshotReport[] = [];
+  const coverages: Coverage[] = [];
 
   for (const name of names) {
     const snap = loadRealWorldSnapshot(name);
@@ -223,21 +278,36 @@ async function main(): Promise<void> {
     reports.push(
       summarize(name, matchTrees(normalizeRoot(browser), normalizeRoot(crater), threshold)),
     );
+    coverages.push(coverage(browser, crater));
   }
 
   if (json) {
-    console.log(JSON.stringify({ threshold, reports }, null, 2));
+    console.log(JSON.stringify({ threshold, reports, coverages }, null, 2));
     return;
   }
 
-  for (const r of reports) {
+  reports.forEach((r, idx) => {
+    const cov = coverages[idx]!;
     console.log(`\n=== ${r.name} ===`);
+    console.log(
+      `  content coverage: ${(cov.ratio * 100).toFixed(1)}%  ` +
+        `(${cov.craterTotal}/${cov.browserTotal} visible elements)`,
+    );
+    if (cov.deficits.length > 0) {
+      const top = cov.deficits
+        .slice(0, 5)
+        .map((d) => `${d.tag} ${d.crater}/${d.browser}`)
+        .join(', ');
+      console.log(`    tag deficits: ${top}`);
+    }
     console.log(
       `  match rate: ${(r.matchRate * 100).toFixed(1)}%  ` +
         `(${r.matched}/${r.compared} within ${threshold}px)`,
     );
     console.log(`  average IoU: ${r.averageIoU.toFixed(3)}`);
-    console.log(`  structural: browserOnly=${r.browserOnly} craterOnly=${r.craterOnly}`);
+    console.log(
+      `  structural (index-aligned, noisy): browserOnly=${r.browserOnly} craterOnly=${r.craterOnly}`,
+    );
     for (const w of r.worst.slice(0, 6)) {
       console.log(
         `    Δ${w.delta.toFixed(0)}px  ${w.path}  ` +
@@ -245,7 +315,7 @@ async function main(): Promise<void> {
           `c=(${w.crater.x.toFixed(0)},${w.crater.y.toFixed(0)} ${w.crater.width.toFixed(0)}x${w.crater.height.toFixed(0)})`,
       );
     }
-  }
+  });
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {

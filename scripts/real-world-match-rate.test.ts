@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  coverage,
   iou,
   matchTrees,
   normalizeRoot,
   summarize,
+  tagHistogram,
+  tagOf,
   type Box,
 } from './real-world-match-rate.ts';
 
@@ -90,5 +93,58 @@ describe('real-world-match-rate pure helpers', () => {
     expect(report.matchRate).toBe(1);
     expect(report.averageIoU).toBe(1);
     expect(report.compared).toBe(1);
+  });
+});
+
+describe('content coverage helpers', () => {
+  it('tagOf extracts the tag from various id forms', () => {
+    expect(tagOf(box({ id: 'div#foo' }))).toBe('div');
+    expect(tagOf(box({ id: 'span.bar' }))).toBe('span');
+    expect(tagOf(box({ id: 'section' }))).toBe('section');
+  });
+
+  it('tagHistogram counts visible non-text elements by tag', () => {
+    const tree = box({
+      id: 'body',
+      width: 100,
+      height: 100,
+      children: [
+        box({ id: 'div#a', width: 10, height: 10 }),
+        box({ id: 'span.x', width: 5, height: 5 }),
+        box({ id: '#text', width: 5, height: 5 }), // text: ignored
+        box({ id: 'div', width: 0, height: 0 }), // zero-size: ignored
+      ],
+    });
+    const h = tagHistogram(tree);
+    expect(h.get('body')).toBe(1);
+    expect(h.get('div')).toBe(1);
+    expect(h.get('span')).toBe(1);
+  });
+
+  it('coverage reports ratio and per-tag deficits', () => {
+    const browser = box({
+      id: 'body',
+      width: 100,
+      height: 100,
+      children: [
+        box({ id: 'span.a', width: 5, height: 5 }),
+        box({ id: 'span.b', width: 5, height: 5 }),
+        box({ id: 'div#d', width: 10, height: 10 }),
+      ],
+    });
+    const crater = box({
+      id: 'body',
+      width: 100,
+      height: 100,
+      children: [
+        box({ id: 'span.a', width: 5, height: 5 }),
+        box({ id: 'div#d', width: 10, height: 10 }),
+      ],
+    });
+    const cov = coverage(browser, crater);
+    expect(cov.browserTotal).toBe(4); // body + 2 span + div
+    expect(cov.craterTotal).toBe(3); // body + 1 span + div
+    expect(cov.ratio).toBeCloseTo(0.75, 5);
+    expect(cov.deficits).toEqual([{ tag: 'span', browser: 2, crater: 1 }]);
   });
 });
