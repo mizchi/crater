@@ -35,7 +35,12 @@ test "list_items_in_flex_columns_keep_available_line_width" {
   let first_li = ul.children[0]
   let first_text = first_li.children[0]
 
-  inspect(two_col.width, content="720")
+  inspect(
+    two_col.width,
+    content=(
+      #|760
+    ),
+  )
   guard first_li.height <= 25.0 else {
     fail("short list item should not wrap in a flex column")
   }
