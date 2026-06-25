@@ -50,6 +50,12 @@ real-world/*
 real-world/example-com/*
 !real-world/example-com/index.html
 !real-world/example-com/meta.json
+# hacker-news is pinned as a second match-rate fixture (a clean, table-based,
+# server-rendered page). Re-capture with scripts/capture-real-world-fetch.ts.
+!real-world/hacker-news/
+real-world/hacker-news/*
+!real-world/hacker-news/index.html
+!real-world/hacker-news/meta.json
 
 # WASM component transpiled output (regenerate with npm run build:wasm-component && npx jco transpile)
 wasm/dist/

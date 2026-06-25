@@ -1,0 +1,12 @@
+{
+  "title": "Hacker News",
+  "sourceUrl": "https://news.ycombinator.com/",
+  "viewport": {
+    "width": 1024,
+    "height": 768
+  },
+  "stylesheetUrls": [
+    "https://news.ycombinator.com/news.css?rbDKZB3Gz3kvhIuyRiN1"
+  ],
+  "capturedAt": "1970-01-01T00:00:00.000Z"
+}
