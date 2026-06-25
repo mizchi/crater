@@ -1720,7 +1720,7 @@ fn resolve_track_intrinsic(track : @types.TrackSizingFunction) -> Double {
         @types.MinTrackSizing::Length(v) => v
         _ => 0.0
       }
-    @types.TrackSizingFunction::Repeat(count, tracks) =>
+    @types.TrackSizingFunction::Repeat(count, tracks, _line_names) =>
       match count {
         @types.RepeatCount::Count(n) => {
           let mut unit = 0.0

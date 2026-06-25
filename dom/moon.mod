@@ -4,7 +4,7 @@ version = "0.18.0"
 
 import {
   "mizchi/crater-core@0.18.0",
-  "mizchi/css@0.5.4",
+  "mizchi/css@0.5.9",
   "mizchi/crater-layout@0.18.0",
 }
 

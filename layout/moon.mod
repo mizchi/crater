@@ -5,7 +5,7 @@ version = "0.18.0"
 description = "Layout kernel for crater CSS layout engine"
 
 import {
-  "mizchi/css@0.5.4",
+  "mizchi/css@0.5.9",
   "mizchi/crater-core@0.18.0",
   "mizchi/layout@0.2.0",
 }

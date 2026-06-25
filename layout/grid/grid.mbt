@@ -4039,10 +4039,10 @@ fn expand_track_templates(
       @types.TrackSizingFunction::Length(v) => fixed_size = fixed_size + v
       @types.TrackSizingFunction::Percent(p) =>
         fixed_size = fixed_size + available_size * p
-      @types.Repeat(@types.Count(n), tracks) =>
+      @types.Repeat(@types.Count(n), tracks, _) =>
         fixed_size = fixed_size +
           calculate_repeat_track_size(tracks, available_size) * n.to_double()
-      @types.Repeat(@types.AutoFill | @types.AutoFit, _) => ()
+      @types.Repeat(@types.AutoFill | @types.AutoFit, _, _) => ()
       _ => () // Fr, Auto, etc. don't contribute to fixed size
     }
   }
@@ -4051,7 +4051,7 @@ fn expand_track_templates(
   let auto_fit_mask : Array[Bool] = []
   for i = 0; i < templates.length(); i = i + 1 {
     match templates[i] {
-      @types.Repeat(repeat_count, tracks) => {
+      @types.Repeat(repeat_count, tracks, _) => {
         let repetitions = match repeat_count {
           @types.Count(n) => n
           @types.AutoFill => {
@@ -4322,7 +4322,7 @@ fn resolve_tracks_with_implicit(
         max_sizes.push(max_limit)
         fixed_size = fixed_size + base
       }
-      @types.Repeat(_, _) => {
+      @types.Repeat(_, _, _) => {
         // Repeat should be expanded before reaching here
         // Treat as auto if unexpanded
         base_sizes.push(max_content)

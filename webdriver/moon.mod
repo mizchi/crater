@@ -3,7 +3,7 @@ name = "mizchi/crater-webdriver-bidi"
 version = "0.18.0"
 
 import {
-  "mizchi/css@0.5.4",
+  "mizchi/css@0.5.9",
   "mizchi/crater-core@0.18.0",
   "mizchi/crater-network@0.18.0",
   "mizchi/font@0.7.3",
