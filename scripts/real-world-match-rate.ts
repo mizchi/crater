@@ -208,6 +208,51 @@ export function summarize(name: string, stats: MatchStats): SnapshotReport {
   };
 }
 
+/** Collect `#id` -> size for every element that carries a real id. */
+export function sizeById(root: Box): Map<string, { width: number; height: number }> {
+  const map = new Map<string, { width: number; height: number }>();
+  const visit = (n: Box): void => {
+    const id = String(n.id);
+    const hash = id.indexOf('#');
+    if (hash >= 0) {
+      map.set(id.slice(hash + 1), { width: n.width ?? 0, height: n.height ?? 0 });
+    }
+    for (const c of n.children ?? []) visit(c);
+  };
+  visit(root);
+  return map;
+}
+
+export interface SizeMatch {
+  shared: number;
+  matched: number;
+  rate: number;
+  worst: Array<{ id: string; browser: { width: number; height: number }; crater: { width: number; height: number }; delta: number }>;
+}
+
+/**
+ * Compare element box sizes anchored on shared ids. Unlike the parallel walk,
+ * id anchoring is immune to structural drift and (being size, not position)
+ * does not cascade, so this is the reliable accuracy signal for real pages.
+ */
+export function idAnchoredSizeMatch(browser: Box, crater: Box, threshold = DEFAULT_THRESHOLD): SizeMatch {
+  const bm = sizeById(browser);
+  const cm = sizeById(crater);
+  const worst: SizeMatch['worst'] = [];
+  let shared = 0;
+  let matched = 0;
+  for (const [id, b] of bm) {
+    const c = cm.get(id);
+    if (!c) continue;
+    shared++;
+    const delta = Math.max(Math.abs(b.width - c.width), Math.abs(b.height - c.height));
+    if (delta <= threshold) matched++;
+    else worst.push({ id, browser: b, crater: c, delta });
+  }
+  worst.sort((p, q) => q.delta - p.delta);
+  return { shared, matched, rate: shared > 0 ? matched / shared : 1, worst: worst.slice(0, WORST_KEEP) };
+}
+
 // --- Renderers ------------------------------------------------------------
 
 type RenderFn = (html: string, w: number, h: number) => string;
@@ -283,6 +328,7 @@ async function main(): Promise<void> {
   const render = await loadCraterRenderer();
   const reports: SnapshotReport[] = [];
   const coverages: Coverage[] = [];
+  const sizeMatches: SizeMatch[] = [];
 
   for (const name of names) {
     const snap = loadRealWorldSnapshot(name);
@@ -294,15 +340,17 @@ async function main(): Promise<void> {
       summarize(name, matchTrees(normalizeRoot(browser), normalizeRoot(crater), threshold)),
     );
     coverages.push(coverage(browser, crater));
+    sizeMatches.push(idAnchoredSizeMatch(browser, crater, threshold));
   }
 
   if (json) {
-    console.log(JSON.stringify({ threshold, reports, coverages }, null, 2));
+    console.log(JSON.stringify({ threshold, reports, coverages, sizeMatches }, null, 2));
     return;
   }
 
   reports.forEach((r, idx) => {
     const cov = coverages[idx]!;
+    const sm = sizeMatches[idx]!;
     console.log(`\n=== ${r.name} ===`);
     console.log(
       `  content coverage: ${(cov.ratio * 100).toFixed(1)}%  ` +
@@ -316,8 +364,19 @@ async function main(): Promise<void> {
       console.log(`    tag deficits: ${top}`);
     }
     console.log(
-      `  match rate: ${(r.matchRate * 100).toFixed(1)}%  ` +
-        `(${r.matched}/${r.compared} within ${threshold}px)`,
+      `  id-anchored size match: ${(sm.rate * 100).toFixed(1)}%  ` +
+        `(${sm.matched}/${sm.shared} elements within ${threshold}px) [reliable]`,
+    );
+    for (const w of sm.worst.slice(0, 4)) {
+      console.log(
+        `    Δ${w.delta.toFixed(0)}px  #${w.id}  ` +
+          `browser=${w.browser.width.toFixed(0)}x${w.browser.height.toFixed(0)} ` +
+          `crater=${w.crater.width.toFixed(0)}x${w.crater.height.toFixed(0)}`,
+      );
+    }
+    console.log(
+      `  index-aligned match rate: ${(r.matchRate * 100).toFixed(1)}%  ` +
+        `(${r.matched}/${r.compared} within ${threshold}px) [noisy: structural drift]`,
     );
     console.log(`  average IoU: ${r.averageIoU.toFixed(3)}`);
     console.log(

@@ -7,6 +7,8 @@ import {
   summarize,
   tagHistogram,
   tagOf,
+  sizeById,
+  idAnchoredSizeMatch,
   type Box,
 } from './real-world-match-rate.ts';
 
@@ -146,5 +148,48 @@ describe('content coverage helpers', () => {
     expect(cov.craterTotal).toBe(3); // body + 1 span + div
     expect(cov.ratio).toBeCloseTo(0.75, 5);
     expect(cov.deficits).toEqual([{ tag: 'span', browser: 2, crater: 1 }]);
+  });
+});
+
+describe('id-anchored size matching', () => {
+  it('sizeById collects id-bearing elements only', () => {
+    const tree = box({
+      id: 'body',
+      width: 100,
+      height: 50,
+      children: [
+        box({ id: 'div#a', width: 10, height: 10 }),
+        box({ id: 'span.cls', width: 5, height: 5 }), // class, no id
+        box({ id: 'div#b', width: 20, height: 20, children: [box({ id: 'i#c', width: 3, height: 3 })] }),
+      ],
+    });
+    const m = sizeById(tree);
+    expect([...m.keys()].sort()).toEqual(['a', 'b', 'c']);
+    expect(m.get('b')).toEqual({ width: 20, height: 20 });
+  });
+
+  it('idAnchoredSizeMatch compares shared ids by size within tolerance', () => {
+    const browser = box({
+      id: 'body',
+      children: [box({ id: 'div#a', width: 100, height: 20 }), box({ id: 'div#b', width: 50, height: 50 })],
+    });
+    const crater = box({
+      id: 'body',
+      children: [box({ id: 'div#a', width: 100, height: 20 }), box({ id: 'div#b', width: 50, height: 90 })],
+    });
+    const sm = idAnchoredSizeMatch(browser, crater, 1);
+    expect(sm.shared).toBe(2);
+    expect(sm.matched).toBe(1);
+    expect(sm.rate).toBe(0.5);
+    expect(sm.worst[0]!.id).toBe('b');
+    expect(sm.worst[0]!.delta).toBe(40);
+  });
+
+  it('idAnchoredSizeMatch ignores ids missing on either side', () => {
+    const browser = box({ id: 'body', children: [box({ id: 'div#a', width: 10, height: 10 }), box({ id: 'div#only', width: 1, height: 1 })] });
+    const crater = box({ id: 'body', children: [box({ id: 'div#a', width: 10, height: 10 })] });
+    const sm = idAnchoredSizeMatch(browser, crater, 1);
+    expect(sm.shared).toBe(1);
+    expect(sm.rate).toBe(1);
   });
 });
