@@ -3436,20 +3436,14 @@ fn compute_intrinsic_flex_main_size(
     if item_count > 1 {
       total_main = total_main + main_gap * (item_count - 1).to_double()
     }
-    let has_container_main_structure = flattened.length() > 1 ||
-      padding.vertical_sum() + border.vertical_sum() > 0.0
-    if !parent_is_row && has_flex_grow && has_container_main_structure {
-      match container_inline {
-        Some(inline) => {
-          let padding_border = padding.vertical_sum() + border.vertical_sum()
-          let available_main = inline + padding_border + total_main_margins
-          if available_main > total_main {
-            total_main = available_main
-          }
-        }
-        None => ()
-      }
-    }
+    // NOTE: an earlier revision floored a flex column's intrinsic main (height)
+    // at `container_inline` (the container WIDTH) whenever it had flex-grow
+    // children. That is dimensionally wrong (width used as a height floor) and
+    // also violates intrinsic sizing — flex-grow does not increase a container's
+    // content/intrinsic size. It made flex-column cards with a `flex:1` child
+    // (e.g. GitHub pinned-repo cards) measure several times too tall, which then
+    // cascaded through align-items:stretch. The content sum (`total_main`) is
+    // the correct intrinsic main size.
     if child_is_row {
       total_main + padding.left + padding.right + border.left + border.right
     } else {
