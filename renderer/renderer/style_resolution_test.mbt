@@ -362,3 +362,25 @@ test "font-size with nested selectors like WPT" {
   inspect(text1.style.font_size, content="20")
   inspect(text1.style.line_height, content="24")
 }
+
+///|
+// Custom elements (hyphenated tag names, per the HTML spec) default to
+// display:inline like browsers; unlisted standard elements stay block.
+test "custom elements default to display inline" {
+  let html =
+    #|<html><body>
+    #|<x-banner id="b1">a</x-banner>
+    #|<relative-time id="b2">b</relative-time>
+    #|<div id="d">plain div</div>
+    #|</body></html>
+  let ctx = @renderer.RenderContext::default()
+  let node = @renderer.render_to_node(html, ctx)
+  let banner = node.children[0]
+  let reltime = node.children[1]
+  let div = node.children[2]
+  inspect(banner.id, content="x-banner#b1")
+  inspect(banner.style.display, content="Inline")
+  inspect(reltime.style.display, content="Inline")
+  inspect(div.id, content="div#d")
+  inspect(div.style.display, content="Block")
+}

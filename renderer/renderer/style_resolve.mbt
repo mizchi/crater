@@ -539,7 +539,16 @@ fn get_ua_default_style(tag : String) -> @style.Style {
     | "param" => { ..default_style, display: @types.Display::None }
     // <center> is deprecated but widely used (e.g., Hacker News)
     "center" => { ..default_style, text_align: @style.TextAlign::Center }
-    _ => default_style
+    other =>
+      // Custom elements (a hyphen in the tag name, per the HTML spec) and other
+      // unknown hyphenated tags default to display:inline, matching browsers —
+      // e.g. GitHub's <x-banner>, <relative-time>. Unlisted standard elements
+      // (div, section, ...) keep the block default above.
+      if other.contains("-") {
+        { ..default_style, display: @types.Inline }
+      } else {
+        default_style
+      }
   }
 }
 
