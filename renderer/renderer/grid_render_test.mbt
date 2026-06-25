@@ -36,8 +36,10 @@ test "grid_named_layout_lines_place_item_to_extended_full_end" {
     @renderer.RenderContext::default(),
   )
   let header_node = node.children[0].children[0]
-  inspect(header_node.style.grid_column.start, content="Line(2)")
-  inspect(header_node.style.grid_column.end, content="Line(-1)")
+  // css 0.5.3 keeps named-line placements as Named(...) in the style; they are
+  // resolved against the template's line names at layout time.
+  inspect(header_node.style.grid_column.start, content="Named(content)")
+  inspect(header_node.style.grid_column.end, content="Named(extended-full-end)")
   let homepage = layout.children[0]
   let header = homepage.children[0]
   inspect(header.x, content="16")

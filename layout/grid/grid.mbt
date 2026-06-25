@@ -702,6 +702,8 @@ fn compute_grid_layout_internal(
     explicit_row_count,
     style.grid_auto_flow,
     grid_areas,
+    style.grid_template_column_line_names,
+    style.grid_template_row_line_names,
   )
 
   // Calculate implicit track range needed
@@ -4748,6 +4750,8 @@ fn place_grid_items(
   explicit_rows : Int,
   auto_flow : @types.GridAutoFlow,
   grid_areas : Array[Array[String]],
+  column_line_names : Array[Array[String]],
+  row_line_names : Array[Array[String]],
 ) -> Array[GridItemPlacement] {
   let columns = if explicit_columns > 0 { explicit_columns } else { 1 }
 
@@ -4834,11 +4838,11 @@ fn place_grid_items(
 
     // Check if item has explicit Line positioning
     let has_explicit_column = match style.grid_column.start {
-      @types.GridPlacement::Line(_) => true
+      @types.GridPlacement::Line(_) | @types.GridPlacement::Named(_) => true
       _ => false
     }
     let has_explicit_row = match style.grid_row.start {
-      @types.GridPlacement::Line(_) => true
+      @types.GridPlacement::Line(_) | @types.GridPlacement::Named(_) => true
       _ => false
     }
 
@@ -4861,8 +4865,14 @@ fn place_grid_items(
           style.grid_column,
           0, // auto_position not used for explicit items
           columns,
+          column_line_names,
         )
-        let (rs, re) = resolve_line_placement(style.grid_row, 0, explicit_rows)
+        let (rs, re) = resolve_line_placement(
+          style.grid_row,
+          0,
+          explicit_rows,
+          row_line_names,
+        )
         (cs, ce, rs, re)
       }
     }
@@ -4908,17 +4918,22 @@ fn place_grid_items(
       continue
     }
     let has_explicit_column = match style.grid_column.start {
-      @types.GridPlacement::Line(_) => true
+      @types.GridPlacement::Line(_) | @types.GridPlacement::Named(_) => true
       _ => false
     }
     let has_explicit_row = match style.grid_row.start {
-      @types.GridPlacement::Line(_) => true
+      @types.GridPlacement::Line(_) | @types.GridPlacement::Named(_) => true
       _ => false
     }
     if has_explicit_column || !has_explicit_row {
       continue
     }
-    let (rs, re) = resolve_line_placement(style.grid_row, 0, explicit_rows)
+    let (rs, re) = resolve_line_placement(
+      style.grid_row,
+      0,
+      explicit_rows,
+      row_line_names,
+    )
     let mut col_cursor = min_col
     while is_cell_occupied(occupied, rs, col_cursor) {
       col_cursor = col_cursor + 1
@@ -4927,6 +4942,7 @@ fn place_grid_items(
       style.grid_column,
       col_cursor,
       columns,
+      column_line_names,
     )
     placements[i] = {
       row_start: rs,
@@ -4959,11 +4975,11 @@ fn place_grid_items(
 
     // Skip items already placed in Pass 2/3
     let has_explicit_column = match style.grid_column.start {
-      @types.GridPlacement::Line(_) => true
+      @types.GridPlacement::Line(_) | @types.GridPlacement::Named(_) => true
       _ => false
     }
     let has_explicit_row = match style.grid_row.start {
-      @types.GridPlacement::Line(_) => true
+      @types.GridPlacement::Line(_) | @types.GridPlacement::Named(_) => true
       _ => false
     }
     if has_explicit_row {
@@ -4987,6 +5003,7 @@ fn place_grid_items(
             style.grid_row,
             0,
             explicit_rows,
+            row_line_names,
           )
           let row_to_check = rs
           let mut col_cursor = min_col
@@ -4998,11 +5015,17 @@ fn place_grid_items(
             style.grid_column,
             col_cursor,
             columns,
+            column_line_names,
           )
           (cs, ce, rs, re)
         } else if has_explicit_column {
           // Explicit column, auto row - find first unoccupied row in that column
-          let (cs, ce) = resolve_line_placement(style.grid_column, 0, columns)
+          let (cs, ce) = resolve_line_placement(
+            style.grid_column,
+            0,
+            columns,
+            column_line_names,
+          )
           let col_to_check = cs
           let mut row_cursor = min_row
           while is_cell_occupied(occupied, row_cursor, col_to_check) {
@@ -5013,6 +5036,7 @@ fn place_grid_items(
             style.grid_row,
             row_cursor,
             explicit_rows,
+            row_line_names,
           )
           (cs, ce, rs, re)
         } else {
@@ -5043,11 +5067,13 @@ fn place_grid_items(
             style.grid_column,
             next_column,
             columns,
+            column_line_names,
           )
           let (rs, re) = resolve_line_placement(
             style.grid_row,
             next_row,
             explicit_rows,
+            row_line_names,
           )
           (cs, ce, rs, re)
         }
@@ -5097,9 +5123,28 @@ fn resolve_line_placement(
   line : @types.GridLine,
   auto_position : Int,
   explicit_count : Int,
+  line_names : Array[Array[String]],
 ) -> (Int, Int) {
-  let start = match line.start {
+  // Resolve named-line placements (e.g. `grid-column: sidebar`) to concrete
+  // 1-based line numbers against the template's declared line names (with the
+  // `<name>-start` / `<name>-end` implicit-area expansion), then fall through to
+  // the normal numeric / span logic.
+  let (named_start, named_end) = @computed.resolve_grid_line_placement(
+    line.start,
+    line.end,
+    line_names,
+  )
+  let eff_start : @types.GridPlacement = match (line.start, named_start) {
+    (@types.GridPlacement::Named(_), Some(n)) => @types.GridPlacement::Line(n)
+    _ => line.start
+  }
+  let eff_end : @types.GridPlacement = match (line.end, named_end) {
+    (@types.GridPlacement::Named(_), Some(n)) => @types.GridPlacement::Line(n)
+    _ => line.end
+  }
+  let start = match eff_start {
     @types.GridPlacement::Auto => auto_position
+    @types.GridPlacement::Named(_) => auto_position // unresolved name
     @types.GridPlacement::Line(n) =>
       if n > 0 {
         n - 1 // Convert 1-indexed to 0-indexed
@@ -5115,8 +5160,9 @@ fn resolve_line_placement(
       }
     @types.GridPlacement::Span(_) => auto_position
   }
-  let end = match line.end {
+  let end = match eff_end {
     @types.GridPlacement::Auto => start + 1
+    @types.GridPlacement::Named(_) => start + 1 // unresolved name
     @types.GridPlacement::Line(n) =>
       if n > 0 {
         n - 1
@@ -5129,9 +5175,9 @@ fn resolve_line_placement(
   }
 
   // Handle span in start position
-  let (final_start, final_end) = match line.start {
+  let (final_start, final_end) = match eff_start {
     @types.GridPlacement::Span(s) =>
-      match line.end {
+      match eff_end {
         @types.GridPlacement::Line(n) => {
           let e = if n > 0 { n - 1 } else { explicit_count + 1 + n }
           (e - s, e)
@@ -6883,5 +6929,6 @@ fn resolve_absolute_grid_line(
         Some(offset)
       }
     @types.GridPlacement::Span(_) => None // Span without explicit end defaults to Auto
+    @types.GridPlacement::Named(_) => None // Named lines not resolved for abspos
   }
 }

@@ -72,3 +72,42 @@ test "grid_max_width_does_not_shrink_fixed_track" {
   // Item keeps the fixed 700px track and overflows (not shrunk to 230).
   inspect(layout.children[0].width, content="700")
 }
+
+///|
+// css 0.5.3 added GridPlacement::Named; items can be placed by named grid line
+// (`grid-column: sidebar-start/sidebar-end`) or by the implicit-area shorthand
+// (`grid-column: sidebar` -> sidebar-start/sidebar-end). Resolved against the
+// template's declared line names.
+test "grid named-line placement" {
+  let default_style = @style.Style::default()
+  let root_style = {
+    ..default_style,
+    display: @types.Grid,
+    width: @types.Length(1000.0),
+    height: @types.Length(100.0),
+    grid_template_columns: [
+      @types.TrackSizingFunction::Length(240.0),
+      @types.TrackSizingFunction::Length(760.0),
+    ],
+    // Line names declared by `[sidebar-start] 240px [sidebar-end content-start]
+    // 760px [content-end]` — index i holds the names at grid line i.
+    grid_template_column_line_names: [
+      ["sidebar-start"],
+      ["sidebar-end", "content-start"],
+      ["content-end"],
+    ],
+  }
+  let side = @node.Node::leaf("side", {
+    ..default_style,
+    grid_column: {
+      start: @types.GridPlacement::Named("sidebar"),
+      end: @types.GridPlacement::Named("sidebar"),
+    },
+    height: @types.Length(20.0),
+  })
+  let root = @node.Node::new("root", root_style, [side])
+  let layout = compute_grid_layout(root, 1000.0, 600.0, default_dispatch())
+  // The named item lands in the 240px sidebar column at x=0.
+  inspect(layout.children[0].width, content="240")
+  inspect(layout.children[0].x, content="0")
+}

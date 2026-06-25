@@ -325,5 +325,6 @@ fn is_supported_grid_placement(placement : @types.GridPlacement) -> Bool {
   match placement {
     @types.GridPlacement::Auto => true
     @types.GridPlacement::Line(v) | @types.GridPlacement::Span(v) => v > 0
+    @types.GridPlacement::Named(_) => true
   }
 }

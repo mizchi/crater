@@ -3,7 +3,7 @@ name = "mizchi/crater"
 version = "0.18.0"
 
 import {
-  "mizchi/css@0.5.2",
+  "mizchi/css@0.5.3",
   "mizchi/crater-dom@0.18.0",
   "mizchi/crater-layout@0.18.0",
   "mizchi/crater-webvitals@0.18.0",
