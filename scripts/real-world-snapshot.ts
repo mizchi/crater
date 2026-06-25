@@ -118,10 +118,12 @@ export function buildGithubMizchiSnapshot(
     "github_global.css",
     "github_main.css",
     "github_profile.css",
-    // Component module CSS the page loads from a remote bundle (not part of the
-    // local primer/global/profile capture). Without it the logged-out marketing
-    // navigation renders unstyled (a vertical list) instead of the desktop flex
-    // bar it becomes at >=1012px.
+    // Component module CSS the page loads from remote bundles (not part of the
+    // local primer/global/profile capture). Without these, components that rely
+    // on them render unstyled — e.g. the logged-out marketing navigation became
+    // a 2254px vertical list instead of the desktop flex bar it is at >=1012px.
+    "github_primer_primitives.css",
+    "github_primer_react.css",
     "github_marketing_navigation.css",
   ];
   const styles = cssFiles.map((file) => fs.readFileSync(path.join(dir, file), "utf8"));
