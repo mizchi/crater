@@ -18,6 +18,7 @@
  */
 
 import fs from 'node:fs';
+import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { execSync } from 'node:child_process';
 import {
@@ -286,6 +287,23 @@ async function loadCraterRenderer(): Promise<RenderFn> {
   return mod.renderHtmlToJsonForWpt as RenderFn;
 }
 
+/**
+ * Force the browser to render all text with the same vendored font (Tinos) that
+ * Crater measures with — Crater's measure ignores font-family, so without this
+ * a page in any other font (HN's Verdana, GitHub's sans) has systematically
+ * different text widths and the size comparison reflects font availability, not
+ * layout. With it the comparison isolates layout accuracy.
+ */
+function injectVendoredFont(html: string): string {
+  const ttf = fs.readFileSync(path.join(process.cwd(), 'tests', 'wpt-fonts', 'Tinos-Regular.ttf'));
+  const style =
+    `<style>@font-face{font-family:CraterVendored;src:url(data:font/ttf;base64,${ttf.toString('base64')})}` +
+    `*,*::before,*::after{font-family:CraterVendored !important}</style>`;
+  return /<head[^>]*>/i.test(html)
+    ? html.replace(/<head[^>]*>/i, (m) => m + style)
+    : style + html;
+}
+
 async function browserLayout(html: string, vw: number, vh: number): Promise<Box> {
   const puppeteer = (await import('puppeteer')).default;
   const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
@@ -320,6 +338,7 @@ async function browserLayout(html: string, vw: number, vh: number): Promise<Box>
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const json = args.includes('--json');
+  const fontFair = args.includes('--font-fair');
   const thIdx = args.indexOf('--threshold');
   const threshold = thIdx >= 0 ? Number(args[thIdx + 1]) : DEFAULT_THRESHOLD;
   const nameArg = args.find((a) => !a.startsWith('--') && a !== String(threshold));
@@ -332,7 +351,11 @@ async function main(): Promise<void> {
 
   for (const name of names) {
     const snap = loadRealWorldSnapshot(name);
-    const browser = await browserLayout(snap.html, snap.viewport.width, snap.viewport.height);
+    // --font-fair forces the browser to use Crater's vendored font so the size
+    // comparison reflects layout rather than font availability. Crater ignores
+    // font-family already, so only the browser HTML needs the override.
+    const browserHtml = fontFair ? injectVendoredFont(snap.html) : snap.html;
+    const browser = await browserLayout(browserHtml, snap.viewport.width, snap.viewport.height);
     const crater: Box = JSON.parse(
       render(snap.html, snap.viewport.width, snap.viewport.height),
     );
