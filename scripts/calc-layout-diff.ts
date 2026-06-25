@@ -156,6 +156,13 @@ export function diffCase(
 type RenderFn = (html: string, w: number, h: number) => string;
 
 async function loadCraterRenderer(): Promise<RenderFn> {
+  // Wire up the vendored proportional font measure (as wpt-runner does), so text
+  // is measured against a real font instead of the crude monospace fallback.
+  const { createTextIntrinsicFnFromMeasureText } = await import('./text-intrinsic.ts');
+  const { createVendoredFontMeasure } = await import('./wpt-font-measure.ts');
+  (globalThis as any).__craterMeasureTextIntrinsic = createTextIntrinsicFnFromMeasureText(
+    createVendoredFontMeasure(),
+  );
   // Refresh the local WPT runtime so the diff reflects current MoonBit sources.
   try {
     execSync(LOCAL_WPT_RUNTIME_BUILD_COMMAND, { stdio: 'ignore', cwd: process.cwd() });

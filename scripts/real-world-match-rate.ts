@@ -212,7 +212,22 @@ export function summarize(name: string, stats: MatchStats): SnapshotReport {
 
 type RenderFn = (html: string, w: number, h: number) => string;
 
+/**
+ * Wire up the vendored proportional font measure (Tinos, metric-compatible with
+ * Chromium's default serif), exactly as wpt-runner does. Without this Crater
+ * falls back to a crude monospace estimate (0.5 * font-size per char), which
+ * makes all text ~10-20% too wide and inflates every text-driven layout.
+ */
+async function configureFontMeasure(): Promise<void> {
+  const { createTextIntrinsicFnFromMeasureText } = await import('./text-intrinsic.ts');
+  const { createVendoredFontMeasure } = await import('./wpt-font-measure.ts');
+  (globalThis as any).__craterMeasureTextIntrinsic = createTextIntrinsicFnFromMeasureText(
+    createVendoredFontMeasure(),
+  );
+}
+
 async function loadCraterRenderer(): Promise<RenderFn> {
+  await configureFontMeasure();
   try {
     execSync(LOCAL_WPT_RUNTIME_BUILD_COMMAND, { stdio: 'ignore', cwd: process.cwd() });
   } catch {
