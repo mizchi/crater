@@ -48,7 +48,8 @@ fn DomTree::collect_style_rules_into(
         Ok(text) => text
         Err(_) => ""
       }
-      for rule in @css.parse_stylesheet(css).rules {
+      for
+        rule in @css.parse_stylesheet(@html.flatten_css_cascade_layers(css)).rules {
         out.push(rule)
       }
     } else {

@@ -6,6 +6,8 @@ pub fn assign_synthetic_ids(Document) -> Document
 
 pub fn extract_stylesheet_links(String) -> Array[String]
 
+pub fn flatten_css_cascade_layers(String) -> String
+
 pub fn parse(String) -> Element?
 
 pub fn parse_document(String) -> Document
