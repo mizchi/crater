@@ -763,3 +763,109 @@ pub fn RenderSession::element_computed_styles(
 ) -> Array[ComputedStyleEntry] {
   collect_computed_styles(self.base_node)
 }
+
+///|
+/// Emit `s` as a double-quoted JS/JSON string literal, escaping the characters
+/// that would break the literal. Node ids and CSS value strings can carry `"`
+/// (rare) or backslashes, so escape both plus the line terminators.
+fn bridge_js_string(s : String) -> String {
+  let buf = StringBuilder::new()
+  buf.write_char('"')
+  for c in s.iter() {
+    match c {
+      '"' => buf.write_string("\\\"")
+      '\\' => buf.write_string("\\\\")
+      '\n' => buf.write_string("\\n")
+      '\r' => buf.write_string("\\r")
+      _ => buf.write_char(c)
+    }
+  }
+  buf.write_char('"')
+  buf.to_string()
+}
+
+///|
+/// Serialize the layout-box geometry index and the computed-style index into the
+/// JS the dynamic-rendering bridge injects into the page realm *before* page JS
+/// runs. It defines two globals as document-order arrays:
+///
+/// - `globalThis.__craterLayoutBoxes` — `{index, id, x, y, width, height}`
+/// - `globalThis.__craterComputedStyles` — `{index, id, display, position,
+///   visibility, fontSize, fontFamily, opacity, zIndex, color, backgroundColor}`
+///
+/// Each entry carries both the pre-order `index` and the `tag#id` `id` string so
+/// the mock DOM can join an element to its real geometry / resolved style by id
+/// (unique when the element has an id attribute) or, failing that, by
+/// document-order index. With these present, `getBoundingClientRect` /
+/// `offsetWidth` / `offsetHeight` / `getComputedStyle` read crater's real layout
+/// instead of the inline-style heuristic. This is the JS payload half of step
+/// (1) "expose real layout to page JS" in
+/// `docs/dynamic-rendering-js-bridge-design.md`; the mock-DOM consumer lives in
+/// `browser/native/js_v8/mock_dom_full.mbt`.
+pub fn layout_bridge_init_js(
+  boxes : Array[LayoutBox],
+  styles : Array[ComputedStyleEntry],
+) -> String {
+  let buf = StringBuilder::new()
+  buf.write_string("globalThis.__craterLayoutBoxes = [")
+  for i, b in boxes {
+    if i > 0 {
+      buf.write_string(",")
+    }
+    buf.write_string("{\"index\":")
+    buf.write_string(b.index.to_string())
+    buf.write_string(",\"id\":")
+    buf.write_string(bridge_js_string(b.id))
+    buf.write_string(",\"x\":")
+    buf.write_string(css_number(b.x))
+    buf.write_string(",\"y\":")
+    buf.write_string(css_number(b.y))
+    buf.write_string(",\"width\":")
+    buf.write_string(css_number(b.width))
+    buf.write_string(",\"height\":")
+    buf.write_string(css_number(b.height))
+    buf.write_string("}")
+  }
+  buf.write_string("];\n")
+  buf.write_string("globalThis.__craterComputedStyles = [")
+  for i, s in styles {
+    if i > 0 {
+      buf.write_string(",")
+    }
+    buf.write_string("{\"index\":")
+    buf.write_string(s.index.to_string())
+    buf.write_string(",\"id\":")
+    buf.write_string(bridge_js_string(s.id))
+    buf.write_string(",\"display\":")
+    buf.write_string(bridge_js_string(s.display))
+    buf.write_string(",\"position\":")
+    buf.write_string(bridge_js_string(s.position))
+    buf.write_string(",\"visibility\":")
+    buf.write_string(bridge_js_string(s.visibility))
+    buf.write_string(",\"fontSize\":")
+    buf.write_string(bridge_js_string(s.font_size))
+    buf.write_string(",\"fontFamily\":")
+    buf.write_string(bridge_js_string(s.font_family))
+    buf.write_string(",\"opacity\":")
+    buf.write_string(bridge_js_string(s.opacity))
+    buf.write_string(",\"zIndex\":")
+    buf.write_string(bridge_js_string(s.z_index))
+    buf.write_string(",\"color\":")
+    buf.write_string(bridge_js_string(s.color))
+    buf.write_string(",\"backgroundColor\":")
+    buf.write_string(bridge_js_string(s.background_color))
+    buf.write_string("}")
+  }
+  buf.write_string("];\n")
+  buf.to_string()
+}
+
+///|
+/// The bridge-injection JS for the session's base render — the layout geometry
+/// and resolved styles page JS would observe on the initial layout. A host that
+/// drives the JS realm (the browser shell over the native V8 runtime) evaluates
+/// this before running page scripts so DOM measurement reads crater's real
+/// layout. See `layout_bridge_init_js`.
+pub fn RenderSession::layout_bridge_init_js(self : RenderSession) -> String {
+  layout_bridge_init_js(self.element_boxes(), self.element_computed_styles())
+}

@@ -53,22 +53,43 @@ pre-order position — a stable key a JS DOM built in the same document order ca
 match. Verified: a flex row of two fixed boxes reports `#a` x=0/w=100 and `#b`
 x=100/w=80.
 
-### JS-side wiring — follow-up (needs the runtime)
+### JS-side wiring — payload + consumer landed; host activation remains
 
-1. Before `script.evaluate` (or per forced reflow), compute the layout and call
-   `collect_layout_boxes`, then inject a `__craterLayoutBoxes` array into the JS
-   realm (an extern set on `globalThis`).
-2. Give each mock-DOM element its document-order `index` at construction (the
-   mock DOM already builds in document order). Rewrite `getBoundingClientRect` /
-   `offsetWidth` / `offsetHeight` / `offsetLeft/Top` to read
-   `__craterLayoutBoxes[this._index]` when present, else fall back to today's
-   heuristic.
-3. `getComputedStyle` needs a parallel **computed-style index**: walk the render
-   node tree (which holds the resolved `@style.Style` per element — see
-   `compute_element_style_indexed`) and expose the subset frameworks read
-   (display, position, color, font-size, width/height used values, …) keyed by
-   the same `index`. This is the node-tree analogue of `collect_layout_boxes`
-   and is the next testable MoonBit piece.
+The data half and the mock-DOM consumer are now in place; what is left is the
+host call that injects the payload before page scripts run.
+
+1. **Payload serializer — landed.** `renderer/vrt` `layout_bridge_init_js(boxes,
+   styles)` (and `RenderSession::layout_bridge_init_js()`) serializes the
+   layout-box geometry index and the computed-style index into the JS that
+   defines two page-realm globals:
+   - `globalThis.__craterLayoutBoxes` — `{index, id, x, y, width, height}` in
+     document order.
+   - `globalThis.__craterComputedStyles` — `{index, id, display, position,
+     visibility, fontSize, fontFamily, opacity, zIndex, color,
+     backgroundColor}`.
+
+   Each entry carries both the pre-order `index` and the `tag#id` `id` string so
+   the consumer can join by id (unique when the element has an id attribute) or
+   by document-order index. Snapshot-tested in `renderer/vrt`.
+
+2. **Mock-DOM consumer — landed.** `browser/native/js_v8/mock_dom_full.mbt`
+   installs `__craterLayoutBox(el)` / `__craterComputedEntry(el)` (id-keyed map,
+   built once and cached per injected array; `_index` fallback) and rewrites
+   `getBoundingClientRect` / `offsetWidth` / `offsetHeight` / `offsetTop` /
+   `offsetLeft` / `getComputedStyle` to read them. Absent the globals every
+   lookup returns null and the methods fall back to today's heuristic, so the
+   change is inert until a host injects the payload.
+
+3. **Host activation — remaining (needs the runtime).** The browser shell holds
+   the computed layout and render node tree (`Browser` state
+   `graphics_layout : @layout_types.Layout?` / `graphics_render_node :
+   @node.Node?`), so before `script.evaluate` it can build the payload via
+   `@vrt.layout_bridge_init_js(@vrt.collect_layout_boxes(layout),
+   @vrt.collect_computed_styles(node))` and `eval_string` it into the realm
+   (re-injecting on a forced reflow). This needs `browser/shell` to depend on
+   `mizchi/crater-renderer/vrt` (no cycle: `vrt` does not import the shell) and
+   can only be validated where the native V8 runtime builds (blocked in the web
+   sandbox — see #312).
 
 ### Synchronous reflow caveat
 
@@ -106,9 +127,12 @@ external pump, and is the prerequisite for the forced-reflow path in (1).
 
 ## Suggested order
 
-1. **computed-style index** (MoonBit, testable like `collect_layout_boxes`).
+1. **computed-style index** (MoonBit, testable like `collect_layout_boxes`). —
+   landed (`collect_computed_styles`).
 2. **JS wiring, initial-layout** — `getBoundingClientRect`/`offsetWidth/Height` +
-   `getComputedStyle` read the injected indexes (validate in an env with the
+   `getComputedStyle` read the injected indexes. — payload serializer
+   (`layout_bridge_init_js`) and mock-DOM consumer landed; the host activation
+   call in `browser/shell` is the remaining piece (validate in an env with the
    runtime).
 3. **Run-loop** in `browser/shell` (microtask → domOps → incremental reflow →
    rAF), then wire forced reflow into the measuring reads.

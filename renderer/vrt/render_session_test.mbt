@@ -185,3 +185,67 @@ test "computed style index matches the resolved style" {
     ),
   )
 }
+
+///|
+/// The bridge serializer emits the two page-realm globals the mock DOM reads,
+/// each as a document-order array whose entries carry the join key (`index` +
+/// `tag#id` `id`). Hand-built indexes pin the exact JS so a format regression is
+/// caught: integral geometry serializes without a trailing `.0`, CSS value
+/// strings are quoted, and getComputedStyle's camelCase keys are used.
+test "layout bridge serializes both page-realm globals" {
+  let boxes : Array[LayoutBox] = [
+    { id: "div#a", index: 0, x: 0.0, y: 0.0, width: 100.0, height: 40.0 },
+    { id: "div#b", index: 1, x: 100.0, y: 0.0, width: 80.5, height: 40.0 },
+  ]
+  let styles : Array[ComputedStyleEntry] = [
+    {
+      id: "div#a",
+      index: 0,
+      display: "flex",
+      position: "static",
+      visibility: "visible",
+      font_size: "16px",
+      font_family: "serif",
+      opacity: "1",
+      z_index: "auto",
+      color: "rgb(0, 0, 0)",
+      background_color: "rgba(0, 0, 0, 0)",
+    },
+  ]
+  let js = layout_bridge_init_js(boxes, styles)
+  let expected =
+    "globalThis.__craterLayoutBoxes = [" +
+    "{\"index\":0,\"id\":\"div#a\",\"x\":0,\"y\":0,\"width\":100,\"height\":40}," +
+    "{\"index\":1,\"id\":\"div#b\",\"x\":100,\"y\":0,\"width\":80.5,\"height\":40}];\n" +
+    "globalThis.__craterComputedStyles = [" +
+    "{\"index\":0,\"id\":\"div#a\",\"display\":\"flex\",\"position\":\"static\"," +
+    "\"visibility\":\"visible\",\"fontSize\":\"16px\",\"fontFamily\":\"serif\"," +
+    "\"opacity\":\"1\",\"zIndex\":\"auto\",\"color\":\"rgb(0, 0, 0)\"," +
+    "\"backgroundColor\":\"rgba(0, 0, 0, 0)\"}];\n"
+  inspect(js == expected, content="true")
+}
+
+///|
+/// End-to-end from a RenderSession: the injected globals describe the real
+/// layout of the flex row (`#a` at x=0/w=100, `#b` at x=100/w=80) and the
+/// resolved styles, so the mock DOM can join an element to its geometry by its
+/// `tag#id` id.
+test "render session emits bridge init js for the real layout" {
+  let html =
+    #|<!DOCTYPE html><style>body{margin:0}</style>
+    #|<div style="display:flex">
+    #|  <div id="a" style="width:100px;height:40px"></div>
+    #|  <div id="b" style="width:80px;height:40px"></div>
+    #|</div>
+  let viewport = @types.Size::new(400.0, 200.0)
+  let session = RenderSession::open(html, viewport, [])
+  let js = session.layout_bridge_init_js()
+  inspect(js.contains("globalThis.__craterLayoutBoxes = ["), content="true")
+  inspect(js.contains("globalThis.__craterComputedStyles = ["), content="true")
+  inspect(js.contains("\"id\":\"div#a\""), content="true")
+  inspect(js.contains("\"id\":\"div#b\""), content="true")
+  // #a is 100x40, #b is 100px to the right and 80x40 (see the layout-box test).
+  inspect(js.contains("\"width\":100,\"height\":40"), content="true")
+  inspect(js.contains(",\"x\":100,"), content="true")
+  inspect(js.contains("\"width\":80,\"height\":40"), content="true")
+}
