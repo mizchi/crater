@@ -228,3 +228,54 @@ test "grid-area name falls back to named-line placement" {
   inspect(layout.children[1].x, content="240")
   inspect(layout.children[1].width, content="760")
 }
+
+///|
+// display:contents grid item: a `display:contents` wrapper is flattened so its
+// children become grid items, but the reconstruction must advance past ALL of
+// the wrapper's flattened children — otherwise a following regular grid item
+// picks up a duplicated layout and its own is dropped. Here `wrap` (contents)
+// holds two items in columns 1 and 2, and a third regular item is in column 3.
+test "grid display:contents wrapper keeps following sibling" {
+  let default_style = @style.Style::default()
+  let root_style = {
+    ..default_style,
+    display: @types.Grid,
+    width: @types.Length(600.0),
+    height: @types.Length(40.0),
+    grid_template_columns: [
+      @types.TrackSizingFunction::Length(100.0),
+      @types.TrackSizingFunction::Length(200.0),
+      @types.TrackSizingFunction::Length(300.0),
+    ],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
+  }
+  let col = fn(n) {
+    {
+      ..default_style,
+      grid_column: {
+        start: @types.GridPlacement::Line(n),
+        end: @types.GridPlacement::Auto,
+      },
+      height: @types.Length(20.0),
+    }
+  }
+  let a = @node.Node::leaf("a", col(1))
+  let b = @node.Node::leaf("b", col(2))
+  let wrap = @node.Node::new(
+    "wrap",
+    { ..default_style, display: @types.Contents },
+    [a, b],
+  )
+  let c = @node.Node::leaf("c", col(3))
+  let root = @node.Node::new("root", root_style, [wrap, c])
+  let layout = compute_grid_layout(root, 600.0, 600.0, default_dispatch())
+  // wrap (contents) reconstructed with a,b inside; c is a direct child.
+  let wrap_layout = layout.children[0]
+  inspect(wrap_layout.children[0].x, content="0") // a -> col1
+  inspect(wrap_layout.children[0].width, content="100")
+  inspect(wrap_layout.children[1].x, content="100") // b -> col2
+  inspect(wrap_layout.children[1].width, content="200")
+  // c must keep its own layout (col3), not a duplicate of a.
+  inspect(layout.children[1].x, content="300")
+  inspect(layout.children[1].width, content="300")
+}

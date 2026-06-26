@@ -2277,7 +2277,11 @@ fn compute_grid_layout_internal(
     }
   }
 
-  // Build final children array with contents wrappers
+  // Build final children array with contents wrappers. `flattened_idx` walks
+  // the flattened layout list, which expands each display:contents element into
+  // its grid-item descendants — so it must advance past ALL of a contents
+  // element's flattened children, not just one slot, or the following regular
+  // child would pick up the wrong (duplicated) layout and the real one is lost.
   let final_children : Array[@layout_types.Layout] = []
   let mut flattened_idx = 0
   for i = 0; i < original_children.length(); i = i + 1 {
@@ -2285,10 +2289,12 @@ fn compute_grid_layout_internal(
     if orig_child.style.display == @types.Contents {
       // Create contents wrapper with its children's layouts
       match contents_layouts.get(i) {
-        Some(layouts) =>
+        Some(layouts) => {
           final_children.push(create_grid_contents_layout(orig_child, layouts))
+          flattened_idx = flattened_idx + layouts.length()
+        }
         None =>
-          // Contents element with no children
+          // Contents element with no grid-item descendants
           final_children.push(create_grid_contents_layout(orig_child, []))
       }
       // Regular child - use its layout from child_layouts
