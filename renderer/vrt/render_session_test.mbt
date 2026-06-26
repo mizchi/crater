@@ -132,3 +132,29 @@ test "render session branch() auto-selects strategy by mutation kind" {
     content="true",
   )
 }
+
+///|
+/// The layout-box geometry index reports each element's real absolute box —
+/// the data page JS getBoundingClientRect / offsetWidth / offsetHeight needs
+/// (today the runtime guesses from inline styles). A flex row of two fixed
+/// boxes lays out at x=0/w=100 and x=100/w=80.
+test "layout box geometry index matches the real layout" {
+  let html =
+    #|<!DOCTYPE html><style>body{margin:0}</style>
+    #|<div style="display:flex">
+    #|  <div id="a" style="width:100px;height:40px"></div>
+    #|  <div id="b" style="width:80px;height:40px"></div>
+    #|</div>
+  let ctx = {
+    ..@renderer.RenderContext::default(),
+    viewport_width: 400.0,
+    viewport_height: 200.0,
+  }
+  let layout = @renderer.render(html, ctx)
+  let a = layout_box_by_id(layout, "#a").unwrap()
+  inspect("\{a.x},\{a.width},\{a.height}", content="0,100,40")
+  let b = layout_box_by_id(layout, "#b").unwrap()
+  inspect("\{b.x},\{b.width},\{b.height}", content="100,80,40")
+  // The flatten is document-order and includes the container; b comes after a.
+  inspect(b.index > a.index, content="true")
+}

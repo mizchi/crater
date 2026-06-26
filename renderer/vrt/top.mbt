@@ -524,3 +524,74 @@ pub fn RenderSession::branch_diff(
 ) -> @paint_diff.PaintTreeDiff {
   @paint_diff.diff_trees(self.base_paint, self.branch(mutations))
 }
+
+///|
+/// Absolute geometry of one laid-out box, in the form page JS needs for
+/// `getBoundingClientRect()` / `offsetWidth` / `offsetHeight`. `index` is the
+/// pre-order (document-order) position in the layout tree — a stable key a JS
+/// DOM built in the same order can match. The crater layout tree already stores
+/// absolute viewport coordinates, so x/y are left/top directly.
+pub(all) struct LayoutBox {
+  id : String
+  index : Int
+  x : Double
+  y : Double
+  width : Double
+  height : Double
+} derive(Eq, Show)
+
+///|
+fn collect_layout_boxes_into(
+  layout : @layout_types.Layout,
+  next_index : Ref[Int],
+  out : Array[LayoutBox],
+) -> Unit {
+  let index = next_index.val
+  next_index.val = index + 1
+  out.push({
+    id: layout.id,
+    index,
+    x: layout.x,
+    y: layout.y,
+    width: layout.width,
+    height: layout.height,
+  })
+  for child in layout.children {
+    collect_layout_boxes_into(child, next_index, out)
+  }
+}
+
+///|
+/// Flatten a layout tree into per-box absolute geometry in document order. This
+/// is the data layer that connects crater's layout engine to page JS box
+/// measurement (the bridge would inject these and have getBoundingClientRect /
+/// offsetWidth / offsetHeight read them, keyed by `index`, instead of the
+/// inline-style heuristic the runtime uses today).
+pub fn collect_layout_boxes(layout : @layout_types.Layout) -> Array[LayoutBox] {
+  let out : Array[LayoutBox] = []
+  collect_layout_boxes_into(layout, { val: 0 }, out)
+  out
+}
+
+///|
+/// The first box whose layout id contains `id_fragment` (e.g. an element id like
+/// "main#content" or "#sidebar"), for getElementById-style measurement.
+pub fn layout_box_by_id(
+  layout : @layout_types.Layout,
+  id_fragment : String,
+) -> LayoutBox? {
+  let boxes = collect_layout_boxes(layout)
+  for b in boxes {
+    if b.id.contains(id_fragment) {
+      return Some(b)
+    }
+  }
+  None
+}
+
+///|
+/// Per-box geometry of the session's base render — the geometry page JS would
+/// observe via getBoundingClientRect on the initial layout.
+pub fn RenderSession::element_boxes(self : RenderSession) -> Array[LayoutBox] {
+  collect_layout_boxes(self.base_layout)
+}
