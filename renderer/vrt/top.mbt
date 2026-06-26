@@ -283,3 +283,112 @@ fn mutations_to_css(mutations : Array[CssMutation]) -> String {
   })
   buf.to_string()
 }
+
+///|
+/// A reusable render "snapshot" for VRT branching. `open` parses + cascades +
+/// lays out + paints the base document once; each branch applies a CSS-mutation
+/// delta. A branch can either re-layout fully (branch_full, for geometry-
+/// affecting changes) or reuse the base layout (branch_reusing_layout, valid
+/// when the delta is paint-only) — the latter skips the dominant layout cost.
+pub(all) struct RenderSession {
+  doc : @html.Document
+  viewport : @types.Size[Double]
+  ctx : @renderer.RenderContext
+  base_node : @layout.Node
+  base_layout : @layout_types.Layout
+  base_paint : @paint_model.PaintNode
+}
+
+///|
+fn render_session_external_css(mutations : Array[CssMutation]) -> Array[String] {
+  let override_css = mutations_to_css(mutations)
+  if override_css.is_empty() {
+    []
+  } else {
+    [override_css]
+  }
+}
+
+///|
+/// Parse + cascade + layout + paint the base document once.
+pub fn RenderSession::open(
+  html : String,
+  viewport : @types.Size[Double],
+  external_css : Array[String],
+) -> RenderSession {
+  let doc = @html.parse_document(html)
+  let ctx = make_render_context(viewport)
+  let prepared = @renderer.prepare_render_document(doc, ctx, external_css)
+  let node = @renderer.build_render_root_node(doc, ctx, prepared)
+  let layout = @renderer.compute_layout_from_render_root(node, prepared, ctx)
+  let paint = paint_tree_from_node_layout(node, layout, viewport)
+  {
+    doc,
+    viewport,
+    ctx,
+    base_node: node,
+    base_layout: layout,
+    base_paint: paint,
+  }
+}
+
+///|
+/// The base (unmutated) paint tree captured at open().
+pub fn RenderSession::base_paint_tree(
+  self : RenderSession,
+) -> @paint_model.PaintNode {
+  self.base_paint
+}
+
+///|
+/// Branch with a full re-layout (correct for any mutation, including ones that
+/// change box geometry). Re-cascades + re-lays-out + paints from scratch,
+/// reusing only the parsed document.
+pub fn RenderSession::branch_full(
+  self : RenderSession,
+  mutations : Array[CssMutation],
+) -> @paint_model.PaintNode {
+  let external = render_session_external_css(mutations)
+  let prepared = @renderer.prepare_render_document(self.doc, self.ctx, external)
+  let node = @renderer.build_render_root_node(self.doc, self.ctx, prepared)
+  let layout = @renderer.compute_layout_from_render_root(
+    node,
+    prepared,
+    self.ctx,
+  )
+  paint_tree_from_node_layout(node, layout, self.viewport)
+}
+
+///|
+/// Branch reusing the base layout: re-cascade the mutated document but paint it
+/// against the base layout, skipping re-layout. Valid only when the mutation is
+/// paint-only (it changes paint properties — color, background, opacity, … —
+/// not box geometry); for such a delta the layout is identical, so the painted
+/// result equals branch_full at a fraction of the cost.
+pub fn RenderSession::branch_reusing_layout(
+  self : RenderSession,
+  mutations : Array[CssMutation],
+) -> @paint_model.PaintNode {
+  let external = render_session_external_css(mutations)
+  let prepared = @renderer.prepare_render_document(self.doc, self.ctx, external)
+  let node = @renderer.build_render_root_node(self.doc, self.ctx, prepared)
+  paint_tree_from_node_layout(node, self.base_layout, self.viewport)
+}
+
+///|
+/// Paint-tree diff of a full-relayout branch against the base.
+pub fn RenderSession::branch_full_diff(
+  self : RenderSession,
+  mutations : Array[CssMutation],
+) -> @paint_diff.PaintTreeDiff {
+  @paint_diff.diff_trees(self.base_paint, self.branch_full(mutations))
+}
+
+///|
+/// Paint-tree diff of a layout-reusing (paint-only) branch against the base.
+pub fn RenderSession::branch_reusing_layout_diff(
+  self : RenderSession,
+  mutations : Array[CssMutation],
+) -> @paint_diff.PaintTreeDiff {
+  @paint_diff.diff_trees(self.base_paint, self.branch_reusing_layout(mutations))
+}
