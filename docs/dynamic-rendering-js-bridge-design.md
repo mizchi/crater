@@ -1,10 +1,22 @@
 # Design memo: connecting the layout engine to page JS (dynamic rendering)
 
-Status: design + first data-layer step landed. The remaining work lives in the
-dynamic-JS runtime (native V8 in `browser/native/js_v8`, QuickJS in `runtime/`),
-which cannot be built or run in the web sandbox (rusty_v8 egress is blocked —
-see #312 — and the MoonBit test suite does not execute real JS), so it is
-captured here to be picked up in an environment where that runtime builds.
+Status: data layers, JS payload serializer, mock-DOM consumer, and the browser-
+shell activation have all landed (steps (1)-(2) below). What remains is the
+incremental run-loop (step (3)).
+
+A note on "the runtime can't build in the web sandbox" (earlier drafts cited
+#312): that was imprecise. The blocker is **git egress scope**, not general
+egress. The Claude-Code-on-the-web git proxy is scoped to the session's
+repositories, so `mizchi/v8`'s postadd (`build-rusty-v8.sh`) fails when it runs
+`git clone https://github.com/denoland/rusty_v8` (403), which aborts whole-
+workspace dependency resolution — even for a v8-unrelated `--target js` test.
+Plain HTTPS egress to GitHub is open: the rusty_v8 source tarball, the prebuilt
+`librusty_v8*.a`, and the `src_binding_release_*.rs` all download via `curl`
+(HTTP 200/206). So the native runtime *does* build in this environment once the
+`git clone` is replaced by an HTTPS source fetch (see #312 and
+`docs/v8-build-egress.md`). The MoonBit test suite still does not execute real
+JS, so the V8 round-trip is validated by the native `js_v8` tests, not the
+JS-target suite.
 
 ## The gap
 
@@ -80,16 +92,19 @@ host call that injects the payload before page scripts run.
    lookup returns null and the methods fall back to today's heuristic, so the
    change is inert until a host injects the payload.
 
-3. **Host activation — remaining (needs the runtime).** The browser shell holds
-   the computed layout and render node tree (`Browser` state
-   `graphics_layout : @layout_types.Layout?` / `graphics_render_node :
-   @node.Node?`), so before `script.evaluate` it can build the payload via
-   `@vrt.layout_bridge_init_js(@vrt.collect_layout_boxes(layout),
-   @vrt.collect_computed_styles(node))` and `eval_string` it into the realm
-   (re-injecting on a forced reflow). This needs `browser/shell` to depend on
-   `mizchi/crater-renderer/vrt` (no cycle: `vrt` does not import the shell) and
-   can only be validated where the native V8 runtime builds (blocked in the web
-   sandbox — see #312).
+3. **Host activation — landed.** `browser/shell` (`Browser::inject_layout_bridge`
+   in `js_execution.mbt`) computes the current render node + layout for the
+   viewport and evaluates the payload into the realm before each script batch
+   (`process_pending_script_tasks`) and before each inline eval
+   (`execute_inline_js`), so `globalThis.__craterLayoutBoxes` /
+   `__craterComputedStyles` are defined before page JS runs. It computes layout
+   directly (not via the cached graphics node/layout, which is keyed for the
+   paint path) and is best-effort — any failure leaves the mock DOM on its
+   fallback. `browser/shell` now depends on `mizchi/crater-renderer/vrt` (no
+   cycle: `vrt` does not import the shell). This is the "initial-layout" path:
+   reads before a mutation see real geometry; reads after a mutation see the
+   last injected layout until the next batch re-injects (full synchronous
+   forced reflow is step (3)).
 
 ### Synchronous reflow caveat
 
@@ -130,9 +145,10 @@ external pump, and is the prerequisite for the forced-reflow path in (1).
 1. **computed-style index** (MoonBit, testable like `collect_layout_boxes`). —
    landed (`collect_computed_styles`).
 2. **JS wiring, initial-layout** — `getBoundingClientRect`/`offsetWidth/Height` +
-   `getComputedStyle` read the injected indexes. — payload serializer
-   (`layout_bridge_init_js`) and mock-DOM consumer landed; the host activation
-   call in `browser/shell` is the remaining piece (validate in an env with the
-   runtime).
+   `getComputedStyle` read the injected indexes. — landed end-to-end: payload
+   serializer (`layout_bridge_init_js`), mock-DOM consumer
+   (`browser/native/js_v8/mock_dom_full.mbt`), and shell activation
+   (`Browser::inject_layout_bridge`). Validate the V8 round-trip with the native
+   `js_v8` tests (see `docs/v8-build-egress.md` to build the runtime here).
 3. **Run-loop** in `browser/shell` (microtask → domOps → incremental reflow →
    rAF), then wire forced reflow into the measuring reads.

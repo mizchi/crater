@@ -19,6 +19,55 @@ fn decode_js_string_result(value : String) -> String? {
 }
 
 ///|
+/// Inject crater's real layout into the JS realm so page-JS DOM measurement
+/// (`getBoundingClientRect` / `offset*` / `getComputedStyle`) reads it instead
+/// of the inline-style heuristic. Computes (or reuses the cached) render node +
+/// layout for the current viewport and evaluates the bridge payload (see
+/// `renderer/vrt` `layout_bridge_init_js`) in the page realm before scripts run,
+/// defining `globalThis.__craterLayoutBoxes` / `__craterComputedStyles`. This is
+/// the "initial-layout" path of the dynamic-rendering JS bridge: reads before a
+/// mutation see real geometry; reads after a mutation see the last injected
+/// layout until the next injection. Best-effort — any failure leaves the mock
+/// DOM on its existing fallback behavior.
+fn Browser::inject_layout_bridge(self : Browser) -> Unit {
+  if !self.enable_js || self.html_content.length() == 0 {
+    return
+  }
+  match self.script_executor {
+    Some(executor) => {
+      let ctx = @browser_helpers.create_render_context(
+        self.viewport_width,
+        self.viewport_height,
+        false,
+      )
+      // Compute layout directly (do NOT use the cached graphics node/layout):
+      // the graphics cache is keyed for the paint path and may be populated
+      // with an image provider installed; reusing it here would either pollute
+      // or read a paint-specific cache.
+      let (node, layout) = match self.parsed_doc {
+        Some(doc) => self.render_node_and_layout_from_document(doc, ctx, false)
+        None =>
+          @renderer.render_to_node_and_layout_with_external_css(
+            self.html_content,
+            ctx,
+            self.external_css,
+          )
+      }
+      let js = @vrt.layout_bridge_init_js(
+        @vrt.collect_layout_boxes(layout),
+        @vrt.collect_computed_styles(node),
+      )
+      try {
+        let _ = executor.execute_source(js)
+      } catch {
+        _ => ()
+      }
+    }
+    None => ()
+  }
+}
+
+///|
 fn Browser::flush_js_logs(self : Browser) -> Unit {
   match self.script_executor {
     Some(executor) => {
@@ -58,6 +107,7 @@ fn Browser::execute_inline_js(self : Browser, source : String) -> String? {
   match self.script_executor {
     Some(executor) =>
       try {
+        self.inject_layout_bridge()
         let result = executor.execute_source(source)
         self.flush_js_logs()
         let _ = self.drain_pending_form_submission_navigation_sync()
@@ -89,6 +139,10 @@ pub async fn Browser::execute_inline_js_async(
 ///|
 fn Browser::process_pending_script_tasks(self : Browser) -> Int {
   let ready_tasks = self.scheduler.poll_ready()
+  // Make crater's real layout visible to page JS before the batch runs.
+  if ready_tasks.length() > 0 {
+    self.inject_layout_bridge()
+  }
   let mut processed = 0
   for task in ready_tasks {
     match task.action {

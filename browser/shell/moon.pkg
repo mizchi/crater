@@ -2,6 +2,7 @@ import {
   "moonbitlang/core/json",
   "moonbitlang/async/io",
   "mizchi/crater-renderer/renderer",
+  "mizchi/crater-renderer/vrt" @vrt,
   "mizchi/crater-dom/html",
   "mizchi/crater-browser-helpers" @browser_helpers,
   "mizchi/crater-dom/aom",
