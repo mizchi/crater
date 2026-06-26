@@ -297,6 +297,10 @@ pub(all) struct RenderSession {
   base_node : @layout.Node
   base_layout : @layout_types.Layout
   base_paint : @paint_model.PaintNode
+  // External text-measurement results observed while rendering the base. Stored
+  // so branches replay them (deterministic, no font engine) and so the whole
+  // session can be serialized and restored on a machine without a font engine.
+  measurements : Array[@renderer.RecordedMetric]
 }
 
 ///|
@@ -310,7 +314,9 @@ fn render_session_external_css(mutations : Array[CssMutation]) -> Array[String] 
 }
 
 ///|
-/// Parse + cascade + layout + paint the base document once.
+/// Parse + cascade + layout + paint the base document once, recording the
+/// external text-measurement side effect so branches (and a restored session)
+/// reproduce it without a font engine.
 pub fn RenderSession::open(
   html : String,
   viewport : @types.Size[Double],
@@ -318,10 +324,12 @@ pub fn RenderSession::open(
 ) -> RenderSession {
   let doc = @html.parse_document(html)
   let ctx = make_render_context(viewport)
+  @renderer.start_text_metrics_recording()
   let prepared = @renderer.prepare_render_document(doc, ctx, external_css)
   let node = @renderer.build_render_root_node(doc, ctx, prepared)
   let layout = @renderer.compute_layout_from_render_root(node, prepared, ctx)
   let paint = paint_tree_from_node_layout(node, layout, viewport)
+  let measurements = @renderer.take_text_metrics_recording()
   {
     doc,
     viewport,
@@ -329,7 +337,48 @@ pub fn RenderSession::open(
     base_node: node,
     base_layout: layout,
     base_paint: paint,
+    measurements,
   }
+}
+
+///|
+/// Restore a session from a previously recorded measurement set (e.g. one
+/// serialized to disk). The base is rendered by replaying `measurements`, so no
+/// font engine is required; branches then reuse the same recording. This is the
+/// portable side of the snapshot: capture once with open(), persist
+/// session.measurements, reproduce anywhere.
+pub fn RenderSession::open_with_recording(
+  html : String,
+  viewport : @types.Size[Double],
+  external_css : Array[String],
+  measurements : Array[@renderer.RecordedMetric],
+) -> RenderSession {
+  let doc = @html.parse_document(html)
+  let ctx = make_render_context(viewport)
+  @renderer.install_text_metrics_replay(measurements)
+  let prepared = @renderer.prepare_render_document(doc, ctx, external_css)
+  let node = @renderer.build_render_root_node(doc, ctx, prepared)
+  let layout = @renderer.compute_layout_from_render_root(node, prepared, ctx)
+  let paint = paint_tree_from_node_layout(node, layout, viewport)
+  @renderer.clear_text_metrics_record_replay()
+  {
+    doc,
+    viewport,
+    ctx,
+    base_node: node,
+    base_layout: layout,
+    base_paint: paint,
+    measurements,
+  }
+}
+
+///|
+/// The recorded text measurements; serialize for persistence with
+/// @renderer.serialize_text_metrics_recording.
+pub fn RenderSession::recorded_measurements(
+  self : RenderSession,
+) -> Array[@renderer.RecordedMetric] {
+  self.measurements
 }
 
 ///|
@@ -349,6 +398,9 @@ pub fn RenderSession::branch_full(
   mutations : Array[CssMutation],
 ) -> @paint_model.PaintNode {
   let external = render_session_external_css(mutations)
+  // Replay the recorded measurements (a delta that introduces new text/sizes
+  // falls back to the live measure func for those misses).
+  @renderer.install_text_metrics_replay(self.measurements)
   let prepared = @renderer.prepare_render_document(self.doc, self.ctx, external)
   let node = @renderer.build_render_root_node(self.doc, self.ctx, prepared)
   let layout = @renderer.compute_layout_from_render_root(
@@ -356,7 +408,9 @@ pub fn RenderSession::branch_full(
     prepared,
     self.ctx,
   )
-  paint_tree_from_node_layout(node, layout, self.viewport)
+  let paint = paint_tree_from_node_layout(node, layout, self.viewport)
+  @renderer.clear_text_metrics_record_replay()
+  paint
 }
 
 ///|
@@ -370,9 +424,14 @@ pub fn RenderSession::branch_reusing_layout(
   mutations : Array[CssMutation],
 ) -> @paint_model.PaintNode {
   let external = render_session_external_css(mutations)
+  // A paint-only delta keeps the same text/sizes, so the recording is complete
+  // and no live measurement happens.
+  @renderer.install_text_metrics_replay(self.measurements)
   let prepared = @renderer.prepare_render_document(self.doc, self.ctx, external)
   let node = @renderer.build_render_root_node(self.doc, self.ctx, prepared)
-  paint_tree_from_node_layout(node, self.base_layout, self.viewport)
+  let paint = paint_tree_from_node_layout(node, self.base_layout, self.viewport)
+  @renderer.clear_text_metrics_record_replay()
+  paint
 }
 
 ///|

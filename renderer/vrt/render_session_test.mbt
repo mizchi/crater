@@ -50,3 +50,45 @@ test "render session: paint-only branch diff is non-empty vs base" {
   // The background color change shows up as a paint property change.
   inspect(diff.changes.length() > 0, content="true")
 }
+
+///|
+/// A session records the text-measurement side effect at open(); restoring a
+/// session from that recording reproduces the base render byte-identically and
+/// supports branching — without needing a font engine. This is the portable
+/// VRT snapshot: capture once, persist measurements, reproduce anywhere.
+test "render session records measurements and restores from them" {
+  let html =
+    #|<!DOCTYPE html><style>body{margin:0}.box{display:inline-block;color:#111}</style>
+    #|<div class="box">Hello snapshot world</div>
+  let viewport = @types.Size::new(400.0, 200.0)
+  let session = RenderSession::open(html, viewport, [])
+  let recording = session.recorded_measurements()
+  inspect(recording.length() > 0, content="true")
+
+  // Restore from the recording (replay-only) and compare the base render.
+  let restored = RenderSession::open_with_recording(
+    html,
+    viewport,
+    [],
+    recording,
+  )
+  inspect(
+    restored.base_paint_tree().to_json_string() ==
+    session.base_paint_tree().to_json_string(),
+    content="true",
+  )
+
+  // A paint-only branch on the restored session matches the original session.
+  let mutations : Array[CssMutation] = [
+    {
+      selector: ".box",
+      property: "color",
+      action: CssMutationAction::Override("#ff0000"),
+    },
+  ]
+  inspect(
+    restored.branch_reusing_layout(mutations).to_json_string() ==
+    session.branch_reusing_layout(mutations).to_json_string(),
+    content="true",
+  )
+}
