@@ -48,3 +48,40 @@ test "text metrics record/replay reproduces and drives the render" {
   @renderer.clear_text_metrics_record_replay()
   inspect(widened_render != base, content="true")
 }
+
+///|
+/// Image intrinsic sizes record/replay the same way: a recording captures the
+/// provider's results, and replaying serves them with no provider installed.
+test "image intrinsic size record/replay reproduces the render" {
+  let html = "<!DOCTYPE html><img src=\"photo.png\">"
+  let ctx = @renderer.RenderContext::default()
+
+  // Provider that reports a fixed intrinsic size for any image.
+  @renderer.set_image_intrinsic_size_provider(
+    @renderer.ImageIntrinsicSizeProvider::new(fn(_src) { Some((120.0, 60.0)) }),
+  )
+  @renderer.start_image_intrinsic_recording()
+  let with_provider = @renderer.layout_to_json(@renderer.render(html, ctx))
+  let recording = @renderer.take_image_intrinsic_recording()
+  @renderer.clear_image_intrinsic_size_provider()
+  inspect(recording.length() > 0, content="true")
+
+  // Without provider or replay the image no longer measures to 120x60.
+  let without = @renderer.layout_to_json(@renderer.render(html, ctx))
+  inspect(without != with_provider, content="true")
+
+  // Replaying the recording reproduces the with-provider render — no provider.
+  @renderer.install_image_intrinsic_replay(recording)
+  let replayed = @renderer.layout_to_json(@renderer.render(html, ctx))
+  @renderer.clear_image_intrinsic_record_replay()
+  inspect(replayed == with_provider, content="true")
+
+  // Serialized image recording round-trips.
+  let round = @renderer.deserialize_image_intrinsic_recording(
+    @renderer.serialize_image_intrinsic_recording(recording),
+  )
+  @renderer.install_image_intrinsic_replay(round)
+  let from_disk = @renderer.layout_to_json(@renderer.render(html, ctx))
+  @renderer.clear_image_intrinsic_record_replay()
+  inspect(from_disk == with_provider, content="true")
+}

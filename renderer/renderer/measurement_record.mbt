@@ -255,3 +255,145 @@ pub fn deserialize_text_metrics_recording(
   }
   result
 }
+
+///|
+/// A single recorded image intrinsic size lookup: the source and its result
+/// (`has_size = false` records a provider that returned "no intrinsic size").
+pub(all) struct RecordedImage {
+  src : String
+  has_size : Bool
+  width : Double
+  height : Double
+}
+
+///|
+let image_record_buffer : Ref[Array[RecordedImage]?] = { val: None }
+
+///|
+let image_replay_table : Ref[Map[String, (Double, Double)?]?] = { val: None }
+
+///|
+/// Resolve an image intrinsic size through the record/replay layer. Returns
+/// `Some(replayed)` to short-circuit the live resolver during replay; otherwise
+/// `None` and the caller resolves live (recording observes the live result via
+/// note_image_intrinsic_result).
+fn image_intrinsic_replay(src : String) -> (Double, Double)?? {
+  match image_replay_table.val {
+    Some(table) =>
+      match table.get(src) {
+        Some(recorded) => Some(recorded) // hit (may itself be None = "no size")
+        None => None // miss: fall back to live
+      }
+    None => None
+  }
+}
+
+///|
+/// Record the (live) result of an image intrinsic size lookup when recording.
+fn note_image_intrinsic_result(
+  src : String,
+  result : (Double, Double)?,
+) -> Unit {
+  match image_record_buffer.val {
+    Some(buffer) =>
+      match result {
+        Some((w, h)) =>
+          buffer.push({ src, has_size: true, width: w, height: h })
+        None => buffer.push({ src, has_size: false, width: 0.0, height: 0.0 })
+      }
+    None => ()
+  }
+}
+
+///|
+/// Begin recording image intrinsic sizes. Clears any active image replay.
+pub fn start_image_intrinsic_recording() -> Unit {
+  image_record_buffer.val = Some([])
+  image_replay_table.val = None
+}
+
+///|
+pub fn take_image_intrinsic_recording() -> Array[RecordedImage] {
+  let recorded = match image_record_buffer.val {
+    Some(buffer) => buffer
+    None => []
+  }
+  image_record_buffer.val = None
+  recorded
+}
+
+///|
+pub fn install_image_intrinsic_replay(images : Array[RecordedImage]) -> Unit {
+  let table : Map[String, (Double, Double)?] = {}
+  for im in images {
+    table[im.src] = if im.has_size { Some((im.width, im.height)) } else { None }
+  }
+  image_replay_table.val = Some(table)
+  image_record_buffer.val = None
+}
+
+///|
+pub fn clear_image_intrinsic_record_replay() -> Unit {
+  image_record_buffer.val = None
+  image_replay_table.val = None
+}
+
+///|
+/// Serialize image recordings (length-prefixed src, so any URL round-trips).
+pub fn serialize_image_intrinsic_recording(
+  images : Array[RecordedImage],
+) -> String {
+  let buf = StringBuilder::new()
+  buf.write_string(images.length().to_string())
+  buf.write_char('\n')
+  for im in images {
+    buf.write_string(if im.has_size { "1" } else { "0" })
+    buf.write_char(' ')
+    buf.write_string(im.width.to_string())
+    buf.write_char(' ')
+    buf.write_string(im.height.to_string())
+    buf.write_char(' ')
+    buf.write_string(im.src.length().to_string())
+    buf.write_char(':')
+    buf.write_string(im.src)
+  }
+  buf.to_string()
+}
+
+///|
+pub fn deserialize_image_intrinsic_recording(
+  data : String,
+) -> Array[RecordedImage] {
+  let result : Array[RecordedImage] = []
+  let len = data.length()
+  let mut i = 0
+  fn unit_at(idx : Int) -> Int {
+    data[idx].to_int()
+  }
+  let nl = '\n'.to_int()
+  let sp = ' '.to_int()
+  let colon = ':'.to_int()
+  while i < len && unit_at(i) != nl {
+    i = i + 1
+  }
+  i = i + 1
+  fn read_until(stop : Int) -> String {
+    let start = i
+    while i < len && unit_at(i) != stop {
+      i = i + 1
+    }
+    let s = data[start:i].to_string()
+    i = i + 1
+    s
+  }
+  while i < len {
+    let has = read_until(sp) == "1"
+    let w = @string.parse_double(read_until(sp)) catch { _ => 0.0 }
+    let h = @string.parse_double(read_until(sp)) catch { _ => 0.0 }
+    let src_len = @string.parse_int(read_until(colon)) catch { _ => 0 }
+    let src = data[i:i + src_len].to_string()
+    i = i + src_len
+    result.push({ src, has_size: has, width: w, height: h })
+  }
+  result
+}

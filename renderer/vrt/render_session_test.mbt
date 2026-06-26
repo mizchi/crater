@@ -71,6 +71,7 @@ test "render session records measurements and restores from them" {
     viewport,
     [],
     recording,
+    session.recorded_images(),
   )
   inspect(
     restored.base_paint_tree().to_json_string() ==
