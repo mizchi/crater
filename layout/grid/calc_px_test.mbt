@@ -279,3 +279,41 @@ test "grid display:contents wrapper keeps following sibling" {
   inspect(layout.children[1].x, content="300")
   inspect(layout.children[1].width, content="300")
 }
+
+///|
+// `grid-column-end: span N <name>` (GridPlacement::SpanNamed) ends at the Nth
+// line carrying <name> after the start line, not N tracks. With "a" lines at
+// grid lines 0/2/4 of a 5-track grid, `grid-column: 1 / span 2 a` spans from
+// line 0 to the 2nd "a" line after it (line 4) -> tracks 0..3, x=0 w=400 (was
+// x=0 w=200 with the old N-track approximation).
+test "grid span N name resolves to the Nth named line" {
+  let default_style = @style.Style::default()
+  let root_style = {
+    ..default_style,
+    display: @types.Grid,
+    width: @types.Length(500.0),
+    height: @types.Length(40.0),
+    grid_template_columns: [
+      @types.TrackSizingFunction::Length(100.0),
+      @types.TrackSizingFunction::Length(100.0),
+      @types.TrackSizingFunction::Length(100.0),
+      @types.TrackSizingFunction::Length(100.0),
+      @types.TrackSizingFunction::Length(100.0),
+    ],
+    // [a] 100 100 [a] 100 100 [a] 100 -> "a" at grid lines 0, 2, 4.
+    grid_template_column_line_names: [["a"], [], ["a"], [], ["a"], []],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
+  }
+  let item = @node.Node::leaf("item", {
+    ..default_style,
+    grid_column: {
+      start: @types.GridPlacement::Line(1),
+      end: @types.GridPlacement::SpanNamed(2, "a"),
+    },
+    height: @types.Length(20.0),
+  })
+  let root = @node.Node::new("root", root_style, [item])
+  let layout = compute_grid_layout(root, 500.0, 600.0, default_dispatch())
+  inspect(layout.children[0].x, content="0")
+  inspect(layout.children[0].width, content="400")
+}

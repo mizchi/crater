@@ -5229,6 +5229,31 @@ fn place_grid_items(
 ///|
 /// Resolve a grid line placement to start/end indices (0-indexed)
 /// Negative indices are allowed - they indicate implicit tracks before the explicit grid
+/// The 0-based grid line that is the `s`-th line carrying `name` strictly after
+/// line `after`, for `span <s> <name>` resolution. None when there aren't `s`
+/// such lines (the caller then falls back to an `s`-track span).
+fn nth_named_line_after(
+  name : String,
+  s : Int,
+  after : Int,
+  line_names : Array[Array[String]],
+) -> Int? {
+  if s <= 0 {
+    return None
+  }
+  let mut count = 0
+  for j = after + 1; j < line_names.length(); j = j + 1 {
+    if line_names[j].contains(name) {
+      count = count + 1
+      if count == s {
+        return Some(j)
+      }
+    }
+  }
+  None
+}
+
+///|
 fn resolve_line_placement(
   line : @types.GridLine,
   auto_position : Int,
@@ -5293,9 +5318,13 @@ fn resolve_line_placement(
         start + 1
       }
     @types.GridPlacement::Span(s) => start + s
-    // `span N name`: approximate by spanning N tracks (proper named-line span
-    // resolution would need the start position relative to the line names).
-    @types.GridPlacement::SpanNamed(s, _) => start + s
+    // `span N name`: the end is the Nth line carrying `name` after the start
+    // line; fall back to an N-track span when there aren't enough named lines.
+    @types.GridPlacement::SpanNamed(s, name) =>
+      match nth_named_line_after(name, s, start, line_names) {
+        Some(j) => j
+        None => start + s
+      }
   }
 
   // Handle span in start position
