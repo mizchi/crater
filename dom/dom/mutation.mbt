@@ -164,7 +164,7 @@ pub fn MutationRecord::affects_layout(self : MutationRecord) -> Bool {
 
 ///|
 /// Check if a CSS property affects layout (vs paint-only)
-fn is_layout_property(prop : String) -> Bool {
+pub fn is_layout_property(prop : String) -> Bool {
   match prop {
     // Box model
     "width"

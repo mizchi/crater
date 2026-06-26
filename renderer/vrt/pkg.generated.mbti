@@ -2,6 +2,8 @@
 package "mizchi/crater-renderer/vrt"
 
 import {
+  "mizchi/crater-core",
+  "mizchi/crater-core/node",
   "mizchi/crater-dom/html",
   "mizchi/crater-painter/paint/diff",
   "mizchi/crater-painter/paint/model",
@@ -11,7 +13,15 @@ import {
 }
 
 // Values
+pub fn collect_computed_styles(@node.Node) -> Array[ComputedStyleEntry]
+
+pub fn collect_layout_boxes(@crater-core.Layout) -> Array[LayoutBox]
+
+pub fn computed_style_by_id(@node.Node, String) -> ComputedStyleEntry?
+
 pub fn diff_rendered_paint_trees(String, String, @values.Size[Double]) -> @diff.PaintTreeDiff
+
+pub fn layout_box_by_id(@crater-core.Layout, String) -> LayoutBox?
 
 pub fn prepare_external_css(Array[String]) -> @renderer.PreparedExternalCss
 
@@ -36,11 +46,26 @@ pub fn render_prepared_vrt_page_to_paint_tree_json(PreparedVrtPage) -> String
 // Errors
 
 // Types and methods
+pub(all) struct ComputedStyleEntry {
+  id : String
+  index : Int
+  display : String
+  position : String
+  visibility : String
+  font_size : String
+  font_family : String
+  opacity : String
+  z_index : String
+  color : String
+  background_color : String
+} derive(Eq, Show)
+
 pub(all) struct CssMutation {
   selector : String
   property : String
   action : CssMutationAction
 } derive(Eq, @debug.Debug)
+pub fn CssMutation::is_paint_only(Self) -> Bool
 pub impl Show for CssMutation
 
 pub(all) enum CssMutationAction {
@@ -49,12 +74,45 @@ pub(all) enum CssMutationAction {
 } derive(Eq, @debug.Debug)
 pub impl Show for CssMutationAction
 
+pub(all) struct LayoutBox {
+  id : String
+  index : Int
+  x : Double
+  y : Double
+  width : Double
+  height : Double
+} derive(Eq, Show)
+
 pub(all) struct PreparedVrtPage {
   doc : @html.Document
   viewport : @values.Size[Double]
   ctx : @renderer.RenderContext
   prepared : @renderer.PreparedRenderDocument
 }
+
+pub(all) struct RenderSession {
+  doc : @html.Document
+  viewport : @values.Size[Double]
+  ctx : @renderer.RenderContext
+  base_node : @node.Node
+  base_layout : @crater-core.Layout
+  base_paint : @model.PaintNode
+  measurements : Array[@renderer.RecordedMetric]
+  images : Array[@renderer.RecordedImage]
+}
+pub fn RenderSession::base_paint_tree(Self) -> @model.PaintNode
+pub fn RenderSession::branch(Self, Array[CssMutation]) -> @model.PaintNode
+pub fn RenderSession::branch_diff(Self, Array[CssMutation]) -> @diff.PaintTreeDiff
+pub fn RenderSession::branch_full(Self, Array[CssMutation]) -> @model.PaintNode
+pub fn RenderSession::branch_full_diff(Self, Array[CssMutation]) -> @diff.PaintTreeDiff
+pub fn RenderSession::branch_reusing_layout(Self, Array[CssMutation]) -> @model.PaintNode
+pub fn RenderSession::branch_reusing_layout_diff(Self, Array[CssMutation]) -> @diff.PaintTreeDiff
+pub fn RenderSession::element_boxes(Self) -> Array[LayoutBox]
+pub fn RenderSession::element_computed_styles(Self) -> Array[ComputedStyleEntry]
+pub fn RenderSession::open(String, @values.Size[Double], Array[String]) -> Self
+pub fn RenderSession::open_with_recording(String, @values.Size[Double], Array[String], Array[@renderer.RecordedMetric], Array[@renderer.RecordedImage]) -> Self
+pub fn RenderSession::recorded_images(Self) -> Array[@renderer.RecordedImage]
+pub fn RenderSession::recorded_measurements(Self) -> Array[@renderer.RecordedMetric]
 
 pub(all) struct RenderVariant {
   id : String

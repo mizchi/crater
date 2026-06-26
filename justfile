@@ -21,6 +21,13 @@ test:
 test-js:
     moon test --target js
 
+# Run `moon test` with the mizchi/v8 native dep excluded, for environments where
+# rusty_v8 can't be built (e.g. the web sandbox; see #312). Args pass through:
+#   just test-no-v8 -p mizchi/crater-dom/html
+#   just test-no-v8 -p mizchi/crater-layout/grid --target js
+test-no-v8 *ARGS:
+    scripts/moon-test-no-v8.sh {{ARGS}}
+
 # Run all repository Vitest suites with an explicit include/exclude boundary
 test-vitest:
     pnpm test:vitest
@@ -223,6 +230,17 @@ wpt-css-report module report *args:
 # Update WPT README
 wpt-update-readme:
     npx tsx scripts/update-wpt-readme.ts
+
+# Diff CSS math (calc/min/max/clamp) layout vs Chromium.
+# No args runs the built-in fixture matrix; pass an HTML file to diff one page.
+# Non-zero exit on any mismatch, so it doubles as a CI gate.
+calc-diff *args:
+    npx tsx scripts/calc-layout-diff.ts {{args}}
+
+# Aggregate Crater-vs-Chromium layout match rate on real-world snapshots
+# (github-mizchi, example-com). No args measures all; pass a snapshot name.
+match-rate *args:
+    npx tsx scripts/real-world-match-rate.ts {{args}}
 
 # === WPT DOM Tests ===
 

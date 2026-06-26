@@ -1,0 +1,27 @@
+{
+  "title": "CSS grid layout - CSS | MDN",
+  "sourceUrl": "https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_grid_layout",
+  "viewport": {
+    "width": 1280,
+    "height": 900
+  },
+  "stylesheetUrls": [
+    "https://developer.mozilla.org/static/client/styles-global.3034d2d094fbb7a7.css",
+    "https://developer.mozilla.org/static/client/270.66bae6059a1c23f9.css",
+    "https://developer.mozilla.org/static/client/styles-reference-layout.632d2f3884f10ca3.css",
+    "https://developer.mozilla.org/static/client/styles-content-section.d72b98b58747a002.css",
+    "https://developer.mozilla.org/static/client/styles-heading-anchor.0eec5185ab9425b7.css",
+    "https://developer.mozilla.org/static/client/styles-reference-toc.9b9bd019efd16b86.css",
+    "https://developer.mozilla.org/static/client/styles-article-footer.81ae18c89fc527dc.css",
+    "https://developer.mozilla.org/static/client/styles-left-sidebar.46e37af4d0b5c883.css",
+    "https://developer.mozilla.org/static/client/styles-page-layout.5a4354f33e894319.css",
+    "https://developer.mozilla.org/static/client/styles-a11y-menu.5796ee87cb69f93f.css",
+    "https://developer.mozilla.org/static/client/styles-navigation.c3ebf384e65df345.css",
+    "https://developer.mozilla.org/static/client/styles-logo.aea5ff6edf1b9cfb.css",
+    "https://developer.mozilla.org/static/client/styles-menu.e2c5c8a53a8854c2.css",
+    "https://developer.mozilla.org/static/client/styles-breadcrumbs-bar.9a51a3c76a6231d0.css",
+    "https://developer.mozilla.org/static/client/styles-breadcrumbs.87eb742f4e711dc3.css",
+    "https://developer.mozilla.org/static/client/styles-footer.66072dd619a4ef50.css"
+  ],
+  "capturedAt": "1970-01-01T00:00:00.000Z"
+}

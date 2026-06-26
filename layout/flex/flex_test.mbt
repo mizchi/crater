@@ -5369,3 +5369,52 @@ test "flexbox_min_width_justify_and_padding" {
   inspect(l2.height, content="10")
   inspect(l3.height, content="10")
 }
+
+///|
+// A flex-column item with a flex:1 0 auto child must measure its cross size
+// (height, in a row container) from content, not be inflated to the container
+// width. Regression for GitHub pinned-repo cards rendering several times too
+// tall (the column's intrinsic main was floored at its own width).
+test "flex column item with flex-grow child is not inflated to width" {
+  let default_style = @style.Style::default()
+  let top = @node.Node::leaf("top", {
+    ..default_style,
+    height: @types.Length(20.0),
+  })
+  let grow = @node.Node::leaf("grow", {
+    ..default_style,
+    flex_grow: 1.0,
+    flex_shrink: 0.0,
+  })
+  let bottom = @node.Node::leaf("bottom", {
+    ..default_style,
+    height: @types.Length(20.0),
+  })
+  let card = @node.Node::new(
+    "card",
+    {
+      ..default_style,
+      display: @types.Flex,
+      flex_direction: @types.Column,
+      width: @types.Length(200.0),
+    },
+    [top, grow, bottom],
+  )
+  let root = @node.Node::new(
+    "root",
+    { ..default_style, display: @types.Flex, align_items: @types.Start },
+    [card],
+  )
+  let ctx : @layout_types.LayoutContext = {
+    available_width: 800.0,
+    available_height: Some(600.0),
+    sizing_mode: @layout_types.MaxContent,
+    viewport_width: 800.0,
+    viewport_height: 600.0,
+    stretch_width: false,
+    stretch_height: false,
+  }
+  let layout = compute(root, ctx, default_dispatch())
+  // Card height is the content sum (20 + 0 + 20), not inflated to width (200).
+  inspect(layout.children[0].height, content="40")
+}

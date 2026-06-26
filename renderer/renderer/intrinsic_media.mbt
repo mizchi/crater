@@ -370,7 +370,12 @@ fn get_image_intrinsic_size_default(src : String) -> (Double, Double)? {
 ///|
 /// Get intrinsic size from image src attribute, optionally using an external provider.
 fn get_image_intrinsic_size(src : String) -> (Double, Double)? {
-  match image_intrinsic_size_provider_override.val {
+  // Replay short-circuits the (external) image resolver when active.
+  match image_intrinsic_replay(src) {
+    Some(replayed) => return replayed
+    None => ()
+  }
+  let result = match image_intrinsic_size_provider_override.val {
     Some(provider) =>
       match (provider.func)(src) {
         Some(size) => Some(size)
@@ -378,4 +383,6 @@ fn get_image_intrinsic_size(src : String) -> (Double, Double)? {
       }
     None => get_image_intrinsic_size_default(src)
   }
+  note_image_intrinsic_result(src, result)
+  result
 }

@@ -99,9 +99,12 @@ test "inline_block_very_narrow_text_wraps" {
   // Text should start at row 0
   let text_row = (text_layout.y / 19.2).to_int()
   inspect(text_row, content="0")
-  // Address should be after text (row 2 since text takes 2 rows)
+  // Address follows the wrapped "...written by" text. The exact row depends on
+  // where the text wraps, which is driven by text measurement: with the body's
+  // (now correctly computed) 104px content width and Crater's built-in metrics
+  // the address lands on row 1.
   let address_row = (address_layout.y / 19.2).to_int()
-  inspect(address_row, content="2")
+  inspect(address_row, content="1")
 }
 
 ///|

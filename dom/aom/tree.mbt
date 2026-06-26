@@ -282,7 +282,9 @@ pub fn build_accessibility_tree(doc : @html.Document) -> AccessibilityTree {
   // Parse stylesheets from the document
   let stylesheets : Array[@css.Stylesheet] = []
   for css_text in doc.stylesheets {
-    let stylesheet = @css.parse_stylesheet(css_text)
+    let stylesheet = @css.parse_stylesheet(
+      @html.flatten_css_cascade_layers(css_text),
+    )
     stylesheets.push(stylesheet)
   }
   let ctx = ctx.with_stylesheets(stylesheets)

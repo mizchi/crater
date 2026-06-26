@@ -8,6 +8,10 @@ fn resolve_dimension_to_px(dim : @types.Dimension) -> Double {
     @types.Length(v) => v
     @types.Percent(_) => 0.0 // Percentages are resolved later
     @types.Calc(px, _) => px // Percent part resolved later; keep px term
+    @types.MathFn(__mop, __mterms) => {
+      let px = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
+      px // Percent part resolved later; keep px term
+    }
     @types.Auto => 0.0
     @types.MinContent => 0.0 // Intrinsic sizing resolved during layout
     @types.MaxContent => 0.0
@@ -33,6 +37,15 @@ fn resolve_dimension_with_percent_basis(
         percent_basis * pct + px
       } else {
         px
+      }
+    @types.MathFn(__mop, __mterms) =>
+      if percent_basis > 0.0 {
+        @types.apply_math_op(
+          __mop,
+          __mterms.map(fn(__t) { percent_basis * __t.1 + __t.0 }),
+        )
+      } else {
+        @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
       }
     @types.Auto => 0.0
     @types.MinContent => 0.0

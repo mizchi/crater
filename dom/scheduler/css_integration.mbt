@@ -41,7 +41,9 @@ pub fn StyleManager::add_stylesheet_source(
   self : StyleManager,
   source : String,
 ) -> @css.Stylesheet {
-  let stylesheet = @css.parse_stylesheet(source)
+  let stylesheet = @css.parse_stylesheet(
+    @html.flatten_css_cascade_layers(source),
+  )
   self.stylesheets.push(stylesheet)
   self.source_order += 1
   // スタイルが変更されたので再計算が必要

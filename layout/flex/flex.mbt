@@ -314,6 +314,7 @@ fn resolve_dimension_intrinsic(dim : @types.Dimension) -> Double {
     @types.Length(v) => v
     @types.Percent(_) => 0.0
     @types.Calc(_, _) => 0.0
+    @types.MathFn(_, _) => 0.0
     @types.Auto => 0.0
     @types.MinContent | @types.MaxContent | @types.FitContent(_) => 0.0
   }
@@ -373,6 +374,19 @@ fn estimate_multicol_intrinsic_inline_width(
       } else {
         gap_total
       }
+    @types.MathFn(__mop, __mterms) => {
+      let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+      if p > 0.0 {
+        let width = parent_width * p
+        if count > 1 {
+          width * count.to_double() + gap_total
+        } else {
+          width
+        }
+      } else {
+        gap_total
+      }
+    }
     @types.Auto
     | @types.MinContent
     | @types.MaxContent
@@ -425,6 +439,7 @@ fn calculate_children_max_content_width(
       @types.Length(w) => @types.max(w, child_min_box)
       @types.Percent(_) => child_min_box
       @types.Calc(_, _) => child_min_box
+      @types.MathFn(_, _) => child_min_box
       @types.Auto =>
         match child.measure {
           Some(mf) => {
@@ -1339,7 +1354,12 @@ fn column_flex_percent_margin_baseline_delta(
             }
             delta = match child.style.margin.top {
               @types.Percent(p) => inline_context * p
-              @types.Calc(_, p) => inline_context * p
+              @types.Calc(px, p) => inline_context * p + px
+              @types.MathFn(__mop, __mterms) =>
+                @types.apply_math_op(
+                  __mop,
+                  __mterms.map(fn(__t) { inline_context * __t.1 + __t.0 }),
+                )
               _ => 0.0
             }
             break
@@ -1376,7 +1396,12 @@ fn first_row_flex_line_baseline_override(
     let child_main_base = match child.style.width {
       @types.Length(w) => w
       @types.Percent(p) => main_size * p
-      @types.Calc(_, p) => main_size * p
+      @types.Calc(px, p) => main_size * p + px
+      @types.MathFn(__mop, __mterms) =>
+        @types.apply_math_op(
+          __mop,
+          __mterms.map(fn(__t) { main_size * __t.1 + __t.0 }),
+        )
       _ => 0.0
     }
     let child_main = child_main_base +
@@ -1389,7 +1414,12 @@ fn first_row_flex_line_baseline_override(
       let child_cross = match child.style.height {
         @types.Length(h) => h
         @types.Percent(p) => cross_size * p
-        @types.Calc(_, p) => cross_size * p
+        @types.Calc(px, p) => cross_size * p + px
+        @types.MathFn(__mop, __mterms) =>
+          @types.apply_math_op(
+            __mop,
+            __mterms.map(fn(__t) { cross_size * __t.1 + __t.0 }),
+          )
         _ => cross_size
       }
       return Some(@baseline.compute_node_baseline(child, child_cross))
@@ -2062,9 +2092,20 @@ fn compute_intrinsic_main_size(
                           Some(cross) => Some(cross * p)
                           None => None
                         }
-                      @types.Calc(_, p) =>
+                      @types.Calc(px, p) =>
                         match available_cross {
-                          Some(cross) => Some(cross * p)
+                          Some(cross) => Some(cross * p + px)
+                          None => None
+                        }
+                      @types.MathFn(__mop, __mterms) =>
+                        match available_cross {
+                          Some(cross) =>
+                            Some(
+                              @types.apply_math_op(
+                                __mop,
+                                __mterms.map(fn(__t) { cross * __t.1 + __t.0 }),
+                              ),
+                            )
                           None => None
                         }
                       _ => None
@@ -2076,9 +2117,20 @@ fn compute_intrinsic_main_size(
                           Some(cross) => Some(cross * p)
                           None => None
                         }
-                      @types.Calc(_, p) =>
+                      @types.Calc(px, p) =>
                         match available_cross {
-                          Some(cross) => Some(cross * p)
+                          Some(cross) => Some(cross * p + px)
+                          None => None
+                        }
+                      @types.MathFn(__mop, __mterms) =>
+                        match available_cross {
+                          Some(cross) =>
+                            Some(
+                              @types.apply_math_op(
+                                __mop,
+                                __mterms.map(fn(__t) { cross * __t.1 + __t.0 }),
+                              ),
+                            )
                           None => None
                         }
                       _ => None
@@ -2442,6 +2494,14 @@ fn compute_min_content_flex_main_size(
       } else {
         None
       }
+    @types.MathFn(__mop, __mterms) => {
+      let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+      if child_available_width > 0.0 {
+        Some(child_available_width * p)
+      } else {
+        None
+      }
+    }
     _ => None
   }
   let content_width_for_children = match container_inline {
@@ -2509,6 +2569,19 @@ fn compute_min_content_flex_main_size(
                 )
               None => None
             }
+          @types.MathFn(__mop, __mterms) => {
+            let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+            match available_cross {
+              Some(ac) =>
+                Some(
+                  max(
+                    0.0,
+                    ac * p - padding.vertical_sum() - border.vertical_sum(),
+                  ),
+                )
+              None => None
+            }
+          }
           _ => None
         }
         match child_style.width {
@@ -2735,6 +2808,25 @@ fn compute_min_content_block_main_size(
           }
           None => None
         }
+      @types.MathFn(__mop, __mterms) => {
+        let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+        match available_cross {
+          Some(cross) => {
+            let resolved_h = cross * p
+            let content_h = if style.box_sizing == @types.BorderBox {
+              resolved_h -
+              padding.top -
+              padding.bottom -
+              border.top -
+              border.bottom
+            } else {
+              resolved_h
+            }
+            Some(max(0.0, content_h))
+          }
+          None => None
+        }
+      }
       @types.Auto
       | @types.MinContent
       | @types.MaxContent
@@ -2946,6 +3038,14 @@ fn compute_intrinsic_flex_main_size(
       } else {
         None
       }
+    @types.MathFn(__mop, __mterms) => {
+      let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+      if child_available_width > 0.0 {
+        Some(child_available_width * p)
+      } else {
+        None
+      }
+    }
     _ => None
   }
   let has_definite_inline = match container_inline {
@@ -3035,6 +3135,19 @@ fn compute_intrinsic_flex_main_size(
                 )
               None => None
             }
+          @types.MathFn(__mop, __mterms) => {
+            let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+            match available_cross {
+              Some(ac) =>
+                Some(
+                  max(
+                    0.0,
+                    ac * p - padding.vertical_sum() - border.vertical_sum(),
+                  ),
+                )
+              None => None
+            }
+          }
           _ => None
         }
         let child_has_aspect_ratio = match child_style.aspect_ratio {
@@ -3056,6 +3169,7 @@ fn compute_intrinsic_flex_main_size(
               @types.Length(h) => Some(h)
               @types.Percent(_) => Some(cross)
               @types.Calc(_, _) => Some(cross)
+              @types.MathFn(_, _) => Some(cross)
               @types.Auto
               | @types.MinContent
               | @types.MaxContent
@@ -3092,9 +3206,22 @@ fn compute_intrinsic_flex_main_size(
                 child, true, intrinsic_cross_for_child, cache, dispatch,
               )
             }
-          @types.Calc(_, p) =>
+          @types.Calc(px, p) =>
             if has_definite_inline {
-              content_width_for_children * p
+              content_width_for_children * p + px
+            } else {
+              compute_intrinsic_main_size(
+                child, true, intrinsic_cross_for_child, cache, dispatch,
+              )
+            }
+          @types.MathFn(__mop, __mterms) =>
+            if has_definite_inline {
+              @types.apply_math_op(
+                __mop,
+                __mterms.map(fn(__t) {
+                  content_width_for_children * __t.1 + __t.0
+                }),
+              )
             } else {
               compute_intrinsic_main_size(
                 child, true, intrinsic_cross_for_child, cache, dispatch,
@@ -3111,9 +3238,22 @@ fn compute_intrinsic_flex_main_size(
                     child, true, intrinsic_cross_for_child, cache, dispatch,
                   )
                 }
-              @types.Calc(_, p) =>
+              @types.Calc(px, p) =>
                 if has_definite_inline {
-                  content_width_for_children * p
+                  content_width_for_children * p + px
+                } else {
+                  compute_intrinsic_main_size(
+                    child, true, intrinsic_cross_for_child, cache, dispatch,
+                  )
+                }
+              @types.MathFn(__mop, __mterms) =>
+                if has_definite_inline {
+                  @types.apply_math_op(
+                    __mop,
+                    __mterms.map(fn(__t) {
+                      content_width_for_children * __t.1 + __t.0
+                    }),
+                  )
                 } else {
                   compute_intrinsic_main_size(
                     child, true, intrinsic_cross_for_child, cache, dispatch,
@@ -3143,9 +3283,21 @@ fn compute_intrinsic_flex_main_size(
                 effective_width = v
               }
             }
-          @types.Calc(_, p) =>
+          @types.Calc(px, p) =>
             if has_definite_inline {
-              let v = content_width_for_children * p
+              let v = content_width_for_children * p + px
+              if effective_width > v {
+                effective_width = v
+              }
+            }
+          @types.MathFn(__mop, __mterms) =>
+            if has_definite_inline {
+              let v = @types.apply_math_op(
+                __mop,
+                __mterms.map(fn(__t) {
+                  content_width_for_children * __t.1 + __t.0
+                }),
+              )
               if effective_width > v {
                 effective_width = v
               }
@@ -3164,9 +3316,21 @@ fn compute_intrinsic_flex_main_size(
                 effective_width = v
               }
             }
-          @types.Calc(_, p) =>
+          @types.Calc(px, p) =>
             if has_definite_inline {
-              let v = content_width_for_children * p
+              let v = content_width_for_children * p + px
+              if effective_width < v {
+                effective_width = v
+              }
+            }
+          @types.MathFn(__mop, __mterms) =>
+            if has_definite_inline {
+              let v = @types.apply_math_op(
+                __mop,
+                __mterms.map(fn(__t) {
+                  content_width_for_children * __t.1 + __t.0
+                }),
+              )
               if effective_width < v {
                 effective_width = v
               }
@@ -3205,11 +3369,13 @@ fn compute_intrinsic_flex_main_size(
             }
           @types.Percent(_) => 0.0
           @types.Calc(_, _) => 0.0
+          @types.MathFn(_, _) => 0.0
           @types.Auto =>
             match child_style.height {
               @types.Length(h) => h
               @types.Percent(_) => 0.0
               @types.Calc(_, _) => 0.0
+              @types.MathFn(_, _) => 0.0
               @types.Auto =>
                 compute_intrinsic_main_size(
                   child,
@@ -3241,6 +3407,7 @@ fn compute_intrinsic_flex_main_size(
           @types.Length(v) => if effective_height > v { effective_height = v }
           @types.Percent(_) => ()
           @types.Calc(_, _) => ()
+          @types.MathFn(_, _) => ()
           @types.Auto
           | @types.MinContent
           | @types.MaxContent
@@ -3250,6 +3417,7 @@ fn compute_intrinsic_flex_main_size(
           @types.Length(v) => if effective_height < v { effective_height = v }
           @types.Percent(_) => ()
           @types.Calc(_, _) => ()
+          @types.MathFn(_, _) => ()
           @types.Auto
           | @types.MinContent
           | @types.MaxContent
@@ -3268,20 +3436,14 @@ fn compute_intrinsic_flex_main_size(
     if item_count > 1 {
       total_main = total_main + main_gap * (item_count - 1).to_double()
     }
-    let has_container_main_structure = flattened.length() > 1 ||
-      padding.vertical_sum() + border.vertical_sum() > 0.0
-    if !parent_is_row && has_flex_grow && has_container_main_structure {
-      match container_inline {
-        Some(inline) => {
-          let padding_border = padding.vertical_sum() + border.vertical_sum()
-          let available_main = inline + padding_border + total_main_margins
-          if available_main > total_main {
-            total_main = available_main
-          }
-        }
-        None => ()
-      }
-    }
+    // NOTE: an earlier revision floored a flex column's intrinsic main (height)
+    // at `container_inline` (the container WIDTH) whenever it had flex-grow
+    // children. That is dimensionally wrong (width used as a height floor) and
+    // also violates intrinsic sizing — flex-grow does not increase a container's
+    // content/intrinsic size. It made flex-column cards with a `flex:1` child
+    // (e.g. GitHub pinned-repo cards) measure several times too tall, which then
+    // cascaded through align-items:stretch. The content sum (`total_main`) is
+    // the correct intrinsic main size.
     if child_is_row {
       total_main + padding.left + padding.right + border.left + border.right
     } else {
@@ -3308,9 +3470,20 @@ fn compute_intrinsic_flex_main_size(
               Some(ac) => Some(ac * p)
               None => None
             }
-          @types.Calc(_, p) =>
+          @types.Calc(px, p) =>
             match available_cross {
-              Some(ac) => Some(ac * p)
+              Some(ac) => Some(ac * p + px)
+              None => None
+            }
+          @types.MathFn(__mop, __mterms) =>
+            match available_cross {
+              Some(ac) =>
+                Some(
+                  @types.apply_math_op(
+                    __mop,
+                    __mterms.map(fn(__t) { ac * __t.1 + __t.0 }),
+                  ),
+                )
               None => None
             }
           @types.Auto => available_cross
@@ -3366,9 +3539,25 @@ fn compute_intrinsic_flex_main_size(
               child_margin.left +
               child_margin.right
             }
-          @types.Calc(_, p) =>
+          @types.Calc(px, p) =>
             if has_definite_inline {
               content_width_for_children * p +
+              px +
+              child_margin.left +
+              child_margin.right
+            } else {
+              compute_intrinsic_main_size(child, true, None, cache, dispatch) +
+              child_margin.left +
+              child_margin.right
+            }
+          @types.MathFn(__mop, __mterms) =>
+            if has_definite_inline {
+              @types.apply_math_op(
+                __mop,
+                __mterms.map(fn(__t) {
+                  content_width_for_children * __t.1 + __t.0
+                }),
+              ) +
               child_margin.left +
               child_margin.right
             } else {
@@ -3389,6 +3578,7 @@ fn compute_intrinsic_flex_main_size(
           @types.Length(h) => h + child_margin.top + child_margin.bottom
           @types.Percent(_) => child_margin.top + child_margin.bottom
           @types.Calc(_, _) => child_margin.top + child_margin.bottom
+          @types.MathFn(_, _) => child_margin.top + child_margin.bottom
           @types.Auto =>
             compute_intrinsic_main_size(
               child,
@@ -3417,6 +3607,7 @@ fn compute_intrinsic_flex_main_size(
           @types.Length(h) => h + child_margin.top + child_margin.bottom
           @types.Percent(_) => child_margin.top + child_margin.bottom
           @types.Calc(_, _) => child_margin.top + child_margin.bottom
+          @types.MathFn(_, _) => child_margin.top + child_margin.bottom
           @types.Auto =>
             compute_intrinsic_main_size(
               child,
@@ -3450,9 +3641,25 @@ fn compute_intrinsic_flex_main_size(
               child_margin.left +
               child_margin.right
             }
-          @types.Calc(_, p) =>
+          @types.Calc(px, p) =>
             if has_definite_inline {
               content_width_for_children * p +
+              px +
+              child_margin.left +
+              child_margin.right
+            } else {
+              compute_intrinsic_main_size(child, true, None, cache, dispatch) +
+              child_margin.left +
+              child_margin.right
+            }
+          @types.MathFn(__mop, __mterms) =>
+            if has_definite_inline {
+              @types.apply_math_op(
+                __mop,
+                __mterms.map(fn(__t) {
+                  content_width_for_children * __t.1 + __t.0
+                }),
+              ) +
               child_margin.left +
               child_margin.right
             } else {
@@ -3632,9 +3839,20 @@ fn compute_intrinsic_block_main_size(
                 Some(cross) => Some(cross * p)
                 None => None
               }
-            @types.Calc(_, p) =>
+            @types.Calc(px, p) =>
               match available_cross {
-                Some(cross) => Some(cross * p)
+                Some(cross) => Some(cross * p + px)
+                None => None
+              }
+            @types.MathFn(__mop, __mterms) =>
+              match available_cross {
+                Some(cross) =>
+                  Some(
+                    @types.apply_math_op(
+                      __mop,
+                      __mterms.map(fn(__t) { cross * __t.1 + __t.0 }),
+                    ),
+                  )
                 None => None
               }
             @types.Auto
@@ -3656,6 +3874,16 @@ fn compute_intrinsic_block_main_size(
                     Some(cross) => cross * p
                     None => 0.0
                   }
+                @types.MathFn(__mop, __mterms) => {
+                  let p = @types.apply_math_op(
+                    __mop,
+                    __mterms.map(fn(__t) { __t.1 }),
+                  )
+                  match available_cross {
+                    Some(cross) => cross * p
+                    None => 0.0
+                  }
+                }
                 _ => 0.0
               }
               let max_h = match style.max_height {
@@ -3748,6 +3976,25 @@ fn compute_intrinsic_block_main_size(
           }
           None => None
         }
+      @types.MathFn(__mop, __mterms) => {
+        let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+        match available_cross {
+          Some(cross) => {
+            let resolved_h = cross * p
+            let content_h = if style.box_sizing == @types.BorderBox {
+              resolved_h -
+              padding.top -
+              padding.bottom -
+              border.top -
+              border.bottom
+            } else {
+              resolved_h
+            }
+            Some(max(0.0, content_h))
+          }
+          None => None
+        }
+      }
       @types.Auto
       | @types.MinContent
       | @types.MaxContent
@@ -4353,6 +4600,14 @@ fn compute_internal(
           } else {
             parent_width * p
           }
+        @types.MathFn(__mop, __mterms) => {
+          let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+          if use_available_width && ctx.sizing_mode == @layout_types.Definite {
+            available_width
+          } else {
+            parent_width * p
+          }
+        }
         @types.Auto =>
           match ctx.sizing_mode {
             // Block-level flex containers with width:auto should fill available width minus margins
@@ -4458,6 +4713,13 @@ fn compute_internal(
         container_width = v
       }
     }
+    @types.MathFn(__mop, __mterms) => {
+      let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+      let v = parent_width * p
+      if container_width > v {
+        container_width = v
+      }
+    }
     @types.Auto => ()
     @types.MinContent => {
       let v = compute_min_content_main_size(
@@ -4502,6 +4764,14 @@ fn compute_internal(
       }
     }
     @types.Calc(_, p) => {
+      let v = parent_width * p
+      let effective_min = max(v, padding_border_width)
+      if container_width < effective_min {
+        container_width = effective_min
+      }
+    }
+    @types.MathFn(__mop, __mterms) => {
+      let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
       let v = parent_width * p
       let effective_min = max(v, padding_border_width)
       if container_width < effective_min {
@@ -4605,6 +4875,23 @@ fn compute_internal(
               }
             None => None
           }
+        @types.MathFn(__mop, __mterms) => {
+          let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+          match ctx.available_height {
+            Some(ah) =>
+              if use_available_width &&
+                ctx.sizing_mode == @layout_types.Definite {
+                Some(ah - padding.vertical_sum() - border.vertical_sum())
+              } else {
+                Some(
+                  parent_height * p -
+                  padding.vertical_sum() -
+                  border.vertical_sum(),
+                )
+              }
+            None => None
+          }
+        }
         @types.Auto =>
           // In Definite mode with available_height, use it for stretched items
           // But only if it's not an "infinity" placeholder (< 1e9).
@@ -4662,6 +4949,10 @@ fn compute_internal(
         Some(parent_height * p - padding.vertical_sum() - border.vertical_sum())
       @types.Calc(_, p) =>
         Some(parent_height * p - padding.vertical_sum() - border.vertical_sum())
+      @types.MathFn(__mop, __mterms) => {
+        let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+        Some(parent_height * p - padding.vertical_sum() - border.vertical_sum())
+      }
       @types.Auto => None
       @types.MinContent | @types.MaxContent | @types.FitContent(_) => None
     }
@@ -4672,12 +4963,14 @@ fn compute_internal(
     match style.column_gap {
       @types.Percent(_) => true
       @types.Calc(_, _) => true
+      @types.MathFn(_, _) => true
       _ => false
     }
   } else {
     match style.row_gap {
       @types.Percent(_) => true
       @types.Calc(_, _) => true
+      @types.MathFn(_, _) => true
       _ => false
     }
   }
@@ -4732,6 +5025,14 @@ fn compute_internal(
             padding.horizontal_sum() -
             border.horizontal_sum(),
           )
+        @types.MathFn(__mop, __mterms) => {
+          let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+          Some(
+            parent_width * p -
+            padding.horizontal_sum() -
+            border.horizontal_sum(),
+          )
+        }
         @types.Auto => None
         @types.MinContent | @types.MaxContent | @types.FitContent(_) => None
       }
@@ -4747,6 +5048,10 @@ fn compute_internal(
         Some(parent_height * p - padding.vertical_sum() - border.vertical_sum())
       @types.Calc(_, p) =>
         Some(parent_height * p - padding.vertical_sum() - border.vertical_sum())
+      @types.MathFn(__mop, __mterms) => {
+        let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+        Some(parent_height * p - padding.vertical_sum() - border.vertical_sum())
+      }
       @types.Auto => None
       @types.MinContent | @types.MaxContent | @types.FitContent(_) => None
     }
@@ -4794,6 +5099,10 @@ fn compute_internal(
           @types.Length(h) => h
           @types.Percent(p) => parent_height * p
           @types.Calc(_, p) => parent_height * p
+          @types.MathFn(__mop, __mterms) => {
+            let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+            parent_height * p
+          }
           @types.Auto =>
             match (ctx.sizing_mode, ctx.available_height) {
               (@layout_types.Definite, Some(ah)) if ah < 1.0e9 =>
@@ -4820,6 +5129,13 @@ fn compute_internal(
           final_height = v
         }
       }
+      @types.MathFn(__mop, __mterms) => {
+        let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+        let v = parent_height * p
+        if final_height > v {
+          final_height = v
+        }
+      }
       @types.Auto => ()
       @types.MinContent | @types.MaxContent | @types.FitContent(_) => ()
     }
@@ -4839,6 +5155,14 @@ fn compute_internal(
         }
       }
       @types.Calc(_, p) => {
+        let v = parent_height * p
+        let effective_min = max(v, padding_border_height)
+        if final_height < effective_min {
+          final_height = effective_min
+        }
+      }
+      @types.MathFn(__mop, __mterms) => {
+        let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
         let v = parent_height * p
         let effective_min = max(v, padding_border_height)
         if final_height < effective_min {
@@ -4946,6 +5270,16 @@ fn compute_internal(
                 Some(ch) => Some(ch * p)
                 None => None
               }
+            @types.MathFn(__mop, __mterms) => {
+              let p = @types.apply_math_op(
+                __mop,
+                __mterms.map(fn(__t) { __t.1 }),
+              )
+              match content_height {
+                Some(ch) => Some(ch * p)
+                None => None
+              }
+            }
             @types.Auto => {
               // Get intrinsic height from MeasureFunc if available
               let intrinsic_h = match child.measure {
@@ -4968,6 +5302,16 @@ fn compute_internal(
                     Some(ch) => ch * p
                     None => 0.0
                   }
+                @types.MathFn(__mop, __mterms) => {
+                  let p = @types.apply_math_op(
+                    __mop,
+                    __mterms.map(fn(__t) { __t.1 }),
+                  )
+                  match content_height {
+                    Some(ch) => ch * p
+                    None => 0.0
+                  }
+                }
                 _ => 0.0
               }
               let max_h = match child_style.max_height {
@@ -4982,6 +5326,16 @@ fn compute_internal(
                     Some(ch) => ch * p
                     None => @double.infinity
                   }
+                @types.MathFn(__mop, __mterms) => {
+                  let p = @types.apply_math_op(
+                    __mop,
+                    __mterms.map(fn(__t) { __t.1 }),
+                  )
+                  match content_height {
+                    Some(ch) => ch * p
+                    None => @double.infinity
+                  }
+                }
                 _ => @double.infinity
               }
               // If max_height is set and less than intrinsic, use constrained value
@@ -5010,6 +5364,13 @@ fn compute_internal(
             @types.Length(w) => Some(w)
             @types.Percent(p) => Some(content_width * p)
             @types.Calc(_, p) => Some(content_width * p)
+            @types.MathFn(__mop, __mterms) => {
+              let p = @types.apply_math_op(
+                __mop,
+                __mterms.map(fn(__t) { __t.1 }),
+              )
+              Some(content_width * p)
+            }
             @types.Auto => {
               // Get intrinsic width from MeasureFunc if available
               let intrinsic_w = match child.measure {
@@ -5078,6 +5439,7 @@ fn compute_internal(
               // Pass containing-block cross size; intrinsic block sizing
               // resolves this child's own percentage height exactly once.
               Some(ch)
+            @types.MathFn(_, _) => Some(ch)
             @types.Auto
             | @types.MinContent
             | @types.MaxContent
@@ -5110,6 +5472,13 @@ fn compute_internal(
             constrained = v
           }
         }
+        @types.MathFn(__mop, __mterms) => {
+          let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+          let v = content_width * p
+          if constrained > v {
+            constrained = v
+          }
+        }
         @types.Auto
         | @types.MinContent
         | @types.MaxContent
@@ -5124,6 +5493,13 @@ fn compute_internal(
           }
         }
         @types.Calc(_, p) => {
+          let v = content_width * p
+          if constrained < v {
+            constrained = v
+          }
+        }
+        @types.MathFn(__mop, __mterms) => {
+          let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
           let v = content_width * p
           if constrained < v {
             constrained = v
@@ -5164,6 +5540,7 @@ fn compute_internal(
         @types.Length(w) => w
         @types.Percent(_) => content_width
         @types.Calc(_, _) => content_width
+        @types.MathFn(_, _) => content_width
         _ =>
           if child_wraps_as_row || align_stretches_cross {
             available_cross_for_intrinsic
@@ -5221,12 +5598,44 @@ fn compute_internal(
             }
           }
         }
-      @types.Calc(_, p) =>
+      @types.Calc(px, p) =>
         if is_row {
-          content_width * p
+          content_width * p + px
         } else {
           match content_height {
-            Some(ch) => ch * p
+            Some(ch) => ch * p + px
+            None => {
+              // Percentage of indefinite dimension resolves to content size
+              // Compute intrinsic height from children.
+              // Treat main-size as auto for this intrinsic probe, so explicit
+              // `height` does not short-circuit the content-based fallback.
+              let available_cross_for_child = available_cross_for_intrinsic
+              let intrinsic_probe = make_flex_intrinsic_probe(
+                child, false, true, true,
+              )
+              compute_intrinsic_main_size(
+                intrinsic_probe,
+                false,
+                Some(available_cross_for_child),
+                cache,
+                dispatch,
+              )
+            }
+          }
+        }
+      @types.MathFn(__mop, __mterms) =>
+        if is_row {
+          @types.apply_math_op(
+            __mop,
+            __mterms.map(fn(__t) { content_width * __t.1 + __t.0 }),
+          )
+        } else {
+          match content_height {
+            Some(ch) =>
+              @types.apply_math_op(
+                __mop,
+                __mterms.map(fn(__t) { ch * __t.1 + __t.0 }),
+              )
             None => {
               // Percentage of indefinite dimension resolves to content size
               // Compute intrinsic height from children.
@@ -5251,7 +5660,12 @@ fn compute_internal(
           match child_style.width {
             @types.Length(w) => w
             @types.Percent(p) => content_width * p
-            @types.Calc(_, p) => content_width * p
+            @types.Calc(px, p) => content_width * p + px
+            @types.MathFn(__mop, __mterms) =>
+              @types.apply_math_op(
+                __mop,
+                __mterms.map(fn(__t) { content_width * __t.1 + __t.0 }),
+              )
             @types.Auto =>
               // Try to use aspect_ratio if cross dimension is known
               match (child_style.aspect_ratio, explicit_cross) {
@@ -5326,6 +5740,16 @@ fn compute_internal(
                 Some(ch) => ch * p
                 None => 0.0
               }
+            @types.MathFn(__mop, __mterms) => {
+              let p = @types.apply_math_op(
+                __mop,
+                __mterms.map(fn(__t) { __t.1 }),
+              )
+              match content_height {
+                Some(ch) => ch * p
+                None => 0.0
+              }
+            }
             @types.Auto =>
               // Try to use aspect_ratio if cross dimension is known
               match (child_style.aspect_ratio, explicit_cross) {
@@ -5443,6 +5867,7 @@ fn compute_internal(
               @types.Length(h) => h
               @types.Percent(_) => 0.0
               @types.Calc(_, _) => 0.0
+              @types.MathFn(_, _) => 0.0
               _ => {
                 let caption_padding = @types.resolve_rect(
                   table_child.style.padding,
@@ -5494,11 +5919,22 @@ fn compute_internal(
         @types.Length(b) => Some(b)
         @types.Percent(p) => Some(content_width * p)
         @types.Calc(_, p) => Some(content_width * p)
+        @types.MathFn(__mop, __mterms) => {
+          let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+          Some(content_width * p)
+        }
         @types.Auto =>
           match child_style.width {
             @types.Length(w) => Some(w)
             @types.Percent(p) => Some(content_width * p)
             @types.Calc(_, p) => Some(content_width * p)
+            @types.MathFn(__mop, __mterms) => {
+              let p = @types.apply_math_op(
+                __mop,
+                __mterms.map(fn(__t) { __t.1 }),
+              )
+              Some(content_width * p)
+            }
             @types.Auto => None
             @types.MinContent | @types.MaxContent | @types.FitContent(_) => None
           }
@@ -5517,6 +5953,13 @@ fn compute_internal(
             Some(ch) => Some(ch * p)
             None => None
           }
+        @types.MathFn(__mop, __mterms) => {
+          let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+          match content_height {
+            Some(ch) => Some(ch * p)
+            None => None
+          }
+        }
         @types.Auto =>
           match child_style.height {
             @types.Length(h) => Some(h)
@@ -5530,6 +5973,16 @@ fn compute_internal(
                 Some(ch) => Some(ch * p)
                 None => None
               }
+            @types.MathFn(__mop, __mterms) => {
+              let p = @types.apply_math_op(
+                __mop,
+                __mterms.map(fn(__t) { __t.1 }),
+              )
+              match content_height {
+                Some(ch) => Some(ch * p)
+                None => None
+              }
+            }
             @types.Auto => {
               let min_h = match child_style.min_height {
                 @types.Length(v) => Some(v)
@@ -5724,6 +6177,30 @@ fn compute_internal(
                 // definite containing block for resolving the percentage.
                 resolve_row_auto_cross()
             }
+          @types.MathFn(__mop, __mterms) => {
+            let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+            match content_height {
+              Some(ch) =>
+                if is_table_item {
+                  (
+                    max(
+                      0.0,
+                      ch * p -
+                      child_resolved.padding.vertical_sum() -
+                      child_resolved.border.vertical_sum(),
+                    ),
+                    false,
+                  )
+                } else {
+                  (ch * p, false)
+                }
+              None =>
+                // Percentage cross-size in an indefinite row flex container
+                // behaves as auto. A min-height on the container is not a
+                // definite containing block for resolving the percentage.
+                resolve_row_auto_cross()
+            }
+          }
           @types.Auto => resolve_row_auto_cross()
           @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
             (
@@ -5748,6 +6225,10 @@ fn compute_internal(
           }
         @types.Percent(p) => (content_width * p, false)
         @types.Calc(_, p) => (content_width * p, false)
+        @types.MathFn(__mop, __mterms) => {
+          let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+          (content_width * p, false)
+        }
         @types.Auto => resolve_column_auto_cross()
         @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
           (
@@ -5793,6 +6274,11 @@ fn compute_internal(
         @types.Length(v) => v
         @types.Percent(p) => content_width * p
         @types.Calc(px, pct) => content_width * pct + px
+        @types.MathFn(__mop, __mterms) =>
+          @types.apply_math_op(
+            __mop,
+            __mterms.map(fn(__t) { content_width * __t.1 + __t.0 }),
+          )
         @types.Auto => 1.0e10 // Effectively infinity
         @types.MaxContent => {
           // Calculate intrinsic width for max-width constraint
@@ -5909,6 +6395,31 @@ fn compute_internal(
                   }
                 None => 1.0e10
               }
+            @types.MathFn(__mop, __mterms) => {
+              let p = @types.apply_math_op(
+                __mop,
+                __mterms.map(fn(__t) { __t.1 }),
+              )
+              match content_height {
+                Some(ch) =>
+                  if child_style.box_sizing == @types.BorderBox {
+                    ch * p * ratio
+                  } else {
+                    let content_h = ch * p -
+                      child_resolved.padding.vertical_sum() -
+                      child_resolved.border.vertical_sum()
+                    if content_h > 0.0 {
+                      content_h * ratio +
+                      child_resolved.padding.horizontal_sum() +
+                      child_resolved.border.horizontal_sum()
+                    } else {
+                      child_resolved.padding.horizontal_sum() +
+                      child_resolved.border.horizontal_sum()
+                    }
+                  }
+                None => 1.0e10
+              }
+            }
             _ => 1.0e10
           }
         _ => 1.0e10
@@ -5922,6 +6433,10 @@ fn compute_internal(
         @types.Length(v) => max(v, padding_border_min) // Explicit min, but padding+border is absolute minimum
         @types.Percent(p) => max(content_width * p, padding_border_min)
         @types.Calc(_, p) => max(content_width * p, padding_border_min)
+        @types.MathFn(__mop, __mterms) => {
+          let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+          max(content_width * p, padding_border_min)
+        }
         @types.Auto => {
           // Auto min-width: use intrinsic content size for containers/MeasureFunc
           // Only for overflow:visible; hidden/scroll/auto have automatic min = 0
@@ -5960,6 +6475,13 @@ fn compute_internal(
               @types.Length(w) => w
               @types.Percent(p) => content_width * p
               @types.Calc(_, p) => content_width * p
+              @types.MathFn(__mop, __mterms) => {
+                let p = @types.apply_math_op(
+                  __mop,
+                  __mterms.map(fn(__t) { __t.1 }),
+                )
+                content_width * p
+              }
               @types.Auto => 1.0e10 // No specified size, no clamp
               @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
                 1.0e10 // No specified size, no clamp
@@ -6017,6 +6539,13 @@ fn compute_internal(
             Some(ch) => ch * p
             None => 1.0e10
           }
+        @types.MathFn(__mop, __mterms) => {
+          let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+          match content_height {
+            Some(ch) => ch * p
+            None => 1.0e10
+          }
+        }
         @types.Auto => 1.0e10
         @types.MaxContent =>
           compute_intrinsic_main_size(
@@ -6092,6 +6621,27 @@ fn compute_internal(
                   child_resolved.border.vertical_sum()
                 }
               }
+            @types.MathFn(__mop, __mterms) => {
+              let p = @types.apply_math_op(
+                __mop,
+                __mterms.map(fn(__t) { __t.1 }),
+              )
+              if child_style.box_sizing == @types.BorderBox {
+                content_width * p / ratio
+              } else {
+                let content_w = content_width * p -
+                  child_resolved.padding.horizontal_sum() -
+                  child_resolved.border.horizontal_sum()
+                if content_w > 0.0 {
+                  content_w / ratio +
+                  child_resolved.padding.vertical_sum() +
+                  child_resolved.border.vertical_sum()
+                } else {
+                  child_resolved.padding.vertical_sum() +
+                  child_resolved.border.vertical_sum()
+                }
+              }
+            }
             _ => 1.0e10
           }
         _ => 1.0e10
@@ -6113,6 +6663,13 @@ fn compute_internal(
             Some(ch) => max(ch * p, padding_border_min)
             None => padding_border_min
           }
+        @types.MathFn(__mop, __mterms) => {
+          let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+          match content_height {
+            Some(ch) => max(ch * p, padding_border_min)
+            None => padding_border_min
+          }
+        }
         @types.Auto => {
           // Auto min-height: use min-content size for containers/MeasureFunc
           // Only for overflow:visible; hidden/scroll/auto have automatic min = 0
@@ -6167,6 +6724,16 @@ fn compute_internal(
                   Some(ch) => ch * p
                   None => 1.0e10
                 }
+              @types.MathFn(__mop, __mterms) => {
+                let p = @types.apply_math_op(
+                  __mop,
+                  __mterms.map(fn(__t) { __t.1 }),
+                )
+                match content_height {
+                  Some(ch) => ch * p
+                  None => 1.0e10
+                }
+              }
               @types.Auto => 1.0e10 // No specified size, no clamp
               @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
                 1.0e10 // No specified size, no clamp
@@ -6770,8 +7337,17 @@ fn compute_internal(
             final_main = v
           }
         }
-        @types.Calc(_, p) => {
-          let v = content_width * p
+        @types.Calc(px, p) => {
+          let v = content_width * p + px
+          if final_main > v {
+            final_main = v
+          }
+        }
+        @types.MathFn(__mop, __mterms) => {
+          let v = @types.apply_math_op(
+            __mop,
+            __mterms.map(fn(__t) { content_width * __t.1 + __t.0 }),
+          )
           if final_main > v {
             final_main = v
           }
@@ -6805,10 +7381,23 @@ fn compute_internal(
             }
             None => ()
           }
-        @types.Calc(_, p) =>
+        @types.Calc(px, p) =>
           match content_height {
             Some(ch) => {
-              let v = ch * p
+              let v = ch * p + px
+              if final_main > v {
+                final_main = v
+              }
+            }
+            None => ()
+          }
+        @types.MathFn(__mop, __mterms) =>
+          match content_height {
+            Some(ch) => {
+              let v = @types.apply_math_op(
+                __mop,
+                __mterms.map(fn(__t) { ch * __t.1 + __t.0 }),
+              )
               if final_main > v {
                 final_main = v
               }
@@ -7005,6 +7594,22 @@ fn compute_internal(
             }
             None => ()
           }
+        @types.MathFn(__mop, __mterms) => {
+          let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+          match cross_size {
+            Some(cs) => {
+              // Add back padding/border to get the full container height for percentage resolution
+              let container_cross = cs +
+                padding.vertical_sum() +
+                border.vertical_sum()
+              let v = container_cross * p
+              if constrained_cross > v {
+                constrained_cross = v
+              }
+            }
+            None => ()
+          }
+        }
         @types.MinContent => {
           let v = compute_min_content_main_size(
             item.node,
@@ -7082,6 +7687,25 @@ fn compute_internal(
                 constrained_cross = padding_border_min
               }
           }
+        @types.MathFn(__mop, __mterms) => {
+          let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+          match cross_size {
+            Some(cs) => {
+              let container_cross = cs +
+                padding.vertical_sum() +
+                border.vertical_sum()
+              let v = container_cross * p
+              let effective_min = max(v, padding_border_min)
+              if constrained_cross < effective_min {
+                constrained_cross = effective_min
+              }
+            }
+            None =>
+              if constrained_cross < padding_border_min {
+                constrained_cross = padding_border_min
+              }
+          }
+        }
         @types.Auto =>
           if child_is_table {
             let table_min_cross = compute_min_content_main_size(
@@ -7141,6 +7765,15 @@ fn compute_internal(
           }
         }
         @types.Calc(_, p) => {
+          // For column flex, cross axis is width
+          // content_width + padding + border = container_width
+          let v = container_width * p
+          if constrained_cross > v {
+            constrained_cross = v
+          }
+        }
+        @types.MathFn(__mop, __mterms) => {
+          let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
           // For column flex, cross axis is width
           // content_width + padding + border = container_width
           let v = container_width * p
@@ -7217,6 +7850,14 @@ fn compute_internal(
           }
         }
         @types.Calc(_, p) => {
+          let v = container_width * p
+          let effective_min = max(v, padding_border_min)
+          if constrained_cross < effective_min {
+            constrained_cross = effective_min
+          }
+        }
+        @types.MathFn(__mop, __mterms) => {
+          let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
           let v = container_width * p
           let effective_min = max(v, padding_border_min)
           if constrained_cross < effective_min {
@@ -7789,6 +8430,24 @@ fn compute_internal(
                     }
                     None => ()
                   }
+                @types.MathFn(__mop, __mterms) => {
+                  let p = @types.apply_math_op(
+                    __mop,
+                    __mterms.map(fn(__t) { __t.1 }),
+                  )
+                  match cross_size {
+                    Some(cs) => {
+                      let container_cross = cs +
+                        padding.vertical_sum() +
+                        border.vertical_sum()
+                      let v = container_cross * p
+                      if constrained > v {
+                        constrained = v
+                      }
+                    }
+                    None => ()
+                  }
+                }
                 @types.MinContent => {
                   let v = compute_min_content_main_size(
                     child,
@@ -7858,6 +8517,28 @@ fn compute_internal(
                         constrained = padding_border_min
                       }
                   }
+                @types.MathFn(__mop, __mterms) => {
+                  let p = @types.apply_math_op(
+                    __mop,
+                    __mterms.map(fn(__t) { __t.1 }),
+                  )
+                  match cross_size {
+                    Some(cs) => {
+                      let container_cross = cs +
+                        padding.vertical_sum() +
+                        border.vertical_sum()
+                      let v = container_cross * p
+                      let effective_min = max(v, padding_border_min)
+                      if constrained < effective_min {
+                        constrained = effective_min
+                      }
+                    }
+                    None =>
+                      if constrained < padding_border_min {
+                        constrained = padding_border_min
+                      }
+                  }
+                }
                 @types.Auto => {
                   let child_is_table = child_style.display == @types.Table ||
                     child_style.display == @types.InlineTable
@@ -7925,6 +8606,16 @@ fn compute_internal(
                     constrained = v
                   }
                 }
+                @types.MathFn(__mop, __mterms) => {
+                  let p = @types.apply_math_op(
+                    __mop,
+                    __mterms.map(fn(__t) { __t.1 }),
+                  )
+                  let v = container_width * p
+                  if constrained > v {
+                    constrained = v
+                  }
+                }
                 @types.MinContent => {
                   let v = compute_min_content_main_size(
                     child,
@@ -7967,6 +8658,17 @@ fn compute_internal(
                   }
                 }
                 @types.Calc(_, p) => {
+                  let v = container_width * p
+                  let effective_min = max(v, padding_border_min)
+                  if constrained < effective_min {
+                    constrained = effective_min
+                  }
+                }
+                @types.MathFn(__mop, __mterms) => {
+                  let p = @types.apply_math_op(
+                    __mop,
+                    __mterms.map(fn(__t) { __t.1 }),
+                  )
                   let v = container_width * p
                   let effective_min = max(v, padding_border_min)
                   if constrained < effective_min {
@@ -8189,6 +8891,7 @@ fn compute_internal(
             // so descendants don't resolve percentage height twice.
             @types.Percent(_) => content_height
             @types.Calc(_, _) => content_height
+            @types.MathFn(_, _) => content_height
             _ => Some(child_height)
           }
         } else {
@@ -8416,6 +9119,50 @@ fn compute_internal(
                 total_main + padding.vertical_sum() + border.vertical_sum()
               }
           }
+        @types.MathFn(__mop, __mterms) =>
+          match ctx.available_height {
+            Some(ah) =>
+              if use_available_width &&
+                ctx.sizing_mode == @layout_types.Definite {
+                ah
+              } else {
+                @types.apply_math_op(
+                  __mop,
+                  __mterms.map(fn(__t) { parent_height * __t.1 + __t.0 }),
+                )
+              }
+            None =>
+              if suppress_auto_block_size {
+                padding.vertical_sum() + border.vertical_sum()
+              } else if is_row {
+                // Row direction: cross size is height.
+                total_lines_cross +
+                padding.vertical_sum() +
+                border.vertical_sum()
+              } else {
+                // Column direction: main size is height.
+                let mut total_main = 0.0
+                for line_idx = 0
+                    line_idx < flex_lines.length()
+                    line_idx = line_idx + 1 {
+                  let line = flex_lines[line_idx]
+                  let mut line_main = 0.0
+                  for item in line.items {
+                    line_main = line_main + item.final_main + item.margin_main
+                  }
+                  if line.items.length() > 1 {
+                    line_main = line_main +
+                      main_gap * (line.items.length() - 1).to_double()
+                  }
+                  total_main = total_main + line_main
+                }
+                if flex_lines.length() > 1 {
+                  total_main = total_main +
+                    cross_gap * (flex_lines.length() - 1).to_double()
+                }
+                total_main + padding.vertical_sum() + border.vertical_sum()
+              }
+          }
         @types.Auto =>
           if suppress_auto_block_size {
             padding.vertical_sum() + border.vertical_sum()
@@ -8512,6 +9259,13 @@ fn compute_internal(
         final_height = v
       }
     }
+    @types.MathFn(__mop, __mterms) => {
+      let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+      let v = parent_height * p
+      if final_height > v {
+        final_height = v
+      }
+    }
     @types.Auto => ()
     @types.MinContent | @types.MaxContent | @types.FitContent(_) => ()
   }
@@ -8532,6 +9286,14 @@ fn compute_internal(
       }
     }
     @types.Calc(_, p) => {
+      let v = parent_height * p
+      let effective_min = max(v, padding_border_height)
+      if final_height < effective_min {
+        final_height = effective_min
+      }
+    }
+    @types.MathFn(__mop, __mterms) => {
+      let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
       let v = parent_height * p
       let effective_min = max(v, padding_border_height)
       if final_height < effective_min {
@@ -9200,6 +9962,7 @@ fn compute_internal(
           match style.column_gap {
             @types.Percent(_) => true
             @types.Calc(_, _) => true
+            @types.MathFn(_, _) => true
             _ => false
           }
         } else {
@@ -9267,6 +10030,16 @@ fn compute_internal(
                 constrained_width = v
               }
             }
+            @types.MathFn(__mop, __mterms) => {
+              let p = @types.apply_math_op(
+                __mop,
+                __mterms.map(fn(__t) { __t.1 }),
+              )
+              let v = parent_width * p
+              if constrained_width > v {
+                constrained_width = v
+              }
+            }
             @types.Auto => ()
             @types.MinContent | @types.MaxContent | @types.FitContent(_) => ()
           }
@@ -9282,6 +10055,16 @@ fn compute_internal(
               }
             }
             @types.Calc(_, p) => {
+              let v = parent_width * p
+              if constrained_width < v {
+                constrained_width = v
+              }
+            }
+            @types.MathFn(__mop, __mterms) => {
+              let p = @types.apply_math_op(
+                __mop,
+                __mterms.map(fn(__t) { __t.1 }),
+              )
               let v = parent_width * p
               if constrained_width < v {
                 constrained_width = v
@@ -9406,6 +10189,10 @@ fn compute_nested(
       @types.Length(w) => w
       @types.Percent(p) => base_width * p
       @types.Calc(_, p) => base_width * p
+      @types.MathFn(__mop, __mterms) => {
+        let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+        base_width * p
+      }
       @types.Auto =>
         match intrinsic {
           Some(intr) =>
@@ -9437,6 +10224,13 @@ fn compute_nested(
           Some(ah) => ah * p
           None => padding.vertical_sum() + border.vertical_sum()
         }
+      @types.MathFn(__mop, __mterms) => {
+        let p = @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.1 }))
+        match ctx.available_height {
+          Some(ah) => ah * p
+          None => padding.vertical_sum() + border.vertical_sum()
+        }
+      }
       @types.Auto =>
         match intrinsic {
           Some(intr) =>

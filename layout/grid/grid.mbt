@@ -666,13 +666,17 @@ fn compute_grid_layout_internal(
     resolve_dimension(style.height, available_height, 0.0)
   }
 
-  // Expand repeat() in templates early (needed for correct column/row counts)
-  let (expanded_columns, auto_fit_columns) = expand_track_templates(
+  // Expand repeat() in templates early (needed for correct column/row counts).
+  // Line names are expanded in lockstep so named-line placement stays aligned
+  // after a repeat and picks up names declared inside repeat(...).
+  let (expanded_columns, auto_fit_columns, expanded_column_line_names) = expand_track_templates(
     style.grid_template_columns,
+    style.grid_template_column_line_names,
     container_width_for_expansion,
   )
-  let (expanded_rows, auto_fit_rows) = expand_track_templates(
+  let (expanded_rows, auto_fit_rows, expanded_row_line_names) = expand_track_templates(
     style.grid_template_rows,
+    style.grid_template_row_line_names,
     container_height_for_expansion,
   )
   let mut has_fit_content_percent_columns = false
@@ -702,6 +706,8 @@ fn compute_grid_layout_internal(
     explicit_row_count,
     style.grid_auto_flow,
     grid_areas,
+    expanded_column_line_names,
+    expanded_row_line_names,
   )
 
   // Calculate implicit track range needed
@@ -773,7 +779,8 @@ fn compute_grid_layout_internal(
         } else {
           preliminary_width
         }
-      @types.Length(_) | @types.Calc(_, _) => preliminary_width
+      @types.Length(_) | @types.Calc(_, _) | @types.MathFn(_, _) =>
+        preliminary_width
       @types.Percent(_) => preliminary_width
     }
   } else if viewport_width > 0.0 && viewport_width > available_width {
@@ -1237,7 +1244,14 @@ fn compute_grid_layout_internal(
     @types.Percent(p) => max(p * available_width, min_width)
     @types.Auto => min_width
     @types.MinContent | @types.MaxContent | @types.FitContent(_) => min_width
-    @types.Calc(_, p) => max(p * available_width, min_width)
+    @types.Calc(px, p) => max(available_width * p + px, min_width)
+    @types.MathFn(__mop, __mterms) => {
+      let resolved = @types.apply_math_op(
+        __mop,
+        __mterms.map(fn(__t) { available_width * __t.1 + __t.0 }),
+      )
+      max(resolved, min_width)
+    }
   }
   let resolved_max_width = match style.max_width {
     @types.Length(v) => v
@@ -1245,7 +1259,12 @@ fn compute_grid_layout_internal(
     @types.Auto => 1.0e10
     @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
       @double.infinity
-    @types.Calc(_, p) => p * available_width
+    @types.Calc(px, p) => available_width * p + px
+    @types.MathFn(__mop, __mterms) =>
+      @types.apply_math_op(
+        __mop,
+        __mterms.map(fn(__t) { available_width * __t.1 + __t.0 }),
+      )
   }
   let has_fit_content_percent_for_width = if is_vertical_writing {
     has_fit_content_percent_rows
@@ -1374,7 +1393,14 @@ fn compute_grid_layout_internal(
       padding_bottom +
       border_top +
       border_bottom
-    @types.Calc(_, p) => max(p * available_height, min_height)
+    @types.Calc(px, p) => max(available_height * p + px, min_height)
+    @types.MathFn(__mop, __mterms) => {
+      let resolved = @types.apply_math_op(
+        __mop,
+        __mterms.map(fn(__t) { available_height * __t.1 + __t.0 }),
+      )
+      max(resolved, min_height)
+    }
   }
   let resolved_max_height = match style.max_height {
     @types.Length(v) => v
@@ -1387,7 +1413,12 @@ fn compute_grid_layout_internal(
       padding_bottom +
       border_top +
       border_bottom
-    @types.Calc(_, p) => p * available_height
+    @types.Calc(px, p) => available_height * p + px
+    @types.MathFn(__mop, __mterms) =>
+      @types.apply_math_op(
+        __mop,
+        __mterms.map(fn(__t) { available_height * __t.1 + __t.0 }),
+      )
   }
   let container_width = if width_is_auto {
     // Block-level Grid in Definite sizing mode expands to fill available width
@@ -2095,11 +2126,34 @@ fn compute_grid_layout_internal(
     } else {
       col_start == 0 && col_end == column_tracks.length()
     }
+    // A narrower container (e.g. clamped by max-width below the track total)
+    // must not shrink an item below the size of its non-stretchable (fixed)
+    // tracks; those keep their size and overflow. Only the stretchable portion
+    // of the span may collapse to fit the container content box.
+    let inline_tracks = if is_vertical_writing {
+      row_tracks
+    } else {
+      column_tracks
+    }
+    let (inline_span_start, inline_span_end) = if is_vertical_writing {
+      (row_start, row_end)
+    } else {
+      (col_start, col_end)
+    }
+    let mut stretchable_span_width = 0.0
+    for t = inline_span_start
+        t < inline_span_end && t < inline_tracks.length()
+        t = t + 1 {
+      if inline_tracks[t].stretchable {
+        stretchable_span_width = stretchable_span_width + inline_tracks[t].size
+      }
+    }
+    let non_stretchable_floor = item_width - stretchable_span_width
     let item_width_for_layout = if width_is_auto &&
       spans_entire_inline_axis &&
       item_x <= 0.0 &&
       item_width > content_box_width {
-      content_box_width
+      max(content_box_width, non_stretchable_floor)
     } else {
       item_width
     }
@@ -2223,7 +2277,11 @@ fn compute_grid_layout_internal(
     }
   }
 
-  // Build final children array with contents wrappers
+  // Build final children array with contents wrappers. `flattened_idx` walks
+  // the flattened layout list, which expands each display:contents element into
+  // its grid-item descendants — so it must advance past ALL of a contents
+  // element's flattened children, not just one slot, or the following regular
+  // child would pick up the wrong (duplicated) layout and the real one is lost.
   let final_children : Array[@layout_types.Layout] = []
   let mut flattened_idx = 0
   for i = 0; i < original_children.length(); i = i + 1 {
@@ -2231,10 +2289,12 @@ fn compute_grid_layout_internal(
     if orig_child.style.display == @types.Contents {
       // Create contents wrapper with its children's layouts
       match contents_layouts.get(i) {
-        Some(layouts) =>
+        Some(layouts) => {
           final_children.push(create_grid_contents_layout(orig_child, layouts))
+          flattened_idx = flattened_idx + layouts.length()
+        }
         None =>
-          // Contents element with no children
+          // Contents element with no grid-item descendants
           final_children.push(create_grid_contents_layout(orig_child, []))
       }
       // Regular child - use its layout from child_layouts
@@ -2307,9 +2367,18 @@ fn resolve_intrinsic_dimension(
       }
     @types.Auto => 0.0
     @types.MinContent | @types.MaxContent | @types.FitContent(_) => 0.0
-    @types.Calc(_, p) =>
+    @types.Calc(px, p) =>
       if is_extrinsically_definite {
-        available * p
+        available * p + px
+      } else {
+        0.0
+      }
+    @types.MathFn(__mop, __mterms) =>
+      if is_extrinsically_definite {
+        @types.apply_math_op(
+          __mop,
+          __mterms.map(fn(__t) { available * __t.1 + __t.0 }),
+        )
       } else {
         0.0
       }
@@ -3112,6 +3181,15 @@ fn calculate_item_intrinsic_sizes(
         )
         (resolved, resolved)
       }
+      @types.MathFn(__mop, __mterms) => {
+        add_box = false
+        let resolved = resolve_dimension(
+          child.style.width,
+          container_width,
+          0.0,
+        )
+        (resolved, resolved)
+      }
       @types.Auto =>
         // For leaf nodes, use measure function or defaults
         if child.children.length() == 0 {
@@ -3176,6 +3254,14 @@ fn calculate_item_intrinsic_sizes(
                       )
                       (resolved, resolved)
                     }
+                    @types.MathFn(__mop, __mterms) => {
+                      let resolved = resolve_dimension(
+                        flex_child.style.width,
+                        container_width,
+                        0.0,
+                      )
+                      (resolved, resolved)
+                    }
                     @types.Auto =>
                       match
                         (flex_child.style.aspect_ratio, flex_child.style.height) {
@@ -3232,6 +3318,14 @@ fn calculate_item_intrinsic_sizes(
                     @types.Percent(p) =>
                       (p * container_width, p * container_width)
                     @types.Calc(_, _) => {
+                      let resolved = resolve_dimension(
+                        flex_child.style.width,
+                        container_width,
+                        0.0,
+                      )
+                      (resolved, resolved)
+                    }
+                    @types.MathFn(__mop, __mterms) => {
                       let resolved = resolve_dimension(
                         flex_child.style.width,
                         container_width,
@@ -3374,7 +3468,12 @@ fn calculate_item_intrinsic_sizes(
       @types.Percent(p) => p * container_width
       @types.Auto => 0.0
       @types.MinContent | @types.MaxContent | @types.FitContent(_) => 0.0
-      @types.Calc(_, p) => p * container_width
+      @types.Calc(px, p) => container_width * p + px
+      @types.MathFn(__mop, __mterms) =>
+        @types.apply_math_op(
+          __mop,
+          __mterms.map(fn(__t) { container_width * __t.1 + __t.0 }),
+        )
     }
     let style_max_width = match child.style.max_width {
       @types.Length(v) => v
@@ -3382,7 +3481,12 @@ fn calculate_item_intrinsic_sizes(
       @types.Auto => 1.0e10
       @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
         @double.infinity
-      @types.Calc(_, p) => p * container_width
+      @types.Calc(px, p) => container_width * p + px
+      @types.MathFn(__mop, __mterms) =>
+        @types.apply_math_op(
+          __mop,
+          __mterms.map(fn(__t) { container_width * __t.1 + __t.0 }),
+        )
     }
     // Effective minimum is max of style min_width and box_size
     let effective_min = max(style_min_width, box_size)
@@ -3438,6 +3542,8 @@ fn calculate_item_intrinsic_sizes(
             @types.Percent(p) => p * container_width
             @types.Calc(_, _) =>
               resolve_dimension(child.style.width, container_width, 1.0e10)
+            @types.MathFn(_, _) =>
+              resolve_dimension(child.style.width, container_width, 1.0e10)
             @types.Auto
             | @types.MinContent
             | @types.MaxContent
@@ -3471,6 +3577,38 @@ fn calculate_item_intrinsic_sizes(
             @types.Percent(p) => p * container_width
             @types.Calc(_, _) =>
               resolve_dimension(child.style.width, container_width, 1.0e10)
+            @types.MathFn(_, _) =>
+              resolve_dimension(child.style.width, container_width, 1.0e10)
+            @types.Auto
+            | @types.MinContent
+            | @types.MaxContent
+            | @types.FitContent(_) => 1.0e10
+          }
+          let intrinsic = get_intrinsic_from_measure(
+            child, measure_available_width, 1.0e10,
+          )
+          (intrinsic.min_height, intrinsic.max_height)
+        } else {
+          (0.0, 0.0)
+        }
+      }
+      @types.MathFn(__mop, __mterms) => {
+        add_box = false
+        if container_height > 0.0 {
+          let resolved = resolve_dimension(
+            child.style.height,
+            container_height,
+            0.0,
+          )
+          (resolved, resolved)
+        } else if child.children.length() == 0 {
+          let measure_available_width = match child.style.width {
+            @types.Length(v) => v
+            @types.Percent(p) => p * container_width
+            @types.Calc(_, _) =>
+              resolve_dimension(child.style.width, container_width, 1.0e10)
+            @types.MathFn(_, _) =>
+              resolve_dimension(child.style.width, container_width, 1.0e10)
             @types.Auto
             | @types.MinContent
             | @types.MaxContent
@@ -3492,6 +3630,8 @@ fn calculate_item_intrinsic_sizes(
             @types.Length(v) => v
             @types.Percent(p) => p * container_width
             @types.Calc(_, _) =>
+              resolve_dimension(child.style.width, container_width, 1.0e10)
+            @types.MathFn(_, _) =>
               resolve_dimension(child.style.width, container_width, 1.0e10)
             @types.Auto
             | @types.MinContent
@@ -3549,6 +3689,14 @@ fn calculate_item_intrinsic_sizes(
                   (w, w)
                 }
                 @types.Calc(_, _) => {
+                  let w = resolve_dimension(
+                    child.style.width,
+                    container_width,
+                    0.0,
+                  )
+                  (w, w)
+                }
+                @types.MathFn(__mop, __mterms) => {
                   let w = resolve_dimension(
                     child.style.width,
                     container_width,
@@ -3625,6 +3773,12 @@ fn calculate_item_intrinsic_sizes(
                     @types.Length(w) => w
                     @types.Percent(p) => p * container_width
                     @types.Calc(_, _) =>
+                      resolve_dimension(
+                        child.style.width,
+                        container_width,
+                        container_width,
+                      )
+                    @types.MathFn(__mop, __mterms) =>
                       resolve_dimension(
                         child.style.width,
                         container_width,
@@ -3781,9 +3935,18 @@ fn calculate_item_intrinsic_sizes(
         }
       @types.Auto => 0.0
       @types.MinContent | @types.MaxContent | @types.FitContent(_) => 0.0
-      @types.Calc(_, p) =>
+      @types.Calc(px, p) =>
         if container_height > 0.0 {
-          p * container_height
+          container_height * p + px
+        } else {
+          0.0
+        }
+      @types.MathFn(__mop, __mterms) =>
+        if container_height > 0.0 {
+          @types.apply_math_op(
+            __mop,
+            __mterms.map(fn(__t) { container_height * __t.1 + __t.0 }),
+          )
         } else {
           0.0
         }
@@ -3799,9 +3962,18 @@ fn calculate_item_intrinsic_sizes(
       @types.Auto => 1.0e10
       @types.MinContent | @types.MaxContent | @types.FitContent(_) =>
         @double.infinity
-      @types.Calc(_, p) =>
+      @types.Calc(px, p) =>
         if container_height > 0.0 {
-          p * container_height
+          container_height * p + px
+        } else {
+          @double.infinity
+        }
+      @types.MathFn(__mop, __mterms) =>
+        if container_height > 0.0 {
+          @types.apply_math_op(
+            __mop,
+            __mterms.map(fn(__t) { container_height * __t.1 + __t.0 }),
+          )
         } else {
           @double.infinity
         }
@@ -3865,11 +4037,40 @@ fn single_to_track(
 }
 
 ///|
-/// Expand repeat() in track templates
+/// Concatenate two grid line-name lists into a fresh array.
+fn merge_line_names(a : Array[String], b : Array[String]) -> Array[String] {
+  let r : Array[String] = []
+  for n in a {
+    r.push(n)
+  }
+  for n in b {
+    r.push(n)
+  }
+  r
+}
+
+///|
+/// Line names at grid line `i` of `names`, or an empty list when out of range.
+fn line_names_at(names : Array[Array[String]], i : Int) -> Array[String] {
+  if i >= 0 && i < names.length() {
+    names[i]
+  } else {
+    []
+  }
+}
+
+///|
+/// Expand repeat() in track templates. `line_names` is the template's per-grid-
+/// line name list (length = templates + 1, with each `repeat()` counting as one
+/// track); it is expanded in lockstep with the tracks so named-line placement
+/// stays aligned after a repeat and picks up the line names declared *inside*
+/// `repeat(...)`. At a repetition boundary the trailing names of one repetition
+/// merge with the leading names of the next, per CSS Grid.
 fn expand_track_templates(
   templates : Array[@types.TrackSizingFunction],
+  line_names : Array[Array[String]],
   available_size : Double,
-) -> (Array[@types.TrackSizingFunction], Array[Bool]) {
+) -> (Array[@types.TrackSizingFunction], Array[Bool], Array[Array[String]]) {
   // First, calculate fixed track sizes (non-repeat tracks)
   let mut fixed_size = 0.0
   for i = 0; i < templates.length(); i = i + 1 {
@@ -3877,19 +4078,23 @@ fn expand_track_templates(
       @types.TrackSizingFunction::Length(v) => fixed_size = fixed_size + v
       @types.TrackSizingFunction::Percent(p) =>
         fixed_size = fixed_size + available_size * p
-      @types.Repeat(@types.Count(n), tracks) =>
+      @types.Repeat(@types.Count(n), tracks, _) =>
         fixed_size = fixed_size +
           calculate_repeat_track_size(tracks, available_size) * n.to_double()
-      @types.Repeat(@types.AutoFill | @types.AutoFit, _) => ()
+      @types.Repeat(@types.AutoFill | @types.AutoFit, _, _) => ()
       _ => () // Fr, Auto, etc. don't contribute to fixed size
     }
   }
   let remaining_size = available_size - fixed_size
   let result : Array[@types.TrackSizingFunction] = []
   let auto_fit_mask : Array[Bool] = []
+  let expanded_names : Array[Array[String]] = []
+  // Names carried onto the next grid line (top-level line before the current
+  // track, or the trailing names of the previous repetition).
+  let mut pending = line_names_at(line_names, 0)
   for i = 0; i < templates.length(); i = i + 1 {
     match templates[i] {
-      @types.Repeat(repeat_count, tracks) => {
+      @types.Repeat(repeat_count, tracks, repeat_names) => {
         let repetitions = match repeat_count {
           @types.Count(n) => n
           @types.AutoFill => {
@@ -3925,21 +4130,41 @@ fn expand_track_templates(
           @types.AutoFit => true
           _ => false
         }
-        // Expand the tracks
+        // Expand the tracks, interleaving the repeat's internal line names.
         for r = 0; r < repetitions; r = r + 1 {
           for t = 0; t < tracks.length(); t = t + 1 {
+            let line = if t == 0 {
+              // Leading repeat names merge with whatever is pending (top-level
+              // names before the repeat, or the previous repetition's trailing).
+              merge_line_names(pending, line_names_at(repeat_names, 0))
+            } else {
+              line_names_at(repeat_names, t)
+            }
+            expanded_names.push(line)
             result.push(single_to_track(tracks[t]))
             auto_fit_mask.push(is_auto_fit)
+            if t == 0 {
+              pending = []
+            }
           }
+          // Trailing names of this repetition become pending for the next line.
+          pending = line_names_at(repeat_names, tracks.length())
         }
+        // Merge the last repetition's trailing names with the top-level names
+        // that follow the repeat.
+        pending = merge_line_names(pending, line_names_at(line_names, i + 1))
       }
       other => {
+        expanded_names.push(pending)
         result.push(other)
         auto_fit_mask.push(false)
+        pending = line_names_at(line_names, i + 1)
       }
     }
   }
-  (result, auto_fit_mask)
+  // Final grid line.
+  expanded_names.push(pending)
+  (result, auto_fit_mask, expanded_names)
 }
 
 ///|
@@ -4160,7 +4385,7 @@ fn resolve_tracks_with_implicit(
         max_sizes.push(max_limit)
         fixed_size = fixed_size + base
       }
-      @types.Repeat(_, _) => {
+      @types.Repeat(_, _, _) => {
         // Repeat should be expanded before reaching here
         // Treat as auto if unexpanded
         base_sizes.push(max_content)
@@ -4539,6 +4764,91 @@ fn parse_grid_template_areas(
 
 ///|
 /// Find the bounds of a named grid area
+/// Whether a placement edge is explicit (a line number, name, or named line).
+fn grid_placement_is_explicit(p : @types.GridPlacement) -> Bool {
+  match p {
+    @types.GridPlacement::Line(_)
+    | @types.GridPlacement::Named(_)
+    | @types.GridPlacement::NamedLine(_, _) => true
+    _ => false
+  }
+}
+
+///|
+/// An item is explicitly column-positioned if grid-column has an explicit start,
+/// or it carries a `grid-area` (which fixes both axes).
+fn style_has_explicit_column(style : @style.Style) -> Bool {
+  (match style.grid_area {
+    Some(_) => true
+    None => false
+  }) ||
+  grid_placement_is_explicit(style.grid_column.start)
+}
+
+///|
+/// An item is explicitly row-positioned if grid-row has an explicit start, or it
+/// carries a `grid-area`.
+fn style_has_explicit_row(style : @style.Style) -> Bool {
+  (match style.grid_area {
+    Some(_) => true
+    None => false
+  }) ||
+  grid_placement_is_explicit(style.grid_row.start)
+}
+
+///|
+/// Resolve a fully-explicit item's track span (col_start, col_end, row_start,
+/// row_end). A `grid-area` first tries the `grid-template-areas` map; when the
+/// name isn't a declared area it falls back to named-line placement (`grid-area:
+/// foo` => `foo / foo` on both axes, with the implicit `<name>-start` /
+/// `<name>-end` area expansion). Otherwise grid-column / grid-row are resolved.
+fn resolve_explicit_item_placement(
+  style : @style.Style,
+  grid_areas : Array[Array[String]],
+  columns : Int,
+  explicit_rows : Int,
+  column_line_names : Array[Array[String]],
+  row_line_names : Array[Array[String]],
+) -> (Int, Int, Int, Int) {
+  match style.grid_area {
+    Some(area_name) =>
+      match find_grid_area_bounds(grid_areas, area_name) {
+        Some(bounds) =>
+          (bounds.col_start, bounds.col_end, bounds.row_start, bounds.row_end)
+        None => {
+          // Not a template area: treat the name as a line for all four edges.
+          let line : @types.GridLine = {
+            start: @types.GridPlacement::Named(area_name),
+            end: @types.GridPlacement::Named(area_name),
+          }
+          let (cs, ce) = resolve_line_placement(
+            line, 0, columns, column_line_names,
+          )
+          let (rs, re) = resolve_line_placement(
+            line, 0, explicit_rows, row_line_names,
+          )
+          (cs, ce, rs, re)
+        }
+      }
+    None => {
+      let (cs, ce) = resolve_line_placement(
+        style.grid_column,
+        0,
+        columns,
+        column_line_names,
+      )
+      let (rs, re) = resolve_line_placement(
+        style.grid_row,
+        0,
+        explicit_rows,
+        row_line_names,
+      )
+      (cs, ce, rs, re)
+    }
+  }
+}
+
+///|
 fn find_grid_area_bounds(
   areas : Array[Array[String]],
   name : String,
@@ -4588,6 +4898,8 @@ fn place_grid_items(
   explicit_rows : Int,
   auto_flow : @types.GridAutoFlow,
   grid_areas : Array[Array[String]],
+  column_line_names : Array[Array[String]],
+  row_line_names : Array[Array[String]],
 ) -> Array[GridItemPlacement] {
   let columns = if explicit_columns > 0 { explicit_columns } else { 1 }
 
@@ -4673,14 +4985,8 @@ fn place_grid_items(
     }
 
     // Check if item has explicit Line positioning
-    let has_explicit_column = match style.grid_column.start {
-      @types.GridPlacement::Line(_) => true
-      _ => false
-    }
-    let has_explicit_row = match style.grid_row.start {
-      @types.GridPlacement::Line(_) => true
-      _ => false
-    }
+    let has_explicit_column = style_has_explicit_column(style)
+    let has_explicit_row = style_has_explicit_row(style)
 
     // Only process FULLY explicitly positioned items (both column AND row)
     // Semi-explicit items (one explicit, one auto) will be processed in Pass 3
@@ -4688,24 +4994,10 @@ fn place_grid_items(
       continue
     }
 
-    // Check for grid-area placement
-    let area_placement = match style.grid_area {
-      Some(area_name) => find_grid_area_bounds(grid_areas, area_name)
-      None => None
-    }
-    let (col_start, col_end, row_start, row_end) = match area_placement {
-      Some(bounds) =>
-        (bounds.col_start, bounds.col_end, bounds.row_start, bounds.row_end)
-      None => {
-        let (cs, ce) = resolve_line_placement(
-          style.grid_column,
-          0, // auto_position not used for explicit items
-          columns,
-        )
-        let (rs, re) = resolve_line_placement(style.grid_row, 0, explicit_rows)
-        (cs, ce, rs, re)
-      }
-    }
+    // Resolve grid-area (template area or named-line fallback) / grid-line.
+    let (col_start, col_end, row_start, row_end) = resolve_explicit_item_placement(
+      style, grid_areas, columns, explicit_rows, column_line_names, row_line_names,
+    )
     placements[i] = {
       row_start,
       row_end,
@@ -4747,18 +5039,17 @@ fn place_grid_items(
     if style.position == @types.Absolute || style.position == @types.Fixed {
       continue
     }
-    let has_explicit_column = match style.grid_column.start {
-      @types.GridPlacement::Line(_) => true
-      _ => false
-    }
-    let has_explicit_row = match style.grid_row.start {
-      @types.GridPlacement::Line(_) => true
-      _ => false
-    }
+    let has_explicit_column = style_has_explicit_column(style)
+    let has_explicit_row = style_has_explicit_row(style)
     if has_explicit_column || !has_explicit_row {
       continue
     }
-    let (rs, re) = resolve_line_placement(style.grid_row, 0, explicit_rows)
+    let (rs, re) = resolve_line_placement(
+      style.grid_row,
+      0,
+      explicit_rows,
+      row_line_names,
+    )
     let mut col_cursor = min_col
     while is_cell_occupied(occupied, rs, col_cursor) {
       col_cursor = col_cursor + 1
@@ -4767,6 +5058,7 @@ fn place_grid_items(
       style.grid_column,
       col_cursor,
       columns,
+      column_line_names,
     )
     placements[i] = {
       row_start: rs,
@@ -4798,14 +5090,8 @@ fn place_grid_items(
     }
 
     // Skip items already placed in Pass 2/3
-    let has_explicit_column = match style.grid_column.start {
-      @types.GridPlacement::Line(_) => true
-      _ => false
-    }
-    let has_explicit_row = match style.grid_row.start {
-      @types.GridPlacement::Line(_) => true
-      _ => false
-    }
+    let has_explicit_column = style_has_explicit_column(style)
+    let has_explicit_row = style_has_explicit_row(style)
     if has_explicit_row {
       continue
     }
@@ -4827,6 +5113,7 @@ fn place_grid_items(
             style.grid_row,
             0,
             explicit_rows,
+            row_line_names,
           )
           let row_to_check = rs
           let mut col_cursor = min_col
@@ -4838,11 +5125,17 @@ fn place_grid_items(
             style.grid_column,
             col_cursor,
             columns,
+            column_line_names,
           )
           (cs, ce, rs, re)
         } else if has_explicit_column {
           // Explicit column, auto row - find first unoccupied row in that column
-          let (cs, ce) = resolve_line_placement(style.grid_column, 0, columns)
+          let (cs, ce) = resolve_line_placement(
+            style.grid_column,
+            0,
+            columns,
+            column_line_names,
+          )
           let col_to_check = cs
           let mut row_cursor = min_row
           while is_cell_occupied(occupied, row_cursor, col_to_check) {
@@ -4853,6 +5146,7 @@ fn place_grid_items(
             style.grid_row,
             row_cursor,
             explicit_rows,
+            row_line_names,
           )
           (cs, ce, rs, re)
         } else {
@@ -4883,11 +5177,13 @@ fn place_grid_items(
             style.grid_column,
             next_column,
             columns,
+            column_line_names,
           )
           let (rs, re) = resolve_line_placement(
             style.grid_row,
             next_row,
             explicit_rows,
+            row_line_names,
           )
           (cs, ce, rs, re)
         }
@@ -4933,13 +5229,67 @@ fn place_grid_items(
 ///|
 /// Resolve a grid line placement to start/end indices (0-indexed)
 /// Negative indices are allowed - they indicate implicit tracks before the explicit grid
+/// The 0-based grid line that is the `s`-th line carrying `name` strictly after
+/// line `after`, for `span <s> <name>` resolution. None when there aren't `s`
+/// such lines (the caller then falls back to an `s`-track span).
+fn nth_named_line_after(
+  name : String,
+  s : Int,
+  after : Int,
+  line_names : Array[Array[String]],
+) -> Int? {
+  if s <= 0 {
+    return None
+  }
+  let mut count = 0
+  for j = after + 1; j < line_names.length(); j = j + 1 {
+    if line_names[j].contains(name) {
+      count = count + 1
+      if count == s {
+        return Some(j)
+      }
+    }
+  }
+  None
+}
+
+///|
 fn resolve_line_placement(
   line : @types.GridLine,
   auto_position : Int,
   explicit_count : Int,
+  line_names : Array[Array[String]],
 ) -> (Int, Int) {
-  let start = match line.start {
+  // Resolve named-line placements (e.g. `grid-column: sidebar`) to concrete
+  // 1-based line numbers against the template's declared line names (with the
+  // `<name>-start` / `<name>-end` implicit-area expansion), then fall through to
+  // the normal numeric / span logic.
+  let (named_start, named_end) = @computed.resolve_grid_line_placement(
+    line.start,
+    line.end,
+    line_names,
+  )
+  // `Named` (`sidebar`) and `NamedLine` (`col 2`) both resolve to a concrete
+  // 1-based line via @computed; substitute the resolved line number.
+  let eff_start : @types.GridPlacement = match (line.start, named_start) {
+    (@types.GridPlacement::Named(_), Some(n))
+    | (@types.GridPlacement::NamedLine(_, _), Some(n)) =>
+      @types.GridPlacement::Line(n)
+    _ => line.start
+  }
+  let eff_end : @types.GridPlacement = match (line.end, named_end) {
+    (@types.GridPlacement::Named(_), Some(n))
+    | (@types.GridPlacement::NamedLine(_, _), Some(n)) =>
+      @types.GridPlacement::Line(n)
+    _ => line.end
+  }
+  let start = match eff_start {
     @types.GridPlacement::Auto => auto_position
+    // Unresolved named placements fall back to auto.
+    @types.GridPlacement::Named(_) | @types.GridPlacement::NamedLine(_, _) =>
+      auto_position
+    // `span N name` not resolvable here; approximate as auto start.
+    @types.GridPlacement::SpanNamed(_, _) => auto_position
     @types.GridPlacement::Line(n) =>
       if n > 0 {
         n - 1 // Convert 1-indexed to 0-indexed
@@ -4955,8 +5305,10 @@ fn resolve_line_placement(
       }
     @types.GridPlacement::Span(_) => auto_position
   }
-  let end = match line.end {
+  let end = match eff_end {
     @types.GridPlacement::Auto => start + 1
+    @types.GridPlacement::Named(_) | @types.GridPlacement::NamedLine(_, _) =>
+      start + 1 // unresolved name
     @types.GridPlacement::Line(n) =>
       if n > 0 {
         n - 1
@@ -4966,12 +5318,19 @@ fn resolve_line_placement(
         start + 1
       }
     @types.GridPlacement::Span(s) => start + s
+    // `span N name`: the end is the Nth line carrying `name` after the start
+    // line; fall back to an N-track span when there aren't enough named lines.
+    @types.GridPlacement::SpanNamed(s, name) =>
+      match nth_named_line_after(name, s, start, line_names) {
+        Some(j) => j
+        None => start + s
+      }
   }
 
   // Handle span in start position
-  let (final_start, final_end) = match line.start {
+  let (final_start, final_end) = match eff_start {
     @types.GridPlacement::Span(s) =>
-      match line.end {
+      match eff_end {
         @types.GridPlacement::Line(n) => {
           let e = if n > 0 { n - 1 } else { explicit_count + 1 + n }
           (e - s, e)
@@ -6723,5 +7082,9 @@ fn resolve_absolute_grid_line(
         Some(offset)
       }
     @types.GridPlacement::Span(_) => None // Span without explicit end defaults to Auto
+    // Named / named-line / named-span placements are not resolved for abspos.
+    @types.GridPlacement::Named(_)
+    | @types.GridPlacement::NamedLine(_, _)
+    | @types.GridPlacement::SpanNamed(_, _) => None
   }
 }

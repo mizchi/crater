@@ -22,6 +22,7 @@ pub(all) enum InsertionMode {
   InCell
   InSelect
   InSelectInTable
+  InTemplate
   AfterBody
   InFrameset
   AfterFrameset
@@ -48,6 +49,10 @@ pub(all) struct TreeBuilder {
   mut frameset_ok : Bool
   mut head_element : Element?
   mut pending_table_chars : Array[Char]
+  // Stack of "template insertion modes" parallel to the open elements stack:
+  // one entry is pushed per open <template>, driving reset_insertion_mode and
+  // EOF handling inside template content.
+  template_insertion_modes : Array[InsertionMode]
   // Text accumulation buffer for efficient character insertion
   pending_text : StringBuilder
   // Queue of tokens to reprocess (avoids stack overflow from recursive process_token calls)
@@ -66,6 +71,7 @@ pub fn TreeBuilder::new(tokenizer : Tokenizer) -> TreeBuilder {
     frameset_ok: true,
     head_element: None,
     pending_table_chars: [],
+    template_insertion_modes: [],
     pending_text: StringBuilder::new(),
     pending_tokens: [],
   }
@@ -665,6 +671,14 @@ pub fn TreeBuilder::build_document(self : TreeBuilder) -> Element {
 ///|
 /// Process a single token (internal - handlers may requeue tokens)
 fn TreeBuilder::process_token_single(self : TreeBuilder, token : Token) -> Unit {
+  // `</template>` closes its (inert, scope-bounded) template subtree regardless
+  // of the insertion mode its content switched into (a nested <table>, <select>,
+  // ...); without this it could be swallowed by such a mode and leave the
+  // template open to absorb the rest of the document.
+  if token is Token::EndTag("template") && self.has_element_in_scope("template") {
+    self.end_template()
+    return
+  }
   match self.insertion_mode {
     InsertionMode::Initial => self.handle_initial(token)
     InsertionMode::BeforeHtml => self.handle_before_html(token)
@@ -680,8 +694,50 @@ fn TreeBuilder::process_token_single(self : TreeBuilder, token : Token) -> Unit 
     InsertionMode::InCell => self.handle_in_cell(token)
     InsertionMode::InCaption => self.handle_in_caption(token)
     InsertionMode::InColumnGroup => self.handle_in_column_group(token)
+    InsertionMode::InTemplate => self.handle_in_template(token)
     InsertionMode::AfterBody => self.handle_after_body(token)
     _ => self.handle_in_body(token) // Fallback for unimplemented modes
+  }
+}
+
+///|
+/// Handle the "in template" insertion mode. Template content is parsed as inert
+/// flow content: most tokens go through the in-body rules. Table-section start
+/// tags switch into the matching table sub-mode so a `<table>` inside a template
+/// builds correctly; `</template>` is handled by the uniform intercept above.
+fn TreeBuilder::handle_in_template(self : TreeBuilder, token : Token) -> Unit {
+  match token {
+    Token::StartTag(tag, _, _) => {
+      // Table-section start tags switch into the matching table sub-mode so a
+      // <table> built inside a template is constructed correctly.
+      let sub_mode = match tag {
+        "caption" | "colgroup" | "tbody" | "tfoot" | "thead" =>
+          Some(InsertionMode::InTable)
+        "col" => Some(InsertionMode::InColumnGroup)
+        "tr" => Some(InsertionMode::InTableBody)
+        "td" | "th" => Some(InsertionMode::InRow)
+        _ => None
+      }
+      match sub_mode {
+        Some(mode) => {
+          let n = self.template_insertion_modes.length()
+          if n > 0 {
+            self.template_insertion_modes[n - 1] = mode
+          }
+          self.insertion_mode = mode
+          self.reprocess_token(token)
+        }
+        None => self.handle_in_body(token)
+      }
+    }
+    Token::EOF =>
+      if self.has_element_in_scope("template") {
+        // Parse error in the spec; close the template and stop.
+        self.end_template()
+      }
+    // Everything else (incl. all end tags except </template>, handled by the
+    // intercept in process_token_single) is processed with the in-body rules.
+    _ => self.handle_in_body(token)
   }
 }
 

@@ -241,7 +241,9 @@ pub fn prepare_external_css(
       let after_rules : Array[PseudoRule] = []
       let mut total_rules = 0
       for css in external_css {
-        let stylesheet = @css.parse_stylesheet(css)
+        let stylesheet = @css.parse_stylesheet(
+          @html.flatten_css_cascade_layers(css),
+        )
         total_rules += stylesheet.rules.length()
         collect_pseudo_rules_from_stylesheet(
           stylesheet, before_rules, after_rules,
@@ -401,7 +403,9 @@ fn prepare_render_document_with_external_css_bundle(
   let after_rules = external_bundle.after_rules.copy()
   let mut total_rules = external_bundle.total_rules
   for css in doc.stylesheets {
-    let stylesheet = @css.parse_stylesheet(css)
+    let stylesheet = @css.parse_stylesheet(
+      @html.flatten_css_cascade_layers(css),
+    )
     total_rules += stylesheet.rules.length()
     collect_pseudo_rules_from_stylesheet(stylesheet, before_rules, after_rules)
     stylesheets.push(stylesheet)

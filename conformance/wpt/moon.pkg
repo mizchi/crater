@@ -11,5 +11,5 @@ warnings = "-unused_package"
 supported_targets = "js+wasm+wasm-gc"
 
 options(
-  link: { "js": { "exports": [ "renderHtmlToJsonForWpt" ], "format": "esm" } },
+  link: { "js": { "exports": [ "renderHtmlToJsonForWpt", "recordRenderSideEffectsForWpt", "renderHtmlWithReplayForWpt" ], "format": "esm" } },
 )

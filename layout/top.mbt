@@ -176,6 +176,10 @@ pub fn compute_layout_in_context(
   node : @node.Node,
   ctx : @layout_types.LayoutContext,
 ) -> @layout_types.Layout {
+  // Reset per-render intrinsic-width memoization once at the top-level entry
+  // (this function delegates to @dispatch.compute_layout and is not re-entered
+  // recursively, so a single clear bounds the caches to one render).
+  @block.clear_block_intrinsic_caches()
   @dispatch.compute_layout(node, ctx)
 }
 

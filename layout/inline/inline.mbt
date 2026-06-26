@@ -1963,6 +1963,18 @@ fn compute_inline_child(
             Some(ah) => Some(ah * pct + px)
             None => Some(px)
           }
+        @types.MathFn(__mop, __mterms) =>
+          match available_height {
+            Some(ah) =>
+              Some(
+                @types.apply_math_op(
+                  __mop,
+                  __mterms.map(fn(__t) { ah * __t.1 + __t.0 }),
+                ),
+              )
+            None =>
+              Some(@types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 })))
+          }
         @types.Auto
         | @types.MinContent
         | @types.MaxContent
@@ -1980,6 +1992,13 @@ fn compute_inline_child(
         @types.Calc(px, pct) =>
           available_width * pct +
           px -
+          padding.horizontal_sum() -
+          border.horizontal_sum()
+        @types.MathFn(__mop, __mterms) =>
+          @types.apply_math_op(
+            __mop,
+            __mterms.map(fn(__t) { available_width * __t.1 + __t.0 }),
+          ) -
           padding.horizontal_sum() -
           border.horizontal_sum()
         @types.MinContent =>
@@ -2096,6 +2115,15 @@ fn compute_inline_child(
           match available_height {
             Some(ah) => ah * pct + px
             None => px
+          }
+        @types.MathFn(__mop, __mterms) =>
+          match available_height {
+            Some(ah) =>
+              @types.apply_math_op(
+                __mop,
+                __mterms.map(fn(__t) { ah * __t.1 + __t.0 }),
+              )
+            None => @types.apply_math_op(__mop, __mterms.map(fn(__t) { __t.0 }))
           }
         @types.Auto
         | @types.MinContent

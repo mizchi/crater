@@ -37,6 +37,8 @@
     "capture:realworld": "tsx scripts/capture-real-world-snapshot.ts",
     "vrt:component": "node --import tsx scripts/component-vrt.ts",
     "vrt:luna-reference": "node --import tsx scripts/luna-vrt-reference.ts",
+    "calc:diff": "tsx scripts/calc-layout-diff.ts",
+    "match-rate": "tsx scripts/real-world-match-rate.ts",
     "webmcp:model": "tsx scripts/webmcp-openrouter-demo.ts",
     "webmcp:openrouter": "tsx scripts/webmcp-openrouter-demo.ts --provider openrouter",
     "smoke:crater-playwright": "tsx scripts/crater-playwright-smoke.ts",

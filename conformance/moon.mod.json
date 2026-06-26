@@ -6,7 +6,19 @@
       "path": "../core",
       "version": "0.18.0"
     },
-    "mizchi/css": "0.4.5",
+    "mizchi/css": "0.7.0",
+    "mizchi/crater-dom": {
+      "path": "../dom",
+      "version": "0.18.0"
+    },
+    "mizchi/crater-painter": {
+      "path": "../painter",
+      "version": "0.18.0"
+    },
+    "mizchi/crater-webvitals": {
+      "path": "../webvitals",
+      "version": "0.18.0"
+    },
     "mizchi/crater-layout": {
       "path": "../layout",
       "version": "0.18.0"

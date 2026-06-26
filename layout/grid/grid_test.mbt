@@ -1934,7 +1934,7 @@ test "grid_repeat_count" {
     width: @types.Length(120.0),
     height: @types.Length(40.0),
     grid_template_columns: [
-      @types.Repeat(@types.Count(3), [@types.SingleTrackSizing::Length(40.0)]),
+      @types.Repeat(@types.Count(3), [@types.SingleTrackSizing::Length(40.0)], []),
     ],
     grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
   }
@@ -1970,7 +1970,7 @@ test "taffy/grid_auto_fill_fixed_size" {
     height: @types.Length(120.0),
     grid_template_columns: [
       @types.TrackSizingFunction::Length(40.0),
-      @types.Repeat(@types.AutoFill, [@types.SingleTrackSizing::Length(40.0)]),
+      @types.Repeat(@types.AutoFill, [@types.SingleTrackSizing::Length(40.0)], []),
     ],
     grid_template_rows: [
       @types.TrackSizingFunction::Length(40.0),

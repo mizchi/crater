@@ -113,7 +113,11 @@ fn resolve_root_available_width(
   root_margin : @types.Rect[Double],
   doc_root_style : @style.Style?,
 ) -> Double {
-  let base = viewport_width - root_margin.left - root_margin.right
+  // The available width is the root's containing block (the initial containing
+  // block = the viewport). The root element's own margin is subtracted once by
+  // its block layout, so it must NOT be subtracted here as well, or a body with
+  // the UA default 8px margin ends up 2x16px narrower than the viewport.
+  let base = viewport_width
   let base = if base > 0.0 { base } else { 0.0 }
   match doc_root_style {
     None => base
@@ -122,6 +126,11 @@ fn resolve_root_available_width(
         @types.Length(v) => v
         @types.Percent(p) => viewport_width * p
         @types.Calc(px, pct) => viewport_width * pct + px
+        @types.MathFn(__mop, __mterms) =>
+          @types.apply_math_op(
+            __mop,
+            __mterms.map(fn(__t) { viewport_width * __t.1 + __t.0 }),
+          )
         @types.Auto
         | @types.MinContent
         | @types.MaxContent
@@ -131,6 +140,11 @@ fn resolve_root_available_width(
         @types.Length(v) => v
         @types.Percent(p) => viewport_width * p
         @types.Calc(px, pct) => viewport_width * pct + px
+        @types.MathFn(__mop, __mterms) =>
+          @types.apply_math_op(
+            __mop,
+            __mterms.map(fn(__t) { viewport_width * __t.1 + __t.0 }),
+          )
         @types.Auto
         | @types.MinContent
         | @types.MaxContent
@@ -140,6 +154,11 @@ fn resolve_root_available_width(
         @types.Length(v) => v
         @types.Percent(p) => viewport_width * p
         @types.Calc(px, pct) => viewport_width * pct + px
+        @types.MathFn(__mop, __mterms) =>
+          @types.apply_math_op(
+            __mop,
+            __mterms.map(fn(__t) { viewport_width * __t.1 + __t.0 }),
+          )
         @types.Auto
         | @types.MinContent
         | @types.MaxContent
@@ -151,8 +170,9 @@ fn resolve_root_available_width(
       if doc_width < min_width {
         doc_width = min_width
       }
-      let constrained = doc_width - root_margin.left - root_margin.right
-      let constrained = if constrained > 0.0 { constrained } else { 0.0 }
+      // Margin is subtracted by the root's block layout (see note above), not
+      // here.
+      let constrained = if doc_width > 0.0 { doc_width } else { 0.0 }
       if constrained < base {
         constrained
       } else {

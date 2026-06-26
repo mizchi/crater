@@ -72,6 +72,10 @@ fn to_layout_dimension(dimension : @types.Dimension) -> @lt.Dimension {
     @types.MaxContent => @lt.MaxContent
     @types.FitContent(v) => @lt.FitContent(v)
     @types.Calc(px, _) => @lt.Length(px)
+    // Layout has no math-fn dimension; approximate by the px terms (mirrors how
+    // Calc drops its percentage component here).
+    @types.MathFn(op, terms) =>
+      @lt.Length(@types.apply_math_op(op, terms.map(fn(t) { t.0 })))
   }
 }
 

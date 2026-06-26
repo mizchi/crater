@@ -1,5 +1,6 @@
 import {
   "moonbitlang/core/math",
+  "mizchi/crater-dom/html",
   "mizchi/css/selector",
   "mizchi/css",
   "mizchi/css/cascade",
