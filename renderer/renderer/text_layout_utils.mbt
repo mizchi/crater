@@ -512,7 +512,12 @@ fn create_text_measure_with_provider(
       result
     },
   }
-  memoized
+  // Route the result through the record/replay layer (a no-op unless recording
+  // or replaying the external measurement side effect is active).
+  let prefix = measurement_key_prefix(
+    text, font_size, text_line_height, white_space, writing_mode, font_weight, font_family,
+  )
+  record_replay_text_measure(prefix, memoized)
 }
 
 ///|
