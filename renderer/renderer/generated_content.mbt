@@ -1090,38 +1090,35 @@ fn selector_has_generated_pseudo_content(
   stylesheets : Array[@css.Stylesheet],
   ctx : RenderContext,
 ) -> Bool {
+  // `stylesheets` is retained for signature compatibility; the fast variant
+  // resolves against the precomputed before/after pseudo-rule indexes instead
+  // of re-scanning every rule's selector text per element (which on text-heavy
+  // pages dominated the render — O(elements x rules) substring searches; #316).
+  ignore(stylesheets)
   let empty_counters : Map[String, CounterEntry] = {}
   let empty_css_vars : Map[String, String] = {}
   let empty_attributes : Map[String, String] = {}
   let default_style = @style.Style::default()
-  let has_before = match
-    resolve_pseudo_spec(
+  let has_before = resolve_pseudo_spec_fast(
       selector_elem,
       default_style,
-      stylesheets,
       ctx,
       Before,
       empty_counters,
       empty_css_vars,
       empty_attributes,
-    ) {
-    Some(_) => true
-    None => false
-  }
-  let has_after = match
-    resolve_pseudo_spec(
+    )
+    is Some(_)
+  let has_after = resolve_pseudo_spec_fast(
       selector_elem,
       default_style,
-      stylesheets,
       ctx,
       After,
       empty_counters,
       empty_css_vars,
       empty_attributes,
-    ) {
-    Some(_) => true
-    None => false
-  }
+    )
+    is Some(_)
   has_before || has_after
 }
 
