@@ -129,8 +129,27 @@ microtask drain, `domOps` application, re-render, and one timer + rAF callback
 per iteration until quiescent — returning a settled / hit-cap signal. The layout
 bridge is refreshed each iteration so timer / rAF callbacks measure the latest
 render, so `setState → re-render`, effects, and animation steps run without an
-external pump. **Still a full re-render per iteration** (step 4 below): the
-incremental-reflow optimization is the remaining follow-up.
+external pump.
+
+**Reflow today:** the bridge skips recomputing layout when the serialized DOM is
+unchanged since the last injection (`Browser::bridge_injected_html`), so idle /
+no-mutation iterations (rAF that only *reads* geometry, effects that don't
+mutate, polling timers) cost no extra layout. When the DOM *does* change it is
+still a **full** re-layout — true dirty-subtree incremental reflow (step 4) is
+the remaining follow-up, and it is a sizeable one:
+
+- `sync_render_state_from_dom_tree` rebuilds the render node tree from
+  re-serialized HTML and `clear_render_cache` drops the persistent
+  `layout_tree` on every mutation, so the existing incremental machinery
+  (`@layout.LayoutTree::compute_incremental`, used by the text renderer for
+  non-mutating re-renders) can't reuse anything across a DOM mutation: the
+  rebuilt node tree has fresh `uid`s, so nothing matches the cached layout.
+- Making a mutation incremental needs a **persistent, `uid`-stable render node
+  tree patched directly by `domOps`** (append/remove/setAttribute/setTextContent
+  against DomTree node ids → the corresponding render nodes), with style re-
+  cascaded only on the touched subtree, then `compute_incremental`. That is the
+  DomTree ↔ render-node ↔ LayoutTree mapping; it is an architectural project,
+  not a local edit, and should be scoped on its own.
 
 The original sketch — turn the one-shot `tick_js` into a real run-loop in
 `browser/shell`:
@@ -161,6 +180,7 @@ external pump, and is the prerequisite for the forced-reflow path in (1).
    (`Browser::inject_layout_bridge`). Validate the V8 round-trip with the native
    `js_v8` tests (see `docs/v8-build-egress.md` to build the runtime here).
 3. **Run-loop** in `browser/shell` (microtask → domOps → reflow → rAF). — landed
-   as `Browser::run_event_loop`; full re-render per iteration. Remaining:
-   incremental reflow (`compute_incremental` on the dirty subtree) and wiring the
-   forced-reflow path into the measuring reads.
+   as `Browser::run_event_loop`. Redundant-layout elision landed (skip when the
+   DOM is unchanged). Remaining: true dirty-subtree incremental reflow (needs the
+   persistent `uid`-stable node tree patched by `domOps` — see above) and wiring
+   the forced-reflow path into the measuring reads.

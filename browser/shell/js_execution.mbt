@@ -33,6 +33,14 @@ fn Browser::inject_layout_bridge(self : Browser) -> Unit {
   if !self.enable_js || self.html_content.length() == 0 {
     return
   }
+  // Skip recomputing/re-injecting when the DOM is unchanged since the last
+  // injection: the layout is identical, so the globals already in the realm are
+  // still correct. This elides the redundant full re-layout on idle / no-DOM-
+  // mutation run-loop iterations (true dirty-subtree incremental reflow on a
+  // mutation is a separate follow-up — see the design memo).
+  if self.html_content == self.bridge_injected_html {
+    return
+  }
   match self.script_executor {
     Some(executor) => {
       let ctx = @browser_helpers.create_render_context(
@@ -59,6 +67,9 @@ fn Browser::inject_layout_bridge(self : Browser) -> Unit {
       )
       try {
         let _ = executor.execute_source(js)
+        // Remember the DOM revision we injected for, so an unchanged DOM skips
+        // the next recompute. Only on success — a failure retries next time.
+        self.bridge_injected_html = self.html_content
       } catch {
         _ => ()
       }

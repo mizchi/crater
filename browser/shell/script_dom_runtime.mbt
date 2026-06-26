@@ -54,6 +54,8 @@ fn Browser::init_js_execution(self : Browser) -> Unit {
       None => @js.ScriptExecutor::new_deferred(dom)
     },
   )
+  // Fresh realm: force the layout bridge to (re)inject on the next call.
+  self.bridge_injected_html = ""
   match self.script_executor {
     Some(executor) =>
       ignore(executor.execute_source(browser_form_submit_bridge_source())) catch {

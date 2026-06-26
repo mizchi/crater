@@ -91,6 +91,10 @@ struct Browser {
   mut source_html : String
   /// DOM snapshot HTML that preserves serializable shadow roots
   mut dom_snapshot_html : String
+  /// Serialized-DOM revision the layout bridge was last injected for. While the
+  /// DOM is unchanged (idle / no-mutation run-loop iterations) the injected
+  /// layout is still valid, so re-injection skips recomputing the same layout.
+  mut bridge_injected_html : String
   /// Parsed document (cached to avoid re-parsing)
   mut parsed_doc : @html.Document?
   /// Whether current render HTML may contain declarative shadow DOM templates
@@ -213,6 +217,7 @@ pub fn Browser::new(
     html_content: "",
     source_html: "",
     dom_snapshot_html: "",
+    bridge_injected_html: "",
     parsed_doc: None,
     html_has_declarative_shadow_dom: false,
     external_css: [],
