@@ -1165,7 +1165,44 @@ fn layout_simple_block_stack(
 ///|
 /// Calculate max-content width of children for intrinsic sizing
 /// This is used when min-width or max-width is max-content/min-content
+// Per-render memoization of intrinsic widths. A node's min/max-content width is
+// a pure function of (node subtree, parent_width [, parent_content_height]) and
+// node.uid is process-unique, so a key of (uid, ...) is stable; the cache is
+// only cleared for memory hygiene (see clear_block_intrinsic_caches), never for
+// correctness. This collapses the otherwise exponential mutual recursion
+// between min/max-content over deep trees (the dominant layout cost on
+// text-heavy pages — see #316).
+let min_intrinsic_width_cache : Ref[Map[String, Double]] = { val: Map::new() }
+
+///|
+let max_intrinsic_width_cache : Ref[Map[String, Double]] = { val: Map::new() }
+
+///|
+/// Reset the intrinsic-width memoization caches. Called once at the start of a
+/// top-level layout so they don't accumulate across renders.
+pub fn clear_block_intrinsic_caches() -> Unit {
+  min_intrinsic_width_cache.val = Map::new()
+  max_intrinsic_width_cache.val = Map::new()
+}
+
+///|
 fn calculate_children_max_content_width(
+  node : @node.Node,
+  parent_width : Double,
+) -> Double {
+  let key = node.uid.to_string() + "|" + parent_width.to_string()
+  match max_intrinsic_width_cache.val.get(key) {
+    Some(v) => v
+    None => {
+      let v = calculate_children_max_content_width_uncached(node, parent_width)
+      max_intrinsic_width_cache.val.set(key, v)
+      v
+    }
+  }
+}
+
+///|
+fn calculate_children_max_content_width_uncached(
   node : @node.Node,
   parent_width : Double,
 ) -> Double {
@@ -1342,6 +1379,29 @@ fn calculate_children_max_content_width(
 ///|
 /// Calculate min-content width of children for intrinsic sizing
 fn calculate_children_min_content_width(
+  node : @node.Node,
+  parent_width : Double,
+  parent_content_height : Double?,
+) -> Double {
+  let ph = match parent_content_height {
+    Some(h) => h.to_string()
+    None => "n"
+  }
+  let key = node.uid.to_string() + "|" + parent_width.to_string() + "|" + ph
+  match min_intrinsic_width_cache.val.get(key) {
+    Some(v) => v
+    None => {
+      let v = calculate_children_min_content_width_uncached(
+        node, parent_width, parent_content_height,
+      )
+      min_intrinsic_width_cache.val.set(key, v)
+      v
+    }
+  }
+}
+
+///|
+fn calculate_children_min_content_width_uncached(
   node : @node.Node,
   parent_width : Double,
   parent_content_height : Double?,
