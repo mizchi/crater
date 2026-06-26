@@ -177,6 +177,9 @@ pub fn Browser::tick_js(self : Browser) -> Bool {
     }
     return self.sync_render_state_from_dom_tree()
   }
+  // Refresh the injected layout before timer / rAF callbacks run so they can
+  // measure the geometry produced by the previous iteration's mutations.
+  self.inject_layout_bridge()
   let ticked = match self.script_executor {
     Some(executor) =>
       executor.tick() catch {
@@ -195,6 +198,61 @@ pub fn Browser::tick_js(self : Browser) -> Bool {
     return true
   }
   self.sync_render_state_from_dom_tree()
+}
+
+///|
+/// Drive the JS event loop to quiescence: repeatedly run pending script / event
+/// tasks, drain microtasks, apply the batched DOM ops, re-render, and run one
+/// timer + requestAnimationFrame callback per iteration — looping until nothing
+/// is left to do (no pending tasks and no timer/rAF fired) or `max_iterations`
+/// is hit. The layout bridge is refreshed each iteration so timer / rAF
+/// callbacks measure the geometry of the latest render (`setState -> re-render`,
+/// effects, and animation steps run without an external pump).
+///
+/// Returns `true` when the loop settled, `false` when it stopped at the
+/// iteration cap (a runaway timer chain). A navigation triggered mid-loop ends
+/// the loop and reports settled.
+pub fn Browser::run_event_loop(
+  self : Browser,
+  max_iterations? : Int = 1000,
+) -> Bool {
+  if !self.enable_js {
+    return true
+  }
+  if self.dom_tree is None {
+    self.init_js_execution()
+  }
+  for i = 0; i < max_iterations; i = i + 1 {
+    let mut worked = false
+    // 1. Pending script / event-handler tasks (injects the bridge internally).
+    let processed = self.process_pending_script_tasks()
+    if processed > 0 {
+      worked = true
+      self.flush_js_logs()
+      if self.drain_pending_form_submission_navigation_sync() {
+        return true
+      }
+      let _ = self.sync_render_state_from_dom_tree()
+    }
+    // 2. One macrotask (timer) + rAF + microtask drain, with fresh geometry.
+    self.inject_layout_bridge()
+    let ticked = match self.script_executor {
+      Some(executor) => executor.tick() catch { _ => false }
+      None => false
+    }
+    if ticked {
+      worked = true
+      self.flush_js_logs()
+      if self.drain_pending_form_submission_navigation_sync() {
+        return true
+      }
+      let _ = self.sync_render_state_from_dom_tree()
+    }
+    if !worked {
+      return true
+    }
+  }
+  false
 }
 
 ///|

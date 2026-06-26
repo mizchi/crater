@@ -46,6 +46,38 @@ test "E2E: page JS reads real layout via the bridge" {
 }
 
 ///|
+/// Browser run-loop: a `setTimeout` scheduled by the page script is drained by
+/// `run_event_loop` (no external pump), its callback mutates the DOM, and the
+/// loop reports settled. Before the run-loop the deferred timer would never
+/// fire on its own.
+test "E2E: run_event_loop drains a timer and settles" {
+  let browser = make_v8_browser(
+    "<html><body><div id=\"out\">start</div>" +
+    "<script>setTimeout(function() { document.getElementById('out').textContent = 'tick'; }, 0);</script>" +
+    "</body></html>",
+  )
+  // Initial scripts schedule the timer (deferred — not flushed yet)...
+  let _ = browser.execute_scripts()
+  // ...then the run-loop drains it to quiescence.
+  let settled = browser.run_event_loop()
+  assert_true(settled)
+  match browser.get_dom_tree() {
+    Some(dom) => {
+      let doc = dom.get_document()
+      match dom.query_selector(doc, "#out") {
+        Ok(Some(node_id)) =>
+          match dom.get_text_content(node_id) {
+            Ok(t) => assert_eq(t, "tick")
+            Err(_) => assert_true(false)
+          }
+        _ => assert_true(false)
+      }
+    }
+    None => assert_true(false)
+  }
+}
+
+///|
 test "E2E: script modifies DOM textContent" {
   let browser = make_v8_browser(
     "<html><body><div id=\"app\">original</div><script>document.getElementById('app').textContent = 'Hello from V8!';</script></body></html>",

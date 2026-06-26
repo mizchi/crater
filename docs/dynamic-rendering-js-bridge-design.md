@@ -123,7 +123,17 @@ options:
 
 ## (2) Event loop + incremental reflow
 
-Turn the one-shot `tick_js` into a real run-loop in `browser/shell`:
+The run-loop landed: `Browser::run_event_loop(max_iterations~)` in
+`browser/shell/js_execution.mbt` drives pending script / event tasks, the
+microtask drain, `domOps` application, re-render, and one timer + rAF callback
+per iteration until quiescent — returning a settled / hit-cap signal. The layout
+bridge is refreshed each iteration so timer / rAF callbacks measure the latest
+render, so `setState → re-render`, effects, and animation steps run without an
+external pump. **Still a full re-render per iteration** (step 4 below): the
+incremental-reflow optimization is the remaining follow-up.
+
+The original sketch — turn the one-shot `tick_js` into a real run-loop in
+`browser/shell`:
 
 1. Run the current task (script / event handler).
 2. Drain the **microtask** queue (Promise callbacks) to completion.
@@ -150,5 +160,7 @@ external pump, and is the prerequisite for the forced-reflow path in (1).
    (`browser/native/js_v8/mock_dom_full.mbt`), and shell activation
    (`Browser::inject_layout_bridge`). Validate the V8 round-trip with the native
    `js_v8` tests (see `docs/v8-build-egress.md` to build the runtime here).
-3. **Run-loop** in `browser/shell` (microtask → domOps → incremental reflow →
-   rAF), then wire forced reflow into the measuring reads.
+3. **Run-loop** in `browser/shell` (microtask → domOps → reflow → rAF). — landed
+   as `Browser::run_event_loop`; full re-render per iteration. Remaining:
+   incremental reflow (`compute_incremental` on the dirty subtree) and wiring the
+   forced-reflow path into the measuring reads.
