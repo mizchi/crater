@@ -92,3 +92,42 @@ test "render session records measurements and restores from them" {
     content="true",
   )
 }
+
+///|
+/// branch() auto-selects: a paint-only delta reuses the base layout (matches
+/// branch_reusing_layout), a geometry delta re-lays-out (matches branch_full).
+test "render session branch() auto-selects strategy by mutation kind" {
+  let html =
+    #|<!DOCTYPE html><style>body{margin:0}.b{display:inline-block;width:80px;height:20px;background:#000}</style>
+    #|<div class="b">x</div>
+  let viewport = @types.Size::new(300.0, 100.0)
+  let session = RenderSession::open(html, viewport, [])
+  // paint-only
+  let paint_mut : Array[CssMutation] = [
+    {
+      selector: ".b",
+      property: "background",
+      action: CssMutationAction::Override("#0f0"),
+    },
+  ]
+  inspect(paint_mut[0].is_paint_only(), content="true")
+  inspect(
+    session.branch(paint_mut).to_json_string() ==
+    session.branch_reusing_layout(paint_mut).to_json_string(),
+    content="true",
+  )
+  // layout-affecting
+  let layout_mut : Array[CssMutation] = [
+    {
+      selector: ".b",
+      property: "width",
+      action: CssMutationAction::Override("200px"),
+    },
+  ]
+  inspect(layout_mut[0].is_paint_only(), content="false")
+  inspect(
+    session.branch(layout_mut).to_json_string() ==
+    session.branch_full(layout_mut).to_json_string(),
+    content="true",
+  )
+}

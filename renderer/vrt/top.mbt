@@ -451,3 +451,37 @@ pub fn RenderSession::branch_reusing_layout_diff(
 ) -> @paint_diff.PaintTreeDiff {
   @paint_diff.diff_trees(self.base_paint, self.branch_reusing_layout(mutations))
 }
+
+///|
+/// Whether this mutation only affects paint (color/background/opacity/…), not
+/// box geometry — i.e. whether a branch carrying only such mutations can reuse
+/// the base layout.
+pub fn CssMutation::is_paint_only(self : CssMutation) -> Bool {
+  not(@dom.is_layout_property(self.property.to_lower()))
+}
+
+///|
+/// Branch with automatic strategy: if every mutation is paint-only the base
+/// layout is reused (fast path); otherwise a full re-layout is performed. This
+/// is the convenient default — correct for any delta, fast for recolor/theme
+/// variants (the common VRT case).
+pub fn RenderSession::branch(
+  self : RenderSession,
+  mutations : Array[CssMutation],
+) -> @paint_model.PaintNode {
+  let all_paint_only = mutations.iter().all(fn(m) { m.is_paint_only() })
+  if all_paint_only {
+    self.branch_reusing_layout(mutations)
+  } else {
+    self.branch_full(mutations)
+  }
+}
+
+///|
+/// Paint-tree diff of an auto-strategy branch against the base.
+pub fn RenderSession::branch_diff(
+  self : RenderSession,
+  mutations : Array[CssMutation],
+) -> @paint_diff.PaintTreeDiff {
+  @paint_diff.diff_trees(self.base_paint, self.branch(mutations))
+}
