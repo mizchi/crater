@@ -158,3 +158,30 @@ test "layout box geometry index matches the real layout" {
   // The flatten is document-order and includes the container; b comes after a.
   inspect(b.index > a.index, content="true")
 }
+
+///|
+/// The computed-style index reports each element's resolved style in the form
+/// page JS getComputedStyle reads (display "flex", color "rgb(...)", font-size
+/// "20px") — the node-tree analogue of the layout-box geometry index, keyed by
+/// the same document-order index so the two can be joined element-for-element.
+test "computed style index matches the resolved style" {
+  let html =
+    #|<!DOCTYPE html><style>body{margin:0}
+    #|#card { display: flex; position: relative; color: #ff0000;
+    #|        background-color: #00ff00; font-size: 20px; opacity: 0.5; z-index: 7; }
+    #|</style>
+    #|<div id="card">hi</div>
+  let ctx = {
+    ..@renderer.RenderContext::default(),
+    viewport_width: 400.0,
+    viewport_height: 200.0,
+  }
+  let node = @renderer.render_to_node(html, ctx)
+  let card = computed_style_by_id(node, "#card").unwrap()
+  inspect(
+    card,
+    content=(
+      #|{id: div#card, index: 1, display: flex, position: relative, visibility: visible, font_size: 20px, font_family: serif, opacity: 0.5, z_index: 7, color: rgb(255, 0, 0), background_color: rgb(0, 255, 0)}
+    ),
+  )
+}

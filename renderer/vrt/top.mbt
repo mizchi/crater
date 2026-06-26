@@ -595,3 +595,171 @@ pub fn layout_box_by_id(
 pub fn RenderSession::element_boxes(self : RenderSession) -> Array[LayoutBox] {
   collect_layout_boxes(self.base_layout)
 }
+
+///|
+/// CSS string for a computed `display`, in the form `getComputedStyle` returns.
+fn display_to_css(d : @types.Display) -> String {
+  match d {
+    @types.Display::Block => "block"
+    @types.Display::Inline => "inline"
+    @types.Display::InlineBlock => "inline-block"
+    @types.Display::Flex => "flex"
+    @types.Display::InlineFlex => "inline-flex"
+    @types.Display::Grid => "grid"
+    @types.Display::InlineGrid => "inline-grid"
+    @types.Display::Table => "table"
+    @types.Display::InlineTable => "inline-table"
+    @types.Display::TableRow => "table-row"
+    @types.Display::TableCell => "table-cell"
+    @types.Display::TableCaption => "table-caption"
+    @types.Display::TableRowGroup => "table-row-group"
+    @types.Display::TableHeaderGroup => "table-header-group"
+    @types.Display::TableFooterGroup => "table-footer-group"
+    @types.Display::TableColumn => "table-column"
+    @types.Display::TableColumnGroup => "table-column-group"
+    @types.Display::None => "none"
+    @types.Display::Contents => "contents"
+    @types.Display::FlowRoot => "flow-root"
+  }
+}
+
+///|
+/// CSS string for a computed `position`.
+fn position_to_css(p : @types.Position) -> String {
+  match p {
+    @types.Position::Static => "static"
+    @types.Position::Relative => "relative"
+    @types.Position::Absolute => "absolute"
+    @types.Position::Fixed => "fixed"
+  }
+}
+
+///|
+/// CSS string for a computed `visibility`.
+fn visibility_to_css(v : @style.Visibility) -> String {
+  match v {
+    @style.Visibility::Visible => "visible"
+    @style.Visibility::Hidden => "hidden"
+    @style.Visibility::Collapse => "collapse"
+  }
+}
+
+///|
+/// CSS string for a computed `z-index` (`auto` or an integer).
+fn z_index_to_css(z : @style.ZIndex) -> String {
+  match z {
+    @style.ZIndex::Auto => "auto"
+    @style.ZIndex::Value(n) => n.to_string()
+  }
+}
+
+///|
+/// Format a Double as a CSS pixel length, dropping a trailing `.0` so an
+/// integral 20.0 serializes as `20px` (matching getComputedStyle), not `20.0px`.
+fn css_px(v : Double) -> String {
+  let i = v.to_int()
+  if i.to_double() == v {
+    "\{i}px"
+  } else {
+    "\{v}px"
+  }
+}
+
+///|
+/// Format a unitless Double (e.g. opacity), dropping a trailing `.0`.
+fn css_number(v : Double) -> String {
+  let i = v.to_int()
+  if i.to_double() == v {
+    "\{i}"
+  } else {
+    "\{v}"
+  }
+}
+
+///|
+/// Resolved computed style of one element, in the form page JS `getComputedStyle`
+/// reads. `index` is the pre-order (document-order) position in the render node
+/// tree — the same key `collect_layout_boxes` assigns to the parallel layout
+/// tree, so a JS DOM built in the same order can join geometry and computed
+/// style by index. Values are serialized as CSS strings (display `"flex"`, color
+/// `"rgb(255, 0, 0)"`, font-size `"20px"`). This is the node-tree analogue of
+/// `collect_layout_boxes`: the data layer a getComputedStyle bridge would inject.
+pub(all) struct ComputedStyleEntry {
+  id : String
+  index : Int
+  display : String
+  position : String
+  visibility : String
+  font_size : String
+  font_family : String
+  opacity : String
+  z_index : String
+  color : String
+  background_color : String
+} derive(Eq, Show)
+
+///|
+fn collect_computed_styles_into(
+  node : @layout.Node,
+  next_index : Ref[Int],
+  out : Array[ComputedStyleEntry],
+) -> Unit {
+  let index = next_index.val
+  next_index.val = index + 1
+  let s = node.style
+  out.push({
+    id: node.id,
+    index,
+    display: display_to_css(s.display),
+    position: position_to_css(s.position),
+    visibility: visibility_to_css(s.visibility),
+    font_size: css_px(s.font_size),
+    font_family: s.font_family,
+    opacity: css_number(s.opacity),
+    z_index: z_index_to_css(s.z_index),
+    color: s.color.to_rgba_string(),
+    background_color: s.background_color.to_rgba_string(),
+  })
+  for child in node.children {
+    collect_computed_styles_into(child, next_index, out)
+  }
+}
+
+///|
+/// Flatten a render node tree into per-element computed style in document order.
+/// This is the parallel of `collect_layout_boxes` for the page-JS
+/// `getComputedStyle` bridge: the node tree carries the resolved `@style.Style`
+/// per element, and the indexes line up with the layout-box indexes so the two
+/// can be joined element-for-element.
+pub fn collect_computed_styles(
+  node : @layout.Node,
+) -> Array[ComputedStyleEntry] {
+  let out : Array[ComputedStyleEntry] = []
+  collect_computed_styles_into(node, { val: 0 }, out)
+  out
+}
+
+///|
+/// The first element whose node id contains `id_fragment`, for
+/// getComputedStyle-by-element lookup.
+pub fn computed_style_by_id(
+  node : @layout.Node,
+  id_fragment : String,
+) -> ComputedStyleEntry? {
+  let entries = collect_computed_styles(node)
+  for e in entries {
+    if e.id.contains(id_fragment) {
+      return Some(e)
+    }
+  }
+  None
+}
+
+///|
+/// Per-element computed style of the session's base render — what page JS would
+/// observe via getComputedStyle on the initial render.
+pub fn RenderSession::element_computed_styles(
+  self : RenderSession,
+) -> Array[ComputedStyleEntry] {
+  collect_computed_styles(self.base_node)
+}
