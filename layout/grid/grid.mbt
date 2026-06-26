@@ -4758,6 +4758,91 @@ fn parse_grid_template_areas(
 
 ///|
 /// Find the bounds of a named grid area
+/// Whether a placement edge is explicit (a line number, name, or named line).
+fn grid_placement_is_explicit(p : @types.GridPlacement) -> Bool {
+  match p {
+    @types.GridPlacement::Line(_)
+    | @types.GridPlacement::Named(_)
+    | @types.GridPlacement::NamedLine(_, _) => true
+    _ => false
+  }
+}
+
+///|
+/// An item is explicitly column-positioned if grid-column has an explicit start,
+/// or it carries a `grid-area` (which fixes both axes).
+fn style_has_explicit_column(style : @style.Style) -> Bool {
+  (match style.grid_area {
+    Some(_) => true
+    None => false
+  }) ||
+  grid_placement_is_explicit(style.grid_column.start)
+}
+
+///|
+/// An item is explicitly row-positioned if grid-row has an explicit start, or it
+/// carries a `grid-area`.
+fn style_has_explicit_row(style : @style.Style) -> Bool {
+  (match style.grid_area {
+    Some(_) => true
+    None => false
+  }) ||
+  grid_placement_is_explicit(style.grid_row.start)
+}
+
+///|
+/// Resolve a fully-explicit item's track span (col_start, col_end, row_start,
+/// row_end). A `grid-area` first tries the `grid-template-areas` map; when the
+/// name isn't a declared area it falls back to named-line placement (`grid-area:
+/// foo` => `foo / foo` on both axes, with the implicit `<name>-start` /
+/// `<name>-end` area expansion). Otherwise grid-column / grid-row are resolved.
+fn resolve_explicit_item_placement(
+  style : @style.Style,
+  grid_areas : Array[Array[String]],
+  columns : Int,
+  explicit_rows : Int,
+  column_line_names : Array[Array[String]],
+  row_line_names : Array[Array[String]],
+) -> (Int, Int, Int, Int) {
+  match style.grid_area {
+    Some(area_name) =>
+      match find_grid_area_bounds(grid_areas, area_name) {
+        Some(bounds) =>
+          (bounds.col_start, bounds.col_end, bounds.row_start, bounds.row_end)
+        None => {
+          // Not a template area: treat the name as a line for all four edges.
+          let line : @types.GridLine = {
+            start: @types.GridPlacement::Named(area_name),
+            end: @types.GridPlacement::Named(area_name),
+          }
+          let (cs, ce) = resolve_line_placement(
+            line, 0, columns, column_line_names,
+          )
+          let (rs, re) = resolve_line_placement(
+            line, 0, explicit_rows, row_line_names,
+          )
+          (cs, ce, rs, re)
+        }
+      }
+    None => {
+      let (cs, ce) = resolve_line_placement(
+        style.grid_column,
+        0,
+        columns,
+        column_line_names,
+      )
+      let (rs, re) = resolve_line_placement(
+        style.grid_row,
+        0,
+        explicit_rows,
+        row_line_names,
+      )
+      (cs, ce, rs, re)
+    }
+  }
+}
+
+///|
 fn find_grid_area_bounds(
   areas : Array[Array[String]],
   name : String,
@@ -4894,18 +4979,8 @@ fn place_grid_items(
     }
 
     // Check if item has explicit Line positioning
-    let has_explicit_column = match style.grid_column.start {
-      @types.GridPlacement::Line(_)
-      | @types.GridPlacement::Named(_)
-      | @types.GridPlacement::NamedLine(_, _) => true
-      _ => false
-    }
-    let has_explicit_row = match style.grid_row.start {
-      @types.GridPlacement::Line(_)
-      | @types.GridPlacement::Named(_)
-      | @types.GridPlacement::NamedLine(_, _) => true
-      _ => false
-    }
+    let has_explicit_column = style_has_explicit_column(style)
+    let has_explicit_row = style_has_explicit_row(style)
 
     // Only process FULLY explicitly positioned items (both column AND row)
     // Semi-explicit items (one explicit, one auto) will be processed in Pass 3
@@ -4913,30 +4988,10 @@ fn place_grid_items(
       continue
     }
 
-    // Check for grid-area placement
-    let area_placement = match style.grid_area {
-      Some(area_name) => find_grid_area_bounds(grid_areas, area_name)
-      None => None
-    }
-    let (col_start, col_end, row_start, row_end) = match area_placement {
-      Some(bounds) =>
-        (bounds.col_start, bounds.col_end, bounds.row_start, bounds.row_end)
-      None => {
-        let (cs, ce) = resolve_line_placement(
-          style.grid_column,
-          0, // auto_position not used for explicit items
-          columns,
-          column_line_names,
-        )
-        let (rs, re) = resolve_line_placement(
-          style.grid_row,
-          0,
-          explicit_rows,
-          row_line_names,
-        )
-        (cs, ce, rs, re)
-      }
-    }
+    // Resolve grid-area (template area or named-line fallback) / grid-line.
+    let (col_start, col_end, row_start, row_end) = resolve_explicit_item_placement(
+      style, grid_areas, columns, explicit_rows, column_line_names, row_line_names,
+    )
     placements[i] = {
       row_start,
       row_end,
@@ -4978,18 +5033,8 @@ fn place_grid_items(
     if style.position == @types.Absolute || style.position == @types.Fixed {
       continue
     }
-    let has_explicit_column = match style.grid_column.start {
-      @types.GridPlacement::Line(_)
-      | @types.GridPlacement::Named(_)
-      | @types.GridPlacement::NamedLine(_, _) => true
-      _ => false
-    }
-    let has_explicit_row = match style.grid_row.start {
-      @types.GridPlacement::Line(_)
-      | @types.GridPlacement::Named(_)
-      | @types.GridPlacement::NamedLine(_, _) => true
-      _ => false
-    }
+    let has_explicit_column = style_has_explicit_column(style)
+    let has_explicit_row = style_has_explicit_row(style)
     if has_explicit_column || !has_explicit_row {
       continue
     }
@@ -5039,18 +5084,8 @@ fn place_grid_items(
     }
 
     // Skip items already placed in Pass 2/3
-    let has_explicit_column = match style.grid_column.start {
-      @types.GridPlacement::Line(_)
-      | @types.GridPlacement::Named(_)
-      | @types.GridPlacement::NamedLine(_, _) => true
-      _ => false
-    }
-    let has_explicit_row = match style.grid_row.start {
-      @types.GridPlacement::Line(_)
-      | @types.GridPlacement::Named(_)
-      | @types.GridPlacement::NamedLine(_, _) => true
-      _ => false
-    }
+    let has_explicit_column = style_has_explicit_column(style)
+    let has_explicit_row = style_has_explicit_row(style)
     if has_explicit_row {
       continue
     }

@@ -184,3 +184,47 @@ test "grid named line after repeat stays aligned" {
   inspect(layout.children[0].x, content="200")
   inspect(layout.children[0].width, content="200")
 }
+
+///|
+// `grid-area: <name>` where the name is not a grid-template-areas area resolves
+// to named lines (`<name>` / `<name>` on both axes, with the implicit
+// `<name>-start` / `<name>-end` expansion). css parses this into
+// `style.grid_area = Some(name)`; the grid engine must fall back to named-line
+// placement instead of auto-placing the item.
+test "grid-area name falls back to named-line placement" {
+  let default_style = @style.Style::default()
+  let root_style = {
+    ..default_style,
+    display: @types.Grid,
+    width: @types.Length(1000.0),
+    height: @types.Length(100.0),
+    grid_template_columns: [
+      @types.TrackSizingFunction::Length(240.0),
+      @types.TrackSizingFunction::Length(760.0),
+    ],
+    // [sidebar-start] 240px [sidebar-end content-start] 760px [content-end]
+    grid_template_column_line_names: [
+      ["sidebar-start"],
+      ["sidebar-end", "content-start"],
+      ["content-end"],
+    ],
+    grid_template_rows: [@types.TrackSizingFunction::Length(40.0)],
+  }
+  let side = @node.Node::leaf("side", {
+    ..default_style,
+    grid_area: Some("sidebar"),
+    height: @types.Length(20.0),
+  })
+  let content = @node.Node::leaf("content", {
+    ..default_style,
+    grid_area: Some("content"),
+    height: @types.Length(20.0),
+  })
+  let root = @node.Node::new("root", root_style, [side, content])
+  let layout = compute_grid_layout(root, 1000.0, 600.0, default_dispatch())
+  // side -> sidebar column (x=0, w=240); content -> content column (x=240, w=760)
+  inspect(layout.children[0].x, content="0")
+  inspect(layout.children[0].width, content="240")
+  inspect(layout.children[1].x, content="240")
+  inspect(layout.children[1].width, content="760")
+}
