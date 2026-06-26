@@ -492,3 +492,73 @@ test "tree_builder/wikipedia style with nested svg and @supports" {
     _ => inspect("not element", content="p")
   }
 }
+
+///|
+/// Find the first descendant element (depth-first, self included) whose tag and
+/// optional class match, or fail.
+fn find_element_by_class(
+  elem : @html.Element,
+  tag : String,
+  class_ : String,
+) -> @html.Element? {
+  if elem.tag == tag && elem.classes.contains(class_) {
+    return Some(elem)
+  }
+  for child in elem.children {
+    match child {
+      @html.Node::Element(ce) =>
+        match find_element_by_class(ce, tag, class_) {
+          Some(found) => return Some(found)
+          None => ()
+        }
+      _ => ()
+    }
+  }
+  None
+}
+
+///|
+/// Direct child element ids of `elem` (elements only), joined with ",".
+fn direct_child_ids(elem : @html.Element) -> String {
+  let ids : Array[String] = []
+  for child in elem.children {
+    match child {
+      @html.Node::Element(ce) =>
+        ids.push(
+          ce.tag +
+          (match ce.id {
+            Some(s) => "#" + s
+            None => ""
+          }),
+        )
+      _ => ()
+    }
+  }
+  ids.join(",")
+}
+
+///|
+/// Regression for the in-template insertion mode: a `<template>` (incl. nested
+/// declarative-shadow templates) is parsed as a real but inert subtree. Its
+/// content must not leak end tags into the surrounding document — previously
+/// the raw-text shortcut stopped at the first inner `</template>`, leaking the
+/// outer template's `</div>` and over-closing the grid container so the trailing
+/// `<aside>` was hoisted out of it.
+test "tree_builder/nested template does not leak siblings out of container" {
+  let html =
+    #|<!DOCTYPE html><div class="grid"><main>m</main><x-el><template shadowrootmode="open"><div><template><span>a</span></template></div></template></x-el><aside id="sidebar">s</aside></div>
+  let root = @html.parse_document_v2(html)
+  let grid = find_element_by_class(root, "div", "grid").unwrap()
+  // The aside stays a child of div.grid, alongside main and the custom element.
+  inspect(direct_child_ids(grid), content="main,x-el,aside#sidebar")
+}
+
+///|
+/// A single (non-nested) `<template>` followed by a sibling stays correct too.
+test "tree_builder/template sibling stays in container" {
+  let html =
+    #|<!DOCTYPE html><div class="grid"><host><template><div>x</div></template></host><aside id="sidebar">s</aside></div>
+  let root = @html.parse_document_v2(html)
+  let grid = find_element_by_class(root, "div", "grid").unwrap()
+  inspect(direct_child_ids(grid), content="host,aside#sidebar")
+}

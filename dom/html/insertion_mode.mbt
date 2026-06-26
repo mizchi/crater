@@ -99,15 +99,7 @@ fn TreeBuilder::handle_in_head(self : TreeBuilder, token : Token) -> Unit {
           self.original_insertion_mode = Some(self.insertion_mode)
           self.insertion_mode = InsertionMode::Text
         }
-        "template" => {
-          // Template requires special handling - for now, create element and skip its content
-          let elem = create_element(tag, attrs)
-          self.insert_element(elem)
-          self.tokenizer.enter_raw_text_mode(tag)
-          // Switch to RCDATA-like mode to skip content until </template>
-          self.original_insertion_mode = Some(self.insertion_mode)
-          self.insertion_mode = InsertionMode::Text
-        }
+        "template" => self.start_template(tag, attrs)
         "head" => () // Parse error, ignore
         _ => {
           // Pop head and switch to after head
@@ -127,6 +119,7 @@ fn TreeBuilder::handle_in_head(self : TreeBuilder, token : Token) -> Unit {
           self.insertion_mode = InsertionMode::AfterHead
           self.reprocess_token(Token::EndTag(tag))
         }
+        "template" => self.end_template()
         _ => () // Parse error, ignore
       }
     _ => {
@@ -135,6 +128,44 @@ fn TreeBuilder::handle_in_head(self : TreeBuilder, token : Token) -> Unit {
       self.reprocess_token(token)
     }
   }
+}
+
+///|
+/// `<template>` start tag (HTML "in head" rules): insert the element, push a
+/// formatting marker, and switch into the in-template insertion mode. Template
+/// content is parsed as a real (but inert — UA display:none) DOM subtree; the
+/// element is a scope boundary so its content cannot leak end tags into the
+/// surrounding document.
+fn TreeBuilder::start_template(
+  self : TreeBuilder,
+  tag : String,
+  attrs : Map[String, String],
+) -> Unit {
+  let elem = create_element(tag, attrs)
+  self.insert_element(elem)
+  self.active_formatting.push(FormattingElement::Marker)
+  self.frameset_ok = false
+  self.template_insertion_modes.push(InsertionMode::InTemplate)
+  self.insertion_mode = InsertionMode::InTemplate
+}
+
+///|
+/// `</template>` end tag (HTML "in head" rules): pop the template subtree and
+/// restore the surrounding insertion mode. Reached uniformly via
+/// process_token_single so it closes from any insertion mode the template's
+/// content may have switched into.
+fn TreeBuilder::end_template(self : TreeBuilder) -> Unit {
+  if !self.has_element_in_scope("template") {
+    return // Parse error, ignore
+  }
+  self.flush_pending_text()
+  self.generate_implied_end_tags()
+  self.pop_until("template")
+  self.clear_active_formatting_to_marker()
+  if self.template_insertion_modes.length() > 0 {
+    self.template_insertion_modes.pop() |> ignore
+  }
+  self.reset_insertion_mode()
 }
 
 ///|
@@ -195,6 +226,7 @@ fn TreeBuilder::handle_in_body_start_tag(
     "head" =>
       // Parse error, ignore - we already have a head
       ()
+    "template" => self.start_template(tag, attrs)
     "base"
     | "basefont"
     | "bgsound"
@@ -203,14 +235,13 @@ fn TreeBuilder::handle_in_body_start_tag(
     | "noframes"
     | "script"
     | "style"
-    | "template"
     | "title" =>
       match tag {
         "base" | "basefont" | "bgsound" | "link" | "meta" => {
           let elem = create_element(tag, attrs)
           self.insert_into_head(elem, false)
         }
-        "noframes" | "script" | "style" | "template" | "title" => {
+        "noframes" | "script" | "style" | "title" => {
           let elem = create_element(tag, attrs)
           self.insert_into_head(elem, true)
           self.tokenizer.enter_raw_text_mode(tag)
@@ -1508,6 +1539,17 @@ fn TreeBuilder::reset_insertion_mode(self : TreeBuilder) -> Unit {
       }
       "table" => {
         self.insertion_mode = InsertionMode::InTable
+        return
+      }
+      "template" => {
+        // Use the current template insertion mode (top of the stack); default
+        // to InTemplate when, defensively, the stack is empty.
+        self.insertion_mode = if self.template_insertion_modes.length() > 0 {
+          self.template_insertion_modes[self.template_insertion_modes.length() -
+          1]
+        } else {
+          InsertionMode::InTemplate
+        }
         return
       }
       "head" | "body" => {
