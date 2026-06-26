@@ -474,7 +474,8 @@ fn create_text_measure_with_provider(
       )
   }
   // Apply letter-spacing and word-spacing adjustments
-  if letter_spacing != 0.0 || word_spacing != 0.0 {
+  let adjusted : @layout_types.MeasureFunc = if letter_spacing != 0.0 ||
+    word_spacing != 0.0 {
     let char_count = text.iter().count()
     let space_count = text
       .iter()
@@ -495,6 +496,23 @@ fn create_text_measure_with_provider(
   } else {
     base_measure
   }
+  let cache : Array[(Double, Double, @layout_types.IntrinsicSize)] = []
+  let memoized : @layout_types.MeasureFunc = {
+    func: fn(available_width, available_height) {
+      for entry in cache {
+        let (caw, cah, cached) = entry
+        if caw == available_width && cah == available_height {
+          return cached
+        }
+      }
+      let result = (adjusted.func)(available_width, available_height)
+      if cache.length() < 32 {
+        cache.push((available_width, available_height, result))
+      }
+      result
+    },
+  }
+  memoized
 }
 
 ///|
