@@ -21,6 +21,13 @@ test:
 test-js:
     moon test --target js
 
+# Run `moon test` with the mizchi/v8 native dep excluded, for environments where
+# rusty_v8 can't be built (e.g. the web sandbox; see #312). Args pass through:
+#   just test-no-v8 -p mizchi/crater-dom/html
+#   just test-no-v8 -p mizchi/crater-layout/grid --target js
+test-no-v8 *ARGS:
+    scripts/moon-test-no-v8.sh {{ARGS}}
+
 # Run all repository Vitest suites with an explicit include/exclude boundary
 test-vitest:
     pnpm test:vitest

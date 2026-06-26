@@ -115,15 +115,46 @@ export function platform_link_flags(platform, module_root) {
   }
 }
 
+// When MIZCHI_V8_OPTIONAL=1 (or CRATER_SKIP_V8_BUILD=1), a failure to build the
+// rusty_v8 bridge degrades to "no v8 link flags" instead of failing the whole
+// build. This lets v8-independent packages (dom, layout, ...) resolve and run
+// `moon test` in environments where rusty_v8 cannot be fetched/built (e.g. the
+// web sandbox, where github egress to denoland/rusty_v8 is policy-blocked).
+// Native targets that actually link v8 will then fail at link time, which is
+// the expected outcome when v8 is unavailable.
+function v8_optional() {
+  return (
+    process.env.MIZCHI_V8_OPTIONAL === "1" ||
+    process.env.CRATER_SKIP_V8_BUILD === "1"
+  )
+}
+
+function emit_no_v8(reason) {
+  process.stderr.write(
+    `[mizchi/v8] ${reason}; MIZCHI_V8_OPTIONAL set -> continuing without v8 ` +
+      `link flags (native v8 runtime will be unavailable)\n`,
+  )
+  process.stdout.write(JSON.stringify({ vars: {} }))
+}
+
 async function main() {
   const raw_input = await read_stdin()
   const input = raw_input.trim() === "" ? {} : JSON.parse(raw_input)
   const module_root = input.paths?.module_root ?? process.cwd()
   const workspace_root = input.paths?.workspace_root
-  const v8_root = resolve_v8_module_root(module_root, [
-    process.cwd(),
-    workspace_root,
-  ])
+  let v8_root
+  try {
+    v8_root = resolve_v8_module_root(module_root, [
+      process.cwd(),
+      workspace_root,
+    ])
+  } catch (err) {
+    if (v8_optional()) {
+      emit_no_v8(`failed to locate mizchi/v8 (${err.message})`)
+      return
+    }
+    throw err
+  }
   const build_script = path.join(v8_root, "src", "scripts", "build-rusty-v8.sh")
   const stamp_path = path.join(
     v8_root,
@@ -139,6 +170,10 @@ async function main() {
   })
 
   if (result.status !== 0) {
+    if (v8_optional()) {
+      emit_no_v8("rusty_v8 bridge build failed")
+      return
+    }
     process.exit(result.status ?? 1)
   }
 
