@@ -22,7 +22,9 @@ fn html_to_selector_element(
 
   // Set attributes
   elem.attributes.each(fn(name, value) {
-    sel_elem = sel_elem.set_attribute(name, value)
+    if name != crater_dom_id_attr {
+      sel_elem = sel_elem.set_attribute(name, value)
+    }
   })
 
   // Set parent
@@ -48,7 +50,9 @@ fn html_to_selector_element_minimal(
   }
   // Copy presentational HTML attributes needed for UA styling
   elem.attributes.each(fn(name, value) {
-    sel_elem = sel_elem.set_attribute(name, value)
+    if name != crater_dom_id_attr {
+      sel_elem = sel_elem.set_attribute(name, value)
+    }
   })
   match parent {
     Some(p) => sel_elem = sel_elem.set_parent(p)
@@ -81,7 +85,9 @@ fn html_to_selector_element_with_parent(
 
   // Set attributes
   elem.attributes.each(fn(name, value) {
-    sel_elem = sel_elem.set_attribute(name, value)
+    if name != crater_dom_id_attr {
+      sel_elem = sel_elem.set_attribute(name, value)
+    }
   })
 
   // Set parent and sibling info

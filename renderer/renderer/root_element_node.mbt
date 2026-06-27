@@ -65,9 +65,10 @@ fn element_to_node_with_styles(
   )
 
   let node_id = make_node_id(elem)
-  if children.is_empty() {
+  let node = if children.is_empty() {
     @node.Node::leaf(node_id, style)
   } else {
     @node.Node::new(node_id, style, children)
   }
+  attach_dom_id(node, elem)
 }

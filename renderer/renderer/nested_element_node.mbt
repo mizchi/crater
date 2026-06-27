@@ -37,7 +37,10 @@ fn element_to_node_with_styles_internal(
     tag_lower,
   )
   if computed_style.display == @types.Display::None {
-    return @node.Node::leaf(make_node_id(elem), computed_style)
+    return attach_dom_id(
+      @node.Node::leaf(make_node_id(elem), computed_style),
+      elem,
+    )
   }
   if should_advance_viewport_estimate(computed_style) {
     viewport_estimated_y.val += computed_style.line_height
@@ -75,7 +78,10 @@ fn element_to_node_with_styles_internal(
   } else {
     children
   }
-  finalize_special_element_node(
-    elem, tag_lower, style, children, element_css_vars,
+  attach_dom_id(
+    finalize_special_element_node(
+      elem, tag_lower, style, children, element_css_vars,
+    ),
+    elem,
   )
 }

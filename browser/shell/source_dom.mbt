@@ -299,6 +299,11 @@ fn build_render_nodes_from_dom_tree(
           }
           let tag = dom.get_tag_name(node_id).unwrap_or(info.node_name)
           let attrs = dom_node_attributes(dom, node_id)
+          // Carry this DOM node's stable id onto the derived render element so
+          // the renderer can key incremental reflow by it (renderer strips it
+          // from the cascade). Lives only on the render document, never on the
+          // DomTree, so it is not serialized into html_content.
+          attrs[@renderer.crater_dom_id_attr] = node_id.to_int().to_string()
           let child_shadow_host = match dom.get_shadow_root(node_id) {
             Ok(Some(_)) => Some(node_id)
             _ => shadow_host

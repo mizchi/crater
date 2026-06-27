@@ -20,6 +20,17 @@ pub struct Node {
   measure : @layout_types.MeasureFunc?
   text : String? // Text content for text nodes
   src : String? // Image source for replaced image content
+  /// Originating `@dom.DomTree` node id, when this render node was built from a
+  /// live DOM (the dynamic-rendering path). `None` for the static parse path.
+  /// A stable, mutation-surviving identity used to key incremental reflow (see
+  /// docs/incremental-reflow-design.md); does not affect layout or cascade.
+  mut dom_id : Int?
+}
+
+///|
+/// Attach the originating DomTree node id (dynamic-rendering path).
+pub fn Node::set_dom_id(self : Node, dom_id : Int?) -> Unit {
+  self.dom_id = dom_id
 }
 
 ///|
@@ -28,7 +39,16 @@ pub fn Node::new(
   style : @style.Style,
   children : Array[Node],
 ) -> Node {
-  { id, uid: next_uid(), style, children, measure: None, text: None, src: None }
+  {
+    id,
+    uid: next_uid(),
+    style,
+    children,
+    measure: None,
+    text: None,
+    src: None,
+    dom_id: None,
+  }
 }
 
 ///|
@@ -39,7 +59,16 @@ pub fn Node::with_uid(
   style : @style.Style,
   children : Array[Node],
 ) -> Node {
-  { id, uid, style, children, measure: None, text: None, src: None }
+  {
+    id,
+    uid,
+    style,
+    children,
+    measure: None,
+    text: None,
+    src: None,
+    dom_id: None,
+  }
 }
 
 ///|
@@ -53,7 +82,7 @@ pub fn Node::with_uid_and_measure(
   text : String?,
   src? : String? = None,
 ) -> Node {
-  { id, uid, style, children, measure, text, src }
+  { id, uid, style, children, measure, text, src, dom_id: None }
 }
 
 ///|
@@ -66,6 +95,7 @@ pub fn Node::leaf(id : String, style : @style.Style) -> Node {
     measure: None,
     text: None,
     src: None,
+    dom_id: None,
   }
 }
 
@@ -87,6 +117,7 @@ pub fn Node::with_measure(
     measure: Some(measure),
     text,
     src,
+    dom_id: None,
   }
 }
 
@@ -106,6 +137,7 @@ pub fn Node::text(
     measure: Some(measure),
     text: Some(content),
     src: None,
+    dom_id: None,
   }
 }
 
