@@ -104,16 +104,38 @@ structural append, and an unchanged re-render (the last reuses the cache —
   this to `reconcile_from` makes the incremental layout equal a full recompute
   while keeping the dirty set tight.
 - **but** the practical speedup is currently bounded by the layout engine's
-  per-node cache, not by the dirty set: a *migrated* child cache frequently
-  misses on `can_use_cache`'s constraint comparison, and `children_dirty`
-  propagates to the root on any change, so the reliable reuse today is the
-  **root / high-subtree short-circuit** (a clean subtree returns its cached
-  layout without descending) — i.e. no-op and paint-only re-renders. Making a
-  change to a *late* element reuse the *earlier* elements needs the per-node
-  child cache to hit across trees (relative-position caching / a style
-  fingerprint on the cache key). That is the next layout-engine lever; the
-  reflow plumbing (stable uids → reconcile → flow-aware dirty) is correct and
-  ready to exploit it.
+  per-node cache, not by the dirty set: `children_dirty` propagates to the root
+  on any change, so the reliable reuse today is the **root / high-subtree
+  short-circuit** (a clean subtree returns its cached layout without descending)
+  — i.e. no-op, paint-only, and disjoint-subtree re-renders.
+
+  **Measured root cause (item 3).** The per-uid cache (`try_cache_by_uid`,
+  `incremental_compute.mbt`) is only consulted for children dispatched through
+  the cache-aware callback — i.e. **flex / grid / table / inline-block BFC
+  roots** (`block.mbt:5609`, `dispatch_fn(child_for_layout, …)`). Ordinary
+  **in-flow block children** are laid out by `compute_with_collapse` directly
+  (`block.mbt:5623`), which never reads the cache. So a `display:block` stack
+  recomputes in full no matter how little changed — a late-element change reuses
+  nothing earlier. Pinned by `layout/tree/incremental_perf_wbtest.mbt`: a
+  12-block stack reports `hits=0` after a one-node change, while an unchanged,
+  unmoved BFC subtree is reused whole (`hits>0`, the short-circuit above).
+
+  **Why a local fix doesn't work.** Routing in-flow block children through
+  `dispatch_fn` changes their layout path from `compute_with_collapse`
+  (margin-collapse aware, returns the child's *escaping* top/bottom margins to
+  the parent for sibling positioning and the parent's own collapsed margins) to
+  `@dispatch.compute` → `@block.compute` (a fresh BFC root, **no** collapse with
+  parent/siblings). The per-uid cache stores only `@layout_types.Layout`, which
+  carries no margin-collapse data, so a cached hit silently drops escaping
+  margins. The correct fix is therefore a **cross-package change**: widen the
+  cache to carry the escaping collapse margins (they reduce to a pair of
+  numbers) so a clean in-flow block child can be served from cache *with* its
+  collapse contribution, then gate the block-flow loop on it. That touches
+  `compute_with_collapse` (IFC, floats, `display:contents`, collapse-through)
+  and must be validated against the full layout + paint/WPT suites — it is the
+  next layout-engine lever, scoped on its own; the reflow plumbing (stable uids
+  → reconcile → flow-aware dirty) is correct and ready to exploit it once the
+  block-flow cache lands.
 
 The remaining (B) work is the shell integration that produces `dirty_uids` and a
 new render node tree with stable uids (phase A's `dom_id`), then calls

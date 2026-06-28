@@ -757,6 +757,14 @@ jobs:
       - name: Setup Crater toolchain
         uses: ./.github/actions/setup-crater
 
+      # The VRT bench is a pure JS-target build (mizchi/crater-benchmarks); it
+      # never links V8. Drop the V8-pulling workspace members so neither the
+      # prefetch nor the bench resolves mizchi/v8 and runs its postadd
+      # (git clone denoland/rusty_v8), which only adds latency and network-flake
+      # risk here. The runner is ephemeral, so no restore is needed.
+      - name: Drop V8 workspace members (not needed for the JS bench)
+        run: bash scripts/ci/drop-v8-members.sh
+
       - name: Prefetch MoonBit dependencies
         uses: ./.github/actions/moon-prefetch
 

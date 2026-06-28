@@ -37,8 +37,9 @@ cp "$work" "$backup"
 restore() { cp "$backup" "$work"; rm -f "$backup"; }
 trap restore EXIT
 
-# Remove the V8-pulling members. Matches lines like `  "./browser/native",`.
-grep -vE '^[[:space:]]*"\./(browser/native|testing)",[[:space:]]*$' "$backup" > "$work"
+# Remove the V8-pulling members (./browser/native, ./testing) for the duration
+# of this run. Shared with the CI dropper so the member list lives in one place.
+bash "$repo_root/scripts/ci/drop-v8-members.sh" "$work"
 
 # Belt-and-suspenders: if a V8-adjacent prebuild still runs, degrade instead of
 # failing (browser/scripts/mizchi-v8-consumer-prebuild.mjs honors this).
