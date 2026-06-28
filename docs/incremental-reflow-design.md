@@ -83,7 +83,30 @@ are stable too.
 
 ### (B) Persist the tree across mutations; mark only what changed
 
-Replace the full-wipe path for JS-driven mutations:
+**Layout-level core landed.** `LayoutTree::reconcile_from(prev, new_root,
+dirty_uids, vw, vh)` (`layout/tree/incremental_reconcile.mbt`) bridges a freshly
+built tree to a prior one: it migrates each node's `cached_layout` by matching
+`uid`, clears the `from_node` default-dirty flag on persisted nodes, auto-detects
+structural changes (a node whose child-`uid` set differs), then re-dirties the
+structural + caller-supplied `dirty_uids` — `mark_node_dirty` propagates
+`children_dirty` to ancestors. `compute_incremental` then recomputes only the
+dirty subtrees. js-tested: incremental == full recompute for a content change, a
+structural append, and an unchanged re-render (the last reuses the cache —
+`cache_hits > 0`). Findings worth knowing for the rest of (B):
+
+- `LayoutNode::from_node` marks every node **dirty**, so migration must
+  `clear_dirty()` persisted nodes or nothing is ever a cache hit.
+- crater caches **absolute** geometry, so a flow-shifting change (resizing a box
+  shifts its following siblings) must include those following siblings in
+  `dirty_uids` — the cache helps most for changes with no later siblings, for
+  independent subtrees, and for no-op / paint-only re-renders. Tightening this
+  (relative-position caching / dirty-rects) is a separate layout-engine lever.
+- per-node child cache hits depend on the layout dispatcher routing children
+  through the cached dispatch; today the reliable win is the clean-tree reuse.
+
+The remaining (B) work is the shell integration that produces `dirty_uids` and a
+new render node tree with stable uids (phase A's `dom_id`), then calls
+`reconcile_from` instead of `clear_render_cache` + full rebuild:
 
 1. Do **not** `clear_render_cache` on a `domOps` apply. Keep `layout_tree`.
 2. Rebuild the render node tree from the mutated Document **with stable uids**
@@ -116,8 +139,11 @@ attr, layout attr, append, remove, move) and a fuzz-ish sequence.
 1. **(A) identity plumbing** — `Node.dom_id`, carry it through
    `build_render_document_from_dom_tree`, stable-uid assignment. Isolated and
    js-testable; the static render path keeps `dom_id = None` and is unchanged.
-2. **(B) incremental apply** — persist `layout_tree`, style-diff dirty marking,
-   structural patch, `compute_incremental`. Gate behind a flag; fall back to the
+2. **(B) incremental apply** — layout-level core landed
+   (`LayoutTree::reconcile_from`, js-tested). Remaining: the shell integration —
+   persist `layout_tree`, build the new node tree with stable uids, compute
+   `dirty_uids` (style/text diff + flow-shift following siblings), call
+   `reconcile_from` instead of the full wipe. Gate behind a flag; fall back to the
    current full path when anything is unmapped (anonymous-box edge, shadow DOM)
    so it can never be *wrong*, only *less incremental*.
 3. **paint-only fast path** — use `affects_layout` to keep layout and re-paint
