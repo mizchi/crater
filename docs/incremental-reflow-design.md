@@ -140,12 +140,18 @@ attr, layout attr, append, remove, move) and a fuzz-ish sequence.
    `build_render_document_from_dom_tree`, stable-uid assignment. Isolated and
    js-testable; the static render path keeps `dom_id = None` and is unchanged.
 2. **(B) incremental apply** — layout-level core landed
-   (`LayoutTree::reconcile_from`, js-tested). Remaining: the shell integration —
-   persist `layout_tree`, build the new node tree with stable uids, compute
-   `dirty_uids` (style/text diff + flow-shift following siblings), call
-   `reconcile_from` instead of the full wipe. Gate behind a flag; fall back to the
-   current full path when anything is unmapped (anonymous-box edge, shadow DOM)
-   so it can never be *wrong*, only *less incremental*.
+   (`LayoutTree::reconcile_from`, js-tested), stable-uid registry landed
+   (`stabilize_uids` / `UidRegistry`, js-tested), and the **shell wiring landed
+   behind a default-off flag**: `Browser::set_incremental_reflow(true)` makes the
+   dynamic render path stabilize uids and reconcile against the prior tree
+   (`Browser::build_dynamic_layout_tree` in `browser/shell/incremental_reflow.mbt`,
+   used by the text render path). Off by default → byte-for-byte the current
+   behavior; js-tested that on vs off render identically. **The dirty set is
+   currently every uid** (correct, == full recompute) — the remaining work is to
+   narrow it so the flag is also *faster*: a paint-only fast path via the DomTree
+   mutation queue (`MutationRecord::affects_layout`), and/or a layout-relevant
+   style diff (`@style.Style` has no `Eq`, so this needs a focused comparator or
+   the mutation classification). Validate the dynamic round-trip with native V8.
 3. **paint-only fast path** — use `affects_layout` to keep layout and re-paint
    only (the dynamic-path analogue of `branch_reusing_layout`).
 4. **forced reflow read path** (separate memo) — on a measuring read after a

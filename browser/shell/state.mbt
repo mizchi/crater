@@ -147,6 +147,15 @@ struct Browser {
   mut render_node : @layout.Node?
   /// Cached layout tree (for incremental layout)
   mut layout_tree : @layout.LayoutTree?
+  /// Persistent stable-uid registry: keeps render-node uids stable across the
+  /// dynamic path's rebuilds so incremental reflow can match (see
+  /// docs/incremental-reflow-design.md).
+  uid_registry : @node.UidRegistry
+  /// Prior dynamic LayoutTree used as the incremental-reflow reconcile baseline.
+  mut incremental_prev_tree : @layout.LayoutTree?
+  /// Opt-in (default off): reconcile the dynamic layout tree against the prior
+  /// one instead of a full from-scratch rebuild.
+  mut enable_incremental_reflow : Bool
   /// Previous TUI buffer for diff rendering
   mut prev_buffer : @tui.CharBuffer?
   /// Last render key (for diff invalidation)
@@ -244,6 +253,9 @@ pub fn Browser::new(
     dark_mode: false,
     render_node: None,
     layout_tree: None,
+    uid_registry: @node.UidRegistry::new(),
+    incremental_prev_tree: None,
+    enable_incremental_reflow: false,
     prev_buffer: None,
     last_render_key: "",
     last_color_scheme_dark: false,

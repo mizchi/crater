@@ -30,7 +30,7 @@ fn Browser::render_text(self : Browser) -> String {
           )
       }
       let rn1 = perf_now()
-      let tree = @layout.LayoutTree::from_node(
+      let tree = self.build_dynamic_layout_tree(
         n,
         self.viewport_width.to_double(),
         self.viewport_height.to_double(),
@@ -55,7 +55,7 @@ fn Browser::render_text(self : Browser) -> String {
     }
     None => {
       force_full = true
-      let tree = @layout.LayoutTree::from_node(
+      let tree = self.build_dynamic_layout_tree(
         render_node,
         self.viewport_width.to_double(),
         self.viewport_height.to_double(),
