@@ -19,6 +19,73 @@ fn decode_js_string_result(value : String) -> String? {
 }
 
 ///|
+/// Inject crater's real layout into the JS realm so page-JS DOM measurement
+/// (`getBoundingClientRect` / `offset*` / `getComputedStyle`) reads it instead
+/// of the inline-style heuristic. Computes (or reuses the cached) render node +
+/// layout for the current viewport and evaluates the bridge payload (see
+/// `renderer/vrt` `layout_bridge_init_js`) in the page realm before scripts run,
+/// defining `globalThis.__craterLayoutBoxes` / `__craterComputedStyles`. This is
+/// the "initial-layout" path of the dynamic-rendering JS bridge: reads before a
+/// mutation see real geometry; reads after a mutation see the last injected
+/// layout until the next injection. Best-effort — any failure leaves the mock
+/// DOM on its existing fallback behavior.
+fn Browser::inject_layout_bridge(self : Browser) -> Unit {
+  if !self.enable_js || self.html_content.length() == 0 {
+    return
+  }
+  // Skip recomputing/re-injecting when the DOM is unchanged since the last
+  // injection: the layout is identical, so the globals already in the realm are
+  // still correct. This elides the redundant full re-layout on idle / no-DOM-
+  // mutation run-loop iterations (true dirty-subtree incremental reflow on a
+  // mutation is a separate follow-up — see the design memo). The key includes the
+  // color scheme so toggling dark mode (which changes layout / computed style via
+  // prefers-color-scheme / light-dark()) forces a re-injection.
+  let memo_key = (if self.dark_mode { "d:" } else { "l:" }) + self.html_content
+  if memo_key == self.bridge_injected_html {
+    return
+  }
+  match self.script_executor {
+    Some(executor) => {
+      // Build with the browser's current color scheme so page JS measures the
+      // same scheme the page renders in (not hard-coded light).
+      let ctx = @browser_helpers.create_render_context(
+        self.viewport_width,
+        self.viewport_height,
+        self.dark_mode,
+      )
+      // Compute layout directly (do NOT use the cached graphics node/layout):
+      // the graphics cache is keyed for the paint path and may be populated
+      // with an image provider installed; reusing it here would either pollute
+      // or read a paint-specific cache.
+      let (node, layout) = match self.parsed_doc {
+        Some(doc) =>
+          self.render_node_and_layout_from_document(doc, ctx, self.dark_mode)
+        None =>
+          @renderer.render_to_node_and_layout_with_external_css(
+            self.html_content,
+            ctx,
+            self.external_css,
+          )
+      }
+      let js = @vrt.layout_bridge_init_js(
+        @vrt.collect_layout_boxes(layout),
+        @vrt.collect_computed_styles(node),
+      )
+      try {
+        let _ = executor.execute_source(js)
+        // Remember the DOM + color-scheme revision we injected for, so an
+        // unchanged one skips the next recompute. Only on success — a failure
+        // retries next time.
+        self.bridge_injected_html = memo_key
+      } catch {
+        _ => ()
+      }
+    }
+    None => ()
+  }
+}
+
+///|
 fn Browser::flush_js_logs(self : Browser) -> Unit {
   match self.script_executor {
     Some(executor) => {
@@ -58,6 +125,7 @@ fn Browser::execute_inline_js(self : Browser, source : String) -> String? {
   match self.script_executor {
     Some(executor) =>
       try {
+        self.inject_layout_bridge()
         let result = executor.execute_source(source)
         self.flush_js_logs()
         let _ = self.drain_pending_form_submission_navigation_sync()
@@ -89,6 +157,10 @@ pub async fn Browser::execute_inline_js_async(
 ///|
 fn Browser::process_pending_script_tasks(self : Browser) -> Int {
   let ready_tasks = self.scheduler.poll_ready()
+  // Make crater's real layout visible to page JS before the batch runs.
+  if ready_tasks.length() > 0 {
+    self.inject_layout_bridge()
+  }
   let mut processed = 0
   for task in ready_tasks {
     match task.action {
@@ -123,6 +195,9 @@ pub fn Browser::tick_js(self : Browser) -> Bool {
     }
     return self.sync_render_state_from_dom_tree()
   }
+  // Refresh the injected layout before timer / rAF callbacks run so they can
+  // measure the geometry produced by the previous iteration's mutations.
+  self.inject_layout_bridge()
   let ticked = match self.script_executor {
     Some(executor) =>
       executor.tick() catch {
@@ -141,6 +216,61 @@ pub fn Browser::tick_js(self : Browser) -> Bool {
     return true
   }
   self.sync_render_state_from_dom_tree()
+}
+
+///|
+/// Drive the JS event loop to quiescence: repeatedly run pending script / event
+/// tasks, drain microtasks, apply the batched DOM ops, re-render, and run one
+/// timer + requestAnimationFrame callback per iteration — looping until nothing
+/// is left to do (no pending tasks and no timer/rAF fired) or `max_iterations`
+/// is hit. The layout bridge is refreshed each iteration so timer / rAF
+/// callbacks measure the geometry of the latest render (`setState -> re-render`,
+/// effects, and animation steps run without an external pump).
+///
+/// Returns `true` when the loop settled, `false` when it stopped at the
+/// iteration cap (a runaway timer chain). A navigation triggered mid-loop ends
+/// the loop and reports settled.
+pub fn Browser::run_event_loop(
+  self : Browser,
+  max_iterations? : Int = 1000,
+) -> Bool {
+  if !self.enable_js {
+    return true
+  }
+  if self.dom_tree is None {
+    self.init_js_execution()
+  }
+  for i = 0; i < max_iterations; i = i + 1 {
+    let mut worked = false
+    // 1. Pending script / event-handler tasks (injects the bridge internally).
+    let processed = self.process_pending_script_tasks()
+    if processed > 0 {
+      worked = true
+      self.flush_js_logs()
+      if self.drain_pending_form_submission_navigation_sync() {
+        return true
+      }
+      let _ = self.sync_render_state_from_dom_tree()
+    }
+    // 2. One macrotask (timer) + rAF + microtask drain, with fresh geometry.
+    self.inject_layout_bridge()
+    let ticked = match self.script_executor {
+      Some(executor) => executor.tick() catch { _ => false }
+      None => false
+    }
+    if ticked {
+      worked = true
+      self.flush_js_logs()
+      if self.drain_pending_form_submission_navigation_sync() {
+        return true
+      }
+      let _ = self.sync_render_state_from_dom_tree()
+    }
+    if !worked {
+      return true
+    }
+  }
+  false
 }
 
 ///|

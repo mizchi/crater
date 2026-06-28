@@ -91,6 +91,10 @@ struct Browser {
   mut source_html : String
   /// DOM snapshot HTML that preserves serializable shadow roots
   mut dom_snapshot_html : String
+  /// Serialized-DOM revision the layout bridge was last injected for. While the
+  /// DOM is unchanged (idle / no-mutation run-loop iterations) the injected
+  /// layout is still valid, so re-injection skips recomputing the same layout.
+  mut bridge_injected_html : String
   /// Parsed document (cached to avoid re-parsing)
   mut parsed_doc : @html.Document?
   /// Whether current render HTML may contain declarative shadow DOM templates
@@ -143,6 +147,15 @@ struct Browser {
   mut render_node : @layout.Node?
   /// Cached layout tree (for incremental layout)
   mut layout_tree : @layout.LayoutTree?
+  /// Persistent stable-uid registry: keeps render-node uids stable across the
+  /// dynamic path's rebuilds so incremental reflow can match (see
+  /// docs/incremental-reflow-design.md).
+  uid_registry : @node.UidRegistry
+  /// Prior dynamic LayoutTree used as the incremental-reflow reconcile baseline.
+  mut incremental_prev_tree : @layout.LayoutTree?
+  /// Opt-in (default off): reconcile the dynamic layout tree against the prior
+  /// one instead of a full from-scratch rebuild.
+  mut enable_incremental_reflow : Bool
   /// Previous TUI buffer for diff rendering
   mut prev_buffer : @tui.CharBuffer?
   /// Last render key (for diff invalidation)
@@ -213,6 +226,7 @@ pub fn Browser::new(
     html_content: "",
     source_html: "",
     dom_snapshot_html: "",
+    bridge_injected_html: "",
     parsed_doc: None,
     html_has_declarative_shadow_dom: false,
     external_css: [],
@@ -239,6 +253,9 @@ pub fn Browser::new(
     dark_mode: false,
     render_node: None,
     layout_tree: None,
+    uid_registry: @node.UidRegistry::new(),
+    incremental_prev_tree: None,
+    enable_incremental_reflow: false,
     prev_buffer: None,
     last_render_key: "",
     last_color_scheme_dark: false,

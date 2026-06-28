@@ -3,11 +3,78 @@
 
 ///|
 fn make_v8_browser(html : String) -> @shell.Browser {
-  let browser = @shell.Browser::new(800, 600)
-  let v8 = @js_v8.V8JsRuntime::new_with_mock_dom(@js_v8.full_mock_dom_js())
-  browser.set_js_runtime(v8.as_js_runtime())
+  let browser = new_v8_browser(800, 600)
   browser.set_html_content(html)
   browser
+}
+
+///|
+/// Browser -> V8 -> layout bridge: a page script reads real layout via
+/// getBoundingClientRect / getComputedStyle. Before this wiring those returned
+/// zero / "" (the inline-style heuristic); now the shell injects crater's real
+/// layout before scripts run, so a 120x50 block reports its true geometry and
+/// `display: block`. The script writes the readings back into the DOM so the
+/// result is observable through the DomTree.
+test "E2E: page JS reads real layout via the bridge" {
+  let browser = make_v8_browser(
+    "<html><body style=\"margin:0\">" +
+    "<div id=\"box\" style=\"width:120px;height:50px\"></div>" +
+    "<div id=\"out\"></div>" +
+    "<script>" +
+    "const b = document.getElementById('box');" +
+    "const r = b.getBoundingClientRect();" +
+    "const cs = window.getComputedStyle(b);" +
+    "document.getElementById('out').textContent = r.width + 'x' + r.height + ' ' + cs.display;" +
+    "</script></body></html>",
+  )
+  let executed = browser.execute_scripts()
+  assert_true(executed > 0)
+  match browser.get_dom_tree() {
+    Some(dom) => {
+      let doc = dom.get_document()
+      match dom.query_selector(doc, "#out") {
+        Ok(Some(node_id)) =>
+          match dom.get_text_content(node_id) {
+            Ok(t) => assert_eq(t, "120x50 block")
+            Err(_) => assert_true(false)
+          }
+        _ => assert_true(false)
+      }
+    }
+    None => assert_true(false)
+  }
+}
+
+///|
+/// Browser run-loop: a `setTimeout` scheduled by the page script is drained by
+/// `run_event_loop` (no external pump), its callback mutates the DOM, and the
+/// loop reports settled. Before the run-loop the deferred timer would never
+/// fire on its own.
+test "E2E: run_event_loop drains a timer and settles" {
+  let browser = make_v8_browser(
+    "<html><body><div id=\"out\">start</div>" +
+    "<script>setTimeout(function() { document.getElementById('out').textContent = 'tick'; }, 0);</script>" +
+    "</body></html>",
+  )
+  // Initial scripts schedule the timer (deferred — not flushed yet)...
+  let _ = browser.execute_scripts()
+  // ...then the run-loop drains it to quiescence.
+  let settled = browser.run_event_loop()
+  assert_true(settled)
+  match browser.get_dom_tree() {
+    Some(dom) => {
+      let doc = dom.get_document()
+      match dom.query_selector(doc, "#out") {
+        Ok(Some(node_id)) =>
+          match dom.get_text_content(node_id) {
+            Ok(t) => assert_eq(t, "tick")
+            Err(_) => assert_true(false)
+          }
+        _ => assert_true(false)
+      }
+    }
+    None => assert_true(false)
+  }
 }
 
 ///|

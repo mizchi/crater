@@ -23,6 +23,8 @@ pub fn diff_rendered_paint_trees(String, String, @values.Size[Double]) -> @diff.
 
 pub fn layout_box_by_id(@crater-core.Layout, String) -> LayoutBox?
 
+pub fn layout_bridge_init_js(Array[LayoutBox], Array[ComputedStyleEntry]) -> String
+
 pub fn prepare_external_css(Array[String]) -> @renderer.PreparedExternalCss
 
 pub fn prepare_vrt_page(String, @values.Size[Double], Array[String]) -> PreparedVrtPage
@@ -109,6 +111,7 @@ pub fn RenderSession::branch_reusing_layout(Self, Array[CssMutation]) -> @model.
 pub fn RenderSession::branch_reusing_layout_diff(Self, Array[CssMutation]) -> @diff.PaintTreeDiff
 pub fn RenderSession::element_boxes(Self) -> Array[LayoutBox]
 pub fn RenderSession::element_computed_styles(Self) -> Array[ComputedStyleEntry]
+pub fn RenderSession::layout_bridge_init_js(Self) -> String
 pub fn RenderSession::open(String, @values.Size[Double], Array[String]) -> Self
 pub fn RenderSession::open_with_recording(String, @values.Size[Double], Array[String], Array[@renderer.RecordedMetric], Array[@renderer.RecordedImage]) -> Self
 pub fn RenderSession::recorded_images(Self) -> Array[@renderer.RecordedImage]

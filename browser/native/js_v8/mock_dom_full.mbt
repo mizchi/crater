@@ -29,6 +29,60 @@ pub fn full_mock_dom_js() -> String {
     #|    }
     #|  }
     #|
+    #|  // --- crater dynamic-rendering bridge: real layout for page JS ---
+    #|  // When the host injects globalThis.__craterLayoutBoxes /
+    #|  // __craterComputedStyles (see renderer/vrt layout_bridge_init_js), element
+    #|  // measurement (getBoundingClientRect / offset* / getComputedStyle) reads
+    #|  // crater's real layout instead of the inline-style heuristic. Absent the
+    #|  // globals every lookup returns null and callers fall back to today's
+    #|  // behavior, so this is inert until the bridge is wired by the host.
+    #|  function __craterBridgeKey(el) {
+    #|    if (!el) return null;
+    #|    var idAttr;
+    #|    try { idAttr = el.id; } catch (e) { idAttr = ''; }
+    #|    if (!idAttr) return null;
+    #|    var tag = '';
+    #|    try {
+    #|      tag = el.localName || (el._tagName ? String(el._tagName).toLowerCase() : '');
+    #|    } catch (e) { tag = ''; }
+    #|    return tag + '#' + idAttr;
+    #|  }
+    #|  function __craterBridgeMap(arr, cacheKey) {
+    #|    if (!arr) return null;
+    #|    var cache = globalThis[cacheKey];
+    #|    if (cache && cache.src === arr) return cache.map;
+    #|    var m = new Map();
+    #|    for (var i = 0; i < arr.length; i++) {
+    #|      if (arr[i] && arr[i].id) m.set(arr[i].id, arr[i]);
+    #|    }
+    #|    globalThis[cacheKey] = { src: arr, map: m };
+    #|    return m;
+    #|  }
+    #|  function __craterLayoutBox(el) {
+    #|    var boxes = globalThis.__craterLayoutBoxes;
+    #|    if (!boxes) return null;
+    #|    var key = __craterBridgeKey(el);
+    #|    if (key) {
+    #|      var m = __craterBridgeMap(boxes, '__craterBoxMapCache');
+    #|      var hit = m && m.get(key);
+    #|      if (hit) return hit;
+    #|    }
+    #|    if (el && el._index !== undefined && boxes[el._index]) return boxes[el._index];
+    #|    return null;
+    #|  }
+    #|  function __craterComputedEntry(el) {
+    #|    var styles = globalThis.__craterComputedStyles;
+    #|    if (!styles) return null;
+    #|    var key = __craterBridgeKey(el);
+    #|    if (key) {
+    #|      var m = __craterBridgeMap(styles, '__craterStyleMapCache');
+    #|      var hit = m && m.get(key);
+    #|      if (hit) return hit;
+    #|    }
+    #|    if (el && el._index !== undefined && styles[el._index]) return styles[el._index];
+    #|    return null;
+    #|  }
+    #|
     #|  // Custom Promise implementation that uses _microtaskQueue for synchronous control
     #|  // This ensures Promise.then callbacks run during _flushMicrotasks()
     #|  const _PromiseState = { PENDING: 0, FULFILLED: 1, REJECTED: 2 };
@@ -4767,7 +4821,13 @@ pub fn full_mock_dom_js() -> String {
     #|      replaceChildren(...nodes) {
     #|        parentNodeReplaceChildren(this, getOwnerDocument(this) || document, nodes);
     #|      },
-    #|      getBoundingClientRect() { return { x: 0, y: 0, width: 0, height: 0, top: 0, right: 0, bottom: 0, left: 0 }; },
+    #|      getBoundingClientRect() {
+    #|        const __b = __craterLayoutBox(this);
+    #|        if (__b) {
+    #|          return { x: __b.x, y: __b.y, width: __b.width, height: __b.height, top: __b.y, right: __b.x + __b.width, bottom: __b.y + __b.height, left: __b.x };
+    #|        }
+    #|        return { x: 0, y: 0, width: 0, height: 0, top: 0, right: 0, bottom: 0, left: 0 };
+    #|      },
     #|      get style() {
     #|        const self = this;
     #|        return new Proxy({}, {
@@ -4839,10 +4899,10 @@ pub fn full_mock_dom_js() -> String {
     #|      },
     #|      attachInternals() { return { shadowRoot: null, form: null, willValidate: false, validity: {}, validationMessage: '', labels: [] }; },
     #|      get offsetParent() { return this._parent; },
-    #|      get offsetTop() { return 0; },
-    #|      get offsetLeft() { return 0; },
-    #|      get offsetWidth() { return 0; },
-    #|      get offsetHeight() { return 0; },
+    #|      get offsetTop() { const __b = __craterLayoutBox(this); return __b ? __b.y : 0; },
+    #|      get offsetLeft() { const __b = __craterLayoutBox(this); return __b ? __b.x : 0; },
+    #|      get offsetWidth() { const __b = __craterLayoutBox(this); return __b ? __b.width : 0; },
+    #|      get offsetHeight() { const __b = __craterLayoutBox(this); return __b ? __b.height : 0; },
     #|      get dataset() {
     #|        const self = this;
     #|        return new Proxy({}, {
@@ -7229,9 +7289,23 @@ pub fn full_mock_dom_js() -> String {
     #|    },
     #|    cancelAnimationFrame(id) { delete _animationFrames.callbacks[id]; },
     #|    getComputedStyle(elt, pseudoElt) {
-    #|      return new Proxy({}, {
-    #|        get(_, prop) { return ''; },
-    #|        getPropertyValue(prop) { return ''; }
+    #|      const __c = __craterComputedEntry(elt);
+    #|      const __vals = __c ? {
+    #|        display: __c.display, position: __c.position, visibility: __c.visibility,
+    #|        'font-size': __c.fontSize, fontSize: __c.fontSize,
+    #|        'font-family': __c.fontFamily, fontFamily: __c.fontFamily,
+    #|        opacity: __c.opacity,
+    #|        'z-index': __c.zIndex, zIndex: __c.zIndex,
+    #|        color: __c.color,
+    #|        'background-color': __c.backgroundColor, backgroundColor: __c.backgroundColor
+    #|      } : {};
+    #|      return new Proxy(__vals, {
+    #|        get(target, prop) {
+    #|          if (prop === 'getPropertyValue') {
+    #|            return function(p) { return target[p] != null ? target[p] : ''; };
+    #|          }
+    #|          return target[prop] != null ? target[prop] : '';
+    #|        }
     #|      });
     #|    },
     #|    matchMedia(query) {

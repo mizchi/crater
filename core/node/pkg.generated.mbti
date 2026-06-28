@@ -13,6 +13,8 @@ pub fn get_layout_dispatcher() -> LayoutDispatchFunc?
 
 pub fn set_layout_dispatcher(LayoutDispatchFunc) -> Unit
 
+pub fn stabilize_uids(Node, UidRegistry) -> Unit
+
 pub fn str_has_prefix(String, String) -> Bool
 
 // Errors
@@ -24,19 +26,29 @@ pub(all) struct LayoutDispatchFunc((Node, @crater-core.LayoutContext) -> @crater
 
 pub struct Node {
   id : String
-  uid : Int
+  mut uid : Int
   style : @style.Style
   children : Array[Node]
   measure : @crater-core.MeasureFunc?
   text : String?
   src : String?
+  mut dom_id : Int?
 }
 pub fn Node::leaf(String, @style.Style) -> Self
 pub fn Node::new(String, @style.Style, Array[Self]) -> Self
+pub fn Node::set_dom_id(Self, Int?) -> Unit
+pub fn Node::set_uid(Self, Int) -> Unit
 pub fn Node::text(String, @style.Style, @crater-core.MeasureFunc, String) -> Self
 pub fn Node::with_measure(String, @style.Style, @crater-core.MeasureFunc, text? : String, src? : String?) -> Self
 pub fn Node::with_uid(String, Int, @style.Style, Array[Self]) -> Self
 pub fn Node::with_uid_and_measure(String, Int, @style.Style, Array[Self], @crater-core.MeasureFunc?, String?, src? : String?) -> Self
+
+pub struct UidRegistry {
+  dom_to_uid : Map[Int, Int]
+  anon_to_uid : Map[String, Int]
+  mut next : Int
+}
+pub fn UidRegistry::new() -> Self
 
 // Type aliases
 

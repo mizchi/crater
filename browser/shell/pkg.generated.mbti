@@ -50,6 +50,7 @@ pub fn Browser::prev_link(Self) -> Unit
 pub fn Browser::process_hint_char(Self, String) -> String?
 pub fn Browser::render_output(Self, OutputMode) -> String
 pub fn Browser::render_text_full_page(Self) -> String
+pub fn Browser::run_event_loop(Self, max_iterations? : Int) -> Bool
 pub fn Browser::scroll_down(Self, Int) -> Unit
 pub fn Browser::scroll_up(Self, Int) -> Unit
 pub fn Browser::set_dark_mode(Self, Bool) -> Unit
@@ -57,6 +58,7 @@ pub fn Browser::set_enable_cookies(Self, Bool) -> Unit
 pub fn Browser::set_enable_js(Self, Bool) -> Unit
 pub fn Browser::set_html_content(Self, String) -> Unit
 pub fn Browser::set_image_cache_max_bytes(Self, Int) -> Unit
+pub fn Browser::set_incremental_reflow(Self, Bool) -> Unit
 pub fn Browser::set_js_runtime(Self, &@crater-browser-runtime.JsRuntime) -> Unit
 pub fn Browser::set_no_color(Self, Bool) -> Unit
 pub fn Browser::set_request_sandbox(Self, @crater-browser-http.RequestSandbox) -> Unit

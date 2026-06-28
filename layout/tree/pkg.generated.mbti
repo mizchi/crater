@@ -194,6 +194,7 @@ pub fn LayoutTree::compute_with_stats(Self, CacheStats) -> @crater-core.Layout
 pub fn LayoutTree::fail_resource(Self, ResourceId) -> Unit
 pub fn LayoutTree::find_node(Self, Int) -> LayoutNode?
 pub fn LayoutTree::find_node_by_id(Self, String) -> LayoutNode?
+pub fn LayoutTree::flow_dirty_uids(Self, Array[Int]) -> Array[Int]
 pub fn LayoutTree::from_node(@node.Node, Double, Double) -> Self
 pub fn LayoutTree::get_parent(Self, Int) -> LayoutNode?
 pub fn LayoutTree::get_pending_resources(Self) -> Array[ResourceId]
@@ -203,6 +204,7 @@ pub fn LayoutTree::mark_all_layouts_seen(Self) -> Unit
 pub fn LayoutTree::mark_node_dirty(Self, Int) -> Unit
 pub fn LayoutTree::needs_layout(Self) -> Bool
 pub fn LayoutTree::new(LayoutNode, Double, Double) -> Self
+pub fn LayoutTree::reconcile_from(Self, @node.Node, Array[Int], Double, Double) -> Self
 pub fn LayoutTree::register_pending_images(Self) -> Map[String, ResourceId]
 pub fn LayoutTree::register_pending_images_with_src(Self, Map[Int, String]) -> Map[String, ResourceId]
 pub fn LayoutTree::register_resource(Self, Int, placeholder_width? : Double, placeholder_height? : Double) -> ResourceId

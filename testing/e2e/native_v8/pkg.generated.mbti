@@ -1,7 +1,14 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "mizchi/crater-testing/native_e2e"
 
+import {
+  "mizchi/crater-browser/shell",
+}
+
 // Values
+pub fn connect_v8(@shell.Browser) -> Unit
+
+pub fn new_v8_browser(Int, Int) -> @shell.Browser
 
 // Errors
 
