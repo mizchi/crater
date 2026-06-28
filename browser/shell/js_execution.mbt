@@ -37,23 +37,29 @@ fn Browser::inject_layout_bridge(self : Browser) -> Unit {
   // injection: the layout is identical, so the globals already in the realm are
   // still correct. This elides the redundant full re-layout on idle / no-DOM-
   // mutation run-loop iterations (true dirty-subtree incremental reflow on a
-  // mutation is a separate follow-up — see the design memo).
-  if self.html_content == self.bridge_injected_html {
+  // mutation is a separate follow-up — see the design memo). The key includes the
+  // color scheme so toggling dark mode (which changes layout / computed style via
+  // prefers-color-scheme / light-dark()) forces a re-injection.
+  let memo_key = (if self.dark_mode { "d:" } else { "l:" }) + self.html_content
+  if memo_key == self.bridge_injected_html {
     return
   }
   match self.script_executor {
     Some(executor) => {
+      // Build with the browser's current color scheme so page JS measures the
+      // same scheme the page renders in (not hard-coded light).
       let ctx = @browser_helpers.create_render_context(
         self.viewport_width,
         self.viewport_height,
-        false,
+        self.dark_mode,
       )
       // Compute layout directly (do NOT use the cached graphics node/layout):
       // the graphics cache is keyed for the paint path and may be populated
       // with an image provider installed; reusing it here would either pollute
       // or read a paint-specific cache.
       let (node, layout) = match self.parsed_doc {
-        Some(doc) => self.render_node_and_layout_from_document(doc, ctx, false)
+        Some(doc) =>
+          self.render_node_and_layout_from_document(doc, ctx, self.dark_mode)
         None =>
           @renderer.render_to_node_and_layout_with_external_css(
             self.html_content,
@@ -67,9 +73,10 @@ fn Browser::inject_layout_bridge(self : Browser) -> Unit {
       )
       try {
         let _ = executor.execute_source(js)
-        // Remember the DOM revision we injected for, so an unchanged DOM skips
-        // the next recompute. Only on success — a failure retries next time.
-        self.bridge_injected_html = self.html_content
+        // Remember the DOM + color-scheme revision we injected for, so an
+        // unchanged one skips the next recompute. Only on success — a failure
+        // retries next time.
+        self.bridge_injected_html = memo_key
       } catch {
         _ => ()
       }

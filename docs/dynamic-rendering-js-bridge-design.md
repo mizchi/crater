@@ -84,6 +84,18 @@ host call that injects the payload before page scripts run.
    the consumer can join by id (unique when the element has an id attribute) or
    by document-order index. Snapshot-tested in `renderer/vrt`.
 
+   **Known gap (id-less elements).** The robust join is by id; the `_index`
+   fallback is currently inert because the mock DOM never assigns `_index`
+   (`create_dom_init_code` only sets `_mockId`). So `querySelector('div')` on an
+   id-less element still reads the zero/empty fallback. The clean fix, now that
+   render nodes carry `Node.dom_id` (= the DomTree id, == the mock element's
+   `_mockId`), is to key the injected entries by `dom_id` and look them up by
+   `el._mockId`. That works directly for the computed-style index (it walks the
+   node tree, which has `dom_id`), but the layout-box index walks
+   `@layout_types.Layout`, which does **not** carry `dom_id` — so it first needs
+   `dom_id` threaded onto `Layout` through the layout engine (or boxes collected
+   by walking the node + layout trees in tandem). Tracked as a follow-up.
+
 2. **Mock-DOM consumer — landed.** `browser/native/js_v8/mock_dom_full.mbt`
    installs `__craterLayoutBox(el)` / `__craterComputedEntry(el)` (id-keyed map,
    built once and cached per injected array; `_index` fallback) and rewrites
