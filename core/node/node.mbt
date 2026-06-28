@@ -14,7 +14,7 @@ fn next_uid() -> Int {
 /// A node in the layout tree
 pub struct Node {
   id : String
-  uid : Int // Unique identifier for caching
+  mut uid : Int // Unique identifier for caching (stabilized across re-renders for incremental reflow)
   style : @style.Style
   children : Array[Node]
   measure : @layout_types.MeasureFunc?
@@ -31,6 +31,14 @@ pub struct Node {
 /// Attach the originating DomTree node id (dynamic-rendering path).
 pub fn Node::set_dom_id(self : Node, dom_id : Int?) -> Unit {
   self.dom_id = dom_id
+}
+
+///|
+/// Overwrite the cache uid. Used to stabilize uids across re-renders so
+/// incremental reflow can match a rebuilt node to its prior layout (see
+/// `stabilize_uids`).
+pub fn Node::set_uid(self : Node, uid : Int) -> Unit {
+  self.uid = uid
 }
 
 ///|
