@@ -98,11 +98,22 @@ structural append, and an unchanged re-render (the last reuses the cache —
   `clear_dirty()` persisted nodes or nothing is ever a cache hit.
 - crater caches **absolute** geometry, so a flow-shifting change (resizing a box
   shifts its following siblings) must include those following siblings in
-  `dirty_uids` — the cache helps most for changes with no later siblings, for
-  independent subtrees, and for no-op / paint-only re-renders. Tightening this
-  (relative-position caching / dirty-rects) is a separate layout-engine lever.
-- per-node child cache hits depend on the layout dispatcher routing children
-  through the cached dispatch; today the reliable win is the clean-tree reuse.
+  `dirty_uids`. `LayoutTree::flow_dirty_uids(seed)` (landed, js-tested) expands a
+  seed of directly-changed uids into the correct set: for each changed node, the
+  following siblings' subtrees at its level and at every ancestor level. Feeding
+  this to `reconcile_from` makes the incremental layout equal a full recompute
+  while keeping the dirty set tight.
+- **but** the practical speedup is currently bounded by the layout engine's
+  per-node cache, not by the dirty set: a *migrated* child cache frequently
+  misses on `can_use_cache`'s constraint comparison, and `children_dirty`
+  propagates to the root on any change, so the reliable reuse today is the
+  **root / high-subtree short-circuit** (a clean subtree returns its cached
+  layout without descending) — i.e. no-op and paint-only re-renders. Making a
+  change to a *late* element reuse the *earlier* elements needs the per-node
+  child cache to hit across trees (relative-position caching / a style
+  fingerprint on the cache key). That is the next layout-engine lever; the
+  reflow plumbing (stable uids → reconcile → flow-aware dirty) is correct and
+  ready to exploit it.
 
 The remaining (B) work is the shell integration that produces `dirty_uids` and a
 new render node tree with stable uids (phase A's `dom_id`), then calls

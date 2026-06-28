@@ -194,6 +194,7 @@ pub fn LayoutTree::compute_with_stats(Self, CacheStats) -> @crater-core.Layout
 pub fn LayoutTree::fail_resource(Self, ResourceId) -> Unit
 pub fn LayoutTree::find_node(Self, Int) -> LayoutNode?
 pub fn LayoutTree::find_node_by_id(Self, String) -> LayoutNode?
+pub fn LayoutTree::flow_dirty_uids(Self, Array[Int]) -> Array[Int]
 pub fn LayoutTree::from_node(@node.Node, Double, Double) -> Self
 pub fn LayoutTree::get_parent(Self, Int) -> LayoutNode?
 pub fn LayoutTree::get_pending_resources(Self) -> Array[ResourceId]

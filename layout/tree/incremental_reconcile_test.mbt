@@ -97,6 +97,41 @@ test "reconcile_from: an unchanged re-render reuses the cache (no recompute)" {
 }
 
 ///|
+fn recon_block(w : Double, h : Double) -> @style.Style {
+  @style.Style::{
+    ..@style.Style::default(),
+    width: @types.Length(w),
+    height: @types.Length(h),
+  }
+}
+
+///|
+test "flow_dirty_uids: resizing a box dirties it + following siblings, reuses earlier ones" {
+  @dispatch.setup()
+  // Vertical block stack #a / #b / #c (uids 1/2/3) under a column root (uid 0).
+  let mk = fn(hb : Double) {
+    @node.Node::with_uid("col", 0, recon_block(200.0, 300.0), [
+      @node.Node::with_uid("a", 1, recon_block(100.0, 40.0), []),
+      @node.Node::with_uid("b", 2, recon_block(100.0, hb), []),
+      @node.Node::with_uid("c", 3, recon_block(100.0, 40.0), []),
+    ])
+  }
+  let tree1 = LayoutTree::from_node(mk(40.0), 200.0, 300.0)
+  let _ = tree1.compute_incremental()
+  // Resize the MIDDLE box #b; #a precedes it (stable), #c follows it (shifts).
+  let seed = [2]
+  let dirty = tree1.flow_dirty_uids(seed)
+  // #b and #c are dirty; #a is not.
+  inspect(dirty.contains(2) && dirty.contains(3), content="true")
+  inspect(dirty.contains(1), content="false")
+  let tree2 = LayoutTree::reconcile_from(tree1, mk(80.0), dirty, 200.0, 300.0)
+  let incr = tree2.compute_incremental()
+  let full = LayoutTree::from_node(mk(80.0), 200.0, 300.0).compute_incremental()
+  // The flow-aware dirty set yields a layout identical to a full recompute.
+  inspect(recon_sig(incr) == recon_sig(full), content="true")
+}
+
+///|
 test "reconcile_from: an appended child is detected structurally and recomputed" {
   @dispatch.setup()
   let row1 = @node.Node::with_uid("row", 0, recon_flex_row(), [
