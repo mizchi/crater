@@ -169,6 +169,39 @@ records (`@dom.MutationRecord::affects_layout`, `dom/dom/mutation.mbt:148`). A
 paint-only attribute edit (e.g. `color`) can skip `mark_dirty` for layout and
 only invalidate paint; a layout attribute (`width`, `display`, …) marks dirty.
 
+> **Note — the mutation queue is *not* a safe substitute for the style diff.**
+> A mutation on node X can change node Y's *computed* style via a combinator
+> (`:has()`, `+`, `~`, `:nth-child`). Dirtying only the mutated DomTree nodes
+> would leave Y reading stale cache. The only fully-correct seed is comparing the
+> freshly-cascaded computed `@style.Style` (step 3), which reflects every
+> combinator. The mutation queue is a *paint-vs-layout* refinement on top of a
+> correct seed, not a replacement for it.
+
+#### Blocker / plan for step 3: `@style.Style` needs `Eq`
+
+The shell currently passes **every** uid as `dirty_uids`
+(`Browser::build_dynamic_layout_tree`) — correct (== full recompute) but it
+defeats the block-flow memoization, which only reuses nodes the driver reports
+clean. Narrowing the seed needs `old_style != new_style` per uid, and
+`@style.Style` (mizchi/css) is a 99-field struct with **no `derive`** — no `Eq`,
+`Show`, or `Hash` — so there is no safe, complete, maintainable comparison in
+crater. A hand-rolled 99-field comparator under-reports the moment a field is
+missed (or upstream adds one) → silent stale-layout, on the opt-in path.
+
+- **Upstream (mizchi/css), one line:** add `derive(Eq, @debug.Debug)` to the
+  `Style` struct. Every field type already derives `Eq` (`@values.Dimension`,
+  `Rect`, `Display`, …), so this is mechanical and auto-covers future fields.
+- **crater follow-up (small, then testable):** in
+  `Browser::build_dynamic_layout_tree`, replace `collect_node_uids(node)` (all
+  uids) with
+  `prev.flow_dirty_uids(seeds)` where
+  `seeds = { uid : old_style != new_style || text/src/measure-presence differ }`
+  computed by walking the new node tree against `prev.node_map`. `flow_dirty_uids`
+  expands for crater's absolute-geometry flow shift; `reconcile_from`'s structural
+  pass already covers add/remove/move. Validate with an on-vs-off render
+  equivalence test per mutation kind (text, size, display, append, remove, move).
+  Until the upstream `Eq` lands, the safe all-uids behavior stays.
+
 ### (C) Validation without V8 (js target)
 
 Correctness is a pure layout property and is testable on the **js** target, no
@@ -192,10 +225,13 @@ attr, layout attr, append, remove, move) and a fuzz-ish sequence.
    used by the text render path). Off by default → byte-for-byte the current
    behavior; js-tested that on vs off render identically. **The dirty set is
    currently every uid** (correct, == full recompute) — the remaining work is to
-   narrow it so the flag is also *faster*: a paint-only fast path via the DomTree
-   mutation queue (`MutationRecord::affects_layout`), and/or a layout-relevant
-   style diff (`@style.Style` has no `Eq`, so this needs a focused comparator or
-   the mutation classification). Validate the dynamic round-trip with native V8.
+   narrow it so the flag is also *faster*. The **layout engine now memoizes
+   in-flow block subtrees per uid** (block-flow memoization — landed, see the
+   "Fix (landed)" section above), so once the seed is narrowed the unchanged
+   block subtrees are reused. Narrowing is **blocked on `@style.Style` gaining
+   `Eq` upstream** (see "Blocker / plan for step 3" above): the seed needs
+   `old_style != new_style` per uid and `Style` has no `derive`. Validate the
+   dynamic round-trip with native V8.
 3. **paint-only fast path** — use `affects_layout` to keep layout and re-paint
    only (the dynamic-path analogue of `branch_reusing_layout`).
 4. **forced reflow read path** (separate memo) — on a measuring read after a
