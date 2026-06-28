@@ -1186,6 +1186,110 @@ pub fn clear_block_intrinsic_caches() -> Unit {
 }
 
 ///|
+/// Block-flow memoization: per-`uid` cache of an in-flow block child's
+/// `compute_with_collapse` result (layout + escaping collapse margins), so an
+/// incremental relayout can skip recomputing a child whose whole subtree is
+/// unchanged. `compute_with_collapse(child, ctx)` is a pure function of the
+/// child subtree and the constraint, so reusing it for a clean child under the
+/// same constraint is exact — the parent's stacking / shift passes treat a
+/// cached result identically to a freshly computed one.
+///
+/// Correctness gates (both required before reuse): the child is reported clean
+/// by the incremental driver (`@node.node_is_clean(uid)` — its subtree did not
+/// change) AND the cached constraint key matches the current child constraint.
+/// The cache is populated only while an incremental layout is active
+/// (`@node.node_incremental_active()`), so the static / full-layout path never
+/// reads or writes it and is byte-for-byte unchanged. `uid`s are stabilized
+/// across rebuilds by the reconcile registry, so an entry keeps tracking the
+/// same element.
+priv struct BlockFlowCacheEntry {
+  key : String
+  result : LayoutWithCollapse
+}
+
+///|
+let block_flow_cache : Ref[Map[Int, BlockFlowCacheEntry]] = { val: Map::new() }
+
+///|
+let block_flow_cache_hits : Ref[Int] = { val: 0 }
+
+///|
+/// Number of in-flow block children served from the block-flow cache since the
+/// last `reset_block_flow_cache_hits`. For tests / perf characterization.
+pub fn block_flow_cache_hit_count() -> Int {
+  block_flow_cache_hits.val
+}
+
+///|
+/// Reset the block-flow cache hit counter (tests / perf characterization).
+pub fn reset_block_flow_cache_hits() -> Unit {
+  block_flow_cache_hits.val = 0
+}
+
+///|
+/// Drop the whole block-flow memoization cache (memory hygiene / test isolation).
+pub fn clear_block_flow_cache() -> Unit {
+  block_flow_cache.val = Map::new()
+  block_flow_cache_hits.val = 0
+}
+
+///|
+/// Build the constraint key for the block-flow cache from a child layout
+/// context. Includes every field that can change the child's computed layout.
+fn block_flow_cache_key(ctx : @layout_types.LayoutContext) -> String {
+  let ah = match ctx.available_height {
+    Some(h) => h.to_string()
+    None => "_"
+  }
+  let sizing = match ctx.sizing_mode {
+    @layout_types.Definite => "d"
+    @layout_types.MaxContent => "max"
+  }
+  ctx.available_width.to_string() +
+  "|" +
+  ah +
+  "|" +
+  sizing +
+  "|" +
+  ctx.viewport_width.to_string() +
+  "|" +
+  ctx.viewport_height.to_string() +
+  "|" +
+  (if ctx.stretch_width { "1" } else { "0" }) +
+  (if ctx.stretch_height { "1" } else { "0" })
+}
+
+///|
+/// Compute an in-flow block child's layout, reusing the cached
+/// `compute_with_collapse` result when the child's subtree is unchanged
+/// (see `block_flow_cache`). On a miss it computes and (while incremental is
+/// active) stores the result.
+fn compute_block_child_memoized(
+  child : @node.Node,
+  ctx : @layout_types.LayoutContext,
+  warnings : Array[@layout_types.LayoutWarning],
+  dispatch : @node.DispatchFn,
+) -> LayoutWithCollapse {
+  let key = block_flow_cache_key(ctx)
+  if @node.node_is_clean(child.uid) {
+    match block_flow_cache.val.get(child.uid) {
+      Some(entry) =>
+        if entry.key == key {
+          block_flow_cache_hits.val = block_flow_cache_hits.val + 1
+          return entry.result
+        }
+      None => ()
+    }
+  }
+  let raw = compute_with_collapse(child, ctx, warnings, dispatch)
+  let result = { ..raw, layout: apply_initial_scroll_snap(child, raw.layout) }
+  if @node.node_incremental_active() {
+    block_flow_cache.val.set(child.uid, { key, result })
+  }
+  result
+}
+
+///|
 fn calculate_children_max_content_width(
   node : @node.Node,
   parent_width : Double,
@@ -5620,13 +5724,11 @@ fn compute_with_collapse(
           stretch_width: false,
           stretch_height: false,
         }
-        let raw = compute_with_collapse(
+        // Memoized: a clean (unchanged-subtree) child under the same constraint
+        // reuses its cached compute_with_collapse result instead of recomputing.
+        compute_block_child_memoized(
           child_for_layout, child_ctx, warnings, dispatch,
         )
-        {
-          ..raw,
-          layout: apply_initial_scroll_snap(child_for_layout, raw.layout),
-        }
       }
     }
     flow_children.push(child_result)

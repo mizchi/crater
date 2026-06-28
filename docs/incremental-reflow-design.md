@@ -110,32 +110,43 @@ structural append, and an unchanged re-render (the last reuses the cache —
   — i.e. no-op, paint-only, and disjoint-subtree re-renders.
 
   **Measured root cause (item 3).** The per-uid cache (`try_cache_by_uid`,
-  `incremental_compute.mbt`) is only consulted for children dispatched through
+  `incremental_compute.mbt`) was only consulted for children dispatched through
   the cache-aware callback — i.e. **flex / grid / table / inline-block BFC
-  roots** (`block.mbt:5609`, `dispatch_fn(child_for_layout, …)`). Ordinary
-  **in-flow block children** are laid out by `compute_with_collapse` directly
-  (`block.mbt:5623`), which never reads the cache. So a `display:block` stack
-  recomputes in full no matter how little changed — a late-element change reuses
-  nothing earlier. Pinned by `layout/tree/incremental_perf_wbtest.mbt`: a
-  12-block stack reports `hits=0` after a one-node change, while an unchanged,
-  unmoved BFC subtree is reused whole (`hits>0`, the short-circuit above).
+  roots** (`block.mbt`, `dispatch_fn(child_for_layout, …)`). Ordinary **in-flow
+  block children** were laid out by `compute_with_collapse` directly, which never
+  read the cache. So a `display:block` stack recomputed in full no matter how
+  little changed — a late-element change reused nothing earlier. Pinned by
+  `layout/tree/incremental_perf_wbtest.mbt`.
 
-  **Why a local fix doesn't work.** Routing in-flow block children through
-  `dispatch_fn` changes their layout path from `compute_with_collapse`
-  (margin-collapse aware, returns the child's *escaping* top/bottom margins to
-  the parent for sibling positioning and the parent's own collapsed margins) to
-  `@dispatch.compute` → `@block.compute` (a fresh BFC root, **no** collapse with
-  parent/siblings). The per-uid cache stores only `@layout_types.Layout`, which
-  carries no margin-collapse data, so a cached hit silently drops escaping
-  margins. The correct fix is therefore a **cross-package change**: widen the
-  cache to carry the escaping collapse margins (they reduce to a pair of
-  numbers) so a clean in-flow block child can be served from cache *with* its
-  collapse contribution, then gate the block-flow loop on it. That touches
-  `compute_with_collapse` (IFC, floats, `display:contents`, collapse-through)
-  and must be validated against the full layout + paint/WPT suites — it is the
-  next layout-engine lever, scoped on its own; the reflow plumbing (stable uids
-  → reconcile → flow-aware dirty) is correct and ready to exploit it once the
-  block-flow cache lands.
+  **Fix (landed): block-flow memoization.** `compute_with_collapse(child, ctx)`
+  is a *pure* function of the child subtree and the constraint, so it is
+  memoized per `uid` (`block_flow_cache` in `block.mbt`): an in-flow block child
+  whose whole subtree is unchanged is served from its cached
+  `LayoutWithCollapse` — layout **and** escaping collapse margins together — so
+  the parent's stacking / shift passes treat it identically to a fresh compute.
+  No coordinate or collapse-through reasoning is needed: a clean child under the
+  same constraint returns exactly what a recompute would. Two correctness gates,
+  both required before reuse:
+
+  - the child's subtree is unchanged — `@node.node_is_clean(uid)`, a core hook
+    installed by `compute_tree_incremental` over the `LayoutTree`'s dirty state
+    (`!dirty && !children_dirty`, dependency-inverted like the layout dispatcher
+    so `layout/block` need not depend on `layout/tree`); and
+  - the constraint matches — the cache key encodes available width/height,
+    sizing mode, and viewport.
+
+  The cache is populated only while an incremental layout is active
+  (`@node.node_incremental_active()`), so the static / full-layout path neither
+  reads nor writes it and is byte-for-byte unchanged. Validated on the js target:
+  a 12-block stack with the last block changed now reuses all 11 preceding
+  blocks (`block_flow_cache_hit_count() == 11`) and the incremental layout is
+  byte-identical to a full recompute; a width change misses the key (no stale
+  reuse); nested block subtrees reuse the unchanged sibling branch. The whole
+  layout (326) and renderer/vrt (410) suites stay green.
+
+  The remaining ceiling is the **cascade** (still O(n) per mutation) and the
+  flex/grid cross-axis perturbation (a change to one flex item can legitimately
+  dirty its line); those are separate levers.
 
 The remaining (B) work is the shell integration that produces `dirty_uids` and a
 new render node tree with stable uids (phase A's `dom_id`), then calls
