@@ -98,6 +98,69 @@ test "incremental reflow: appending a child matches a full rebuild" {
 }
 
 ///|
+/// The seed must be *tight*: only the persisted uids whose layout inputs
+/// actually changed, so the block-flow / per-uid memoization can reuse the rest.
+/// A layout change seeds exactly that node; a paint-only change seeds nothing
+/// (the precondition for the dynamic-path speedup, and a regression guard against
+/// the seed silently collapsing back to "all uids").
+fn seed_box(uid : Int, w : Double, h : Double) -> @node.Node {
+  let style = @style.Style::{
+    ..@style.Style::default(),
+    width: @types.Length(w),
+    height: @types.Length(h),
+  }
+  @node.Node::with_uid("b" + uid.to_string(), uid, style, [])
+}
+
+///|
+fn seed_box_colored(uid : Int, w : Double, h : Double) -> @node.Node {
+  let style = @style.Style::{
+    ..@style.Style::default(),
+    width: @types.Length(w),
+    height: @types.Length(h),
+    color: @types.Color::{ r: 255, g: 0, b: 0, a: 1.0 },
+  }
+  @node.Node::with_uid("b" + uid.to_string(), uid, style, [])
+}
+
+///|
+fn seed_uids_for(prev : @node.Node, next : @node.Node) -> Array[Int] {
+  let by_uid : Map[Int, @node.Node] = {}
+  index_nodes_by_uid(prev, by_uid)
+  let seeds : Array[Int] = []
+  collect_changed_seed_uids(next, by_uid, seeds)
+  seeds
+}
+
+///|
+test "incremental reflow seed: a layout change seeds exactly the changed node" {
+  let prev = @node.Node::with_uid("root", 0, @style.Style::default(), [
+    seed_box(1, 100.0, 40.0),
+    seed_box(2, 80.0, 60.0),
+  ])
+  // Widen #1 only.
+  let next = @node.Node::with_uid("root", 0, @style.Style::default(), [
+    seed_box(1, 150.0, 40.0),
+    seed_box(2, 80.0, 60.0),
+  ])
+  inspect(seed_uids_for(prev, next), content="[1]")
+}
+
+///|
+test "incremental reflow seed: a paint-only change seeds nothing (layout_eq holds)" {
+  let prev = @node.Node::with_uid("root", 0, @style.Style::default(), [
+    seed_box(1, 100.0, 40.0),
+    seed_box(2, 80.0, 60.0),
+  ])
+  // Only #1's color changes — layout_eq ignores it.
+  let next = @node.Node::with_uid("root", 0, @style.Style::default(), [
+    seed_box_colored(1, 100.0, 40.0),
+    seed_box(2, 80.0, 60.0),
+  ])
+  inspect(seed_uids_for(prev, next), content="[]")
+}
+
+///|
 test "incremental reflow: removing a child matches a full rebuild" {
   let v1 =
     "<html><body style=\"margin:0\">" +
