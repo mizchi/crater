@@ -610,21 +610,105 @@ let element_internals_polyfill_js : String =
   #|})();
 
 ///|
-impl @js.JsRuntime for V8JsRuntime with fn init(self : V8JsRuntime) -> Unit {
-  if !self.initialized {
-    match @v8.runtime_new() {
-      Ok(rt) => {
-        self.runtime = Some(rt)
-        self.initialized = true
-        // If mock DOM source is provided, it defines its own console/logs.
-        // Otherwise, set up basic console capture.
-        match self.mock_dom_source {
-          Some(_) => () // Console setup deferred to mock DOM init
-          None => ignore(rt.eval_string(console_setup_js))
-        }
-      }
-      Err(_) => ()
+/// Process-wide cache of the V8 startup snapshot that bakes in the page-
+/// independent JS API surface (the mock DOM classes / `document` / `window`
+/// globals, console, the logs bridge, and the ElementInternals polyfill). Keyed
+/// by the mock-DOM source so a changed source rebuilds. Like a real browser, the
+/// DOM / global API is pre-injected into the isolate via the snapshot instead of
+/// re-evaluating the (large) setup JS on every runtime; only per-page data
+/// (`create_dom_init_code`) and user code run at execute time.
+let mock_dom_snapshot_cache : Ref[(String, Bytes)?] = { val: None }
+
+///|
+/// Toggle the snapshot path (default on). Set to false to force the
+/// eval-on-init fallback — useful to isolate a snapshot-specific issue.
+let v8_snapshot_enabled : Ref[Bool] = { val: true }
+
+///|
+/// Enable/disable building runtimes from the pre-injected API snapshot.
+pub fn set_v8_snapshot_enabled(enabled : Bool) -> Unit {
+  v8_snapshot_enabled.val = enabled
+}
+
+///|
+/// Build (or reuse) the startup snapshot for a given mock-DOM source: a snapshot
+/// whose realm already has the static API surface installed. Returns `None` if
+/// snapshotting fails so the caller can fall back to eval-on-init.
+fn build_mock_dom_snapshot(src : String) -> Bytes? {
+  match mock_dom_snapshot_cache.val {
+    Some((cached_src, bytes)) => if cached_src == src { return Some(bytes) }
+    None => ()
+  }
+  // The same page-independent setup the eval path runs, captured once into the
+  // snapshot heap. `create_dom_init_code` (per-page) is intentionally NOT here.
+  let builder = @v8.snapshot_builder_new()
+    .eval(src)
+    .eval(logs_bridge_js)
+    .eval(element_internals_polyfill_js)
+  match builder.build() {
+    Ok(bytes) => {
+      mock_dom_snapshot_cache.val = Some((src, bytes))
+      Some(bytes)
     }
+    Err(_) => None
+  }
+}
+
+///|
+impl @js.JsRuntime for V8JsRuntime with fn init(self : V8JsRuntime) -> Unit {
+  if self.initialized {
+    return
+  }
+  match self.mock_dom_source {
+    // Mock-DOM path: prefer a runtime created from the pre-injected API
+    // snapshot (the static surface is already present — no per-runtime eval of
+    // the setup JS). Fall back to a plain runtime + eval-on-first-execute if
+    // snapshotting is disabled or fails.
+    Some(src) => {
+      let snapshot = if v8_snapshot_enabled.val {
+        build_mock_dom_snapshot(src)
+      } else {
+        None
+      }
+      match snapshot {
+        Some(snapshot) =>
+          match @v8.runtime_new_with_snapshot(snapshot) {
+            Ok(rt) => {
+              self.runtime = Some(rt)
+              self.initialized = true
+              // The API surface is already in the realm — skip the per-runtime
+              // eval of mock_dom_source / logs bridge / polyfill in execute().
+              self.dom_initialized = true
+            }
+            Err(_) => self.init_plain_runtime()
+          }
+        None => self.init_plain_runtime()
+      }
+    }
+    // No mock DOM: basic eval with console capture.
+    None =>
+      match @v8.runtime_new() {
+        Ok(rt) => {
+          self.runtime = Some(rt)
+          self.initialized = true
+          ignore(rt.eval_string(console_setup_js))
+        }
+        Err(_) => ()
+      }
+  }
+}
+
+///|
+/// Fallback initializer: a plain runtime whose mock-DOM API is evaluated lazily
+/// on the first `execute()` (the pre-snapshot behavior). `dom_initialized` stays
+/// false so `execute()` runs the setup JS.
+fn V8JsRuntime::init_plain_runtime(self : V8JsRuntime) -> Unit {
+  match @v8.runtime_new() {
+    Ok(rt) => {
+      self.runtime = Some(rt)
+      self.initialized = true
+    }
+    Err(_) => ()
   }
 }
 

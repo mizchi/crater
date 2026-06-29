@@ -7,9 +7,17 @@ import {
 }
 
 // Values
+pub fn block_flow_cache_hit_count() -> Int
+
+pub fn clear_block_flow_cache() -> Unit
+
+pub fn clear_block_intrinsic_caches() -> Unit
+
 pub fn compute(@node.Node, @crater-core.LayoutContext, @node.DispatchFn) -> @crater-core.Layout
 
 pub fn compute_with_warnings(@node.Node, @crater-core.LayoutContext, @node.DispatchFn) -> @crater-core.LayoutResult
+
+pub fn reset_block_flow_cache_hits() -> Unit
 
 // Errors
 

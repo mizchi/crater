@@ -12,6 +12,8 @@ pub fn full_mock_dom_js() -> String
 
 pub fn minimal_mock_dom_js() -> String
 
+pub fn set_v8_snapshot_enabled(Bool) -> Unit
+
 // Errors
 
 // Types and methods

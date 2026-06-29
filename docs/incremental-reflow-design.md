@@ -1,8 +1,12 @@
 # Design: incremental reflow for the dynamic-rendering path
 
-Status: design. This is step (4) of `docs/dynamic-rendering-js-bridge-design.md`
-— make a DOM mutation re-lay-out only the dirty subtree instead of a full
-re-parse + re-layout. Grounded in the current code; no implementation yet.
+Status: **landed and default-on.** This is step (4) of
+`docs/dynamic-rendering-js-bridge-design.md` — make a DOM mutation re-lay-out only
+the dirty subtree instead of a full re-parse + re-layout. The full pipeline
+(stable uids → `reconcile_from` → flow-aware dirty seed via `Style::layout_eq` →
+block-flow memoization) is implemented and equivalence-validated on js (shell +
+reflow-VRT corpus, incl. real-world fixtures) and native V8 (js_v8 + e2e). The
+sections below document the design and the as-built notes.
 
 ## Where the cost is today
 
@@ -104,16 +108,49 @@ structural append, and an unchanged re-render (the last reuses the cache —
   this to `reconcile_from` makes the incremental layout equal a full recompute
   while keeping the dirty set tight.
 - **but** the practical speedup is currently bounded by the layout engine's
-  per-node cache, not by the dirty set: a *migrated* child cache frequently
-  misses on `can_use_cache`'s constraint comparison, and `children_dirty`
-  propagates to the root on any change, so the reliable reuse today is the
-  **root / high-subtree short-circuit** (a clean subtree returns its cached
-  layout without descending) — i.e. no-op and paint-only re-renders. Making a
-  change to a *late* element reuse the *earlier* elements needs the per-node
-  child cache to hit across trees (relative-position caching / a style
-  fingerprint on the cache key). That is the next layout-engine lever; the
-  reflow plumbing (stable uids → reconcile → flow-aware dirty) is correct and
-  ready to exploit it.
+  per-node cache, not by the dirty set: `children_dirty` propagates to the root
+  on any change, so the reliable reuse today is the **root / high-subtree
+  short-circuit** (a clean subtree returns its cached layout without descending)
+  — i.e. no-op, paint-only, and disjoint-subtree re-renders.
+
+  **Measured root cause (item 3).** The per-uid cache (`try_cache_by_uid`,
+  `incremental_compute.mbt`) was only consulted for children dispatched through
+  the cache-aware callback — i.e. **flex / grid / table / inline-block BFC
+  roots** (`block.mbt`, `dispatch_fn(child_for_layout, …)`). Ordinary **in-flow
+  block children** were laid out by `compute_with_collapse` directly, which never
+  read the cache. So a `display:block` stack recomputed in full no matter how
+  little changed — a late-element change reused nothing earlier. Pinned by
+  `layout/tree/incremental_perf_wbtest.mbt`.
+
+  **Fix (landed): block-flow memoization.** `compute_with_collapse(child, ctx)`
+  is a *pure* function of the child subtree and the constraint, so it is
+  memoized per `uid` (`block_flow_cache` in `block.mbt`): an in-flow block child
+  whose whole subtree is unchanged is served from its cached
+  `LayoutWithCollapse` — layout **and** escaping collapse margins together — so
+  the parent's stacking / shift passes treat it identically to a fresh compute.
+  No coordinate or collapse-through reasoning is needed: a clean child under the
+  same constraint returns exactly what a recompute would. Two correctness gates,
+  both required before reuse:
+
+  - the child's subtree is unchanged — `@node.node_is_clean(uid)`, a core hook
+    installed by `compute_tree_incremental` over the `LayoutTree`'s dirty state
+    (`!dirty && !children_dirty`, dependency-inverted like the layout dispatcher
+    so `layout/block` need not depend on `layout/tree`); and
+  - the constraint matches — the cache key encodes available width/height,
+    sizing mode, and viewport.
+
+  The cache is populated only while an incremental layout is active
+  (`@node.node_incremental_active()`), so the static / full-layout path neither
+  reads nor writes it and is byte-for-byte unchanged. Validated on the js target:
+  a 12-block stack with the last block changed now reuses all 11 preceding
+  blocks (`block_flow_cache_hit_count() == 11`) and the incremental layout is
+  byte-identical to a full recompute; a width change misses the key (no stale
+  reuse); nested block subtrees reuse the unchanged sibling branch. The whole
+  layout (326) and renderer/vrt (410) suites stay green.
+
+  The remaining ceiling is the **cascade** (still O(n) per mutation) and the
+  flex/grid cross-axis perturbation (a change to one flex item can legitimately
+  dirty its line); those are separate levers.
 
 The remaining (B) work is the shell integration that produces `dirty_uids` and a
 new render node tree with stable uids (phase A's `dom_id`), then calls
@@ -136,6 +173,41 @@ records (`@dom.MutationRecord::affects_layout`, `dom/dom/mutation.mbt:148`). A
 paint-only attribute edit (e.g. `color`) can skip `mark_dirty` for layout and
 only invalidate paint; a layout attribute (`width`, `display`, …) marks dirty.
 
+> **Note — the mutation queue is *not* a safe substitute for the style diff.**
+> A mutation on node X can change node Y's *computed* style via a combinator
+> (`:has()`, `+`, `~`, `:nth-child`). Dirtying only the mutated DomTree nodes
+> would leave Y reading stale cache. The only fully-correct seed is comparing the
+> freshly-cascaded computed `@style.Style` (step 3), which reflects every
+> combinator. The mutation queue is a *paint-vs-layout* refinement on top of a
+> correct seed, not a replacement for it.
+
+#### Step 3 narrowing — **landed** (mizchi/css `Style::layout_eq`)
+
+The shell used to pass **every** uid as `dirty_uids`
+(`Browser::build_dynamic_layout_tree`) — correct (== full recompute) but it
+defeated the block-flow memoization, which only reuses nodes the driver reports
+clean. Narrowing needed an `old_style != new_style` check per uid; `@style.Style`
+is a large struct and a hand-rolled comparator in crater would under-report the
+moment a field is missed (→ stale layout). The clean signal lives upstream:
+**`mizchi/css@0.7.3` adds `Style::layout_eq(self, other) -> Bool`** comparing only
+layout-affecting fields (paint-only — color, background, shadow, border-color,
+border-radius, clip, opacity, z-index, pointer-events — ignored), so a paint-only
+change does not invalidate layout. (Blanket `derive(Eq)` on `Style` would instead
+force `Eq` onto paint types like gradients/shadows and over-dirty on repaint — the
+focused method is the right tool.)
+
+crater consumes it (`Browser::build_dynamic_layout_tree`): it keeps the prior
+render-node tree (`incremental_prev_node`), seeds the dirty set with the persisted
+uids whose `node_layout_inputs_equal` fails — `!a.style.layout_eq(b.style)` or a
+`text` / `src` / measure-presence change — expands it with `flow_dirty_uids`
+(absolute-geometry flow shift), and hands that to `reconcile_from` (whose
+structural pass covers add/remove/move). The comparison is against the *computed*
+post-cascade style, so a mutation that changes an un-mutated node's style via a
+combinator (`:has()`, `+`, `~`, `:nth-child`) is still caught. js-tested on-vs-off
+render equivalence per mutation kind (text, size, paint-only, append, remove) in
+`browser/shell/incremental_reflow_wbtest.mbt`. Residual: a measure-func *value*
+change with no src/style change (closures aren't comparable).
+
 ### (C) Validation without V8 (js target)
 
 Correctness is a pure layout property and is testable on the **js** target, no
@@ -152,23 +224,45 @@ attr, layout attr, append, remove, move) and a fuzz-ish sequence.
    js-testable; the static render path keeps `dom_id = None` and is unchanged.
 2. **(B) incremental apply** — layout-level core landed
    (`LayoutTree::reconcile_from`, js-tested), stable-uid registry landed
-   (`stabilize_uids` / `UidRegistry`, js-tested), and the **shell wiring landed
-   behind a default-off flag**: `Browser::set_incremental_reflow(true)` makes the
+   (`stabilize_uids` / `UidRegistry`, js-tested), and the **shell wiring landed and is now default-on**: `Browser::set_incremental_reflow(true)` makes the
    dynamic render path stabilize uids and reconcile against the prior tree
    (`Browser::build_dynamic_layout_tree` in `browser/shell/incremental_reflow.mbt`,
-   used by the text render path). Off by default → byte-for-byte the current
-   behavior; js-tested that on vs off render identically. **The dirty set is
-   currently every uid** (correct, == full recompute) — the remaining work is to
-   narrow it so the flag is also *faster*: a paint-only fast path via the DomTree
-   mutation queue (`MutationRecord::affects_layout`), and/or a layout-relevant
-   style diff (`@style.Style` has no `Eq`, so this needs a focused comparator or
-   the mutation classification). Validate the dynamic round-trip with native V8.
+   used by the text render path). `set_incremental_reflow(false)` opts back into a full rebuild; js- and native-tested that on vs off render identically. The dirty seed is now
+   **narrowed** (landed): `build_dynamic_layout_tree` seeds only the persisted
+   uids whose layout inputs changed (`Style::layout_eq` / text / src / measure),
+   expands with `flow_dirty_uids`, and reconciles — so the **block-flow
+   memoization** (also landed) reuses the unchanged block subtrees. js-tested
+   on-vs-off equivalence per mutation kind (see "Step 3 narrowing — landed"
+   above). The dynamic round-trip is validated on native V8 in-sandbox: testing/e2e/native_v8 "E2E: incremental reflow matches a full rebuild on the dynamic JS path" (31/31 e2e tests pass) — see docs/v8-build-egress.md.
 3. **paint-only fast path** — use `affects_layout` to keep layout and re-paint
    only (the dynamic-path analogue of `branch_reusing_layout`).
 4. **forced reflow read path** (separate memo) — on a measuring read after a
    mutation, run (B) mid-script and re-inject the layout bridge so reads-after-
    mutation aren't stale. Needs a JS↔MoonBit callback the batch model doesn't yet
    have; pairs with the bridge work.
+
+## Checking it (CLI / VRT)
+
+The flag is exposed on the CLI as `--incremental-reflow` (default off), so a
+render can be driven with reconcile on without code changes:
+
+```bash
+# Same page, flag off vs on — text output should be identical (a smoke check
+# that reconcile doesn't perturb a static render):
+crater --text https://example.com > off.txt
+crater --text --incremental-reflow https://example.com > on.txt
+diff off.txt on.txt   # expect no difference
+
+# The real signal is on *re-renders after a DOM mutation* (the dynamic path),
+# which the static paint-VRT harness (single `crater_paint` render) does not
+# exercise. Use the native-V8 e2e sign-off for that:
+just test-native-full   # "E2E: incremental reflow matches a full rebuild ..."
+```
+
+The js-target `incremental_reflow_wbtest.mbt` sweep is the offline equivalent of
+the VRT equivalence check (incremental == full per mutation kind, no browser
+needed). A paint-level VRT that mutates then re-renders would need a harness on
+the dynamic (JS) path rather than the static `crater_paint` stdin renderer.
 
 ## Risks / open questions
 

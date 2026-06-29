@@ -7,11 +7,19 @@ import {
 }
 
 // Values
+pub fn clear_node_clean_predicate() -> Unit
+
 pub fn fallback_layout(Node, @crater-core.LayoutContext) -> @crater-core.Layout
 
 pub fn get_layout_dispatcher() -> LayoutDispatchFunc?
 
+pub fn node_incremental_active() -> Bool
+
+pub fn node_is_clean(Int) -> Bool
+
 pub fn set_layout_dispatcher(LayoutDispatchFunc) -> Unit
+
+pub fn set_node_clean_predicate((Int) -> Bool) -> Unit
 
 pub fn stabilize_uids(Node, UidRegistry) -> Unit
 

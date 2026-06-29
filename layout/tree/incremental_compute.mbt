@@ -434,6 +434,19 @@ pub fn compute_tree_incremental(
   // 2. Set up global stats reference
   global_cache_stats.val = Some(stats)
 
+  // 2b. Install the subtree-clean predicate so block-flow memoization
+  // (layout/block) can reuse a clean child's cached `compute_with_collapse`
+  // result. A node is reusable iff neither it nor any descendant changed —
+  // `children_dirty` propagates descendant changes up, so `!dirty &&
+  // !children_dirty` is exactly "whole subtree unchanged".
+  let node_map = tree.node_map
+  @node.set_node_clean_predicate(fn(uid) {
+    match node_map.get(uid) {
+      Some(n) => !n.dirty && !n.children_dirty
+      None => false
+    }
+  })
+
   // 3. Save original dispatcher and set up cached dispatcher
   let original_dispatcher = @node.get_layout_dispatcher()
   match original_dispatcher {
@@ -461,6 +474,7 @@ pub fn compute_tree_incremental(
     Some(d) => @node.set_layout_dispatcher(d)
     None => ()
   }
+  @node.clear_node_clean_predicate()
   global_cache_stats.val = None
   layout_node_cache_map.val = {}
   result

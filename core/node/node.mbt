@@ -181,6 +181,53 @@ pub fn get_layout_dispatcher() -> LayoutDispatchFunc? {
 }
 
 ///|
+/// Global "is this node's whole subtree unchanged since the last layout?"
+/// predicate, keyed by `uid`. Installed by the incremental layout driver
+/// (`compute_tree_incremental`) over the `LayoutTree`'s dirty state, and read by
+/// the block-flow memoization in `layout/block` to decide whether a clean child
+/// subtree can be served from its cached `compute_with_collapse` result.
+///
+/// Dependency-inverted on purpose: `layout/block` cannot depend on `layout/tree`
+/// (the dispatcher cycle), so the cleanliness signal flows through this core hook
+/// the same way the layout dispatcher does. Absent an installed predicate (the
+/// non-incremental / full-layout path) it returns `false`, so memoization is off
+/// by default and the static path is byte-for-byte unchanged.
+let node_clean_predicate : Ref[((Int) -> Bool)?] = { val: None }
+
+///|
+/// Install the subtree-clean predicate for the duration of an incremental layout.
+/// Pass `None` (via `clear_node_clean_predicate`) to remove it afterwards.
+pub fn set_node_clean_predicate(f : (Int) -> Bool) -> Unit {
+  node_clean_predicate.val = Some(f)
+}
+
+///|
+/// Remove the subtree-clean predicate (back to the conservative default where
+/// every node reports not-clean, disabling block-flow memoization).
+pub fn clear_node_clean_predicate() -> Unit {
+  node_clean_predicate.val = None
+}
+
+///|
+/// Whether the node with this `uid` has an entirely unchanged subtree since the
+/// last layout, per the installed predicate. `false` when no predicate is
+/// installed (the safe default: recompute).
+pub fn node_is_clean(uid : Int) -> Bool {
+  match node_clean_predicate.val {
+    Some(pred) => pred(uid)
+    None => false
+  }
+}
+
+///|
+/// Whether an incremental layout is in progress (the clean predicate is
+/// installed). Block-flow memoization populates its cache only while this is
+/// true, so the static / full-layout path neither reads nor writes it.
+pub fn node_incremental_active() -> Bool {
+  node_clean_predicate.val is Some(_)
+}
+
+///|
 /// Create a minimal fallback layout for a node (used when dispatch is unavailable)
 pub fn fallback_layout(
   node : Node,

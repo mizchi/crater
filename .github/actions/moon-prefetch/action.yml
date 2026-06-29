@@ -16,7 +16,7 @@ runs:
     - name: Update and prefetch root manifest
       shell: bash
       run: |
-        moon update
+        bash scripts/ci/moon-update-retry.sh
         bash scripts/ci/prefetch-moon-deps.sh
 
     - name: Update and prefetch extra manifests
@@ -30,7 +30,7 @@ runs:
           manifest="${manifest%% }"
           if [ -z "$manifest" ]; then continue; fi
           echo "::group::Update + prefetch ${manifest}"
-          moon update --manifest-path "$manifest"
+          bash scripts/ci/moon-update-retry.sh --manifest-path "$manifest"
           bash scripts/ci/prefetch-moon-deps.sh --manifest-path "$manifest"
           echo "::endgroup::"
         done <<<"$EXTRA_MANIFESTS"

@@ -182,6 +182,40 @@ test "E2E: multiple scripts execute in order" {
 }
 
 ///|
+/// Incremental reflow on the native dynamic path must equal a full rebuild.
+/// A page script mutates the DOM (changes text + appends a block); the
+/// flag-on browser renders a baseline, runs the script, then re-renders
+/// *incrementally* (reconcile against the prior tree), while the flag-off
+/// browser runs the same script and renders from scratch. The text renders
+/// must be byte-identical. This is the native-V8 sign-off for the
+/// `Style::layout_eq`-narrowed dirty seed + block-flow memoization that the
+/// js-target tests cover offline (see browser/shell/incremental_reflow_wbtest.mbt).
+test "E2E: incremental reflow matches a full rebuild on the dynamic JS path" {
+  let html =
+    "<html><body style=\"margin:0\">" +
+    "<div id=\"a\" style=\"width:200px\">alpha</div>" +
+    "<div id=\"b\" style=\"width:200px\">beta</div>" +
+    "<script>" +
+    "document.getElementById('b').textContent = 'beta beta beta beta beta beta';" +
+    "const el = document.createElement('div'); el.textContent = 'appended'; document.body.appendChild(el);" +
+    "</script></body></html>"
+  // Flag off: run the script, then render the final DOM from scratch.
+  let full = new_v8_browser(800, 600)
+  full.set_incremental_reflow(false)
+  full.set_html_content(html)
+  let _ = full.execute_scripts()
+  let want = full.render_text_full_page()
+  // Flag on: baseline render, run the script (mutates), incremental re-render.
+  let incr = new_v8_browser(800, 600)
+  incr.set_incremental_reflow(true)
+  incr.set_html_content(html)
+  let _ = incr.render_text_full_page()
+  let _ = incr.execute_scripts()
+  let got = incr.render_text_full_page()
+  assert_eq(got, want)
+}
+
+///|
 test "E2E: console.log captured" {
   let browser = make_v8_browser(
     "<html><body><script>console.log('hello from script');</script></body></html>",
