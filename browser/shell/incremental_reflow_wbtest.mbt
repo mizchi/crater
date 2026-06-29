@@ -59,6 +59,37 @@ test "incremental reflow: a text mutation matches a full rebuild" {
 }
 
 ///|
+test "incremental reflow: a flex-item mutation matches a full rebuild" {
+  let mk = fn(w : String) {
+    "<html><body style=\"margin:0\">" +
+    "<div style=\"display:flex;width:300px;height:50px\">" +
+    "<div style=\"width:" +
+    w +
+    ";height:40px\">a</div>" +
+    "<div style=\"width:80px;height:40px\">b</div>" +
+    "<div style=\"width:60px;height:40px\">c</div>" +
+    "</div></body></html>"
+  }
+  inspect(incremental_mutation_matches_full(mk("60px"), mk("120px")), content="true")
+}
+
+///|
+test "incremental reflow: a deep nested mutation matches a full rebuild" {
+  let mk = fn(h : String) {
+    "<html><body style=\"margin:0\">" +
+    "<div style=\"width:200px\">" +
+    "<div style=\"width:180px;height:30px\">head</div>" +
+    "<div style=\"width:180px\">" +
+    "<div style=\"width:160px;height:" +
+    h +
+    "\">deep</div>" +
+    "</div></div>" +
+    "<div style=\"width:200px;height:25px\">footer</div></body></html>"
+  }
+  inspect(incremental_mutation_matches_full(mk("40px"), mk("90px")), content="true")
+}
+
+///|
 test "incremental reflow: a size mutation matches a full rebuild" {
   let mk = fn(h : String) {
     "<html><body style=\"margin:0\">" +
