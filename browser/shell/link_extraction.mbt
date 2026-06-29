@@ -73,7 +73,7 @@ fn extract_links_fallback(html : String) -> Array[Link] {
         let text = html
           .unsafe_substring(start=text_start, end=text_end)
           .trim()
-          .to_string()
+          .to_owned()
         if href.length() > 0 {
           links.push({ href, text, source_id })
         }

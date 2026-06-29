@@ -20,6 +20,8 @@ import {
   "mizchi/crater-dom/layout/html_tree" @layout_html_tree,
 }
 
+warnings = "-unused_package"
+
 options(
   link: {
     "js": {

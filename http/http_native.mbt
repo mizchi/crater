@@ -50,7 +50,7 @@ pub async fn fetch(
   let host_url = extract_host_url(url)
   let path = extract_path_from_url(url)
   // Create HTTP client with just the host
-  let client = @async_http.Client::new(host_url, headers=prepared.headers) catch {
+  let client = @async_http.Client(host_url, headers=prepared.headers) catch {
     _ => raise InvalidUrl(url)
   }
   // Perform request based on method

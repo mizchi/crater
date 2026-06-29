@@ -84,3 +84,11 @@ test("platform_link_flags includes libm on linux", () => {
   assert.match(flags, /-pthread/)
   assert.match(flags, /-lm(\s|$)/)
 })
+
+test("platform_link_flags includes libc++ on darwin", () => {
+  const flags = platform_link_flags("darwin", "/tmp/mizchi-v8")
+  assert.match(flags, /librusty_v8_bridge\.a/)
+  assert.match(flags, /-lc\+\+/)
+  assert.match(flags, /-pthread/)
+  assert.match(flags, /-framework CoreFoundation/)
+})

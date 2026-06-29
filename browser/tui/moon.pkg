@@ -21,7 +21,7 @@ import {
 warnings = "-unused_package"
 
 options(
-  link: { "native": { "cc-link-flags": "tui/tui_native.c" } },
+  link: { "native": { "cc-link-flags": "browser/tui/tui_native.c" } },
   targets: {
     "codeblock_test.mbt": [ "wasm-gc", "native" ],
     "render_test.mbt": [ "wasm-gc", "js" ],
