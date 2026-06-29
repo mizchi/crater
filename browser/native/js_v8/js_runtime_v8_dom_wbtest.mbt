@@ -339,3 +339,38 @@ test "V8+FullDOM: custom states round-trip into DomTree and render html" {
   assert_true(composed.contains("data-crater-custom-states=\"open\""))
   assert_false(snapshot.contains("data-crater-custom-states"))
 }
+
+///|
+/// Snapshot parity: a runtime created from the pre-injected API snapshot must
+/// behave identically to one that evaluates the mock-DOM setup on first execute.
+/// Runs the same script both ways (toggled via set_v8_snapshot_enabled) and
+/// asserts identical results — the sign-off that the V8 startup snapshot bakes
+/// in the full DOM / global API surface (other-browser-style pre-injection).
+test "V8+Snapshot: snapshot-initialized runtime matches eval-initialized" {
+  let code =
+    #|const d = document.createElement('div');
+    #|d.id = 'x'; d.textContent = 'hi';
+    #|document.body.appendChild(d);
+    #|console.log('snapshot parity');
+    #|const r = document.getElementById('x').getBoundingClientRect();
+    #|return document.body.children.length + ':' +
+    #|  document.getElementById('x').textContent + ':' +
+    #|  (typeof window) + ':' + (typeof r.width);
+  // Eval path (snapshot disabled).
+  set_v8_snapshot_enabled(false)
+  let rt_eval = V8JsRuntime::new_with_mock_dom(full_mock_dom_js())
+  rt_eval.init()
+  let r_eval = rt_eval.execute(
+    0, @dom.DomTree::new(), code, @js.ImmediateFlush,
+  )
+  // Snapshot path (default).
+  set_v8_snapshot_enabled(true)
+  let rt_snap = V8JsRuntime::new_with_mock_dom(full_mock_dom_js())
+  rt_snap.init()
+  let r_snap = rt_snap.execute(
+    0, @dom.DomTree::new(), code, @js.ImmediateFlush,
+  )
+  assert_true(r_eval.success)
+  assert_true(r_snap.success)
+  assert_eq(r_snap.value, r_eval.value)
+}
