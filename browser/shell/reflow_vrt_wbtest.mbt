@@ -68,6 +68,81 @@ fn reflow_vrt_corpus() -> Array[(String, String, String)] {
       page("<div style=\"width:260px\"><div style=\"width:240px;height:20px\">h</div><div style=\"width:240px\"><div style=\"width:220px;height:30px\">x</div><div style=\"width:220px;height:44px\">y</div></div><div style=\"width:260px;height:20px\">f</div></div>"),
     ),
     (
+      "grid: template column count change",
+      page("<div style=\"display:grid;grid-template-columns:1fr 1fr;width:300px\"><div style=\"height:30px\">a</div><div style=\"height:30px\">b</div><div style=\"height:30px\">c</div><div style=\"height:30px\">d</div></div>"),
+      page("<div style=\"display:grid;grid-template-columns:1fr 1fr 1fr;width:300px\"><div style=\"height:30px\">a</div><div style=\"height:30px\">b</div><div style=\"height:30px\">c</div><div style=\"height:30px\">d</div></div>"),
+    ),
+    (
+      "grid: cell height change",
+      page("<div style=\"display:grid;grid-template-columns:1fr 1fr;width:300px\"><div style=\"height:30px\">a</div><div style=\"height:30px\">b</div><div style=\"height:30px\">c</div><div style=\"height:30px\">d</div></div>"),
+      page("<div style=\"display:grid;grid-template-columns:1fr 1fr;width:300px\"><div style=\"height:30px\">a</div><div style=\"height:90px\">b</div><div style=\"height:30px\">c</div><div style=\"height:30px\">d</div></div>"),
+    ),
+    (
+      "table: append a row",
+      page("<table style=\"width:300px\"><tr><td>a1</td><td>a2</td></tr><tr><td>b1</td><td>b2</td></tr></table>"),
+      page("<table style=\"width:300px\"><tr><td>a1</td><td>a2</td></tr><tr><td>b1</td><td>b2</td></tr><tr><td>c1</td><td>c2</td></tr></table>"),
+    ),
+    (
+      "table: remove the first row",
+      page("<table style=\"width:300px\"><tr><td>a1</td><td>a2</td></tr><tr><td>b1</td><td>b2</td></tr><tr><td>c1</td><td>c2</td></tr></table>"),
+      page("<table style=\"width:300px\"><tr><td>b1</td><td>b2</td></tr><tr><td>c1</td><td>c2</td></tr></table>"),
+    ),
+    (
+      "positioned: absolute child inset change",
+      page("<div style=\"position:relative;width:300px;height:200px\"><div style=\"position:absolute;top:10px;left:10px;width:50px;height:50px\">x</div></div>"),
+      page("<div style=\"position:relative;width:300px;height:200px\"><div style=\"position:absolute;top:80px;left:120px;width:50px;height:50px\">x</div></div>"),
+    ),
+    (
+      "margin collapse: between siblings",
+      page("<div style=\"width:200px\"><div style=\"height:20px;margin-bottom:10px\">a</div><div style=\"height:20px;margin-top:10px\">b</div></div>"),
+      page("<div style=\"width:200px\"><div style=\"height:20px;margin-bottom:50px\">a</div><div style=\"height:20px;margin-top:10px\">b</div></div>"),
+    ),
+    (
+      "flex wrap: item grows past wrap (line count change)",
+      page("<div style=\"display:flex;flex-wrap:wrap;width:200px\"><div style=\"width:80px;height:30px\">a</div><div style=\"width:80px;height:30px\">b</div><div style=\"width:80px;height:30px\">c</div></div>"),
+      page("<div style=\"display:flex;flex-wrap:wrap;width:200px\"><div style=\"width:160px;height:30px\">a</div><div style=\"width:80px;height:30px\">b</div><div style=\"width:80px;height:30px\">c</div></div>"),
+    ),
+    (
+      "flex: direction row -> column",
+      page("<div style=\"display:flex;flex-direction:row;width:300px;height:200px\"><div style=\"width:60px;height:40px\">a</div><div style=\"width:60px;height:40px\">b</div></div>"),
+      page("<div style=\"display:flex;flex-direction:column;width:300px;height:200px\"><div style=\"width:60px;height:40px\">a</div><div style=\"width:60px;height:40px\">b</div></div>"),
+    ),
+    (
+      "display: block container becomes flex",
+      page("<div style=\"width:300px\"><div style=\"width:60px;height:40px\">a</div><div style=\"width:60px;height:40px\">b</div></div>"),
+      page("<div style=\"display:flex;width:300px\"><div style=\"width:60px;height:40px\">a</div><div style=\"width:60px;height:40px\">b</div></div>"),
+    ),
+    (
+      "display: none hides a sibling (following shifts up)",
+      page("<div style=\"width:200px\"><div style=\"height:30px\">a</div><div style=\"height:30px\">b</div><div style=\"height:30px\">c</div></div>"),
+      page("<div style=\"width:200px\"><div style=\"height:30px\">a</div><div style=\"display:none;height:30px\">b</div><div style=\"height:30px\">c</div></div>"),
+    ),
+    (
+      "constraint: min-height kicks in",
+      page("<div style=\"width:200px\"><div style=\"width:180px;height:20px;min-height:0\">a</div><div style=\"width:180px;height:20px\">b</div></div>"),
+      page("<div style=\"width:200px\"><div style=\"width:180px;height:20px;min-height:80px\">a</div><div style=\"width:180px;height:20px\">b</div></div>"),
+    ),
+    (
+      "box model: padding + border change",
+      page("<div style=\"width:200px\"><div style=\"width:160px;height:30px;padding:4px;border:1px solid\">a</div><div style=\"width:160px;height:30px\">b</div></div>"),
+      page("<div style=\"width:200px\"><div style=\"width:160px;height:30px;padding:20px;border:6px solid\">a</div><div style=\"width:160px;height:30px\">b</div></div>"),
+    ),
+    (
+      "percentage: child width under widened parent",
+      page("<div style=\"width:200px\"><div style=\"width:50%;height:30px\">a</div></div>"),
+      page("<div style=\"width:360px\"><div style=\"width:50%;height:30px\">a</div></div>"),
+    ),
+    (
+      "deep stack: change the LAST of many (memo reuse path)",
+      page("<div style=\"width:200px\"><div style=\"height:20px\">1</div><div style=\"height:20px\">2</div><div style=\"height:20px\">3</div><div style=\"height:20px\">4</div><div style=\"height:20px\">5</div><div style=\"height:20px\">6</div><div style=\"height:20px\">7</div><div style=\"height:20px\">8</div></div>"),
+      page("<div style=\"width:200px\"><div style=\"height:20px\">1</div><div style=\"height:20px\">2</div><div style=\"height:20px\">3</div><div style=\"height:20px\">4</div><div style=\"height:20px\">5</div><div style=\"height:20px\">6</div><div style=\"height:20px\">7</div><div style=\"height:70px\">8 grew</div></div>"),
+    ),
+    (
+      "multiple simultaneous mutations across the tree",
+      page("<div style=\"width:300px\"><div style=\"width:280px;height:30px\">head</div><div style=\"display:flex;width:280px\"><div style=\"width:80px;height:40px\">x</div><div style=\"width:80px;height:40px\">y</div></div><div style=\"width:280px;height:20px\">tail</div></div>"),
+      page("<div style=\"width:300px\"><div style=\"width:280px;height:60px\">head taller</div><div style=\"display:flex;width:280px\"><div style=\"width:140px;height:40px\">x</div><div style=\"width:80px;height:70px\">y</div></div><div style=\"width:280px;height:20px\">tail</div></div>"),
+    ),
+    (
       "no-op: identical re-render",
       page("<div style=\"width:120px;height:40px\">a</div><div style=\"width:80px;height:60px\">b</div>"),
       page("<div style=\"width:120px;height:40px\">a</div><div style=\"width:80px;height:60px\">b</div>"),
