@@ -1,8 +1,12 @@
 # Design: incremental reflow for the dynamic-rendering path
 
-Status: design. This is step (4) of `docs/dynamic-rendering-js-bridge-design.md`
-— make a DOM mutation re-lay-out only the dirty subtree instead of a full
-re-parse + re-layout. Grounded in the current code; no implementation yet.
+Status: **landed and default-on.** This is step (4) of
+`docs/dynamic-rendering-js-bridge-design.md` — make a DOM mutation re-lay-out only
+the dirty subtree instead of a full re-parse + re-layout. The full pipeline
+(stable uids → `reconcile_from` → flow-aware dirty seed via `Style::layout_eq` →
+block-flow memoization) is implemented and equivalence-validated on js (shell +
+reflow-VRT corpus, incl. real-world fixtures) and native V8 (js_v8 + e2e). The
+sections below document the design and the as-built notes.
 
 ## Where the cost is today
 
