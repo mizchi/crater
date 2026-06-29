@@ -32,9 +32,9 @@ test "render_paint_tree_to_image produces the expected pixels" {
     [solid("box", 2.0, 2.0, 4.0, 4.0, @types.Color::rgb(0, 0, 0), [])],
   )
   let image = render_paint_tree_to_image(root, 8, 8)
-  inspect(image.pixel_at(0, 0), content="(255, 255, 255, 255)")
-  inspect(image.pixel_at(3, 3), content="(0, 0, 0, 255)")
-  inspect(image.pixel_at(7, 7), content="(255, 255, 255, 255)")
+  debug_inspect(image.pixel_at(0, 0), content="(255, 255, 255, 255)")
+  debug_inspect(image.pixel_at(3, 3), content="(0, 0, 0, 255)")
+  debug_inspect(image.pixel_at(7, 7), content="(255, 255, 255, 255)")
 }
 
 ///|
@@ -76,7 +76,7 @@ test "render_html_to_image rasterizes a styled box through the VRT pipeline" {
   inspect(image.width, content="8")
   inspect(image.height, content="8")
   // the red box paints the top-left pixel
-  inspect(image.pixel_at(0, 0), content="(255, 0, 0, 255)")
+  debug_inspect(image.pixel_at(0, 0), content="(255, 0, 0, 255)")
 }
 
 ///|

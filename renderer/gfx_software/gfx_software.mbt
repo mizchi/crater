@@ -530,7 +530,7 @@ pub impl @gfx.GraphicsDriver for SoftwareDriver with fn begin(self, pass) {
 }
 
 ///|
-pub impl @gfx.GraphicsDriver for SoftwareDriver with fn end(self, _present) {
+pub impl @gfx.GraphicsDriver for SoftwareDriver with fn end(_self, _present) {
 
 }
 

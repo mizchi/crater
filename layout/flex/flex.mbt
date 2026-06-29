@@ -3081,7 +3081,6 @@ fn compute_intrinsic_flex_main_size(
     }
     let mut total_main = 0.0
     let mut total_main_margins = 0.0
-    let mut has_flex_grow = false
     let mut item_count = 0
     for i = 0; i < flattened.length(); i = i + 1 {
       let child = flattened[i].node
@@ -3106,9 +3105,6 @@ fn compute_intrinsic_flex_main_size(
         child_border.horizontal_sum()
       let child_min_height = child_padding.vertical_sum() +
         child_border.vertical_sum()
-      if child_style.flex_grow > 0.0 {
-        has_flex_grow = true
-      }
       let child_main = if child_is_row {
         let intrinsic_cross_for_aspect : Double? = match style.height {
           @types.Length(h) =>

@@ -825,7 +825,7 @@ fn pseudo_base_style_from_host(host_style : @style.Style) -> @style.Style {
 }
 
 ///|
-fn resolve_pseudo_spec(
+fn _resolve_pseudo_spec(
   selector_elem : @css.Element,
   host_style : @style.Style,
   stylesheets : Array[@css.Stylesheet],
