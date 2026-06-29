@@ -145,10 +145,13 @@ faults depends on which copy the linker kept and the host CPU dispatch.)
 intra-archive references together) with a `__v8priv` suffix via
 `objcopy --redefine-syms`, so V8 stays self-consistent and no longer collides
 with MoonBit's copy — each side binds to its own simdutf. Idempotent; a no-op
-without binutils (then the `-z,muldefs` fallback applies). With this, the full
-native `js_v8` suite (55 tests) **passes in the web sandbox**, so native V8 is no
-longer "blocked here" — it just needs the HTTPS bridge build above plus this
-symbol isolation (now automatic).
+without binutils (then the `-z,muldefs` fallback applies). With this, **both**
+native V8 suites pass in the web sandbox — `js_v8` (55 tests, incl. the V8
+snapshot parity test) and the `testing/e2e/native_v8` end-to-end suite (31 tests,
+incl. the layout-bridge read, `run_event_loop`, DOM round-trips, and the
+incremental-reflow == full-rebuild sign-off). Native V8 is no longer "blocked
+here" — it just needs the HTTPS bridge build above plus this symbol isolation
+(now automatic).
 
 ## Recurrence prevention
 

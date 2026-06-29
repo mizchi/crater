@@ -231,7 +231,7 @@ attr, layout attr, append, remove, move) and a fuzz-ish sequence.
    expands with `flow_dirty_uids`, and reconciles — so the **block-flow
    memoization** (also landed) reuses the unchanged block subtrees. js-tested
    on-vs-off equivalence per mutation kind (see "Step 3 narrowing — landed"
-   above). Validate the dynamic round-trip with native V8.
+   above). The dynamic round-trip is validated on native V8 in-sandbox: testing/e2e/native_v8 "E2E: incremental reflow matches a full rebuild on the dynamic JS path" (31/31 e2e tests pass) — see docs/v8-build-egress.md.
 3. **paint-only fast path** — use `affects_layout` to keep layout and re-paint
    only (the dynamic-path analogue of `branch_reusing_layout`).
 4. **forced reflow read path** (separate memo) — on a measuring read after a
