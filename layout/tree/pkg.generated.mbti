@@ -89,6 +89,7 @@ pub struct LayoutNode {
   children : Array[LayoutNode]
   mut measure : @crater-core.MeasureFunc?
   text : String?
+  src : String?
   mut dirty : Bool
   mut children_dirty : Bool
   mut cached_layout : LayoutCache?
@@ -231,4 +232,3 @@ pub fn ResourceRegistry::next_resource_id(Self) -> ResourceId
 // Type aliases
 
 // Traits
-

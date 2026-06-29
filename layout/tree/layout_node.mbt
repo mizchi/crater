@@ -61,6 +61,7 @@ pub struct LayoutNode {
   children : Array[LayoutNode]
   mut measure : @layout_types.MeasureFunc?
   text : String?
+  src : String?
   // Dirty bits
   mut dirty : Bool
   mut children_dirty : Bool
@@ -93,6 +94,7 @@ pub fn LayoutNode::new(
     children,
     measure: None,
     text: None,
+    src: None,
     dirty: true, // Initially dirty
     children_dirty: false,
     cached_layout: None,
@@ -116,6 +118,7 @@ pub fn LayoutNode::leaf(id : String, style : @style.Style) -> LayoutNode {
     children: [],
     measure: None,
     text: None,
+    src: None,
     dirty: true,
     children_dirty: false,
     cached_layout: None,
@@ -143,6 +146,7 @@ pub fn LayoutNode::with_measure(
     children: [],
     measure: Some(measure),
     text: None,
+    src: None,
     dirty: true,
     children_dirty: false,
     cached_layout: None,
@@ -209,6 +213,7 @@ pub fn LayoutNode::to_node(self : LayoutNode) -> @node.Node {
     children,
     self.measure,
     self.text,
+    src=self.src,
   )
 }
 
@@ -223,6 +228,7 @@ pub fn LayoutNode::from_node(node : @node.Node) -> LayoutNode {
     children,
     measure: node.measure,
     text: node.text,
+    src: node.src,
     dirty: true,
     children_dirty: false,
     cached_layout: None,

@@ -9,6 +9,7 @@ import {
   "mizchi/crater-browser-helpers" @browser_helpers,
   "mizchi/crater-dom/aom",
   "mizchi/crater-layout" @layout,
+  "mizchi/css/style" @style,
   "mizchi/css/values" @types,
   "mizchi/crater-core" @layout_types,
   "mizchi/crater-dom/dom",
