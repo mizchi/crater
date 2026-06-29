@@ -129,6 +129,66 @@ test "incremental reflow: appending a child matches a full rebuild" {
 }
 
 ///|
+/// Broad equivalence sweep across layout modes and mutation kinds: each (v1, v2)
+/// pair must render byte-identically whether reached incrementally (flag on,
+/// v1 then v2) or by a full rebuild of v2. This is the confidence base for
+/// considering the flag default-on; native-V8 round-trip validation is the
+/// remaining real-environment sign-off.
+test "incremental reflow: broad equivalence sweep (layout modes x mutations)" {
+  let cases : Array[(String, String, String)] = [
+    // (name, v1, v2)
+    (
+      "block: resize middle (shifts following)",
+      "<html><body style=\"margin:0\"><div style=\"width:200px\"><div style=\"width:100px;height:30px\">a</div><div style=\"width:100px;height:30px\">b</div><div style=\"width:100px;height:30px\">c</div></div></body></html>",
+      "<html><body style=\"margin:0\"><div style=\"width:200px\"><div style=\"width:100px;height:30px\">a</div><div style=\"width:100px;height:80px\">b</div><div style=\"width:100px;height:30px\">c</div></div></body></html>",
+    ),
+    (
+      "flex column: wrap toggle",
+      "<html><body style=\"margin:0\"><div style=\"display:flex;flex-direction:column;width:200px;height:300px\"><div style=\"width:80px;height:40px\">a</div><div style=\"width:80px;height:40px\">b</div></div></body></html>",
+      "<html><body style=\"margin:0\"><div style=\"display:flex;flex-direction:row;width:200px;height:300px\"><div style=\"width:80px;height:40px\">a</div><div style=\"width:80px;height:40px\">b</div></div></body></html>",
+    ),
+    (
+      "flex wrap: item width grows past wrap",
+      "<html><body style=\"margin:0\"><div style=\"display:flex;flex-wrap:wrap;width:200px\"><div style=\"width:80px;height:30px\">a</div><div style=\"width:80px;height:30px\">b</div><div style=\"width:80px;height:30px\">c</div></div></body></html>",
+      "<html><body style=\"margin:0\"><div style=\"display:flex;flex-wrap:wrap;width:200px\"><div style=\"width:150px;height:30px\">a</div><div style=\"width:80px;height:30px\">b</div><div style=\"width:80px;height:30px\">c</div></div></body></html>",
+    ),
+    (
+      "text: wrapping width change",
+      "<html><body style=\"margin:0\"><div style=\"width:200px\">the quick brown fox jumps over the lazy dog</div></body></html>",
+      "<html><body style=\"margin:0\"><div style=\"width:90px\">the quick brown fox jumps over the lazy dog</div></body></html>",
+    ),
+    (
+      "margins: collapse change",
+      "<html><body style=\"margin:0\"><div style=\"width:200px\"><div style=\"width:100px;height:20px;margin-bottom:10px\">a</div><div style=\"width:100px;height:20px;margin-top:10px\">b</div></div></body></html>",
+      "<html><body style=\"margin:0\"><div style=\"width:200px\"><div style=\"width:100px;height:20px;margin-bottom:40px\">a</div><div style=\"width:100px;height:20px;margin-top:10px\">b</div></div></body></html>",
+    ),
+    (
+      "nested: deep insert + sibling shift",
+      "<html><body style=\"margin:0\"><div style=\"width:200px\"><div style=\"width:180px;height:20px\">h</div><div style=\"width:180px\"><div style=\"width:160px;height:30px\">x</div></div><div style=\"width:200px;height:20px\">f</div></div></body></html>",
+      "<html><body style=\"margin:0\"><div style=\"width:200px\"><div style=\"width:180px;height:20px\">h</div><div style=\"width:180px\"><div style=\"width:160px;height:30px\">x</div><div style=\"width:160px;height:50px\">y</div></div><div style=\"width:200px;height:20px\">f</div></div></body></html>",
+    ),
+    (
+      "multiple simultaneous mutations",
+      "<html><body style=\"margin:0\"><div style=\"width:200px\"><div style=\"width:100px;height:30px\">a</div><div style=\"width:100px;height:30px\">b</div><div style=\"width:100px;height:30px\">c</div></div></body></html>",
+      "<html><body style=\"margin:0\"><div style=\"width:200px\"><div style=\"width:140px;height:30px\">a</div><div style=\"width:100px;height:70px\">b</div><div style=\"width:60px;height:30px\">c changed</div></div></body></html>",
+    ),
+    (
+      "no-op re-render (identical)",
+      "<html><body style=\"margin:0\"><div style=\"width:120px;height:40px\">a</div><div style=\"width:80px;height:60px\">b</div></body></html>",
+      "<html><body style=\"margin:0\"><div style=\"width:120px;height:40px\">a</div><div style=\"width:80px;height:60px\">b</div></body></html>",
+    ),
+  ]
+  let failures : Array[String] = []
+  for c in cases {
+    let (name, v1, v2) = c
+    if !incremental_mutation_matches_full(v1, v2) {
+      failures.push(name)
+    }
+  }
+  inspect(failures, content="[]")
+}
+
+///|
 /// The seed must be *tight*: only the persisted uids whose layout inputs
 /// actually changed, so the block-flow / per-uid memoization can reuse the rest.
 /// A layout change seeds exactly that node; a paint-only change seeds nothing
