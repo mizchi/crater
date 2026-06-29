@@ -64,7 +64,7 @@ test "mathfn_term_with_both_units" {
 ///|
 test "mathfn_inset_returns_resolved_length" {
   // resolve_inset wraps the same resolution in Some(..).
-  inspect(
+  debug_inspect(
     resolve_inset(
       @types.MathFn(@types.MathOp::Min, [(20.0, 0.5), (200.0, 0.0)]),
       400.0,

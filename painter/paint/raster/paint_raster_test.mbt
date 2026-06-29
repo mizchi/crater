@@ -655,7 +655,7 @@ test "framebuffer crop extracts sub-rectangle" {
   inspect(c.width, content="2")
   inspect(c.height, content="2")
   // y=1 row is [4,5,6,7], y=2 row is [8,9,10,11]; columns [1,3) -> 5,6 / 9,10
-  inspect(c.pixels, content="[5, 6, 9, 10]")
+  debug_inspect(c.pixels, content="[5, 6, 9, 10]")
 }
 
 ///|
@@ -668,7 +668,7 @@ test "framebuffer crop clamps a rect that overflows the edges" {
   let c = fb.crop(3, 2, 5, 5)
   inspect(c.width, content="1")
   inspect(c.height, content="1")
-  inspect(c.pixels, content="[11]")
+  debug_inspect(c.pixels, content="[11]")
 }
 
 ///|
@@ -681,7 +681,7 @@ test "framebuffer crop clamps negative origin (padding underflow)" {
   let c = fb.crop(-2, -1, 3, 2)
   inspect(c.width, content="1")
   inspect(c.height, content="1")
-  inspect(c.pixels, content="[0]")
+  debug_inspect(c.pixels, content="[0]")
 }
 
 ///|
@@ -690,5 +690,5 @@ test "framebuffer crop fully outside yields empty" {
   let c = fb.crop(10, 10, 2, 2)
   inspect(c.width, content="0")
   inspect(c.height, content="0")
-  inspect(c.pixels, content="[]")
+  debug_inspect(c.pixels, content="[]")
 }

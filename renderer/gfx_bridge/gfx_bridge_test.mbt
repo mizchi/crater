@@ -60,7 +60,7 @@ test "collect_paint_commands lowers background fills in paint order" {
   let commands = collect_paint_commands(frame, tree)
   // root + opaque child only; transparent and zero-area nodes are skipped.
   inspect(commands.length(), content="2")
-  inspect(
+  debug_inspect(
     commands.map(fn(c) { c.dst_regions[0].index_count }),
     content="[6, 6]",
   )
@@ -117,7 +117,7 @@ test "replaced images are lowered when an image resolver is supplied" {
   }
   let commands = collect_paint_commands(frame, img_node, resolve_image=resolve)
   inspect(commands.length(), content="1")
-  inspect(commands[0].src_image_ids, content="[42]")
+  debug_inspect(commands[0].src_image_ids, content="[42]")
 }
 
 ///|
@@ -170,8 +170,8 @@ test "node opacity dims the emitted fill and propagates to children" {
   let commands = collect_paint_commands(frame, parent)
   // parent + child fills, both dimmed by the parent's 0.5 group opacity
   inspect(commands.length(), content="2")
-  inspect(commands[0].uniform_dwords, content="[0, 0, 0, 127]")
-  inspect(commands[1].uniform_dwords, content="[0, 0, 0, 127]")
+  debug_inspect(commands[0].uniform_dwords, content="[0, 0, 0, 127]")
+  debug_inspect(commands[1].uniform_dwords, content="[0, 0, 0, 127]")
 }
 
 ///|
@@ -203,8 +203,8 @@ test "box shadow is lowered as a fill before the background" {
   // shadow fill, then background fill
   inspect(commands.length(), content="2")
   // shadow is grey and painted first
-  inspect(commands[0].uniform_dwords, content="[170, 170, 170, 255]")
-  inspect(commands[1].uniform_dwords, content="[0, 0, 0, 255]")
+  debug_inspect(commands[0].uniform_dwords, content="[170, 170, 170, 255]")
+  debug_inspect(commands[1].uniform_dwords, content="[0, 0, 0, 255]")
 }
 
 ///|
@@ -230,7 +230,7 @@ test "border radius lowers the background as a rounded fill" {
   let commands = collect_paint_commands(frame, node)
   inspect(commands.length(), content="1")
   // rounded: shape uniforms appended after the colour
-  inspect(
+  debug_inspect(
     commands[0].uniform_dwords,
     content=(
       #|[0, 0, 0, 255, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 8, 8]

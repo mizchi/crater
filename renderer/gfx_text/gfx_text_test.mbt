@@ -42,12 +42,29 @@ test "glyph_placements_to_commands emits one quad per inked glyph" {
   let commands = glyph_placements_to_commands(frame, placements, color)
   inspect(commands.length(), content="2")
   // each glyph is a single quad
-  inspect(commands.map(fn(c) { c.indices.length() }), content="[6, 6]")
+  debug_inspect(commands.map(fn(c) { c.indices.length() }), content="[6, 6]")
   // the ink box position folds in the bitmap offset (10+1, 0+2)
-  inspect(
+  debug_inspect(
     commands[1].vertex_data,
     content=(
-      #|[-0.78, 0.96, 0, 0, -0.6599999999999999, 0.96, 1, 0, -0.6599999999999999, 0.8, 1, 1, -0.78, 0.8, 0, 1]
+      #|[
+      #|  -0.78,
+      #|  0.96,
+      #|  0,
+      #|  0,
+      #|  -0.6599999999999999,
+      #|  0.96,
+      #|  1,
+      #|  0,
+      #|  -0.6599999999999999,
+      #|  0.8,
+      #|  1,
+      #|  1,
+      #|  -0.78,
+      #|  0.8,
+      #|  0,
+      #|  1,
+      #|]
     ),
   )
 }

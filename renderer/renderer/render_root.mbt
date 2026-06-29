@@ -110,7 +110,7 @@ fn select_render_root(
 ///|
 fn resolve_root_available_width(
   viewport_width : Double,
-  root_margin : @types.Rect[Double],
+  _root_margin : @types.Rect[Double],
   doc_root_style : @style.Style?,
 ) -> Double {
   // The available width is the root's containing block (the initial containing

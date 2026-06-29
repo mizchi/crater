@@ -178,10 +178,22 @@ test "computed style index matches the resolved style" {
   }
   let node = @renderer.render_to_node(html, ctx)
   let card = computed_style_by_id(node, "#card").unwrap()
-  inspect(
+  debug_inspect(
     card,
     content=(
-      #|{id: div#card, index: 1, display: flex, position: relative, visibility: visible, font_size: 20px, font_family: serif, opacity: 0.5, z_index: 7, color: rgb(255, 0, 0), background_color: rgb(0, 255, 0)}
+      #|{
+      #|  id: "div#card",
+      #|  index: 1,
+      #|  display: "flex",
+      #|  position: "relative",
+      #|  visibility: "visible",
+      #|  font_size: "20px",
+      #|  font_family: "serif",
+      #|  opacity: "0.5",
+      #|  z_index: "7",
+      #|  color: "rgb(255, 0, 0)",
+      #|  background_color: "rgb(0, 255, 0)",
+      #|}
     ),
   )
 }

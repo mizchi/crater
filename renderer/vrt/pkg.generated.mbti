@@ -60,20 +60,20 @@ pub(all) struct ComputedStyleEntry {
   z_index : String
   color : String
   background_color : String
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 pub(all) struct CssMutation {
   selector : String
   property : String
   action : CssMutationAction
-} derive(Eq, @debug.Debug)
+} derive(Eq, Debug)
 pub fn CssMutation::is_paint_only(Self) -> Bool
 pub impl Show for CssMutation
 
 pub(all) enum CssMutationAction {
   Remove
   Override(String)
-} derive(Eq, @debug.Debug)
+} derive(Eq, Debug)
 pub impl Show for CssMutationAction
 
 pub(all) struct LayoutBox {
@@ -83,7 +83,7 @@ pub(all) struct LayoutBox {
   y : Double
   width : Double
   height : Double
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 
 pub(all) struct PreparedVrtPage {
   doc : @html.Document
@@ -132,4 +132,3 @@ pub impl Show for RenderVariantResult
 // Type aliases
 
 // Traits
-

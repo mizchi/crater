@@ -34,7 +34,10 @@ test "build_glyph_atlas packs inked glyphs into an alpha strip" {
   inspect(atlas.height, content="2")
   // row-major alpha: g0 occupies columns 0..1, g1 columns 2..3.
   // row 0: [255,255, 127,255]; row 1: [255,255, 0,255]
-  inspect(atlas.coverage, content="[255, 255, 127, 255, 255, 255, 0, 255]")
+  debug_inspect(
+    atlas.coverage,
+    content="[255, 255, 127, 255, 255, 255, 0, 255]",
+  )
   // g1's uv rect starts halfway across the atlas
   inspect(atlas.entries[1].u0, content="0.5")
   inspect(atlas.entries[1].u1, content="1")
@@ -57,7 +60,7 @@ test "atlas_to_commands emits textured quads sampling the atlas" {
   )
   inspect(commands.length(), content="1")
   // textured: references the atlas image id
-  inspect(commands[0].src_image_ids, content="[9]")
+  debug_inspect(commands[0].src_image_ids, content="[9]")
   // uv of the single glyph spans the whole atlas
   inspect(atlas.entries[0].u0, content="0")
   inspect(atlas.entries[0].u1, content="1")

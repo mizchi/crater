@@ -29,7 +29,7 @@ test "dom_id is threaded onto the render node and hidden from the cascade" {
   let root = @renderer.render_to_node(html, @renderer.RenderContext::default())
   let div = find_render_node_by_id(root, "div").unwrap()
   // The DomTree id reaches the render node...
-  inspect(div.dom_id, content="Some(7)")
+  debug_inspect(div.dom_id, content="Some(7)")
   // ...but the cascade never saw the attribute, so the rule did not match
   // (still the default color, not red).
   inspect(div.style.color.to_rgba_string() == "rgb(255, 0, 0)", content="false")
@@ -40,5 +40,5 @@ test "dom_id is None on the static parse path (no internal attribute)" {
   let html = "<div>plain</div>"
   let root = @renderer.render_to_node(html, @renderer.RenderContext::default())
   let div = find_render_node_by_id(root, "div").unwrap()
-  inspect(div.dom_id, content="None")
+  debug_inspect(div.dom_id, content="None")
 }

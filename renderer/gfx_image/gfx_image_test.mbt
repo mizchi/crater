@@ -20,9 +20,9 @@ test "append_image_quad emits a textured quad referencing the image id" {
   )
   inspect(commands.length(), content="1")
   // textured: the source image id is referenced
-  inspect(commands[0].src_image_ids, content="[7]")
+  debug_inspect(commands[0].src_image_ids, content="[7]")
   // uv spans the unit square
-  inspect(
+  debug_inspect(
     commands[0].vertex_data,
     content="[-1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, -1, 0, 0, 1]",
   )

@@ -16,14 +16,10 @@ pub fn Browser::set_incremental_reflow(self : Browser, enabled : Bool) -> Unit {
 ///
 /// On: stabilize uids against the persistent registry (so a node maps to the
 /// same uid across rebuilds), then reconcile against the prior tree, migrating
-/// cached geometry. The dirty set is currently *every* uid — correct (equivalent
-/// to a full recompute) and end-to-end wired. The layout engine now memoizes
-/// in-flow block subtrees per uid (block-flow memoization, see
-/// docs/incremental-reflow-design.md), so a *narrower* dirty set here would let
-/// unchanged block subtrees be reused — narrowing it (paint-only via the mutation
-/// queue, or a layout-relevant `@style.Style` diff) is the remaining optimization
-/// to realize that win on this path. The result is recorded as the next
-/// reconcile baseline.
+/// cached geometry. The dirty seed is the set of nodes whose own layout inputs
+/// changed; `flow_dirty_uids` expands that seed for crater's absolute-geometry
+/// cache so following in-flow siblings remain correct. The result is recorded as
+/// the next reconcile baseline.
 fn Browser::build_dynamic_layout_tree(
   self : Browser,
   node : @node.Node,
@@ -35,7 +31,10 @@ fn Browser::build_dynamic_layout_tree(
   }
   @node.stabilize_uids(node, self.uid_registry)
   let tree = match self.incremental_prev_tree {
-    Some(prev) => prev.reconcile_from(node, collect_node_uids(node), vw, vh)
+    Some(prev) => {
+      let seeds = changed_seed_uids(node, prev)
+      prev.reconcile_from(node, prev.flow_dirty_uids(seeds), vw, vh)
+    }
     None => @layout.LayoutTree::from_node(node, vw, vh)
   }
   self.incremental_prev_tree = Some(tree)
@@ -43,17 +42,47 @@ fn Browser::build_dynamic_layout_tree(
 }
 
 ///|
-/// Every uid in the tree, in document order.
-fn collect_node_uids(node : @node.Node) -> Array[Int] {
+/// Directly changed layout-input uids, before flow-shift expansion.
+fn changed_seed_uids(node : @node.Node, prev : @layout.LayoutTree) -> Array[Int] {
   let out : Array[Int] = []
-  collect_node_uids_into(node, out)
+  changed_seed_uids_into(node, prev, out)
   out
 }
 
 ///|
-fn collect_node_uids_into(node : @node.Node, out : Array[Int]) -> Unit {
-  out.push(node.uid)
+fn changed_seed_uids_into(
+  node : @node.Node,
+  prev : @layout.LayoutTree,
+  out : Array[Int],
+) -> Unit {
+  match prev.find_node(node.uid) {
+    Some(old) =>
+      if node_layout_input_changed(node, old) {
+        out.push(node.uid)
+      }
+    None => ()
+  }
   for child in node.children {
-    collect_node_uids_into(child, out)
+    changed_seed_uids_into(child, prev, out)
+  }
+}
+
+///|
+fn node_layout_input_changed(node : @node.Node, old : @layout.LayoutNode) -> Bool {
+  !node.style.layout_eq(old.style) ||
+  node.text != old.text ||
+  node.src != old.src ||
+  measure_presence_changed(node.measure, old.measure)
+}
+
+///|
+fn measure_presence_changed(
+  next : @layout_types.MeasureFunc?,
+  old : @layout_types.MeasureFunc?,
+) -> Bool {
+  match (next, old) {
+    (Some(_), Some(_)) => false
+    (None, None) => false
+    _ => true
   }
 }
