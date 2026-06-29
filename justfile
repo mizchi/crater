@@ -28,6 +28,12 @@ test-js:
 test-no-v8 *ARGS:
     scripts/moon-test-no-v8.sh {{ARGS}}
 
+# Dynamic-reflow VRT harness: assert incremental re-render geometry == full
+# rebuild across a corpus of (before, after) page states. Runs on the js target
+# with no V8 (browser-free equivalent of a paint VRT for the reflow path).
+reflow-vrt:
+    scripts/moon-test-no-v8.sh -p mizchi/crater-browser/shell -f "reflow VRT*" --target js
+
 # Run all repository Vitest suites with an explicit include/exclude boundary
 test-vitest:
     pnpm test:vitest

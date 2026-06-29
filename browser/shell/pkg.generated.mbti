@@ -39,6 +39,7 @@ pub async fn Browser::handle_focused_key(Self, String) -> Bool raise @crater-bro
 pub fn Browser::hover_at(Self, Int, Int) -> Bool
 pub fn Browser::http_cache(Self) -> @cache.MemoryCacheBackend
 pub fn Browser::is_hint_mode(Self) -> Bool
+pub fn Browser::layout_box_snapshot(Self) -> String
 pub async fn Browser::navigate(Self, String) -> String raise @crater-browser-http.HttpError
 pub async fn Browser::navigate_lightweight(Self, String) -> String raise @crater-browser-http.HttpError
 pub fn Browser::new(Int, Int, terminal_cols? : Int) -> Self

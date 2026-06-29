@@ -9,6 +9,37 @@ pub fn Browser::set_incremental_reflow(self : Browser, enabled : Bool) -> Unit {
 }
 
 ///|
+/// A deterministic geometry signature of the current render's layout boxes —
+/// `id:x,y,w,h` per box in document order — for VRT-style comparison of the
+/// dynamic reflow path. Forces a render so the layout tree reflects the current
+/// DOM, then flattens the absolute box geometry. Two snapshots being equal means
+/// the rendered layout is geometrically identical (the property a paint VRT
+/// checks), so an incremental re-render can be diffed against a full rebuild.
+pub fn Browser::layout_box_snapshot(self : Browser) -> String {
+  let _ = self.render_text_full_page()
+  match self.layout_tree {
+    Some(tree) => {
+      let layout = tree.compute_incremental()
+      let buf = StringBuilder::new()
+      for b in @vrt.collect_layout_boxes(layout) {
+        buf.write_string(b.id)
+        buf.write_string(":")
+        buf.write_string(b.x.to_string())
+        buf.write_string(",")
+        buf.write_string(b.y.to_string())
+        buf.write_string(",")
+        buf.write_string(b.width.to_string())
+        buf.write_string(",")
+        buf.write_string(b.height.to_string())
+        buf.write_string(";")
+      }
+      buf.to_string()
+    }
+    None => ""
+  }
+}
+
+///|
 /// Build the layout tree for a freshly built render node tree.
 ///
 /// Off (default): a plain `LayoutTree::from_node` — unchanged behavior, no
