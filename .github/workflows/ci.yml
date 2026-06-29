@@ -47,8 +47,23 @@ jobs:
 
       - name: Install pkfire via nix
         run: |
-          nix profile install --no-write-lock-file \
-            github:mizchi/pkfire/v0.10.0
+          # The flake-ref tag resolve still occasionally hits a GitHub API
+          # HTTP 429 ("temporarily being throttled") before the authenticated
+          # quota applies, which fails the install with a garbage (gzip) body
+          # and a json parse error. Retry with backoff so a transient throttle
+          # doesn't fail the whole affected-gating job.
+          for attempt in 1 2 3 4 5; do
+            if nix profile install --no-write-lock-file \
+                 github:mizchi/pkfire/v0.10.0; then
+              break
+            fi
+            if [ "$attempt" = 5 ]; then
+              echo "pkfire nix install failed after $attempt attempts" >&2
+              exit 1
+            fi
+            echo "pkfire nix install attempt $attempt failed (likely GitHub API 429); retrying in $((attempt * 15))s" >&2
+            sleep $((attempt * 15))
+          done
           pkf --version
 
       - name: Restore Pkl package cache
