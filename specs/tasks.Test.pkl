@@ -84,9 +84,9 @@ tests {
       [graphTaskPath(test.buildJsPackage.name, "visibility")] = "internal"
     }
     expectStdoutContains {
-      "\"outputs\": ["
+      "\"outputs\":["
       "\"js/dist/**\""
-      "\"deps\": ["
+      "\"deps\":["
       "\"build-js-package\","
       "\"test-wasm\""
     }
@@ -240,7 +240,7 @@ tests {
     workdir = ".."
     cmd = "pkf affected --check"
     expectStdoutContains {
-      "workflow test(s) passed"
+      "workflow tests passed"
     }
   }
   new {
@@ -251,7 +251,7 @@ tests {
     specRef { "task.diagnostics" }
     workdir = ".."
     cmd =
-      "bash -lc 'set -euo pipefail; json=$(pkf lint --json); printf \"%s\" \"$json\" | grep -Fq \"\\\"findings\\\": []\"'"
+      "bash -lc 'set -euo pipefail; json=$(pkf lint --json); printf \"%s\" \"$json\" | grep -Eq \"\\\"findings\\\":[[:space:]]*[[]]\"'"
   }
   new {
     name = "ci_dead_module_detection_guard"
