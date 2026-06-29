@@ -34,6 +34,11 @@ test-no-v8 *ARGS:
 reflow-vrt:
     scripts/moon-test-no-v8.sh -p mizchi/crater-browser/shell -f "reflow VRT*" --target js
 
+# Regenerate the embedded real-world reflow-VRT fixture corpus from
+# real-world/*/index.html (run after changing the fixtures or the generator).
+gen-reflow-vrt-fixtures:
+    node scripts/gen-reflow-vrt-fixtures.mjs
+
 # Run all repository Vitest suites with an explicit include/exclude boundary
 test-vitest:
     pnpm test:vitest
