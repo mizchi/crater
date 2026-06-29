@@ -205,6 +205,7 @@ struct Options {
   headless : HeadlessMode // Headless rendering mode
   show_help : Bool // Show help message
   width : Int // Override viewport width in columns (0 = auto-detect)
+  incremental_reflow : Bool // Reconcile layout across re-renders (default off)
 }
 
 ///|
@@ -438,6 +439,9 @@ fn print_help() -> Unit {
   )
   println("    --no-color        Disable color output (underline links only)")
   println("    --width=N         Override viewport width in columns")
+  println(
+    "    --incremental-reflow  Reconcile layout across re-renders (experimental)",
+  )
   println("")
   println("EXAMPLES:")
   println("  npx @mizchi/crater-browser https://example.com")
@@ -487,6 +491,7 @@ fn parse_args_list(args : Array[String]) -> Options {
   let mut headless : HeadlessMode = Off
   let mut show_help = false
   let mut width = 0
+  let mut incremental_reflow = false
   for arg in args {
     if arg == "-h" || arg == "--help" {
       show_help = true
@@ -515,6 +520,8 @@ fn parse_args_list(args : Array[String]) -> Options {
       dark = true
     } else if arg == "--no-color" {
       no_color = true
+    } else if arg == "--incremental-reflow" {
+      incremental_reflow = true
     } else if arg == "--extract-main" {
       extract_main = true
     } else if arg == "--headless" || arg == "--headless=viewport" {
@@ -557,6 +564,7 @@ fn parse_args_list(args : Array[String]) -> Options {
     headless,
     show_help,
     width,
+    incremental_reflow,
   }
 }
 
@@ -601,6 +609,10 @@ async fn main {
   // Set no-color mode if requested
   if options.no_color {
     browser.set_no_color(true)
+  }
+  // Enable incremental reflow (reconcile layout across re-renders) if requested.
+  if options.incremental_reflow {
+    browser.set_incremental_reflow(true)
   }
   // For JSON/AOM modes, use lightweight navigation (skip CSS cascade and layout)
   if options.json || options.aom {

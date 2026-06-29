@@ -15,6 +15,14 @@ fn output_mode_name(mode : @shell.OutputMode) -> String {
 }
 
 ///|
+test "parse_args_list enables incremental reflow" {
+  let on = parse_args_list(["--incremental-reflow", "https://example.com"])
+  inspect(on.incremental_reflow, content="true")
+  let off = parse_args_list(["https://example.com"])
+  inspect(off.incremental_reflow, content="false")
+}
+
+///|
 test "parse_args_list enables kitty output mode" {
   let options = parse_args_list(["--kitty", "https://example.com"])
   inspect(options.kitty, content="true")

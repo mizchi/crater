@@ -239,6 +239,29 @@ attr, layout attr, append, remove, move) and a fuzz-ish sequence.
    mutation aren't stale. Needs a JS↔MoonBit callback the batch model doesn't yet
    have; pairs with the bridge work.
 
+## Checking it (CLI / VRT)
+
+The flag is exposed on the CLI as `--incremental-reflow` (default off), so a
+render can be driven with reconcile on without code changes:
+
+```bash
+# Same page, flag off vs on — text output should be identical (a smoke check
+# that reconcile doesn't perturb a static render):
+crater --text https://example.com > off.txt
+crater --text --incremental-reflow https://example.com > on.txt
+diff off.txt on.txt   # expect no difference
+
+# The real signal is on *re-renders after a DOM mutation* (the dynamic path),
+# which the static paint-VRT harness (single `crater_paint` render) does not
+# exercise. Use the native-V8 e2e sign-off for that:
+just test-native-full   # "E2E: incremental reflow matches a full rebuild ..."
+```
+
+The js-target `incremental_reflow_wbtest.mbt` sweep is the offline equivalent of
+the VRT equivalence check (incremental == full per mutation kind, no browser
+needed). A paint-level VRT that mutates then re-renders would need a harness on
+the dynamic (JS) path rather than the static `crater_paint` stdin renderer.
+
 ## Risks / open questions
 
 - **Cascade still O(n).** This design makes layout incremental but re-cascades
