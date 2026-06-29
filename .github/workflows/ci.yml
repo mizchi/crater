@@ -32,39 +32,26 @@ jobs:
         with:
           fetch-depth: 0
 
-      # The mizchi/pkfire action curls the GitHub releases API
-      # unauthenticated, so concurrent runs hit the 60/hr per-IP limit
-      # and fail with curl 22 / HTTP 429. Install the binary from its
-      # nix flake instead — the access-tokens entry lets nix use the
-      # job's GITHUB_TOKEN for github.com fetches, giving us the
-      # 5000/hr authenticated quota and a deterministic install.
-      - name: Install Nix
-        uses: cachix/install-nix-action@v27
-        with:
-          extra_nix_config: |
-            experimental-features = nix-command flakes
-            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
-
-      - name: Install pkfire via nix
+      # pkfire is a self-contained MoonBit binary (>= 0.12). Install it from the
+      # release asset over codeload, NOT the nix flake / GitHub releases-API
+      # path: those resolve a tag via api.github.com, which GitHub anti-scraping
+      # throttles (HTTP 429) under concurrent CI, failing the gating job. A
+      # direct codeload tarball download is unauthenticated-rate-limit-free.
+      - name: Install pkfire
+        env:
+          PKFIRE_TAG: pkfire@0.12.3
         run: |
-          # The flake-ref tag resolve still occasionally hits a GitHub API
-          # HTTP 429 ("temporarily being throttled") before the authenticated
-          # quota applies, which fails the install with a garbage (gzip) body
-          # and a json parse error. Retry with backoff so a transient throttle
-          # doesn't fail the whole affected-gating job.
-          for attempt in 1 2 3 4 5; do
-            if nix profile install --no-write-lock-file \
-                 github:mizchi/pkfire/v0.10.0; then
-              break
-            fi
-            if [ "$attempt" = 5 ]; then
-              echo "pkfire nix install failed after $attempt attempts" >&2
-              exit 1
-            fi
-            echo "pkfire nix install attempt $attempt failed (likely GitHub API 429); retrying in $((attempt * 15))s" >&2
-            sleep $((attempt * 15))
-          done
-          pkf --version
+          mkdir -p "$HOME/.local/bin"
+          base="https://github.com/mizchi/pkfire/releases/download/${PKFIRE_TAG}"
+          curl -fsSL "${base}/pkf-linux-amd64.tar.gz" -o /tmp/pkf.tar.gz
+          curl -fsSL "${base}/pkf-linux-amd64.tar.gz.sha256" -o /tmp/pkf.tar.gz.sha256 || true
+          if [ -s /tmp/pkf.tar.gz.sha256 ]; then
+            ( cd /tmp && echo "$(awk '{print $1}' pkf.tar.gz.sha256)  pkf.tar.gz" | sha256sum -c - )
+          fi
+          tar -xzf /tmp/pkf.tar.gz -C "$HOME/.local/bin" pkf
+          chmod +x "$HOME/.local/bin/pkf"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/pkf" --version
 
       - name: Restore Pkl package cache
         uses: actions/cache@v4
@@ -74,9 +61,6 @@ jobs:
           restore-keys: |
             pkl-cache-${{ runner.os }}-
             pkl-cache-
-
-      - name: Warm Pkl package cache
-        run: pkf pkl-cache warm
 
       - name: Resolve affected base
         id: affected_base

@@ -40,31 +40,33 @@ if [[ "$event" == "schedule" ]]; then
   exit 0
 fi
 
-affected_args=()
-if [[ ${#changed_files[@]} -gt 0 ]]; then
-  for file in "${changed_files[@]}"; do
-    affected_args+=(--files "$file")
-  done
-elif [[ -n "$base" ]]; then
-  affected_args+=(--since "$base")
-else
-  base="$(bash scripts/ci/pkfire-affected-base.sh)"
-  affected_args+=(--since "$base")
-fi
-if [[ -n "$base" ]]; then
-  echo "affected base: ${base}"
-fi
-if [[ ${#changed_files[@]} -gt 0 ]]; then
-  printf 'affected files:'
-  printf ' %s' "${changed_files[@]}"
-  printf '\n'
+# pkfire >= 0.12 (MoonBit rewrite): `pkf affected <path>...` takes the changed
+# file paths and prints the affected task names, one per line. (Older `pkf
+# affected --since <base>` / `--files` / `--dry-run` flags were removed.) So
+# resolve the changed file set first, then ask pkf which tasks it affects.
+if [[ ${#changed_files[@]} -eq 0 ]]; then
+  if [[ -z "$base" ]]; then
+    base="$(bash scripts/ci/pkfire-affected-base.sh)"
+  fi
+  if [[ -n "$base" ]]; then
+    echo "affected base: ${base}"
+    mapfile -t changed_files < <(git diff --name-only "${base}...HEAD")
+  fi
 fi
 
+if [[ ${#changed_files[@]} -eq 0 ]]; then
+  # Couldn't determine a changed-file set — run everything to be safe rather
+  # than risk skipping a needed gate.
+  emit_all_true "no changed files resolved"
+  exit 0
+fi
+
+printf 'affected files:'
+printf ' %s' "${changed_files[@]}"
+printf '\n'
+
 set +e
-plan="$(pkf affected \
-  "${affected_args[@]}" \
-  --dry-run \
-  test-wpt-css test-wpt-dom test-wpt-webdriver test-vrt test-wpt-vrt test-image-vrt 2>&1)"
+plan="$(pkf affected "${changed_files[@]}" 2>&1)"
 status=$?
 set -e
 echo "${plan}"
@@ -75,10 +77,8 @@ if [[ $status -ne 0 ]]; then
   exit 0
 fi
 
-# `pkf affected --dry-run` prints a plan table whose rows look like:
-#   uncached                test-wpt-css        just wpt-all
-# We grep each task name. When the task name appears in a plan row, the
-# gate is considered affected.
+# Each gate maps to a pkf task; the gate is affected iff that task name appears
+# (as a whole line) in pkf's affected-task output.
 declare -A task_for=(
   [wpt_css]=test-wpt-css
   [wpt_dom]=test-wpt-dom
@@ -90,7 +90,7 @@ declare -A task_for=(
 
 for gate in "${gates[@]}"; do
   task="${task_for[$gate]}"
-  if echo "${plan}" | awk -v t="${task}" '$0 ~ ("[[:space:]]" t "[[:space:]]")' | grep -q .; then
+  if grep -qxF "${task}" <<<"${plan}"; then
     value=true
   else
     value=false
