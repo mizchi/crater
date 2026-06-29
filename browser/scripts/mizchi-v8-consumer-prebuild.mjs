@@ -1,4 +1,5 @@
 import fs from "node:fs"
+import os from "node:os"
 import path from "node:path"
 import process from "node:process"
 import { spawnSync } from "node:child_process"
@@ -91,22 +92,78 @@ export function resolve_v8_module_root(module_root, search_roots = []) {
   )
 }
 
-export function platform_link_flags(platform, module_root) {
-  const archive_path = path.join(
+function bridge_archive_path(module_root) {
+  return path.join(
     module_root,
     "target",
     "rusty_v8_bridge",
     "release",
     "librusty_v8_bridge.a",
   )
+}
+
+// MoonBit's runtime statically links its OWN simdutf (`$HOME/.moon/lib/simdutf.o`)
+// and V8 statically links a DIFFERENT simdutf inside librusty_v8_bridge.a. Linking
+// both leaves duplicate global `simdutf::*` symbols. `-Wl,-z,muldefs` makes the
+// link *succeed* by keeping the first definition — but then MoonBit code and V8
+// code share ONE simdutf at runtime; the version/ABI mismatch corrupts simdutf's
+// first-use CPU dispatch and SIGSEGVs the moment MoonBit converts a JS source
+// string (UTF-16->UTF-8) for `Runtime::eval_string` (see
+// docs/v8-snapshot-pre-injection.md / the V8 sandbox investigation).
+//
+// The real fix: rename V8's simdutf symbols (defs AND intra-archive refs, so V8
+// stays self-consistent) with a private suffix, so they no longer collide with
+// MoonBit's copy — each side binds to its own simdutf. Idempotent; a no-op if
+// already renamed or if binutils (nm/objcopy) aren't available (then we fall back
+// to the -z,muldefs behavior, preserving prior behavior on such hosts).
+export function isolate_v8_simdutf_symbols(archive_path) {
+  if (process.platform !== "linux" || !fs.existsSync(archive_path)) {
+    return false
+  }
+  const nm = spawnSync("nm", [archive_path], {
+    encoding: "utf8",
+    maxBuffer: 1 << 30,
+  })
+  if (nm.status !== 0 || typeof nm.stdout !== "string") {
+    return false // nm unavailable -> leave archive as-is (fall back to muldefs)
+  }
+  const SUFFIX = "__v8priv"
+  const syms = new Set()
+  for (const line of nm.stdout.split("\n")) {
+    const name = line.trim().split(/\s+/).pop()
+    if (name && name.includes("simdutf") && !name.endsWith(SUFFIX)) {
+      syms.add(name)
+    }
+  }
+  if (syms.size === 0) {
+    return false // already isolated, or this archive has no simdutf symbols
+  }
+  const map = [...syms].map((s) => `${s} ${s}${SUFFIX}`).join("\n") + "\n"
+  const mapfile = path.join(os.tmpdir(), `v8-simdutf-rename-${process.pid}.txt`)
+  fs.writeFileSync(mapfile, map)
+  const oc = spawnSync("objcopy", [`--redefine-syms=${mapfile}`, archive_path], {
+    stdio: "inherit",
+  })
+  fs.rmSync(mapfile, { force: true })
+  if (oc.status === 0) {
+    process.stderr.write(
+      `[mizchi/v8] isolated ${syms.size} V8 simdutf symbols ` +
+        `(avoids the MoonBit-runtime simdutf collision / SIGSEGV)\n`,
+    )
+    return true
+  }
+  return false
+}
+
+export function platform_link_flags(platform, module_root) {
+  const archive_path = bridge_archive_path(module_root)
   switch (platform) {
     case "darwin":
       return `${archive_path} -lc++ -pthread -framework CoreFoundation`
     case "linux":
-      // MoonBit 0.18.0 bundles its own simdutf.o (in $HOME/.moon/lib) that
-      // collides with simdutf in librusty_v8_bridge.a at link time. Use the
-      // BSD-style multiple-defs flag so the linker keeps the first definition
-      // it sees instead of erroring with "multiple definition".
+      // `-z,muldefs` is kept as a belt-and-suspenders fallback for hosts where
+      // the symbol-rename above couldn't run (no binutils); when the rename
+      // succeeds there is no longer a duplicate to tolerate.
       return `${archive_path} -Wl,-z,muldefs -lstdc++ -ldl -pthread -lm`
     default:
       throw new Error(
@@ -176,6 +233,10 @@ async function main() {
     }
     process.exit(result.status ?? 1)
   }
+
+  // Isolate V8's simdutf symbols from MoonBit's to avoid the link-time collision
+  // that otherwise SIGSEGVs at first JS-string conversion. Best-effort.
+  isolate_v8_simdutf_symbols(bridge_archive_path(v8_root))
 
   process.stdout.write(
     JSON.stringify({

@@ -1,9 +1,10 @@
 # V8 startup snapshot: pre-injecting the DOM / global API into the isolate
 
-Status: implemented in `browser/native/js_v8/js_runtime_v8.mbt` (native target).
-**Not compiled/run in the Claude-Code-on-the-web sandbox** — V8 SIGSEGVs at
-isolate init there (see `docs/v8-build-egress.md`), so this must be built and
-tested on a real host (`moon info && moon test -C browser/native -p
+Status: implemented in `browser/native/js_v8/js_runtime_v8.mbt` (native target)
+and **validated in the web sandbox** — the prior "V8 SIGSEGVs at isolate init"
+claim was a simdutf symbol collision, now fixed (see `docs/v8-build-egress.md`).
+With the HTTPS bridge build + simdutf isolation, the full native `js_v8` suite —
+including the parity test below — passes here (`moon -C browser/native test -p
 mizchi/crater-browser-native/js_v8 --target native`).
 
 ## What changed

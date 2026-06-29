@@ -116,14 +116,39 @@ just test-native-full     # moon -C testing test -p .../e2e/native_v8 --target n
 computed styles read, fallback-to-zero when nothing injected, id-less fallback);
 `testing/e2e/native_v8/browser_v8_e2e_test.mbt` drives the whole shell.
 
-### Caveat: V8 SIGSEGVs at isolate init in the web sandbox
+### The "SIGSEGV in the web sandbox" was a simdutf symbol collision — fixed
 
-In the Claude-Code-on-the-web container the bridge **builds** (HTTPS path) but the
-resulting binary **segfaults at `v8::Isolate` creation** — a bare `eval("1+1")`
-crashes too, so it is environment (container vaddr / sandbox), not crater code.
-The native tests above therefore can't run here; run them on a normal host. If you
-see the segfault, it is not a regression in the bridge — confirm with a minimal
-isolate-only program before suspecting crater.
+Earlier notes claimed native V8 "segfaults at `v8::Isolate` creation … container
+vaddr / sandbox issue." **That diagnosis was wrong.** Verified in the sandbox:
+
+- A minimal standalone `rusty_v8` program (no MoonBit) creates an isolate, a
+  context, compiles and runs `40 + 2` → `42`. V8 itself runs fine here. Large
+  `PROT_NONE` reservations (4 GB / 1 TB / 8 TB) all succeed, and the prebuilt has
+  pointer-compression / sandbox **off** — so the address-space "cage" was never
+  the problem.
+- crater's native `js_v8` suite *did* SIGSEGV, but the gdb backtrace points at
+  **simdutf**, not V8: `simdutf::detect_best_supported_implementation` →
+  `autodetect_encoding`, reached from MoonBit's runtime `moonbit_utf8_len_from_utf16`
+  when `mizchi/v8 Runtime::eval_string` converts the JS source (UTF-16 → UTF-8).
+
+**Root cause:** MoonBit's runtime statically links its **own** simdutf
+(`$HOME/.moon/lib/simdutf.o`) and V8 links a **different** simdutf inside
+`librusty_v8_bridge.a`. Both export global `simdutf::*` symbols. The consumer
+prebuild used `-Wl,-z,muldefs`, which makes the link *succeed* by keeping the
+first definition — but then MoonBit and V8 share one simdutf at runtime, and the
+version/ABI mismatch corrupts simdutf's first-use CPU dispatch → SIGSEGV on the
+first JS-string conversion. (Why it didn't always crash elsewhere: whether it
+faults depends on which copy the linker kept and the host CPU dispatch.)
+
+**Fix (landed):** `browser/scripts/mizchi-v8-consumer-prebuild.mjs`
+`isolate_v8_simdutf_symbols()` renames V8's simdutf symbols (definitions and
+intra-archive references together) with a `__v8priv` suffix via
+`objcopy --redefine-syms`, so V8 stays self-consistent and no longer collides
+with MoonBit's copy — each side binds to its own simdutf. Idempotent; a no-op
+without binutils (then the `-z,muldefs` fallback applies). With this, the full
+native `js_v8` suite (55 tests) **passes in the web sandbox**, so native V8 is no
+longer "blocked here" — it just needs the HTTPS bridge build above plus this
+symbol isolation (now automatic).
 
 ## Recurrence prevention
 

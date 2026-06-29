@@ -5,6 +5,7 @@ import path from "node:path"
 import test from "node:test"
 
 import {
+  isolate_v8_simdutf_symbols,
   platform_link_flags,
   resolve_v8_module_root,
 } from "./mizchi-v8-consumer-prebuild.mjs"
@@ -83,4 +84,10 @@ test("platform_link_flags includes libm on linux", () => {
   assert.match(flags, /-ldl/)
   assert.match(flags, /-pthread/)
   assert.match(flags, /-lm(\s|$)/)
+})
+
+test("isolate_v8_simdutf_symbols is a safe no-op for a missing archive", () => {
+  // No archive present -> returns false, never throws (so a degraded build path
+  // that lacks the bridge or binutils is unaffected).
+  assert.equal(isolate_v8_simdutf_symbols("/tmp/does-not-exist-librusty_v8_bridge.a"), false)
 })
