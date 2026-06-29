@@ -1,9 +1,9 @@
 name = "mizchi/crater-wasm"
 
-version = "0.18.0"
+version = "0.18.1"
 
 import {
-  "mizchi/crater-js@0.18.0",
+  "mizchi/crater-js@0.18.1",
 }
 
 readme = "README.md"

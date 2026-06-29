@@ -1,6 +1,6 @@
 name = "mizchi/crater-html-assets"
 
-version = "0.18.0"
+version = "0.18.1"
 
 repository = "https://github.com/mizchi/crater"
 

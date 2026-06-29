@@ -1,9 +1,9 @@
 name = "mizchi/crater-tools"
 
-version = "0.18.0"
+version = "0.18.1"
 
 import {
-  "mizchi/crater-webdriver-bidi@0.18.0",
+  "mizchi/crater-webdriver-bidi@0.18.1",
   "mizchi/js@0.10.13",
 }
 

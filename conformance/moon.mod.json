@@ -1,31 +1,31 @@
 {
   "name": "mizchi/crater-conformance",
-  "version": "0.18.0",
+  "version": "0.18.1",
   "deps": {
     "mizchi/crater-core": {
       "path": "../core",
-      "version": "0.18.0"
+      "version": "0.18.1"
     },
     "mizchi/css": "0.7.0",
     "mizchi/crater-dom": {
       "path": "../dom",
-      "version": "0.18.0"
+      "version": "0.18.1"
     },
     "mizchi/crater-painter": {
       "path": "../painter",
-      "version": "0.18.0"
+      "version": "0.18.1"
     },
     "mizchi/crater-webvitals": {
       "path": "../webvitals",
-      "version": "0.18.0"
+      "version": "0.18.1"
     },
     "mizchi/crater-layout": {
       "path": "../layout",
-      "version": "0.18.0"
+      "version": "0.18.1"
     },
     "mizchi/crater-renderer": {
       "path": "../renderer",
-      "version": "0.18.0"
+      "version": "0.18.1"
     }
   },
   "repository": "https://github.com/mizchi/crater",

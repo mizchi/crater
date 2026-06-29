@@ -1,11 +1,11 @@
 name = "mizchi/crater-painter"
 
-version = "0.18.0"
+version = "0.18.1"
 
 import {
   "mizchi/css@0.7.3",
-  "mizchi/crater-core@0.18.0",
-  "mizchi/crater-terminal-protocol@0.18.0",
+  "mizchi/crater-core@0.18.1",
+  "mizchi/crater-terminal-protocol@0.18.1",
   "mizchi/font@0.7.3",
   "mizchi/svg@0.2.1",
   "mizchi/x@0.3.0",

@@ -1,13 +1,13 @@
 name = "mizchi/crater-renderer"
 
-version = "0.18.0"
+version = "0.18.1"
 
 import {
-  "mizchi/crater-core@0.18.0",
+  "mizchi/crater-core@0.18.1",
   "mizchi/css@0.7.3",
-  "mizchi/crater-dom@0.18.0",
-  "mizchi/crater-layout@0.18.0",
-  "mizchi/crater-painter@0.18.0",
+  "mizchi/crater-dom@0.18.1",
+  "mizchi/crater-layout@0.18.1",
+  "mizchi/crater-painter@0.18.1",
   "mizchi/gfx@0.1.0",
   "mizchi/svg@0.2.1",
   "moonbitlang/async@0.19.0",
