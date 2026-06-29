@@ -105,7 +105,10 @@ moon -C browser/native test -p mizchi/crater-browser-native/js_v8 \
 just test-native-v8
 
 # Full browser <-> V8 e2e (new_v8_browser/connect_v8, real getBoundingClientRect,
-# run_event_loop settle, DOM mutation round-trips):
+# run_event_loop settle, DOM mutation round-trips, AND the incremental-reflow
+# sign-off "E2E: incremental reflow matches a full rebuild on the dynamic JS
+# path" — flag-on incremental render == flag-off full rebuild after a JS DOM
+# mutation):
 just test-native-full     # moon -C testing test -p .../e2e/native_v8 --target native
 ```
 
