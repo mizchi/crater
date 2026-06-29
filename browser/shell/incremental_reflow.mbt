@@ -1,9 +1,10 @@
 ///|
-/// Opt in to incremental reflow on the dynamic-rendering path. When enabled,
+/// Control incremental reflow on the dynamic-rendering path. **Default on**:
 /// re-renders after a DOM mutation reconcile the layout tree against the prior
-/// one (reusing cached geometry via stable uids) instead of a full from-scratch
-/// rebuild. Default off — when off the render path is byte-for-byte the current
-/// behavior. See docs/incremental-reflow-design.md.
+/// one (reusing cached geometry via stable uids + block-flow memoization) instead
+/// of a full from-scratch rebuild; equivalence to a full rebuild is validated on
+/// the js and native-V8 suites. Pass `false` to force a full rebuild every render.
+/// See docs/incremental-reflow-design.md.
 pub fn Browser::set_incremental_reflow(self : Browser, enabled : Bool) -> Unit {
   self.enable_incremental_reflow = enabled
 }

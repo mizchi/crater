@@ -12,6 +12,7 @@ test "incremental reflow flag preserves the rendered output" {
     #|</body></html>
   // Baseline: flag off (full rebuild every time).
   let baseline = Browser::new(400, 300)
+  baseline.set_incremental_reflow(false)
   baseline.set_html_content(html)
   let want = baseline.render_text_full_page()
 
@@ -34,6 +35,7 @@ test "incremental reflow flag preserves the rendered output" {
 /// full render of `v2`. This is the on-vs-off equivalence per mutation kind.
 fn incremental_mutation_matches_full(v1 : String, v2 : String) -> Bool {
   let full = Browser::new(400, 300)
+  full.set_incremental_reflow(false)
   full.set_html_content(v2)
   let want = full.render_text_full_page()
   let incr = Browser::new(400, 300)

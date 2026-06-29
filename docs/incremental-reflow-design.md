@@ -220,12 +220,10 @@ attr, layout attr, append, remove, move) and a fuzz-ish sequence.
    js-testable; the static render path keeps `dom_id = None` and is unchanged.
 2. **(B) incremental apply** — layout-level core landed
    (`LayoutTree::reconcile_from`, js-tested), stable-uid registry landed
-   (`stabilize_uids` / `UidRegistry`, js-tested), and the **shell wiring landed
-   behind a default-off flag**: `Browser::set_incremental_reflow(true)` makes the
+   (`stabilize_uids` / `UidRegistry`, js-tested), and the **shell wiring landed and is now default-on**: `Browser::set_incremental_reflow(true)` makes the
    dynamic render path stabilize uids and reconcile against the prior tree
    (`Browser::build_dynamic_layout_tree` in `browser/shell/incremental_reflow.mbt`,
-   used by the text render path). Off by default → byte-for-byte the current
-   behavior; js-tested that on vs off render identically. The dirty seed is now
+   used by the text render path). `set_incremental_reflow(false)` opts back into a full rebuild; js- and native-tested that on vs off render identically. The dirty seed is now
    **narrowed** (landed): `build_dynamic_layout_tree` seeds only the persisted
    uids whose layout inputs changed (`Style::layout_eq` / text / src / measure),
    expands with `flow_dirty_uids`, and reconciles — so the **block-flow

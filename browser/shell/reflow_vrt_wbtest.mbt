@@ -17,6 +17,7 @@
 /// incremental geometry so a caller can report the diff.
 fn reflow_vrt_render(before : String, after : String) -> (String, String) {
   let full = Browser::new(800, 600)
+  full.set_incremental_reflow(false)
   full.set_html_content(after)
   let want = full.layout_box_snapshot()
   let incr = Browser::new(800, 600)

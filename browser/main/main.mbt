@@ -440,7 +440,7 @@ fn print_help() -> Unit {
   println("    --no-color        Disable color output (underline links only)")
   println("    --width=N         Override viewport width in columns")
   println(
-    "    --incremental-reflow  Reconcile layout across re-renders (experimental)",
+    "    --no-incremental-reflow  Full layout rebuild each render (default: incremental)",
   )
   println("")
   println("EXAMPLES:")
@@ -491,7 +491,7 @@ fn parse_args_list(args : Array[String]) -> Options {
   let mut headless : HeadlessMode = Off
   let mut show_help = false
   let mut width = 0
-  let mut incremental_reflow = false
+  let mut incremental_reflow = true
   for arg in args {
     if arg == "-h" || arg == "--help" {
       show_help = true
@@ -520,7 +520,10 @@ fn parse_args_list(args : Array[String]) -> Options {
       dark = true
     } else if arg == "--no-color" {
       no_color = true
+    } else if arg == "--no-incremental-reflow" {
+      incremental_reflow = false
     } else if arg == "--incremental-reflow" {
+      // Now the default; accepted (no-op) for backward compatibility.
       incremental_reflow = true
     } else if arg == "--extract-main" {
       extract_main = true
@@ -610,9 +613,10 @@ async fn main {
   if options.no_color {
     browser.set_no_color(true)
   }
-  // Enable incremental reflow (reconcile layout across re-renders) if requested.
-  if options.incremental_reflow {
-    browser.set_incremental_reflow(true)
+  // Incremental reflow (reconcile layout across re-renders) is on by default;
+  // --no-incremental-reflow opts back into a full rebuild every render.
+  if !options.incremental_reflow {
+    browser.set_incremental_reflow(false)
   }
   // For JSON/AOM modes, use lightweight navigation (skip CSS cascade and layout)
   if options.json || options.aom {

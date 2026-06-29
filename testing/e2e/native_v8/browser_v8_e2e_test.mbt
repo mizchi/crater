@@ -201,6 +201,7 @@ test "E2E: incremental reflow matches a full rebuild on the dynamic JS path" {
     "</script></body></html>"
   // Flag off: run the script, then render the final DOM from scratch.
   let full = new_v8_browser(800, 600)
+  full.set_incremental_reflow(false)
   full.set_html_content(html)
   let _ = full.execute_scripts()
   let want = full.render_text_full_page()
