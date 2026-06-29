@@ -177,30 +177,32 @@ only invalidate paint; a layout attribute (`width`, `display`, …) marks dirty.
 > combinator. The mutation queue is a *paint-vs-layout* refinement on top of a
 > correct seed, not a replacement for it.
 
-#### Blocker / plan for step 3: `@style.Style` needs `Eq`
+#### Step 3 narrowing — **landed** (mizchi/css `Style::layout_eq`)
 
-The shell currently passes **every** uid as `dirty_uids`
+The shell used to pass **every** uid as `dirty_uids`
 (`Browser::build_dynamic_layout_tree`) — correct (== full recompute) but it
-defeats the block-flow memoization, which only reuses nodes the driver reports
-clean. Narrowing the seed needs `old_style != new_style` per uid, and
-`@style.Style` (mizchi/css) is a 99-field struct with **no `derive`** — no `Eq`,
-`Show`, or `Hash` — so there is no safe, complete, maintainable comparison in
-crater. A hand-rolled 99-field comparator under-reports the moment a field is
-missed (or upstream adds one) → silent stale-layout, on the opt-in path.
+defeated the block-flow memoization, which only reuses nodes the driver reports
+clean. Narrowing needed an `old_style != new_style` check per uid; `@style.Style`
+is a large struct and a hand-rolled comparator in crater would under-report the
+moment a field is missed (→ stale layout). The clean signal lives upstream:
+**`mizchi/css@0.7.3` adds `Style::layout_eq(self, other) -> Bool`** comparing only
+layout-affecting fields (paint-only — color, background, shadow, border-color,
+border-radius, clip, opacity, z-index, pointer-events — ignored), so a paint-only
+change does not invalidate layout. (Blanket `derive(Eq)` on `Style` would instead
+force `Eq` onto paint types like gradients/shadows and over-dirty on repaint — the
+focused method is the right tool.)
 
-- **Upstream (mizchi/css), one line:** add `derive(Eq, @debug.Debug)` to the
-  `Style` struct. Every field type already derives `Eq` (`@values.Dimension`,
-  `Rect`, `Display`, …), so this is mechanical and auto-covers future fields.
-- **crater follow-up (small, then testable):** in
-  `Browser::build_dynamic_layout_tree`, replace `collect_node_uids(node)` (all
-  uids) with
-  `prev.flow_dirty_uids(seeds)` where
-  `seeds = { uid : old_style != new_style || text/src/measure-presence differ }`
-  computed by walking the new node tree against `prev.node_map`. `flow_dirty_uids`
-  expands for crater's absolute-geometry flow shift; `reconcile_from`'s structural
-  pass already covers add/remove/move. Validate with an on-vs-off render
-  equivalence test per mutation kind (text, size, display, append, remove, move).
-  Until the upstream `Eq` lands, the safe all-uids behavior stays.
+crater consumes it (`Browser::build_dynamic_layout_tree`): it keeps the prior
+render-node tree (`incremental_prev_node`), seeds the dirty set with the persisted
+uids whose `node_layout_inputs_equal` fails — `!a.style.layout_eq(b.style)` or a
+`text` / `src` / measure-presence change — expands it with `flow_dirty_uids`
+(absolute-geometry flow shift), and hands that to `reconcile_from` (whose
+structural pass covers add/remove/move). The comparison is against the *computed*
+post-cascade style, so a mutation that changes an un-mutated node's style via a
+combinator (`:has()`, `+`, `~`, `:nth-child`) is still caught. js-tested on-vs-off
+render equivalence per mutation kind (text, size, paint-only, append, remove) in
+`browser/shell/incremental_reflow_wbtest.mbt`. Residual: a measure-func *value*
+change with no src/style change (closures aren't comparable).
 
 ### (C) Validation without V8 (js target)
 
@@ -223,15 +225,13 @@ attr, layout attr, append, remove, move) and a fuzz-ish sequence.
    dynamic render path stabilize uids and reconcile against the prior tree
    (`Browser::build_dynamic_layout_tree` in `browser/shell/incremental_reflow.mbt`,
    used by the text render path). Off by default → byte-for-byte the current
-   behavior; js-tested that on vs off render identically. **The dirty set is
-   currently every uid** (correct, == full recompute) — the remaining work is to
-   narrow it so the flag is also *faster*. The **layout engine now memoizes
-   in-flow block subtrees per uid** (block-flow memoization — landed, see the
-   "Fix (landed)" section above), so once the seed is narrowed the unchanged
-   block subtrees are reused. Narrowing is **blocked on `@style.Style` gaining
-   `Eq` upstream** (see "Blocker / plan for step 3" above): the seed needs
-   `old_style != new_style` per uid and `Style` has no `derive`. Validate the
-   dynamic round-trip with native V8.
+   behavior; js-tested that on vs off render identically. The dirty seed is now
+   **narrowed** (landed): `build_dynamic_layout_tree` seeds only the persisted
+   uids whose layout inputs changed (`Style::layout_eq` / text / src / measure),
+   expands with `flow_dirty_uids`, and reconciles — so the **block-flow
+   memoization** (also landed) reuses the unchanged block subtrees. js-tested
+   on-vs-off equivalence per mutation kind (see "Step 3 narrowing — landed"
+   above). Validate the dynamic round-trip with native V8.
 3. **paint-only fast path** — use `affects_layout` to keep layout and re-paint
    only (the dynamic-path analogue of `branch_reusing_layout`).
 4. **forced reflow read path** (separate memo) — on a measuring read after a

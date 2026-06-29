@@ -153,6 +153,10 @@ struct Browser {
   uid_registry : @node.UidRegistry
   /// Prior dynamic LayoutTree used as the incremental-reflow reconcile baseline.
   mut incremental_prev_tree : @layout.LayoutTree?
+  /// Prior dynamic render-node tree, kept so the next reconcile can diff each
+  /// node's layout inputs (computed style via `Style::layout_eq` / text / src /
+  /// measure) by uid to produce a tight dirty seed instead of dirtying every node.
+  mut incremental_prev_node : @node.Node?
   /// Opt-in (default off): reconcile the dynamic layout tree against the prior
   /// one instead of a full from-scratch rebuild.
   mut enable_incremental_reflow : Bool
@@ -255,6 +259,7 @@ pub fn Browser::new(
     layout_tree: None,
     uid_registry: @node.UidRegistry::new(),
     incremental_prev_tree: None,
+    incremental_prev_node: None,
     enable_incremental_reflow: false,
     prev_buffer: None,
     last_render_key: "",
