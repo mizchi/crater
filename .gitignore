@@ -24,6 +24,11 @@ uv.lock
 # MoonBit generated files (tracked for publishing)
 # *.generated.mbti
 
+# Nix / direnv
+.direnv/
+result
+result-*
+
 # Generated render results
 render-results/
 
