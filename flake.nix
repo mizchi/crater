@@ -17,22 +17,31 @@
       moonbitVersion = "0.1.20260618"; # expected `moon version`; see shellHook
       pkfVersion = "0.12.3";
 
-      systems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
+      # pkfire@0.12.3 publishes binaries for exactly three platforms (no
+      # x86_64-darwin / Intel-mac asset exists upstream). `systems` therefore
+      # tracks what pkf can actually be provided for; add a row here only when
+      # pkfire starts shipping that target.
+      systems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
       forAllSystems = f: nixpkgs.lib.genAttrs systems (system: f system);
 
       # pkfire ships per-platform static tarballs as GitHub release assets.
-      # Hashes are flat-file SRI of `pkf-<asset>.tar.gz`. Only the assets we have
-      # verified are filled in; the rest use lib.fakeHash so `nix build` prints
-      # the real hash on first use (standard FOD bootstrap).
+      # Hashes are flat-file SRI of `pkf-<asset>.tar.gz`, verified 2026-07-01
+      # against the upstream `.tar.gz.sha256` sidecars of the pkfire@0.12.3
+      # release. To add a platform: `nix build .#pkf` on it (or hash the tarball
+      # with `openssl dgst -sha256 -binary <f> | openssl base64 -A`).
       pkfAssets = {
         "x86_64-linux" = {
           asset = "pkf-linux-amd64";
-          # verified 2026-06-30 against pkfire@0.12.3 release
           hash = "sha256-AjeiXgYsVoGqjQrrVH9g454hRF1ACOd4ZryoJUPGN3M=";
         };
-        "aarch64-linux" = { asset = "pkf-linux-arm64"; hash = nixpkgs.lib.fakeHash; };
-        "x86_64-darwin" = { asset = "pkf-darwin-amd64"; hash = nixpkgs.lib.fakeHash; };
-        "aarch64-darwin" = { asset = "pkf-darwin-arm64"; hash = nixpkgs.lib.fakeHash; };
+        "aarch64-linux" = {
+          asset = "pkf-linux-arm64";
+          hash = "sha256-wK2yy5IrktT0M+f/XGszGtmWKpDke2Dtfq0xXwtzb8s=";
+        };
+        "aarch64-darwin" = {
+          asset = "pkf-darwin-arm64";
+          hash = "sha256-HkOuPANkPJYdVGZrtSxESIDoJzEaY6o8HNZD/MBUCBY=";
+        };
       };
 
       mkPkf = pkgs: system:

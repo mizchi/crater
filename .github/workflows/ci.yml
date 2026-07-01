@@ -83,6 +83,55 @@ jobs:
         id: gates
         run: bash scripts/ci/affected-gates.sh --base "${{ steps.affected_base.outputs.base }}"
 
+  # Proves the reproducible toolchain (flake.nix) actually provisions and that
+  # every version-pinned tool resolves to its pin inside `nix develop`. Additive
+  # and independent of the tool-install path the other jobs use; it fails loudly
+  # if the dev shell drifts. Also emits the generated flake.lock as an artifact
+  # so it can be committed to fully pin nixpkgs.
+  nix-develop:
+    name: nix develop (reproducible toolchain)
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v30
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            accept-flake-config = true
+
+      - name: Lock nixpkgs (flake.lock is not committed)
+        run: nix flake lock
+
+      - name: Assert pinned toolchain resolves inside the dev shell
+        run: |
+          nix develop --command bash -euo pipefail -c '
+            echo "moon:       $(moon version 2>/dev/null || echo MISSING)"
+            echo "pkf:        $(pkf --version 2>/dev/null || echo MISSING)"
+            echo "node:       $(node --version)"
+            echo "just:       $(just --version)"
+            echo "wasm-tools: $(wasm-tools --version)"
+            echo "pkl:        $(pkl --version 2>/dev/null | head -1)"
+
+            # Hard failures on drift. MoonBit is version-asserted (installer);
+            # pkf is FOD-pinned so identity is guaranteed — just require it runs.
+            moon version | grep -q "$MOONBIT_EXPECTED_VERSION" || {
+              echo "::error::MoonBit drift: expected $MOONBIT_EXPECTED_VERSION"; moon version; exit 1;
+            }
+            pkf --version >/dev/null || { echo "::error::pkf failed to run"; exit 1; }
+          '
+
+      - name: Upload generated flake.lock
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flake.lock
+          path: flake.lock
+          if-no-files-found: warn
+
   test:
     runs-on: ubuntu-latest
 
