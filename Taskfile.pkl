@@ -30,11 +30,12 @@ workflowTests {
     changed { "flaker.toml" }
     direct { check.checkFlaker.name }
     tasks {
-      check.checkFlaker.name
-      check.checkMbti.name
       check.checkMoon.name
-      check.checkTaskfile.name
       check.checkTs.name
+      check.checkFlaker.name
+      check.checkDeadModules.name
+      check.checkTaskfile.name
+      check.checkMbti.name
       spec.specCheck.name
       spec.specLint.name
       check.check.name
@@ -54,34 +55,34 @@ workflowTests {
     name = "wpt dom fixture change runs dom and visual gates"
     changed { "wpt/dom/nodes/Document-createElement.html" }
     direct {
-      visual.testWptVrt.name
       wpt.testWptDom.name
+      visual.testWptVrt.name
     }
     tasks {
-      visual.testVrt.name
-      visual.testWptVrt.name
-      visual.testVisual.name
       wpt.testWptCss.name
       wpt.testWptDom.name
       wpt.testWptWebdriver.name
       wpt.testWpt.name
+      visual.testVrt.name
+      visual.testWptVrt.name
+      visual.testVisual.name
     }
   }
   new {
     name = "wpt webdriver fixture change runs webdriver and visual gates"
     changed { "wpt/webdriver/tests/bidi/session/status/status.py" }
     direct {
-      visual.testWptVrt.name
       wpt.testWptWebdriver.name
+      visual.testWptVrt.name
     }
     tasks {
-      visual.testVrt.name
-      visual.testWptVrt.name
-      visual.testVisual.name
       wpt.testWptCss.name
       wpt.testWptDom.name
       wpt.testWptWebdriver.name
       wpt.testWpt.name
+      visual.testVrt.name
+      visual.testWptVrt.name
+      visual.testVisual.name
     }
   }
   new {
@@ -94,20 +95,21 @@ workflowTests {
       spec.specTest.name
     }
     tasks {
-      check.checkFlaker.name
-      check.checkMbti.name
       check.checkMoon.name
-      check.checkTaskfile.name
       check.checkTs.name
+      check.checkFlaker.name
+      check.checkDeadModules.name
+      check.checkTaskfile.name
+      check.checkMbti.name
       spec.specCheck.name
       spec.specLint.name
       check.check.name
       spec.specDocs.name
       spec.specTest.name
       spec.spec.name
-      test.buildJsPackage.name
       test.testMoon.name
       test.testVitest.name
+      test.buildJsPackage.name
       test.testWasm.name
       test.testNode.name
       test.test.name
