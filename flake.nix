@@ -91,9 +91,15 @@
 
             shellHook = ''
               set -u
-              # pnpm: honour the package.json `packageManager` pin via corepack
+              # pnpm: honour the package.json `packageManager` pin via corepack.
+              # Corepack lives in the read-only /nix/store, so `corepack enable`
+              # cannot write shims next to its own binary; point it at a writable
+              # dir that we prepend to PATH instead.
               export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
-              corepack enable >/dev/null 2>&1 || true
+              corepack_shims="$HOME/.cache/crater/corepack-shims"
+              mkdir -p "$corepack_shims"
+              export PATH="$corepack_shims:$PATH"
+              corepack enable --install-directory "$corepack_shims" pnpm npm >/dev/null 2>&1 || true
 
               # MoonBit is not in nixpkgs and upstream does not currently serve
               # pinned per-version binary tarballs (the dated /binaries/<ver>/
@@ -104,8 +110,8 @@
               installed="$(moon version 2>/dev/null | awk 'NR==1{print $2}')"
               if [ "$installed" != "$MOONBIT_EXPECTED_VERSION" ]; then
                 echo "crater: installing MoonBit (have '$installed', want '$MOONBIT_EXPECTED_VERSION')" >&2
-                if MOONBIT_INSTALL_VERSION="$MOONBIT_EXPECTED_VERSION" \
-                     curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash >&2; then :; else
+                if curl -fsSL https://cli.moonbitlang.com/install/unix.sh \
+                     | MOONBIT_INSTALL_VERSION="$MOONBIT_EXPECTED_VERSION" bash >&2; then :; else
                   echo "crater: pinned install failed; falling back to latest" >&2
                   curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash >&2 || true
                 fi
