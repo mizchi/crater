@@ -106,22 +106,34 @@ jobs:
       - name: Lock nixpkgs (flake.lock is not committed)
         run: nix flake lock
 
-      - name: Assert pinned toolchain resolves inside the dev shell
+      - name: Enter the dev shell and check the toolchain
         run: |
-          nix develop --command bash -euo pipefail -c '
-            echo "moon:       $(moon version 2>/dev/null || echo MISSING)"
-            echo "pkf:        $(pkf --version 2>/dev/null || echo MISSING)"
+          nix develop --command bash -uo pipefail -c '
+            echo "== tool versions =="
+            echo "moon:       $(moon version 2>&1 | head -1)"
             echo "node:       $(node --version)"
             echo "just:       $(just --version)"
             echo "wasm-tools: $(wasm-tools --version)"
-            echo "pkl:        $(pkl --version 2>/dev/null | head -1)"
+            echo "pkl:        $(pkl --version 2>&1 | head -1)"
 
-            # Hard failures on drift. MoonBit is version-asserted (installer);
-            # pkf is FOD-pinned so identity is guaranteed — just require it runs.
-            moon version | grep -q "$MOONBIT_EXPECTED_VERSION" || {
-              echo "::error::MoonBit drift: expected $MOONBIT_EXPECTED_VERSION"; moon version; exit 1;
-            }
-            pkf --version >/dev/null || { echo "::error::pkf failed to run"; exit 1; }
+            # pkf is FOD-pinned; provisioning + runnability are the hard gate.
+            echo "== pkf (FOD-pinned) =="
+            pkf_path="$(command -v pkf || true)"
+            echo "path: ${pkf_path:-MISSING}"
+            [ -n "$pkf_path" ] || { echo "::error::pkf not provisioned by the flake"; exit 1; }
+            set +e
+            pkf --version; pkf_rc=$?
+            set -e
+            echo "pkf --version exit=$pkf_rc"
+            if [ "$pkf_rc" -ne 0 ]; then
+              echo "-- diagnostics --"
+              head -c 20 "$pkf_path" | od -An -tx1 || true
+              ldd "$pkf_path" || true
+              echo "::error::pkf present but failed to run (exit $pkf_rc)"
+              exit 1
+            fi
+            # MoonBit floats "latest" (matches setup-crater); just require it runs.
+            moon version >/dev/null 2>&1 || { echo "::error::moon failed to run"; exit 1; }
           '
 
       - name: Upload generated flake.lock
