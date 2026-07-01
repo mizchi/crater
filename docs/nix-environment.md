@@ -63,7 +63,13 @@ hashes in `pkfAssets`:
 | `aarch64-darwin` | `pkf-darwin-arm64` |
 
 There is **no** `x86_64-darwin` (Intel-mac) asset upstream, so that system is
-omitted from `systems`. To add a target once pkfire publishes it: add it to
+omitted from `systems`.
+
+The FOD hash pins the exact pkf *binary*, but pkf is a prebuilt MoonBit-native
+ELF that links only `libc`/`libm` and **aborts under nixpkgs-unstable's glibc
+2.42**. It is therefore installed *without* `autoPatchelfHook`, keeping its
+original interpreter so it binds the **host glibc** at runtime (fine on CI and
+typical distros). Like MoonBit, on NixOS this needs `nix-ld`. To add a target once pkfire publishes it: add it to
 `systems`, then run `nix build .#pkf` on that machine (Nix prints the hash) or
 hash the release tarball directly:
 

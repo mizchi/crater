@@ -58,13 +58,13 @@
             inherit (a) hash;
           };
           sourceRoot = ".";
-          nativeBuildInputs = nixpkgs.lib.optionals pkgs.stdenv.isLinux [ pkgs.autoPatchelfHook ];
-          # Runtime libs the prebuilt pkf ELF links against; autoPatchelfHook
-          # resolves DT_NEEDED entries against these on Linux.
-          buildInputs = nixpkgs.lib.optionals pkgs.stdenv.isLinux [
-            pkgs.stdenv.cc.cc.lib
-            pkgs.zlib
-          ];
+          # The prebuilt pkf ELF links only libc/libm and SIGABRTs (exit 134)
+          # under nixpkgs-unstable's very new glibc (2.42), while running fine on
+          # the host glibc that CI/most distros ship. So do NOT autopatch it onto
+          # the nix loader — keep its original interpreter and let it bind the
+          # host glibc at runtime. On NixOS this needs nix-ld, the same
+          # requirement MoonBit already carries.
+          dontPatchELF = true;
           installPhase = ''
             runHook preInstall
             install -Dm755 pkf "$out/bin/pkf"
