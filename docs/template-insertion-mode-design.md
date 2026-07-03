@@ -1,15 +1,29 @@
 # Design memo: `<template>` content parsing ("in template" insertion mode)
 
-Status: design only. Diagnosed and a partial fix prototyped + reverted in the
-2026-06-25 session. The full fix needs the HTML "in template" insertion mode and
-must be validated against the `dom` package WPT suite, which currently cannot run
-in the web sandbox (see "Test-environment blocker" below). This memo records the
-precise root cause, minimal repros, and the change shape so the work can be
-picked up directly once the suite runs.
+Status: **landed** (crater #313). The full "in template" insertion mode described
+below is implemented in `dom/html` and validated. This memo is kept as the
+root-cause record; the "Proposed change" section documents what shipped.
 
-Source of the issue: the MDN `CSS grid layout` fixture
-(`real-world/mdn-grid/`) renders its left sidebar (`<aside id="main-sidebar">`)
-at full width because the sidebar is hoisted out of its grid container.
+Implementation: `TreeBuilder::start_template` / `end_template`
+(`dom/html/insertion_mode.mbt`), the `template_insertion_modes` stack and uniform
+`</template>` intercept in `dom/html/tree_builder.mbt`
+(`process_token_single` + `handle_in_template`), and the `template` case in
+`reset_insertion_mode` (`insertion_mode.mbt`). Template content is parsed as a
+real but inert (`display:none`) subtree — no raw-text shortcut.
+
+Verification (2026-07-03, via `just test-no-v8` now that #312 is unblocked):
+- `dom/html/tree_builder_test.mbt` regression tests
+  `tree_builder/nested template does not leak siblings out of container` and
+  `tree_builder/template sibling stays in container` — green; full `dom/html`
+  suite 161/161.
+- Real `real-world/mdn-grid/` fixture rendered through the conformance runtime:
+  `aside#main-sidebar` is a child of the grid container
+  (`div.layout__2-sidebars-inline`) and lands in the 256px sidebar column
+  (`x=0, width=256`), not full-width 1280 and not vanished.
+
+Original source of the issue: the MDN `CSS grid layout` fixture
+(`real-world/mdn-grid/`) rendered its left sidebar (`<aside id="main-sidebar">`)
+at full width because the sidebar was hoisted out of its grid container.
 
 ---
 
@@ -114,26 +128,25 @@ properly-stacked template neither renders nor leaks stray end tags.
 
 ---
 
-## Test-environment blocker
+## Test-environment blocker (resolved)
 
-The `dom` package's own test suite cannot run in the web sandbox: the workspace
-pulls `mizchi/v8` (via `browser/native` and `testing`), whose postadd / consumer
-prebuild `git clone`s `denoland/rusty_v8`, which the agent proxy rejects (403).
-`moon test` therefore fails at dependency resolution before any test runs.
+Originally the `dom` package's own test suite could not run in the web sandbox:
+the workspace pulls `mizchi/v8` (via `browser/native` and `testing`), whose
+postadd / consumer prebuild `git clone`s `denoland/rusty_v8`, aborting `moon
+test` at dependency resolution before any test runs.
 
-For this session the css 0.5.4 verification was done through the **conformance**
-module instead (`conformance/`, its own `moon.mod.json`, depends only on
-core/dom/layout/renderer/painter/webvitals + css — no v8):
+This is now unblocked (crater #312): `just test-no-v8 -p mizchi/crater-dom/html`
+(→ `scripts/moon-test-no-v8.sh`, which drops the two v8-pulling members via
+`scripts/ci/drop-v8-members.sh`) runs the `dom/html` suite without touching v8.
+The template fix above was validated with it.
+
+The **conformance** module (`conformance/`, its own `moon.mod.json`, no v8) is
+still the path for whole-fixture render checks:
 
 ```
 cd conformance && moon build --target js --release --warn-list -27-29
 # -> conformance/_build/js/release/build/wpt/wpt.js exports renderHtmlToJsonForWpt(html, w, h)
 ```
-
-The template fix should be developed where `moon test` (and the WPT `dom`
-runner) can run, so the in-template insertion mode is validated against the
-`wpt/dom/` testharness suite (`just wpt-dom-all`) and the existing
-`dom/html/*_test.mbt` snapshots — not just the conformance JS render.
 
 ---
 
