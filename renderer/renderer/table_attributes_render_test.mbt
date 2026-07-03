@@ -305,3 +305,34 @@ test "table_border_fixed_layout_width_matches_browser_281" {
     None => fail("table layout box not found")
   }
 }
+
+///|
+/// Issue #281: tables default to `box-sizing: content-box`, so when the columns
+/// fit inside the specified `width` the used table box is the content width plus
+/// the border added *outside* it. Here `width: 500px` + a `border="10"` table
+/// border gives 500 + 2*10 = 520 (previously the table incorrectly defaulted to
+/// border-box and stayed 500, eating the border into the content).
+test "table_explicit_width_is_content_box_281" {
+  let html =
+    #|<!DOCTYPE HTML>
+    #|<style>table { border-spacing: 0 }</style>
+    #|<table border="10" style="width: 500px"><tr><td>x</td></tr></table>
+  let layout = @renderer.render(html, @renderer.RenderContext::default())
+  fn find_table(l : @layout_types.Layout) -> @layout_types.Layout? {
+    if l.id.has_prefix("table") {
+      return Some(l)
+    }
+    for c in l.children {
+      match find_table(c) {
+        Some(found) => return Some(found)
+        None => ()
+      }
+    }
+    None
+  }
+
+  match find_table(layout) {
+    Some(table) => inspect(table.width, content="520")
+    None => fail("table layout box not found")
+  }
+}
