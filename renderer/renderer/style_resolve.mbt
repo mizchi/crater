@@ -15,12 +15,74 @@ fn is_root_selector(selector : @css.CompoundSelector) -> Bool {
 
 ///|
 fn clone_string_map(source : Map[String, String]) -> Map[String, String] {
-  let cloned : Map[String, String] = {}
-  for entry in source {
-    let (key, value) = entry
-    cloned[key] = value
+  // Native copy pre-sizes the target, avoiding the incremental grow/rehash
+  // churn of inserting entries one-by-one.
+  source.copy()
+}
+
+///|
+/// True when this element writes into the inherited custom-property map, so the
+/// map must be cloned before mutation. When false, the element inherits the
+/// parent's vars unchanged and the map can be shared read-only — avoiding an
+/// O(vars) clone per element, the dominant style-resolution cost on var-heavy
+/// pages. Conservative: any `--` declaration, a `color-scheme` declaration, or
+/// a not-yet-seeded color-scheme key forces the clone. Mirrors exactly the
+/// write conditions of collect_cascaded_custom_properties /
+/// collect_inline_custom_properties / seed_effective_color_scheme_for_direct_style.
+fn element_contributes_css_vars(
+  cascaded : @css.CascadedValues?,
+  inline_css : String?,
+  css_vars : Map[String, String],
+) -> Bool {
+  // Root / first element still needs the color-scheme seed written.
+  if css_vars.get(renderer_effective_color_scheme_key) is None {
+    return true
   }
-  cloned
+  match cascaded {
+    Some(cv) => {
+      let mut contributes = false
+      cv.each(fn(prop, _decl) {
+        if prop.has_prefix("--") || prop == "color-scheme" {
+          contributes = true
+        }
+      })
+      if contributes {
+        return true
+      }
+    }
+    None => ()
+  }
+  match inline_css {
+    Some(css) =>
+      for declaration in parse_inline_declarations_cached(css) {
+        let (prop, _value) = declaration
+        if prop.has_prefix("--") || prop.to_lower() == "color-scheme" {
+          return true
+        }
+      }
+    None => ()
+  }
+  false
+}
+
+///|
+/// Build the element's effective custom-property map. Shares the inherited map
+/// read-only when the element contributes nothing (the common case), else
+/// clones and folds in the element's own custom properties + color-scheme seed.
+fn compute_element_css_vars(
+  cascaded : @css.CascadedValues?,
+  inline_css : String?,
+  css_vars : Map[String, String],
+) -> Map[String, String] {
+  if element_contributes_css_vars(cascaded, inline_css, css_vars) {
+    let vars = css_vars.copy()
+    collect_cascaded_custom_properties(cascaded, vars)
+    collect_inline_custom_properties(inline_css, vars)
+    seed_effective_color_scheme_for_direct_style(cascaded, inline_css, vars)
+    vars
+  } else {
+    css_vars
+  }
 }
 
 ///|
@@ -714,11 +776,8 @@ fn apply_cascaded_to_style(
   parent_style : @style.Style?,
   css_vars : Map[String, String],
 ) -> @style.Style {
-  let element_css_vars = clone_string_map(css_vars)
-  collect_cascaded_custom_properties(cascaded, element_css_vars)
-  collect_inline_custom_properties(inline_css, element_css_vars)
-  seed_effective_color_scheme_for_direct_style(
-    cascaded, inline_css, element_css_vars,
+  let element_css_vars = compute_element_css_vars(
+    cascaded, inline_css, css_vars,
   )
   let mut author_line_height_present = false
   match cascaded {
@@ -1253,13 +1312,7 @@ fn compute_element_css_vars_indexed(
   } else {
     None
   }
-  let element_css_vars = clone_string_map(css_vars)
-  collect_cascaded_custom_properties(cascaded, element_css_vars)
-  collect_inline_custom_properties(inline_css, element_css_vars)
-  seed_effective_color_scheme_for_direct_style(
-    cascaded, inline_css, element_css_vars,
-  )
-  element_css_vars
+  compute_element_css_vars(cascaded, inline_css, css_vars)
 }
 
 ///|
