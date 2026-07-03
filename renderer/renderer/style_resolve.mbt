@@ -560,9 +560,12 @@ fn get_ua_default_style(tag : String) -> @style.Style {
     // Table elements
     "table" =>
       {
+        // Tables default to `box-sizing: content-box` like every other element
+        // (there is no UA rule making them border-box). An explicit `width` is
+        // therefore the content-box width, and border/padding — including the
+        // legacy `<table border>` presentational hint — are added outside it.
         ..default_style,
         display: @types.Table,
-        box_sizing: @types.BorderBox,
         border_spacing: 2.0,
       }
     "tr" => { ..default_style, display: @types.TableRow }
