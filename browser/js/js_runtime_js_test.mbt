@@ -2632,7 +2632,7 @@ test "slot assignedNodes distributes default and named light DOM children" {
 }
 
 ///|
-test "slot assignedNodes falls back to slot children when no assignment exists" {
+test "slot assignedNodes is empty without assignment; flatten yields fallback" {
   let dom = @dom.DomTree::new()
   let html = dom.create_element("html")
   let body = dom.create_element("body")
@@ -2646,12 +2646,14 @@ test "slot assignedNodes falls back to slot children when no assignment exists" 
     #|const shadow = host.attachShadow({ mode: 'open' });
     #|shadow.innerHTML = '<slot name="missing"><span id="fb">fallback</span></slot>';
     #|const slot = shadow.querySelector('slot');
-    #|const fallbackNode = slot.assignedNodes()[0];
-    #|const fallbackEl = slot.assignedElements()[0];
-    #|[slot.assignedNodes().length, fallbackNode.id, slot.assignedElements().length, fallbackEl.id].join('|')
+    #|// Nothing is slotted, so assignedNodes()/assignedElements() are empty; the
+    #|// slot's fallback content appears only under { flatten: true } (per Chromium).
+    #|const flatNode = slot.assignedNodes({ flatten: true })[0];
+    #|const flatEl = slot.assignedElements({ flatten: true })[0];
+    #|[slot.assignedNodes().length, slot.assignedElements().length, slot.assignedNodes({ flatten: true }).length, flatNode.id, slot.assignedElements({ flatten: true }).length, flatEl.id].join('|')
   let result = ctx.execute(code)
   inspect(result.success, content="true")
-  inspect(result.value, content="1|fb|1|fb")
+  inspect(result.value, content="0|0|1|fb|1|fb")
 }
 
 ///|
@@ -2669,12 +2671,13 @@ test "slot assignedNodes with flatten traverses nested fallback slots" {
     #|const shadow = host.attachShadow({ mode: 'open' });
     #|shadow.innerHTML = '<slot id="outer"><slot name="inner"><span id="fb">fallback</span></slot></slot>';
     #|const outer = shadow.getElementById('outer');
-    #|const nested = outer.assignedNodes()[0];
+    #|// Nested slots are not "assigned nodes" of the outer slot, so non-flatten
+    #|// assignedNodes() is empty; flattening descends into the inner slot's
+    #|// fallback content (per Chromium).
     #|const flatNode = outer.assignedNodes({ flatten: true })[0];
     #|const flatEl = outer.assignedElements({ flatten: true })[0];
     #|[
     #|  outer.assignedNodes().length,
-    #|  nested.localName,
     #|  outer.assignedNodes({ flatten: true }).length,
     #|  flatNode.id,
     #|  outer.assignedElements({ flatten: true }).length,
@@ -2682,7 +2685,7 @@ test "slot assignedNodes with flatten traverses nested fallback slots" {
     #|].join('|')
   let result = ctx.execute(code)
   inspect(result.success, content="true")
-  inspect(result.value, content="1|slot|1|fb|1|fb")
+  inspect(result.value, content="0|1|fb|1|fb")
 }
 
 ///|
@@ -2704,9 +2707,11 @@ test "slot assignedNodes with flatten resolves nested slot assignments" {
     #|child.id = 'assigned';
     #|child.slot = 'inner';
     #|host.appendChild(child);
+    #|// The child is assigned to the inner slot, not the outer one, so the outer
+    #|// slot's non-flatten assignedNodes() is empty; flattening surfaces the
+    #|// child through the inner slot (per Chromium).
     #|[
     #|  outer.assignedNodes().length,
-    #|  outer.assignedNodes()[0].localName,
     #|  outer.assignedNodes({ flatten: true }).length,
     #|  outer.assignedNodes({ flatten: true })[0] === child,
     #|  outer.assignedElements({ flatten: true }).length,
@@ -2714,7 +2719,7 @@ test "slot assignedNodes with flatten resolves nested slot assignments" {
     #|].join('|')
   let result = ctx.execute(code)
   inspect(result.success, content="true")
-  inspect(result.value, content="1|slot|1|true|1|true")
+  inspect(result.value, content="0|1|true|1|true")
 }
 
 ///|
@@ -2771,17 +2776,19 @@ test "assignedSlot prefers the first matching slot and ignores unmatched nodes" 
     #|missing.slot = 'missing';
     #|host.appendChild(plain);
     #|host.appendChild(missing);
+    #|// `plain` (no slot attr) goes to the first default slot; `second` has no
+    #|// assigned light nodes so its non-flatten assignedNodes() is empty (its
+    #|// fallback is not "assigned"); `missing`/`fallback` have no slot.
     #|[
     #|  plain.assignedSlot.id,
     #|  first.assignedNodes().length,
     #|  second.assignedNodes().length,
-    #|  second.assignedNodes()[0].id,
     #|  missing.assignedSlot === null,
     #|  fallback.assignedSlot === null,
     #|].join('|')
   let result = ctx.execute(code)
   inspect(result.success, content="true")
-  inspect(result.value, content="first|1|1|fb|true|true")
+  inspect(result.value, content="first|1|0|true|true")
 }
 
 ///|
@@ -2879,22 +2886,24 @@ test "slot.assign supports manual slot assignment and assignedSlot" {
     #|host.appendChild(plain);
     #|host.appendChild(labeled);
     #|defaultSlot.assign(labeled);
+    #|// Manual assignment: `labeled` is assigned to defaultSlot regardless of its
+    #|// slot="label" attribute. The named slot has no manual assignment, so its
+    #|// assignedNodes() is empty (fallback is not "assigned"); per Chromium.
     #|JSON.stringify([
     #|  shadow.slotAssignment,
     #|  defaultSlot.assignedNodes().length,
     #|  defaultSlot.assignedNodes()[0] === labeled,
     #|  namedSlot.assignedNodes().length,
-    #|  namedSlot.assignedNodes()[0].id,
     #|  labeled.assignedSlot === defaultSlot,
     #|  plain.assignedSlot === null
     #|])
   let result = ctx.execute(code)
   inspect(result.success, content="true")
-  inspect(result.value, content="[\"manual\",1,true,1,\"fallback\",true,true]")
+  inspect(result.value, content="[\"manual\",1,true,0,true,true]")
 }
 
 ///|
-test "slot.assign throws when shadow root uses named slot assignment" {
+test "slot.assign does not throw in a named-assignment shadow root" {
   let dom = @dom.DomTree::new()
   let html = dom.create_element("html")
   let body = dom.create_element("body")
@@ -2909,6 +2918,9 @@ test "slot.assign throws when shadow root uses named slot assignment" {
     #|const slot = shadow.querySelector('slot');
     #|const child = document.createElement('span');
     #|host.appendChild(child);
+    #|// assign() records the manually-assigned nodes regardless of the shadow
+    #|// root's slot-assignment mode; it does not throw in a named ('named') root
+    #|// (the assignment simply stays inactive). Matches Chromium.
     #|try {
     #|  slot.assign(child);
     #|  'no-error';
@@ -2917,7 +2929,7 @@ test "slot.assign throws when shadow root uses named slot assignment" {
     #|}
   let result = ctx.execute(code)
   inspect(result.success, content="true")
-  inspect(result.value, content="NotAllowedError")
+  inspect(result.value, content="no-error")
 }
 
 ///|
