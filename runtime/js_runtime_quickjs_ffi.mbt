@@ -440,8 +440,9 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|       configurable: true
   #|     });
   #|     // assignedSlot belongs to the Slottable mixin (Element + Text), not all
-  #|     // Nodes; it is defined on Element.prototype / Text.prototype by the host
-  #|     // harness so comment / PI / document nodes do not expose it.
+  #|     // Nodes; it is installed on Element.prototype / Text.prototype below
+  #|     // (near the Text constructor) so comment / PI / document nodes do not
+  #|     // expose it.
   #|     Object.defineProperty(Node.prototype, 'parentElement', {
   #|       get() {
   #|         const p = this.parentNode;
@@ -5528,6 +5529,18 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #|     }
   #|     Text.prototype = Object.create(CharacterData.prototype);
   #|     Text.prototype.constructor = Text;
+  #|
+  #|     // Slottable mixin: assignedSlot is exposed on Element and Text (not on
+  #|     // Comment / ProcessingInstruction). getAssignedSlotPublic returns null
+  #|     // for a slot inside a closed shadow tree, and null for unslotted nodes.
+  #|     Object.defineProperty(Element.prototype, 'assignedSlot', {
+  #|       get() { return getAssignedSlotPublic(this); },
+  #|       configurable: true
+  #|     });
+  #|     Object.defineProperty(Text.prototype, 'assignedSlot', {
+  #|       get() { return getAssignedSlotPublic(this); },
+  #|       configurable: true
+  #|     });
   #|
   #|     // Comment constructor
   #|     function Comment(data) {
