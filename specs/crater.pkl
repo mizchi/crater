@@ -444,10 +444,10 @@ scenarios {
     id = "compat.web-components-shadow-selectors"
     name = "Shadow DOM selector surface is complete"
     description =
-      "Implement remaining shadow-aware selectors: :host compound selectors, ::slotted, :host-context. Source: TODO Next (P1) and browser/TODO.md."
+      "Implement remaining shadow-aware selectors: :host compound selectors, ::slotted, :host-context. Source: TODO Next (P1) and browser/TODO.md. See GitHub issue #155."
     tags { "dom"; "shadow"; "selectors"; "todo:next" }
     severity = "major"
-    reviewStatus = "draft"
+    reviewStatus = "approved"
     contributes { "goal.dom-compat" }
   }
   new {

@@ -854,4 +854,14 @@ tests {
     cmd =
       "bash -lc 'set -e; grep -Fq -- \"pub fn DomTree::shadow_query_selector_all\" dom/dom/shadow_query_selector.mbt; grep -Fq -- \"pub fn DomTree::shadow_query_selector(\" dom/dom/shadow_query_selector.mbt; grep -Fq -- \"shadow_query_selector handles compounds, combinators, and :host scoping\" dom/dom/shadow_query_selector_test.mbt; grep -Fq -- \"shadow_query_selector does not cross into nested shadow roots\" dom/dom/shadow_query_selector_test.mbt; grep -Fq -- \"shadow_query_selector rejects non-shadow-root scope and invalid selector\" dom/dom/shadow_query_selector_test.mbt'"
   }
+  new {
+    name = "shadow_selector_surface_matches_host_slotted_host_context"
+    description =
+      "The remaining shadow-aware selectors are complete: DomTree::matches_shadow_scoped resolves :host (incl. :host() compounds), :host-context(<compound>), and ::slotted(<compound>) through the mizchi/css matcher, verified by the matches_shadow_scoped tests (#155)."
+    tags { "dom"; "shadow"; "selectors"; "issue:155"; "todo:next" }
+    specRef { "compat.web-components-shadow-selectors" }
+    workdir = ".."
+    cmd =
+      "bash -lc 'set -e; grep -Fq -- \"pub fn DomTree::matches_shadow_scoped(\" dom/dom/shadow_query.mbt; grep -Fq -- \"matches_shadow_scoped resolves :host and descendants\" dom/dom/shadow_query_test.mbt; grep -Fq -- \":host-context(.page)\" dom/dom/shadow_query_test.mbt; grep -Fq -- \"matches_shadow_scoped resolves ::slotted\" dom/dom/shadow_query_test.mbt'"
+  }
 }
