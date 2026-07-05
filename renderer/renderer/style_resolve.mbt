@@ -226,13 +226,37 @@ fn collect_root_css_variables(
 }
 
 ///|
-/// Get user-agent default style for an element tag
+/// UA default styles depend only on the (lowercased) tag name and every call
+/// site treats the result as read-only, so memoize them. Building a fresh
+/// `Style` per element — a large struct, plus a spread for the tagged defaults —
+/// was pure allocation/drop churn in the render profile; sharing one instance
+/// per tag is safe because `Rect` fields are immutable and no caller mutates the
+/// returned style.
+let ua_default_style_cache : Ref[Map[String, @style.Style]] = { val: {} }
+
+///|
+/// Get user-agent default style for an element tag (memoized by tag name).
 fn get_ua_default_style(tag : String) -> @style.Style {
+  let key = tag.to_lower()
+  match ua_default_style_cache.val.get(key) {
+    Some(cached) => cached
+    None => {
+      let computed = compute_ua_default_style(key)
+      ua_default_style_cache.val.set(key, computed)
+      computed
+    }
+  }
+}
+
+///|
+/// Compute the user-agent default style for a (already lowercased) tag.
+fn compute_ua_default_style(tag : String) -> @style.Style {
   let default_style = @style.Style::default()
 
   // Default margins for block elements (based on typical browser defaults)
-  // Values are in em units, converted to px assuming 16px base font
-  match tag.to_lower() {
+  // Values are in em units, converted to px assuming 16px base font.
+  // `tag` is already lowercased by the memoizing `get_ua_default_style` wrapper.
+  match tag {
     "html" => { ..default_style, font_family: "serif" }
     "body" =>
       {
@@ -848,19 +872,20 @@ fn apply_cascaded_to_style(
       } else {
         1.2
       }
-      style = {
-        ..style,
-        color: ps.color,
-        font_size: ps.font_size,
-        font_family: ps.font_family,
-        line_height: ps.font_size * lh_ratio,
-        white_space: ps.white_space,
-        writing_mode: ps.writing_mode,
-        direction: ps.direction,
-        pointer_events: ps.pointer_events,
-        letter_spacing: ps.letter_spacing,
-        word_spacing: ps.word_spacing,
-      }
+      // In-place field assignment on the uniquely-owned mutable `style`
+      // avoids allocating (and later dropping) a whole fresh Style per spread;
+      // per-element style resolution dominates the render, and the spread
+      // churn was a large share of the refcount-drop cost.
+      style.color = ps.color
+      style.font_size = ps.font_size
+      style.font_family = ps.font_family
+      style.line_height = ps.font_size * lh_ratio
+      style.white_space = ps.white_space
+      style.writing_mode = ps.writing_mode
+      style.direction = ps.direction
+      style.pointer_events = ps.pointer_events
+      style.letter_spacing = ps.letter_spacing
+      style.word_spacing = ps.word_spacing
     }
     None => ()
   }
@@ -868,63 +893,55 @@ fn apply_cascaded_to_style(
   // Apply user-agent default style
   let ua_style = get_ua_default_style(selector_elem.tag_name)
   if ua_style.color != @types.Color::black() {
-    style = { ..style, color: ua_style.color }
+    style.color = ua_style.color
   }
-  style = { ..style, display: ua_style.display }
-  style = { ..style, box_sizing: ua_style.box_sizing }
+  style.display = ua_style.display
+  style.box_sizing = ua_style.box_sizing
   if ua_style.text_align != default_style.text_align {
-    style = { ..style, text_align: ua_style.text_align }
+    style.text_align = ua_style.text_align
   }
   if ua_style.vertical_align != default_style.vertical_align {
-    style = { ..style, vertical_align: ua_style.vertical_align }
+    style.vertical_align = ua_style.vertical_align
   }
   if ua_style.white_space != default_style.white_space {
-    style = { ..style, white_space: ua_style.white_space }
+    style.white_space = ua_style.white_space
   }
   if ua_style.overflow_x != default_style.overflow_x ||
     ua_style.overflow_y != default_style.overflow_y {
-    style = {
-      ..style,
-      overflow_x: ua_style.overflow_x,
-      overflow_y: ua_style.overflow_y,
-    }
+    style.overflow_x = ua_style.overflow_x
+    style.overflow_y = ua_style.overflow_y
   }
-  style = { ..style, margin: ua_style.margin, padding: ua_style.padding }
+  style.margin = ua_style.margin
+  style.padding = ua_style.padding
   if ua_style.font_size != default_style.font_size {
-    style = { ..style, font_size: ua_style.font_size }
+    style.font_size = ua_style.font_size
   }
   if ua_style.line_height != default_style.line_height {
-    style = { ..style, line_height: ua_style.line_height }
+    style.line_height = ua_style.line_height
   }
   if ua_style.font_family != "" {
-    style = { ..style, font_family: ua_style.font_family }
+    style.font_family = ua_style.font_family
   }
   if ua_style.font_weight != 400.0 {
-    style = { ..style, font_weight: ua_style.font_weight }
+    style.font_weight = ua_style.font_weight
   }
-  style = {
-    ..style,
-    border_spacing: ua_style.border_spacing,
-    border_collapse: ua_style.border_collapse,
-    text_decoration_underline: ua_style.text_decoration_underline,
-    text_decoration_line_through: ua_style.text_decoration_line_through,
-    text_decoration_overline: ua_style.text_decoration_overline,
-  }
-  style = { ..style, min_height: ua_style.min_height }
+  style.border_spacing = ua_style.border_spacing
+  style.border_collapse = ua_style.border_collapse
+  style.text_decoration_underline = ua_style.text_decoration_underline
+  style.text_decoration_line_through = ua_style.text_decoration_line_through
+  style.text_decoration_overline = ua_style.text_decoration_overline
+  style.min_height = ua_style.min_height
   if selector_elem.tag_name.to_lower() == "rt" {
     let inherited_font_size = match parent_style {
       Some(ps) => ps.font_size
       None => style.font_size
     }
     let rt_font_size = inherited_font_size * 0.5
-    style = {
-      ..style,
-      font_size: rt_font_size,
-      line_height: rt_font_size * 1.2,
-    }
+    style.font_size = rt_font_size
+    style.line_height = rt_font_size * 1.2
   }
   if uses_table_normal_line_height(selector_elem.tag_name) {
-    style = { ..style, line_height: style.font_size * normal_line_height_ratio }
+    style.line_height = style.font_size * normal_line_height_ratio
   }
 
   // Apply presentational HTML attributes (bgcolor, width, align, etc.)
@@ -933,7 +950,7 @@ fn apply_cascaded_to_style(
     Some(bg_value) => {
       let parsed = @css.parse_color(bg_value)
       match parsed.get_color() {
-        Some(color) => style = { ..style, background_color: color }
+        Some(color) => style.background_color = color
         None => ()
       }
     }
@@ -972,7 +989,7 @@ fn apply_cascaded_to_style(
           }
         }
         if dim != @types.Dimension::Auto {
-          style = { ..style, width: dim }
+          style.width = dim
         }
       }
     }
@@ -981,9 +998,9 @@ fn apply_cascaded_to_style(
   match selector_elem.get_attribute("align") {
     Some(align_value) =>
       match align_value.to_lower() {
-        "center" => style = { ..style, text_align: @style.TextAlign::Center }
-        "right" => style = { ..style, text_align: @style.TextAlign::Right }
-        "left" => style = { ..style, text_align: @style.TextAlign::Left }
+        "center" => style.text_align = @style.TextAlign::Center
+        "right" => style.text_align = @style.TextAlign::Right
+        "left" => style.text_align = @style.TextAlign::Left
         _ => ()
       }
     None => ()
@@ -992,10 +1009,10 @@ fn apply_cascaded_to_style(
   match selector_elem.get_attribute("valign") {
     Some(valign_value) =>
       match valign_value.to_lower() {
-        "top" => style = { ..style, vertical_align: @style.Top }
-        "middle" => style = { ..style, vertical_align: @style.Middle }
-        "bottom" => style = { ..style, vertical_align: @style.Bottom }
-        "baseline" => style = { ..style, vertical_align: @style.Baseline }
+        "top" => style.vertical_align = @style.Top
+        "middle" => style.vertical_align = @style.Middle
+        "bottom" => style.vertical_align = @style.Bottom
+        "baseline" => style.vertical_align = @style.Baseline
         _ => ()
       }
     None => ()
@@ -1012,15 +1029,12 @@ fn apply_cascaded_to_style(
         }
         if n > 0.0 {
           let bw = @types.Dimension::Length(n)
-          style = {
-            ..style,
-            border: { top: bw, right: bw, bottom: bw, left: bw },
-            border_style: {
-              top: @style.BorderStyle::Solid,
-              right: @style.BorderStyle::Solid,
-              bottom: @style.BorderStyle::Solid,
-              left: @style.BorderStyle::Solid,
-            },
+          style.border = { top: bw, right: bw, bottom: bw, left: bw }
+          style.border_style = {
+            top: @style.BorderStyle::Solid,
+            right: @style.BorderStyle::Solid,
+            bottom: @style.BorderStyle::Solid,
+            left: @style.BorderStyle::Solid,
           }
         }
       }
@@ -1036,15 +1050,12 @@ fn apply_cascaded_to_style(
   if cell_tag == "td" || cell_tag == "th" {
     if table_ancestor_has_border(selector_elem) {
       let bw = @types.Dimension::Length(1.0)
-      style = {
-        ..style,
-        border: { top: bw, right: bw, bottom: bw, left: bw },
-        border_style: {
-          top: @style.BorderStyle::Solid,
-          right: @style.BorderStyle::Solid,
-          bottom: @style.BorderStyle::Solid,
-          left: @style.BorderStyle::Solid,
-        },
+      style.border = { top: bw, right: bw, bottom: bw, left: bw }
+      style.border_style = {
+        top: @style.BorderStyle::Solid,
+        right: @style.BorderStyle::Solid,
+        bottom: @style.BorderStyle::Solid,
+        left: @style.BorderStyle::Solid,
       }
     }
   }
@@ -1179,13 +1190,13 @@ fn apply_cascaded_to_style(
     let keeps_non_table_display = style.display == @types.Contents ||
       style.display == @types.Display::None
     if !is_table_display(style.display) && !keeps_non_table_display {
-      style = { ..style, display: ua_style.display }
+      style.display = ua_style.display
     }
   }
   // Size containment does not apply to table-cell elements, while
   // layout/paint/style containment still can.
   if style.display == @types.TableCell && style.contain.size {
-    style = { ..style, contain: { ..style.contain, size: false } }
+    style.contain = { ..style.contain, size: false }
   }
 
   // Apply inline styles
@@ -1245,13 +1256,10 @@ fn apply_cascaded_to_style(
   // true. Set it authoritatively from the var-aware determination above; this
   // covers every trigger @css uses (cascaded filter, cascaded backdrop-filter,
   // and the inline path), so it neither under- nor over-establishes the CB.
-  style = {
-    ..style,
-    has_filter: establishes_effect_cb,
-    contain: {
-      ..style.contain,
-      paint: style.contain.paint || establishes_effect_cb,
-    },
+  style.has_filter = establishes_effect_cb
+  style.contain = {
+    ..style.contain,
+    paint: style.contain.paint || establishes_effect_cb,
   }
 
   // Apply viewport dimensions if root
@@ -1271,10 +1279,7 @@ fn apply_cascaded_to_style(
     if !has_horizontal_inset_pair {
       match style.width {
         @types.Dimension::Auto =>
-          style = {
-            ..style,
-            width: @types.Dimension::Length(ctx.viewport_width),
-          }
+          style.width = @types.Dimension::Length(ctx.viewport_width)
         _ => ()
       }
     }
