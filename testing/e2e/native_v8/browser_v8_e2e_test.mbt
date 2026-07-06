@@ -216,6 +216,43 @@ test "E2E: incremental reflow matches a full rebuild on the dynamic JS path" {
 }
 
 ///|
+/// Cascade reuse (incremental *scoped cascade*) on the native dynamic path must
+/// equal a full rebuild. Same shape as the incremental-reflow e2e above, but the
+/// flag-on browser also enables `set_cascade_reuse`; the page carries a
+/// reuse-safe `<style>` (class / descendant / sibling selectors) so the reuse
+/// fast path engages on the post-mutation re-render. This is the native-V8
+/// sign-off for the js-target equivalence in
+/// browser/shell/cascade_reuse_wbtest.mbt — the correctness bar for flipping
+/// `set_cascade_reuse` default-on (it stays off by default until then).
+test "E2E: cascade reuse matches a full rebuild on the dynamic JS path" {
+  let html =
+    "<html><head><style>" +
+    ".box{color:#112233;padding:4px}.row .cell{margin:2px;color:#334455}.box + .box{padding:6px}" +
+    "</style></head><body>" +
+    "<div class=\"row\"><div class=\"box\"><span class=\"cell\">alpha</span></div>" +
+    "<div class=\"box\"><span class=\"cell\" id=\"b\">beta</span></div></div>" +
+    "<script>" +
+    "document.getElementById('b').textContent = 'beta beta beta beta';" +
+    "</script></body></html>"
+  // Flags off: run the script, then render the final DOM from scratch.
+  let full = new_v8_browser(800, 600)
+  full.set_incremental_reflow(false)
+  full.set_cascade_reuse(false)
+  full.set_html_content(html)
+  let _ = full.execute_scripts()
+  let want = full.render_text_full_page()
+  // Flags on: baseline render, run the script (mutates), reuse re-render.
+  let incr = new_v8_browser(800, 600)
+  incr.set_incremental_reflow(true)
+  incr.set_cascade_reuse(true)
+  incr.set_html_content(html)
+  let _ = incr.render_text_full_page()
+  let _ = incr.execute_scripts()
+  let got = incr.render_text_full_page()
+  assert_eq(got, want)
+}
+
+///|
 test "E2E: console.log captured" {
   let browser = make_v8_browser(
     "<html><body><script>console.log('hello from script');</script></body></html>",

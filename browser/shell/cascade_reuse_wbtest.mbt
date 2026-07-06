@@ -136,6 +136,41 @@ test "cascade reuse: a calc() plus is not mistaken for an unsafe selector" {
 }
 
 ///|
+/// A page with a `.list .item:first-child` rule. `prepend` inserts an extra
+/// leading item; `t` is appended to the first original item's text.
+fn cascade_reuse_first_child_page(prepend : Bool, t : String) -> String {
+  let extra = if prepend { "<div class=\"item\">new</div>" } else { "" }
+  "<html><head><style>.item{color:#111111}.list .item:first-child{color:#ff0000;padding:8px}</style></head><body>" +
+  "<div class=\"list\">" +
+  extra +
+  "<div class=\"item\">a" +
+  t +
+  "</div><div class=\"item\">b</div></div></body></html>"
+}
+
+///|
+test "cascade reuse: :first-child survives a prepend (positional-from-start)" {
+  // Prepending a sibling makes the old first child no longer `:first-child`. Its
+  // owner_id (child index) shifts, so it recomputes; reusing its red style would
+  // be a stale-style bug. Output must match a full rebuild.
+  let v1 = cascade_reuse_first_child_page(false, "")
+  let v2 = cascade_reuse_first_child_page(true, "")
+  let (equal, _) = cascade_reuse_equiv(v1, v2)
+  inspect(equal, content="true")
+}
+
+///|
+test "cascade reuse: a :first-child sheet still reuses on a text edit" {
+  // `:first-child` is now reuse-safe; a text edit keeps positions and inputs
+  // stable, so reuse engages and matches full.
+  let v1 = cascade_reuse_first_child_page(false, "")
+  let v2 = cascade_reuse_first_child_page(false, "xxx")
+  let (equal, reused) = cascade_reuse_equiv(v1, v2)
+  inspect(equal, content="true")
+  inspect(reused > 0, content="true")
+}
+
+///|
 test "cascade reuse: an ancestor class change invalidates descendants (combinator)" {
   // `.active .cell` is a descendant dependency: adding `active` to the ancestor
   // must recompute the .cell descendants' style, even though the .cell elements'

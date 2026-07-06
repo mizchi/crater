@@ -1,6 +1,8 @@
 ///|
-// Incremental (scoped) cascade — Phases 1 & 2. See
-// docs/incremental-cascade-design.md.
+// Incremental (scoped) cascade — Phases 1–3. See
+// docs/incremental-cascade-design.md. (Phase 2 = sibling combinators via the
+// preceding-sibling gate; Phase 3 = positional-from-start `:first-child` /
+// `:nth-child` via owner_id keying — see `css_allows_cascade_reuse`.)
 //
 // A dynamic re-render rebuilds the styled node tree from the mutated document
 // and re-runs the full O(n) cascade even when almost nothing changed. When the
@@ -219,16 +221,22 @@ fn cascade_reuse_record(owner_id : String, style : @style.Style) -> Unit {
 /// the disqualifying selector features. A false positive (e.g. `+` inside a
 /// `calc()` value) only disables the optimization — never a correctness risk.
 pub fn css_allows_cascade_reuse(texts : Array[String]) -> Bool {
-  // Sibling combinators (`+`/`~`) are NOT disqualifying — they are handled by the
-  // preceding-sibling gate (see `css_uses_sibling_combinator`). The rest create
-  // dependencies the owner_id/ancestor/sibling model does not capture:
-  // positional-from-end / only / of-type (a sibling appended after an element
-  // flips its match without changing its key), `:has` (descendant dependency),
-  // `:empty`/`:blank` (child/text presence), `:focus-within` (descendant focus),
-  // and pseudo-elements.
+  // NOT disqualifying:
+  //   - sibling combinators (`+`/`~`) — handled by the preceding-sibling gate
+  //     (`css_uses_sibling_combinator`);
+  //   - `:first-child` / `:nth-child(...)` (from the *start*) — a sibling
+  //     inserted before an element shifts its `owner_id` (child index) so it
+  //     recomputes; one inserted after leaves its from-start position (and key)
+  //     unchanged, so reuse is correct.
+  // Still disqualifying — dependencies the owner_id/ancestor/sibling model does
+  // not capture: positional-from-*end* / only / of-type (`:last-child`,
+  // `:only-child`, `:nth-last-*`, `*-of-type`) — a sibling appended *after* an
+  // element flips its match without changing its key; `:has` (descendant
+  // dependency); `:empty`/`:blank` (child/text presence); `:focus-within`
+  // (descendant focus); pseudo-elements.
   let unsafe_tokens = [
-    ":nth", ":has", ":empty", ":blank", ":first-child", ":last-child", ":only-child",
-    "-of-type", ":focus-within", "::",
+    ":nth-last", ":has", ":empty", ":blank", ":last-child", ":only-child", "-of-type",
+    ":focus-within", "::",
   ]
   for text in texts {
     for tok in unsafe_tokens {

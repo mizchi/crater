@@ -12,8 +12,28 @@ when every preceding sibling is also clean, so a changed preceding sibling that
 flips an `X + this` match correctly recomputes `this`. This also removes the
 Phase-1 false-positive where a `calc(a + b)` value disabled reuse. It stays off
 by default pending a native-V8 dynamic round-trip sign-off (same bar incremental
-layout held). Phase 3 (full descendant/`:has`/positional-from-end/`:empty`
-invalidation) remains future work.
+layout held).
+
+**Phase 3** relaxes the guard to allow **positional-from-start** selectors
+(`:first-child`, `:nth-child(...)`): a sibling inserted *before* an element
+shifts its `owner_id` (child index) so it recomputes, while one inserted *after*
+leaves its from-start position — and its key — unchanged, so reuse stays correct
+without new machinery. The remaining unsafe set (positional-from-**end** / only
+/ of-type, `:has`, `:empty`/`:blank`, `:focus-within`, pseudo-elements) needs
+per-feature invalidation (a subtree-clean pass for `:has`, a child-presence
+signature for `:empty`, a parent-child-list gate for from-end/of-type) and is
+deferred to Phase 4.
+
+**Flag-on readiness.** Correctness is covered offline on the js target
+(`browser/shell/cascade_reuse_wbtest.mbt` — text edit, `:empty` fallback, class
+change, ancestor-combinator invalidation, sibling-combinator invalidation,
+`calc()` non-disable, `:first-child` prepend invalidation) and the win is
+measured (−14.7%). The remaining gate before `set_cascade_reuse` goes default-on
+is the **native-V8 dynamic round-trip**: `testing/e2e/native_v8`
+"E2E: cascade reuse matches a full rebuild on the dynamic JS path" enables the
+flag on the real script-driven mutation path and asserts equivalence to a full
+rebuild — the same sign-off incremental layout used. (That suite is V8-gated, so
+it runs in the native-V8 CI job / a V8 environment, not the no-v8 sandbox.)
 
 This is the explicitly-deferred next lever
 named in `docs/incremental-reflow-design.md` ("Risks / open questions → *Cascade
