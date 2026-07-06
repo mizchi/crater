@@ -195,3 +195,96 @@ equivalence tests above (including the "skip actually engaged" counter and the
 Per `CLAUDE.md`, this multi-PR workstream should get a `pkspec` scenario
 (`diagnostic.*` / `protocol.*` family) filed from day one so each PR backlinks to
 it; `TODO.md` gets a row under the appropriate priority.
+
+## Implementation plan — as scoped against the current code
+
+Tracing the shell reflow path pins down the exact mechanism and its one real
+hazard, so Phase 1 can be built without guesswork.
+
+### Reflow flow today (where the cascade actually runs)
+
+`Browser::render_text` / `render_text_full_page` (`browser/shell/text_renderer.mbt`):
+
+1. If `render_node` **and** `layout_tree` are cached → reuse (no rebuild). This is
+   the no-op re-render short-circuit.
+2. Otherwise (a mutation called `clear_render_cache`, dropping both):
+   - `render_node_from_document(doc)` → `@renderer.build_render_root_node` — **the
+     full O(n) cascade**;
+   - `build_dynamic_layout_tree(n)` (`incremental_reflow.mbt`) → stabilizes uids,
+     reconciles against `incremental_prev_node`, incremental layout.
+
+So the cascade to skip is step 2's `build_render_root_node`, and the reuse source
+is `incremental_prev_node` (the prior styled tree, already retained).
+
+### Landed identity infrastructure (Phase A — usable now)
+
+`Node` already carries `mut uid` (stabilized across rebuilds via
+`@node.stabilize_uids` + `UidRegistry`) and `mut dom_id : Int?`. So a prior
+computed `@style.Style` can be keyed by stabilized `uid` and matched on the next
+rebuild.
+
+### The mechanism (and the hazard that picks it)
+
+Reusing `incremental_prev_node` **wholesale** is wrong: its text nodes hold the
+*old* text, and render trees contain generated / anonymous / inline-split nodes
+with no 1:1 mapping back to DOM text, so "patch the new text in" is not a safe
+local edit.
+
+Therefore the safe mechanism is: **rebuild the node-tree structure from the
+current document (cheap — element→node, text→text node, generated content handled
+by the existing builder), but for each element reuse its prior computed
+`@style.Style` (keyed by stabilized uid) instead of re-running selector matching +
+`StyleBuilder`, whenever that element's cascade result is provably unchanged.**
+
+An element's cascade result is provably unchanged when:
+
+- the stylesheet is guard-clean for the mutation class (for a pure-text edit:
+  `not uses_empty_or_blank`), **and**
+- the element's own cascade inputs (tag, id, class list, matched attributes,
+  inline `style`) are unchanged vs the prior render, **and**
+- its inherited context (parent's reused computed style) is unchanged.
+
+Per-element input comparison is cheap string compares vs the expensive selector
+match it replaces — a net win. New / input-changed elements fall back to a normal
+per-element cascade; the whole optimization degrades to today's full cascade when
+nothing qualifies.
+
+### Concrete pieces
+
+1. **Guard** (`renderer` or `browser/shell`): `css_uses_empty_or_blank(sheets,
+   inline_style_blocks) -> Bool`, a conservative substring scan for `:empty` /
+   `:blank` over the stylesheet text (`self.external_css` + `<style>` blocks in
+   `html_content`). Over-conservative (a literal match forces fallback) = always
+   safe. Cache on the prepared document.
+2. **Prior inputs** to compare against: keep the prior `@html.Document` (or a
+   per-`dom_id` signature of tag/id/class/attr/inline) beside
+   `incremental_prev_node`.
+3. **Style-reusing node build**: a `build_render_root_node` variant taking a
+   `Map[uid, @style.Style]` (prior styles) + the prior-input signature; it builds
+   structure from the current doc and, per element, reuses the prior style when
+   inputs match and the guard holds, else cascades that element.
+4. **Shell wiring**: in step 2 above, when the flag is on, the guard holds, and
+   `incremental_prev_node` exists, take the style-reusing build instead of the
+   full cascade; feed the result to `build_dynamic_layout_tree` unchanged.
+5. **Skip-engaged counter**: `cascade_reused_uid_count()` (mirroring
+   `block_flow_cache_hit_count`) so a test asserts the fast path fired — a
+   silently-disabled skip must not read as a pass.
+
+### Validation boundary
+
+The js-target equivalence harness (`incremental_reflow_wbtest.mbt`) drives reflow
+via `set_html_content` through the **same** `render_node_from_document` →
+`build_dynamic_layout_tree` flow the V8 dynamic path uses, so incremental-with-skip
+== full-rebuild is checkable in-sandbox, no V8: add per-kind goldens (pure-text
+reuse; pure-text **with** a `:empty` rule present → must fall back and still
+match; class/attr change → element re-cascades; append/remove/move) plus the
+counter assertion. The native-V8 dynamic round-trip stays the final real-env
+sign-off (as for incremental layout), but correctness is a pure render property
+the js harness already exercises.
+
+### Why this is staged as its own PR, not folded into a perf sweep
+
+It touches the **core render path** and its failure mode is a *silent* stale-style
+render, so it needs its own focused change + the equivalence goldens above before
+default-on — the same bar (and off-by-default flag `enable_incremental_reflow`
+gating) the incremental-layout work held itself to.
