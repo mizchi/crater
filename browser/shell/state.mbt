@@ -162,6 +162,17 @@ struct Browser {
   /// see docs/incremental-reflow-design.md). `set_incremental_reflow(false)`
   /// opts back into a full rebuild every render.
   mut enable_incremental_reflow : Bool
+  /// Incremental (scoped) cascade — Phase 1, **off by default**. When on, a
+  /// reflow whose stylesheet is reuse-safe reuses prior computed styles for
+  /// unchanged subtrees instead of re-cascading. See
+  /// docs/incremental-cascade-design.md. The prior maps are keyed by the
+  /// renderer's `owner_id`; `cascade_reuse_prev_css_sig` invalidates them on a
+  /// stylesheet edit.
+  mut enable_cascade_reuse : Bool
+  mut cascade_reuse_prior_styles : Map[String, @style.Style]
+  mut cascade_reuse_prior_sigs : Map[String, String]
+  mut cascade_reuse_prev_css_sig : String?
+  mut cascade_reuse_last_count : Int
   /// Previous TUI buffer for diff rendering
   mut prev_buffer : @tui.CharBuffer?
   /// Last render key (for diff invalidation)
@@ -263,6 +274,11 @@ pub fn Browser::new(
     incremental_prev_tree: None,
     incremental_prev_node: None,
     enable_incremental_reflow: true,
+    enable_cascade_reuse: false,
+    cascade_reuse_prior_styles: {},
+    cascade_reuse_prior_sigs: {},
+    cascade_reuse_prev_css_sig: None,
+    cascade_reuse_last_count: 0,
     prev_buffer: None,
     last_render_key: "",
     last_color_scheme_dark: false,

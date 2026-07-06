@@ -20,15 +20,27 @@ fn element_to_node_with_styles_internal(
       incoming_counters, owner_id,
     )
   }
-  let computed_style = compute_element_style_indexed(
-    selector_elem,
-    elem.style,
-    indexed_stylesheets,
-    false,
-    ctx,
-    parent_style,
-    css_vars,
-  )
+  // Incremental cascade (Phase 1): when a reuse pass is active and this element
+  // is clean (unchanged inputs + clean ancestors under a reuse-safe stylesheet),
+  // reuse its prior computed style instead of re-running the cascade. `owner_id`
+  // is the structural key; downstream adjustments re-run identically for a clean
+  // node. See docs/incremental-cascade-design.md.
+  let computed_style = match cascade_reuse_try(owner_id, elem) {
+    Some(reused) => reused
+    None => {
+      let s = compute_element_style_indexed(
+        selector_elem,
+        elem.style,
+        indexed_stylesheets,
+        false,
+        ctx,
+        parent_style,
+        css_vars,
+      )
+      cascade_reuse_record(owner_id, s)
+      s
+    }
+  }
   viewport_full_node_count.val += 1
   let tag_lower = elem.tag.to_lower()
   let computed_style = apply_element_visibility_attributes(

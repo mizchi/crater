@@ -10,6 +10,25 @@ pub fn Browser::set_incremental_reflow(self : Browser, enabled : Bool) -> Unit {
 }
 
 ///|
+/// Enable incremental (scoped) cascade — Phase 1, **off by default**. When on, a
+/// reflow whose stylesheet is reuse-safe (no sibling/positional/:has/:empty
+/// selectors) reuses prior computed styles for subtrees whose inputs are
+/// unchanged, skipping the O(n) re-cascade. Correctness is a pure render
+/// property, validated on the js target (incremental == full per mutation kind).
+/// See docs/incremental-cascade-design.md.
+pub fn Browser::set_cascade_reuse(self : Browser, enabled : Bool) -> Unit {
+  self.enable_cascade_reuse = enabled
+}
+
+///|
+/// The number of elements that reused a prior computed style on the last render
+/// (0 when reuse was off, the stylesheet was not reuse-safe, or the CSS changed).
+/// Lets a test assert the fast path actually engaged.
+pub fn Browser::cascade_reuse_last_count(self : Browser) -> Int {
+  self.cascade_reuse_last_count
+}
+
+///|
 /// A deterministic geometry signature of the current render's layout boxes —
 /// `id:x,y,w,h` per box in document order — for VRT-style comparison of the
 /// dynamic reflow path. Forces a render so the layout tree reflects the current

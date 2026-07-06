@@ -1,0 +1,11 @@
+import {
+  "mizchi/crater-renderer/renderer",
+  "mizchi/crater-core",
+  "mizchi/crater-core/node",
+}
+
+supported_targets = "native"
+
+options(
+  "is-main": true,
+)

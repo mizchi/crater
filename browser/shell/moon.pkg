@@ -2,8 +2,8 @@ import {
   "moonbitlang/core/json",
   "moonbitlang/async/io",
   "mizchi/crater-renderer/renderer",
-  "mizchi/crater-renderer/vrt" @vrt,
-  "mizchi/crater-core/node" @node,
+  "mizchi/crater-renderer/vrt",
+  "mizchi/crater-core/node",
   "mizchi/crater-layout/tree" @layout_tree,
   "mizchi/crater-dom/html",
   "mizchi/crater-browser-helpers" @browser_helpers,
@@ -29,12 +29,12 @@ import {
   "mizchi/crater-painter/terminal/sixel",
   "mizchi/crater-terminal-image-cache" @terminal_image_cache,
   "mizchi/crater-painter/paint/raster",
+  "mizchi/css/style",
 }
 
 import {
   "moonbitlang/async",
   "mizchi/crater-dom/css/responsive",
-  "mizchi/css/style" @style,
 } for "wbtest"
 
 warnings = "-unused_package"

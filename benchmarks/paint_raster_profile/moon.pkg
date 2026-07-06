@@ -1,0 +1,14 @@
+import {
+  "mizchi/crater-renderer/renderer",
+  "mizchi/crater-core",
+  "mizchi/crater-core/node",
+  "mizchi/crater-painter/paint/render_bridge" @paint_render,
+  "mizchi/crater-painter/paint/model" @paint_model,
+  "mizchi/crater-painter/paint/raster",
+}
+
+supported_targets = "native"
+
+options(
+  "is-main": true,
+)

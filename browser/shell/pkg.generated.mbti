@@ -19,6 +19,7 @@ type Browser
 pub async fn Browser::activate_at(Self, Int, Int) -> Bool raise @crater-browser-http.HttpError
 pub async fn Browser::activate_focused_link(Self) -> Bool raise @crater-browser-http.HttpError
 pub async fn Browser::activate_link_at(Self, Int, Int) -> Bool raise @crater-browser-http.HttpError
+pub fn Browser::cascade_reuse_last_count(Self) -> Int
 pub fn Browser::cookie_jar(Self) -> @cookie_jar.CookieJar
 pub fn Browser::debug_layout(Self) -> Unit
 pub fn Browser::enter_hint_mode(Self) -> Unit
@@ -54,6 +55,7 @@ pub fn Browser::render_text_full_page(Self) -> String
 pub fn Browser::run_event_loop(Self, max_iterations? : Int) -> Bool
 pub fn Browser::scroll_down(Self, Int) -> Unit
 pub fn Browser::scroll_up(Self, Int) -> Unit
+pub fn Browser::set_cascade_reuse(Self, Bool) -> Unit
 pub fn Browser::set_dark_mode(Self, Bool) -> Unit
 pub fn Browser::set_enable_cookies(Self, Bool) -> Unit
 pub fn Browser::set_enable_js(Self, Bool) -> Unit
