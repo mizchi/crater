@@ -87,6 +87,55 @@ test "cascade reuse: an unchanged re-render matches and reuses everything" {
 }
 
 ///|
+/// A page with an adjacent-sibling rule `.a + .b`. `c1`/`c2` are the two
+/// siblings' classes, `t` the second sibling's text.
+fn cascade_reuse_sibling_page(c1 : String, c2 : String, t : String) -> String {
+  "<html><head><style>.b{color:#111111}.a + .b{color:#ff0000;padding:7px}</style></head><body>" +
+  "<div class=\"row\"><span class=\"" +
+  c1 +
+  "\">x</span><span class=\"" +
+  c2 +
+  "\">" +
+  t +
+  "</span></div></body></html>"
+}
+
+///|
+test "cascade reuse: a preceding-sibling change invalidates an adjacent match" {
+  // `.a + .b` — changing the FIRST sibling's class must recompute `.b` even
+  // though `.b`'s own inputs are unchanged. The preceding-sibling gate must catch
+  // it; reusing `.b`'s style would be a stale-style bug. Output must match full.
+  let v1 = cascade_reuse_sibling_page("a", "b", "y")
+  let v2 = cascade_reuse_sibling_page("z", "b", "y") // .a -> .z: .b no longer adjacent to .a
+  let (equal, _) = cascade_reuse_equiv(v1, v2)
+  inspect(equal, content="true")
+}
+
+///|
+test "cascade reuse: a sibling-combinator sheet still reuses on a text edit" {
+  // With `+` in the sheet the preceding-sibling gate is active, but a text-only
+  // edit keeps every sibling clean, so reuse still engages and matches full.
+  let v1 = cascade_reuse_sibling_page("a", "b", "y")
+  let v2 = cascade_reuse_sibling_page("a", "b", "yyy changed")
+  let (equal, reused) = cascade_reuse_equiv(v1, v2)
+  inspect(equal, content="true")
+  inspect(reused > 0, content="true")
+}
+
+///|
+test "cascade reuse: a calc() plus is not mistaken for an unsafe selector" {
+  // `calc(... + ...)` in a value must not disable reuse (Phase 1 wrongly did):
+  // it only trips the conservative sibling gate. A text edit still reuses.
+  let v1 = cascade_reuse_page("a", "b", ".box{width:calc(100px + 2px)}")
+  let v2 = cascade_reuse_page(
+    "aaa changed", "b", ".box{width:calc(100px + 2px)}",
+  )
+  let (equal, reused) = cascade_reuse_equiv(v1, v2)
+  inspect(equal, content="true")
+  inspect(reused > 0, content="true")
+}
+
+///|
 test "cascade reuse: an ancestor class change invalidates descendants (combinator)" {
   // `.active .cell` is a descendant dependency: adding `active` to the ancestor
   // must recompute the .cell descendants' style, even though the .cell elements'

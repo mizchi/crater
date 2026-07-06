@@ -84,6 +84,7 @@ fn Browser::render_node_from_document(
         } else {
           {}
         },
+        uses_sibling=@renderer.css_uses_sibling_combinator(css_texts),
       )
       let node = @renderer.build_render_root_node(doc, ctx, prepared)
       let (styles, sigs, reused) = @renderer.cascade_reuse_end()

@@ -1,25 +1,30 @@
 ///|
-// Incremental (scoped) cascade — Phase 1. See docs/incremental-cascade-design.md.
+// Incremental (scoped) cascade — Phases 1 & 2. See
+// docs/incremental-cascade-design.md.
 //
 // A dynamic re-render rebuilds the styled node tree from the mutated document
 // and re-runs the full O(n) cascade even when almost nothing changed. When the
 // shell installs a prior-style map (via `cascade_reuse_begin`) for a reflow
-// whose stylesheet is *reuse-safe* (no sibling/positional/:has/:empty selectors
-// — `css_allows_cascade_reuse`), this lets an element whose own cascade inputs
-// are unchanged **and** whose whole ancestor chain is unchanged reuse its prior
-// computed style instead of re-running selector matching + StyleBuilder.
+// whose stylesheet is *reuse-safe* (`css_allows_cascade_reuse`), this lets an
+// element whose own cascade inputs are unchanged reuse its prior computed style
+// instead of re-running selector matching + StyleBuilder.
 //
 // Correctness (proved inductively):
 //   - key: `owner_id`, the structural path already threaded through the build
 //     (matches the anonymous-node uid scheme), so a stable position ⇒ stable key;
 //   - a node is *clean* iff the stylesheet is reuse-safe, its input signature is
-//     unchanged, and its parent is clean (root is the base case). The clean
-//     chain means every ancestor's inputs are unchanged, so descendant/child
-//     combinators and inherited context (style + css vars) are all unchanged;
-//   - reuse-safe excludes exactly the selectors whose match can flip without a
-//     change in the element's own inputs or its ancestors' inputs: sibling
-//     (`+`/`~`), positional (`:nth`/`:first`/`:last`/`:only`), `:has`,
-//     `:empty`/`:blank`, `:focus-within`.
+//     unchanged, its parent is clean (root is the base case), and — when the
+//     sheet uses a sibling combinator (Phase 2) — every preceding sibling is
+//     clean. The ancestor chain makes descendant/child combinators and inherited
+//     context (style + css vars) safe; the preceding-sibling gate makes `+`/`~`
+//     safe (a changed preceding sibling flips an `X + this` / `X ~ this` match);
+//   - reuse-safe (`css_allows_cascade_reuse`) still excludes the selectors whose
+//     match can flip without a change captured by the owner_id / ancestor /
+//     preceding-sibling model: positional-from-end / only / of-type (a sibling
+//     appended after an element flips its match without changing its key), `:has`
+//     (descendant dependency), `:empty`/`:blank` (child/text presence), and
+//     `:focus-within`. `css_uses_sibling_combinator` flags `+`/`~` so the
+//     preceding-sibling gate turns on;
 //   - the stylesheet itself must be unchanged — the shell only passes a prior
 //     map when the CSS signature matches (a CSS edit resets the map).
 //
@@ -33,6 +38,13 @@ priv struct CascadeReuseCtx {
   new_styles : Map[String, @style.Style]
   new_sigs : Map[String, String]
   clean : Map[String, Bool]
+  // Phase 2: when the stylesheet uses a sibling combinator (`+`/`~`), an
+  // element's match can depend on a preceding sibling, so it may only reuse when
+  // every preceding sibling (same parent) is also clean. `preceding_clean` is the
+  // running AND of the direct children's cleanliness, keyed by parent owner_id;
+  // children are entered left-to-right so it is complete for each next sibling.
+  uses_sibling : Bool
+  preceding_clean : Map[String, Bool]
   mut reused : Int
 }
 
@@ -48,6 +60,7 @@ let cascade_reuse_ctx : Ref[CascadeReuseCtx?] = { val: None }
 pub fn cascade_reuse_begin(
   prior_styles : Map[String, @style.Style],
   prior_sigs : Map[String, String],
+  uses_sibling? : Bool = false,
 ) -> Unit {
   cascade_reuse_ctx.val = Some({
     prior_styles,
@@ -55,6 +68,8 @@ pub fn cascade_reuse_begin(
     new_styles: {},
     new_sigs: {},
     clean: {},
+    uses_sibling,
+    preceding_clean: {},
     reused: 0,
   })
 }
@@ -137,21 +152,49 @@ fn cascade_reuse_try(owner_id : String, elem : @html.Element) -> @style.Style? {
     Some(ctx) => {
       let sig = cascade_reuse_sig(elem)
       ctx.new_sigs[owner_id] = sig
-      let parent_clean = match cascade_reuse_parent_key(owner_id) {
+      let parent = cascade_reuse_parent_key(owner_id)
+      let parent_clean = match parent {
         None => true // root: no parent constraint
         Some(pk) => ctx.clean.get(pk) is Some(true)
       }
-      if parent_clean && ctx.prior_sigs.get(owner_id) is Some(prior_sig) {
-        if prior_sig == sig {
-          match ctx.prior_styles.get(owner_id) {
-            Some(style) => {
-              ctx.clean[owner_id] = true
-              ctx.new_styles[owner_id] = style
-              ctx.reused += 1
-              return Some(style)
-            }
-            None => ()
+      // Own inputs unchanged and a prior style exists to reuse.
+      let self_clean = match ctx.prior_sigs.get(owner_id) {
+        Some(prior_sig) =>
+          prior_sig == sig && ctx.prior_styles.get(owner_id) is Some(_)
+        None => false
+      }
+      // Sibling gate (Phase 2): with `+`/`~` in the sheet, this element may only
+      // reuse if every preceding sibling is clean (a changed preceding sibling
+      // can flip an `X + this` / `X ~ this` match).
+      let preceding_ok = if ctx.uses_sibling {
+        match parent {
+          None => true
+          Some(pk) => not(ctx.preceding_clean.get(pk) is Some(false))
+        }
+      } else {
+        true
+      }
+      let is_clean = self_clean && parent_clean && preceding_ok
+      // Fold this element into its parent's running preceding-clean AND.
+      match parent {
+        Some(pk) => {
+          let prev = match ctx.preceding_clean.get(pk) {
+            Some(v) => v
+            None => true
           }
+          ctx.preceding_clean[pk] = prev && is_clean
+        }
+        None => ()
+      }
+      if is_clean {
+        ctx.clean[owner_id] = true
+        match ctx.prior_styles.get(owner_id) {
+          Some(style) => {
+            ctx.new_styles[owner_id] = style
+            ctx.reused += 1
+            return Some(style)
+          }
+          None => ()
         }
       }
       None
@@ -176,9 +219,16 @@ fn cascade_reuse_record(owner_id : String, style : @style.Style) -> Unit {
 /// the disqualifying selector features. A false positive (e.g. `+` inside a
 /// `calc()` value) only disables the optimization — never a correctness risk.
 pub fn css_allows_cascade_reuse(texts : Array[String]) -> Bool {
+  // Sibling combinators (`+`/`~`) are NOT disqualifying — they are handled by the
+  // preceding-sibling gate (see `css_uses_sibling_combinator`). The rest create
+  // dependencies the owner_id/ancestor/sibling model does not capture:
+  // positional-from-end / only / of-type (a sibling appended after an element
+  // flips its match without changing its key), `:has` (descendant dependency),
+  // `:empty`/`:blank` (child/text presence), `:focus-within` (descendant focus),
+  // and pseudo-elements.
   let unsafe_tokens = [
-    "+", "~", ":nth", ":has", ":empty", ":blank", ":first-child", ":last-child",
-    ":only-child", "-of-type", ":focus-within", "::",
+    ":nth", ":has", ":empty", ":blank", ":first-child", ":last-child", ":only-child",
+    "-of-type", ":focus-within", "::",
   ]
   for text in texts {
     for tok in unsafe_tokens {
@@ -188,4 +238,18 @@ pub fn css_allows_cascade_reuse(texts : Array[String]) -> Bool {
     }
   }
   true
+}
+
+///|
+/// Whether any CSS text uses a sibling combinator (`+` or `~`). Conservative: a
+/// substring match (so `calc(a + b)` or `[attr~=v]` also counts) — a false
+/// positive only tightens the preceding-sibling gate, never a correctness risk.
+/// When true, cascade reuse requires every preceding sibling to be clean.
+pub fn css_uses_sibling_combinator(texts : Array[String]) -> Bool {
+  for text in texts {
+    if text.contains("+") || text.contains("~") {
+      return true
+    }
+  }
+  false
 }

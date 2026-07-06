@@ -1,13 +1,19 @@
 # Design: incremental (scoped) cascade for the dynamic-rendering path
 
-Status: **Phase 1 landed (off by default).** The scoped-cascade reuse of Phase 1
-below is implemented (`renderer/renderer/cascade_reuse.mbt`, wired in
-`browser/shell`, `set_cascade_reuse`), js-equivalence-tested, and measured:
+Status: **Phases 1 & 2 landed (off by default).** The scoped-cascade reuse is
+implemented (`renderer/renderer/cascade_reuse.mbt`, wired in `browser/shell`,
+`set_cascade_reuse`), js-equivalence-tested, and measured:
 `benchmarks/cascade_reuse_profile` A/B on the renderer reflow path (90 blocks,
 ~360 elements, ~80% clean) shows the cascade drop from **2.57s → 2.19s (−14.7%)**
-median wall-clock. It stays off by default pending a native-V8 dynamic
-round-trip sign-off (same bar incremental layout held). Phases 2–3 remain
-future work.
+median wall-clock. **Phase 2** extends the reuse-safe set to **sibling
+combinators (`+`/`~`)** via a preceding-sibling-clean gate
+(`css_uses_sibling_combinator`) — an element under a `+`/`~` sheet may only reuse
+when every preceding sibling is also clean, so a changed preceding sibling that
+flips an `X + this` match correctly recomputes `this`. This also removes the
+Phase-1 false-positive where a `calc(a + b)` value disabled reuse. It stays off
+by default pending a native-V8 dynamic round-trip sign-off (same bar incremental
+layout held). Phase 3 (full descendant/`:has`/positional-from-end/`:empty`
+invalidation) remains future work.
 
 This is the explicitly-deferred next lever
 named in `docs/incremental-reflow-design.md` ("Risks / open questions → *Cascade

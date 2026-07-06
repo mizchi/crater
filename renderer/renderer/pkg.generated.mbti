@@ -18,7 +18,7 @@ pub fn apply_css_property_debug(@style.Style, String, String) -> @style.Style
 
 pub fn build_render_root_node(@html.Document, RenderContext, PreparedRenderDocument) -> @node.Node
 
-pub fn cascade_reuse_begin(Map[String, @style.Style], Map[String, String]) -> Unit
+pub fn cascade_reuse_begin(Map[String, @style.Style], Map[String, String], uses_sibling? : Bool) -> Unit
 
 pub fn cascade_reuse_end() -> (Map[String, @style.Style], Map[String, String], Int)
 
@@ -41,6 +41,8 @@ pub fn compute_slotted_styles(@dom.DomTree, @dom.NodeId, RenderContext, @style.S
 pub let crater_dom_id_attr : String
 
 pub fn css_allows_cascade_reuse(Array[String]) -> Bool
+
+pub fn css_uses_sibling_combinator(Array[String]) -> Bool
 
 pub fn element_to_node(@html.Element, @style.Style?) -> @node.Node
 
