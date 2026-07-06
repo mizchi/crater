@@ -18,11 +18,17 @@ layout held).
 (`:first-child`, `:nth-child(...)`): a sibling inserted *before* an element
 shifts its `owner_id` (child index) so it recomputes, while one inserted *after*
 leaves its from-start position — and its key — unchanged, so reuse stays correct
-without new machinery. The remaining unsafe set (positional-from-**end** / only
-/ of-type, `:has`, `:empty`/`:blank`, `:focus-within`, pseudo-elements) needs
-per-feature invalidation (a subtree-clean pass for `:has`, a child-presence
-signature for `:empty`, a parent-child-list gate for from-end/of-type) and is
-deferred to Phase 4.
+without new machinery. **Phase 4** adds `:empty`/`:blank` and positional-from-**end** / only / of-type
+(`:last-child`, `:only-child`, `:nth-last-*`, `*-of-type`) via one mechanism: a
+**child-structure summary** appended to an element's signature
+(`css_uses_child_structure`). It captures the two things those selectors read —
+(a) the element's own emptiness/blankness (`:empty`/`:blank`), and (b), through
+the *parent's* summary reaching children via the ancestor-clean chain, the
+child list a from-end/of-type match depends on (count, order, tags). A
+non-whitespace text edit keeps the same summary shape, so text-edit reuse is
+preserved. Only **`:has`** (arbitrary-depth descendant dependency — needs a
+subtree-clean pre-pass), **`:focus-within`** (descendant focus state), and
+**pseudo-elements** remain disqualified.
 
 **Flag-on readiness.** Correctness is covered offline on the js target
 (`browser/shell/cascade_reuse_wbtest.mbt` — text edit, `:empty` fallback, class

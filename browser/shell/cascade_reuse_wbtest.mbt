@@ -57,14 +57,44 @@ test "cascade reuse: a text-only change matches a full rebuild and engages" {
 }
 
 ///|
-test "cascade reuse: a :empty rule disables reuse but still matches" {
-  // `:empty` makes a text edit able to flip a match, so the guard must fall back
-  // to a full cascade. Output still matches; reuse must not have engaged.
+test "cascade reuse: a :empty sheet reuses on a non-empty text edit (Phase 4)" {
+  // Phase 4 makes `:empty` reuse-safe via the child-structure summary. Both
+  // versions keep the `.box` non-empty, so its emptiness is unchanged: reuse
+  // engages and matches a full rebuild.
   let v1 = cascade_reuse_page("a", "b", ".box:empty{color:#ff0000}")
   let v2 = cascade_reuse_page("aaa changed", "b", ".box:empty{color:#ff0000}")
   let (equal, reused) = cascade_reuse_equiv(v1, v2)
   inspect(equal, content="true")
-  inspect(reused, content="0")
+  inspect(reused > 0, content="true")
+}
+
+///|
+test "cascade reuse: an empty -> filled transition invalidates :empty" {
+  // Filling a previously-empty element flips its `:empty` match. The child
+  // summary in its signature changes (no children -> a text child), so it
+  // recomputes; reusing its empty-state style would be a stale-style bug.
+  let v1 = "<html><head><style>.slot{color:#111111}.slot:empty{color:#ff0000;padding:9px}</style></head><body>" +
+    "<div class=\"slot\"></div></body></html>"
+  let v2 = "<html><head><style>.slot{color:#111111}.slot:empty{color:#ff0000;padding:9px}</style></head><body>" +
+    "<div class=\"slot\">now filled</div></body></html>"
+  let (equal, _) = cascade_reuse_equiv(v1, v2)
+  inspect(equal, content="true")
+}
+
+///|
+test "cascade reuse: appending a child invalidates :last-child (positional-from-end)" {
+  // `.list .item:last-child` — appending an item makes the old last item no
+  // longer `:last-child`. The parent's child summary changes, dirtying the whole
+  // list via the ancestor chain, so the old last item recomputes. Match full.
+  let css = ".item{color:#111111}.list .item:last-child{color:#ff0000;padding:5px}"
+  let v1 = "<html><head><style>" +
+    css +
+    "</style></head><body><div class=\"list\"><div class=\"item\">a</div><div class=\"item\">b</div></div></body></html>"
+  let v2 = "<html><head><style>" +
+    css +
+    "</style></head><body><div class=\"list\"><div class=\"item\">a</div><div class=\"item\">b</div><div class=\"item\">c</div></div></body></html>"
+  let (equal, _) = cascade_reuse_equiv(v1, v2)
+  inspect(equal, content="true")
 }
 
 ///|

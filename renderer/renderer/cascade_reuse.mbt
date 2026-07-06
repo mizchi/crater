@@ -1,8 +1,11 @@
 ///|
-// Incremental (scoped) cascade — Phases 1–3. See
-// docs/incremental-cascade-design.md. (Phase 2 = sibling combinators via the
-// preceding-sibling gate; Phase 3 = positional-from-start `:first-child` /
-// `:nth-child` via owner_id keying — see `css_allows_cascade_reuse`.)
+// Incremental (scoped) cascade — Phases 1–4. See
+// docs/incremental-cascade-design.md. Beyond the base owner_id + ancestor-clean
+// model: Phase 2 = sibling combinators via the preceding-sibling gate; Phase 3 =
+// positional-from-start `:first-child` / `:nth-child` via owner_id keying;
+// Phase 4 = `:empty`/`:blank` and positional-from-end / only / of-type via the
+// child-structure signature. Only `:has`, `:focus-within` and pseudo-elements
+// remain disqualified (see `css_allows_cascade_reuse`).
 //
 // A dynamic re-render rebuilds the styled node tree from the mutated document
 // and re-runs the full O(n) cascade even when almost nothing changed. When the
@@ -47,6 +50,10 @@ priv struct CascadeReuseCtx {
   // children are entered left-to-right so it is complete for each next sibling.
   uses_sibling : Bool
   preceding_clean : Map[String, Bool]
+  // Phase 4: when the sheet uses `:empty`/`:blank` or a positional-from-end /
+  // only / of-type selector, each element's signature includes a summary of its
+  // direct children (see `cascade_reuse_sig`).
+  uses_child_structure : Bool
   mut reused : Int
 }
 
@@ -63,6 +70,7 @@ pub fn cascade_reuse_begin(
   prior_styles : Map[String, @style.Style],
   prior_sigs : Map[String, String],
   uses_sibling? : Bool = false,
+  uses_child_structure? : Bool = false,
 ) -> Unit {
   cascade_reuse_ctx.val = Some({
     prior_styles,
@@ -72,6 +80,7 @@ pub fn cascade_reuse_begin(
     clean: {},
     uses_sibling,
     preceding_clean: {},
+    uses_child_structure,
     reused: 0,
   })
 }
@@ -99,7 +108,10 @@ pub fn cascade_reuse_end() -> (
 /// keys on (tag, id, class list, inline style, attributes). Two renders with the
 /// same signature at the same `owner_id` and a clean parent compute the same
 /// style. Attributes are serialized in sorted order for stability.
-fn cascade_reuse_sig(elem : @html.Element) -> String {
+fn cascade_reuse_sig(
+  elem : @html.Element,
+  include_child_structure : Bool,
+) -> String {
   let buf = StringBuilder::new()
   buf.write_string(elem.tag)
   buf.write_char('|')
@@ -129,6 +141,32 @@ fn cascade_reuse_sig(elem : @html.Element) -> String {
     }
     buf.write_char(';')
   }
+  // Phase 4: when the sheet uses child-structure-dependent selectors, append a
+  // summary of this element's direct children. It captures the two things those
+  // selectors key on: (a) the element's own emptiness / blankness (`:empty` /
+  // `:blank`), and (b) — through the *parent's* summary, which reaches children
+  // via the ancestor-clean chain — the child list a positional-from-end / only /
+  // of-type match reads (count, order, tags). A non-whitespace text edit that
+  // keeps the same shape (`T`) leaves the summary unchanged, so text-edit reuse
+  // is preserved.
+  if include_child_structure {
+    buf.write_char('|')
+    for child in elem.children {
+      match child {
+        @html.Node::Element(e) => {
+          buf.write_string("E:")
+          buf.write_string(e.tag)
+          buf.write_char(';')
+        }
+        @html.Node::Text(t) =>
+          if t.trim().is_empty() {
+            buf.write_char('W')
+          } else {
+            buf.write_char('T')
+          }
+      }
+    }
+  }
   buf.to_string()
 }
 
@@ -152,7 +190,7 @@ fn cascade_reuse_try(owner_id : String, elem : @html.Element) -> @style.Style? {
   match cascade_reuse_ctx.val {
     None => None
     Some(ctx) => {
-      let sig = cascade_reuse_sig(elem)
+      let sig = cascade_reuse_sig(elem, ctx.uses_child_structure)
       ctx.new_sigs[owner_id] = sig
       let parent = cascade_reuse_parent_key(owner_id)
       let parent_clean = match parent {
@@ -228,16 +266,13 @@ pub fn css_allows_cascade_reuse(texts : Array[String]) -> Bool {
   //     inserted before an element shifts its `owner_id` (child index) so it
   //     recomputes; one inserted after leaves its from-start position (and key)
   //     unchanged, so reuse is correct.
-  // Still disqualifying — dependencies the owner_id/ancestor/sibling model does
-  // not capture: positional-from-*end* / only / of-type (`:last-child`,
-  // `:only-child`, `:nth-last-*`, `*-of-type`) — a sibling appended *after* an
-  // element flips its match without changing its key; `:has` (descendant
-  // dependency); `:empty`/`:blank` (child/text presence); `:focus-within`
-  // (descendant focus); pseudo-elements.
-  let unsafe_tokens = [
-    ":nth-last", ":has", ":empty", ":blank", ":last-child", ":only-child", "-of-type",
-    ":focus-within", "::",
-  ]
+  //   - positional-from-*end* / only / of-type (`:last-child`, `:only-child`,
+  //     `:nth-last-*`, `*-of-type`) and `:empty`/`:blank` — handled by the child
+  //     structure summary (see `css_uses_child_structure` / `cascade_reuse_sig`).
+  // Still disqualifying — dependencies not captured by any of the above: `:has`
+  // (arbitrary-depth descendant dependency, needs a subtree-clean pass),
+  // `:focus-within` (descendant focus state), and pseudo-elements.
+  let unsafe_tokens = [":has", ":focus-within", "::"]
   for text in texts {
     for tok in unsafe_tokens {
       if text.contains(tok) {
@@ -246,6 +281,27 @@ pub fn css_allows_cascade_reuse(texts : Array[String]) -> Bool {
     }
   }
   true
+}
+
+///|
+/// Whether any CSS text uses a selector whose match depends on child structure:
+/// `:empty`/`:blank` (own child/text presence) or positional-from-end / only /
+/// of-type (`:last-child`, `:only-child`, `:nth-last-*`, `*-of-type` — read the
+/// parent's child list). When true, each element's reuse signature includes a
+/// summary of its direct children. Conservative substring scan; a false positive
+/// only tightens reuse.
+pub fn css_uses_child_structure(texts : Array[String]) -> Bool {
+  let tokens = [
+    ":empty", ":blank", ":last-child", ":only-child", ":nth-last", "-of-type",
+  ]
+  for text in texts {
+    for tok in tokens {
+      if text.contains(tok) {
+        return true
+      }
+    }
+  }
+  false
 }
 
 ///|
