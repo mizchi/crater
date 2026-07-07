@@ -26,9 +26,29 @@ without new machinery. **Phase 4** adds `:empty`/`:blank` and positional-from-**
 the *parent's* summary reaching children via the ancestor-clean chain, the
 child list a from-end/of-type match depends on (count, order, tags). A
 non-whitespace text edit keeps the same summary shape, so text-edit reuse is
-preserved. Only **`:has`** (arbitrary-depth descendant dependency — needs a
-subtree-clean pre-pass), **`:focus-within`** (descendant focus state), and
-**pseudo-elements** remain disqualified.
+preserved. **`:has`**, **`:focus-within`**, and **pseudo-elements** remain
+disqualified.
+
+**Functional pseudo-classes `:not()` / `:is()` / `:where()` need no new work.**
+The guards are substring scans over the raw CSS, so they see *inside* the
+functional-pseudo parens: `:not(.x)` keys on the element signature (a compound on
+the element itself), `:is(.a .b)` / `:where(.a .b)` on the ancestor-clean chain,
+and any unsafe feature nested inside (`:not(:has(...))`, `:is(.a + .b)`,
+`:where(:nth-last-child(2))`) trips the matching gate / disqualifier just as if
+written at top level. Covered by `browser/shell/cascade_reuse_functional_wbtest.mbt`.
+
+**`:has` was prototyped and rejected on cost.** A correct subtree-clean pre-pass
+(walk the document post-order, gate reuse on the element's whole subtree being
+unchanged) was implemented and validated equivalent to a full rebuild. But the
+pre-pass is an extra full-document walk, and an A/B on a `:has` sheet with an
+otherwise cheap (class-selector) cascade measured **reuse ~5% *slower* than a
+full cascade** (has/reuse ≈ 2.82s vs has/full ≈ 2.70s, even after sharing the
+pre-pass's signatures with the build) — the walk costs more than the cheap
+cascade it saves. It may pay off on sheets with an expensive cascade, but since
+it is a net loss on a plausible common case, `:has` stays disqualified (those
+sheets fall back to a full cascade, which is both correct and faster than
+reuse+pre-pass). A future gate that only runs the pre-pass when the cascade is
+expensive enough could revisit this.
 
 **Flag-on readiness.** Correctness is covered offline on the js target
 (`browser/shell/cascade_reuse_wbtest.mbt` — text edit, `:empty` fallback, class
