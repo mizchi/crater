@@ -6,7 +6,7 @@
       "path": "../core",
       "version": "0.19.0"
     },
-    "mizchi/css": "0.7.0",
+    "mizchi/css": "0.7.3",
     "mizchi/crater-dom": {
       "path": "../dom",
       "version": "0.19.0"

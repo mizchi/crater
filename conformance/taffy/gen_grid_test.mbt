@@ -8663,7 +8663,7 @@ test "taffy/grid_auto_fill_fixed_size" {
     height: @types.Length(120.0),
     grid_template_columns: [
       @types.TrackSizingFunction::Length(40.0),
-      @types.Repeat(@types.AutoFill, [@types.SingleTrackSizing::Length(40.0)]),
+      @types.Repeat(@types.AutoFill, [@types.SingleTrackSizing::Length(40.0)], []),
     ],
     grid_template_rows: [
       @types.TrackSizingFunction::Length(40.0),
@@ -8797,7 +8797,7 @@ test "taffy/grid_auto_fill_with_empty_auto_track" {
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @types.Repeat(@types.AutoFill, [@types.SingleTrackSizing::Length(40.0)]),
+      @types.Repeat(@types.AutoFill, [@types.SingleTrackSizing::Length(40.0)], []),
     ],
     grid_template_rows: [
       @types.TrackSizingFunction::Length(40.0),
@@ -8868,7 +8868,7 @@ test "taffy/grid_auto_fit_definite_percentage" {
           @types.MinTrackSizing::Length(150.0),
           @types.MaxTrackSizing::Fr(1.0),
         ),
-      ]),
+      ], []),
     ],
     row_gap: @types.Length(10.0),
     column_gap: @types.Length(10.0),
@@ -8995,7 +8995,7 @@ test "taffy/grid_auto_fit_with_empty_auto_track" {
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @types.Repeat(@types.AutoFit, [@types.SingleTrackSizing::Length(40.0)]),
+      @types.Repeat(@types.AutoFit, [@types.SingleTrackSizing::Length(40.0)], []),
     ],
     grid_template_rows: [
       @types.TrackSizingFunction::Length(40.0),
@@ -22412,10 +22412,10 @@ test "taffy/grid_repeat_integer" {
     width: @types.Length(120.0),
     height: @types.Length(120.0),
     grid_template_columns: [
-      @types.Repeat(@types.Count(3), [@types.SingleTrackSizing::Length(40.0)]),
+      @types.Repeat(@types.Count(3), [@types.SingleTrackSizing::Length(40.0)], []),
     ],
     grid_template_rows: [
-      @types.Repeat(@types.Count(3), [@types.SingleTrackSizing::Length(40.0)]),
+      @types.Repeat(@types.Count(3), [@types.SingleTrackSizing::Length(40.0)], []),
     ],
   }
   let root_children : Array[@node.Node] = []
@@ -22545,13 +22545,13 @@ test "taffy/grid_repeat_mixed" {
     height: @types.Length(120.0),
     grid_template_columns: [
       @types.TrackSizingFunction::Length(40.0),
-      @types.Repeat(@types.Count(1), [@types.SingleTrackSizing::Length(40.0)]),
-      @types.Repeat(@types.AutoFill, [@types.SingleTrackSizing::Length(40.0)]),
+      @types.Repeat(@types.Count(1), [@types.SingleTrackSizing::Length(40.0)], []),
+      @types.Repeat(@types.AutoFill, [@types.SingleTrackSizing::Length(40.0)], []),
     ],
     grid_template_rows: [
       @types.TrackSizingFunction::Length(40.0),
-      @types.Repeat(@types.Count(1), [@types.SingleTrackSizing::Length(40.0)]),
-      @types.Repeat(@types.AutoFill, [@types.SingleTrackSizing::Length(40.0)]),
+      @types.Repeat(@types.Count(1), [@types.SingleTrackSizing::Length(40.0)], []),
+      @types.Repeat(@types.AutoFill, [@types.SingleTrackSizing::Length(40.0)], []),
     ],
   }
   let root_children : Array[@node.Node] = []
