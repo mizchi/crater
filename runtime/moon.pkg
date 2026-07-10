@@ -10,6 +10,7 @@ options(
     "js_runtime_native_stub.mbt": [ "native" ],
     "js_runtime_quickjs.mbt": [ "js" ],
     "js_runtime_quickjs_dom_ops.mbt": [ "js" ],
+    "dom_ops_wbtest.mbt": [ "js" ],
     "js_runtime_quickjs_ffi.mbt": [ "js" ],
     "js_runtime_wasm.mbt": [ "wasm", "wasm-gc" ],
     "scheduler_integration_js.mbt": [ "js", "native" ],
