@@ -1,9 +1,9 @@
 name = "mizchi/crater-browser-runtime"
 
-version = "0.18.0"
+version = "0.19.0"
 
 import {
-  "mizchi/crater-dom@0.18.0",
+  "mizchi/crater-dom@0.19.0",
 }
 
 repository = "https://github.com/mizchi/crater"

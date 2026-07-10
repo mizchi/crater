@@ -1,14 +1,14 @@
 name = "mizchi/crater"
 
-version = "0.18.0"
+version = "0.19.0"
 
 import {
   "mizchi/css@0.7.3",
-  "mizchi/crater-dom@0.18.0",
-  "mizchi/crater-layout@0.18.0",
-  "mizchi/crater-webvitals@0.18.0",
-  "mizchi/crater-painter@0.18.0",
-  "mizchi/crater-renderer@0.18.0",
+  "mizchi/crater-dom@0.19.0",
+  "mizchi/crater-layout@0.19.0",
+  "mizchi/crater-webvitals@0.19.0",
+  "mizchi/crater-painter@0.19.0",
+  "mizchi/crater-renderer@0.19.0",
 }
 
 readme = "README.mbt.md"

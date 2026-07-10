@@ -1,6 +1,6 @@
 name = "mizchi/crater-browser-http"
 
-version = "0.18.0"
+version = "0.19.0"
 
 import {
   "moonbitlang/async@0.19.0",

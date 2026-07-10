@@ -1,6 +1,6 @@
 name = "mizchi/crater-terminal-protocol"
 
-version = "0.18.0"
+version = "0.19.0"
 
 import {
   "mizchi/tui-terminal-protocol@0.1.2",

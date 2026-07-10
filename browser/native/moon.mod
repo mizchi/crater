@@ -1,10 +1,10 @@
 name = "mizchi/crater-browser-native"
 
-version = "0.18.0"
+version = "0.19.0"
 
 import {
-  "mizchi/crater-browser-runtime@0.18.0",
-  "mizchi/crater-dom@0.18.0",
+  "mizchi/crater-browser-runtime@0.19.0",
+  "mizchi/crater-dom@0.19.0",
   "mizchi/v8@0.2.0",
 }
 
