@@ -160,6 +160,10 @@ check:
     moon -C painter check --target js -j 1
     moon -C renderer check --target js -j 1
     moon -C runtime check --target js -j 1
+    # runtime ships native-target code (js_runtime_native_stub.mbt, scheduler
+    # integration); check it on native too so js-only helpers referenced from
+    # non-target-gated tests are caught here instead of only at publish time.
+    moon -C runtime check --target native -j 1
     moon -C browser check --target js -j 1
     moon -C browser/native check --target native -j 1
     moon -C js check --target js
