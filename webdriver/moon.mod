@@ -16,8 +16,9 @@ import {
   "mizchi/crater-browser-http@0.19.0",
   "mizchi/crater-browser-helpers@0.19.0",
   "mizchi/webdriver@0.2.6",
-  "mizchi/js@0.10.13",
-  "moonbitlang/async@0.19.0",
+  "mizchi/js@0.12.1",
+  "mizchi/js_deno@0.12.1",
+  "moonbitlang/async@0.20.1",
 }
 
 readme = "README.md"

@@ -18,9 +18,9 @@ import {
   "mizchi/crater-terminal-protocol@0.19.0",
   "mizchi/font@0.7.3",
   "mizchi/tui-terminal-buffer@0.1.3",
-  "mizchi/x@0.3.0",
-  "moonbitlang/async@0.19.0",
-  "moonbitlang/x@0.4.43",
+  "mizchi/x@0.5.1",
+  "moonbitlang/async@0.20.1",
+  "moonbitlang/x@0.4.46",
 }
 
 repository = "https://github.com/mizchi/crater"
