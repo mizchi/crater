@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, existsSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -25,33 +25,72 @@ export function classifyModule(name) {
   return 'public'
 }
 
+// Parse a module manifest. Supports both the legacy `moon.mod.json` (JSON) and
+// the current `moon.mod` (TOML-ish) format introduced by the moon.mod migration.
+// Returns the raw declared dependency module names (version stripped); callers
+// narrow these to workspace-local deps.
+export function parseModuleManifest(source, { json }) {
+  if (json) {
+    const manifest = JSON.parse(source)
+    return {
+      name: manifest.name,
+      version: manifest.version ?? null,
+      preferredTarget: manifest['preferred-target'] ?? null,
+      depNames: Object.entries(manifest.deps ?? {})
+        .filter(
+          ([, spec]) =>
+            typeof spec === 'object' && spec !== null && 'path' in spec,
+        )
+        .map(([name]) => name),
+    }
+  }
+  const name = source.match(/^\s*name\s*=\s*"([^"]+)"/m)?.[1] ?? null
+  const version = source.match(/^\s*version\s*=\s*"([^"]+)"/m)?.[1] ?? null
+  const preferredTarget =
+    source.match(/^\s*preferred[_-]target\s*=\s*"([^"]+)"/m)?.[1] ?? null
+  const importBlock = source.match(/import\s*\{([^}]*)\}/)?.[1] ?? ''
+  const depNames = [...importBlock.matchAll(/"([^"@]+)@[^"]*"/g)].map(
+    (match) => match[1],
+  )
+  return { name, version, preferredTarget, depNames }
+}
+
 export function loadWorkspaceModules(rootDir) {
   const workspaceSource = readFileSync(path.join(rootDir, 'moon.work'), 'utf8')
   const members = parseWorkspaceMembers(workspaceSource)
-  return members.map((member) => {
+  const raw = members.map((member) => {
     const relativeDir = normalizeMember(member)
-    const manifestRel =
+    const modRel =
+      relativeDir === '.' ? 'moon.mod' : path.join(relativeDir, 'moon.mod')
+    const jsonRel =
       relativeDir === '.'
         ? 'moon.mod.json'
         : path.join(relativeDir, 'moon.mod.json')
-    const manifest = JSON.parse(
+    const useJson =
+      !existsSync(path.join(rootDir, modRel)) &&
+      existsSync(path.join(rootDir, jsonRel))
+    const manifestRel = useJson ? jsonRel : modRel
+    const parsed = parseModuleManifest(
       readFileSync(path.join(rootDir, manifestRel), 'utf8'),
+      { json: useJson },
     )
-    const localDeps = Object.entries(manifest.deps ?? {})
-      .filter(([, spec]) => typeof spec === 'object' && spec !== null && 'path' in spec)
-      .map(([name]) => name)
-      .sort()
-    return {
-      manifestRel,
-      member,
-      name: manifest.name,
-      relativeDir,
-      localDeps,
-      preferredTarget: manifest['preferred-target'] ?? null,
-      version: manifest.version ?? null,
-      layer: classifyModule(manifest.name),
-    }
+    return { manifestRel, member, relativeDir, parsed }
   })
+
+  // Second pass: narrow declared deps to the ones that are workspace members so
+  // the publish order only accounts for local dependencies (external registry
+  // deps such as mizchi/css or moonbitlang/async are ignored here).
+  const workspaceNames = new Set(raw.map((entry) => entry.parsed.name))
+  return raw.map(({ manifestRel, member, relativeDir, parsed }) => ({
+    manifestRel,
+    member,
+    name: parsed.name,
+    relativeDir,
+    localDeps: parsed.depNames.filter((dep) => workspaceNames.has(dep)).sort(),
+    preferredTarget: parsed.preferredTarget,
+    version: parsed.version,
+    layer: classifyModule(parsed.name),
+  }))
 }
 
 export function buildPublishPlan(
