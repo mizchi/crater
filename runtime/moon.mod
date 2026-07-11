@@ -4,6 +4,7 @@ version = "0.19.0"
 
 import {
   "mizchi/crater-dom@0.19.0",
+  "dowdiness/js_engine@0.5.0",
 }
 
 repository = "https://github.com/mizchi/crater"
