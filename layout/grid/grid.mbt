@@ -4797,11 +4797,143 @@ fn style_has_explicit_row(style : @style.Style) -> Bool {
 }
 
 ///|
+/// Trim leading / trailing ASCII whitespace.
+fn trim_grid_ws(s : String) -> String {
+  let chars : Array[Char] = []
+  for c in s {
+    chars.push(c)
+  }
+  let mut start = 0
+  let mut end = chars.length()
+  while start < end && (chars[start] == ' ' || chars[start] == '\t') {
+    start = start + 1
+  }
+  while end > start && (chars[end - 1] == ' ' || chars[end - 1] == '\t') {
+    end = end - 1
+  }
+  let mut r = ""
+  for i = start; i < end; i = i + 1 {
+    r = r + chars[i].to_string()
+  }
+  r
+}
+
+///|
+/// Parse a signed base-10 integer; `None` when the string isn't a bare integer.
+fn parse_grid_int(s : String) -> Int? {
+  let chars : Array[Char] = []
+  for c in s {
+    chars.push(c)
+  }
+  if chars.length() == 0 {
+    return None
+  }
+  let mut i = 0
+  let mut neg = false
+  if chars[0] == '-' {
+    neg = true
+    i = 1
+  } else if chars[0] == '+' {
+    i = 1
+  }
+  if i >= chars.length() {
+    return None
+  }
+  let mut val = 0
+  while i < chars.length() {
+    let c = chars[i]
+    if c >= '0' && c <= '9' {
+      val = val * 10 + (c.to_int() - 48)
+    } else {
+      return None
+    }
+    i = i + 1
+  }
+  Some(if neg { -val } else { val })
+}
+
+///|
+/// Parse one `grid-area` component (`auto`, `<integer>`, or `span <integer>`)
+/// into a placement. Returns `None` for names (`foo`) or `span <ident>`, which
+/// aren't line-based and should fall back to named-area handling.
+fn parse_grid_area_token(raw : String) -> @types.GridPlacement? {
+  let t = trim_grid_ws(raw)
+  if t == "" || t == "auto" {
+    return Some(@types.GridPlacement::Auto)
+  }
+  let chars : Array[Char] = []
+  for c in t {
+    chars.push(c)
+  }
+  if chars.length() >= 4 &&
+    chars[0] == 's' &&
+    chars[1] == 'p' &&
+    chars[2] == 'a' &&
+    chars[3] == 'n' {
+    let mut rest = ""
+    for i = 4; i < chars.length(); i = i + 1 {
+      rest = rest + chars[i].to_string()
+    }
+    match parse_grid_int(trim_grid_ws(rest)) {
+      Some(n) => return Some(@types.GridPlacement::Span(n))
+      None => return None
+    }
+  }
+  match parse_grid_int(t) {
+    Some(n) => Some(@types.GridPlacement::Line(n))
+    None => None
+  }
+}
+
+///|
+/// Parse a numeric / line-based `grid-area` shorthand
+/// (`<row-start> / <col-start> / <row-end> / <col-end>`) into (column, row)
+/// grid lines. Returns `None` when the value isn't line-based (a single token,
+/// or any component that is a bare name), so callers keep the named-area path.
+fn parse_grid_area_lines(area : String) -> (@types.GridLine, @types.GridLine)? {
+  let tokens : Array[String] = []
+  let mut current = ""
+  for c in area {
+    if c == '/' {
+      tokens.push(current)
+      current = ""
+    } else {
+      current = current + c.to_string()
+    }
+  }
+  tokens.push(current)
+  if tokens.length() < 2 {
+    return None
+  }
+  let placements : Array[@types.GridPlacement] = []
+  for t in tokens {
+    match parse_grid_area_token(t) {
+      Some(p) => placements.push(p)
+      None => return None
+    }
+  }
+  let row_start = placements[0]
+  let col_start = placements[1]
+  let row_end = if placements.length() > 2 {
+    placements[2]
+  } else {
+    @types.GridPlacement::Auto
+  }
+  let col_end = if placements.length() > 3 {
+    placements[3]
+  } else {
+    @types.GridPlacement::Auto
+  }
+  Some(({ start: col_start, end: col_end }, { start: row_start, end: row_end }))
+}
+
+///|
 /// Resolve a fully-explicit item's track span (col_start, col_end, row_start,
-/// row_end). A `grid-area` first tries the `grid-template-areas` map; when the
-/// name isn't a declared area it falls back to named-line placement (`grid-area:
-/// foo` => `foo / foo` on both axes, with the implicit `<name>-start` /
-/// `<name>-end` area expansion). Otherwise grid-column / grid-row are resolved.
+/// row_end). A `grid-area` first tries the `grid-template-areas` map; then the
+/// numeric / line-based shorthand (`3 / 3`, `1 / 1 / auto / span 2`); when the
+/// name is neither, it falls back to named-line placement (`grid-area: foo` =>
+/// `foo / foo` on both axes, with the implicit `<name>-start` / `<name>-end`
+/// area expansion). Otherwise grid-column / grid-row are resolved.
 fn resolve_explicit_item_placement(
   style : @style.Style,
   grid_areas : Array[Array[String]],
@@ -4815,20 +4947,34 @@ fn resolve_explicit_item_placement(
       match find_grid_area_bounds(grid_areas, area_name) {
         Some(bounds) =>
           (bounds.col_start, bounds.col_end, bounds.row_start, bounds.row_end)
-        None => {
-          // Not a template area: treat the name as a line for all four edges.
-          let line : @types.GridLine = {
-            start: @types.GridPlacement::Named(area_name),
-            end: @types.GridPlacement::Named(area_name),
+        None =>
+          // Not a template area. Try the numeric / line-based `grid-area`
+          // shorthand (`3 / 3`); only a bare name falls through to named lines.
+          match parse_grid_area_lines(area_name) {
+            Some((col_line, row_line)) => {
+              let (cs, ce) = resolve_line_placement(
+                col_line, 0, columns, column_line_names,
+              )
+              let (rs, re) = resolve_line_placement(
+                row_line, 0, explicit_rows, row_line_names,
+              )
+              (cs, ce, rs, re)
+            }
+            None => {
+              // Treat the name as a line for all four edges.
+              let line : @types.GridLine = {
+                start: @types.GridPlacement::Named(area_name),
+                end: @types.GridPlacement::Named(area_name),
+              }
+              let (cs, ce) = resolve_line_placement(
+                line, 0, columns, column_line_names,
+              )
+              let (rs, re) = resolve_line_placement(
+                line, 0, explicit_rows, row_line_names,
+              )
+              (cs, ce, rs, re)
+            }
           }
-          let (cs, ce) = resolve_line_placement(
-            line, 0, columns, column_line_names,
-          )
-          let (rs, re) = resolve_line_placement(
-            line, 0, explicit_rows, row_line_names,
-          )
-          (cs, ce, rs, re)
-        }
       }
     None => {
       let (cs, ce) = resolve_line_placement(

@@ -164,7 +164,10 @@ function trackSizingToMoonBit(track: TrackSizing): string {
                     track.repeatCount === 'auto-fit' ? '@types.RepeatCount::AutoFit' :
                     `@types.RepeatCount::Count(${track.repeatCount})`;
       const innerTracks = track.tracks!.map(t => singleTrackToMoonBit(t)).join(', ');
-      return `@types.TrackSizingFunction::Repeat(${count}, [${innerTracks}])`;
+      // 3rd arg is line_names (Array[Array[String]]); taffy fixtures carry no
+      // named grid lines, so emit an empty list. Added for mizchi/css 0.7.x,
+      // which extended Repeat from (count, tracks) to (count, tracks, line_names).
+      return `@types.TrackSizingFunction::Repeat(${count}, [${innerTracks}], [])`;
     default:
       return '@types.TrackSizingFunction::Auto';
   }

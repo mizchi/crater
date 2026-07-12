@@ -835,6 +835,16 @@ scenarios {
     contributes { "goal.css-compat"; "goal.paint-accuracy" }
   }
   new {
+    id = "bug.flex-auto-min-nested-margin"
+    name = "flex automatic minimum size measures nested margined child at the right width"
+    description =
+      "The taffy conformance fixture taffy/bevy_issue_9530 (conformance/taffy/gen_flex_test.mbt) fails: a flex-grow column item's automatic minimum size (min-height: auto) computes 360 instead of 420. The min-content path in layout/flex/flex.mbt (~6689-6704, use_max_content_min) reflows a nested measured child at the container content width (260) without subtracting that child's own horizontal margins (20+20), and crater's compute_measured_cross_size uses a continuous area-preserving reflow (area/width) where taffy uses a discrete line-count measure (ceil(max_width/avail) * line_height). Both compound: the nested child measures 180 where taffy expects 240 (Δ60). The four reduced variants pass because they either drop the nested margins or make the measure node a direct flex item. A correct fix subtracts the nested cross-axis margin AND reconciles the reflow model, but both touch the shared intrinsic-sizing core exercised by all 537 flex conformance tests, so it is treated as a risky flex-algorithm change rather than a spot fix. Pre-existing on main; not introduced by the css 0.7.x grid regen (PR #334). Source: taffy bevy_issue_9530."
+    tags { "css"; "flexbox"; "bug"; "taffy"; "conformance" }
+    severity = "minor"
+    reviewStatus = "draft"
+    contributes { "goal.css-compat" }
+  }
+  new {
     id = "bug.samesite.psl-required"
     name = "SameSite site classification needs Public Suffix List"
     description =
