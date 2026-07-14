@@ -1172,17 +1172,17 @@ fn layout_simple_block_stack(
 // correctness. This collapses the otherwise exponential mutual recursion
 // between min/max-content over deep trees (the dominant layout cost on
 // text-heavy pages — see #316).
-let min_intrinsic_width_cache : Ref[Map[String, Double]] = { val: Map::new() }
+let min_intrinsic_width_cache : Ref[Map[String, Double]] = { val: Map([]) }
 
 ///|
-let max_intrinsic_width_cache : Ref[Map[String, Double]] = { val: Map::new() }
+let max_intrinsic_width_cache : Ref[Map[String, Double]] = { val: Map([]) }
 
 ///|
 /// Reset the intrinsic-width memoization caches. Called once at the start of a
 /// top-level layout so they don't accumulate across renders.
 pub fn clear_block_intrinsic_caches() -> Unit {
-  min_intrinsic_width_cache.val = Map::new()
-  max_intrinsic_width_cache.val = Map::new()
+  min_intrinsic_width_cache.val = Map([])
+  max_intrinsic_width_cache.val = Map([])
 }
 
 ///|
@@ -1208,7 +1208,7 @@ priv struct BlockFlowCacheEntry {
 }
 
 ///|
-let block_flow_cache : Ref[Map[Int, BlockFlowCacheEntry]] = { val: Map::new() }
+let block_flow_cache : Ref[Map[Int, BlockFlowCacheEntry]] = { val: Map([]) }
 
 ///|
 let block_flow_cache_hits : Ref[Int] = { val: 0 }
@@ -1229,7 +1229,7 @@ pub fn reset_block_flow_cache_hits() -> Unit {
 ///|
 /// Drop the whole block-flow memoization cache (memory hygiene / test isolation).
 pub fn clear_block_flow_cache() -> Unit {
-  block_flow_cache.val = Map::new()
+  block_flow_cache.val = Map([])
   block_flow_cache_hits.val = 0
 }
 

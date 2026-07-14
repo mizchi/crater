@@ -80,7 +80,7 @@ test "compute_shadow_tree_styles threads inheritance across the boundary" {
   )
 
   // Host, wrapper, and leaf are all styled.
-  inspect(styles.size(), content="3")
+  inspect(styles.length(), content="3")
 
   // font-size: 20px on .wrap inherits into its leaf child.
   let wrap_style = styles.get(wrap.to_int()).unwrap()
@@ -121,7 +121,7 @@ test "compute_slotted_styles applies ::slotted rules to assigned light nodes" {
   )
 
   // Both light children are slotted, so both receive an entry.
-  inspect(styles.size(), content="2")
+  inspect(styles.length(), content="2")
 
   // Only .tag matches ::slotted(.tag): its color differs from the plain node's.
   let tagged_style = styles.get(tagged.to_int()).unwrap()
