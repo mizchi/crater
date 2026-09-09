@@ -4,6 +4,7 @@ package "mizchi/crater-core/node"
 import {
   "mizchi/crater-core",
   "mizchi/css/style",
+  "mizchi/css/values",
 }
 
 // Values
@@ -41,15 +42,23 @@ pub struct Node {
   text : String?
   src : String?
   mut dom_id : Int?
+  mut resolved_rects_memo : ResolvedRects?
 }
 pub fn Node::leaf(String, @style.Style) -> Self
 pub fn Node::new(String, @style.Style, Array[Self]) -> Self
+pub fn Node::resolved_rects(Self, Double) -> ResolvedRects
 pub fn Node::set_dom_id(Self, Int?) -> Unit
 pub fn Node::set_uid(Self, Int) -> Unit
 pub fn Node::text(String, @style.Style, @crater-core.MeasureFunc, String) -> Self
 pub fn Node::with_measure(String, @style.Style, @crater-core.MeasureFunc, text? : String, src? : String?) -> Self
 pub fn Node::with_uid(String, Int, @style.Style, Array[Self]) -> Self
 pub fn Node::with_uid_and_measure(String, Int, @style.Style, Array[Self], @crater-core.MeasureFunc?, String?, src? : String?) -> Self
+
+pub(all) struct ResolvedRects {
+  padding : @values.Rect[Double]
+  margin : @values.Rect[Double]
+  border : @values.Rect[Double]
+}
 
 pub struct UidRegistry {
   dom_to_uid : Map[Int, Int]

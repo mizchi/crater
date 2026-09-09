@@ -25,6 +25,10 @@ pub struct Node {
   /// A stable, mutation-surviving identity used to key incremental reflow (see
   /// docs/incremental-reflow-design.md); does not affect layout or cascade.
   mut dom_id : Int?
+  /// Memo for `Node::resolved_rects`, filled on first use and only when the
+  /// resolved value does not depend on the containing-block width. `style` is
+  /// immutable, so this never goes stale for the node's lifetime.
+  mut resolved_rects_memo : ResolvedRects?
 }
 
 ///|
@@ -56,6 +60,7 @@ pub fn Node::new(
     text: None,
     src: None,
     dom_id: None,
+    resolved_rects_memo: None,
   }
 }
 
@@ -76,6 +81,7 @@ pub fn Node::with_uid(
     text: None,
     src: None,
     dom_id: None,
+    resolved_rects_memo: None,
   }
 }
 
@@ -90,7 +96,17 @@ pub fn Node::with_uid_and_measure(
   text : String?,
   src? : String? = None,
 ) -> Node {
-  { id, uid, style, children, measure, text, src, dom_id: None }
+  {
+    id,
+    uid,
+    style,
+    children,
+    measure,
+    text,
+    src,
+    dom_id: None,
+    resolved_rects_memo: None,
+  }
 }
 
 ///|
@@ -104,6 +120,7 @@ pub fn Node::leaf(id : String, style : @style.Style) -> Node {
     text: None,
     src: None,
     dom_id: None,
+    resolved_rects_memo: None,
   }
 }
 
@@ -126,6 +143,7 @@ pub fn Node::with_measure(
     text,
     src,
     dom_id: None,
+    resolved_rects_memo: None,
   }
 }
 
@@ -146,6 +164,7 @@ pub fn Node::text(
     text: Some(content),
     src: None,
     dom_id: None,
+    resolved_rects_memo: None,
   }
 }
 

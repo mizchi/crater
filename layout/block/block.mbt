@@ -1270,21 +1270,45 @@ fn compute_block_child_memoized(
   warnings : Array[@layout_types.LayoutWarning],
   dispatch : @node.DispatchFn,
 ) -> LayoutWithCollapse {
-  let key = block_flow_cache_key(ctx)
-  if @node.node_is_clean(child.uid) {
-    match block_flow_cache.val.get(child.uid) {
-      Some(entry) =>
-        if entry.key == key {
-          block_flow_cache_hits.val = block_flow_cache_hits.val + 1
-          return entry.result
+  // `node_is_clean` only answers true while an incremental reflow has a clean
+  // predicate installed, which is also the one condition under which this
+  // cache is written, so outside such a reflow the key has no reader at all.
+  // Building it up front spent five `Double::to_string()` calls and six string
+  // concatenations per block child of every static render, then threw the
+  // result away.
+  let key : String? = if @node.node_incremental_active() {
+    Some(block_flow_cache_key(ctx))
+  } else {
+    None
+  }
+  match key {
+    Some(key) =>
+      if @node.node_is_clean(child.uid) {
+        match block_flow_cache.val.get(child.uid) {
+          Some(entry) =>
+            if entry.key == key {
+              block_flow_cache_hits.val = block_flow_cache_hits.val + 1
+              return entry.result
+            }
+          None => ()
         }
-      None => ()
-    }
+      }
+    None => ()
   }
   let raw = compute_with_collapse(child, ctx, warnings, dispatch)
-  let result = { ..raw, layout: apply_initial_scroll_snap(child, raw.layout) }
-  if @node.node_incremental_active() {
-    block_flow_cache.val.set(child.uid, { key, result })
+  let snapped = apply_initial_scroll_snap(child, raw.layout)
+  // `apply_initial_scroll_snap` hands its input straight back for any child
+  // without overflow alignment or mandatory scroll snap (nearly all of them),
+  // so rebuilding the record unconditionally allocated one
+  // `LayoutWithCollapse` per block child per render for no change at all.
+  let result = if physical_equal(snapped, raw.layout) {
+    raw
+  } else {
+    { ..raw, layout: snapped }
+  }
+  match key {
+    Some(key) => block_flow_cache.val.set(child.uid, { key, result })
+    None => ()
   }
   result
 }
@@ -2498,9 +2522,10 @@ fn try_layout_empty_block_leaf_with_definite_height(
     _ => return None
   }
 
-  let margin = @types.resolve_rect(style.margin, available_width)
-  let padding = @types.resolve_rect(style.padding, available_width)
-  let border = @types.resolve_rect(style.border, available_width)
+  let resolved = node.resolved_rects(available_width)
+  let margin = resolved.margin
+  let padding = resolved.padding
+  let border = resolved.border
   let mut box_width = match style.width {
     @types.Length(w) =>
       if style.box_sizing == @types.BorderBox {
@@ -3105,9 +3130,10 @@ fn compute_with_collapse(
         let parent_width = ctx.available_width
         let parent_height_opt = ctx.available_height
         let parent_height = parent_height_opt.unwrap_or(0.0)
-        let margin = @types.resolve_rect(style.margin, parent_width)
-        let padding = @types.resolve_rect(style.padding, parent_width)
-        let border = @types.resolve_rect(style.border, parent_width)
+        let resolved = node.resolved_rects(parent_width)
+        let margin = resolved.margin
+        let padding = resolved.padding
+        let border = resolved.border
         let available_h = ctx.available_height.unwrap_or(0.0)
         let intrinsic = (mf.func)(parent_width, available_h)
         let suppress_inline_intrinsic = style.suppresses_intrinsic_width()

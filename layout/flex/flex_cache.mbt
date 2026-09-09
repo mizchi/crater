@@ -62,53 +62,6 @@ pub fn reset_intrinsic_cache() -> Unit {
   global_intrinsic_cache.val = {}
 }
 
-// =============================================================================
-// Resolved Style Cache
-// =============================================================================
-
-///|
-/// Cached resolved rectangle values (padding, margin, border)
-priv struct ResolvedRects {
-  padding : @types.Rect[Double]
-  margin : @types.Rect[Double]
-  border : @types.Rect[Double]
-}
-
-///|
-/// Global cache for resolved style values.
-/// Key: node_uid * 1000000 + quantized_parent_width
-/// This avoids repeated resolve_rect calls for the same node/width combination.
-let global_resolved_cache : Ref[Map[Int, ResolvedRects]] = { val: {} }
-
-///|
-/// Quantize parent_width to reduce cache key variation
-/// Uses 0.1px precision which is sufficient for layout
-fn quantize_width(width : Double) -> Int {
-  (width * 10.0).to_int()
-}
-
-///|
-/// Get or compute resolved rects for a node's style
-fn get_resolved_rects(
-  style : @style.Style,
-  node_uid : Int,
-  parent_width : Double,
-) -> ResolvedRects {
-  let key = node_uid * 1000000 + quantize_width(parent_width)
-  match global_resolved_cache.val.get(key) {
-    Some(cached) => cached
-    None => {
-      let resolved : ResolvedRects = {
-        padding: @types.resolve_rect(style.padding, parent_width),
-        margin: @types.resolve_rect(style.margin, parent_width),
-        border: @types.resolve_rect(style.border, parent_width),
-      }
-      global_resolved_cache.val.set(key, resolved)
-      resolved
-    }
-  }
-}
-
 ///|
 /// Detect whether a subtree contains a table element with percentage width.
 /// Such descendants need a definite containing block width during flex base-size
@@ -142,12 +95,6 @@ fn has_flex_grow_descendant(node : @node.Node) -> Bool {
     }
   }
   false
-}
-
-///|
-/// Reset resolved style cache
-pub fn reset_resolved_cache() -> Unit {
-  global_resolved_cache.val = {}
 }
 
 ///|

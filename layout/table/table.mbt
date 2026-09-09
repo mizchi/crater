@@ -1899,9 +1899,10 @@ fn layout_row(
 ) -> @layout_types.Layout {
   let style = row.style
   let parent_width = ctx.available_width
-  let margin = @types.resolve_rect(style.margin, parent_width)
-  let padding = @types.resolve_rect(style.padding, parent_width)
-  let border = @types.resolve_rect(style.border, parent_width)
+  let resolved = row.resolved_rects(parent_width)
+  let margin = resolved.margin
+  let padding = resolved.padding
+  let border = resolved.border
 
   // Resolve explicit row height from style
   // This is needed BEFORE laying out cells so percentage heights can resolve
@@ -2753,9 +2754,10 @@ pub fn compute(
     return create_zero_layout(node)
   }
   let parent_width = ctx.available_width
-  let margin = @types.resolve_rect(style.margin, parent_width)
-  let padding = @types.resolve_rect(style.padding, parent_width)
-  let border = @types.resolve_rect(style.border, parent_width)
+  let resolved = node.resolved_rects(parent_width)
+  let margin = resolved.margin
+  let padding = resolved.padding
+  let border = resolved.border
 
   // Check if border-collapse is enabled
   let is_border_collapse = style.border_collapse == @style.Collapse

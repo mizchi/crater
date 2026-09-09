@@ -22,8 +22,6 @@ pub fn compute_with_warnings(@node.Node, @crater-core.LayoutContext, @node.Dispa
 
 pub fn reset_intrinsic_cache() -> Unit
 
-pub fn reset_resolved_cache() -> Unit
-
 // Errors
 
 // Types and methods
