@@ -6,10 +6,10 @@ import {
   "mizchi/css@0.7.3",
   "mizchi/crater-core@0.19.0",
   "mizchi/crater-terminal-protocol@0.19.0",
-  "mizchi/font@0.7.3",
-  "mizchi/svg@0.2.1",
-  "mizchi/x@0.5.1",
-  "moonbitlang/async@0.20.1",
+  "mizchi/font@0.7.4",
+  "mizchi/svg@0.2.3",
+  "mizchi/x@0.6.0",
+  "moonbitlang/async@0.21.3",
 }
 
 repository = "https://github.com/mizchi/crater"

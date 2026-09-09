@@ -49,8 +49,14 @@ pub async fn fetch(
   // Extract host URL (without path) and path separately
   let host_url = extract_host_url(url)
   let path = extract_path_from_url(url)
-  // Create HTTP client with just the host
-  let client = @async_http.Client::new(host_url, headers=prepared.headers) catch {
+  // Create HTTP client with just the host.
+  // @async_http keys headers by `CaseInsensitiveString`, so lift the plain
+  // `Map[String, String]` the crater API exposes into that key type.
+  let request_headers : Map[@async_http.CaseInsensitiveString, String] = {}
+  for k, v in prepared.headers {
+    request_headers[@async_http.CaseInsensitiveString(k)] = v
+  }
+  let client = @async_http.Client::new(host_url, headers=request_headers) catch {
     _ => raise InvalidUrl(url)
   }
   // Perform request based on method
@@ -76,10 +82,10 @@ pub async fn fetch(
   }
   let body = body_data.text() catch { _ => "" }
   client.close()
-  // Convert headers
+  // Convert headers back to the plain lowercase-keyed map crater exposes
   let headers : Map[String, String] = {}
   for k, v in response.headers {
-    headers[k.to_lower()] = v
+    headers[k.0.to_lower()] = v
   }
   let result = { status: response.code, headers, body }
   enforce_cors_response(url, prepared, result)

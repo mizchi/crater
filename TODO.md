@@ -87,6 +87,7 @@ scenario 化していない (contract として書く粒度ではない) もの�
 - `mizchi/css`: mixed `calc()` (percentage + length) の Dimension 表現が無く `Auto` に落ちる → #67 (css-values), 設計メモ `docs/css-calc-and-border-longhand-design.md`
 - `mizchi/css`: `border` shorthand が後続の `border-*-width` longhand を上書き (cascade order) → #68 (css-images)
 - `mizchi/css`: `sibling-index()` 未実装 → #68
+- `mizchi/v8`: 公開済み最新の 0.2.0 が現行 moonbitlang/core でコンパイル不能 (`@strconv.parse_int` が `moonbitlang/core/string` へ移動、 `StrConvError` 廃止) → `moon check --target native` / `just check` が `.mooncakes/mizchi/v8` で失敗する。 v8.mbt main は修正済み (version 0.3.0) なので mooncakes へ publish 後、 `browser/native/moon.mod` の pin を 0.3.0 に上げれば解消
 - `mizchi/kagura`: SVG rasterizer alpha 問題 (テキスト色が薄い) → #19 / #47 関連
 - `mizchi/kagura`: glyph mirror per-quad UV swap workaround の正しい層での解消
 - CI: llvmpipe セットアップ判断 (`LIBGL_ALWAYS_SOFTWARE=1` / `mesa-vulkan-drivers`)

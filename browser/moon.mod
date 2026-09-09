@@ -16,11 +16,11 @@ import {
   "mizchi/crater-html-assets@0.19.0",
   "mizchi/crater-terminal-image-cache@0.19.0",
   "mizchi/crater-terminal-protocol@0.19.0",
-  "mizchi/font@0.7.3",
+  "mizchi/font@0.7.4",
   "mizchi/tui-terminal-buffer@0.1.3",
-  "mizchi/x@0.5.1",
-  "moonbitlang/async@0.20.1",
-  "moonbitlang/x@0.4.46",
+  "mizchi/x@0.6.0",
+  "moonbitlang/async@0.21.3",
+  "moonbitlang/x@0.5.4",
 }
 
 repository = "https://github.com/mizchi/crater"
