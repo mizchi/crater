@@ -43,6 +43,32 @@ fi
 echo "Prefetching MoonBit dependencies"
 cat "$tmp_deps"
 
+# `moon fetch` pulls each archive from https://download.mooncakes.io/. That host
+# drops connections often enough to fail a whole job on one dependency
+# (observed: `client error (Connect) / Connection reset by peer` fetching
+# mizchi/crater-aomx, before any build had started). It is the same class of
+# transient registry blip that `moon-update-retry.sh` already guards `moon
+# update` against, so retry on the same schedule; a dependency that is genuinely
+# missing still fails after the last attempt.
+fetch_with_retries() {
+  local dep="$1"
+  local attempts=4
+  local delay=5
+  local attempt
+  for attempt in $(seq 1 "$attempts"); do
+    if moon ${moon_common[@]+"${moon_common[@]}"} fetch --no-update "$dep"; then
+      return 0
+    fi
+    if [[ "$attempt" -eq "$attempts" ]]; then
+      echo "moon fetch ${dep} failed after ${attempt} attempts" >&2
+      return 1
+    fi
+    echo "moon fetch ${dep} attempt ${attempt} failed (likely a transient mooncakes.io blip); retrying in ${delay}s" >&2
+    sleep "$delay"
+    delay=$((delay * 2))
+  done
+}
+
 while IFS= read -r dep; do
-  moon ${moon_common[@]+"${moon_common[@]}"} fetch --no-update "$dep"
+  fetch_with_retries "$dep"
 done <"$tmp_deps"
