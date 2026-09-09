@@ -214,6 +214,17 @@ fn apply_zoom_and_scale(
   let child_parent_scale_x = total_scale_x / effective_zoom // Remove node zoom, will be re-applied
   let child_parent_scale_y = total_scale_y / effective_zoom
 
+  // Nothing here scales, translates or otherwise moves this box: no inherited
+  // zoom or scale, no zoom of its own, and an identity transform. Every field
+  // this function would compute for such a node is then the field it was given.
+  // Combined with `children_changed` below, this drives the fast path at the
+  // end of the function.
+  let node_is_unscaled = parent_zoom == 1.0 &&
+    parent_scale_x == 1.0 &&
+    parent_scale_y == 1.0 &&
+    node.style.zoom == 1.0 &&
+    node.style.transform.is_none()
+
   // Scale the layout dimensions
   let scaled_width = layout.width * total_scale_x
   let scaled_height = layout.height * total_scale_y
@@ -271,6 +282,10 @@ fn apply_zoom_and_scale(
 
   // Process children with updated parent zoom and scale
   let scaled_children : Array[@layout_types.Layout] = []
+  // Whether any child came back as a different record than the one already in
+  // `layout.children` -- a scaled subtree, or an absolutely-positioned child
+  // shifted onto its real containing block.
+  let mut children_changed = false
   let mut child_node_cursor = 0
   for i = 0; i < layout.children.length(); i = i + 1 {
     let child_layout = layout.children[i]
@@ -282,7 +297,7 @@ fn apply_zoom_and_scale(
     let mut scan_index = child_node_cursor
     while scan_index < node.children.length() {
       let candidate = node.children[scan_index]
-      if candidate.style.display == @types.Display::None {
+      if candidate.style.display is @types.Display::None {
         scan_index = scan_index + 1
         continue
       }
@@ -312,7 +327,7 @@ fn apply_zoom_and_scale(
       current_abs_containing_block_global_y, current_abs_containing_block_width,
       current_abs_containing_block_height,
     )
-    if child_node.style.position == @types.Absolute {
+    if child_node.style.position is @types.Absolute {
       let inset_left_auto = is_auto_inset(child_node.style.inset.left)
       let inset_right_auto = is_auto_inset(child_node.style.inset.right)
       let inset_top_auto = is_auto_inset(child_node.style.inset.top)
@@ -459,14 +474,26 @@ fn apply_zoom_and_scale(
       } else {
         0.0
       }
+      children_changed = true
       scaled_children.push({
         ..scaled_child,
         x: scaled_child.x + adjust_x + cb_size_adjust_x + align_adjust_x,
         y: scaled_child.y + adjust_y + cb_size_adjust_y + align_adjust_y,
       })
     } else {
+      if !physical_equal(scaled_child, child_layout) {
+        children_changed = true
+      }
       scaled_children.push(scaled_child)
     }
+  }
+  // Fast path: this box does not move and neither did anything below it, so the
+  // record built below would equal `layout` field for field. Hand `layout` back
+  // instead. A document with no zoom and no transforms -- the common case --
+  // takes this at every node, which turns the whole walk from a deep copy of
+  // the layout tree into a read of it.
+  if node_is_unscaled && !children_changed {
+    return layout
   }
   // Scale margin, padding, border
   let scaled_margin : @types.Rect[Double] = {

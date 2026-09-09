@@ -2965,7 +2965,7 @@ fn try_compute_simple_block_intrinsic_height(
   cache : GridIntrinsicCache,
   dispatch : @node.DispatchFn,
 ) -> Double? {
-  if child.style.position != @types.Static ||
+  if !(child.style.position is @types.Static) ||
     child.measure is Some(_) ||
     child.style.writing_mode.is_vertical() {
     return None
@@ -2988,19 +2988,19 @@ fn try_compute_simple_block_intrinsic_height(
   let mut total_height = pt + pb + bt + bb
   for grand_child in child.children {
     let grand_style = grand_child.style
-    if grand_style.display == @types.Display::None {
+    if grand_style.display is @types.Display::None {
       continue
     }
     match grand_style.display {
       @types.Block | @types.Flex | @types.InlineFlex => ()
       _ => return None
     }
-    if grand_style.display == @types.Contents ||
+    if grand_style.display is @types.Contents ||
       @inline.is_inline_level(grand_style.display) ||
       grand_child.id == "br" {
       return None
     }
-    if grand_style.position != @types.Static ||
+    if !(grand_style.position is @types.Static) ||
       grand_child.measure is Some(_) ||
       grand_style.writing_mode.is_vertical() {
       return None
@@ -5057,11 +5057,11 @@ fn place_grid_items(
   for i = 0; i < children.length(); i = i + 1 {
     let child = children[i]
     let style = child.style
-    if style.display == @types.Display::None {
+    if style.display is @types.Display::None {
       continue
     }
     // Skip absolute positioned items - they don't participate in grid placement
-    if style.position == @types.Absolute || style.position == @types.Fixed {
+    if style.position is @types.Absolute || style.position is @types.Fixed {
       continue
     }
 
@@ -5122,11 +5122,11 @@ fn place_grid_items(
   for i = 0; i < children.length(); i = i + 1 {
     let child = children[i]
     let style = child.style
-    if style.display == @types.Display::None {
+    if style.display is @types.Display::None {
       continue
     }
     // Skip absolute positioned items
-    if style.position == @types.Absolute || style.position == @types.Fixed {
+    if style.position is @types.Absolute || style.position is @types.Fixed {
       continue
     }
 
@@ -5179,10 +5179,10 @@ fn place_grid_items(
   for i = 0; i < children.length(); i = i + 1 {
     let child = children[i]
     let style = child.style
-    if style.display == @types.Display::None {
+    if style.display is @types.Display::None {
       continue
     }
-    if style.position == @types.Absolute || style.position == @types.Fixed {
+    if style.position is @types.Absolute || style.position is @types.Fixed {
       continue
     }
     let has_explicit_column = style_has_explicit_column(style)
@@ -5227,11 +5227,11 @@ fn place_grid_items(
   for i = 0; i < children.length(); i = i + 1 {
     let child = children[i]
     let style = child.style
-    if style.display == @types.Display::None {
+    if style.display is @types.Display::None {
       continue
     }
     // Skip absolute positioned items
-    if style.position == @types.Absolute || style.position == @types.Fixed {
+    if style.position is @types.Absolute || style.position is @types.Fixed {
       continue
     }
 
