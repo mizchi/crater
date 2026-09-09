@@ -2990,11 +2990,11 @@ pub fn should_establish_ifc(children : Array[@node.Node]) -> Bool {
   let mut has_inline = false
   for child in children {
     // Skip absolute positioned children
-    if child.style.position == @types.Absolute {
+    if child.style.position is @types.Absolute {
       continue
     }
     // Skip display:none
-    if child.style.display == @types.Display::None {
+    if child.style.display is @types.Display::None {
       continue
     }
     if child.id == "br" || @node.str_has_prefix(child.id, "#text") {

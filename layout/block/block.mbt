@@ -237,7 +237,7 @@ fn is_table_internal_flow_node(node : @node.Node) -> Bool {
   if is_table_internal_display(node.style.display) {
     return true
   }
-  node.style.display == @types.Contents && has_table_internal_descendant(node)
+  node.style.display is @types.Contents && has_table_internal_descendant(node)
 }
 
 ///|
@@ -552,8 +552,8 @@ fn get_inflow_children_flow_extent_height(
     let child_layout = children[i]
     let skip_out_of_flow = if i < source_node.children.length() {
       let child_style = source_node.children[i].style
-      child_style.position == @types.Absolute ||
-      child_style.position == @types.Fixed
+      child_style.position is @types.Absolute ||
+      child_style.position is @types.Fixed
     } else {
       false
     }
@@ -954,7 +954,7 @@ fn block_flow_establishes_bfc(style : @style.Style) -> Bool {
   overflow_blocks ||
   display_establishes_bfc ||
   non_normal_block_alignment ||
-  style.display == @types.FlowRoot ||
+  style.display is @types.FlowRoot ||
   containment_establishes_bfc
 }
 
@@ -2680,7 +2680,7 @@ fn place_fixed_children_for_parent(
 ) -> Unit {
   for i = 0; i < node.children.length(); i = i + 1 {
     let child = node.children[i]
-    if child.style.position == @types.Fixed {
+    if child.style.position is @types.Fixed {
       let fixed_layout = layout_fixed_child_for_parent(
         child, parent_style, parent_width, parent_height, box_width, box_height,
         border, viewport_width, viewport_height, warnings, dispatch,
@@ -2892,7 +2892,7 @@ fn compute_with_collapse(
 
   // Handle no-principal-box displays (display: contents and table-internal no-principal
   // values) - element doesn't generate a box but children do.
-  if style.display == @types.Contents ||
+  if style.display is @types.Contents ||
     is_no_principal_table_internal_display(style.display) {
     let keep_intrinsic_size = is_no_principal_table_internal_display(
       style.display,
@@ -2901,11 +2901,11 @@ fn compute_with_collapse(
     let flow_inline_nodes : Array[@node.Node] = []
     let mut has_out_of_flow = false
     for child in node.children {
-      if child.style.display == @types.Display::None {
+      if child.style.display is @types.Display::None {
         continue
       }
-      if child.style.position == @types.Absolute ||
-        child.style.position == @types.Fixed {
+      if child.style.position is @types.Absolute ||
+        child.style.position is @types.Fixed {
         has_out_of_flow = true
         break
       }
@@ -2935,7 +2935,7 @@ fn compute_with_collapse(
       for i = 0; i < ifc_result.layouts.length(); i = i + 1 {
         let child_layout = ifc_result.layouts[i]
         let normalized_layout = if i < flow_inline_nodes.length() &&
-          flow_inline_nodes[i].style.display == @types.Contents {
+          flow_inline_nodes[i].style.display is @types.Contents {
           {
             ..child_layout,
             width: 0.0,
@@ -2999,7 +2999,7 @@ fn compute_with_collapse(
         !should_preserve_flow_whitespace_text(node.children, i) {
         continue
       }
-      if child.style.position == @types.Absolute {
+      if child.style.position is @types.Absolute {
         let abs_layout_raw = layout_absolute_child(
           child,
           ctx.available_width,
@@ -3010,7 +3010,7 @@ fn compute_with_collapse(
           warnings,
           dispatch,
         )
-        let abs_layout = if child.style.width == @types.Auto &&
+        let abs_layout = if child.style.width is @types.Auto &&
           abs_layout_raw.height > 0.0 {
           let min_width_from_font = abs_layout_raw.height * 0.6
           if abs_layout_raw.width < min_width_from_font {
@@ -3024,7 +3024,7 @@ fn compute_with_collapse(
         layout_map[i] = abs_layout
         continue
       }
-      if child.style.position == @types.Fixed {
+      if child.style.position is @types.Fixed {
         layout_map[i] = layout_fixed_child(
           child,
           ctx.viewport_width,
@@ -3235,11 +3235,11 @@ fn compute_with_collapse(
               definite_height_for_auto_width > 0.0 {
               None
             } else if auto_viewbox_svg_leaf &&
-              ctx.sizing_mode == @layout_types.Definite &&
+              ctx.sizing_mode is @layout_types.Definite &&
               parent_width > 0.0 {
               Some(parent_width)
-            } else if style.display == @types.Block &&
-              ctx.sizing_mode == @layout_types.Definite &&
+            } else if style.display is @types.Block &&
+              ctx.sizing_mode is @layout_types.Definite &&
               !suppress_inline_intrinsic {
               Some(
                 @types.max(
@@ -3254,7 +3254,7 @@ fn compute_with_collapse(
               // Text nodes should wrap to available inline size, but replaced elements
               // keep their intrinsic width contribution for shrink-to-fit/abspos sizing.
               if node.text is Some(_) &&
-                ctx.sizing_mode == @layout_types.Definite {
+                ctx.sizing_mode is @layout_types.Definite {
                 Some(@types.min(content_width, parent_width))
               } else {
                 Some(content_width)
@@ -3489,9 +3489,9 @@ fn compute_with_collapse(
     @types.Auto => has_percent_sized_replaced_descendant(node)
     _ => false
   }
-  let supports_vertical_auto_fill = style.display == @types.Block ||
-    style.display == @types.FlowRoot ||
-    style.display == @types.Table
+  let supports_vertical_auto_fill = style.display is @types.Block ||
+    style.display is @types.FlowRoot ||
+    style.display is @types.Table
   let is_empty_leaf_for_vertical_fill = supports_vertical_auto_fill &&
     node.children.length() == 0 &&
     node.measure is None
@@ -3510,9 +3510,9 @@ fn compute_with_collapse(
   // Box width - depends on sizing mode and aspect_ratio
   // For MaxContent mode with width:Auto, or explicit width: max-content/min-content
   // InlineBlock elements also use shrink-to-fit (max-content) when width is auto
-  let is_inline_block = style.display == @types.Inline ||
-    style.display == @types.InlineBlock ||
-    style.display == @types.TableCell
+  let is_inline_block = style.display is @types.Inline ||
+    style.display is @types.InlineBlock ||
+    style.display is @types.TableCell
   let use_max_content = match (ctx.sizing_mode, style.width) {
     (@layout_types.MaxContent, @types.Auto) => true
     (_, @types.Dimension::MaxContent) => true
@@ -3527,7 +3527,7 @@ fn compute_with_collapse(
     (@types.Auto, @types.Length(h), Some(ratio)) =>
       // With box-sizing: border-box, aspect-ratio applies to border-box dimensions
       // With content-box (default), it applies to content dimensions
-      if style.box_sizing == @types.BorderBox {
+      if style.box_sizing is @types.BorderBox {
         // aspect-ratio applies to border-box: width = height * ratio
         Some(h * ratio)
       } else {
@@ -3544,7 +3544,7 @@ fn compute_with_collapse(
       match parent_height_opt {
         Some(ph) => {
           let h = ph * p
-          if style.box_sizing == @types.BorderBox {
+          if style.box_sizing is @types.BorderBox {
             Some(h * ratio)
           } else {
             let content_height = h
@@ -3601,7 +3601,7 @@ fn compute_with_collapse(
   // So apply max first, then min
   match style.max_width {
     @types.Length(max_w) => {
-      let max_box_w = if style.box_sizing == @types.BorderBox {
+      let max_box_w = if style.box_sizing is @types.BorderBox {
         max_w
       } else {
         max_w + padding.horizontal_sum() + border.horizontal_sum()
@@ -3612,7 +3612,7 @@ fn compute_with_collapse(
     }
     @types.Percent(p) => {
       let max_content_w = parent_width * p
-      let max_box_w = if style.box_sizing == @types.BorderBox {
+      let max_box_w = if style.box_sizing is @types.BorderBox {
         max_content_w
       } else {
         max_content_w + padding.horizontal_sum() + border.horizontal_sum()
@@ -3623,7 +3623,7 @@ fn compute_with_collapse(
     }
     @types.Calc(px, pct) => {
       let max_content_w = parent_width * pct + px
-      let max_box_w = if style.box_sizing == @types.BorderBox {
+      let max_box_w = if style.box_sizing is @types.BorderBox {
         max_content_w
       } else {
         max_content_w + padding.horizontal_sum() + border.horizontal_sum()
@@ -3637,7 +3637,7 @@ fn compute_with_collapse(
         __mop,
         __mterms.map(fn(__t) { parent_width * __t.1 + __t.0 }),
       )
-      let max_box_w = if style.box_sizing == @types.BorderBox {
+      let max_box_w = if style.box_sizing is @types.BorderBox {
         max_content_w
       } else {
         max_content_w + padding.horizontal_sum() + border.horizontal_sum()
@@ -3658,7 +3658,7 @@ fn compute_with_collapse(
         border.horizontal_sum()
       let aspect_width = match (style.aspect_ratio, style.height) {
         (Some(ar), @types.Length(h)) if ar > 0.0 =>
-          if style.box_sizing == @types.BorderBox {
+          if style.box_sizing is @types.BorderBox {
             h * ar
           } else {
             h * ar + padding.horizontal_sum() + border.horizontal_sum()
@@ -3667,7 +3667,7 @@ fn compute_with_collapse(
           match parent_height_opt {
             Some(ph) => {
               let h = ph * p
-              if style.box_sizing == @types.BorderBox {
+              if style.box_sizing is @types.BorderBox {
                 h * ar
               } else {
                 h * ar + padding.horizontal_sum() + border.horizontal_sum()
@@ -3698,7 +3698,7 @@ fn compute_with_collapse(
   }
   match style.min_width {
     @types.Length(min_w) => {
-      let min_box_w = if style.box_sizing == @types.BorderBox {
+      let min_box_w = if style.box_sizing is @types.BorderBox {
         min_w
       } else {
         min_w + padding.horizontal_sum() + border.horizontal_sum()
@@ -3709,7 +3709,7 @@ fn compute_with_collapse(
     }
     @types.Calc(px, pct) => {
       let min_content_w = parent_width * pct + px
-      let min_box_w = if style.box_sizing == @types.BorderBox {
+      let min_box_w = if style.box_sizing is @types.BorderBox {
         min_content_w
       } else {
         min_content_w + padding.horizontal_sum() + border.horizontal_sum()
@@ -3723,7 +3723,7 @@ fn compute_with_collapse(
         __mop,
         __mterms.map(fn(__t) { parent_width * __t.1 + __t.0 }),
       )
-      let min_box_w = if style.box_sizing == @types.BorderBox {
+      let min_box_w = if style.box_sizing is @types.BorderBox {
         min_content_w
       } else {
         min_content_w + padding.horizontal_sum() + border.horizontal_sum()
@@ -3734,7 +3734,7 @@ fn compute_with_collapse(
     }
     @types.Percent(p) => {
       let min_content_w = parent_width * p
-      let min_box_w = if style.box_sizing == @types.BorderBox {
+      let min_box_w = if style.box_sizing is @types.BorderBox {
         min_content_w
       } else {
         min_content_w + padding.horizontal_sum() + border.horizontal_sum()
@@ -3784,7 +3784,7 @@ fn compute_with_collapse(
   // Calculate available height for children
   let child_available_height : Double? = match style.height {
     @types.Length(h) =>
-      if style.box_sizing == @types.BorderBox {
+      if style.box_sizing is @types.BorderBox {
         Some(h - padding.vertical_sum() - border.vertical_sum())
       } else {
         Some(h)
@@ -3792,7 +3792,7 @@ fn compute_with_collapse(
     @types.Percent(p) =>
       match parent_height_opt {
         Some(ph) =>
-          if style.box_sizing == @types.BorderBox {
+          if style.box_sizing is @types.BorderBox {
             Some(ph * p - padding.vertical_sum() - border.vertical_sum())
           } else {
             Some(ph * p)
@@ -3803,7 +3803,7 @@ fn compute_with_collapse(
           // descendants with percentage heights can resolve against the used size.
           match style.max_height {
             @types.Length(max_h) =>
-              if style.box_sizing == @types.BorderBox {
+              if style.box_sizing is @types.BorderBox {
                 Some(
                   @types.max(
                     0.0,
@@ -3819,7 +3819,7 @@ fn compute_with_collapse(
     @types.Calc(px, pct) =>
       match parent_height_opt {
         Some(ph) =>
-          if style.box_sizing == @types.BorderBox {
+          if style.box_sizing is @types.BorderBox {
             Some(ph * pct + px - padding.vertical_sum() - border.vertical_sum())
           } else {
             Some(ph * pct + px)
@@ -3830,7 +3830,7 @@ fn compute_with_collapse(
           // descendants with percentage heights can resolve against the used size.
           match style.max_height {
             @types.Length(max_h) =>
-              if style.box_sizing == @types.BorderBox {
+              if style.box_sizing is @types.BorderBox {
                 Some(
                   @types.max(
                     0.0,
@@ -3850,7 +3850,7 @@ fn compute_with_collapse(
             __mop,
             __mterms.map(fn(__t) { ph * __t.1 + __t.0 }),
           )
-          if style.box_sizing == @types.BorderBox {
+          if style.box_sizing is @types.BorderBox {
             Some(resolved - padding.vertical_sum() - border.vertical_sum())
           } else {
             Some(resolved)
@@ -3862,7 +3862,7 @@ fn compute_with_collapse(
           // descendants with percentage heights can resolve against the used size.
           match style.max_height {
             @types.Length(max_h) =>
-              if style.box_sizing == @types.BorderBox {
+              if style.box_sizing is @types.BorderBox {
                 Some(
                   @types.max(
                     0.0,
@@ -3890,7 +3890,7 @@ fn compute_with_collapse(
       } else {
         match (ctx.sizing_mode, style.aspect_ratio) {
           (@layout_types.Definite, Some(ratio)) if ratio > 0.0 =>
-            if style.box_sizing == @types.BorderBox {
+            if style.box_sizing is @types.BorderBox {
               Some(
                 @types.max(
                   0.0,
@@ -3914,7 +3914,7 @@ fn compute_with_collapse(
                 node.id == "body" ||
                 has_percent_sized_replaced_descendant(node) ||
                 (
-                  ctx.sizing_mode == @layout_types.Definite &&
+                  ctx.sizing_mode is @layout_types.Definite &&
                   has_percent_sized_descendant(node)
                 ) =>
                 Some(
@@ -3933,7 +3933,7 @@ fn compute_with_collapse(
           node.id == "body" ||
           has_percent_sized_replaced_descendant(node) ||
           (
-            ctx.sizing_mode == @layout_types.Definite &&
+            ctx.sizing_mode is @layout_types.Definite &&
             has_percent_sized_descendant(node)
           ) =>
           Some(
@@ -3969,14 +3969,14 @@ fn compute_with_collapse(
       has_non_flow_children = true
       continue
     }
-    if child.style.display == @types.Display::None {
+    if child.style.display is @types.Display::None {
       // Add zero-sized layout for display:none children (including descendants)
       layout_map[i] = create_zero_layout(child)
       has_non_flow_children = true
       continue
     }
-    if child.style.position == @types.Absolute ||
-      child.style.position == @types.Fixed {
+    if child.style.position is @types.Absolute ||
+      child.style.position is @types.Fixed {
       // Record where this absolute/fixed child appears in flow order
       absolute_static_positions[i] = flow_position
       has_non_flow_children = true
@@ -4156,7 +4156,7 @@ fn compute_with_collapse(
           border_h : Double,
           min_box : Double,
         ) -> Double {
-          if box_sizing == @types.BorderBox {
+          if box_sizing is @types.BorderBox {
             h * ratio
           } else {
             let content_height = h - padding_v - border_v
@@ -4689,7 +4689,7 @@ fn compute_with_collapse(
                   None =>
                     if child.children.length() == 0 {
                       child_min_box // Leaf nodes with no content have padding+border as minimum
-                    } else if child_style.display == @types.Contents {
+                    } else if child_style.display is @types.Contents {
                       if has_table_internal_descendant(child) {
                         // Measure contiguous table-internal descendants as one
                         // anonymous table run so intrinsic width is not fragmented.
@@ -4849,7 +4849,7 @@ fn compute_with_collapse(
           border_h : Double,
           min_box : Double,
         ) -> Double {
-          if box_sizing == @types.BorderBox {
+          if box_sizing is @types.BorderBox {
             h * ratio
           } else {
             let content_height = h - padding_v - border_v
@@ -5124,7 +5124,7 @@ fn compute_with_collapse(
     float_nodes.length() == 0 &&
     !has_non_flow_children &&
     flow_nodes.length() == 1 &&
-    flow_nodes[0].style.display == @types.Contents {
+    flow_nodes[0].style.display is @types.Contents {
     let contents_child = flow_nodes[0]
     let synthetic_node = @node.Node::with_uid_and_measure(
       node.id,
@@ -5224,7 +5224,7 @@ fn compute_with_collapse(
       if i < ifc_result.layouts.length() {
         let flow_node = flow_nodes[i]
         let ifc_layout = ifc_result.layouts[i]
-        let normalized_layout = if flow_node.style.display == @types.Contents {
+        let normalized_layout = if flow_node.style.display is @types.Contents {
           {
             ..ifc_layout,
             width: 0.0,
@@ -5648,7 +5648,7 @@ fn compute_with_collapse(
     }
     let child_for_layout = if child_is_orthogonal &&
       child_has_auto_margin &&
-      child.style.width == @types.Auto {
+      child.style.width is @types.Auto {
       // Orthogonal-flow auto inline-size behaves closer to fit-content than
       // fill-available for these WPT containment cases.
       @node.Node::with_uid_and_measure(
@@ -5766,9 +5766,9 @@ fn compute_with_collapse(
     padding.vertical_sum() > 0.0 ||
     border.horizontal_sum() > 0.0 ||
     border.vertical_sum() > 0.0
-  let can_use_simple_block_stack = ctx.sizing_mode == @layout_types.Definite &&
+  let can_use_simple_block_stack = ctx.sizing_mode is @layout_types.Definite &&
     has_simple_block_stack_hint &&
-    style.align_content == @types.Stretch &&
+    style.align_content is @types.Stretch &&
     !style.writing_mode.is_vertical() &&
     !multicol_enabled &&
     !use_ifc &&
@@ -5820,16 +5820,16 @@ fn compute_with_collapse(
       )
     }
     let mut content_height = flow_content_height
-    if style.height == @types.Auto {
+    if style.height is @types.Auto {
       let mut adjusted_flow_extent = 0.0
       let content_offset_y = padding.top + border.top
       for i = 0
           i < adjusted_child_layouts.length() && i < flow_nodes.length()
           i = i + 1 {
         let child_style = flow_nodes[i].style
-        let skip_out_of_flow = child_style.position == @types.Absolute ||
-          child_style.position == @types.Fixed ||
-          child_style.float != @types.Float::None
+        let skip_out_of_flow = child_style.position is @types.Absolute ||
+          child_style.position is @types.Fixed ||
+          !(child_style.float is @types.Float::None)
         if skip_out_of_flow {
           continue
         }
@@ -6290,7 +6290,7 @@ fn compute_with_collapse(
     }
     inline_run_active = true
   }
-  let default_text_align = style.text_align == @style.TextAlign::Start
+  let default_text_align = style.text_align is @style.TextAlign::Start
   let multicol_height_limit = if multicol_enabled {
     estimate_multicol_column_height_limit(
       child_available_height,
@@ -6305,7 +6305,7 @@ fn compute_with_collapse(
   }
   let multicol_fragment_contained = multicol_enabled &&
     (
-      style.column_fill == @style.ColumnFill::Balance ||
+      style.column_fill is @style.ColumnFill::Balance ||
       style.contain.inline_size ||
       style.contain.size
     ) &&
@@ -6395,8 +6395,8 @@ fn compute_with_collapse(
         is_inline_flow_participant(child_node, child_style) ||
         is_inline_float_only_wrapper
       ) &&
-      child_style.position != @types.Absolute &&
-      child_style.position != @types.Fixed
+      !(child_style.position is @types.Absolute) &&
+      !(child_style.position is @types.Fixed)
     if !participates_in_inline_run && inline_run_active {
       flush_inline_run_state()
     }
@@ -6420,8 +6420,8 @@ fn compute_with_collapse(
 
     let mut deferred_clear_y = current_pos
     let defer_inline_clear = child_node.id == "br" &&
-      child_style.display == @types.Inline &&
-      child_style.clear != @types.Clear::None
+      child_style.display is @types.Inline &&
+      !(child_style.clear is @types.Clear::None)
     // Handle clear property - move current_pos below cleared floats
     match child_style.clear {
       @types.Clear::Left | @types.Clear::Right | @types.Clear::Both => {
@@ -6457,8 +6457,8 @@ fn compute_with_collapse(
       child_establishes_bfc &&
       float_ctx.has_floats() &&
       !participates_in_inline_run &&
-      child_style.position != @types.Absolute &&
-      child_style.position != @types.Fixed {
+      !(child_style.position is @types.Absolute) &&
+      !(child_style.position is @types.Fixed) {
       let probe_height = if child_layout.height > 0.0 {
         child_layout.height
       } else if style.line_height > 0.0 {
@@ -6551,8 +6551,8 @@ fn compute_with_collapse(
     if !is_vertical_writing &&
       child_establishes_bfc &&
       float_ctx.has_floats() &&
-      child_style.position != @types.Absolute &&
-      child_style.position != @types.Fixed {
+      !(child_style.position is @types.Absolute) &&
+      !(child_style.position is @types.Fixed) {
       let required_width = child_layout.width +
         child_layout.margin.left +
         child_layout.margin.right
@@ -6646,8 +6646,8 @@ fn compute_with_collapse(
     let (float_inline_offset, float_inline_constrained) = if !is_vertical_writing &&
       float_ctx.has_floats() &&
       (@inline.is_inline_level(child_style.display) || child_establishes_bfc) &&
-      child_style.position != @types.Absolute &&
-      child_style.position != @types.Fixed {
+      !(child_style.position is @types.Absolute) &&
+      !(child_style.position is @types.Fixed) {
       let probe_height = if child_layout.height > 0.0 {
         child_layout.height
       } else if style.line_height > 0.0 {
@@ -6683,8 +6683,8 @@ fn compute_with_collapse(
       float_ctx.has_floats() &&
       !@inline.is_inline_level(child_style.display) &&
       !child_establishes_bfc &&
-      child_style.position != @types.Absolute &&
-      child_style.position != @types.Fixed {
+      !(child_style.position is @types.Absolute) &&
+      !(child_style.position is @types.Fixed) {
       let probe_height = if child_layout.height > 0.0 {
         child_layout.height
       } else if style.line_height > 0.0 {
@@ -6729,9 +6729,9 @@ fn compute_with_collapse(
     let mut positioned_child_width = child_layout.width
     if !is_vertical_writing &&
       !participates_in_inline_run &&
-      child_style.position != @types.Absolute &&
-      child_style.position != @types.Fixed &&
-      explicit_justify_self == @types.Alignment::Stretch {
+      !(child_style.position is @types.Absolute) &&
+      !(child_style.position is @types.Fixed) &&
+      explicit_justify_self is @types.Alignment::Stretch {
       let stretch_width = child_available_width -
         child_layout.margin.left -
         child_layout.margin.right
@@ -6780,8 +6780,8 @@ fn compute_with_collapse(
           inline_run_offset
         let self_align_offset = if !is_vertical_writing &&
           !participates_in_inline_run &&
-          child_style.position != @types.Absolute &&
-          child_style.position != @types.Fixed {
+          !(child_style.position is @types.Absolute) &&
+          !(child_style.position is @types.Fixed) {
           let free_space = child_available_width -
             positioned_child_width -
             child_layout.margin.left -
@@ -6820,7 +6820,7 @@ fn compute_with_collapse(
     }
 
     // Relative positioning offsets apply only to position:relative.
-    let (raw_final_x, raw_final_y) = if child_style.position == @types.Relative {
+    let (raw_final_x, raw_final_y) = if child_style.position is @types.Relative {
       let height_context = match child_available_height {
         Some(h) => Some(h + padding.vertical_sum() + border.vertical_sum())
         None => None
@@ -6936,7 +6936,7 @@ fn compute_with_collapse(
     } else {
       adjusted_layout
     }
-    let is_display_contents = child_style.display == @types.Contents
+    let is_display_contents = child_style.display is @types.Contents
     let no_principal = is_no_principal_table_internal_display(
       child_style.display,
     )
@@ -7061,7 +7061,7 @@ fn compute_with_collapse(
       if !collapses_through {
         // For display: contents, use children's total height instead of element's height (which is 0)
         // In vertical mode, we advance by width instead of height
-        let effective_size = if child_style.display == @types.Contents {
+        let effective_size = if child_style.display is @types.Contents {
           if is_vertical_writing {
             get_children_flow_extent_width(child_layout.children)
           } else {
@@ -7180,9 +7180,9 @@ fn compute_with_collapse(
     for i = 0; i < flow_children.length() && i < flow_styles.length(); i = i + 1 {
       let child_style = flow_styles[i]
       let child_layout = flow_children[i].layout
-      if child_style.position == @types.Absolute ||
-        child_style.position == @types.Fixed ||
-        child_style.float != @types.Float::None ||
+      if child_style.position is @types.Absolute ||
+        child_style.position is @types.Fixed ||
+        !(child_style.float is @types.Float::None) ||
         @inline.is_inline_level(child_style.display) ||
         child_layout.children.length() > 0 {
         simple_vertical_multicol = false
@@ -7436,7 +7436,7 @@ fn compute_with_collapse(
   // Now handle absolute positioned children
   for i = 0; i < node.children.length(); i = i + 1 {
     let child = node.children[i]
-    if child.style.position == @types.Absolute {
+    if child.style.position is @types.Absolute {
       // Get static y position for this absolute child
       let static_y = match absolute_static_positions.get(i) {
         Some(pos) =>
@@ -7526,7 +7526,7 @@ fn compute_with_collapse(
           raw_layout, child_node, style, is_vertical_writing, true,
         )
         let adjusted_layout = if multicol_enabled &&
-          child_node.style.display == @types.Contents &&
+          child_node.style.display is @types.Contents &&
           adjusted_layout.children.length() > 1 {
           {
             ..adjusted_layout,
@@ -7540,10 +7540,10 @@ fn compute_with_collapse(
           adjusted_layout
         }
         let child_style = child_node.style
-        let skip_out_of_flow = child_style.position == @types.Absolute ||
-          child_style.position == @types.Fixed ||
-          child_style.position == @types.Relative ||
-          child_style.float != @types.Float::None
+        let skip_out_of_flow = child_style.position is @types.Absolute ||
+          child_style.position is @types.Fixed ||
+          child_style.position is @types.Relative ||
+          !(child_style.float is @types.Float::None)
         if !skip_out_of_flow {
           let descendant_h = get_child_descendant_flow_extent_for_auto_height(
             child_node, adjusted_layout,
