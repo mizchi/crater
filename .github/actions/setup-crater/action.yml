@@ -56,7 +56,26 @@ runs:
       if: inputs.native-deps == 'true'
       shell: bash
       run: |
-        sudo apt-get update
+        # `apt-get update` exits non-zero when ANY configured index fails to
+        # refresh, and the runner image ships a Google Chrome source this repo
+        # does not use. A hash-sum mismatch there (Google's CDN serving a stale
+        # Packages.gz against a fresh Release file) has taken the whole `test`
+        # job down at this step, before MoonBit was even installed. Only the
+        # Ubuntu archive provides libsqlite3-dev, so retry the refresh and then
+        # let the install be the gate: apt keeps the previous index for a source
+        # it could not refresh, and a genuinely missing package still fails here.
+        refreshed=0
+        for attempt in 1 2 3; do
+          if sudo apt-get update; then
+            refreshed=1
+            break
+          fi
+          echo "apt-get update failed (attempt ${attempt}/3); retrying" >&2
+          sleep $((attempt * 5))
+        done
+        if [[ "${refreshed}" -ne 1 ]]; then
+          echo "apt-get update never refreshed every index; continuing to the install" >&2
+        fi
         sudo apt-get install -y libsqlite3-dev
 
     - name: Set up MoonBit
