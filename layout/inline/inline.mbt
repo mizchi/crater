@@ -184,15 +184,32 @@ fn has_inline_break_opportunity_between(
 }
 
 ///|
+/// Where the word-wrap scan has got to: lines opened so far, and the width of
+/// the line still being filled, both in columns.
+///
+/// `place_word_with_wrap` writes here instead of returning `(Int, Int)`,
+/// because a tuple return is a heap allocation on the wasm backend, one per
+/// word.
+/// `moon-pprof` put `place_word_with_wrap` at 5,280 allocations of 13 bytes for
+/// a single 161-box render; one cursor per text node replaces all of them.
+priv struct WrapCursor {
+  mut lines : Int
+  mut line_width : Int
+}
+
+///|
 fn place_word_with_wrap(
+  out : WrapCursor,
   lines : Int,
   line_width : Int,
   word_width : Int,
   cols_available : Int,
   needs_space : Bool,
-) -> (Int, Int) {
+) -> Unit {
   if cols_available <= 0 {
-    return (lines, line_width)
+    out.lines = lines
+    out.line_width = line_width
+    return
   }
   let mut new_lines = lines
   let mut new_line_width = line_width
@@ -202,15 +219,18 @@ fn place_word_with_wrap(
   }
   if new_line_width > 0 &&
     new_line_width + space_width + word_width <= cols_available {
-    new_line_width = new_line_width + space_width + word_width
-    return (new_lines, new_line_width)
+    out.lines = new_lines
+    out.line_width = new_line_width + space_width + word_width
+    return
   }
   if new_line_width > 0 {
     new_lines = new_lines + 1
     new_line_width = 0
   }
   if word_width <= cols_available {
-    return (new_lines, word_width)
+    out.lines = new_lines
+    out.line_width = word_width
+    return
   }
   let full_lines = word_width / cols_available
   let remainder = word_width % cols_available
@@ -225,7 +245,8 @@ fn place_word_with_wrap(
     new_lines = new_lines + full_lines
     new_line_width = remainder
   }
-  (new_lines, new_line_width)
+  out.lines = new_lines
+  out.line_width = new_line_width
 }
 
 ///|
@@ -235,7 +256,7 @@ fn estimate_wrapped_text_metrics(
 ) -> WrappedTextMetrics? {
   match node.text {
     Some(raw_text) => {
-      let text = raw_text.trim().to_owned()
+      let text = trim_blank_edges(raw_text)
       if text.is_empty() || node.style.writing_mode.is_vertical() {
         return None
       }
@@ -278,6 +299,8 @@ fn estimate_wrapped_text_metrics(
       let mut total_lines = 1
       let mut last_line_cols = 0
       let mut max_line_cols = 0
+      // One scratch cursor for the whole scan; see `WrapCursor`.
+      let wrap_out = WrapCursor::{ lines: 0, line_width: 0 }
       if use_word_wrap && !no_wrap {
         let mut current_line_width = 0
         let mut current_word_width = 0
@@ -285,12 +308,12 @@ fn estimate_wrapped_text_metrics(
         for c in text.iter() {
           if c == '\n' {
             if current_word_width > 0 {
-              let (l, w) = place_word_with_wrap(
-                total_lines, current_line_width, current_word_width, cols_available,
+              place_word_with_wrap(
+                wrap_out, total_lines, current_line_width, current_word_width, cols_available,
                 has_pending_space,
               )
-              total_lines = l
-              current_line_width = w
+              total_lines = wrap_out.lines
+              current_line_width = wrap_out.line_width
               if current_line_width > max_line_cols {
                 max_line_cols = current_line_width
               }
@@ -308,12 +331,12 @@ fn estimate_wrapped_text_metrics(
             has_pending_space = false
           } else if c == ' ' || c == '\t' {
             if current_word_width > 0 {
-              let (l, w) = place_word_with_wrap(
-                total_lines, current_line_width, current_word_width, cols_available,
+              place_word_with_wrap(
+                wrap_out, total_lines, current_line_width, current_word_width, cols_available,
                 has_pending_space,
               )
-              total_lines = l
-              current_line_width = w
+              total_lines = wrap_out.lines
+              current_line_width = wrap_out.line_width
               if current_line_width > max_line_cols {
                 max_line_cols = current_line_width
               }
@@ -329,12 +352,12 @@ fn estimate_wrapped_text_metrics(
           }
         }
         if current_word_width > 0 {
-          let (l, w) = place_word_with_wrap(
-            total_lines, current_line_width, current_word_width, cols_available,
+          place_word_with_wrap(
+            wrap_out, total_lines, current_line_width, current_word_width, cols_available,
             has_pending_space,
           )
-          total_lines = l
-          current_line_width = w
+          total_lines = wrap_out.lines
+          current_line_width = wrap_out.line_width
           if current_line_width > max_line_cols {
             max_line_cols = current_line_width
           }
@@ -552,12 +575,60 @@ fn id_matches_tag(node_id : String, tag : String) -> Bool {
 }
 
 ///|
+/// Whether `c` is a code unit `String::trim` strips. The set matches its
+/// default exactly -- tab, line feed, carriage return and space -- and
+/// deliberately not vertical tab or form feed.
+fn is_trimmable_code_unit(c : Int) -> Bool {
+  c == 0x20 || c == 0x09 || c == 0x0A || c == 0x0D
+}
+
+///|
+/// Whether `text` is blank, i.e. whether `text.trim()` would be empty.
+///
+/// `trim()` answers the same question, but it builds a 128-bit ASCII character
+/// set on every call and then a trimmed copy of the string -- two heap
+/// allocations on the wasm backend for a predicate that returns a `Bool`.
+/// `moon-pprof` attributed 2,642 allocations of a single 161-box render to that
+/// character set alone.
+fn is_blank_text(text : String) -> Bool {
+  for i = 0; i < text.length(); i = i + 1 {
+    if !is_trimmable_code_unit(text[i].to_int()) {
+      return false
+    }
+  }
+  true
+}
+
+///|
+/// `text.trim()` as an owned string, without the character set `trim()`
+/// allocates -- and without allocating at all when there is nothing to strip,
+/// which is the common case for text that already came out of the parser
+/// collapsed. Only ASCII whitespace is skipped, so the slice never splits a
+/// surrogate pair.
+fn trim_blank_edges(text : String) -> String {
+  let len = text.length()
+  let mut start = 0
+  while start < len && is_trimmable_code_unit(text[start].to_int()) {
+    start = start + 1
+  }
+  let mut end = len
+  while end > start && is_trimmable_code_unit(text[end - 1].to_int()) {
+    end = end - 1
+  }
+  if start == 0 && end == len {
+    text
+  } else {
+    text[start:end].to_owned()
+  }
+}
+
+///|
 fn is_whitespace_text_node(node : @node.Node) -> Bool {
   if !@node.str_has_prefix(node.id, "#text") {
     return false
   }
   match node.text {
-    Some(text) => text.trim().is_empty()
+    Some(text) => is_blank_text(text)
     None =>
       match node.measure {
         Some(_) => false
@@ -569,7 +640,7 @@ fn is_whitespace_text_node(node : @node.Node) -> Bool {
 ///|
 fn has_non_whitespace_text_descendant(node : @node.Node) -> Bool {
   match node.text {
-    Some(text) => if !text.trim().is_empty() { return true }
+    Some(text) => if !is_blank_text(text) { return true }
     None => ()
   }
   for child in node.children {

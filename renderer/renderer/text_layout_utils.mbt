@@ -118,15 +118,30 @@ fn char_display_width(c : Char) -> Int {
 ///|
 /// Place a word into wrapped lines.
 /// Returns (updated_lines, updated_line_width).
+/// Where the word-wrap scan has got to: lines opened so far, and the width of
+/// the line still being filled, both in columns.
+///
+/// `place_word_with_wrap` writes here instead of returning `(Int, Int)`: a
+/// tuple return is a heap allocation on the wasm backend, one per word. See
+/// the twin of this type in `mizchi/crater-layout/inline`.
+priv struct WrapCursor {
+  mut lines : Int
+  mut line_width : Int
+}
+
+///|
 fn place_word_with_wrap(
+  out : WrapCursor,
   lines : Int,
   line_width : Int,
   word_width : Int,
   cols_available : Int,
   needs_space : Bool,
-) -> (Int, Int) {
+) -> Unit {
   if cols_available <= 0 {
-    return (lines, line_width)
+    out.lines = lines
+    out.line_width = line_width
+    return
   }
   let mut new_lines = lines
   let mut new_line_width = line_width
@@ -138,8 +153,9 @@ fn place_word_with_wrap(
   // Fits current line
   if new_line_width > 0 &&
     new_line_width + space_width + word_width <= cols_available {
-    new_line_width = new_line_width + space_width + word_width
-    return (new_lines, new_line_width)
+    out.lines = new_lines
+    out.line_width = new_line_width + space_width + word_width
+    return
   }
 
   // Move to next line if current line already has content.
@@ -150,7 +166,9 @@ fn place_word_with_wrap(
 
   // Fits a fresh line.
   if word_width <= cols_available {
-    return (new_lines, word_width)
+    out.lines = new_lines
+    out.line_width = word_width
+    return
   }
 
   // Long word fallback: hard-wrap by available columns.
@@ -167,7 +185,8 @@ fn place_word_with_wrap(
     new_lines = new_lines + full_lines
     new_line_width = remainder
   }
-  (new_lines, new_line_width)
+  out.lines = new_lines
+  out.line_width = new_line_width
 }
 
 ///|
@@ -687,18 +706,20 @@ fn create_text_measure(
       let mut total_lines = 1
       if use_word_wrap && !no_wrap {
         // Greedy word wrapping with long-word hard-wrap fallback.
+        // One scratch cursor for the whole scan; see `WrapCursor`.
+        let wrap_out = WrapCursor::{ lines: 0, line_width: 0 }
         let mut current_line_width = 0
         let mut current_word_width = 0
         let mut has_pending_space = false
         for c in trimmed.iter() {
           if c == '\n' {
             if current_word_width > 0 {
-              let (l, w) = place_word_with_wrap(
-                total_lines, current_line_width, current_word_width, cols_available,
+              place_word_with_wrap(
+                wrap_out, total_lines, current_line_width, current_word_width, cols_available,
                 has_pending_space,
               )
-              total_lines = l
-              current_line_width = w
+              total_lines = wrap_out.lines
+              current_line_width = wrap_out.line_width
               current_word_width = 0
             }
             // Explicit line break always starts a new visual line.
@@ -707,12 +728,12 @@ fn create_text_measure(
             has_pending_space = false
           } else if c == ' ' || c == '\t' {
             if current_word_width > 0 {
-              let (l, w) = place_word_with_wrap(
-                total_lines, current_line_width, current_word_width, cols_available,
+              place_word_with_wrap(
+                wrap_out, total_lines, current_line_width, current_word_width, cols_available,
                 has_pending_space,
               )
-              total_lines = l
-              current_line_width = w
+              total_lines = wrap_out.lines
+              current_line_width = wrap_out.line_width
               current_word_width = 0
             }
             has_pending_space = true
@@ -721,11 +742,11 @@ fn create_text_measure(
           }
         }
         if current_word_width > 0 {
-          let (l, _w) = place_word_with_wrap(
-            total_lines, current_line_width, current_word_width, cols_available,
+          place_word_with_wrap(
+            wrap_out, total_lines, current_line_width, current_word_width, cols_available,
             has_pending_space,
           )
-          total_lines = l
+          total_lines = wrap_out.lines
         }
       } else {
         // Character-based wrapping for nowrap/pre/pre-wrap behavior.
