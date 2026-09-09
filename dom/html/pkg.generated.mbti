@@ -62,6 +62,7 @@ pub(all) enum InsertionMode {
   InCell
   InSelect
   InSelectInTable
+  InTemplate
   AfterBody
   InFrameset
   AfterFrameset
@@ -137,6 +138,7 @@ pub(all) struct TreeBuilder {
   mut frameset_ok : Bool
   mut head_element : Element?
   mut pending_table_chars : Array[Char]
+  template_insertion_modes : Array[InsertionMode]
   pending_text : StringBuilder
   pending_tokens : Array[Token]
 }
