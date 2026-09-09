@@ -30,7 +30,9 @@ runs:
           manifest="${manifest%% }"
           if [ -z "$manifest" ]; then continue; fi
           echo "::group::Update + prefetch ${manifest}"
-          bash scripts/ci/moon-update-retry.sh --manifest-path "$manifest"
-          bash scripts/ci/prefetch-moon-deps.sh --manifest-path "$manifest"
+          # `moon tree` / `moon update` take no `--manifest-path`; select the
+          # module with the common `-C <dir>` option instead.
+          bash scripts/ci/moon-update-retry.sh -C "$(dirname "$manifest")"
+          bash scripts/ci/prefetch-moon-deps.sh -C "$(dirname "$manifest")"
           echo "::endgroup::"
         done <<<"$EXTRA_MANIFESTS"
