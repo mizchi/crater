@@ -10,7 +10,7 @@ import {
   "mizchi/crater-layout@0.19.0",
   "mizchi/crater-painter@0.19.0",
   "mizchi/crater-renderer@0.19.0",
-  "mizchi/svg@0.2.1",
+  "mizchi/svg@0.2.3",
 }
 
 repository = "https://github.com/mizchi/crater"

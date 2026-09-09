@@ -15,6 +15,11 @@ function write_json(file_path, value) {
   fs.writeFileSync(file_path, `${JSON.stringify(value, null, 2)}\n`)
 }
 
+function write_text(file_path, contents) {
+  fs.mkdirSync(path.dirname(file_path), { recursive: true })
+  fs.writeFileSync(file_path, contents)
+}
+
 test("resolve_v8_module_root prefers a local path dependency", (t) => {
   const temp_root = fs.mkdtempSync(path.join(os.tmpdir(), "mizchi-v8-prebuild-"))
   t.after(() => fs.rmSync(temp_root, { recursive: true, force: true }))
@@ -73,6 +78,23 @@ test("resolve_v8_module_root falls back to ancestor workspace mooncakes", (t) =>
   write_json(path.join(v8_root, "moon.mod.json"), {
     name: "mizchi/v8",
   })
+
+  assert.equal(resolve_v8_module_root(native_root), v8_root)
+})
+
+test("resolve_v8_module_root finds a mooncakes install shipping moon.mod", (t) => {
+  const temp_root = fs.mkdtempSync(path.join(os.tmpdir(), "mizchi-v8-prebuild-"))
+  t.after(() => fs.rmSync(temp_root, { recursive: true, force: true }))
+
+  // mizchi/v8 0.2.0 shipped `moon.mod.json`; 0.3.0 ships the `moon.mod` format.
+  // The consumer manifest is on `moon.mod` too, so nothing here is JSON.
+  const native_root = path.join(temp_root, "browser", "native")
+  const v8_root = path.join(native_root, ".mooncakes", "mizchi", "v8")
+  write_text(
+    path.join(native_root, "moon.mod"),
+    'name = "mizchi/crater-browser-native"\n\nimport {\n  "mizchi/v8@0.3.0",\n}\n',
+  )
+  write_text(path.join(v8_root, "moon.mod"), 'name = "mizchi/v8"\n\nversion = "0.3.0"\n')
 
   assert.equal(resolve_v8_module_root(native_root), v8_root)
 })

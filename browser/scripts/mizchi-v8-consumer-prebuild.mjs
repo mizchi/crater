@@ -65,8 +65,23 @@ function candidate_mooncakes_roots(root) {
   return candidates
 }
 
+// A module manifest is `moon.mod.json` on older MoonBit and `moon.mod` on
+// current ones, and a published package ships whichever its author used:
+// mizchi/v8 0.2.0 shipped `moon.mod.json`, 0.3.0 ships `moon.mod`. Probing only
+// the JSON name made an installed 0.3.0 invisible here, which surfaced as
+// "failed to locate mizchi/v8" even though `.mooncakes/mizchi/v8` was present.
+export function has_moon_module_manifest(dir) {
+  return (
+    fs.existsSync(path.join(dir, "moon.mod.json")) ||
+    fs.existsSync(path.join(dir, "moon.mod"))
+  )
+}
+
 export function resolve_v8_module_root(module_root, search_roots = []) {
   const roots = collect_search_roots(module_root, search_roots)
+  // A local path dependency is only expressible in the JSON manifest, so this
+  // lookup stays JSON-only; consumers on `moon.mod` fall through to the
+  // `.mooncakes` scan below.
   for (const root of roots) {
     const moon_mod_path = path.join(root, "moon.mod.json")
     if (!fs.existsSync(moon_mod_path)) {
@@ -81,7 +96,7 @@ export function resolve_v8_module_root(module_root, search_roots = []) {
 
   for (const root of roots) {
     for (const mooncakes_root of candidate_mooncakes_roots(root)) {
-      if (fs.existsSync(path.join(mooncakes_root, "moon.mod.json"))) {
+      if (has_moon_module_manifest(mooncakes_root)) {
         return mooncakes_root
       }
     }

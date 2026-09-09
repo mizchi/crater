@@ -9,8 +9,8 @@ import {
   "mizchi/crater-layout@0.19.0",
   "mizchi/crater-painter@0.19.0",
   "mizchi/gfx@0.1.0",
-  "mizchi/svg@0.2.1",
-  "moonbitlang/async@0.20.1",
+  "mizchi/svg@0.2.3",
+  "moonbitlang/async@0.21.3",
 }
 
 repository = "https://github.com/mizchi/crater"
