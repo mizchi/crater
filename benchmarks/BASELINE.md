@@ -971,3 +971,71 @@ sizing revisits the same node many times — nested flex, deep block nesting,
 dashboard-shaped documents. Benchmarks bound by parsing, selector matching or
 rasterization sit inside the noise floor, as expected: this change removes
 allocation from layout, not work from any other phase.
+
+## Zoom Walk and Enum Comparisons (2026-09-09)
+
+Two follow-ups to the box-model work above, both aimed at work the renderer and
+layout do on every node regardless of the document. Measured the same way
+(`benchmarks/scripts/ab-bench.mjs`, interleaved), plus deterministic counters
+obtained by instrumenting the built bundle, which do not move run to run.
+
+### The zoom / transform walk deep-copied the layout tree
+
+`apply_zoom_and_scale` rebuilds every `Layout` record it visits — a new record,
+a new children array and three new `Rect[Double]` for margin/padding/border —
+so a render always ended with a full copy of the layout tree. Instrumenting the
+walk on `render_large_2k5` showed all 8,173 calls were the identity case:
+inherited zoom 1, no zoom of its own, identity transform.
+
+The walk cannot simply be skipped: it also shifts absolutely-positioned children
+onto their real containing block. So the fast path is bottom-up — a node hands
+`layout` straight back when it neither zooms nor transforms *and* every child
+came back physically unchanged (`physical_equal`), which is exactly the case
+where the record it would build equals the one it was given, field for field.
+
+### `==` on a payload-less enum is a function call
+
+`x == @types.Display::None` compiles to a call into the derived `Eq::equal`,
+which is a switch over all 20 variants; `x != ...` costs two calls, through the
+default `not_equal` wrapper. The pattern form `x is @types.Display::None`
+compiles to `x === 17` — a plain integer comparison, inlined, in both debug and
+release. `match` compiles the same way, so this is purely about the operator.
+
+Attributing the calls to their callers on `render_large_2k5` showed 92% of them
+came from 18 functions, so only those were converted (222 comparisons across
+five files) rather than the ~1,200 sites in the workspace. The remaining sites
+are colder by construction and are left alone deliberately: the tail is not
+worth the diff.
+
+### Deterministic counters (10 renders of `render_large_2k5`)
+
+| Counter | Before | After | Delta |
+|---------|--------|-------|-------|
+| `Display::equal` calls | 407,352 | 175,186 | **-57.0%** |
+| `Position::equal` calls | 364,430 | 34,386 | **-90.6%** |
+| `Layout` records constructed | 58,971 | 50,798 | -13.9% |
+| `Rect[Double]` constructed | 87,551 | 63,032 | -28.0% |
+
+### Wall clock (21 interleaved repetitions, median of medians)
+
+| Benchmark | Before | After | Delta |
+|-----------|--------|-------|-------|
+| `deep_flex_d6` | 6.71 ms | 6.51 ms | -3.0% |
+| `dashboard_layout` | 1.13 ms | 1.11 ms | -1.8% |
+| `render_flat_1000` | 25.30 ms | 25.16 ms | -0.6% |
+| `render_dash_med` | 7.40 ms | 7.59 ms | +2.6% |
+| `parse_simple_100` (control) | 36.90 µs | 36.33 µs | -1.6% |
+| `parse_simple_1000` (control) | 397.24 µs | 397.79 µs | +0.1% |
+| `match_non_idx_1k` (control) | 32.15 µs | 32.85 µs | +2.2% |
+
+Read this honestly: the controls put the noise floor at about ±2%, and only
+`deep_flex_d6` clears it. An earlier 11-repetition sweep of the same two changes
+reported `dashboard_layout` at -10.8%; at 21 repetitions that collapsed to -1.8%,
+which is a good reminder that a single sweep at low repetition count on this
+runner will happily invent a double-digit result.
+
+So: the work removed is real and large — three quarters of the enum-equality
+calls and a whole tree copy per render — but at this document size it is worth
+roughly one to three percent of wall clock, not more. Both changes are kept
+because they are strictly less work for identical output, not because the
+stopwatch shows much.
