@@ -5,17 +5,10 @@ version = "0.19.0"
 import {
   "mizchi/crater-browser-runtime@0.19.0",
   "mizchi/crater-dom@0.19.0",
-  // Pinned to the newest published mizchi/v8. It does not compile against the
-  // current moonbitlang/core (`@strconv.parse_int` was moved to
-  // `moonbitlang/core/string` and `StrConvError` is gone), so
-  // `moon check --target native` fails inside `.mooncakes/mizchi/v8`.
-  // v8.mbt main already carries the fix and is versioned 0.3.0; bump this pin
-  // to 0.3.0 once that is published to mooncakes. See TODO.md External / Blocker.
-  "mizchi/v8@0.2.0",
-  // mizchi/v8 pins moonbitlang/async 0.16.8, which no longer compiles against
-  // the current core (`IterResult` undefined in task_group.mbt). This module is
-  // its own single-member workspace (`browser/native/moon.work`), so it resolves
-  // deps independently of the root workspace and needs the floor stated here.
+  "mizchi/v8@0.3.0",
+  // This module is its own single-member workspace (`browser/native/moon.work`),
+  // so it resolves deps independently of the root workspace. State the async
+  // floor here rather than inheriting whatever mizchi/v8 happens to pin.
   "moonbitlang/async@0.21.3",
 }
 
