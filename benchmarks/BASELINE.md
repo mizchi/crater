@@ -886,3 +886,88 @@ Optimizations (all bit-identical to the general path):
    single pass for the common uniform clears (opaque white / transparent
    black), and full-frame `read_pixels` does one bulk copy instead of a
    per-pixel gather.
+
+## Box-Model Resolution (2026-09-09)
+
+### How this was measured
+
+`moon bench` reports each benchmark once per invocation, so comparing a "before"
+run of the whole suite against an "after" run charges every benchmark whatever
+the machine happened to be doing while it ran. On this runner that is enough to
+drown the signal: the suite diff for the change below came back 93 benchmarks
+faster and 85 slower, with `parse_simple_10` moving +59% and `render_cards_24`
++301% — from a change that cannot touch either.
+
+`benchmarks/scripts/ab-bench.mjs` alternates two prebuilt bundles benchmark by
+benchmark and repeats the sweep, so both variants meet the same machine seconds
+apart, and reports the median of each variant's per-run medians. Always include a
+benchmark the change cannot affect and read its delta as the run's noise floor —
+with 11 repetitions here, `parse_simple_100`, `match_non_idx_1k` and
+`render_large_2k5` all landed inside ±1%.
+
+```bash
+moon -C benchmarks bench --target js --build-only
+cp _build/js/release/bench/mizchi/crater-benchmarks/{crater-benchmarks.internal_test.js,package.json,__internal_test_info.json} /tmp/ab/after/
+git stash && moon -C benchmarks bench --target js --build-only \
+  && cp _build/js/release/bench/mizchi/crater-benchmarks/{crater-benchmarks.internal_test.js,package.json,__internal_test_info.json} /tmp/ab/before/ \
+  && git stash pop
+node benchmarks/scripts/ab-bench.mjs --before /tmp/ab/before --after /tmp/ab/after --reps 11 \
+  --filter deep_flex --filter render_flex --filter parse_simple
+```
+
+### What the profile said
+
+`node --cpu-prof` / `--heap-prof` on `render_large_2k5` (2.5k nodes):
+
+- the garbage collector was the single largest CPU entry at **14.4%**;
+- `@css.resolve_rect` was the largest allocator of the whole layout phase at
+  **21%** of sampled bytes — 141k calls per 10 renders, each materializing a
+  fresh `Rect[Double]`;
+- **every one of those 141k calls** resolved a rect whose four sides were plain
+  lengths, i.e. whose result did not depend on the containing-block width at all;
+- flex's `(uid, quantized width)`-keyed resolved-rect cache hit **0 times in
+  19,668 lookups** — but 58.6% of those lookups were repeat visits to a node it
+  had already resolved, missing only because the width in the key differed. It
+  was allocating a `ResolvedRects` plus a map entry per call for nothing.
+
+### What changed
+
+`Node::resolved_rects` resolves `padding`/`margin`/`border` once and memoizes the
+result on the node whenever the three rects ignore the containing-block width.
+`Node::style` is immutable, so a node-attached memo cannot go stale and needs no
+reset discipline; a rect that genuinely reads the width is resolved every time,
+as before. Flex, block and table now go through it instead of calling
+`resolve_rect` directly. Two smaller allocation fixes rode along: the block-flow
+cache key (five `Double::to_string()` calls and six concatenations) is now built
+only where it is consulted rather than on every block child of every static
+render, and `compute_block_child_memoized` stops rebuilding its result record
+when scroll-snap hands the layout straight back.
+
+Sampled workload allocation on `render_large_2k5` fell from **20.4 MB to 7.1 MB**
+(excluding Node's own module loading), and the GC's CPU share from **14.4% to
+8.8%**.
+
+### Result
+
+Final confirmation run, 9 interleaved repetitions, median of medians; the delta
+range is across three separate sweeps (5, 11 and 9 repetitions), so it also shows
+how much each figure still moves run to run.
+
+| Benchmark | Before | After | Delta | Range over 3 sweeps |
+|-----------|--------|-------|-------|---------------------|
+| `render_flex_d5` | 8.10 ms | 6.02 ms | **-25.6%** | -23% … -28% |
+| `deep_flex_d6` | 9.30 ms | 7.12 ms | **-23.5%** | -23% … -28% |
+| `render_flex_d6` | 25.06 ms | 21.39 ms | **-14.6%** | -9% … -15% |
+| `dashboard_layout` | 1.35 ms | 1.17 ms | **-13.9%** | -11% … -16% |
+| `nested_flex_d4` | 683.25 µs | 630.67 µs | -7.7% | -8% … -13% |
+| `render_large_2k5` | 30.20 ms | 29.35 ms | -2.8% | -3% … +0% |
+| `parse_simple_100` (control) | 32.83 µs | 34.06 µs | +3.8% | -1% … +4% |
+| `parse_simple_1000` (control) | 393.30 µs | 377.93 µs | -3.9% | — |
+| `match_non_idx_1k` (control) | 31.79 µs | 30.63 µs | -3.7% | -4% … +2% |
+
+The controls put this runner's noise floor at roughly ±4%, so the nested-flex and
+dashboard figures are the real signal. The gain concentrates where intrinsic
+sizing revisits the same node many times — nested flex, deep block nesting,
+dashboard-shaped documents. Benchmarks bound by parsing, selector matching or
+rasterization sit inside the noise floor, as expected: this change removes
+allocation from layout, not work from any other phase.

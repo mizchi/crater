@@ -192,7 +192,6 @@ pub fn clear_intrinsic_cache_for_node(uid : Int) -> Unit {
 /// Call this for a full re-layout.
 pub fn reset_intrinsic_cache() -> Unit {
   @flex.reset_intrinsic_cache()
-  @flex.reset_resolved_cache()
 }
 
 ///|
