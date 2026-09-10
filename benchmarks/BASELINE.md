@@ -1182,3 +1182,98 @@ shape: 303 of 400 calls exist only to answer an intrinsic-size question and
 throw the rest away. Memoizing that answer per (node, constraint) is the same
 move that worked for the box model in #339, and it would remove the allocations
 rather than shrink them.
+
+## Memoizing the repeated subtree walk (2026-09-10)
+
+The lever proposed above was tried and **rejected**. It works — the repeats are
+real and large — but paying for them in retained heap costs more than the
+recomputation it saves. Recorded here so the next pass starts from the numbers
+instead of the idea.
+
+### The duplication is real
+
+Keying every `compute_with_collapse` call of one dashboard render by
+`(uid, available_width, available_height, sizing_mode, viewport, stretch)`:
+
+| | |
+|---|---|
+| calls | 289 |
+| distinct keys | 145 |
+| repeats | 144 (**49.8%**) |
+| multiplicity | every duplicated key appears exactly twice, never more |
+
+Diffing the two stacks of each duplicate pair from the outermost frame, the
+dominant divergence (72 of 144) is one level of flex:
+
+```
+flex.compute_internal.inner
+  A: flex.compute_min_content_main_size ...
+  B: flex.compute_nested.inner          ...
+```
+
+Sizing a box and laying it out are the same walk run twice. Grid does the same
+thing when `adjust_block_tracks_for_content_items` re-lays a track's items.
+
+### Where to put the cache
+
+`@block.compute_with_collapse` is the wrong level -- it is entered thousands of
+times per render, so a miss is charged constantly. `@dispatch.compute` is the
+one boundary every layout mode recurses through, so a hit there skips a whole
+mixed flex/grid/block subtree, and it is entered rarely:
+
+| bench | dispatcher entries / render | repeats |
+|---|---|---|
+| `render_dash_med` | 102 | **47.1%** |
+| `layout_only_dash` | 77 | **31.2%** |
+| `layout_only_large` (2,500 boxes) | 140 | 0% |
+| `grid_10x10` | **1** | 0% |
+
+A per-render cache there (armed by `compute_layout_in_context`, keyed by `uid`
+with the constraint matched field by field) cut real work on the dashboards
+exactly as predicted.
+
+### Why it was rejected
+
+It also cost 3-5% on block-flow pages, and the cost is **retention, not
+lookup**. Two isolation builds settle it:
+
+| variant | `layout_only_large` | `layout_only_dash` |
+|---|---|---|
+| cache present, never armed | -0.7% | +0.0% |
+| armed, lookups only (storage disabled) | **+0.1%** | +0.5% |
+| armed, storing | **+5.1%** | -6.1% |
+
+Storing is the whole cost. A CPU profile of `layout_only_large` agrees: +9.4%
+samples spread diffusely across a dozen layout frames with GC up 12 --- the
+signature of a bigger live heap, not a hot new path. Holding 140 subtree
+layouts of a 2,500-box page alive for the duration of a render is what that
+buys.
+
+Four independent 21-25 rep interleaved sweeps: `layout_only_dash` -6 to -7%
+every time, `layout_only_large` +2.7 to +5.1% every time, and the full-render
+benchmarks moving no further than their own controls (`render_large_2k5` came
+back -9.2%, -3.9% and +4.3% on different sweeps, against controls that moved up
+to 4.1% -- it carries no signal here).
+
+Two cautions from this round. `grid_10x10` reproduced +6.6% to +8.7% across
+sweeps, and it is not real: that benchmark enters the dispatcher **once** per
+render, a direct micro-benchmark puts the added work at 114 ns against its
+153 us, and its CPU profile shows total samples *down* 5.8%. Benchmarks in the
+100-200 us range produce reproducible double-digit artifacts under the per-process
+harness -- pair them with a control of similar duration, or discount them.
+And `render_*` benchmarks rebuild the node tree each iteration while
+`layout_only_*` reuse one, so the two are not interchangeable readings of the
+same tree.
+
+### What would actually fix it
+
+No cheap signal at the dispatcher separates "will be reused" from "won't":
+display is `Block` for everything that reaches block layout, leaf calls never
+repeat but barely reach the dispatcher, and gating on a flex/grid ancestor does
+not discriminate at all (the 2,500-box page makes 138 of its 140 dispatcher
+entries under a flex or grid container and repeats none of them).
+
+So the fix belongs where the duplication is created, not behind a cache: flex
+answering `compute_min_content_main_size` with a full child layout that
+`compute_nested` then immediately repeats. Removing that second walk is free of
+retention because there is nothing to retain.
