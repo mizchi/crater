@@ -1039,3 +1039,67 @@ calls and a whole tree copy per render — but at this document size it is worth
 roughly one to three percent of wall clock, not more. Both changes are kept
 because they are strictly less work for identical output, not because the
 stopwatch shows much.
+
+## Wasm Allocation Pass (2026-09-10)
+
+First use of the repo's `moonbit-mem-profile` skill (`moon-pprof memprofile`) on
+a wasm build. Everything above was measured on the JS backend; this pass looks at
+allocations the JS backend mostly does not make.
+
+### Setup
+
+A throwaway `renderer/profmain` package renders one dashboard-shaped document
+(161 boxes -- the shape of `render_dash_med`, sized so the instrumented wasm
+finishes in about a second), built with `moon -C renderer build --target wasm`
+(debug, linear-memory wasm, both required) and profiled with
+`moon-pprof memprofile`. The package is deleted afterwards; only the library
+change ships.
+
+`moon-pprof summary` prints the top sites by bytes. Sort by *allocation count*
+instead: a site with thousands of ~13-byte allocations is per-word or per-
+character churn, while a handful of large ones is usually the output the render
+actually has to produce.
+
+### What the wasm backend charges for that the JS backend does not
+
+- **A tuple return is a heap allocation.** Verified on a scratch module: a
+  function returning `(Int, Int)`, called 200,000 times, allocates 200,000 times
+  at 16 bytes; the same function writing into a mutable record allocates zero.
+- **`String::iter` allocates**, both the iterator and (on wasm) a `Char` per
+  step. An index scan over code units allocates nothing.
+- **`String::trim` allocates a 128-bit ASCII character set per call**, since
+  core gained the optional `chars` parameter -- so `trim().is_empty()` costs two
+  allocations to answer a `Bool`.
+
+### Result on one render
+
+| Counter | Before | After | Delta |
+|---------|--------|-------|-------|
+| Total allocations | 102,744 | 100,923 | **-1.8%** |
+| Total bytes | 3.14 MB | 3.11 MB | -1.2% |
+| `place_word_with_wrap` (layout) | 54.4 kB | 37.7 kB | -30.8% |
+| `place_word_with_wrap` (renderer) | 12.6 kB | 8.8 kB | -30.8% |
+| `build_ascii_char_set` | 61.9 kB | 47.7 kB | -22.9% |
+| `String::iter` | 54.5 kB | 43.8 kB | -19.5% |
+| `Iter::new` | 33.2 kB | 27.3 kB | -17.8% |
+
+The JS backend shows nothing, as expected: 21 interleaved repetitions of
+`render_dash_med` put it at +2.1% against controls at -1.2% and +2.0%. Report
+that honestly rather than hunting for a JS number to quote -- a wasm allocation
+fix is a wasm win.
+
+### The largest site is still unattributed
+
+`block::compute_with_collapse` holds 12,342 allocations (12% of the render) at
+22 bytes each. moon-pprof can name the function but not the line -- the wasm name
+section carries no line numbers -- and that function is 4,700 lines, so stubbing
+one suspect at a time is the only handle the skill offers. Next pass should
+either shrink the function first or find a way to get line attribution; the
+allocations are small and numerous, so the shape to look for is `Some(...)` of a
+`Double` and small records built per child.
+
+`Array` growth is worth a look at the same time: 3,592 allocations came from
+`Array::realloc` on pushes with no reserved capacity, reached mostly from block
+and inline layout. (The element type in the demangled name is not meaningful --
+MoonBit shares one array implementation across reference element types and names
+it after whichever instantiation was emitted first.)

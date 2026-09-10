@@ -24,9 +24,13 @@ pub fn cascade_reuse_end() -> (Map[String, @style.Style], Map[String, String], I
 
 pub fn clear_builtin_text_advance_ratio_override_for_test() -> Unit
 
+pub fn clear_image_intrinsic_record_replay() -> Unit
+
 pub fn clear_image_intrinsic_size_provider() -> Unit
 
 pub fn clear_text_metrics_provider() -> Unit
+
+pub fn clear_text_metrics_record_replay() -> Unit
 
 pub fn compute_composed_shadow_styles(@dom.DomTree, RenderContext) -> Map[Int, @style.Style]
 
@@ -46,6 +50,10 @@ pub fn css_uses_child_structure(Array[String]) -> Bool
 
 pub fn css_uses_sibling_combinator(Array[String]) -> Bool
 
+pub fn deserialize_image_intrinsic_recording(String) -> Array[RecordedImage]
+
+pub fn deserialize_text_metrics_recording(String) -> Array[RecordedMetric]
+
 pub fn element_to_node(@html.Element, @style.Style?) -> @node.Node
 
 pub fn get_content_height(String, Int, Int) -> Int
@@ -55,6 +63,10 @@ pub fn get_content_height_with_css(String, Int, Int, Array[String]) -> Int
 pub fn get_content_height_with_document(@html.Document, Int, Int, Array[String]) -> Int
 
 pub fn get_force_monospace_metrics() -> Bool
+
+pub fn install_image_intrinsic_replay(Array[RecordedImage]) -> Unit
+
+pub fn install_text_metrics_replay(Array[RecordedMetric]) -> Unit
 
 pub fn layout_to_json(@crater-core.Layout) -> String
 
@@ -106,6 +118,10 @@ pub fn render_to_node_with_prepared_external_css(@html.Document, RenderContext, 
 
 pub fn render_with_external_css(String, RenderContext, Array[String]) -> @crater-core.Layout
 
+pub fn serialize_image_intrinsic_recording(Array[RecordedImage]) -> String
+
+pub fn serialize_text_metrics_recording(Array[RecordedMetric]) -> String
+
 pub fn set_builtin_text_advance_ratio_override_for_test(Double) -> Unit
 
 pub fn set_force_monospace_metrics(Bool) -> Unit
@@ -113,6 +129,14 @@ pub fn set_force_monospace_metrics(Bool) -> Unit
 pub fn set_image_intrinsic_size_provider(ImageIntrinsicSizeProvider) -> Unit
 
 pub fn set_text_metrics_provider(TextMetricsProvider) -> Unit
+
+pub fn start_image_intrinsic_recording() -> Unit
+
+pub fn start_text_metrics_recording() -> Unit
+
+pub fn take_image_intrinsic_recording() -> Array[RecordedImage]
+
+pub fn take_text_metrics_recording() -> Array[RecordedMetric]
 
 // Errors
 
@@ -159,6 +183,21 @@ pub struct PseudoRuleIndex {
   by_class : Map[String, Array[Int]]
   by_tag : Map[String, Array[Int]]
   universal : Array[Int]
+}
+
+pub(all) struct RecordedImage {
+  src : String
+  has_size : Bool
+  width : Double
+  height : Double
+}
+
+pub(all) struct RecordedMetric {
+  key : String
+  min_width : Double
+  max_width : Double
+  min_height : Double
+  max_height : Double
 }
 
 pub(all) struct RenderContext {

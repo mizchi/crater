@@ -280,8 +280,15 @@ fn flatten_first_table_child(
 }
 
 ///|
-fn is_table_run_whitespace_char(c : Char) -> Bool {
-  c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\u000C'
+/// The same set as `is_flow_whitespace_char` / `is_table_run_whitespace_char`,
+/// on a UTF-16 code unit. Scanning code units lets these predicates run over a
+/// string by index instead of through `String::iter`, which allocates an
+/// iterator (and, on the wasm backend, a `Char` per step) for a question whose
+/// answer is a `Bool`. Every character in the set is ASCII, so a code-unit scan
+/// accepts exactly what the `Char` scan accepted -- a surrogate half is no more
+/// whitespace than the astral character it belongs to.
+fn is_flow_whitespace_code_unit(c : Int) -> Bool {
+  c == 0x20 || c == 0x09 || c == 0x0A || c == 0x0D || c == 0x0C
 }
 
 ///|
@@ -291,8 +298,8 @@ fn is_whitespace_only_table_run_text(node : @node.Node) -> Bool {
   }
   match node.text {
     Some(text) => {
-      for c in text.iter() {
-        if !is_table_run_whitespace_char(c) {
+      for i = 0; i < text.length(); i = i + 1 {
+        if !is_flow_whitespace_code_unit(text[i].to_int()) {
           return false
         }
       }
@@ -325,14 +332,13 @@ fn text_ends_with_collapsible_flow_whitespace(node : @node.Node) -> Bool {
   }
   match node.text {
     Some(text) => {
-      let chars : Array[Char] = []
-      for c in text.iter() {
-        chars.push(c)
-      }
-      if chars.length() == 0 {
+      // Only the final code unit decides this; collecting the whole string into
+      // an `Array[Char]` first allocated the array and a `Char` per character.
+      let len = text.length()
+      if len == 0 {
         return false
       }
-      is_flow_whitespace_char(chars[chars.length() - 1])
+      is_flow_whitespace_code_unit(text[len - 1].to_int())
     }
     None => false
   }
@@ -345,8 +351,8 @@ fn is_whitespace_only_flow_text(node : @node.Node) -> Bool {
   }
   match node.text {
     Some(text) => {
-      for c in text.iter() {
-        if !is_flow_whitespace_char(c) {
+      for i = 0; i < text.length(); i = i + 1 {
+        if !is_flow_whitespace_code_unit(text[i].to_int()) {
           return false
         }
       }
@@ -363,8 +369,9 @@ fn flow_whitespace_contains_line_break(node : @node.Node) -> Bool {
   }
   match node.text {
     Some(text) =>
-      for c in text.iter() {
-        if c == '\n' || c == '\r' || c == '\t' || c == '\u000C' {
+      for i = 0; i < text.length(); i = i + 1 {
+        let c = text[i].to_int()
+        if c == 0x0A || c == 0x0D || c == 0x09 || c == 0x0C {
           return true
         }
       }
