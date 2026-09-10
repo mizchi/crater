@@ -1103,3 +1103,82 @@ allocations are small and numerous, so the shape to look for is `Some(...)` of a
 and inline layout. (The element type in the demangled name is not meaningful --
 MoonBit shares one array implementation across reference element types and names
 it after whichever instantiation was emitted first.)
+
+## Splitting `compute_with_collapse` (2026-09-10)
+
+The previous pass left `block::compute_with_collapse` holding 12,342 allocations
+(12% of a render) with no way to say *where*: moon-pprof names the innermost
+function, and that one was 4,740 lines. This splits it and re-profiles.
+
+### The split
+
+Three blocks lifted out verbatim, behaviour unchanged:
+
+| Function | Lines | What it is |
+|----------|-------|------------|
+| `layout_no_principal_box` | 240 | the `display: contents` / table-internal path |
+| `layout_measured_leaf` | 285 | the childless leaf with a `MeasureFunc` |
+| `max_content_box_width` | 1,086 | the max-content sizing pass |
+
+`compute_with_collapse` goes from 4,740 to 3,148 lines. `max_content_box_width`
+takes 14 parameters because that is how much of the enclosing scope the block
+read; nothing is captured implicitly, and it wrote back exactly one value.
+
+### What the re-profile says
+
+The split is real -- `max_content_box_width` appears as its own frame with 768
+allocations of its own and 3,966 flowing through it -- but `compute_with_collapse`
+still holds **11,670**, down only 672. So the allocations were never in the
+blocks that came out. `layout_no_principal_box` and `layout_measured_leaf` do not
+appear in a single stack: a dashboard has no `display: contents` and reaches its
+text through the inline path.
+
+No nested-function frame of `compute_with_collapse` appears either (MoonBit names
+them, and they would show), so what is left is straight-line body code.
+
+### Call shape
+
+Counting invocations on the JS build of the same render (one dashboard, 161
+boxes) with markers at each phase:
+
+| Point | Reached |
+|-------|---------|
+| function entry | **400** |
+| child classification + the 7 collections it needs | 400 |
+| flow placement (`flow_children` onward) | **97** |
+
+So the function runs 2.5 times per box, and **three quarters of those calls do
+the box model and child classification and then return early** from one of the
+intrinsic-sizing paths. Each of those 400 calls allocates seven collections
+(`layout_map`, `absolute_static_positions`, and the five parallel
+flow/float arrays); the later phases add six more on the 97 that get there.
+That is ~3,400 of the 11,670 -- the remaining ~8,300, about 21 per call, is
+diffuse: no single line, spread across the box-model and constraint code.
+
+The seven cannot simply move below the early returns: the classification loop
+that populates them runs before every one of those returns. Sharing one instance
+across calls is not available either -- stubbing that in overflows the stack,
+which is a fair reminder that they are genuinely per-call state of a recursive
+walk.
+
+### Cost of the split
+
+Two 25-repetition interleaved sweeps against the unsplit build:
+
+| Run | `render_large_2k5` | controls |
+|-----|--------------------|----------|
+| 1 | +2.0% | +0.7%, -0.0%, +0.2% |
+| 2 | +3.8% | +3.5%, -2.2%, +4.7% |
+
+Run 2's controls moved as far as its subject, so the honest reading is
+0% to +2% on the heaviest render, not clearly a regression. A variant carrying
+only the two small extractions measured neutral, so whatever cost exists belongs
+to `max_content_box_width`.
+
+### Where a next pass should look
+
+Not at a hot line inside this function -- there isn't one. The lever is the call
+shape: 303 of 400 calls exist only to answer an intrinsic-size question and
+throw the rest away. Memoizing that answer per (node, constraint) is the same
+move that worked for the box model in #339, and it would remove the allocations
+rather than shrink them.
