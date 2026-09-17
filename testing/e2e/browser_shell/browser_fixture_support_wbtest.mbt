@@ -52,7 +52,7 @@ fn builtin_github_snapshot_fixture() -> String {
 
 ///|
 fn docs_article_fixture() -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string(
     "<!DOCTYPE html><html><body style=\"margin:0;background:#202532;color:#f6f7fb\">",
   )

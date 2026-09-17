@@ -191,8 +191,7 @@ test "E2E: multiple scripts execute in order" {
 /// `Style::layout_eq`-narrowed dirty seed + block-flow memoization that the
 /// js-target tests cover offline (see browser/shell/incremental_reflow_wbtest.mbt).
 test "E2E: incremental reflow matches a full rebuild on the dynamic JS path" {
-  let html =
-    "<html><body style=\"margin:0\">" +
+  let html = "<html><body style=\"margin:0\">" +
     "<div id=\"a\" style=\"width:200px\">alpha</div>" +
     "<div id=\"b\" style=\"width:200px\">beta</div>" +
     "<script>" +
@@ -225,8 +224,7 @@ test "E2E: incremental reflow matches a full rebuild on the dynamic JS path" {
 /// browser/shell/cascade_reuse_wbtest.mbt — the correctness bar for flipping
 /// `set_cascade_reuse` default-on (it stays off by default until then).
 test "E2E: cascade reuse matches a full rebuild on the dynamic JS path" {
-  let html =
-    "<html><head><style>" +
+  let html = "<html><head><style>" +
     ".box{color:#112233;padding:4px}.row .cell{margin:2px;color:#334455}.box + .box{padding:6px}" +
     "</style></head><body>" +
     "<div class=\"row\"><div class=\"box\"><span class=\"cell\">alpha</span></div>" +

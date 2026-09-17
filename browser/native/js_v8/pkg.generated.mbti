@@ -26,10 +26,11 @@ pub struct V8JsRuntime {
   id_map : Map[Int, @dom.NodeId]
 }
 pub fn V8JsRuntime::as_js_runtime(Self) -> &@crater-browser-runtime.JsRuntime
+pub fn V8JsRuntime::execute(Self, Int, @dom.DomTree, String, @crater-browser-runtime.AsyncExecutionMode) -> @crater-browser-runtime.JsResult raise @crater-browser-runtime.JsError
+pub fn V8JsRuntime::init(Self) -> Unit
 pub fn V8JsRuntime::new() -> Self
 pub fn V8JsRuntime::new_with_mock_dom(String) -> Self
 
 // Type aliases
 
 // Traits
-

@@ -150,7 +150,7 @@ pub fn LayoutManager::execute_layout(
         children: [],
         text: None,
       }
-      { layout: empty_layout, was_incremental: false, pending_images: 0 }
+      { layout: empty_layout, was_incremental: false, pending_images: 0, }
     }
   }
 }
@@ -180,9 +180,9 @@ pub fn LayoutManager::schedule_resize(
       tree.resize_viewport(width, height)
       // レイアウト再計算をスケジュール
       let layout_task = self.schedule_layout()
-      { resized: true, layout_task: Some(layout_task) }
+      { resized: true, layout_task: Some(layout_task), }
     }
-    None => { resized: false, layout_task: None }
+    None => { resized: false, layout_task: None, }
   }
 }
 
@@ -266,7 +266,7 @@ pub fn LayoutManager::register_and_decode_image(
         placeholder_height~,
       )
       let decode_task = self.schedule_image_decode(resource_id)
-      { resource_id, decode_task, registered: true }
+      { resource_id, decode_task, registered: true, }
     }
     None =>
       {

@@ -623,7 +623,7 @@ fn BidiProtocol::emit_input_file_dialog_opened(
     None => ()
   }
   self.outbox.push(
-    Event({ event_method: event_name, params: make_object(params) }),
+    Event({ event_method: event_name, params: make_object(params), }),
   )
 }
 

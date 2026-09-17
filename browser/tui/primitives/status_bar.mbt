@@ -34,7 +34,7 @@ pub fn draw_status_bar(
   }
   buf.fill_rect(0, y, buf.width, 1, fill)
   // Build status text
-  let style : TextStyle = { fg, bg, bold: false, underline: false }
+  let style : TextStyle = { fg, bg, bold: false, underline: false, }
   let selection_style : TextStyle = {
     fg: selection_fg,
     bg,

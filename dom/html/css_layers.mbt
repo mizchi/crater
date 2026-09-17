@@ -38,7 +38,7 @@ pub fn flatten_css_cascade_layers(css : String) -> String {
   if !css.contains("@layer") {
     return css
   }
-  let out = StringBuilder::new()
+  let out = StringBuilder()
   let len = css.length()
   let mut i = 0
   let mut depth = 0

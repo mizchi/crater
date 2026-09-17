@@ -73,7 +73,7 @@ pub fn LayoutTree::flow_dirty_uids(
   self : LayoutTree,
   seed : Array[Int],
 ) -> Array[Int] {
-  let result : Map[Int, Bool] = {}
+  let result : Map[Int, Bool] = Map([])
   for uid in seed {
     result[uid] = true
   }

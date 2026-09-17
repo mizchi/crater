@@ -32,7 +32,7 @@ fn write_base64_quad(
 ///|
 #cfg(not(target="js"))
 fn encode_bytes_base64(bytes : Array[Int]) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder()
   let mut i = 0
   while i < bytes.length() {
     let b0 = bytes[i]

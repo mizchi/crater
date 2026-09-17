@@ -36,8 +36,8 @@ pub fn diff_trees(
 ) -> PaintTreeDiff {
   let before_nodes : Array[FlatPaintNode] = []
   let after_nodes : Array[FlatPaintNode] = []
-  let before_by_path : Map[String, FlatPaintNode] = {}
-  let after_by_path : Map[String, FlatPaintNode] = {}
+  let before_by_path : Map[String, FlatPaintNode] = Map([])
+  let after_by_path : Map[String, FlatPaintNode] = Map([])
   collect_flat_nodes(before, before.tag + "[0]", before_nodes, before_by_path)
   collect_flat_nodes(after, after.tag + "[0]", after_nodes, after_by_path)
 
@@ -70,7 +70,7 @@ pub fn diff_trees(
     }
   }
 
-  { changes, layout_shifts }
+  { changes, layout_shifts, }
 }
 
 ///|
@@ -80,7 +80,7 @@ fn collect_flat_nodes(
   flat_nodes : Array[FlatPaintNode],
   by_path : Map[String, FlatPaintNode],
 ) -> Unit {
-  let flat = { path, node }
+  let flat = { path, node, }
   flat_nodes.push(flat)
   by_path.set(path, flat)
   for i, child in node.children {
@@ -510,7 +510,7 @@ fn compare_optional_string_property(
   changes : Array[PaintPropertyChange],
 ) -> Unit {
   if before != after {
-    changes.push({ node_path: path, node_id, property, before, after })
+    changes.push({ node_path: path, node_id, property, before, after, })
   }
 }
 

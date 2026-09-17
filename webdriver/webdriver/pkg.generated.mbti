@@ -6,12 +6,12 @@ import {
   "mizchi/crater-browser/cdp",
   "mizchi/crater-webdriver-bidi/contract",
   "mizchi/crater-webdriver-bidi/rpc",
-  "mizchi/js/core",
+  "mizchi/js_core",
   "moonbitlang/core/debug",
 }
 
 // Values
-pub fn await_promise(@core.Any) -> String
+pub fn await_promise(@js_core.Any) -> String
 
 pub fn decode_base64(String) -> String
 
@@ -19,11 +19,11 @@ pub fn delete_runtime_handle(String) -> Unit
 
 pub fn error_text_of(@crater-browser-http.HttpError) -> String
 
-pub fn eval_and_send_async(@core.Any, Int, String, String) -> Unit
+pub fn eval_and_send_async(@js_core.Any, Int, String, String) -> Unit
 
 pub fn evaluate_js(String) -> String
 
-pub fn evaluate_js_async(String) -> @core.Any
+pub fn evaluate_js_async(String) -> @js_core.Any
 
 pub fn generate_auth_token() -> String
 
@@ -103,7 +103,7 @@ pub fn js_set_runtime_context_credentials(String, String) -> Unit
 
 pub fn js_set_runtime_prompt_handlers(String) -> Unit
 
-pub fn navigate_and_send_async(@core.Any, Int, String, String, String) -> Unit
+pub fn navigate_and_send_async(@js_core.Any, Int, String, String, String) -> Unit
 
 pub fn parse_data_url(String) -> (String, String)?
 
@@ -152,7 +152,7 @@ pub fn warmup_glyph_cache() -> Unit
 // Types and methods
 pub struct BidiServer {
   config : BidiServerConfig
-  mut server : @core.Any?
+  mut server : @js_core.Any?
   // private fields
 }
 pub fn BidiServer::new(config? : BidiServerConfig) -> Self
@@ -215,4 +215,3 @@ pub fn Executor::url(Self, String) -> @contract.ApiResult[String]
 // Type aliases
 
 // Traits
-

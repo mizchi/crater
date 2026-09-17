@@ -44,11 +44,11 @@ pub impl Show for StylePropertyDiff with fn output(self, logger) {
 ///|
 pub impl Show for ComputedStylesWithStateResult with fn output(self, logger) {
   logger.write_string("{normal: ")
-  logger.write_object(to_repr(self.normal))
+  logger.write_object(Repr(self.normal))
   logger.write_string(", forced: ")
-  logger.write_object(to_repr(self.forced))
+  logger.write_object(Repr(self.forced))
   logger.write_string(", diff: ")
-  logger.write_object(to_repr(self.diff))
+  logger.write_object(Repr(self.diff))
   logger.write_string("}")
 }
 
@@ -98,11 +98,11 @@ pub fn discover_computed_styles_with_state(
     forced_state_target_lookup_selector_text(target_selector, forced_states),
   )
   let elements = collect_matching_elements(doc, target_sel)
-  let normal_values : Map[String, String] = {}
-  let forced_values : Map[String, String] = {}
+  let normal_values : Map[String, String] = Map([])
+  let forced_values : Map[String, String] = Map([])
   let diff : Array[StylePropertyDiff] = []
   if elements.is_empty() {
-    return { normal: normal_values, forced: forced_values, diff }
+    return { normal: normal_values, forced: forced_values, diff, }
   }
   let element = elements[0]
   let inline_style = parse_inline_declarations(
@@ -127,10 +127,10 @@ pub fn discover_computed_styles_with_state(
     normal_values.set(prop, normal_val)
     forced_values.set(prop, forced_val)
     if normal_val != forced_val {
-      diff.push({ property: prop, normal: normal_val, forced: forced_val })
+      diff.push({ property: prop, normal: normal_val, forced: forced_val, })
     }
   }
-  { normal: normal_values, forced: forced_values, diff }
+  { normal: normal_values, forced: forced_values, diff, }
 }
 
 ///|
@@ -187,7 +187,7 @@ fn strip_forced_state_pseudos_from_subject_text(
   subject : String,
   forced_states : @selector.ForcedPseudoStates,
 ) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder()
   let mut paren_depth = 0
   let mut bracket_depth = 0
   let mut i = 0
@@ -294,7 +294,7 @@ pub fn discover_all_computed_styles(
   let stylesheets = parse_document_stylesheets(doc)
   let elements = collect_document_elements(doc)
   let media_env = Some(@media.MediaEnvironment::new(1280.0, 900.0))
-  let result : Map[String, Map[String, String]] = {}
+  let result : Map[String, Map[String, String]] = Map([])
   for element in elements {
     result.set(
       selector_element_to_unique_selector(element),
@@ -313,14 +313,14 @@ pub fn discover_css_rule_usage(html : String) -> Array[CssRuleUsage] {
   let doc = @html.parse_document(html)
   let stylesheets = parse_document_stylesheets(doc)
   let resolved_rules = build_resolved_rule_entries(stylesheets)
-  let matched_counts : Map[Int, Int] = {}
-  let winning_rules : Map[Int, Bool] = {}
-  let visual_effect_rules : Map[Int, Bool] = {}
-  let overridden_by : Map[Int, String] = {}
-  let no_effect_reason : Map[Int, String] = {}
+  let matched_counts : Map[Int, Int] = Map([])
+  let winning_rules : Map[Int, Bool] = Map([])
+  let visual_effect_rules : Map[Int, Bool] = Map([])
+  let overridden_by : Map[Int, String] = Map([])
+  let no_effect_reason : Map[Int, String] = Map([])
   let elements = collect_document_elements(doc)
   let media_env = Some(@media.MediaEnvironment::new(1280.0, 900.0))
-  let resolved_value_cache : Map[String, String] = {}
+  let resolved_value_cache : Map[String, String] = Map([])
   for element in elements {
     let inline_style = parse_inline_declarations(
       selector_element_attribute_value(element, "style").unwrap_or(""),
@@ -446,7 +446,7 @@ fn collect_property_candidates_for_element(
   inline_style : Array[@cascade.Declaration],
   media_env : @media.MediaEnvironment?,
 ) -> PropertyCandidateCollection {
-  let by_property : Map[String, Array[PropertyCandidate]] = {}
+  let by_property : Map[String, Array[PropertyCandidate]] = Map([])
   let matched_rule_indices : Array[Int] = []
   for i, rule in resolved_rules {
     if !resolved_rule_matches_element(rule, element, media_env) {
@@ -468,7 +468,7 @@ fn collect_property_candidates_for_element(
       declaration: decl,
     })
   }
-  { by_property, matched_rule_indices }
+  { by_property, matched_rule_indices, }
 }
 
 ///|
@@ -699,7 +699,7 @@ pub fn discover_css_effective_property_sources(
   let source_lookup = build_resolved_rule_source_lookup(resolved_rules)
   let elements = collect_document_elements(doc)
   let media_env = Some(@media.MediaEnvironment::new(1280.0, 900.0))
-  let result : Map[String, Map[String, String]] = {}
+  let result : Map[String, Map[String, String]] = Map([])
   for element in elements {
     let inline_style = parse_inline_declarations(
       selector_element_attribute_value(element, "style").unwrap_or(""),
@@ -707,7 +707,7 @@ pub fn discover_css_effective_property_sources(
     let cascaded = @cascade.cascade_element_with_media(
       element, stylesheets, inline_style, media_env,
     )
-    let sources : Map[String, String] = {}
+    let sources : Map[String, String] = Map([])
     cascaded.each(fn(property, declaration) {
       match declaration_source_label(declaration, source_lookup) {
         Some(label) => sources[property] = label
@@ -740,7 +740,7 @@ fn forced_states_from_names(
       _ => ()
     }
   }
-  { hover, focus, active, focus_visible, focus_within }
+  { hover, focus, active, focus_visible, focus_within, }
 }
 
 ///|
@@ -770,7 +770,7 @@ fn compute_normal_styles_for_element(
   let props_to_check = resolve_properties_to_check_from_cascaded(
     cascaded, properties,
   )
-  let styles : Map[String, String] = {}
+  let styles : Map[String, String] = Map([])
   for prop in props_to_check {
     styles.set(prop, cascaded.get_value(prop).unwrap_or(""))
   }
@@ -786,7 +786,7 @@ fn resolve_properties_to_check_from_cascades(
   if !properties.is_empty() {
     return properties
   }
-  let all_props : Map[String, Bool] = {}
+  let all_props : Map[String, Bool] = Map([])
   normal_cascaded.each(fn(prop, _) { all_props.set(prop, true) })
   forced_cascaded.each(fn(prop, _) { all_props.set(prop, true) })
   let props : Array[String] = []
@@ -929,7 +929,7 @@ fn selector_element_to_unique_selector(el : @selector.Element) -> String {
 fn selector_element_to_unique_selector_segment(
   el : @selector.Element,
 ) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string(el.tag_name.to_lower())
   match el.id {
     Some(id) if !id.is_empty() => {
@@ -966,7 +966,7 @@ fn html_element_to_selector_element(
   )
   el.attributes.each(fn(name, value) {
     if name != render_custom_states_attr_name {
-      attributes.push(@selector.Attribute::{ name, value })
+      attributes.push(@selector.Attribute::{ name, value, })
     }
   })
   {
@@ -1060,7 +1060,7 @@ fn parse_inline_declarations(
         @cascade.PropertyValue::Value(value),
         @cascade.Origin::Author,
         importance,
-        { a: 1000, b: 0, c: 0 },
+        { a: 1000, b: 0, c: 0, },
         order,
       ),
     )
@@ -1135,7 +1135,7 @@ fn build_resolved_rule_entries(
 fn build_resolved_rule_source_lookup(
   rules : Array[ResolvedRuleEntry],
 ) -> Map[Int, String] {
-  let lookup : Map[Int, String] = {}
+  let lookup : Map[Int, String] = Map([])
   for rule in rules {
     for decl in rule.declarations {
       lookup[decl.source_order] = rule.selector_text

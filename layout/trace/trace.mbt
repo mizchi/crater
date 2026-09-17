@@ -92,13 +92,13 @@ pub struct LayoutTracer {
 
 ///|
 pub fn LayoutTracer::new(enabled : Bool) -> LayoutTracer {
-  { traces: {}, enabled }
+  { traces: {}, enabled, }
 }
 
 ///|
 /// Create a disabled tracer (no-op for performance)
 pub fn LayoutTracer::disabled() -> LayoutTracer {
-  { traces: {}, enabled: false }
+  { traces: {}, enabled: false, }
 }
 
 ///|
@@ -126,7 +126,7 @@ pub fn LayoutTracer::begin_compute(
   // Initialize trace with empty output (will be filled in end_compute)
   let trace : NodeTrace = {
     input,
-    output: { node_uid, width: 0.0, height: 0.0 },
+    output: { node_uid, width: 0.0, height: 0.0, },
     dependencies: [],
   }
   self.traces.set(node_uid, trace)
@@ -147,7 +147,7 @@ pub fn LayoutTracer::end_compute(
     Some(trace) => {
       let updated : NodeTrace = {
         input: trace.input,
-        output: { node_uid, width, height },
+        output: { node_uid, width, height, },
         dependencies: trace.dependencies,
       }
       self.traces.set(node_uid, updated)
@@ -266,7 +266,7 @@ pub fn LayoutTracer::collect_from_tree(
     let child = node.children[i]
     deps.push(ChildIntrinsicMain(child.uid))
   }
-  let trace : NodeTrace = { input, output, dependencies: deps }
+  let trace : NodeTrace = { input, output, dependencies: deps, }
   self.traces.set(node.uid, trace)
   // Recursively process children
   // Match children by index (assumes layout.children corresponds to node.children)

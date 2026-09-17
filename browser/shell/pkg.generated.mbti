@@ -11,6 +11,7 @@ import {
 }
 
 // Values
+pub fn reflow_vrt_fixture_corpus() -> Array[(String, String, String)]
 
 // Errors
 
@@ -84,4 +85,3 @@ pub(all) enum OutputMode {
 // Type aliases
 
 // Traits
-

@@ -28,7 +28,7 @@ pub fn CharCell::default() -> CharCell {
 ///|
 /// Create a cell with just a character
 pub fn CharCell::from_char(c : Char) -> CharCell {
-  { ..CharCell::default(), char: c }
+  { ..CharCell::default(), char: c, }
 }
 
 ///|
@@ -38,7 +38,7 @@ pub fn CharCell::styled(
   fg : @types.Color,
   bg : @types.Color,
 ) -> CharCell {
-  { ..CharCell::default(), char: c, fg, bg }
+  { ..CharCell::default(), char: c, fg, bg, }
 }
 
 ///|

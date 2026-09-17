@@ -74,7 +74,7 @@ pub(all) struct Modifiers {
 ///|
 /// Default modifiers (none pressed)
 pub fn Modifiers::none() -> Modifiers {
-  { ctrl: false, shift: false, alt: false, meta: false }
+  { ctrl: false, shift: false, alt: false, meta: false, }
 }
 
 // =============================================================================
@@ -163,59 +163,59 @@ pub impl Show for ApiError with fn output(self, logger) {
   match self {
     ElementNotFound(selector~) => {
       logger.write_string("ElementNotFound(selector=")
-      selector.output(logger)
+      Show::output(selector, logger)
       logger.write_string(")")
     }
     PageNotFound(page_id~) => {
       logger.write_string("PageNotFound(page_id=")
-      page_id.output(logger)
+      Show::output(page_id, logger)
       logger.write_string(")")
     }
     ContextNotFound(context_id~) => {
       logger.write_string("ContextNotFound(context_id=")
-      context_id.output(logger)
+      Show::output(context_id, logger)
       logger.write_string(")")
     }
     Timeout(message~) => {
       logger.write_string("Timeout(message=")
-      message.output(logger)
+      Show::output(message, logger)
       logger.write_string(")")
     }
     NavigationFailed(url~, reason~) => {
       logger.write_string("NavigationFailed(url=")
-      url.output(logger)
+      Show::output(url, logger)
       logger.write_string(", reason=")
-      reason.output(logger)
+      Show::output(reason, logger)
       logger.write_string(")")
     }
     ElementNotVisible(element_id~) => {
       logger.write_string("ElementNotVisible(element_id=")
-      element_id.output(logger)
+      Show::output(element_id, logger)
       logger.write_string(")")
     }
     ElementNotEnabled(element_id~) => {
       logger.write_string("ElementNotEnabled(element_id=")
-      element_id.output(logger)
+      Show::output(element_id, logger)
       logger.write_string(")")
     }
     EvalError(message~) => {
       logger.write_string("EvalError(message=")
-      message.output(logger)
+      Show::output(message, logger)
       logger.write_string(")")
     }
     InvalidArgument(message~) => {
       logger.write_string("InvalidArgument(message=")
-      message.output(logger)
+      Show::output(message, logger)
       logger.write_string(")")
     }
     NotSupported(message~) => {
       logger.write_string("NotSupported(message=")
-      message.output(logger)
+      Show::output(message, logger)
       logger.write_string(")")
     }
     InternalError(message~) => {
       logger.write_string("InternalError(message=")
-      message.output(logger)
+      Show::output(message, logger)
       logger.write_string(")")
     }
   }
@@ -302,276 +302,276 @@ pub impl Show for ApiMethod with fn output(self, logger) {
     NewContext => logger.write_string("NewContext")
     CloseContext(context_id~) => {
       logger.write_string("CloseContext(context_id=")
-      context_id.output(logger)
+      Show::output(context_id, logger)
       logger.write_string(")")
     }
     NewPage(context_id~) => {
       logger.write_string("NewPage(context_id=")
-      context_id.output(logger)
+      Show::output(context_id, logger)
       logger.write_string(")")
     }
     ClosePage(page_id~) => {
       logger.write_string("ClosePage(page_id=")
-      page_id.output(logger)
+      Show::output(page_id, logger)
       logger.write_string(")")
     }
     Pages(context_id~) => {
       logger.write_string("Pages(context_id=")
-      context_id.output(logger)
+      Show::output(context_id, logger)
       logger.write_string(")")
     }
     Goto(page_id~, url~) => {
       logger.write_string("Goto(page_id=")
-      page_id.output(logger)
+      Show::output(page_id, logger)
       logger.write_string(", url=")
-      url.output(logger)
+      Show::output(url, logger)
       logger.write_string(")")
     }
     GoBack(page_id~) => {
       logger.write_string("GoBack(page_id=")
-      page_id.output(logger)
+      Show::output(page_id, logger)
       logger.write_string(")")
     }
     GoForward(page_id~) => {
       logger.write_string("GoForward(page_id=")
-      page_id.output(logger)
+      Show::output(page_id, logger)
       logger.write_string(")")
     }
     Reload(page_id~) => {
       logger.write_string("Reload(page_id=")
-      page_id.output(logger)
+      Show::output(page_id, logger)
       logger.write_string(")")
     }
     Url(page_id~) => {
       logger.write_string("Url(page_id=")
-      page_id.output(logger)
+      Show::output(page_id, logger)
       logger.write_string(")")
     }
     Title(page_id~) => {
       logger.write_string("Title(page_id=")
-      page_id.output(logger)
+      Show::output(page_id, logger)
       logger.write_string(")")
     }
     Query(page_id~, selector~) => {
       logger.write_string("Query(page_id=")
-      page_id.output(logger)
+      Show::output(page_id, logger)
       logger.write_string(", selector=")
-      selector.output(logger)
+      Show::output(selector, logger)
       logger.write_string(")")
     }
     QueryAll(page_id~, selector~) => {
       logger.write_string("QueryAll(page_id=")
-      page_id.output(logger)
+      Show::output(page_id, logger)
       logger.write_string(", selector=")
-      selector.output(logger)
+      Show::output(selector, logger)
       logger.write_string(")")
     }
     WaitFor(page_id~, selector~, timeout~) => {
       logger.write_string("WaitFor(page_id=")
-      page_id.output(logger)
+      Show::output(page_id, logger)
       logger.write_string(", selector=")
-      selector.output(logger)
+      Show::output(selector, logger)
       logger.write_string(", timeout=")
-      timeout.output(logger)
+      Show::output(timeout, logger)
       logger.write_string(")")
     }
     BoundingBox(element_id~) => {
       logger.write_string("BoundingBox(element_id=")
-      element_id.output(logger)
+      Show::output(element_id, logger)
       logger.write_string(")")
     }
     TextContent(element_id~) => {
       logger.write_string("TextContent(element_id=")
-      element_id.output(logger)
+      Show::output(element_id, logger)
       logger.write_string(")")
     }
     InnerText(element_id~) => {
       logger.write_string("InnerText(element_id=")
-      element_id.output(logger)
+      Show::output(element_id, logger)
       logger.write_string(")")
     }
     InnerHtml(element_id~) => {
       logger.write_string("InnerHtml(element_id=")
-      element_id.output(logger)
+      Show::output(element_id, logger)
       logger.write_string(")")
     }
     GetAttribute(element_id~, name~) => {
       logger.write_string("GetAttribute(element_id=")
-      element_id.output(logger)
+      Show::output(element_id, logger)
       logger.write_string(", name=")
-      name.output(logger)
+      Show::output(name, logger)
       logger.write_string(")")
     }
     IsVisible(element_id~) => {
       logger.write_string("IsVisible(element_id=")
-      element_id.output(logger)
+      Show::output(element_id, logger)
       logger.write_string(")")
     }
     IsEnabled(element_id~) => {
       logger.write_string("IsEnabled(element_id=")
-      element_id.output(logger)
+      Show::output(element_id, logger)
       logger.write_string(")")
     }
     IsChecked(element_id~) => {
       logger.write_string("IsChecked(element_id=")
-      element_id.output(logger)
+      Show::output(element_id, logger)
       logger.write_string(")")
     }
     Click(element_id~) => {
       logger.write_string("Click(element_id=")
-      element_id.output(logger)
+      Show::output(element_id, logger)
       logger.write_string(")")
     }
     DblClick(element_id~) => {
       logger.write_string("DblClick(element_id=")
-      element_id.output(logger)
+      Show::output(element_id, logger)
       logger.write_string(")")
     }
     RightClick(element_id~) => {
       logger.write_string("RightClick(element_id=")
-      element_id.output(logger)
+      Show::output(element_id, logger)
       logger.write_string(")")
     }
     Hover(element_id~) => {
       logger.write_string("Hover(element_id=")
-      element_id.output(logger)
+      Show::output(element_id, logger)
       logger.write_string(")")
     }
     Focus(element_id~) => {
       logger.write_string("Focus(element_id=")
-      element_id.output(logger)
+      Show::output(element_id, logger)
       logger.write_string(")")
     }
     Fill(element_id~, value~) => {
       logger.write_string("Fill(element_id=")
-      element_id.output(logger)
+      Show::output(element_id, logger)
       logger.write_string(", value=")
-      value.output(logger)
+      Show::output(value, logger)
       logger.write_string(")")
     }
     Press(element_id~, key~) => {
       logger.write_string("Press(element_id=")
-      element_id.output(logger)
+      Show::output(element_id, logger)
       logger.write_string(", key=")
-      key.output(logger)
+      Show::output(key, logger)
       logger.write_string(")")
     }
     Clear(element_id~) => {
       logger.write_string("Clear(element_id=")
-      element_id.output(logger)
+      Show::output(element_id, logger)
       logger.write_string(")")
     }
     SelectOption(element_id~, value~) => {
       logger.write_string("SelectOption(element_id=")
-      element_id.output(logger)
+      Show::output(element_id, logger)
       logger.write_string(", value=")
-      value.output(logger)
+      Show::output(value, logger)
       logger.write_string(")")
     }
     Check(element_id~) => {
       logger.write_string("Check(element_id=")
-      element_id.output(logger)
+      Show::output(element_id, logger)
       logger.write_string(")")
     }
     Uncheck(element_id~) => {
       logger.write_string("Uncheck(element_id=")
-      element_id.output(logger)
+      Show::output(element_id, logger)
       logger.write_string(")")
     }
     MouseMove(page_id~, x~, y~) => {
       logger.write_string("MouseMove(page_id=")
-      page_id.output(logger)
+      Show::output(page_id, logger)
       logger.write_string(", x=")
-      x.output(logger)
+      Show::output(x, logger)
       logger.write_string(", y=")
-      y.output(logger)
+      Show::output(y, logger)
       logger.write_string(")")
     }
     MouseClick(page_id~, x~, y~, button~) => {
       logger.write_string("MouseClick(page_id=")
-      page_id.output(logger)
+      Show::output(page_id, logger)
       logger.write_string(", x=")
-      x.output(logger)
+      Show::output(x, logger)
       logger.write_string(", y=")
-      y.output(logger)
+      Show::output(y, logger)
       logger.write_string(", button=")
-      button.output(logger)
+      Show::output(button, logger)
       logger.write_string(")")
     }
     MouseDown(page_id~, button~) => {
       logger.write_string("MouseDown(page_id=")
-      page_id.output(logger)
+      Show::output(page_id, logger)
       logger.write_string(", button=")
-      button.output(logger)
+      Show::output(button, logger)
       logger.write_string(")")
     }
     MouseUp(page_id~, button~) => {
       logger.write_string("MouseUp(page_id=")
-      page_id.output(logger)
+      Show::output(page_id, logger)
       logger.write_string(", button=")
-      button.output(logger)
+      Show::output(button, logger)
       logger.write_string(")")
     }
     KeyboardPress(page_id~, key~) => {
       logger.write_string("KeyboardPress(page_id=")
-      page_id.output(logger)
+      Show::output(page_id, logger)
       logger.write_string(", key=")
-      key.output(logger)
+      Show::output(key, logger)
       logger.write_string(")")
     }
     KeyboardType(page_id~, text~) => {
       logger.write_string("KeyboardType(page_id=")
-      page_id.output(logger)
+      Show::output(page_id, logger)
       logger.write_string(", text=")
-      text.output(logger)
+      Show::output(text, logger)
       logger.write_string(")")
     }
     Content(page_id~) => {
       logger.write_string("Content(page_id=")
-      page_id.output(logger)
+      Show::output(page_id, logger)
       logger.write_string(")")
     }
     SetContent(page_id~, html~) => {
       logger.write_string("SetContent(page_id=")
-      page_id.output(logger)
+      Show::output(page_id, logger)
       logger.write_string(", html=")
-      html.output(logger)
+      Show::output(html, logger)
       logger.write_string(")")
     }
     ViewportSize(page_id~) => {
       logger.write_string("ViewportSize(page_id=")
-      page_id.output(logger)
+      Show::output(page_id, logger)
       logger.write_string(")")
     }
     SetViewportSize(page_id~, width~, height~) => {
       logger.write_string("SetViewportSize(page_id=")
-      page_id.output(logger)
+      Show::output(page_id, logger)
       logger.write_string(", width=")
-      width.output(logger)
+      Show::output(width, logger)
       logger.write_string(", height=")
-      height.output(logger)
+      Show::output(height, logger)
       logger.write_string(")")
     }
     Evaluate(page_id~, expression~) => {
       logger.write_string("Evaluate(page_id=")
-      page_id.output(logger)
+      Show::output(page_id, logger)
       logger.write_string(", expression=")
-      expression.output(logger)
+      Show::output(expression, logger)
       logger.write_string(")")
     }
     Screenshot(page_id~) => {
       logger.write_string("Screenshot(page_id=")
-      page_id.output(logger)
+      Show::output(page_id, logger)
       logger.write_string(")")
     }
     ElementScreenshot(element_id~) => {
       logger.write_string("ElementScreenshot(element_id=")
-      element_id.output(logger)
+      Show::output(element_id, logger)
       logger.write_string(")")
     }
     AccessibilitySnapshot(page_id~) => {
       logger.write_string("AccessibilitySnapshot(page_id=")
-      page_id.output(logger)
+      Show::output(page_id, logger)
       logger.write_string(")")
     }
   }

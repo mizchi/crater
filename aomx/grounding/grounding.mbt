@@ -64,7 +64,7 @@ pub(all) struct Viewport {
 
 ///|
 pub fn Viewport::default() -> Viewport {
-  { width: 1280.0, height: 800.0 }
+  { width: 1280.0, height: 800.0, }
 }
 
 // =============================================================================
@@ -224,7 +224,7 @@ fn collect_in_region(
         if is_in_region(bounds, region, viewport) {
           let (cx, cy) = get_element_center(node)
           let distance = calc_distance(cx, cy, target_x, target_y)
-          results.push({ node, distance, click_x: cx, click_y: cy })
+          results.push({ node, distance, click_x: cx, click_y: cy, })
         }
       None => ()
     }
@@ -275,7 +275,7 @@ fn collect_relative(
         if matches_relation(bounds, relation, anchor) {
           let (cx, cy) = get_element_center(node)
           let distance = calc_relation_distance(bounds, relation, anchor)
-          results.push({ node, distance, click_x: cx, click_y: cy })
+          results.push({ node, distance, click_x: cx, click_y: cy, })
         }
       None => ()
     }
@@ -351,7 +351,7 @@ fn collect_nearest(
       Some(_) => {
         let (cx, cy) = get_element_center(node)
         let distance = calc_distance(cx, cy, x, y)
-        results.push({ node, distance, click_x: cx, click_y: cy })
+        results.push({ node, distance, click_x: cx, click_y: cy, })
       }
       None => ()
     }
@@ -403,7 +403,7 @@ fn collect_role_in_region(
         if is_in_region(bounds, region, viewport) {
           let (cx, cy) = get_element_center(node)
           let distance = calc_distance(cx, cy, target_x, target_y)
-          results.push({ node, distance, click_x: cx, click_y: cy })
+          results.push({ node, distance, click_x: cx, click_y: cy, })
         }
       None => ()
     }

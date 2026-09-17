@@ -145,7 +145,7 @@ fn is_plaintext_element(tag : String) -> Bool {
 
 ///|
 fn Parser::new(input : String) -> Parser {
-  { input, pos: 0, len: input.length(), depth: 0 }
+  { input, pos: 0, len: input.length(), depth: 0, }
 }
 
 ///|
@@ -279,7 +279,7 @@ fn Parser::skip_comment(self : Parser) -> Bool {
 ///|
 /// Peek at the next word (lowercase) without consuming
 fn Parser::peek_word_lowercase(self : Parser) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let mut i = self.pos
   while i < self.input.length() {
     let code = self.input[i].to_int()
@@ -355,7 +355,7 @@ fn Parser::consume_quoted_string(self : Parser) -> String {
       decode_html_entities(s)
     }
     _ => {
-      let buf = StringBuilder::new()
+      let buf = StringBuilder()
       while !self.is_eof() {
         match self.peek() {
           Some(c) if is_whitespace(c) ||
@@ -379,7 +379,7 @@ fn Parser::consume_quoted_string(self : Parser) -> String {
 ///|
 /// Consume ALL remaining content as text (for plaintext element)
 fn Parser::consume_all_remaining(self : Parser) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   while !self.is_eof() {
     match self.consume() {
       Some(c) => buf.write_char(c)
@@ -392,7 +392,7 @@ fn Parser::consume_all_remaining(self : Parser) -> String {
 ///|
 /// Consume raw text content until the closing tag is found
 fn Parser::consume_raw_text(self : Parser, tag : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   while !self.is_eof() {
     // Check for closing tag (case-insensitive)
     if self.peek() is Some('<') && self.peek_at(1) is Some('/') {
@@ -463,7 +463,7 @@ fn Parser::parse_element_inner(self : Parser) -> Element? {
   let mut id : String? = None
   let classes : Array[String] = []
   let mut style : String? = None
-  let attributes : Map[String, String] = {}
+  let attributes : Map[String, String] = Map([])
   while true {
     self.skip_whitespace()
     match self.peek() {
@@ -481,7 +481,7 @@ fn Parser::parse_element_inner(self : Parser) -> Element? {
           }
           _ => ()
         }
-        return Some({ tag, id, classes, style, attributes, children: [] })
+        return Some({ tag, id, classes, style, attributes, children: [], })
       }
       Some(_) => {
         let attr_name = self.consume_name()
@@ -522,7 +522,7 @@ fn Parser::parse_element_inner(self : Parser) -> Element? {
 
   // Void elements have no children and no closing tag
   if is_void_element(tag) {
-    return Some({ tag, id, classes, style, attributes, children: [] })
+    return Some({ tag, id, classes, style, attributes, children: [], })
   }
 
   // Raw text elements: content is treated as text until closing tag
@@ -533,7 +533,7 @@ fn Parser::parse_element_inner(self : Parser) -> Element? {
     } else {
       [Node::Text(text_content)]
     }
-    return Some({ tag, id, classes, style, attributes, children })
+    return Some({ tag, id, classes, style, attributes, children, })
   }
 
   // Plaintext: ALL remaining content is text (including closing tags)
@@ -544,12 +544,12 @@ fn Parser::parse_element_inner(self : Parser) -> Element? {
     } else {
       [Node::Text(text_content)]
     }
-    return Some({ tag, id, classes, style, attributes, children })
+    return Some({ tag, id, classes, style, attributes, children, })
   }
 
   // Parse children
   let children = self.parse_children(tag)
-  Some({ tag, id, classes, style, attributes, children })
+  Some({ tag, id, classes, style, attributes, children, })
 }
 
 ///|
@@ -689,7 +689,7 @@ fn decode_html_entities(text : String) -> String {
   if !text.contains("&") {
     return text
   }
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let chars = text.to_array()
   let len = chars.length()
   let mut i = 0
@@ -816,7 +816,7 @@ fn parse_decimal(s : String) -> Int? {
 
 ///|
 fn Parser::parse_text(self : Parser) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   while !self.is_eof() {
     match self.peek() {
       Some('<') => break
@@ -878,7 +878,7 @@ pub fn parse_document(html : String) -> Document {
   let stylesheets : Array[String] = []
   let stylesheet_links : Array[String] = []
   extract_stylesheets(resource_root, stylesheets, stylesheet_links, false)
-  { root, stylesheets, stylesheet_links, quirks_mode }
+  { root, stylesheets, stylesheet_links, quirks_mode, }
 }
 
 ///|
@@ -892,7 +892,7 @@ fn strip_noscript_blocks(html : String) -> String {
   let lower = html.to_lower()
   guard lower.contains("<noscript") else { return html }
   let mut pos = 0
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   while pos < html.length() {
     let start = find_substring(lower, "<noscript", pos)
     if start < 0 {
@@ -978,7 +978,7 @@ fn css_with_style_media(css : String, media : String?) -> String {
 ///|
 /// Extract all text content from an element
 fn extract_text_content(elem : Element) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for child in elem.children {
     match child {
       Node::Text(text) => buf.write_string(text)
@@ -1128,7 +1128,7 @@ priv struct IdAssigner {
 
 ///|
 fn IdAssigner::new() -> IdAssigner {
-  { counter: 0 }
+  { counter: 0, }
 }
 
 ///|
@@ -1158,7 +1158,7 @@ fn assign_ids_element(elem : Element, assigner : IdAssigner) -> Element {
       Node::Text(text) => new_children.push(Node::Text(text))
     }
   }
-  { ..elem, id: new_id, children: new_children }
+  { ..elem, id: new_id, children: new_children, }
 }
 
 ///|
@@ -1167,5 +1167,5 @@ fn assign_ids_element(elem : Element, assigner : IdAssigner) -> Element {
 pub fn assign_synthetic_ids(doc : Document) -> Document {
   let assigner = IdAssigner::new()
   let new_root = assign_ids_element(doc.root, assigner)
-  { ..doc, root: new_root }
+  { ..doc, root: new_root, }
 }

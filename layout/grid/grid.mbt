@@ -44,7 +44,7 @@ priv struct GridIntrinsicCache {
 
 ///|
 fn GridIntrinsicCache::new() -> GridIntrinsicCache {
-  { data: {} }
+  { data: {}, }
 }
 
 ///|
@@ -633,7 +633,7 @@ fn compute_grid_layout_internal(
   }
 
   // Map to collect layouts for display: contents children reconstruction
-  let contents_layouts : Map[Int, Array[@layout_types.Layout]] = {}
+  let contents_layouts : Map[Int, Array[@layout_types.Layout]] = Map([])
 
   // Create cache for intrinsic size calculations
   let intrinsic_cache = GridIntrinsicCache::new()
@@ -2251,7 +2251,7 @@ fn compute_grid_layout_internal(
       if info.row >= 0 {
         let max_ascent = row_max_ascent.get(info.row).unwrap_or(0.0)
         let baseline_offset = max_ascent - info.ascent
-        child_layouts.push({ ..layout, y: layout.y + baseline_offset })
+        child_layouts.push({ ..layout, y: layout.y + baseline_offset, })
       } else {
         child_layouts.push(layout)
       }
@@ -4663,7 +4663,7 @@ fn resolve_tracks_with_implicit(
       @types.MinMax(_, _) => true
       _ => false
     }
-    tracks.push({ position, size: base_sizes[i], stretchable: is_stretchable })
+    tracks.push({ position, size: base_sizes[i], stretchable: is_stretchable, })
     position = position + base_sizes[i] + gap
   }
   tracks
@@ -4924,7 +4924,9 @@ fn parse_grid_area_lines(area : String) -> (@types.GridLine, @types.GridLine)? {
   } else {
     @types.GridPlacement::Auto
   }
-  Some(({ start: col_start, end: col_end }, { start: row_start, end: row_end }))
+  Some(
+    ({ start: col_start, end: col_end, }, { start: row_start, end: row_end, }),
+  )
 }
 
 ///|
@@ -5115,7 +5117,12 @@ fn place_grid_items(
 
   // Initialize placements array
   for i = 0; i < children.length(); i = i + 1 {
-    placements.push({ row_start: 0, row_end: 0, column_start: 0, column_end: 0 })
+    placements.push({
+      row_start: 0,
+      row_end: 0,
+      column_start: 0,
+      column_end: 0,
+    })
   }
 
   // First, place FULLY explicitly positioned items (both column and row are Line)
@@ -5955,7 +5962,7 @@ fn collapse_auto_fit_tracks(
     } else {
       tracks[i].stretchable
     }
-    tracks[i] = { position: pos, size, stretchable }
+    tracks[i] = { position: pos, size, stretchable, }
     if !should_collapse {
       pos = pos + size + gap
     }

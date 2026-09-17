@@ -114,7 +114,10 @@ fn BidiProtocol::perform_synthetic_fetch_internal(
     )
     match step_result.blocked_text {
       Some(text) =>
-        return { blocked_text: Some(text), response_value: last_response_value }
+        return {
+          blocked_text: Some(text),
+          response_value: last_response_value,
+        }
       None => ()
     }
     match step_result.response_value {
@@ -122,5 +125,5 @@ fn BidiProtocol::perform_synthetic_fetch_internal(
       None => ()
     }
   }
-  { blocked_text: None, response_value: last_response_value }
+  { blocked_text: None, response_value: last_response_value, }
 }

@@ -77,9 +77,9 @@ fn apply_initial_scroll_snap(
   }
 
   let shifted_children = layout.children.map(fn(child) {
-    { ..child, x: child.x - offset_x, y: child.y - offset_y }
+    { ..child, x: child.x - offset_x, y: child.y - offset_y, }
   })
-  { ..layout, children: shifted_children }
+  { ..layout, children: shifted_children, }
 }
 
 ///|

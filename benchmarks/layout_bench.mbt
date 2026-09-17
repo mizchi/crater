@@ -26,10 +26,10 @@ fn create_flat_block(n : Int) -> @tree.Node {
   let default_style = @style.Style::default()
   let children : Array[@tree.Node] = []
   for i = 0; i < n; i = i + 1 {
-    let child_style = { ..default_style, height: @types.Length(20.0) }
+    let child_style = { ..default_style, height: @types.Length(20.0), }
     children.push(@tree.Node::leaf("child\{i}", child_style))
   }
-  let root_style = { ..default_style, width: @types.Length(400.0) }
+  let root_style = { ..default_style, width: @types.Length(400.0), }
   @tree.Node::new("root", root_style, children)
 }
 
@@ -39,7 +39,7 @@ fn create_nested_block(depth : Int, children_per_level : Int) -> @tree.Node {
   let default_style = @style.Style::default()
   fn build(d : Int) -> @tree.Node {
     if d == 0 {
-      let leaf_style = { ..default_style, height: @types.Length(10.0) }
+      let leaf_style = { ..default_style, height: @types.Length(10.0), }
       return @tree.Node::leaf("leaf", leaf_style)
     }
     let children : Array[@tree.Node] = []
@@ -58,7 +58,7 @@ fn create_nested_block(depth : Int, children_per_level : Int) -> @tree.Node {
     @tree.Node::new("node_d\{d}", style, children)
   }
 
-  let root_style = { ..default_style, width: @types.Length(800.0) }
+  let root_style = { ..default_style, width: @types.Length(800.0), }
   @tree.Node::new("root", root_style, [build(depth)])
 }
 
@@ -107,7 +107,7 @@ fn create_complex_layout() -> @tree.Node {
   }
   let sidebar = @tree.Node::new(
     "sidebar",
-    { ..default_style, width: @types.Length(200.0) },
+    { ..default_style, width: @types.Length(200.0), },
     sidebar_children,
   )
 
@@ -116,7 +116,7 @@ fn create_complex_layout() -> @tree.Node {
   for i = 0; i < 5; i = i + 1 {
     // Each section has a header and items
     let section_items : Array[@tree.Node] = []
-    let header_style = { ..default_style, height: @types.Length(40.0) }
+    let header_style = { ..default_style, height: @types.Length(40.0), }
     section_items.push(@tree.Node::leaf("header\{i}", header_style))
     for j = 0; j < 3; j = j + 1 {
       let item_style = {
@@ -146,7 +146,7 @@ fn create_complex_layout() -> @tree.Node {
   }
   let content = @tree.Node::new(
     "content",
-    { ..default_style, flex_grow: 1.0 },
+    { ..default_style, flex_grow: 1.0, },
     content_children,
   )
 
@@ -965,7 +965,7 @@ fn create_form_layout() -> @tree.Node {
     }
     let input_row = @tree.Node::new(
       "input_row\{i}",
-      { ..default_style, display: @types.Flex, flex_direction: @types.Row },
+      { ..default_style, display: @types.Flex, flex_direction: @types.Row, },
       input_row_children,
     )
     field_children.push(input_row)
@@ -1540,7 +1540,7 @@ fn create_large_website_node(
   // Body
   let body = @tree.Node::new(
     "body",
-    { ..default_style, display: @types.Flex, flex_grow: 1.0 },
+    { ..default_style, display: @types.Flex, flex_grow: 1.0, },
     [sidebar, main_content],
   )
 
@@ -1822,7 +1822,7 @@ fn create_contained_cards(
     // Each card has nested items
     let items : Array[@tree.Node] = []
     for j = 0; j < items_per_card; j = j + 1 {
-      let item_style = { ..default_style, height: @types.Length(20.0) }
+      let item_style = { ..default_style, height: @types.Length(20.0), }
       items.push(@tree.Node::leaf("item_\{i}_\{j}", item_style))
     }
     // Card style with optional containment
@@ -1862,7 +1862,7 @@ fn create_nested_with_containment(
   let default_style = @style.Style::default()
   fn build(d : Int) -> @tree.Node {
     if d == 0 {
-      let leaf_style = { ..default_style, height: @types.Length(10.0) }
+      let leaf_style = { ..default_style, height: @types.Length(10.0), }
       return @tree.Node::leaf("leaf", leaf_style)
     }
     let children : Array[@tree.Node] = []
@@ -1894,7 +1894,7 @@ fn create_nested_with_containment(
     @tree.Node::new("node_d\{d}", style, children)
   }
 
-  let root_style = { ..default_style, width: @types.Length(800.0) }
+  let root_style = { ..default_style, width: @types.Length(800.0), }
   @tree.Node::new("root", root_style, [build(depth)])
 }
 
@@ -1972,12 +1972,12 @@ fn create_intrinsic_dependent_layout(
           }
           deep.push(@tree.Node::leaf("leaf_\{i}_\{j}_\{k}_\{l}", leaf_style))
         }
-        let nested_style = { ..default_style }
+        let nested_style = { ..default_style, }
         nested.push(
           @tree.Node::new("nested_\{i}_\{j}_\{k}", nested_style, deep),
         )
       }
-      let item_style = { ..default_style }
+      let item_style = { ..default_style, }
       items.push(@tree.Node::new("item_\{i}_\{j}", item_style, nested))
     }
     // Card: containment version has fixed size, non-containment has width: auto
@@ -1990,12 +1990,16 @@ fn create_intrinsic_dependent_layout(
       }
     } else {
       // width: auto forces intrinsic size calculation through nested children
-      { ..default_style, height: @types.Length(300.0) }
+      { ..default_style, height: @types.Length(300.0), }
     }
     cards.push(@tree.Node::new("card_\{i}", card_style, items))
   }
   // Parent with AUTO width - depends on children's intrinsic sizes
-  let root_style = { ..default_style, display: @types.Flex, width: @types.Auto }
+  let root_style = {
+    ..default_style,
+    display: @types.Flex,
+    width: @types.Auto,
+  }
   @tree.Node::new("root", root_style, cards)
 }
 
@@ -2058,7 +2062,7 @@ fn create_pure_intrinsic_tree(
   let root = build(depth)
   @tree.Node::new(
     "root",
-    { ..default_style, display: @types.Flex, width: @types.Auto },
+    { ..default_style, display: @types.Flex, width: @types.Auto, },
     [root],
   )
 }

@@ -1720,7 +1720,7 @@ fn BidiProtocol::emit_bluetooth_characteristic_event_generated(
     None => ()
   }
   self.outbox.push(
-    Event({ event_method: event_name, params: make_object(params) }),
+    Event({ event_method: event_name, params: make_object(params), }),
   )
 }
 
@@ -1752,7 +1752,7 @@ fn BidiProtocol::emit_bluetooth_descriptor_event_generated(
     None => ()
   }
   self.outbox.push(
-    Event({ event_method: event_name, params: make_object(params) }),
+    Event({ event_method: event_name, params: make_object(params), }),
   )
 }
 
@@ -1915,7 +1915,7 @@ fn BidiProtocol::validate_bluetooth_characteristic_properties(
       params, "characteristicProperties", "characteristic_properties",
     ) {
     Some(Object(map)) => {
-      let out : Map[String, Json] = {}
+      let out : Map[String, Json] = Map([])
       for key, value in map {
         match value {
           True => out[key] = Json::boolean(true)

@@ -17,7 +17,7 @@ fn BidiProtocol::emit_navigation_started_event(
     "url": Json::string(url),
     "timestamp": Json::number(input_now_ms()),
   })
-  self.outbox.push(Event({ event_method: event_name, params }))
+  self.outbox.push(Event({ event_method: event_name, params, }))
 }
 
 ///|
@@ -38,7 +38,7 @@ fn BidiProtocol::emit_navigation_committed_event(
     "url": Json::string(url),
     "timestamp": Json::number(input_now_ms()),
   })
-  self.outbox.push(Event({ event_method: event_name, params }))
+  self.outbox.push(Event({ event_method: event_name, params, }))
 }
 
 ///|
@@ -59,7 +59,7 @@ fn BidiProtocol::emit_navigation_failed_event(
     "url": Json::string(url),
     "timestamp": Json::number(input_now_ms()),
   })
-  self.outbox.push(Event({ event_method: event_name, params }))
+  self.outbox.push(Event({ event_method: event_name, params, }))
 }
 
 ///|
@@ -80,7 +80,7 @@ fn BidiProtocol::emit_navigation_aborted_event(
     "url": Json::string(url),
     "timestamp": Json::number(input_now_ms()),
   })
-  self.outbox.push(Event({ event_method: event_name, params }))
+  self.outbox.push(Event({ event_method: event_name, params, }))
 }
 
 ///|
@@ -101,13 +101,13 @@ fn BidiProtocol::emit_navigation_lifecycle_events(
   // Emit domContentLoaded
   if self.is_subscribed_for_context("browsingContext.domContentLoaded", ctx_id) {
     self.outbox.push(
-      Event({ event_method: "browsingContext.domContentLoaded", params: base }),
+      Event({ event_method: "browsingContext.domContentLoaded", params: base, }),
     )
   }
   // Emit load
   if self.is_subscribed_for_context("browsingContext.load", ctx_id) {
     self.outbox.push(
-      Event({ event_method: "browsingContext.load", params: base }),
+      Event({ event_method: "browsingContext.load", params: base, }),
     )
   }
   // Emit historyUpdated
@@ -118,7 +118,7 @@ fn BidiProtocol::emit_navigation_lifecycle_events(
   })
   if self.is_subscribed_for_context("browsingContext.historyUpdated", ctx_id) {
     self.outbox.push(
-      Event({ event_method: "browsingContext.historyUpdated", params: history }),
+      Event({ event_method: "browsingContext.historyUpdated", params: history, }),
     )
   }
 }

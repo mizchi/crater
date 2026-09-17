@@ -11,7 +11,7 @@ pub fn print_extraction_result(result : ExtractionResult) -> String {
 ///|
 /// Extract and print statistics about content detection
 pub fn get_extraction_stats(result : ExtractionResult) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("Arc90 Extraction Statistics:\n")
   buf.write_string("----------------------------\n")
   buf.write_string("Total content blocks found: ")

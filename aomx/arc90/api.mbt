@@ -61,7 +61,7 @@ pub fn extract_content(
     config,
     readability_scores.scores,
   )
-  { main_content, content_blocks, detected_ads, detected_navigation }
+  { main_content, content_blocks, detected_ads, detected_navigation, }
 }
 
 ///|

@@ -121,7 +121,7 @@ fn extract_source_html_fragment(
           html.unsafe_substring(start=open_end + 1, end=close_start)
         _ => ""
       }
-      Some({ attrs: parse_html_attributes(attr_source), inner_html })
+      Some({ attrs: parse_html_attributes(attr_source), inner_html, })
     }
     None => None
   }
@@ -194,7 +194,7 @@ fn dom_node_attributes(
   dom : @dom.DomTree,
   node_id : @dom.NodeId,
 ) -> Map[String, String] {
-  let attrs : Map[String, String] = {}
+  let attrs : Map[String, String] = Map([])
   match dom.get_attributes(node_id) {
     Ok(pairs) =>
       for pair in pairs {
@@ -255,7 +255,7 @@ fn collect_render_document_resources(
 
 ///|
 fn html_element_text_content(elem : @html.Element) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for child in elem.children {
     match child {
       @html.Node::Text(text) => buf.write_string(text)
@@ -369,7 +369,7 @@ fn normalize_declarative_shadow_source_html_with_hint(
       }
       let snapshot_html = @js.serialize_dom_to_snapshot_html(dom)
       let parsed_doc = build_render_document_from_dom_tree(dom)
-      Some({ render_html, snapshot_html, parsed_doc })
+      Some({ render_html, snapshot_html, parsed_doc, })
     }
     None => None
   }
@@ -448,7 +448,7 @@ fn build_dom_tree_from_source_html(html : String) -> @dom.DomTree? {
     Some(fragment) => fragment.inner_html
     None => html
   }
-  let source = StringBuilder::new()
+  let source = StringBuilder()
   source.write_string("(function(){")
   source.write_string("const htmlEl=document.documentElement;")
   source.write_string("const headEl=document.head;")

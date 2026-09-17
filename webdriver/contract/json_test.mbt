@@ -37,7 +37,7 @@ test "error response" {
 
 ///|
 test "timeouts to json" {
-  let timeouts : Timeouts = { script: 30000, page_load: 300000, implicit: 0 }
+  let timeouts : Timeouts = { script: 30000, page_load: 300000, implicit: 0, }
   inspect(
     timeouts.to_json(),
     content="{\"script\":30000,\"pageLoad\":300000,\"implicit\":0}",
@@ -46,7 +46,7 @@ test "timeouts to json" {
 
 ///|
 test "window rect to json" {
-  let rect : WindowRect = { x: 0, y: 0, width: 800, height: 600 }
+  let rect : WindowRect = { x: 0, y: 0, width: 800, height: 600, }
   inspect(
     rect.to_json(),
     content="{\"x\":0,\"y\":0,\"width\":800,\"height\":600}",
@@ -55,7 +55,7 @@ test "window rect to json" {
 
 ///|
 test "element rect to json" {
-  let rect : ElementRect = { x: 10.5, y: 20.5, width: 100.0, height: 50.0 }
+  let rect : ElementRect = { x: 10.5, y: 20.5, width: 100.0, height: 50.0, }
   inspect(
     rect.to_json(),
     content="{\"x\":10.5,\"y\":20.5,\"width\":100,\"height\":50}",
@@ -76,7 +76,7 @@ test "array value to json" {
 
 ///|
 test "object value to json" {
-  let map : Map[String, WebDriverValue] = {}
+  let map : Map[String, WebDriverValue] = Map([])
   map["name"] = String("test")
   map["value"] = Number(123.0)
   let value : WebDriverValue = Object(map)

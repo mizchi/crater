@@ -27,7 +27,7 @@ pub fn compute_shadow_element_style(
     None => @css.Element::new("span")
   }
   let cascaded = Some(tree.shadow_cascaded_values(host, rules, target))
-  let css_vars : Map[String, String] = {}
+  let css_vars : Map[String, String] = Map([])
   apply_cascaded_to_style(
     cascaded,
     selector_elem,
@@ -55,7 +55,7 @@ pub fn compute_shadow_tree_styles(
   ctx : RenderContext,
   host_parent_style : @style.Style?,
 ) -> Map[Int, @style.Style] {
-  let styles : Map[Int, @style.Style] = {}
+  let styles : Map[Int, @style.Style] = Map([])
   let shadow_root = match tree.get_shadow_root(host) {
     Ok(Some(root)) => root
     _ => return styles
@@ -125,7 +125,7 @@ pub fn compute_slotted_styles(
   ctx : RenderContext,
   host_style : @style.Style?,
 ) -> Map[Int, @style.Style] {
-  let styles : Map[Int, @style.Style] = {}
+  let styles : Map[Int, @style.Style] = Map([])
   let shadow_root = match tree.get_shadow_root(host) {
     Ok(Some(root)) => root
     _ => return styles

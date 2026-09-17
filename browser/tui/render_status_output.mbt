@@ -133,5 +133,11 @@ pub fn render_to_buffer_with_status(
       content_height,
     )
   }
-  { buffer: buf, link_regions, hit_regions, scrollable_elements, image_regions }
+  {
+    buffer: buf,
+    link_regions,
+    hit_regions,
+    scrollable_elements,
+    image_regions,
+  }
 }

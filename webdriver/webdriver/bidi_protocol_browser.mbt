@@ -96,7 +96,7 @@ fn BidiProtocol::resolve_browser_client_windows_list(
   }
 
   let windows : Array[Json] = []
-  let seen_windows : Map[String, Bool] = {}
+  let seen_windows : Map[String, Bool] = Map([])
   for ctx_id in top_level_contexts {
     let client_window = self.context_client_window
       .get(ctx_id)

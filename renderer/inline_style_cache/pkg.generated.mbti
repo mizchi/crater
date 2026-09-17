@@ -24,4 +24,3 @@ pub fn parse_inline_declarations_cached(String) -> Array[(String, String)]
 // Type aliases
 
 // Traits
-

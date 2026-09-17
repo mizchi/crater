@@ -32,7 +32,7 @@ pub fn StreamingTreeBuilder::new() -> StreamingTreeBuilder {
     frameset_ok: true,
     head_element: None,
     pending_table_chars: [],
-    pending_text: StringBuilder::new(),
+    pending_text: StringBuilder(),
     pending_tokens: [],
     root: None,
   }
@@ -105,7 +105,7 @@ fn stb_create_element(tag : String, attrs : Map[String, String]) -> Element {
     None => []
   }
   let style = attrs.get("style")
-  { tag, id, classes, style, attributes: attrs, children: [] }
+  { tag, id, classes, style, attributes: attrs, children: [], }
 }
 
 ///|

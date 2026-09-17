@@ -11,7 +11,7 @@ fn block_child_size(
   height : @types.Dimension,
 ) -> (Double, Double) {
   let default_style = @style.Style::default()
-  let child_style = { ..default_style, width, height }
+  let child_style = { ..default_style, width, height, }
   let child = @node.Node::leaf("child", child_style)
   let root_style = {
     ..default_style,

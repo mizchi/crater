@@ -60,7 +60,7 @@ test "real glyph rasterization lowers to coverage fills" {
     @gfx.GraphicsDriver::draw_triangles(driver, cmd)
   }
   @gfx.GraphicsDriver::end(driver, false)
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for py in 0..<h {
     for px in 0..<w {
       let (r, _g, _b, _a) = driver.pixel_at(px, py)

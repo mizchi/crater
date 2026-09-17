@@ -191,7 +191,7 @@ fn collect_root_css_variables(
   stylesheets : Array[@css.Stylesheet],
   ctx : RenderContext,
 ) -> Map[String, String] {
-  let vars : Map[String, String] = {}
+  let vars : Map[String, String] = Map([])
   // Create media environment for evaluating @media queries
   let media_env = @css.MediaEnvironment::with_color_scheme(
     ctx.viewport_width,
@@ -232,7 +232,7 @@ fn collect_root_css_variables(
 /// was pure allocation/drop churn in the render profile; sharing one instance
 /// per tag is safe because `Rect` fields are immutable and no caller mutates the
 /// returned style.
-let ua_default_style_cache : Ref[Map[String, @style.Style]] = { val: {} }
+let ua_default_style_cache : Ref[Map[String, @style.Style]] = { val: {}, }
 
 ///|
 /// Get user-agent default style for an element tag (memoized by tag name).
@@ -257,7 +257,7 @@ fn compute_ua_default_style(tag : String) -> @style.Style {
   // Values are in em units, converted to px assuming 16px base font.
   // `tag` is already lowercased by the memoizing `get_ua_default_style` wrapper.
   match tag {
-    "html" => { ..default_style, font_family: "serif" }
+    "html" => { ..default_style, font_family: "serif", }
     "body" =>
       {
         ..default_style,
@@ -480,7 +480,7 @@ fn compute_ua_default_style(tag : String) -> @style.Style {
       }
     // Bold inline elements
     "strong" | "b" =>
-      { ..default_style, display: @types.Inline, font_weight: 700.0 }
+      { ..default_style, display: @types.Inline, font_weight: 700.0, }
     // Inline elements - HTML default display: inline
     "span"
     | "em"
@@ -509,7 +509,7 @@ fn compute_ua_default_style(tag : String) -> @style.Style {
     | "rp"
     | "bdi"
     | "bdo"
-    | "wbr" => { ..default_style, display: @types.Inline }
+    | "wbr" => { ..default_style, display: @types.Inline, }
     // Replaced inline elements - inline by default
     // SVG has intrinsic size of 300x150 when no width/height specified
     "img"
@@ -519,7 +519,7 @@ fn compute_ua_default_style(tag : String) -> @style.Style {
     | "iframe"
     | "object"
     | "embed"
-    | "svg" => { ..default_style, display: @types.Inline }
+    | "svg" => { ..default_style, display: @types.Inline, }
     // SVG child elements - inline-block to fit content
     "g"
     | "rect"
@@ -541,7 +541,7 @@ fn compute_ua_default_style(tag : String) -> @style.Style {
     | "radialGradient"
     | "stop"
     | "image"
-    | "foreignObject" => { ..default_style, display: @types.InlineBlock }
+    | "foreignObject" => { ..default_style, display: @types.InlineBlock, }
     // Form elements - inline-block and border-box by default
     "input" | "select" | "textarea" =>
       {
@@ -561,9 +561,9 @@ fn compute_ua_default_style(tag : String) -> @style.Style {
         font_size: 14.0,
         line_height: 16.1,
       }
-    "label" => { ..default_style, display: @types.Inline }
+    "label" => { ..default_style, display: @types.Inline, }
     // br is inline with no width
-    "br" => { ..default_style, display: @types.Inline }
+    "br" => { ..default_style, display: @types.Inline, }
     // hr: horizontal rule (1px top border + margin)
     "hr" =>
       {
@@ -592,7 +592,7 @@ fn compute_ua_default_style(tag : String) -> @style.Style {
         display: @types.Table,
         border_spacing: 2.0,
       }
-    "tr" => { ..default_style, display: @types.TableRow }
+    "tr" => { ..default_style, display: @types.TableRow, }
     "td" =>
       {
         ..default_style,
@@ -610,12 +610,12 @@ fn compute_ua_default_style(tag : String) -> @style.Style {
         text_align: @style.TextAlign::Center, // th defaults to center
         font_weight: 700.0,
       }
-    "thead" => { ..default_style, display: @types.TableHeaderGroup }
-    "tbody" => { ..default_style, display: @types.TableRowGroup }
-    "tfoot" => { ..default_style, display: @types.TableFooterGroup }
-    "caption" => { ..default_style, display: @types.TableCaption }
-    "col" => { ..default_style, display: @types.TableColumn }
-    "colgroup" => { ..default_style, display: @types.TableColumnGroup }
+    "thead" => { ..default_style, display: @types.TableHeaderGroup, }
+    "tbody" => { ..default_style, display: @types.TableRowGroup, }
+    "tfoot" => { ..default_style, display: @types.TableFooterGroup, }
+    "caption" => { ..default_style, display: @types.TableCaption, }
+    "col" => { ..default_style, display: @types.TableColumn, }
+    "colgroup" => { ..default_style, display: @types.TableColumnGroup, }
     // Hidden elements - display: none by default
     "template"
     | "script"
@@ -625,16 +625,16 @@ fn compute_ua_default_style(tag : String) -> @style.Style {
     | "link"
     | "title"
     | "track"
-    | "param" => { ..default_style, display: @types.Display::None }
+    | "param" => { ..default_style, display: @types.Display::None, }
     // <center> is deprecated but widely used (e.g., Hacker News)
-    "center" => { ..default_style, text_align: @style.TextAlign::Center }
+    "center" => { ..default_style, text_align: @style.TextAlign::Center, }
     other =>
       // Custom elements (a hyphen in the tag name, per the HTML spec) and other
       // unknown hyphenated tags default to display:inline, matching browsers —
       // e.g. GitHub's <x-banner>, <relative-time>. Unlisted standard elements
       // (div, section, ...) keep the block default above.
       if other.contains("-") {
-        { ..default_style, display: @types.Inline }
+        { ..default_style, display: @types.Inline, }
       } else {
         default_style
       }
@@ -678,7 +678,7 @@ fn normalize_display_contents_for_unusual_html(
 ) -> @style.Style {
   if style.display == @types.Contents &&
     is_display_contents_suppressed_html_element(tag) {
-    { ..style, display: @types.Display::None }
+    { ..style, display: @types.Display::None, }
   } else {
     style
   }
@@ -697,7 +697,7 @@ fn filter_value_establishes_effect_cb(
 ) -> Bool {
   let had_var = raw_value.contains("var(")
   let resolved = if had_var {
-    let empty_attributes : Map[String, String] = {}
+    let empty_attributes : Map[String, String] = Map([])
     resolve_pseudo_content_value(raw_value, css_vars, empty_attributes)
   } else {
     raw_value
@@ -1029,7 +1029,7 @@ fn apply_cascaded_to_style(
         }
         if n > 0.0 {
           let bw = @types.Dimension::Length(n)
-          style.border = { top: bw, right: bw, bottom: bw, left: bw }
+          style.border = { top: bw, right: bw, bottom: bw, left: bw, }
           style.border_style = {
             top: @style.BorderStyle::Solid,
             right: @style.BorderStyle::Solid,
@@ -1050,7 +1050,7 @@ fn apply_cascaded_to_style(
   if cell_tag == "td" || cell_tag == "th" {
     if table_ancestor_has_border(selector_elem) {
       let bw = @types.Dimension::Length(1.0)
-      style.border = { top: bw, right: bw, bottom: bw, left: bw }
+      style.border = { top: bw, right: bw, bottom: bw, left: bw, }
       style.border_style = {
         top: @style.BorderStyle::Solid,
         right: @style.BorderStyle::Solid,
@@ -1196,7 +1196,7 @@ fn apply_cascaded_to_style(
   // Size containment does not apply to table-cell elements, while
   // layout/paint/style containment still can.
   if style.display == @types.TableCell && style.contain.size {
-    style.contain = { ..style.contain, size: false }
+    style.contain = { ..style.contain, size: false, }
   }
 
   // Apply inline styles
@@ -1525,10 +1525,10 @@ fn apply_css_property_with_viewport(
   match resolve_axis_mixed_calc_dimension(property, value, ctx) {
     Some(dim) =>
       match property {
-        "height" => { ..resolved, height: dim }
-        "min-width" => { ..resolved, min_width: dim }
-        "min-height" => { ..resolved, min_height: dim }
-        "max-height" => { ..resolved, max_height: dim }
+        "height" => { ..resolved, height: dim, }
+        "min-width" => { ..resolved, min_width: dim, }
+        "min-height" => { ..resolved, min_height: dim, }
+        "max-height" => { ..resolved, max_height: dim, }
         _ => resolved
       }
     None => resolved

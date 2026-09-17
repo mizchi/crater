@@ -363,7 +363,7 @@ fn make_track(
   size : Double,
   stretchable : Bool,
 ) -> ContentTrack {
-  { position, size, stretchable }
+  { position, size, stretchable, }
 }
 
 ///|

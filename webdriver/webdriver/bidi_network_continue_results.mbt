@@ -112,7 +112,7 @@ fn BidiProtocol::send_continue_blocked_response_result(
   body_text : String?,
 ) -> Unit {
   let _ = self
-  let result : Map[String, Json] = {}
+  let result : Map[String, Json] = Map([])
   result["responseStartedEvent"] = match response_started_event {
     Some(event) => event
     None => Json::null()
@@ -157,7 +157,10 @@ fn BidiProtocol::emit_synthetic_network_event_if_subscribed(
         Some(String(context_id)) =>
           if self.is_subscribed_for_context(event_name, context_id) {
             self.outbox.push(
-              Event({ event_method: event_name, params: make_object(event_map) }),
+              Event({
+                event_method: event_name,
+                params: make_object(event_map),
+              }),
             )
           }
         _ => ()
@@ -278,8 +281,8 @@ fn BidiProtocol::maybe_emit_followup_preflight_blocked_request(
     Some(event) => event
     None => return
   }
-  self.outbox.push(Event({ event_method: event_name, params: event }))
-  let followup_blocked_request : Map[String, Json] = {}
+  self.outbox.push(Event({ event_method: event_name, params: event, }))
+  let followup_blocked_request : Map[String, Json] = Map([])
   followup_blocked_request["phase"] = Json::string("beforeRequestSent")
   followup_blocked_request["context_id"] = Json::string(context_id)
   followup_blocked_request["url"] = Json::string(url)

@@ -36,4 +36,3 @@ pub(all) enum TreeChange {
 // Type aliases
 
 // Traits
-

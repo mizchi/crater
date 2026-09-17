@@ -25,7 +25,7 @@ fn fill_canvas_background(
 ) -> Unit {
   let canvas_bg = resolve_canvas_background_color(node)
   if !canvas_bg.is_transparent() {
-    let bg_raster = { r: canvas_bg.r, g: canvas_bg.g, b: canvas_bg.b }
+    let bg_raster = { r: canvas_bg.r, g: canvas_bg.g, b: canvas_bg.b, }
     let bg_idx = palette.get_or_add(bg_raster)
     fb.fill_rect(0, 0, fb.width, fb.height, bg_idx)
   }

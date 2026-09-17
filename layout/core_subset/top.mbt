@@ -30,7 +30,7 @@ pub fn compute_core_layout(
 ) -> CoreComputeResult {
   let issues = validate_core_subset(node)
   if issues.length() > 0 {
-    return { layout: None, issues }
+    return { layout: None, issues, }
   }
   let ctx : @layout_types.LayoutContext = {
     available_width: viewport.width,
@@ -41,7 +41,7 @@ pub fn compute_core_layout(
     stretch_width: false,
     stretch_height: false,
   }
-  { layout: Some(@layout.compute_layout_in_context(node, ctx)), issues: [] }
+  { layout: Some(@layout.compute_layout_in_context(node, ctx)), issues: [], }
 }
 
 ///|
@@ -239,7 +239,7 @@ fn add_issue(
   property : String,
   detail : String,
 ) -> Unit {
-  issues.push({ node_id, property, detail })
+  issues.push({ node_id, property, detail, })
 }
 
 ///|

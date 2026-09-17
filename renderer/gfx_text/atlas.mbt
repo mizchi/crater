@@ -53,7 +53,7 @@ pub fn build_glyph_atlas(
     }
   }
   if inked.length() == 0 {
-    return { width: 0, height: 0, coverage: [], image, entries: [] }
+    return { width: 0, height: 0, coverage: [], image, entries: [], }
   }
   let mut atlas_w = 0
   let mut atlas_h = 0
@@ -102,7 +102,7 @@ pub fn build_glyph_atlas(
     })
     x_off = x_off + b.width
   }
-  { width: atlas_w, height: atlas_h, coverage, image, entries }
+  { width: atlas_w, height: atlas_h, coverage, image, entries, }
 }
 
 ///|

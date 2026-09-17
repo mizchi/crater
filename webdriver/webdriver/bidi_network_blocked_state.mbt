@@ -246,7 +246,7 @@ fn BidiProtocol::remember_network_blocked_request(
   request_id : String,
   payload : Map[String, Json],
 ) -> Unit {
-  let normalized : Map[String, Json] = {}
+  let normalized : Map[String, Json] = Map([])
   for key, value in payload {
     normalized[key] = value
   }

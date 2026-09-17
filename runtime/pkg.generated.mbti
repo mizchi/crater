@@ -86,4 +86,3 @@ pub(open) trait JsRuntime {
   fn execute(Self, Int, @dom.DomTree, String, AsyncExecutionMode) -> JsResult raise JsError
   fn tick(Self, Int, @dom.DomTree) -> JsResult raise JsError
 }
-

@@ -33,7 +33,7 @@ fn recon_flatten_perf(l : @layout_types.Layout, buf : StringBuilder) -> Unit {
 
 ///|
 fn recon_sig_perf(l : @layout_types.Layout) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   recon_flatten_perf(l, buf)
   buf.to_string()
 }
@@ -59,9 +59,9 @@ fn perf_stack(
   let children : Array[@node.Node] = []
   for i = 0; i < n; i = i + 1 {
     let h = if i == changed_idx { tweak } else { 40.0 }
-    children.push(@node.Node::with_uid("b" + i.to_string(), i + 1, perf_block(
-      100.0, h,
-    ), []))
+    children.push(
+      @node.Node::with_uid("b" + i.to_string(), i + 1, perf_block(100.0, h), []),
+    )
   }
   let root_style = @style.Style::{ ..perf_block(200.0, 2000.0), display, }
   @node.Node::with_uid("root", 0, root_style, children)
@@ -72,7 +72,9 @@ test "perf(block): changing the LAST block reuses every preceding block via bloc
   @dispatch.setup()
   let n = 12
   let tree1 = LayoutTree::from_node(
-    perf_stack(@types.Block, n, -1, 40.0), 200.0, 2000.0,
+    perf_stack(@types.Block, n, -1, 40.0),
+    200.0,
+    2000.0,
   )
   @block.clear_block_flow_cache()
   let _ = tree1.compute_incremental() // populate the block-flow cache
@@ -82,7 +84,11 @@ test "perf(block): changing the LAST block reuses every preceding block via bloc
   let dirty = tree1.flow_dirty_uids([n])
   inspect(dirty.length(), content="1")
   let tree2 = LayoutTree::reconcile_from(
-    tree1, perf_stack(@types.Block, n, n - 1, 80.0), dirty, 200.0, 2000.0,
+    tree1,
+    perf_stack(@types.Block, n, n - 1, 80.0),
+    dirty,
+    200.0,
+    2000.0,
   )
   @block.reset_block_flow_cache_hits()
   let incr = tree2.compute_incremental()
@@ -90,7 +96,9 @@ test "perf(block): changing the LAST block reuses every preceding block via bloc
   inspect(@block.block_flow_cache_hit_count(), content="11")
   // Correctness: incremental result is byte-identical to a full recompute.
   let full = LayoutTree::from_node(
-    perf_stack(@types.Block, n, n - 1, 80.0), 200.0, 2000.0,
+    perf_stack(@types.Block, n, n - 1, 80.0),
+    200.0,
+    2000.0,
   ).compute_incremental()
   inspect(recon_sig_perf(incr) == recon_sig_perf(full), content="true")
 }
@@ -109,11 +117,16 @@ fn perf_flex_group(
   let items : Array[@node.Node] = []
   for i = 0; i < n; i = i + 1 {
     let h = if i == changed_idx { tweak } else { 40.0 }
-    items.push(@node.Node::with_uid(
-      tag + "i" + i.to_string(), base + 1 + i, perf_block(30.0, h), [],
-    ))
+    items.push(
+      @node.Node::with_uid(
+        tag + "i" + i.to_string(),
+        base + 1 + i,
+        perf_block(30.0, h),
+        [],
+      ),
+    )
   }
-  let style = @style.Style::{ ..perf_block(200.0, 60.0), display: @types.Flex }
+  let style = @style.Style::{ ..perf_block(200.0, 60.0), display: @types.Flex, }
   @node.Node::with_uid(tag, base, style, items)
 }
 
@@ -199,7 +212,7 @@ test "perf(block): nested block subtrees reuse the unchanged sibling branch" {
   // root(0) -> [groupA(1) -> [a0(2), a1(3)], groupB(4) -> [b0(5), b1(6)]]
   let mk = fn(b1_h : Double) {
     let col = fn(id, uid, kids) {
-      let s = @style.Style::{ ..perf_block(200.0, 0.0), height: @types.Auto }
+      let s = @style.Style::{ ..perf_block(200.0, 0.0), height: @types.Auto, }
       @node.Node::with_uid(id, uid, s, kids)
     }
     @node.Node::with_uid("root", 0, perf_block(200.0, 600.0), [

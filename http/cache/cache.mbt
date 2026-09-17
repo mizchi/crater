@@ -26,19 +26,19 @@ pub fn CacheDirectives::default() -> CacheDirectives {
 ///|
 pub impl Show for CacheDirectives with fn output(self, logger) {
   logger.write_string("{max_age: ")
-  logger.write_object(to_repr(self.max_age))
+  logger.write_object(Repr(self.max_age))
   logger.write_string(", no_cache: ")
-  self.no_cache.output(logger)
+  Show::output(self.no_cache, logger)
   logger.write_string(", no_store: ")
-  self.no_store.output(logger)
+  Show::output(self.no_store, logger)
   logger.write_string(", must_revalidate: ")
-  self.must_revalidate.output(logger)
+  Show::output(self.must_revalidate, logger)
   logger.write_string(", public_: ")
-  self.public_.output(logger)
+  Show::output(self.public_, logger)
   logger.write_string(", private_: ")
-  self.private_.output(logger)
+  Show::output(self.private_, logger)
   logger.write_string(", immutable: ")
-  self.immutable.output(logger)
+  Show::output(self.immutable, logger)
   logger.write_string("}")
 }
 
@@ -72,7 +72,15 @@ pub fn parse_cache_control(header : String) -> CacheDirectives {
       max_age = parse_int_string(value_str)
     }
   }
-  { max_age, no_cache, no_store, must_revalidate, public_, private_, immutable }
+  {
+    max_age,
+    no_cache,
+    no_store,
+    must_revalidate,
+    public_,
+    private_,
+    immutable,
+  }
 }
 
 ///|

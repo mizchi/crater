@@ -182,7 +182,7 @@ test "grid_item_flex_column_reflows_nested_grid_height_at_final_width" {
   )
   let root = @node.Node::new(
     "root",
-    { ..default_style, display: @types.Grid },
+    { ..default_style, display: @types.Grid, },
     [outer_flex],
   )
   let ctx : @layout_types.LayoutContext = {
@@ -215,7 +215,7 @@ test "grid_item_percent_height_chain_with_max_height_clamps_to_100" {
   }
   let scroll_inner = @node.Node::new(
     "scroll-inner",
-    { ..default_style, height: @types.Percent(1.0), overflow_y: @types.Scroll },
+    { ..default_style, height: @types.Percent(1.0), overflow_y: @types.Scroll, },
     lines,
   )
   let scroll_outer = @node.Node::new(
@@ -231,7 +231,7 @@ test "grid_item_percent_height_chain_with_max_height_clamps_to_100" {
   let grid_item = @node.Node::new("grid-item", default_style, [scroll_outer])
   let root = @node.Node::new(
     "root",
-    { ..default_style, display: @types.Grid, width: @types.Length(100.0) },
+    { ..default_style, display: @types.Grid, width: @types.Length(100.0), },
     [grid_item],
   )
   let ctx : @layout_types.LayoutContext = {
@@ -253,24 +253,24 @@ test "grid_item_percent_height_chain_with_max_height_clamps_to_100" {
 ///|
 test "grid_auto_height_does_not_fill_available_height" {
   let default_style = @style.Style::default()
-  let img_style = { ..default_style, min_height: @types.Percent(1.0) }
+  let img_style = { ..default_style, min_height: @types.Percent(1.0), }
   let img_measure : @layout_types.MeasureFunc = {
     func: fn(
       _available_width : Double,
       _available_height : Double,
     ) -> @layout_types.IntrinsicSize {
-      { min_width: 0.0, max_width: 0.0, min_height: 0.0, max_height: 0.0 }
+      { min_width: 0.0, max_width: 0.0, min_height: 0.0, max_height: 0.0, }
     },
   }
   let img = @node.Node::with_measure("img", img_style, img_measure)
   let grid_item = @node.Node::new(
     "grid-item",
-    { ..default_style, display: @types.Grid },
+    { ..default_style, display: @types.Grid, },
     [img],
   )
   let root = @node.Node::new(
     "root",
-    { ..default_style, display: @types.Grid, width: @types.Length(800.0) },
+    { ..default_style, display: @types.Grid, width: @types.Length(800.0), },
     [grid_item],
   )
   let ctx : @layout_types.LayoutContext = {
@@ -703,7 +703,7 @@ test "taffy/grid_auto_single_item" {
   let children : Array[@node.Node] = []
   for i = 0; i < 9; i = i + 1 {
     let style = if i == 1 {
-      { ..default_style, width: @types.Length(100.0) }
+      { ..default_style, width: @types.Length(100.0), }
     } else {
       default_style
     }
@@ -1222,7 +1222,7 @@ test "grid_minmax_min_content_auto_track" {
   let default_style = @style.Style::default()
   let text_measure : @layout_types.MeasureFunc = {
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 72.0, max_width: 216.0, min_height: 16.0, max_height: 16.0 }
+      { min_width: 72.0, max_width: 216.0, min_height: 16.0, max_height: 16.0, }
     },
   }
   let text = @node.Node::with_measure("text", default_style, text_measure)
@@ -1256,7 +1256,7 @@ test "grid_contain_inline_size_fit_content_ignores_item_intrinsic_width" {
     ..default_style,
     display: @types.Grid,
     width: @types.FitContent(1.0e10),
-    contain: { ..default_style.contain, inline_size: true },
+    contain: { ..default_style.contain, inline_size: true, },
     border: {
       top: @types.Length(0.0),
       right: @types.Length(50.0),
@@ -1387,7 +1387,7 @@ test "grid_fit_content_block_item_with_flex_child_uses_intrinsic_width" {
   )
   let root = @node.Node::new(
     "root",
-    { ..default_style, display: @types.Grid, width: @types.FitContent(1.0e10) },
+    { ..default_style, display: @types.Grid, width: @types.FitContent(1.0e10), },
     [body],
   )
 
@@ -1541,7 +1541,7 @@ test "grid_fit_content_nested_simple_block_leaf_item_uses_intrinsic_width" {
   let card = @node.Node::new("card", default_style, [body])
   let root = @node.Node::new(
     "root",
-    { ..default_style, display: @types.Grid, width: @types.FitContent(1.0e10) },
+    { ..default_style, display: @types.Grid, width: @types.FitContent(1.0e10), },
     [card],
   )
 
@@ -1562,7 +1562,7 @@ test "grid_contain_size_inline_grid_auto_size_uses_border_only" {
   let root_style = {
     ..default_style,
     display: @types.InlineGrid,
-    contain: { ..default_style.contain, size: true },
+    contain: { ..default_style.contain, size: true, },
     border: {
       top: @types.Length(5.0),
       right: @types.Length(5.0),
@@ -1593,7 +1593,7 @@ test "grid_contain_size_preserves_explicit_tracks_and_gaps" {
   let root_style = {
     ..default_style,
     display: @types.Grid,
-    contain: { ..default_style.contain, size: true },
+    contain: { ..default_style.contain, size: true, },
     column_gap: @types.Length(20.0),
     row_gap: @types.Length(20.0),
     grid_template_columns: [
@@ -1629,7 +1629,7 @@ test "grid_contain_size_min_height_expands_fr_track_for_alignment" {
   let root_style = {
     ..default_style,
     display: @types.Grid,
-    contain: { ..default_style.contain, size: true },
+    contain: { ..default_style.contain, size: true, },
     min_height: @types.Length(100.0),
     grid_template_rows: [@types.TrackSizingFunction::Fr(1.0)],
   }
@@ -1695,7 +1695,7 @@ test "grid_inline_baseline_with_definite_height_replaced_item_keeps_auto_row_con
     ..default_style,
     width: @types.Length(50.0),
     height: @types.Length(100.0),
-    contain: { ..default_style.contain, layout: true },
+    contain: { ..default_style.contain, layout: true, },
   })
   let root = @node.Node::new(
     "root",
@@ -2015,10 +2015,10 @@ test "grid_template_areas_basic" {
   let default_style = @style.Style::default()
 
   // Create children with grid-area names
-  let header_style = { ..default_style, grid_area: Some("header") }
-  let sidebar_style = { ..default_style, grid_area: Some("sidebar") }
-  let main_style = { ..default_style, grid_area: Some("main") }
-  let footer_style = { ..default_style, grid_area: Some("footer") }
+  let header_style = { ..default_style, grid_area: Some("header"), }
+  let sidebar_style = { ..default_style, grid_area: Some("sidebar"), }
+  let main_style = { ..default_style, grid_area: Some("main"), }
+  let footer_style = { ..default_style, grid_area: Some("footer"), }
   let children : Array[@node.Node] = [
     @node.Node::leaf("header", header_style),
     @node.Node::leaf("sidebar", sidebar_style),
@@ -2094,7 +2094,7 @@ test "grid_measure_function_basic" {
   // Create a measure function that returns custom sizes
   let custom_measure : @layout_types.MeasureFunc = {
     func: fn(_available_width, _available_height) {
-      { min_width: 50.0, max_width: 100.0, min_height: 25.0, max_height: 50.0 }
+      { min_width: 50.0, max_width: 100.0, min_height: 25.0, max_height: 50.0, }
     },
   }
 
@@ -2126,7 +2126,7 @@ test "grid_measure_function_min_content" {
   let default_style = @style.Style::default()
   let custom_measure : @layout_types.MeasureFunc = {
     func: fn(_available_width, _available_height) {
-      { min_width: 30.0, max_width: 80.0, min_height: 15.0, max_height: 40.0 }
+      { min_width: 30.0, max_width: 80.0, min_height: 15.0, max_height: 40.0, }
     },
   }
   let child = @node.Node::with_measure(

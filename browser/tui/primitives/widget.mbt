@@ -43,7 +43,7 @@ pub fn draw_box(
     reverse: false,
   }
   for cell in @tui_buffer.plan_box(x, y, w, h, box_chars(style)) {
-    buf.set_cell(cell.x, cell.y, { ..cell_style, char: cell.char })
+    buf.set_cell(cell.x, cell.y, { ..cell_style, char: cell.char, })
   }
 }
 

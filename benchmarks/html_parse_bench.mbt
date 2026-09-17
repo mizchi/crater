@@ -10,7 +10,7 @@
 ///|
 /// Generate simple HTML with N elements
 fn generate_simple_html(n : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("<div>")
   for i = 0; i < n; i = i + 1 {
     buf.write_string("<p>Item ")
@@ -24,7 +24,7 @@ fn generate_simple_html(n : Int) -> String {
 ///|
 /// Generate nested HTML with depth D
 fn generate_nested_html(depth : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for i = 0; i < depth; i = i + 1 {
     buf.write_string("<div class=\"level-")
     buf.write_string(i.to_string())
@@ -40,7 +40,7 @@ fn generate_nested_html(depth : Int) -> String {
 ///|
 /// Generate HTML with many attributes
 fn generate_attribute_heavy_html(n : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("<div>")
   for i = 0; i < n; i = i + 1 {
     buf.write_string("<div id=\"item-")
@@ -61,7 +61,7 @@ fn generate_attribute_heavy_html(n : Int) -> String {
 ///|
 /// Generate a table with R rows and C columns
 fn generate_table_html(rows : Int, cols : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("<table>")
   buf.write_string("<thead><tr>")
   for c = 0; c < cols; c = c + 1 {
@@ -90,7 +90,7 @@ fn generate_table_html(rows : Int, cols : Int) -> String {
 ///|
 /// Generate a complex page layout (header, nav, main, footer)
 fn generate_page_layout(sidebar_items : Int, content_sections : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string(
     "<!DOCTYPE html><html><head><title>Page</title></head><body>",
   )
@@ -136,7 +136,7 @@ fn generate_page_layout(sidebar_items : Int, content_sections : Int) -> String {
 ///|
 /// Generate HTML with inline styles (CSS in style attribute)
 fn generate_styled_html(n : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("<div style=\"display: flex; flex-direction: column;\">")
   for i = 0; i < n; i = i + 1 {
     buf.write_string(
@@ -157,7 +157,7 @@ fn generate_styled_html(n : Int) -> String {
 ///|
 /// Generate HTML with script and style tags (to test extraction)
 fn generate_resource_heavy_html(styles : Int, scripts : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><head>")
   for i = 0; i < styles; i = i + 1 {
     buf.write_string("<style>.class")
@@ -180,7 +180,7 @@ fn generate_resource_heavy_html(styles : Int, scripts : Int) -> String {
 ///|
 /// Generate form HTML with various input types
 fn generate_form_html(fields : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("<form action=\"/submit\" method=\"post\">")
   for i = 0; i < fields; i = i + 1 {
     let field_type = match i % 5 {
@@ -213,7 +213,7 @@ fn generate_form_html(fields : Int) -> String {
 ///|
 /// Generate HTML with malformed/edge case content (for error recovery testing)
 fn generate_malformed_html(n : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("<div>")
   for i = 0; i < n; i = i + 1 {
     // Mix of well-formed and malformed
@@ -438,7 +438,7 @@ test "bench_parse_fragment_simple" (b : @bench.T) {
 
 ///|
 test "bench_parse_fragment_list" (b : @bench.T) {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("<ul>")
   for i = 0; i < 20; i = i + 1 {
     buf.write_string("<li>Item ")
@@ -456,7 +456,7 @@ test "bench_parse_fragment_list" (b : @bench.T) {
 
 ///|
 fn generate_card_grid(cards : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string(
     "<div class=\"grid\" style=\"display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;\">",
   )
@@ -560,7 +560,7 @@ fn generate_large_document(
   sections : Int,
   paragraphs_per_section : Int,
 ) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><head><title>Large Document</title>")
   buf.write_string("<style>body { font-family: sans-serif; }</style>")
   buf.write_string("</head><body>")

@@ -46,4 +46,3 @@ pub async fn[T : @io.Writer] write_svg_to_kitty(T, @svg.Scene, Int, Int) -> Unit
 // Type aliases
 
 // Traits
-

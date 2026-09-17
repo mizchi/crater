@@ -100,7 +100,7 @@ fn BidiProtocol::append_data_url_navigation_request_entries(
     })
   }
 
-  let seen_urls : Map[String, Bool] = {}
+  let seen_urls : Map[String, Bool] = Map([])
   for resource_url in self.collect_attribute_values(context_id, "link", "href") {
     synthetic_navigation_push_unique_resource(
       requests,

@@ -44,4 +44,3 @@ pub fn FloatContext::prune_floats_above(Self, Double) -> Unit
 // Type aliases
 
 // Traits
-

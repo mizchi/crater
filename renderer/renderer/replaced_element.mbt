@@ -87,7 +87,7 @@ fn is_text_like_input_type(input_type : String) -> Bool {
 
 ///|
 fn mask_password_value(value : String) -> String {
-  let masked = StringBuilder::new()
+  let masked = StringBuilder()
   for _ in value {
     masked.write_char('*')
   }

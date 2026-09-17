@@ -122,9 +122,9 @@ pub fn pointer_move_event_sequence(
   pointer_type : String,
 ) -> Array[PointerDispatchEvent] {
   let events : Array[PointerDispatchEvent] = []
-  events.push({ event_type: "pointermove", button: 0 })
+  events.push({ event_type: "pointermove", button: 0, })
   if pointer_type == "mouse" {
-    events.push({ event_type: "mousemove", button: 0 })
+    events.push({ event_type: "mousemove", button: 0, })
   }
   events
 }
@@ -136,11 +136,11 @@ pub fn pointer_press_event_sequence(
 ) -> Array[PointerDispatchEvent] {
   let events : Array[PointerDispatchEvent] = []
   if button == 0 && pointer_type != "mouse" {
-    events.push({ event_type: "pointerover", button })
-    events.push({ event_type: "pointerenter", button })
+    events.push({ event_type: "pointerover", button, })
+    events.push({ event_type: "pointerenter", button, })
   }
-  events.push({ event_type: "pointerdown", button })
-  events.push({ event_type: "mousedown", button })
+  events.push({ event_type: "pointerdown", button, })
+  events.push({ event_type: "mousedown", button, })
   events
 }
 
@@ -150,10 +150,10 @@ pub fn pointer_release_event_sequence(
   button : Int,
 ) -> Array[PointerDispatchEvent] {
   let events : Array[PointerDispatchEvent] = []
-  events.push({ event_type: "pointerup", button })
+  events.push({ event_type: "pointerup", button, })
   if button == 0 && pointer_type == "touch" {
-    events.push({ event_type: "pointerout", button })
-    events.push({ event_type: "pointerleave", button })
+    events.push({ event_type: "pointerout", button, })
+    events.push({ event_type: "pointerleave", button, })
   }
   events
 }
@@ -167,13 +167,13 @@ pub fn pointer_post_release_mouse_event_sequence(
 ) -> Array[PointerDispatchEvent] {
   let events : Array[PointerDispatchEvent] = []
   if emit_contextmenu {
-    events.push({ event_type: "contextmenu", button })
+    events.push({ event_type: "contextmenu", button, })
   }
-  events.push({ event_type: "mouseup", button })
+  events.push({ event_type: "mouseup", button, })
   if emit_click {
-    events.push({ event_type: "click", button })
+    events.push({ event_type: "click", button, })
     if emit_double_click {
-      events.push({ event_type: "dblclick", button })
+      events.push({ event_type: "dblclick", button, })
     }
   }
   events
@@ -293,17 +293,17 @@ pub fn drag_move_event_sequence(
 ) -> Array[DragDispatchEvent] {
   let events : Array[DragDispatchEvent] = []
   if emit_dragstart {
-    events.push({ event_type: "dragstart", target: Source })
+    events.push({ event_type: "dragstart", target: Source, })
   }
-  events.push({ event_type: "drag", target: Source })
+  events.push({ event_type: "drag", target: Source, })
   if emit_dragleave {
-    events.push({ event_type: "dragleave", target: PreviousTarget })
+    events.push({ event_type: "dragleave", target: PreviousTarget, })
   }
   if emit_dragenter {
-    events.push({ event_type: "dragenter", target: CurrentTarget })
+    events.push({ event_type: "dragenter", target: CurrentTarget, })
   }
   if emit_dragover {
-    events.push({ event_type: "dragover", target: CurrentTarget })
+    events.push({ event_type: "dragover", target: CurrentTarget, })
   }
   events
 }
@@ -314,9 +314,9 @@ pub fn drag_release_event_sequence(
 ) -> Array[DragDispatchEvent] {
   let events : Array[DragDispatchEvent] = []
   if emit_drop {
-    events.push({ event_type: "drop", target: CurrentTarget })
+    events.push({ event_type: "drop", target: CurrentTarget, })
   }
-  events.push({ event_type: "dragend", target: Source })
+  events.push({ event_type: "dragend", target: Source, })
   events
 }
 

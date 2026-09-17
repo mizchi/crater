@@ -20,7 +20,7 @@ fn decode_svg_data_uri(src : String) -> String {
 
 ///|
 fn url_decode_simple(s : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let chars = s.to_array()
   let len = chars.length()
   let mut i = 0

@@ -24,4 +24,3 @@ pub impl @gfx.GraphicsDriver for SoftwareDriver
 // Type aliases
 
 // Traits
-

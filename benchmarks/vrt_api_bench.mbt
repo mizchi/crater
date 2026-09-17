@@ -74,7 +74,7 @@ fn vrt_component_fixture(
   bg : String,
   accent : String,
 ) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string(
     "<!DOCTYPE html><html><body style=\"margin:0;background:#f4f6fb;padding:24px\">",
   )

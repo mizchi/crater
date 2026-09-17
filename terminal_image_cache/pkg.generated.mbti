@@ -51,4 +51,3 @@ pub fn TerminalImageCacheEntry::encode(Self) -> String
 // Type aliases
 
 // Traits
-

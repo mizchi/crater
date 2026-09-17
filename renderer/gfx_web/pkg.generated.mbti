@@ -35,4 +35,3 @@ pub fn CaptureSink::draws(Self) -> Array[@gfx.DrawTrianglesCommand]
 // Type aliases
 
 // Traits
-

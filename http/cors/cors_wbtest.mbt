@@ -68,7 +68,7 @@ fn test_preflight_response(
   aca_credentials? : String,
   aca_max_age? : String,
 ) -> @http_impl.HttpResponse {
-  let h : Map[String, String] = {}
+  let h : Map[String, String] = Map([])
   if aca_origin is Some(v) {
     h["access-control-allow-origin"] = v
   }
@@ -84,7 +84,7 @@ fn test_preflight_response(
   if aca_max_age is Some(v) {
     h["access-control-max-age"] = v
   }
-  { status, headers: h, body: "" }
+  { status, headers: h, body: "", }
 }
 
 ///|

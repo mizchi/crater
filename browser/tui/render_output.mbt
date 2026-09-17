@@ -77,7 +77,13 @@ pub fn render_to_buffer(
     element_scroll_positions: {},
   }
   render_paint_node(ctx, prepared.tree, 0.0, 0.0, false)
-  { buffer: buf, link_regions, hit_regions, scrollable_elements, image_regions }
+  {
+    buffer: buf,
+    link_regions,
+    hit_regions,
+    scrollable_elements,
+    image_regions,
+  }
 }
 
 ///|

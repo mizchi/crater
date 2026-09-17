@@ -66,7 +66,7 @@ fn Browser::init_scrollable_elements(
 fn Browser::get_element_scroll_positions(
   self : Browser,
 ) -> Map[String, @tui.ElementScrollPos] {
-  let result : Map[String, @tui.ElementScrollPos] = {}
+  let result : Map[String, @tui.ElementScrollPos] = Map([])
   self.element_scroll_states.each(fn(id, state) {
     result.set(id, {
       scroll_top: state.scroll_top,

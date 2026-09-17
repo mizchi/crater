@@ -4,7 +4,7 @@
 
 ///|
 /// Global counter for generating unique layout node IDs
-let layout_node_uid_counter : Ref[Int] = { val: 0 }
+let layout_node_uid_counter : Ref[Int] = { val: 0, }
 
 ///|
 fn next_layout_uid() -> Int {
@@ -27,7 +27,7 @@ pub fn ConstraintKey::new(
   available_height : Double?,
   sizing_mode : @layout_types.SizingMode,
 ) -> ConstraintKey {
-  { available_width, available_height, sizing_mode }
+  { available_width, available_height, sizing_mode, }
 }
 
 ///|

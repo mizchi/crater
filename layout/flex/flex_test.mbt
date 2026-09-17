@@ -24,7 +24,7 @@ test "flex_item_height_recalculated_on_shrink" {
         available_width
       }
       if actual_width >= max_width {
-        { min_width: 50.0, max_width, min_height: 20.0, max_height: 20.0 }
+        { min_width: 50.0, max_width, min_height: 20.0, max_height: 20.0, }
       } else {
         // Wraps - needs more height
         let lines = (max_width / actual_width).ceil()
@@ -38,7 +38,7 @@ test "flex_item_height_recalculated_on_shrink" {
     },
   }
   // Two flex items with flex-shrink: 1
-  let child_style = { ..default_style, flex_shrink: 1.0, flex_grow: 0.0 }
+  let child_style = { ..default_style, flex_shrink: 1.0, flex_grow: 0.0, }
   let child1 = @node.Node::with_measure("child1", child_style, text_measure)
   let child2 = @node.Node::with_measure("child2", child_style, text_measure)
   // Container is only 200px, with align-items: flex-start to disable stretch
@@ -345,7 +345,7 @@ test "flex_align_stretch" {
   let default_style = @style.Style::default()
   let child = @node.Node::leaf(
     "child",
-    { ..default_style, width: @types.Length(50.0) },
+    { ..default_style, width: @types.Length(50.0), },
     // No height specified, should stretch
   )
   let root_style = {
@@ -668,8 +668,8 @@ test "flex_item_block_child_negative_margin_keeps_offsets_in_vertical_rl" {
     height: @types.Length(24.0),
     float: @types.Float::Left,
   }
-  let tile_right = { ..tile_left, float: @types.Float::Right }
-  let tile_left_clear = { ..tile_left, clear: @types.Clear::Both }
+  let tile_right = { ..tile_left, float: @types.Float::Right, }
+  let tile_left_clear = { ..tile_left, clear: @types.Clear::Both, }
   let indicator = @node.Node::new(
     "indicator",
     {
@@ -747,8 +747,8 @@ test "flex_item_block_child_negative_margin_keeps_offsets_in_vertical_lr" {
     height: @types.Length(24.0),
     float: @types.Float::Left,
   }
-  let tile_right = { ..tile_left, float: @types.Float::Right }
-  let tile_left_clear = { ..tile_left, clear: @types.Clear::Both }
+  let tile_right = { ..tile_left, float: @types.Float::Right, }
+  let tile_left_clear = { ..tile_left, clear: @types.Clear::Both, }
   let indicator = @node.Node::new(
     "indicator",
     {
@@ -1375,7 +1375,11 @@ test "flex_stretch_respects_explicit_height" {
   let default_style = @style.Style::default()
   let child = @node.Node::leaf(
     "child",
-    { ..default_style, width: @types.Length(50.0), height: @types.Length(40.0) }, // Explicit height
+    {
+      ..default_style,
+      width: @types.Length(50.0),
+      height: @types.Length(40.0),
+    }, // Explicit height
   )
   let root_style = {
     ..default_style,
@@ -1471,7 +1475,7 @@ test "flex_max_width_constraint" {
 /// From taffy: display_none - display:none child should be skipped in flex layout
 test "flex_display_none" {
   let default_style = @style.Style::default()
-  let child1 = @node.Node::leaf("child1", { ..default_style, flex_grow: 1.0 })
+  let child1 = @node.Node::leaf("child1", { ..default_style, flex_grow: 1.0, })
   let child2 = @node.Node::leaf("child2", {
     ..default_style,
     display: @types.Display::None,
@@ -1511,7 +1515,7 @@ test "flex_display_none" {
 /// Column flex with min-height and flex-grow child
 test "flex_grow_within_constrained_min_column" {
   let default_style = @style.Style::default()
-  let child1 = @node.Node::leaf("child1", { ..default_style, flex_grow: 1.0 })
+  let child1 = @node.Node::leaf("child1", { ..default_style, flex_grow: 1.0, })
   let child2 = @node.Node::leaf("child2", {
     ..default_style,
     height: @types.Length(50.0),
@@ -1939,7 +1943,7 @@ test "flex_column_align_stretch" {
   let default_style = @style.Style::default()
   let child = @node.Node::leaf(
     "child",
-    { ..default_style, height: @types.Length(50.0) },
+    { ..default_style, height: @types.Length(50.0), },
     // width: auto (should stretch)
   )
   let root_style = {
@@ -2457,7 +2461,7 @@ test "flex_basis_flex_grow_column" {
     flex_basis: @types.Length(50.0),
   })
   // Child with flex-grow: 1 (no basis)
-  let child2 = @node.Node::leaf("child2", { ..default_style, flex_grow: 1.0 })
+  let child2 = @node.Node::leaf("child2", { ..default_style, flex_grow: 1.0, })
   let root_style = {
     ..default_style,
     display: @types.Flex,
@@ -3171,7 +3175,7 @@ test "aspect_ratio_transferred_max_height_from_flex_grow_width" {
   })
   let root = @node.Node::new(
     "root",
-    { ..default_style, display: @types.Flex, width: @types.Length(100.0) },
+    { ..default_style, display: @types.Flex, width: @types.Length(100.0), },
     [child0],
   )
   let ctx : @layout_types.LayoutContext = {
@@ -3204,7 +3208,7 @@ test "min_content_block_width_uses_stretched_aspect_ratio_flex_child" {
   })
   let flex_child = @node.Node::new(
     "flex",
-    { ..default_style, display: @types.Flex, height: @types.Percent(1.0) },
+    { ..default_style, display: @types.Flex, height: @types.Percent(1.0), },
     [ratio_child],
   )
   let root = @node.Node::new(
@@ -3370,7 +3374,7 @@ test "inline_flex_intrinsic_width_uses_stretched_canvas_percent_height" {
   let default_style = @style.Style::default()
   let canvas_measure : @layout_types.MeasureFunc = {
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 10.0, max_width: 10.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 10.0, max_width: 10.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let canvas = @node.Node::with_measure(
@@ -3955,7 +3959,7 @@ test "nested_overflowing_child_unconstrained" {
   // node0: no explicit size, wraps node00
   let node0 = @node.Node::new(
     "node0",
-    { ..default_style, display: @types.Flex },
+    { ..default_style, display: @types.Flex, },
     [node00],
   )
 
@@ -4222,7 +4226,7 @@ test "debug_intrinsic_cross_sizing" {
   // Root is Row with height: Auto - should grow to fit children
   let root = @node.Node::new(
     "root",
-    { ..default_style, display: @types.Flex, width: @types.Length(100.0) },
+    { ..default_style, display: @types.Flex, width: @types.Length(100.0), },
     // height: Auto (default)
     [parent],
   )
@@ -4280,7 +4284,7 @@ test "flex_text_wrapping_in_fixed_width_container" {
   let text_node = @node.Node::with_measure("#text", default_style, text_measure)
   let flex_item = @node.Node::new(
     "item",
-    { ..default_style, flex_shrink: 1.0 },
+    { ..default_style, flex_shrink: 1.0, },
     [text_node],
   )
 
@@ -4322,7 +4326,7 @@ test "flex_text_wrapping_in_fixed_width_container" {
 
 ///|
 test "row_flex_direct_text_leaf_keeps_single_line_cross_size_at_intrinsic_width" {
-  let default_style = { ..@style.Style::default(), display: @types.Inline }
+  let default_style = { ..@style.Style::default(), display: @types.Inline, }
   let text_measure : @layout_types.MeasureFunc = {
     func: fn(
       available_width : Double,
@@ -4386,23 +4390,23 @@ test "row_column_div_with_cache_reset" {
       _available_width,
       _available_height,
     ) -> @layout_types.IntrinsicSize {
-      { min_width: 8.0, max_width: 8.0, min_height: 16.0, max_height: 16.0 }
+      { min_width: 8.0, max_width: 8.0, min_height: 16.0, max_height: 16.0, }
     },
   }
   let text_node = @node.Node::with_measure("text", default_style, text_measure)
   let inner_div = @node.Node::new(
     "div",
-    { ..default_style, display: @types.Block },
+    { ..default_style, display: @types.Block, },
     [text_node],
   )
   let column = @node.Node::new(
     "column",
-    { ..default_style, display: @types.Flex, flex_direction: @types.Column },
+    { ..default_style, display: @types.Flex, flex_direction: @types.Column, },
     [inner_div],
   )
   let row = @node.Node::new(
     "row",
-    { ..default_style, display: @types.Flex, flex_direction: @types.Row },
+    { ..default_style, display: @types.Flex, flex_direction: @types.Row, },
     [column],
   )
   let ctx : @layout_types.LayoutContext = {
@@ -4427,18 +4431,18 @@ test "column_div_nested" {
       _available_width,
       _available_height,
     ) -> @layout_types.IntrinsicSize {
-      { min_width: 8.0, max_width: 8.0, min_height: 16.0, max_height: 16.0 }
+      { min_width: 8.0, max_width: 8.0, min_height: 16.0, max_height: 16.0, }
     },
   }
   let text_node = @node.Node::with_measure("text", default_style, text_measure)
   let inner_div = @node.Node::new(
     "div",
-    { ..default_style, display: @types.Block },
+    { ..default_style, display: @types.Block, },
     [text_node],
   )
   let column = @node.Node::new(
     "column",
-    { ..default_style, display: @types.Flex, flex_direction: @types.Column },
+    { ..default_style, display: @types.Flex, flex_direction: @types.Column, },
     [inner_div],
   )
   let ctx : @layout_types.LayoutContext = {
@@ -4466,7 +4470,7 @@ test "row_column_nested_flex_with_text" {
       _available_width,
       _available_height,
     ) -> @layout_types.IntrinsicSize {
-      { min_width: 8.0, max_width: 8.0, min_height: 16.0, max_height: 16.0 }
+      { min_width: 8.0, max_width: 8.0, min_height: 16.0, max_height: 16.0, }
     },
   }
   // Inner text node
@@ -4474,19 +4478,19 @@ test "row_column_nested_flex_with_text" {
   // Inner div containing text (display: block by default)
   let inner_div = @node.Node::new(
     "div",
-    { ..default_style, display: @types.Block },
+    { ..default_style, display: @types.Block, },
     [text_node],
   )
   // Column flex container
   let column = @node.Node::new(
     "column",
-    { ..default_style, display: @types.Flex, flex_direction: @types.Column },
+    { ..default_style, display: @types.Flex, flex_direction: @types.Column, },
     [inner_div],
   )
   // Row flex container
   let row = @node.Node::new(
     "row",
-    { ..default_style, display: @types.Flex, flex_direction: @types.Row },
+    { ..default_style, display: @types.Flex, flex_direction: @types.Row, },
     [column],
   )
   let ctx : @layout_types.LayoutContext = {
@@ -5081,7 +5085,7 @@ test "flex_contain_size_auto_height_ignores_child_content" {
       ..default_style,
       display: @types.Flex,
       flex_direction: @types.Row,
-      contain: { ..default_style.contain, size: true },
+      contain: { ..default_style.contain, size: true, },
       border: {
         top: @types.Length(2.0),
         right: @types.Length(2.0),
@@ -5109,7 +5113,7 @@ test "inline_flex_contain_size_uses_definite_zero_main_size_for_shrink" {
   let default_style = @style.Style::default()
   let measure : @layout_types.MeasureFunc = {
     func: fn(_w, _h) {
-      { min_width: 40.0, max_width: 100.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 40.0, max_width: 100.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let item = @node.Node::with_measure(
@@ -5127,7 +5131,7 @@ test "inline_flex_contain_size_uses_definite_zero_main_size_for_shrink" {
       ..default_style,
       display: @types.InlineFlex,
       flex_direction: @types.Row,
-      contain: { ..default_style.contain, size: true },
+      contain: { ..default_style.contain, size: true, },
       border: {
         top: @types.Length(2.0),
         right: @types.Length(2.0),
@@ -5267,7 +5271,7 @@ test "flex_align_items_center_differs_from_default_stretch" {
   let m = fn(h : Double) -> @layout_types.MeasureFunc {
     {
       func: fn(_w, _h) {
-        { min_width: 20.0, max_width: 20.0, min_height: h, max_height: h }
+        { min_width: 20.0, max_width: 20.0, min_height: h, max_height: h, }
       },
     }
   }
@@ -5290,7 +5294,7 @@ test "flex_align_items_center_differs_from_default_stretch" {
       width: @types.Length(100.0),
     }
     let style = match align {
-      Some(a) => { ..base, align_items: a }
+      Some(a) => { ..base, align_items: a, }
       None => base
     }
     compute(@node.Node::new("root", style, [c1, c2]), ctx, default_dispatch())
@@ -5313,7 +5317,7 @@ test "flexbox_min_width_justify_and_padding" {
   let ds = @style.Style::default()
   let tm : @layout_types.MeasureFunc = {
     func: fn(_w, _h) {
-      { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let ctx : @layout_types.LayoutContext = {
@@ -5352,7 +5356,7 @@ test "flexbox_min_width_justify_and_padding" {
   let c2 = @node.Node::with_measure("c2", ds, tm)
   let r2 = @node.Node::new(
     "r2",
-    { ..ds, display: @types.Flex, flex_direction: @types.Row, padding: pad2 },
+    { ..ds, display: @types.Flex, flex_direction: @types.Row, padding: pad2, },
     [c2],
   )
   let l2 = compute(r2, ctx, default_dispatch())
@@ -5362,7 +5366,7 @@ test "flexbox_min_width_justify_and_padding" {
   let c3 = @node.Node::with_measure("c3", ds, tm)
   let r3 = @node.Node::new(
     "r3",
-    { ..ds, display: @types.Flex, flex_direction: @types.Row },
+    { ..ds, display: @types.Flex, flex_direction: @types.Row, },
     [c3],
   )
   let l3 = compute(r3, ctx, default_dispatch())
@@ -5402,7 +5406,7 @@ test "flex column item with flex-grow child is not inflated to width" {
   )
   let root = @node.Node::new(
     "root",
-    { ..default_style, display: @types.Flex, align_items: @types.Start },
+    { ..default_style, display: @types.Flex, align_items: @types.Start, },
     [card],
   )
   let ctx : @layout_types.LayoutContext = {

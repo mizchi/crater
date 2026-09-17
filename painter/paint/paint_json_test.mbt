@@ -71,7 +71,7 @@ test "PaintNode::to_json_string preserves numeric font weight" {
     0.0,
     80.0,
     20.0,
-    { ..PaintProperties::default(), font_weight: 500.0, is_bold: false },
+    { ..PaintProperties::default(), font_weight: 500.0, is_bold: false, },
     [],
     text=Some("Medium"),
   )

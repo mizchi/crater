@@ -175,7 +175,7 @@ test "text metrics provider affects default text input intrinsic width" {
         _available_width : Double,
         _available_height : Double,
       ) -> @layout_types.IntrinsicSize {
-        { min_width: 6.0, max_width: 6.0, min_height: 16.0, max_height: 16.0 }
+        { min_width: 6.0, max_width: 6.0, min_height: 16.0, max_height: 16.0, }
       },
     }
   })

@@ -28,7 +28,7 @@ fn collapse_inline_whitespace(text : String) -> String {
     trailing = true
     end_idx = end_idx - 1
   }
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   if leading {
     buf.write_char(' ')
   }

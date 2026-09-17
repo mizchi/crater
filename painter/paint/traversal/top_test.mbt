@@ -8,7 +8,7 @@ test "paint traversal owns stacking order normalization" {
     0.0,
     10.0,
     10.0,
-    { ..paint, z_index: @style.ZIndex::Value(0) },
+    { ..paint, z_index: @style.ZIndex::Value(0), },
     [],
   )
   let front = @model.PaintNode::new(
@@ -18,7 +18,7 @@ test "paint traversal owns stacking order normalization" {
     0.0,
     10.0,
     10.0,
-    { ..paint, z_index: @style.ZIndex::Value(10) },
+    { ..paint, z_index: @style.ZIndex::Value(10), },
     [],
   )
   let sorted = sort_by_stacking_order([front, back])

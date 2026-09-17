@@ -1,0 +1,12 @@
+# Packaging exclusions for the mizchi/crater meta-package (migrated from the
+# deprecated `options(exclude: [...])` in moon.mod). See the moon.mod docs.
+wpt
+_build
+node_modules
+browser
+js
+wasm
+tests
+wpt-tests
+scripts
+docs

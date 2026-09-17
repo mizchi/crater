@@ -17,7 +17,7 @@ priv struct TaskIdGenerator {
 }
 
 ///|
-let task_id_gen : TaskIdGenerator = { next_id: 0 }
+let task_id_gen : TaskIdGenerator = { next_id: 0, }
 
 ///|
 fn TaskId::next() -> TaskId {
@@ -200,7 +200,7 @@ pub impl Show for TaskConstraint with fn output(self, logger) {
   match self {
     MainThreadOnly => logger.write_string("MainThreadOnly")
     Parallel => logger.write_string("Parallel")
-    Blocking(sources) => logger.write_string("Blocking(\{to_repr(sources)})")
+    Blocking(sources) => logger.write_string("Blocking(\{Repr(sources)})")
   }
 }
 
@@ -253,7 +253,7 @@ pub impl Show for TaskAction with fn output(self, logger) {
       logger.write_string(")")
     }
     ComputeStyle(node_ids~) =>
-      logger.write_string("ComputeStyle(node_ids=\{to_repr(node_ids)})")
+      logger.write_string("ComputeStyle(node_ids=\{Repr(node_ids)})")
     ComputeLayout => logger.write_string("ComputeLayout")
     FetchResource(url~, resource_type~) => {
       logger.write_string("FetchResource(url=")
@@ -278,7 +278,7 @@ pub impl Show for TaskAction with fn output(self, logger) {
 pub impl Show for TaskResult with fn output(self, logger) {
   match self {
     Success(new_tasks~) =>
-      logger.write_string("Success(new_tasks=\{to_repr(new_tasks)})")
+      logger.write_string("Success(new_tasks=\{Repr(new_tasks)})")
     Failure(error~) => {
       logger.write_string("Failure(error=")
       logger.write_string("\"")

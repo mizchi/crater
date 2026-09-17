@@ -153,7 +153,7 @@ test "buffer_to_plain_with_links generates OSC 8" {
   }
   let _ = buf.write_text(2, 0, "Click", style, 20)
   let links : Array[PlainLink] = [
-    { col: 2, row: 0, width: 5, url: "https://example.com" },
+    { col: 2, row: 0, width: 5, url: "https://example.com", },
   ]
   let output = buffer_to_plain_with_links(buf, links)
   // Debug: print escape sequences in hex for verification
@@ -164,7 +164,7 @@ test "buffer_to_plain_with_links generates OSC 8" {
   let osc_end = "\u001b]8;;\u0007"
   println("Contains OSC end: " + output.contains(osc_end).to_string())
   // Print full output as hex bytes for debugging
-  let hex = StringBuilder::new()
+  let hex = StringBuilder()
   for c in output {
     let code = c.to_int()
     if code < 32 || code > 126 {
@@ -189,13 +189,13 @@ test "OSC 8 escape sequence format" {
   let start = ansi_hyperlink_start("https://test.com")
   let end = ansi_hyperlink_end()
   // Build byte string for debugging
-  let start_bytes = StringBuilder::new()
+  let start_bytes = StringBuilder()
   for c in start {
     start_bytes.write_string(c.to_int().to_string())
     start_bytes.write_string(" ")
   }
   println("Start sequence bytes: " + start_bytes.to_string())
-  let end_bytes = StringBuilder::new()
+  let end_bytes = StringBuilder()
   for c in end {
     end_bytes.write_string(c.to_int().to_string())
     end_bytes.write_string(" ")

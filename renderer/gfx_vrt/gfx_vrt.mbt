@@ -60,7 +60,7 @@ pub fn render_paint_tree_to_image(
   } catch {
     _ => Array::make(width * height * 4, 0)
   }
-  { width, height, pixels }
+  { width, height, pixels, }
 }
 
 ///|
@@ -85,7 +85,7 @@ pub fn render_html_to_image(
 pub fn RenderedImage::to_ascii(self : RenderedImage) -> String {
   let ramp = [' ', '.', ':', '-', '=', '+', '*', '#', '%', '@']
   let last = ramp.length() - 1
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for y in 0..<self.height {
     for x in 0..<self.width {
       let base = (y * self.width + x) * 4
@@ -153,5 +153,5 @@ pub fn render_text_to_image(
   } catch {
     _ => Array::make(width * height * 4, 0)
   }
-  { width, height, pixels }
+  { width, height, pixels, }
 }

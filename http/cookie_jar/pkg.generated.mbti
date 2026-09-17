@@ -37,4 +37,3 @@ pub impl Show for ParsedCookie
 // Type aliases
 
 // Traits
-

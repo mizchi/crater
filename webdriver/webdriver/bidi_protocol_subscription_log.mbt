@@ -38,7 +38,7 @@ fn BidiProtocol::flush_pending_log_entries(self : BidiProtocol) -> Unit {
     match self.subscription_state.pending_log_entries.get(ctx_id) {
       Some(entries) =>
         for params in entries {
-          self.outbox.push(Event({ event_method: "log.entryAdded", params }))
+          self.outbox.push(Event({ event_method: "log.entryAdded", params, }))
         }
       None => ()
     }

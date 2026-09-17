@@ -11,15 +11,15 @@ pub fn DynamicPalette::new() -> DynamicPalette {
   // Reserve index 0 for transparent/white background
   let white = Color::white()
   colors.push(white)
-  let color_map : Map[Int, Int] = {}
+  let color_map : Map[Int, Int] = Map([])
   color_map.set(color_hash(white), 0)
-  { colors, color_map }
+  { colors, color_map, }
 }
 
 ///|
 /// Convert layout Color to raster Color
 fn types_color_to_image(c : @types.Color) -> Color {
-  { r: c.r, g: c.g, b: c.b }
+  { r: c.r, g: c.g, b: c.b, }
 }
 
 ///|

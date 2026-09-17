@@ -67,7 +67,7 @@ test "enforce_cors_response rejects missing ACAO" {
         origin: "https://example.test/page",
         sandbox: Open,
       },
-      { status: 200, headers: {}, body: "" },
+      { status: 200, headers: {}, body: "", },
     )
   })
   match err {
@@ -78,7 +78,7 @@ test "enforce_cors_response rejects missing ACAO" {
 
 ///|
 test "enforce_cors_response rejects wildcard with credentials" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   headers["access-control-allow-origin"] = "*"
   headers["access-control-allow-credentials"] = "true"
   let err = capture_error(fn() raise HttpError {
@@ -91,7 +91,7 @@ test "enforce_cors_response rejects wildcard with credentials" {
         origin: "https://example.test/page",
         sandbox: Open,
       },
-      { status: 200, headers, body: "" },
+      { status: 200, headers, body: "", },
     )
   })
   match err {
@@ -102,7 +102,7 @@ test "enforce_cors_response rejects wildcard with credentials" {
 
 ///|
 test "enforce_cors_response allows matching origin" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   headers["access-control-allow-origin"] = "https://example.test"
   let result = enforce_cors_response(
     "https://other.test/asset",
@@ -112,7 +112,7 @@ test "enforce_cors_response allows matching origin" {
       origin: "https://example.test/page",
       sandbox: Open,
     },
-    { status: 200, headers, body: "ok" },
+    { status: 200, headers, body: "ok", },
   )
   inspect(result.status, content="200")
   inspect(result.body, content="ok")
@@ -124,7 +124,7 @@ test "enforce_cors_response allows matching origin" {
 
 ///|
 test "CORS: filters non-safelisted headers by default" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   headers["access-control-allow-origin"] = "*"
   headers["content-type"] = "text/html"
   headers["x-custom-header"] = "secret"
@@ -137,7 +137,7 @@ test "CORS: filters non-safelisted headers by default" {
       origin: "https://example.test",
       sandbox: Open,
     },
-    { status: 200, headers, body: "ok" },
+    { status: 200, headers, body: "ok", },
   )
   // content-type is safelisted → visible
   inspect(result.headers.contains("content-type"), content="true")
@@ -148,7 +148,7 @@ test "CORS: filters non-safelisted headers by default" {
 
 ///|
 test "CORS: expose-headers allows specific non-safelisted headers" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   headers["access-control-allow-origin"] = "*"
   headers["access-control-expose-headers"] = "X-Custom-Header"
   headers["content-type"] = "application/json"
@@ -162,7 +162,7 @@ test "CORS: expose-headers allows specific non-safelisted headers" {
       origin: "https://example.test",
       sandbox: Open,
     },
-    { status: 200, headers, body: "" },
+    { status: 200, headers, body: "", },
   )
   inspect(result.headers.contains("x-custom-header"), content="true")
   inspect(result.headers.contains("x-other"), content="false")
@@ -171,7 +171,7 @@ test "CORS: expose-headers allows specific non-safelisted headers" {
 
 ///|
 test "CORS: expose-headers wildcard exposes all (no credentials)" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   headers["access-control-allow-origin"] = "*"
   headers["access-control-expose-headers"] = "*"
   headers["x-custom"] = "val1"
@@ -185,7 +185,7 @@ test "CORS: expose-headers wildcard exposes all (no credentials)" {
       origin: "https://example.test",
       sandbox: Open,
     },
-    { status: 200, headers, body: "" },
+    { status: 200, headers, body: "", },
   )
   inspect(result.headers.contains("x-custom"), content="true")
   inspect(result.headers.contains("x-secret"), content="true")
@@ -193,7 +193,7 @@ test "CORS: expose-headers wildcard exposes all (no credentials)" {
 
 ///|
 test "CORS: expose-headers wildcard does NOT work with credentials:Include" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   headers["access-control-allow-origin"] = "https://example.test"
   headers["access-control-allow-credentials"] = "true"
   headers["access-control-expose-headers"] = "*"
@@ -208,7 +208,7 @@ test "CORS: expose-headers wildcard does NOT work with credentials:Include" {
       origin: "https://example.test",
       sandbox: Open,
     },
-    { status: 200, headers, body: "" },
+    { status: 200, headers, body: "", },
   )
   // Wildcard is ignored with credentials, but "*" is in the exposed list literally
   // so only safelisted headers should be visible (wildcard doesn't expand)
@@ -219,7 +219,7 @@ test "CORS: expose-headers wildcard does NOT work with credentials:Include" {
 
 ///|
 test "CORS: safelisted headers always visible" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   headers["access-control-allow-origin"] = "*"
   headers["cache-control"] = "max-age=300"
   headers["content-language"] = "en"
@@ -236,7 +236,7 @@ test "CORS: safelisted headers always visible" {
       origin: "https://example.test",
       sandbox: Open,
     },
-    { status: 200, headers, body: "" },
+    { status: 200, headers, body: "", },
   )
   inspect(result.headers.contains("cache-control"), content="true")
   inspect(result.headers.contains("content-language"), content="true")
@@ -253,7 +253,7 @@ test "CORS: safelisted headers always visible" {
 
 ///|
 test "CORS: same-origin request skips CORS checks" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   // No ACAO header — but same-origin, so it should pass
   headers["x-custom"] = "visible"
   let result = enforce_cors_response(
@@ -264,7 +264,7 @@ test "CORS: same-origin request skips CORS checks" {
       origin: "https://example.test",
       sandbox: Open,
     },
-    { status: 200, headers, body: "ok" },
+    { status: 200, headers, body: "ok", },
   )
   // Same-origin → no filtering, all headers visible
   inspect(result.headers.contains("x-custom"), content="true")
@@ -272,7 +272,7 @@ test "CORS: same-origin request skips CORS checks" {
 
 ///|
 test "CORS: NoCors mode skips CORS enforcement" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   headers["x-custom"] = "visible"
   // NoCors: no ACAO needed, no filtering
   let result = enforce_cors_response(
@@ -283,14 +283,14 @@ test "CORS: NoCors mode skips CORS enforcement" {
       origin: "https://example.test",
       sandbox: Open,
     },
-    { status: 200, headers, body: "ok" },
+    { status: 200, headers, body: "ok", },
   )
   inspect(result.headers.contains("x-custom"), content="true")
 }
 
 ///|
 test "CORS: Navigate mode skips CORS enforcement" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   let result = enforce_cors_response(
     "https://other.test/page",
     {
@@ -299,14 +299,14 @@ test "CORS: Navigate mode skips CORS enforcement" {
       origin: "https://example.test",
       sandbox: Open,
     },
-    { status: 200, headers, body: "html" },
+    { status: 200, headers, body: "html", },
   )
   inspect(result.status, content="200")
 }
 
 ///|
 test "CORS: credentials Include with matching origin succeeds" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   headers["access-control-allow-origin"] = "https://example.test"
   headers["access-control-allow-credentials"] = "true"
   let result = enforce_cors_response(
@@ -318,14 +318,14 @@ test "CORS: credentials Include with matching origin succeeds" {
       origin: "https://example.test",
       sandbox: Open,
     },
-    { status: 200, headers, body: "ok" },
+    { status: 200, headers, body: "ok", },
   )
   inspect(result.status, content="200")
 }
 
 ///|
 test "CORS: credentials Include without allow-credentials header fails" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   headers["access-control-allow-origin"] = "https://example.test"
   // Missing access-control-allow-credentials
   let err = capture_error(fn() raise HttpError {
@@ -338,7 +338,7 @@ test "CORS: credentials Include without allow-credentials header fails" {
         origin: "https://example.test",
         sandbox: Open,
       },
-      { status: 200, headers, body: "" },
+      { status: 200, headers, body: "", },
     )
   })
   match err {
@@ -349,7 +349,7 @@ test "CORS: credentials Include without allow-credentials header fails" {
 
 ///|
 test "CORS: origin with port is distinct" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   headers["access-control-allow-origin"] = "https://example.test"
   // Origin has port → different origin
   let err = capture_error(fn() raise HttpError {
@@ -361,7 +361,7 @@ test "CORS: origin with port is distinct" {
         origin: "https://example.test:8080",
         sandbox: Open,
       },
-      { status: 200, headers, body: "" },
+      { status: 200, headers, body: "", },
     )
   })
   match err {
@@ -372,12 +372,12 @@ test "CORS: origin with port is distinct" {
 
 ///|
 test "CORS: empty origin treated as same-origin" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   // No ACAO, but empty origin → not cross-origin → passes
   let result = enforce_cors_response(
     "https://other.test/api",
-    { ..FetchOptions::default(), mode: Cors, origin: "", sandbox: Open },
-    { status: 200, headers, body: "ok" },
+    { ..FetchOptions::default(), mode: Cors, origin: "", sandbox: Open, },
+    { status: 200, headers, body: "ok", },
   )
   inspect(result.status, content="200")
 }
@@ -502,7 +502,7 @@ test "normalize_origin: empty string" {
 
 ///|
 test "get_header: case insensitive lookup (lowercase key)" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   headers["content-type"] = "text/html"
   // get_header tries lowercase first
   debug_inspect(
@@ -513,7 +513,7 @@ test "get_header: case insensitive lookup (lowercase key)" {
 
 ///|
 test "get_header: exact match" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   headers["content-type"] = "text/html"
   debug_inspect(
     get_header(headers, "content-type"),
@@ -523,7 +523,7 @@ test "get_header: exact match" {
 
 ///|
 test "get_header: missing header" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   debug_inspect(get_header(headers, "x-missing"), content="None")
 }
 
@@ -534,7 +534,7 @@ test "get_header: missing header" {
 ///|
 /// Attack: ACAO with leading/trailing whitespace to bypass origin check
 test "CORS attack: ACAO with whitespace should still match wildcard" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   headers["access-control-allow-origin"] = "  *  "
   let result = enforce_cors_response(
     "https://evil.test/steal",
@@ -544,7 +544,7 @@ test "CORS attack: ACAO with whitespace should still match wildcard" {
       origin: "https://victim.test",
       sandbox: Open,
     },
-    { status: 200, headers, body: "data" },
+    { status: 200, headers, body: "data", },
   )
   // Trimmed " * " → "*" → should pass
   inspect(result.status, content="200")
@@ -553,7 +553,7 @@ test "CORS attack: ACAO with whitespace should still match wildcard" {
 ///|
 /// Attack: ACAO with whitespace around specific origin
 test "CORS attack: ACAO with whitespace around origin" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   headers["access-control-allow-origin"] = "  https://victim.test  "
   let result = enforce_cors_response(
     "https://other.test/api",
@@ -563,7 +563,7 @@ test "CORS attack: ACAO with whitespace around origin" {
       origin: "https://victim.test",
       sandbox: Open,
     },
-    { status: 200, headers, body: "ok" },
+    { status: 200, headers, body: "ok", },
   )
   inspect(result.status, content="200")
 }
@@ -571,7 +571,7 @@ test "CORS attack: ACAO with whitespace around origin" {
 ///|
 /// Attack: ACAO set to "null" (e.g. from sandboxed iframe) — should NOT match
 test "CORS attack: ACAO null string should not match real origin" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   headers["access-control-allow-origin"] = "null"
   let err = capture_error(fn() raise HttpError {
     let _ = enforce_cors_response(
@@ -582,7 +582,7 @@ test "CORS attack: ACAO null string should not match real origin" {
         origin: "https://victim.test",
         sandbox: Open,
       },
-      { status: 200, headers, body: "" },
+      { status: 200, headers, body: "", },
     )
   })
   match err {
@@ -594,7 +594,7 @@ test "CORS attack: ACAO null string should not match real origin" {
 ///|
 /// Attack: ACAO with subdomain prefix trying to match parent domain
 test "CORS attack: subdomain in ACAO should not match parent domain" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   headers["access-control-allow-origin"] = "https://evil.victim.test"
   let err = capture_error(fn() raise HttpError {
     let _ = enforce_cors_response(
@@ -605,7 +605,7 @@ test "CORS attack: subdomain in ACAO should not match parent domain" {
         origin: "https://victim.test",
         sandbox: Open,
       },
-      { status: 200, headers, body: "" },
+      { status: 200, headers, body: "", },
     )
   })
   match err {
@@ -617,7 +617,7 @@ test "CORS attack: subdomain in ACAO should not match parent domain" {
 ///|
 /// Attack: ACAO with http:// when caller is https:// (protocol downgrade)
 test "CORS attack: http ACAO should not match https origin" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   headers["access-control-allow-origin"] = "http://victim.test"
   let err = capture_error(fn() raise HttpError {
     let _ = enforce_cors_response(
@@ -628,7 +628,7 @@ test "CORS attack: http ACAO should not match https origin" {
         origin: "https://victim.test",
         sandbox: Open,
       },
-      { status: 200, headers, body: "" },
+      { status: 200, headers, body: "", },
     )
   })
   match err {
@@ -640,7 +640,7 @@ test "CORS attack: http ACAO should not match https origin" {
 ///|
 /// Attack: Try to exfiltrate Set-Cookie via CORS response
 test "CORS attack: Set-Cookie header must be filtered" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   headers["access-control-allow-origin"] = "*"
   headers["set-cookie"] = "session=stolen123"
   headers["content-type"] = "application/json"
@@ -652,7 +652,7 @@ test "CORS attack: Set-Cookie header must be filtered" {
       origin: "https://victim.test",
       sandbox: Open,
     },
-    { status: 200, headers, body: "{}" },
+    { status: 200, headers, body: "{}", },
   )
   // Set-Cookie must be filtered out
   inspect(result.headers.contains("set-cookie"), content="false")
@@ -663,7 +663,7 @@ test "CORS attack: Set-Cookie header must be filtered" {
 ///|
 /// Attack: Try to read Authorization header via CORS response
 test "CORS attack: Authorization response header must be filtered" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   headers["access-control-allow-origin"] = "*"
   headers["authorization"] = "Bearer stolen-token"
   headers["x-internal-id"] = "secret-123"
@@ -675,7 +675,7 @@ test "CORS attack: Authorization response header must be filtered" {
       origin: "https://victim.test",
       sandbox: Open,
     },
-    { status: 200, headers, body: "" },
+    { status: 200, headers, body: "", },
   )
   inspect(result.headers.contains("authorization"), content="false")
   inspect(result.headers.contains("x-internal-id"), content="false")
@@ -684,7 +684,7 @@ test "CORS attack: Authorization response header must be filtered" {
 ///|
 /// Attack: Expose-Headers with credentials tries to use wildcard
 test "CORS attack: wildcard expose-headers with credentials is blocked" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   headers["access-control-allow-origin"] = "https://victim.test"
   headers["access-control-allow-credentials"] = "true"
   headers["access-control-expose-headers"] = "*"
@@ -699,7 +699,7 @@ test "CORS attack: wildcard expose-headers with credentials is blocked" {
       origin: "https://victim.test",
       sandbox: Open,
     },
-    { status: 200, headers, body: "" },
+    { status: 200, headers, body: "", },
   )
   // Wildcard is ignored with credentials → non-safelisted headers filtered
   inspect(result.headers.contains("x-secret"), content="false")
@@ -709,7 +709,7 @@ test "CORS attack: wildcard expose-headers with credentials is blocked" {
 ///|
 /// Attack: Multiple ACAO values (spec says single value only)
 test "CORS attack: multiple origins in ACAO should fail" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   headers["access-control-allow-origin"] = "https://victim.test https://evil.test"
   let err = capture_error(fn() raise HttpError {
     let _ = enforce_cors_response(
@@ -720,7 +720,7 @@ test "CORS attack: multiple origins in ACAO should fail" {
         origin: "https://victim.test",
         sandbox: Open,
       },
-      { status: 200, headers, body: "" },
+      { status: 200, headers, body: "", },
     )
   })
   // "https://victim.test https://evil.test" != "https://victim.test"
@@ -733,7 +733,7 @@ test "CORS attack: multiple origins in ACAO should fail" {
 ///|
 /// Attack: ACAO with trailing path (should not match origin-only)
 test "CORS attack: ACAO with path should not match origin" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   headers["access-control-allow-origin"] = "https://victim.test/evil"
   let err = capture_error(fn() raise HttpError {
     let _ = enforce_cors_response(
@@ -744,7 +744,7 @@ test "CORS attack: ACAO with path should not match origin" {
         origin: "https://victim.test",
         sandbox: Open,
       },
-      { status: 200, headers, body: "" },
+      { status: 200, headers, body: "", },
     )
   })
   match err {
@@ -762,7 +762,7 @@ test "CORS attack: ACAO with path should not match origin" {
 /// Our implementation checks exact match, so reflected origin works
 /// This test documents the behavior — the risk is on the server side
 test "CORS reflection: server reflects origin (this is a server misconfiguration)" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   // Server reflects any origin — our client-side check passes for exact match
   headers["access-control-allow-origin"] = "https://evil.test"
   let err = capture_error(fn() raise HttpError {
@@ -774,7 +774,7 @@ test "CORS reflection: server reflects origin (this is a server misconfiguration
         origin: "https://victim.test", // Caller is victim
         sandbox: Open,
       },
-      { status: 200, headers, body: "secret" },
+      { status: 200, headers, body: "secret", },
     )
   })
   // ACAO is "evil.test" but caller is "victim.test" → mismatch → blocked
@@ -788,7 +788,7 @@ test "CORS reflection: server reflects origin (this is a server misconfiguration
 /// CORS: case sensitivity of origin scheme
 /// "HTTPS://example.test" vs "https://example.test"
 test "CORS: scheme case sensitivity in origin" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   headers["access-control-allow-origin"] = "HTTPS://victim.test"
   let err = capture_error(fn() raise HttpError {
     let _ = enforce_cors_response(
@@ -799,7 +799,7 @@ test "CORS: scheme case sensitivity in origin" {
         origin: "https://victim.test",
         sandbox: Open,
       },
-      { status: 200, headers, body: "" },
+      { status: 200, headers, body: "", },
     )
   })
   // Strict comparison: "HTTPS://victim.test" != "https://victim.test" → blocked
@@ -813,7 +813,7 @@ test "CORS: scheme case sensitivity in origin" {
 ///|
 /// CORS: IDN homograph attack — unicode domain vs ASCII
 test "CORS: unicode domain does not match ASCII lookalike" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   // Cyrillic "а" looks like Latin "a" but is different codepoint
   headers["access-control-allow-origin"] = "https://ex\u0430mple.test"
   let err = capture_error(fn() raise HttpError {
@@ -825,7 +825,7 @@ test "CORS: unicode domain does not match ASCII lookalike" {
         origin: "https://example.test", // Latin a
         sandbox: Open,
       },
-      { status: 200, headers, body: "" },
+      { status: 200, headers, body: "", },
     )
   })
   match err {
@@ -837,7 +837,7 @@ test "CORS: unicode domain does not match ASCII lookalike" {
 ///|
 /// CORS: tab/newline characters in ACAO value (HTTP header injection)
 test "CORS: tab character in ACAO is trimmed and accepted" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   headers["access-control-allow-origin"] = "https://victim.test\t"
   // MoonBit's trim() removes whitespace including \t
   // This matches browser behavior (HTTP header values are trimmed of OWS)
@@ -849,7 +849,7 @@ test "CORS: tab character in ACAO is trimmed and accepted" {
       origin: "https://victim.test",
       sandbox: Open,
     },
-    { status: 200, headers, body: "ok" },
+    { status: 200, headers, body: "ok", },
   )
   inspect(result.status, content="200")
 }
@@ -857,7 +857,7 @@ test "CORS: tab character in ACAO is trimmed and accepted" {
 ///|
 /// CORS: Expose-Headers header injection via comma in header name
 test "CORS: expose-headers cannot inject via comma in value" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   headers["access-control-allow-origin"] = "*"
   // Attacker tries to expose "set-cookie" by injecting into expose-headers
   headers["access-control-expose-headers"] = "x-safe, set-cookie"
@@ -871,7 +871,7 @@ test "CORS: expose-headers cannot inject via comma in value" {
       origin: "https://victim.test",
       sandbox: Open,
     },
-    { status: 200, headers, body: "" },
+    { status: 200, headers, body: "", },
   )
   // If server explicitly lists set-cookie in expose-headers, it IS exposed
   // This is correct behavior — the server explicitly opted in
@@ -883,7 +883,7 @@ test "CORS: expose-headers cannot inject via comma in value" {
 ///|
 /// DNS rebinding: origin check with IP address
 test "CORS: IP-based origin check is strict" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   headers["access-control-allow-origin"] = "https://192.168.1.1"
   let err = capture_error(fn() raise HttpError {
     let _ = enforce_cors_response(
@@ -894,7 +894,7 @@ test "CORS: IP-based origin check is strict" {
         origin: "https://192.168.1.2", // Different IP
         sandbox: Open,
       },
-      { status: 200, headers, body: "" },
+      { status: 200, headers, body: "", },
     )
   })
   match err {
@@ -906,7 +906,7 @@ test "CORS: IP-based origin check is strict" {
 ///|
 /// CORS: credentials SameOrigin mode with cross-origin request
 test "CORS: credentials SameOrigin does not trigger credential check" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   headers["access-control-allow-origin"] = "*"
   // credentials=SameOrigin + cross-origin → credentials are NOT included
   // So wildcard ACAO should work (no credentials check triggered)
@@ -919,7 +919,7 @@ test "CORS: credentials SameOrigin does not trigger credential check" {
       origin: "https://victim.test",
       sandbox: Open,
     },
-    { status: 200, headers, body: "ok" },
+    { status: 200, headers, body: "ok", },
   )
   inspect(result.status, content="200")
 }
@@ -927,7 +927,7 @@ test "CORS: credentials SameOrigin does not trigger credential check" {
 ///|
 /// Header smuggling: duplicate header keys use last value
 test "header smuggling: duplicate ACAO uses last value" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   headers["access-control-allow-origin"] = "https://evil.test"
   // Overwrite with correct origin
   headers["access-control-allow-origin"] = "https://victim.test"
@@ -939,7 +939,7 @@ test "header smuggling: duplicate ACAO uses last value" {
       origin: "https://victim.test",
       sandbox: Open,
     },
-    { status: 200, headers, body: "ok" },
+    { status: 200, headers, body: "ok", },
   )
   // Map stores last value → "https://victim.test" → matches
   inspect(result.status, content="200")
@@ -1034,7 +1034,7 @@ test "is_cross_origin: different origin" {
 
 ///|
 test "CORS filter: empty expose-headers value" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   headers["access-control-allow-origin"] = "*"
   headers["access-control-expose-headers"] = ""
   headers["x-custom"] = "val"
@@ -1047,7 +1047,7 @@ test "CORS filter: empty expose-headers value" {
       origin: "https://example.test",
       sandbox: Open,
     },
-    { status: 200, headers, body: "" },
+    { status: 200, headers, body: "", },
   )
   // Empty expose → only safelisted headers
   inspect(result.headers.contains("content-type"), content="true")
@@ -1056,7 +1056,7 @@ test "CORS filter: empty expose-headers value" {
 
 ///|
 test "CORS filter: expose-headers with extra commas" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   headers["access-control-allow-origin"] = "*"
   headers["access-control-expose-headers"] = ",,x-custom,,,"
   headers["x-custom"] = "val"
@@ -1069,7 +1069,7 @@ test "CORS filter: expose-headers with extra commas" {
       origin: "https://example.test",
       sandbox: Open,
     },
-    { status: 200, headers, body: "" },
+    { status: 200, headers, body: "", },
   )
   inspect(result.headers.contains("x-custom"), content="true")
   inspect(result.headers.contains("x-other"), content="false")
@@ -1077,7 +1077,7 @@ test "CORS filter: expose-headers with extra commas" {
 
 ///|
 test "CORS filter: response with no headers at all" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   headers["access-control-allow-origin"] = "*"
   let result = enforce_cors_response(
     "https://other.test/api",
@@ -1087,7 +1087,7 @@ test "CORS filter: response with no headers at all" {
       origin: "https://example.test",
       sandbox: Open,
     },
-    { status: 200, headers, body: "" },
+    { status: 200, headers, body: "", },
   )
   inspect(result.status, content="200")
 }
@@ -1095,7 +1095,7 @@ test "CORS filter: response with no headers at all" {
 ///|
 /// Edge case: CORS check on non-2xx response
 test "CORS: non-2xx response still requires valid ACAO" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   // No ACAO on 403 → should still be blocked by CORS
   let err = capture_error(fn() raise HttpError {
     let _ = enforce_cors_response(
@@ -1106,7 +1106,7 @@ test "CORS: non-2xx response still requires valid ACAO" {
         origin: "https://example.test",
         sandbox: Open,
       },
-      { status: 403, headers, body: "Forbidden" },
+      { status: 403, headers, body: "Forbidden", },
     )
   })
   match err {
@@ -1118,7 +1118,7 @@ test "CORS: non-2xx response still requires valid ACAO" {
 ///|
 /// Edge case: CORS check on redirect response (3xx)
 test "CORS: 301 response without ACAO is blocked" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   headers["location"] = "https://other.test/new-path"
   let err = capture_error(fn() raise HttpError {
     let _ = enforce_cors_response(
@@ -1129,7 +1129,7 @@ test "CORS: 301 response without ACAO is blocked" {
         origin: "https://example.test",
         sandbox: Open,
       },
-      { status: 301, headers, body: "" },
+      { status: 301, headers, body: "", },
     )
   })
   match err {
@@ -1178,7 +1178,7 @@ test "headers_to_json: empty map" {
 ///|
 /// headers_to_json: single header
 test "headers_to_json: single header" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   headers["a"] = "b"
   inspect(headers_to_json(headers), content="{\"a\":\"b\"}")
 }

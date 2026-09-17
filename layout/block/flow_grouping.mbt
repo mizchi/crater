@@ -310,7 +310,7 @@ fn compute_mixed_content_layout(
             if j < fallback_layouts.length() {
               let child_layout = fallback_layouts[j]
               let aligned_layout = if fallback_offset.abs() > 0.0001 {
-                { ..child_layout, x: child_layout.x + fallback_offset }
+                { ..child_layout, x: child_layout.x + fallback_offset, }
               } else {
                 child_layout
               }
@@ -369,7 +369,7 @@ fn compute_mixed_content_layout(
             if j < ifc_result.layouts.length() {
               let child_layout = ifc_result.layouts[j]
               let aligned_layout = if inline_group_offset.abs() > 0.0001 {
-                { ..child_layout, x: child_layout.x + inline_group_offset }
+                { ..child_layout, x: child_layout.x + inline_group_offset, }
               } else {
                 child_layout
               }

@@ -530,7 +530,7 @@ pub impl @gfx.GraphicsDriver for SoftwareDriver with fn begin(self, pass) {
 }
 
 ///|
-pub impl @gfx.GraphicsDriver for SoftwareDriver with fn end(self, _present) {
+pub impl @gfx.GraphicsDriver for SoftwareDriver with fn end(_self, _present) {
 
 }
 
@@ -557,13 +557,13 @@ pub impl @gfx.GraphicsDriver for SoftwareDriver with fn new_image(
   height,
 ) {
   self.next_id = self.next_id + 1
-  { id: self.next_id, width, height }
+  { id: self.next_id, width, height, }
 }
 
 ///|
 pub impl @gfx.GraphicsDriver for SoftwareDriver with fn new_shader(self, source) {
   self.next_id = self.next_id + 1
-  { id: self.next_id, source }
+  { id: self.next_id, source, }
 }
 
 ///|

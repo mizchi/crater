@@ -120,7 +120,7 @@ fn parse_inline_declarations(style_text : String) -> Array[@css.Declaration] {
 ///|
 fn split_by_semicolon(s : String) -> Array[String] {
   let result : Array[String] = []
-  let current = StringBuilder::new()
+  let current = StringBuilder()
   for c in s {
     if c == ';' {
       result.push(current.to_string())
@@ -235,7 +235,7 @@ pub fn StyleManager::on_css_parsed(
   } else {
     None
   }
-  { stylesheet, recompute_task, rule_count: stylesheet.rules.length() }
+  { stylesheet, recompute_task, rule_count: stylesheet.rules.length(), }
 }
 
 ///|

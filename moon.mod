@@ -22,18 +22,3 @@ keywords = [ "css", "browser" ]
 description = "CSS Layout Engine that implements Box/Flex/Grid"
 
 preferred_target = "js"
-
-options(
-  exclude: [
-    "wpt",
-    "_build",
-    "node_modules",
-    "browser",
-    "js",
-    "wasm",
-    "tests",
-    "wpt-tests",
-    "scripts",
-    "docs",
-  ],
-)

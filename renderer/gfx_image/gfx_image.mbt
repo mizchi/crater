@@ -30,7 +30,7 @@ pub fn ImageQuad2D::new(
   image~ : @gfx.ImageHandle,
   tint? : @gfx.Color = @gfx.new_color(1.0, 1.0, 1.0, 1.0),
 ) -> ImageQuad2D {
-  { x, y, w, h, image, tint }
+  { x, y, w, h, image, tint, }
 }
 
 ///|

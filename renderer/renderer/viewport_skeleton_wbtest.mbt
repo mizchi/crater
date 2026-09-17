@@ -43,7 +43,7 @@ fn count_nodes_with_id_prefix(node : @node.Node, prefix : String) -> Int {
 
 ///|
 fn many_image_document(count : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("<!doctype html><html><body style='margin:0'>")
   for i in 0..<count {
     buf.write_string(

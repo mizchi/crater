@@ -82,7 +82,7 @@ test "parse_cache_control: private, max-age=0, must-revalidate" {
 ///|
 test "is_fresh: max_age=300, stored 100s ago -> fresh" {
   let entry = make_entry(
-    directives={ ..CacheDirectives::default(), max_age: Some(300) },
+    directives={ ..CacheDirectives::default(), max_age: Some(300), },
     stored_at=1000.0,
   )
   inspect(is_fresh(entry, 1100.0), content="true")
@@ -91,7 +91,7 @@ test "is_fresh: max_age=300, stored 100s ago -> fresh" {
 ///|
 test "is_fresh: max_age=300, stored 400s ago -> stale" {
   let entry = make_entry(
-    directives={ ..CacheDirectives::default(), max_age: Some(300) },
+    directives={ ..CacheDirectives::default(), max_age: Some(300), },
     stored_at=1000.0,
   )
   inspect(is_fresh(entry, 1400.0), content="false")
@@ -100,7 +100,7 @@ test "is_fresh: max_age=300, stored 400s ago -> stale" {
 ///|
 test "is_fresh: immutable -> always fresh" {
   let entry = make_entry(
-    directives={ ..CacheDirectives::default(), immutable: true },
+    directives={ ..CacheDirectives::default(), immutable: true, },
     stored_at=0.0,
   )
   inspect(is_fresh(entry, 999999.0), content="true")
@@ -109,7 +109,7 @@ test "is_fresh: immutable -> always fresh" {
 ///|
 test "is_fresh: no_store -> always stale" {
   let entry = make_entry(
-    directives={ ..CacheDirectives::default(), no_store: true },
+    directives={ ..CacheDirectives::default(), no_store: true, },
     stored_at=1000.0,
   )
   inspect(is_fresh(entry, 1000.0), content="false")
@@ -190,8 +190,8 @@ test "MemoryCacheBackend: eviction at max_entries" {
     directives: CacheDirectives::default(),
     stored_at: 100.0,
   }
-  let e2 : CacheEntry = { ..e1, url: "https://a.com/2", stored_at: 200.0 }
-  let e3 : CacheEntry = { ..e1, url: "https://a.com/3", stored_at: 300.0 }
+  let e2 : CacheEntry = { ..e1, url: "https://a.com/2", stored_at: 200.0, }
+  let e3 : CacheEntry = { ..e1, url: "https://a.com/3", stored_at: 300.0, }
   cache.store(e1)
   cache.store(e2)
   cache.store(e3) // should evict e1 (oldest)
@@ -242,7 +242,7 @@ test "cached_fetch: no-store skips cache" {
     _options : @http.FetchOptions,
   ) -> @http.HttpResponse raise @http.HttpError {
     let _ = url
-    { status: 200, headers: { "cache-control": "no-store" }, body: "body" }
+    { status: 200, headers: { "cache-control": "no-store" }, body: "body", }
   }
   let _ = cached_fetch(
     url="https://example.com/ns.css",
@@ -271,7 +271,7 @@ test "cached_fetch: stale with etag sends conditional request" {
     _url : String,
     _options : @http.FetchOptions,
   ) -> @http.HttpResponse raise @http.HttpError {
-    { status: 304, headers: {}, body: "" }
+    { status: 304, headers: {}, body: "", }
   }
   let r = cached_fetch(
     url="https://example.com/old.css",
@@ -397,7 +397,7 @@ test "cached_fetch: 500 response is not cached" {
     _url : String,
     _options : @http.FetchOptions,
   ) -> @http.HttpResponse raise @http.HttpError {
-    { status: 500, headers: {}, body: "error" }
+    { status: 500, headers: {}, body: "error", }
   }
   let _ = cached_fetch(
     url="https://example.com/err",
@@ -454,7 +454,7 @@ test "cached_fetch: no-cache forces revalidation even when entry exists" {
     _options : @http.FetchOptions,
   ) -> @http.HttpResponse raise @http.HttpError {
     log.push(url)
-    { status: 304, headers: {}, body: "" }
+    { status: 304, headers: {}, body: "", }
   }
   let r = cached_fetch(
     url="https://example.com/nc.css",
@@ -554,7 +554,7 @@ test "cache attack: stale revalidation with 500 should not poison cache" {
     _url : String,
     _options : @http.FetchOptions,
   ) -> @http.HttpResponse raise @http.HttpError {
-    { status: 500, headers: {}, body: "attacker-controlled-error" }
+    { status: 500, headers: {}, body: "attacker-controlled-error", }
   }
   let r = cached_fetch(
     url="https://victim.test/api.js",
@@ -583,7 +583,7 @@ test "cache attack: HEAD response should not pollute GET cache" {
     _url : String,
     _options : @http.FetchOptions,
   ) -> @http.HttpResponse raise @http.HttpError {
-    { status: 200, headers: { "cache-control": "max-age=300" }, body: "" }
+    { status: 200, headers: { "cache-control": "max-age=300" }, body: "", }
   }
   let opts : @http.FetchOptions = {
     ..@http.FetchOptions::default(),
@@ -635,7 +635,7 @@ test "cache attack: response without any cache hints is still stored but immedia
     _url : String,
     _options : @http.FetchOptions,
   ) -> @http.HttpResponse raise @http.HttpError {
-    { status: 200, headers: {}, body: "no-cache-headers" }
+    { status: 200, headers: {}, body: "no-cache-headers", }
   }
   let _ = cached_fetch(
     url="https://example.com/no-hints",
@@ -743,7 +743,7 @@ test "cache attack: 304 on no-store entry should not refresh" {
     _url : String,
     _options : @http.FetchOptions,
   ) -> @http.HttpResponse raise @http.HttpError {
-    { status: 304, headers: {}, body: "" }
+    { status: 304, headers: {}, body: "", }
   }
   let r = cached_fetch(
     url="https://example.com/secret",
@@ -905,7 +905,7 @@ test "XS-Leak: no-cache always revalidates (timing-safe)" {
     _options : @http.FetchOptions,
   ) -> @http.HttpResponse raise @http.HttpError {
     fetcher_called[0] = true
-    { status: 304, headers: {}, body: "" }
+    { status: 304, headers: {}, body: "", }
   }
   let _ = cached_fetch(
     url="https://sensitive.test/inbox",
@@ -944,7 +944,7 @@ test "response splitting: ETag with CRLF does not corrupt conditional request" {
       Some(v) => captured_headers[0] = ("If-None-Match", v)
       None => ()
     }
-    { status: 200, headers: { "cache-control": "max-age=300" }, body: "new" }
+    { status: 200, headers: { "cache-control": "max-age=300" }, body: "new", }
   }
   let _ = cached_fetch(
     url="https://example.com/resource",
@@ -964,7 +964,7 @@ test "response splitting: ETag with CRLF does not corrupt conditional request" {
 ///|
 /// Prototype Pollution: header key "__proto__" should not affect behavior
 test "prototype pollution: __proto__ header key is harmless" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   headers["access-control-allow-origin"] = "*"
   headers["__proto__"] = "{\"polluted\":true}"
   headers["constructor"] = "Object"
@@ -976,7 +976,7 @@ test "prototype pollution: __proto__ header key is harmless" {
       origin: "https://victim.test",
       sandbox: Open,
     },
-    { status: 200, headers, body: "safe" },
+    { status: 200, headers, body: "safe", },
   )
   // __proto__ and constructor are filtered by CORS (not safelisted)
   inspect(result.headers.contains("__proto__"), content="false")
@@ -1079,7 +1079,7 @@ test "supply chain: must-revalidate entry serves fresh within max-age" {
     _url : String,
     _options : @http.FetchOptions,
   ) -> @http.HttpResponse raise @http.HttpError {
-    { status: 200, headers: {}, body: "fixed();" }
+    { status: 200, headers: {}, body: "fixed();", }
   }
   let r = cached_fetch(
     url="https://cdn.test/lib.js",
@@ -1181,7 +1181,7 @@ test "boundary: max_entries=1 only keeps latest entry" {
     directives: CacheDirectives::default(),
     stored_at: 100.0,
   }
-  let e2 : CacheEntry = { ..e1, url: "https://a.test/2", stored_at: 200.0 }
+  let e2 : CacheEntry = { ..e1, url: "https://a.test/2", stored_at: 200.0, }
   cache.store(e1)
   cache.store(e2)
   inspect(cache.lookup("https://a.test/1") is None, content="true")
@@ -1202,11 +1202,11 @@ test "boundary: update same URL does not evict" {
     directives: CacheDirectives::default(),
     stored_at: 100.0,
   }
-  let e2 : CacheEntry = { ..e1, url: "https://a.test/2", stored_at: 200.0 }
+  let e2 : CacheEntry = { ..e1, url: "https://a.test/2", stored_at: 200.0, }
   cache.store(e1)
   cache.store(e2)
   // Update existing entry — should NOT evict the other
-  let e1_updated : CacheEntry = { ..e1, body: "v2", stored_at: 300.0 }
+  let e1_updated : CacheEntry = { ..e1, body: "v2", stored_at: 300.0, }
   cache.store(e1_updated)
   inspect(cache.lookup("https://a.test/1") is None, content="false")
   inspect(cache.lookup("https://a.test/2") is None, content="false")
@@ -1352,7 +1352,7 @@ test "boundary: URL with unicode in path" {
 ///|
 /// Boundary: headers_to_json with special characters in values
 test "boundary: headers_to_json preserves values" {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   headers["x-test"] = "value with spaces"
   let json = @http.headers_to_json(headers)
   inspect(json.contains("value with spaces"), content="true")
@@ -1556,7 +1556,7 @@ test "304 revalidation: original body preserved after 304" {
     _url : String,
     _options : @http.FetchOptions,
   ) -> @http.HttpResponse raise @http.HttpError {
-    { status: 304, headers: {}, body: "" }
+    { status: 304, headers: {}, body: "", }
   }
   let r = cached_fetch(
     url="https://example.com/r",

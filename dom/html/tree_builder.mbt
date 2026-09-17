@@ -72,7 +72,7 @@ pub fn TreeBuilder::new(tokenizer : Tokenizer) -> TreeBuilder {
     head_element: None,
     pending_table_chars: [],
     template_insertion_modes: [],
-    pending_text: StringBuilder::new(),
+    pending_text: StringBuilder(),
     pending_tokens: [],
   }
 }
@@ -163,7 +163,7 @@ fn create_element(tag : String, attrs : Map[String, String]) -> Element {
     None => []
   }
   let style = attrs.get("style")
-  { tag, id, classes, style, attributes: attrs, children: [] }
+  { tag, id, classes, style, attributes: attrs, children: [], }
 }
 
 ///|

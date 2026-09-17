@@ -21,7 +21,7 @@ pub fn synthetic_network_normalize_continue_credentials(
     Some(String(password)) => password
     _ => return Err("credentials.password must be a string")
   }
-  Ok({ username, password })
+  Ok({ username, password, })
 }
 
 ///|
@@ -152,7 +152,7 @@ pub fn synthetic_network_expected_auth_credentials(
   let username = synthetic_network_first_query_value(url, "username")
   let password = synthetic_network_first_query_value(url, "password")
   match (username, password) {
-    (Some(username), Some(password)) => Some({ username, password })
+    (Some(username), Some(password)) => Some({ username, password, })
     _ => None
   }
 }

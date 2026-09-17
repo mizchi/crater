@@ -39,7 +39,7 @@ fn create_test_stylesheet(num_rules : Int) -> @css.Stylesheet {
         value: @css.PropertyValue::Value("red"),
         origin: @css.Origin::Author,
         importance: @css.Importance::Normal,
-        specificity: { a: 0, b: 0, c: 0 },
+        specificity: { a: 0, b: 0, c: 0, },
         source_order: 0,
       },
     ]

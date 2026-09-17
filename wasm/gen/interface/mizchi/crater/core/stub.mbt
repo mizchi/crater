@@ -14,7 +14,7 @@ pub fn compute_layout(html : String, width : UInt, height : UInt) -> String {
 
 ///|
 fn flat_layout_to_json(result : @crater.FlatLayoutResult) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("{\"rootId\":\"")
   buf.write_string(escape_json(result.root_id))
   buf.write_string("\",\"nodes\":[")
@@ -57,7 +57,7 @@ fn flat_layout_to_json(result : @crater.FlatLayoutResult) -> String {
 
 ///|
 fn escape_json(s : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for c in s {
     match c {
       '"' => buf.write_string("\\\"")

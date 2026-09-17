@@ -25,7 +25,7 @@ import {
   "mizchi/crater-painter/paint/raster",
   "mizchi/crater-painter/paint/model" @paint_model,
   "mizchi/crater-painter/paint/glyph",
-  "mizchi/js/core",
+  "mizchi/js_core" @core,
   "mizchi/js_deno" @deno,
   "moonbitlang/core/json",
   "moonbitlang/core/string",

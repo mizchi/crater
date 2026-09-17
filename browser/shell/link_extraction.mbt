@@ -73,9 +73,9 @@ fn extract_links_fallback(html : String) -> Array[Link] {
         let text = html
           .unsafe_substring(start=text_start, end=text_end)
           .trim()
-          .to_string()
+          .to_owned()
         if href.length() > 0 {
-          links.push({ href, text, source_id })
+          links.push({ href, text, source_id, })
         }
         i = text_end
       }
@@ -87,7 +87,7 @@ fn extract_links_fallback(html : String) -> Array[Link] {
 
 ///|
 #cfg(target="js")
-extern "js" fn extract_links_js(html : String) -> Array[Link] =
+extern "js" fn extract_links_js(html : String) -> FixedArray[Link] =
   #| (html) => {
   #|   const links = [];
   #|   const anchorRe = /<a\b([^>]*)>([\s\S]*?)<\/a\s*>/gi;
@@ -116,7 +116,7 @@ extern "js" fn extract_links_js(html : String) -> Array[Link] =
 ///|
 #cfg(target="js")
 fn extract_links(html : String) -> Array[Link] {
-  extract_links_js(html)
+  Array::from_fixed_array(extract_links_js(html))
 }
 
 ///|

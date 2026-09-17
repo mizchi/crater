@@ -322,7 +322,7 @@ fn validate_options(options : Options) -> String? {
 
 ///|
 fn help_text() -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("crater - component artifact renderer\n")
   buf.write_string("\n")
   buf.write_string("Render one component artifact from HTML + CSS inputs.\n")

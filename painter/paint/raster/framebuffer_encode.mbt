@@ -4,10 +4,10 @@
 ///|
 #cfg(target="js")
 extern "js" fn framebuffer_to_rgba_base64_js(
-  pixels : Array[Int],
-  palette_r : Array[Int],
-  palette_g : Array[Int],
-  palette_b : Array[Int],
+  pixels : FixedArray[Int],
+  palette_r : FixedArray[Int],
+  palette_g : FixedArray[Int],
+  palette_b : FixedArray[Int],
 ) -> String =
   #|(pixels, pr, pg, pb) => {
   #|  const n = pixels.length;
@@ -44,10 +44,10 @@ extern "js" fn framebuffer_to_rgba_base64_js(
 ///|
 #cfg(not(target="js"))
 fn framebuffer_to_rgba_base64_js(
-  pixels : Array[Int],
-  palette_r : Array[Int],
-  palette_g : Array[Int],
-  palette_b : Array[Int],
+  pixels : FixedArray[Int],
+  palette_r : FixedArray[Int],
+  palette_g : FixedArray[Int],
+  palette_b : FixedArray[Int],
 ) -> String {
   // Fuse the RGBA expansion into the base64 loop instead of materializing an
   // ~n*4-int RGBA buffer first: that intermediate was pure memory-bandwidth
@@ -58,7 +58,7 @@ fn framebuffer_to_rgba_base64_js(
   // StringBuilder — eagerly presizing it to the multi-MB output measured slower
   // (worse cache/paging) than incremental growth.
   let n = pixels.length()
-  let out = StringBuilder::new()
+  let out = StringBuilder()
   let full = n / 3
   for g = 0; g < full; g = g + 1 {
     let i = g * 3
@@ -111,5 +111,10 @@ pub fn framebuffer_to_rgba_base64(
     palette_g.push(color.g)
     palette_b.push(color.b)
   }
-  framebuffer_to_rgba_base64_js(fb.pixels, palette_r, palette_g, palette_b)
+  framebuffer_to_rgba_base64_js(
+    FixedArray::from_array(fb.pixels),
+    FixedArray::from_array(palette_r),
+    FixedArray::from_array(palette_g),
+    FixedArray::from_array(palette_b),
+  )
 }

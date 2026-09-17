@@ -360,16 +360,12 @@ test "V8+Snapshot: snapshot-initialized runtime matches eval-initialized" {
   set_v8_snapshot_enabled(false)
   let rt_eval = V8JsRuntime::new_with_mock_dom(full_mock_dom_js())
   rt_eval.init()
-  let r_eval = rt_eval.execute(
-    0, @dom.DomTree::new(), code, @js.ImmediateFlush,
-  )
+  let r_eval = rt_eval.execute(0, @dom.DomTree::new(), code, @js.ImmediateFlush)
   // Snapshot path (default).
   set_v8_snapshot_enabled(true)
   let rt_snap = V8JsRuntime::new_with_mock_dom(full_mock_dom_js())
   rt_snap.init()
-  let r_snap = rt_snap.execute(
-    0, @dom.DomTree::new(), code, @js.ImmediateFlush,
-  )
+  let r_snap = rt_snap.execute(0, @dom.DomTree::new(), code, @js.ImmediateFlush)
   assert_true(r_eval.success)
   assert_true(r_snap.success)
   assert_eq(r_snap.value, r_eval.value)

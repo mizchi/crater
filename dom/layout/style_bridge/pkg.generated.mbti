@@ -24,4 +24,3 @@ pub fn update_node_style(@tree.LayoutTree, String, @cascade.CascadedValues) -> B
 // Type aliases
 
 // Traits
-

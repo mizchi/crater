@@ -1,7 +1,7 @@
 ///|
 test "paint package diff_trees reports paint property changes" {
   let before_paint = PaintProperties::default()
-  let after_paint = { ..PaintProperties::default(), opacity: 0.5 }
+  let after_paint = { ..PaintProperties::default(), opacity: 0.5, }
 
   let before = PaintNode::new(
     "root",

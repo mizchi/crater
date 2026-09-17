@@ -67,4 +67,3 @@ pub using @contract {type WebDriverValue}
 pub using @contract {type WindowRect}
 
 // Traits
-

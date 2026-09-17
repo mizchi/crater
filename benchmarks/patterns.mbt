@@ -10,7 +10,7 @@
 ///|
 /// Simple flat list of divs
 pub fn simple_flat(n : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><body style=\"margin:0\">")
   for i = 0; i < n; i = i + 1 {
     buf.write_string("<div style=\"height:20px;background:#")
@@ -26,7 +26,7 @@ pub fn simple_flat(n : Int) -> String {
 ///|
 /// Nested divs (depth-first)
 pub fn nested_depth(depth : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><body style=\"margin:0\">")
   for i = 0; i < depth; i = i + 1 {
     buf.write_string("<div style=\"padding:5px;border:1px solid #ccc\">")
@@ -46,7 +46,7 @@ pub fn nested_depth(depth : Int) -> String {
 ///|
 /// Flex row with N items
 pub fn flex_row(n : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string(
     "<!DOCTYPE html><html><body style=\"margin:0\"><div style=\"display:flex;flex-direction:row\">",
   )
@@ -64,7 +64,7 @@ pub fn flex_row(n : Int) -> String {
 ///|
 /// Flex column with N items
 pub fn flex_column(n : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string(
     "<!DOCTYPE html><html><body style=\"margin:0\"><div style=\"display:flex;flex-direction:column\">",
   )
@@ -82,7 +82,7 @@ pub fn flex_column(n : Int) -> String {
 ///|
 /// Flex wrap with many items
 pub fn flex_wrap(n : Int, item_width : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string(
     "<!DOCTYPE html><html><body style=\"margin:0\"><div style=\"display:flex;flex-wrap:wrap\">",
   )
@@ -102,7 +102,7 @@ pub fn flex_wrap(n : Int, item_width : Int) -> String {
 ///|
 /// Nested flex containers
 pub fn flex_nested(depth : Int, items_per_level : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><body style=\"margin:0\">")
   fn build(d : Int, is_row : Bool) -> Unit {
     if d == 0 {
@@ -132,7 +132,7 @@ pub fn flex_nested(depth : Int, items_per_level : Int) -> String {
 ///|
 /// Simple grid with rows x cols
 pub fn grid_simple(rows : Int, cols : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><body style=\"margin:0\">")
   buf.write_string("<div style=\"display:grid;grid-template-columns:repeat(")
   buf.write_string(cols.to_string())
@@ -151,7 +151,7 @@ pub fn grid_simple(rows : Int, cols : Int) -> String {
 ///|
 /// Grid with explicit template rows and columns
 pub fn grid_explicit(rows : Int, cols : Int, cell_height : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><body style=\"margin:0\">")
   buf.write_string("<div style=\"display:grid;grid-template-columns:")
   for _c = 0; _c < cols; _c = _c + 1 {
@@ -179,7 +179,7 @@ pub fn grid_explicit(rows : Int, cols : Int, cell_height : Int) -> String {
 ///|
 /// Card grid (e-commerce style)
 pub fn card_grid(num_cards : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><body style=\"margin:0\">")
   buf.write_string(
     "<div style=\"display:flex;flex-wrap:wrap;gap:16px;padding:16px\">",
@@ -219,7 +219,7 @@ pub fn card_grid(num_cards : Int) -> String {
 ///|
 /// Dashboard layout with sidebar, header, and content
 pub fn dashboard(sidebar_items : Int, content_cards : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><body style=\"margin:0\">")
   buf.write_string("<div style=\"display:flex;height:100vh\">")
   // Sidebar
@@ -301,7 +301,7 @@ pub fn dashboard(sidebar_items : Int, content_cards : Int) -> String {
 ///|
 /// Chat message list
 pub fn chat_messages(num_messages : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><body style=\"margin:0\">")
   buf.write_string(
     "<div style=\"display:flex;flex-direction:column;padding:16px;gap:8px;max-width:600px\">",
@@ -333,7 +333,7 @@ pub fn chat_messages(num_messages : Int) -> String {
 ///|
 /// Table with header and rows
 pub fn table_layout(rows : Int, cols : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string(
     "<!DOCTYPE html><html><body style=\"margin:0;padding:16px\">",
   )
@@ -381,7 +381,7 @@ pub fn large_website(
   sections : Int,
   cards_per_section : Int,
 ) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><body style=\"margin:0\">")
   buf.write_string("<div style=\"display:flex;min-height:100vh\">")
   // Sidebar
@@ -470,7 +470,7 @@ pub fn large_website(
 ///|
 /// Scrollable content with many items (for scroll benchmarks)
 pub fn scrollable_list(num_items : Int, item_height : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><body style=\"margin:0\">")
   buf.write_string("<div style=\"height:100vh;overflow-y:auto\">")
   for i = 0; i < num_items; i = i + 1 {
@@ -512,7 +512,7 @@ pub fn scrollable_list(num_items : Int, item_height : Int) -> String {
 ///|
 /// Deep nested structure (for parsing stress test)
 pub fn deep_nesting(depth : Int, width : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><body style=\"margin:0\">")
   fn build(d : Int) -> Unit {
     if d == 0 {
@@ -534,7 +534,7 @@ pub fn deep_nesting(depth : Int, width : Int) -> String {
 ///|
 /// Form with many fields
 pub fn form_fields(num_fields : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string(
     "<!DOCTYPE html><html><body style=\"margin:0;padding:24px\">",
   )

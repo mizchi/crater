@@ -188,9 +188,9 @@ fn parse_mouse_event(key : String) -> String? {
   let payload = key.unsafe_substring(start=3, end=key.length() - 1)
   let parts = payload.split(";").collect()
   guard parts.length() == 3 else { return None }
-  let btn = @string.parse_int(parts[0].to_string()) catch { _ => return None }
-  let col = @string.parse_int(parts[1].to_string()) catch { _ => return None }
-  let row = @string.parse_int(parts[2].to_string()) catch { _ => return None }
+  let btn = @string.parse_int(parts[0].to_owned()) catch { _ => return None }
+  let col = @string.parse_int(parts[1].to_owned()) catch { _ => return None }
+  let row = @string.parse_int(parts[2].to_owned()) catch { _ => return None }
   if btn == 0 && suffix == 'M' {
     return Some("MouseDown:\{col},\{row}")
   }

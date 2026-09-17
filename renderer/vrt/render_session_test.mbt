@@ -178,10 +178,22 @@ test "computed style index matches the resolved style" {
   }
   let node = @renderer.render_to_node(html, ctx)
   let card = computed_style_by_id(node, "#card").unwrap()
-  inspect(
+  debug_inspect(
     card,
     content=(
-      #|{id: div#card, index: 1, display: flex, position: relative, visibility: visible, font_size: 20px, font_family: serif, opacity: 0.5, z_index: 7, color: rgb(255, 0, 0), background_color: rgb(0, 255, 0)}
+      #|{
+      #|  id: "div#card",
+      #|  index: 1,
+      #|  display: "flex",
+      #|  position: "relative",
+      #|  visibility: "visible",
+      #|  font_size: "20px",
+      #|  font_family: "serif",
+      #|  opacity: "0.5",
+      #|  z_index: "7",
+      #|  color: "rgb(255, 0, 0)",
+      #|  background_color: "rgb(0, 255, 0)",
+      #|}
     ),
   )
 }
@@ -194,8 +206,8 @@ test "computed style index matches the resolved style" {
 /// strings are quoted, and getComputedStyle's camelCase keys are used.
 test "layout bridge serializes both page-realm globals" {
   let boxes : Array[LayoutBox] = [
-    { id: "div#a", index: 0, x: 0.0, y: 0.0, width: 100.0, height: 40.0 },
-    { id: "div#b", index: 1, x: 100.0, y: 0.0, width: 80.5, height: 40.0 },
+    { id: "div#a", index: 0, x: 0.0, y: 0.0, width: 100.0, height: 40.0, },
+    { id: "div#b", index: 1, x: 100.0, y: 0.0, width: 80.5, height: 40.0, },
   ]
   let styles : Array[ComputedStyleEntry] = [
     {
@@ -213,8 +225,7 @@ test "layout bridge serializes both page-realm globals" {
     },
   ]
   let js = layout_bridge_init_js(boxes, styles)
-  let expected =
-    "globalThis.__craterLayoutBoxes = [" +
+  let expected = "globalThis.__craterLayoutBoxes = [" +
     "{\"index\":0,\"id\":\"div#a\",\"x\":0,\"y\":0,\"width\":100,\"height\":40}," +
     "{\"index\":1,\"id\":\"div#b\",\"x\":100,\"y\":0,\"width\":80.5,\"height\":40}];\n" +
     "globalThis.__craterComputedStyles = [" +

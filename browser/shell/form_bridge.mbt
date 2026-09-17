@@ -16,7 +16,7 @@ fn parse_navigation_request(json_str : String) -> NavigationRequest? {
           Some(String(content_type)),
           Some(String(body)),
         ) =>
-          Some({ url, http_method: http_method.to_upper(), content_type, body })
+          Some({ url, http_method: http_method.to_upper(), content_type, body, })
         _ => None
       }
     _ => None

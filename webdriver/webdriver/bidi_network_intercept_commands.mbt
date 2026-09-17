@@ -90,8 +90,8 @@ fn BidiProtocol::prepare_navigation_request_internal(
     Some(event) => event
     None => return None
   }
-  self.outbox.push(Event({ event_method: event_name, params: event }))
-  let blocked_request : Map[String, Json] = {}
+  self.outbox.push(Event({ event_method: event_name, params: event, }))
+  let blocked_request : Map[String, Json] = Map([])
   blocked_request["phase"] = Json::string("beforeRequestSent")
   blocked_request["context_id"] = Json::string(context_id)
   blocked_request["url"] = Json::string(url)
@@ -124,7 +124,7 @@ fn BidiProtocol::handle_network_continue_response(
 ) -> Unit {
   let forwarded = match params {
     Some(Object(map)) => {
-      let copy : Map[String, Json] = {}
+      let copy : Map[String, Json] = Map([])
       for key, value in map {
         copy[key] = value
       }
@@ -153,7 +153,7 @@ fn BidiProtocol::handle_network_provide_response(
 ) -> Unit {
   let forwarded = match params {
     Some(Object(map)) => {
-      let copy : Map[String, Json] = {}
+      let copy : Map[String, Json] = Map([])
       for key, value in map {
         copy[key] = value
       }
@@ -282,7 +282,7 @@ fn BidiProtocol::handle_network_continue_auth_request(
       )
       return
     }
-    let forwarded : Map[String, Json] = {}
+    let forwarded : Map[String, Json] = Map([])
     forwarded["request"] = map.get("request").unwrap_or(Json::null())
     forwarded["mode"] = Json::string("continueResponse")
     forwarded["credentials"] = map.get("credentials").unwrap_or(Json::null())

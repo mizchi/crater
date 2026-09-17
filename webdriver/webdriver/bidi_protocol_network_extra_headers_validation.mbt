@@ -35,7 +35,7 @@ fn BidiProtocol::validate_network_set_extra_headers_params(
     }
   }
 
-  let options : Map[String, Json] = {}
+  let options : Map[String, Json] = Map([])
 
   let headers : Array[Json] = []
   match raw_headers {

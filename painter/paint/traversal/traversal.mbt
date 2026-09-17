@@ -44,7 +44,7 @@ pub fn sort_tree_by_stacking_order(node : @model.PaintNode) -> @model.PaintNode 
   let sorted_children = sort_by_stacking_order(node.children).map(
     sort_tree_by_stacking_order,
   )
-  { ..node, children: sorted_children }
+  { ..node, children: sorted_children, }
 }
 
 ///|

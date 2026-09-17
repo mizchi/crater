@@ -16,7 +16,7 @@ pub(all) struct BidiServerConfig {
 ///|
 /// Default configuration (generates a random auth token)
 pub fn BidiServerConfig::default() -> BidiServerConfig {
-  { host: "127.0.0.1", port: 9222, auth_token: generate_auth_token() }
+  { host: "127.0.0.1", port: 9222, auth_token: generate_auth_token(), }
 }
 
 ///|
@@ -68,7 +68,7 @@ pub struct BidiServer {
 pub fn BidiServer::new(
   config? : BidiServerConfig = BidiServerConfig::default(),
 ) -> BidiServer {
-  { config, protocol: BidiProtocol::new(), server: None }
+  { config, protocol: BidiProtocol::new(), server: None, }
 }
 
 ///|

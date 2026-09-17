@@ -4,6 +4,11 @@ import {
   "moonbitlang/core/string",
 }
 
+// core/string is used from js-target sources in this package (see
+// js_runtime_quickjs_dom_ops.mbt), which the default-target check does not see.
+
+warnings = "-unused_package"
+
 options(
   targets: {
     // Stubs

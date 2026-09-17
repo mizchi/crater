@@ -56,7 +56,7 @@ fn resolve_text_style(
     (node.paint.color, node.paint.background_color, false, false)
   }
   (
-    { fg: fg_color, bg: bg_color, bold: use_bold, underline: use_underline },
+    { fg: fg_color, bg: bg_color, bold: use_bold, underline: use_underline, },
     is_link,
   )
 }

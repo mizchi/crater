@@ -23,7 +23,7 @@ fn BidiProtocol::build_context_ancestry(
   ctx_id : String,
 ) -> Array[String] {
   let ancestry : Array[String] = []
-  let seen : Map[String, Bool] = {}
+  let seen : Map[String, Bool] = Map([])
   self.collect_context_ancestry(ctx_id, ancestry, seen)
   ancestry
 }

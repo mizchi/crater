@@ -946,14 +946,10 @@ async test "Browser execute_inline_js_async requestSubmit posts body to external
   browser.set_enable_js(true)
 
   let _ = browser.execute_scripts()
+  errdefer js_restore_fetch_mock()
   let result = browser.execute_inline_js_async(
     "(function(){ const form = document.getElementById('form'); const button = document.getElementById('btn'); form.requestSubmit(button); return 'ok'; })()",
-  ) catch {
-    err => {
-      js_restore_fetch_mock()
-      raise err
-    }
-  }
+  )
   debug_inspect(result, content="Some(\"ok\")")
   inspect(
     browser.get_current_url(),
@@ -1031,17 +1027,13 @@ async test "Browser load_url_request preserves external post body with CRLF" {
   )
   let browser = Browser::new(800, 600)
   browser.current_url = "https://example.test/form"
+  errdefer js_restore_fetch_mock()
   let _ = browser.load_url_request({
     url: "https://api.test/direct-post-text",
     http_method: "POST",
     content_type: "text/plain;charset=UTF-8",
     body: "token=1\r\ngo=Go",
-  }) catch {
-    err => {
-      js_restore_fetch_mock()
-      raise err
-    }
-  }
+  })
   let call_json = js_take_last_fetch_mock_call_for_url(
     "https://api.test/direct-post-text",
   )
@@ -1099,14 +1091,10 @@ async test "Browser execute_inline_js_async requestSubmit posts multipart body t
   browser.set_enable_js(true)
 
   let _ = browser.execute_scripts()
+  errdefer js_restore_fetch_mock()
   let result = browser.execute_inline_js_async(
     "(function(){ const form = document.getElementById('form'); const button = document.getElementById('btn'); form.requestSubmit(button); return 'ok'; })()",
-  ) catch {
-    err => {
-      js_restore_fetch_mock()
-      raise err
-    }
-  }
+  )
   debug_inspect(result, content="Some(\"ok\")")
   inspect(
     browser.get_current_url(),
@@ -1206,14 +1194,10 @@ async test "Browser execute_inline_js_async form.submit omits submitter field in
   browser.set_enable_js(true)
 
   let _ = browser.execute_scripts()
+  errdefer js_restore_fetch_mock()
   let result = browser.execute_inline_js_async(
     "(function(){ document.getElementById('form').submit(); return 'ok'; })()",
-  ) catch {
-    err => {
-      js_restore_fetch_mock()
-      raise err
-    }
-  }
+  )
   debug_inspect(result, content="Some(\"ok\")")
   inspect(
     browser.get_current_url(),

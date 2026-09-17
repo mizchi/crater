@@ -11,7 +11,7 @@ test "find_in_region_top_right" {
     visible: true,
   }
   let root = @aom.AccessibilityNode::new("root", @aom.Document)
-  let root = { ..root, children: [button], visible: true }
+  let root = { ..root, children: [button], visible: true, }
   let tree = @aom.AccessibilityTree::new(root)
   let viewport = Viewport::default()
   let results = find_by_spatial(tree, InRegion(TopRight), viewport)
@@ -41,7 +41,7 @@ test "find_by_role_in_region" {
     visible: true,
   }
   let root = @aom.AccessibilityNode::new("root", @aom.Document)
-  let root = { ..root, children: [link1, link2], visible: true }
+  let root = { ..root, children: [link1, link2], visible: true, }
   let tree = @aom.AccessibilityTree::new(root)
   let viewport = Viewport::default()
 
@@ -77,7 +77,7 @@ test "find_relative_below" {
     visible: true,
   }
   let root = @aom.AccessibilityNode::new("root", @aom.Document)
-  let root = { ..root, children: [form, submit], visible: true }
+  let root = { ..root, children: [form, submit], visible: true, }
   let tree = @aom.AccessibilityTree::new(root)
   let viewport = Viewport::default()
   let results = find_by_spatial(tree, RelativeTo(Below, "ref_1"), viewport)
@@ -97,7 +97,7 @@ test "get_click_coords" {
     visible: true,
   }
   let root = @aom.AccessibilityNode::new("root", @aom.Document)
-  let root = { ..root, children: [button], visible: true }
+  let root = { ..root, children: [button], visible: true, }
   let tree = @aom.AccessibilityTree::new(root)
   let coords = get_click_coords(tree, "ref_1")
   debug_inspect(coords, content="Some((200, 125))")

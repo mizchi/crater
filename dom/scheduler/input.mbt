@@ -94,7 +94,7 @@ pub fn KeyboardEvent::new(
   event_type : KeyEventType,
   key : String,
 ) -> KeyboardEvent {
-  { event_type, key, code: "", modifiers: 0, text: None, timestamp: 0.0 }
+  { event_type, key, code: "", modifiers: 0, text: None, timestamp: 0.0, }
 }
 
 ///|
@@ -118,7 +118,7 @@ pub fn KeyboardEvent::with_text(
   self : KeyboardEvent,
   text : String,
 ) -> KeyboardEvent {
-  { ..self, text: Some(text) }
+  { ..self, text: Some(text), }
 }
 
 ///|
@@ -211,9 +211,9 @@ pub impl Show for KeyboardEvent with fn output(self, logger) {
   logger.write_string(self.code)
   logger.write_string("\"")
   logger.write_string(", modifiers: ")
-  logger.write_object(to_repr(self.modifiers))
+  logger.write_object(Repr(self.modifiers))
   logger.write_string(", text: ")
-  logger.write_object(to_repr(self.text))
+  logger.write_object(Repr(self.text))
   logger.write_string(", ")
   logger.write_string("timestamp: \{self.timestamp}}")
 }
@@ -242,7 +242,7 @@ pub struct InputManager {
 
 ///|
 pub fn InputManager::new() -> InputManager {
-  { pending_events: [], enabled: false }
+  { pending_events: [], enabled: false, }
 }
 
 ///|

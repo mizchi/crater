@@ -96,7 +96,7 @@ fn calculate_alignment_content_bounds(
       }
     }
   }
-  { min_x: min_left, max_x: max_right, min_y: min_top, max_y: max_bottom }
+  { min_x: min_left, max_x: max_right, min_y: min_top, max_y: max_bottom, }
 }
 
 ///|
@@ -295,9 +295,9 @@ fn apply_initial_overflow_content_alignment(
   }
 
   let shifted_children = layout.children.map(fn(child) {
-    { ..child, x: child.x + offset_x, y: child.y + offset_y }
+    { ..child, x: child.x + offset_x, y: child.y + offset_y, }
   })
-  { ..layout, children: shifted_children }
+  { ..layout, children: shifted_children, }
 }
 
 ///|
@@ -349,9 +349,9 @@ fn apply_initial_scroll_snap(
   }
 
   let shifted_children = layout.children.map(fn(child) {
-    { ..child, x: child.x - offset_x, y: child.y - offset_y }
+    { ..child, x: child.x - offset_x, y: child.y - offset_y, }
   })
-  { ..layout, children: shifted_children }
+  { ..layout, children: shifted_children, }
 }
 
 ///|

@@ -8,7 +8,7 @@ fn get_text_content(node : @aom.AccessibilityNode) -> String {
   match node.text {
     Some(text) => {
       if should_defer_to_children_text(node, text) {
-        let buf = StringBuilder::new()
+        let buf = StringBuilder()
         for child in node.children {
           collect_text(child, buf)
         }
@@ -21,7 +21,7 @@ fn get_text_content(node : @aom.AccessibilityNode) -> String {
     }
     None => {
       // Otherwise collect from children
-      let buf = StringBuilder::new()
+      let buf = StringBuilder()
       collect_text(node, buf)
       buf.to_string()
     }

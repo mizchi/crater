@@ -7,25 +7,27 @@
 ///|
 /// Viewport culling: estimated cumulative Y position during build_node.
 /// Elements estimated below viewport_cutoff use skeleton mode (fast path).
-let viewport_estimated_y : Ref[Double] = { val: 0.0 }
+let viewport_estimated_y : Ref[Double] = { val: 0.0, }
 
 ///|
-let viewport_cutoff : Ref[Double] = { val: 1.0e10 }
+let viewport_cutoff : Ref[Double] = { val: 1.0e10, }
 
 ///|
-let viewport_skeleton_count : Ref[Int] = { val: 0 }
+let viewport_skeleton_count : Ref[Int] = { val: 0, }
 
 ///|
-let viewport_full_node_count : Ref[Int] = { val: 0 }
+let viewport_full_node_count : Ref[Int] = { val: 0, }
 
 ///|
-let viewport_full_node_cutoff : Ref[Int] = { val: 2000 }
+let viewport_full_node_cutoff : Ref[Int] = { val: 2000, }
 
 ///|
-let viewport_skeleton_enabled : Ref[Bool] = { val: true }
+let viewport_skeleton_enabled : Ref[Bool] = { val: true, }
 
 ///|
-let empty_indexed_stylesheets : Ref[Array[@css.IndexedStylesheet]] = { val: [] }
+let empty_indexed_stylesheets : Ref[Array[@css.IndexedStylesheet]] = {
+  val: [],
+}
 
 ///|
 fn should_use_viewport_skeleton() -> Bool {

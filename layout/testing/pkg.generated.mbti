@@ -13,4 +13,3 @@ pub fn set_builtin_text_advance_ratio(Double) -> Unit
 // Type aliases
 
 // Traits
-

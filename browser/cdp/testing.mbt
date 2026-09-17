@@ -13,7 +13,7 @@ pub struct TestContext {
 ///|
 /// Create a new test context
 pub fn TestContext::new() -> TestContext {
-  { session: CdpSession::new("test-session") }
+  { session: CdpSession::new("test-session"), }
 }
 
 ///|
@@ -150,7 +150,7 @@ fn parse_html_content(
 ///|
 /// Extract substring from char array
 fn substring(chars : Array[Char], start : Int, end : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for i = start; i < end; i = i + 1 {
     buf.write_char(chars[i])
   }

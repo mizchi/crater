@@ -36,4 +36,3 @@ pub fn resolve_flex_axis(@values.FlexDirection, Bool, Bool) -> @core.FlexAxis
 // Type aliases
 
 // Traits
-

@@ -281,7 +281,7 @@ fn BidiProtocol::parse_geolocation_coordinates_param(
         None => None
       }
 
-      let normalized : Map[String, Json] = {}
+      let normalized : Map[String, Json] = Map([])
       normalized["latitude"] = Json::number(latitude)
       normalized["longitude"] = Json::number(longitude)
       normalized["accuracy"] = Json::number(accuracy)

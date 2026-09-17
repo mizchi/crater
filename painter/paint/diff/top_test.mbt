@@ -17,7 +17,7 @@ test "paint diff wraps diff_trees" {
     0.0,
     100.0,
     40.0,
-    { ..@model.PaintProperties::default(), opacity: 0.5 },
+    { ..@model.PaintProperties::default(), opacity: 0.5, },
     [],
   )
 

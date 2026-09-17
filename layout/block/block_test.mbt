@@ -7,11 +7,11 @@ fn default_dispatch() -> @node.DispatchFn {
 ///|
 test "block_basic" {
   let default_style = @style.Style::default()
-  let child1_style = { ..default_style, height: @types.Length(10.0) }
+  let child1_style = { ..default_style, height: @types.Length(10.0), }
   let child1 = @node.Node::leaf("child1", child1_style)
-  let child2_style = { ..default_style, height: @types.Length(10.0) }
+  let child2_style = { ..default_style, height: @types.Length(10.0), }
   let child2 = @node.Node::leaf("child2", child2_style)
-  let root_style = { ..default_style, width: @types.Length(50.0) }
+  let root_style = { ..default_style, width: @types.Length(50.0), }
   let root = @node.Node::new("test-root", root_style, [child1, child2])
   let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
@@ -38,9 +38,9 @@ test "block_basic" {
 ///|
 test "block_border_fixed_size" {
   let default_style = @style.Style::default()
-  let child1_style = { ..default_style, height: @types.Length(10.0) }
+  let child1_style = { ..default_style, height: @types.Length(10.0), }
   let child1 = @node.Node::leaf("child1", child1_style)
-  let child2_style = { ..default_style, height: @types.Length(10.0) }
+  let child2_style = { ..default_style, height: @types.Length(10.0), }
   let child2 = @node.Node::leaf("child2", child2_style)
   let root_style = {
     ..default_style,
@@ -90,9 +90,9 @@ test "block_margin_x_fixed_size_positive" {
     },
   }
   let child1 = @node.Node::leaf("child1", child1_style)
-  let child2_style = { ..default_style, height: @types.Length(10.0) }
+  let child2_style = { ..default_style, height: @types.Length(10.0), }
   let child2 = @node.Node::leaf("child2", child2_style)
-  let root_style = { ..default_style, width: @types.Length(50.0) }
+  let root_style = { ..default_style, width: @types.Length(50.0), }
   let root = @node.Node::new("test-root", root_style, [child1, child2])
   let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
@@ -119,9 +119,9 @@ test "block_margin_x_fixed_size_positive" {
 ///|
 test "block_padding_fixed_size" {
   let default_style = @style.Style::default()
-  let child1_style = { ..default_style, height: @types.Length(10.0) }
+  let child1_style = { ..default_style, height: @types.Length(10.0), }
   let child1 = @node.Node::leaf("child1", child1_style)
-  let child2_style = { ..default_style, height: @types.Length(10.0) }
+  let child2_style = { ..default_style, height: @types.Length(10.0), }
   let child2 = @node.Node::leaf("child2", child2_style)
   let root_style = {
     ..default_style,
@@ -160,7 +160,7 @@ test "block_padding_fixed_size" {
 ///|
 test "block_nested" {
   let default_style = @style.Style::default()
-  let inner_style = { ..default_style, height: @types.Length(20.0) }
+  let inner_style = { ..default_style, height: @types.Length(20.0), }
   let inner = @node.Node::leaf("inner", inner_style)
   let middle_style = {
     ..default_style,
@@ -219,7 +219,7 @@ test "block_card_like_nested_body_stacks_simple_block_children" {
       bottom: @types.Length(8.0),
     },
   }
-  let body_style = { ..default_style, height: @types.Length(32.0) }
+  let body_style = { ..default_style, height: @types.Length(32.0), }
   let title = @node.Node::leaf("title", title_style)
   let body = @node.Node::leaf("body", body_style)
   let content_style = {
@@ -232,7 +232,7 @@ test "block_card_like_nested_body_stacks_simple_block_children" {
     },
   }
   let content = @node.Node::new("content", content_style, [title, body])
-  let card_style = { ..default_style, width: @types.Length(240.0) }
+  let card_style = { ..default_style, width: @types.Length(240.0), }
   let card = @node.Node::new("card", card_style, [content])
   let ctx : @layout_types.LayoutContext = {
     available_width: 240.0,
@@ -288,7 +288,7 @@ test "block_leaf_fixed_height_percent_width_keeps_box_model" {
   })
   let root = @node.Node::new(
     "root",
-    { ..default_style, width: @types.Length(120.0) },
+    { ..default_style, width: @types.Length(120.0), },
     [child],
   )
   let ctx : @layout_types.LayoutContext = {
@@ -514,7 +514,7 @@ test "block_margin_collapse_siblings" {
     },
   }
   let child2 = @node.Node::leaf("child2", child2_style)
-  let root_style = { ..default_style, width: @types.Length(100.0) }
+  let root_style = { ..default_style, width: @types.Length(100.0), }
   let root = @node.Node::new("root", root_style, [child1, child2])
   let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
@@ -536,7 +536,7 @@ test "block_margin_collapse_siblings" {
 ///|
 test "block_percentage_padding" {
   let default_style = @style.Style::default()
-  let grandchild_style = { ..default_style, height: @types.Length(20.0) }
+  let grandchild_style = { ..default_style, height: @types.Length(20.0), }
   let grandchild = @node.Node::leaf("grandchild", grandchild_style)
   let child_style = {
     ..default_style,
@@ -548,7 +548,7 @@ test "block_percentage_padding" {
     },
   }
   let child = @node.Node::new("child", child_style, [grandchild])
-  let root_style = { ..default_style, width: @types.Length(200.0) }
+  let root_style = { ..default_style, width: @types.Length(200.0), }
   let root = @node.Node::new("root", root_style, [child])
   let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
@@ -583,7 +583,7 @@ test "block_percentage_margin_vertical" {
     },
   }
   let child = @node.Node::leaf("child", child_style)
-  let root_style = { ..default_style, width: @types.Length(100.0) }
+  let root_style = { ..default_style, width: @types.Length(100.0), }
   let root = @node.Node::new("root", root_style, [child])
   let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
@@ -644,7 +644,7 @@ test "block_float_supported" {
     height: @types.Length(30.0),
   }
   let float_child = @node.Node::leaf("float-child", float_child_style)
-  let root_style = { ..default_style, width: @types.Length(100.0) }
+  let root_style = { ..default_style, width: @types.Length(100.0), }
   let root = @node.Node::new("root", root_style, [float_child])
   let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
@@ -696,7 +696,7 @@ test "block_flow_root_is_pushed_below_float_stack_when_tall" {
   let float2 = @node.Node::leaf("float2", float2_style)
   let float3 = @node.Node::leaf("float3", float3_style)
   let flow_root = @node.Node::leaf("flow-root", flow_root_style)
-  let root_style = { ..default_style, width: @types.Length(400.0) }
+  let root_style = { ..default_style, width: @types.Length(400.0), }
   let root = @node.Node::new("root", root_style, [
     float1, float2, float3, flow_root,
   ])
@@ -746,7 +746,7 @@ test "block_flow_root_stays_at_top_when_short_enough_between_floats" {
   let float2 = @node.Node::leaf("float2", float2_style)
   let float3 = @node.Node::leaf("float3", float3_style)
   let flow_root = @node.Node::leaf("flow-root", flow_root_style)
-  let root_style = { ..default_style, width: @types.Length(400.0) }
+  let root_style = { ..default_style, width: @types.Length(400.0), }
   let root = @node.Node::new("root", root_style, [
     float1, float2, float3, flow_root,
   ])
@@ -796,7 +796,7 @@ test "block_align_content_start_establishes_bfc_against_outer_floats" {
   let float2 = @node.Node::leaf("float2", float2_style)
   let float3 = @node.Node::leaf("float3", float3_style)
   let aligned_block = @node.Node::leaf("aligned-block", aligned_block_style)
-  let root_style = { ..default_style, width: @types.Length(400.0) }
+  let root_style = { ..default_style, width: @types.Length(400.0), }
   let root = @node.Node::new("root", root_style, [
     float1, float2, float3, aligned_block,
   ])
@@ -865,7 +865,7 @@ test "block_non_bfc_wrapper_propagates_float_intrusion_to_nested_float_child" {
   let container = @node.Node::new("container", default_style, [wrapper])
   let root = @node.Node::new(
     "root",
-    { ..default_style, width: @types.Length(100.0) },
+    { ..default_style, width: @types.Length(100.0), },
     [outer_float, container],
   )
   let ctx : @layout_types.LayoutContext = {
@@ -894,12 +894,12 @@ test "block_auto_height_ignores_explicit_zero_height_overflow_wrapper_descendant
   })
   let zero_height_wrapper = @node.Node::new(
     "zero-height-wrapper",
-    { ..default_style, height: @types.Length(0.0) },
+    { ..default_style, height: @types.Length(0.0), },
     [overflowing_child],
   )
   let root = @node.Node::new(
     "root",
-    { ..default_style, width: @types.Length(100.0) },
+    { ..default_style, width: @types.Length(100.0), },
     [zero_height_wrapper],
   )
   let ctx : @layout_types.LayoutContext = {
@@ -940,7 +940,7 @@ test "block_flow_root_zero_width_avoids_float_overlap_with_inline_offset" {
   let right_float = @node.Node::leaf("right-float", right_float_style)
   let left_float = @node.Node::leaf("left-float", left_float_style)
   let flow_root = @node.Node::leaf("flow-root", flow_root_style)
-  let root_style = { ..default_style, width: @types.Length(400.0) }
+  let root_style = { ..default_style, width: @types.Length(400.0), }
   let root = @node.Node::new("root", root_style, [
     right_float, left_float, flow_root,
   ])
@@ -984,7 +984,7 @@ test "block_first_inflow_child_clear_left_starts_below_left_float" {
   let left_float = @node.Node::leaf("left-float", left_float_style)
   let right_float = @node.Node::leaf("right-float", right_float_style)
   let cleared = @node.Node::leaf("cleared", cleared_style)
-  let root_style = { ..default_style, width: @types.Length(240.0) }
+  let root_style = { ..default_style, width: @types.Length(240.0), }
   let root = @node.Node::new("root", root_style, [
     left_float, right_float, cleared,
   ])
@@ -1040,7 +1040,7 @@ test "block_float_after_inline_run_flushes_previous_line_progress" {
   let inline2 = @node.Node::leaf("inline2", inline2_style)
   let float2 = @node.Node::leaf("float2", float2_style)
   let inline3 = @node.Node::leaf("inline3", inline3_style)
-  let root_style = { ..default_style, width: @types.Length(200.0) }
+  let root_style = { ..default_style, width: @types.Length(200.0), }
   let root = @node.Node::new("root", root_style, [
     inline1, float1, inline2, float2, inline3,
   ])
@@ -1106,7 +1106,7 @@ test "block_absolute_positioning_works" {
 /// From taffy: block_display_none
 test "block_display_none" {
   let default_style = @style.Style::default()
-  let child1_style = { ..default_style, height: @types.Length(10.0) }
+  let child1_style = { ..default_style, height: @types.Length(10.0), }
   let child1 = @node.Node::leaf("child1", child1_style)
 
   // This child has display: none
@@ -1116,9 +1116,9 @@ test "block_display_none" {
     height: @types.Length(10.0),
   }
   let child2 = @node.Node::leaf("child2", child2_style)
-  let child3_style = { ..default_style, height: @types.Length(10.0) }
+  let child3_style = { ..default_style, height: @types.Length(10.0), }
   let child3 = @node.Node::leaf("child3", child3_style)
-  let root_style = { ..default_style, width: @types.Length(50.0) }
+  let root_style = { ..default_style, width: @types.Length(50.0), }
   let root = @node.Node::new("root", root_style, [child1, child2, child3])
   let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
@@ -1153,7 +1153,7 @@ test "block_display_none" {
 ///|
 test "block_auto_width_fills_parent" {
   let default_style = @style.Style::default()
-  let child_style = { ..default_style, height: @types.Length(20.0) }
+  let child_style = { ..default_style, height: @types.Length(20.0), }
   // width: auto (default)
   let child = @node.Node::leaf("child", child_style)
   let root_style = {
@@ -1182,10 +1182,10 @@ test "block_multiple_children_stacking" {
   let default_style = @style.Style::default()
   let children : Array[@node.Node] = []
   for i = 0; i < 5; i = i + 1 {
-    let child_style = { ..default_style, height: @types.Length(20.0) }
+    let child_style = { ..default_style, height: @types.Length(20.0), }
     children.push(@node.Node::leaf("child\{i}", child_style))
   }
-  let root_style = { ..default_style, width: @types.Length(100.0) }
+  let root_style = { ..default_style, width: @types.Length(100.0), }
   let root = @node.Node::new("root", root_style, children)
   let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
@@ -1220,9 +1220,9 @@ test "block_percentage_nested" {
   let grandchild = @node.Node::leaf("grandchild", grandchild_style)
 
   // Child with 50% width of root
-  let child_style = { ..default_style, width: @types.Percent(0.5) }
+  let child_style = { ..default_style, width: @types.Percent(0.5), }
   let child = @node.Node::new("child", child_style, [grandchild])
-  let root_style = { ..default_style, width: @types.Length(200.0) }
+  let root_style = { ..default_style, width: @types.Length(200.0), }
   let root = @node.Node::new("root", root_style, [child])
   let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
@@ -1244,7 +1244,7 @@ test "block_percentage_nested" {
 ///|
 test "block_border_and_padding_combined" {
   let default_style = @style.Style::default()
-  let child_style = { ..default_style, height: @types.Length(30.0) }
+  let child_style = { ..default_style, height: @types.Length(30.0), }
   let child = @node.Node::leaf("child", child_style)
   let root_style = {
     ..default_style,
@@ -1332,7 +1332,7 @@ test "block_margin_collapse_blocked_by_padding" {
     },
   }
   let child3 = @node.Node::leaf("child3", child3_style)
-  let root_style = { ..default_style, width: @types.Length(50.0) }
+  let root_style = { ..default_style, width: @types.Length(50.0), }
   let root = @node.Node::new("root", root_style, [child1, child2, child3])
   let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
@@ -1434,7 +1434,7 @@ test "block_percentage_height_nested" {
     width: @types.Length(30.0),
   }
   let grandchild = @node.Node::leaf("grandchild", grandchild_style)
-  let child_style = { ..default_style, height: @types.Percent(0.5) } // 50% of root
+  let child_style = { ..default_style, height: @types.Percent(0.5), } // 50% of root
   let child = @node.Node::new("child", child_style, [grandchild])
   let root_style = {
     ..default_style,
@@ -1463,7 +1463,7 @@ test "block_percentage_height_nested" {
 /// Test multiple display:none children
 test "block_multiple_display_none" {
   let default_style = @style.Style::default()
-  let visible1_style = { ..default_style, height: @types.Length(20.0) }
+  let visible1_style = { ..default_style, height: @types.Length(20.0), }
   let visible1 = @node.Node::leaf("visible1", visible1_style)
   let hidden1_style = {
     ..default_style,
@@ -1477,9 +1477,9 @@ test "block_multiple_display_none" {
     height: @types.Length(50.0),
   }
   let hidden2 = @node.Node::leaf("hidden2", hidden2_style)
-  let visible2_style = { ..default_style, height: @types.Length(30.0) }
+  let visible2_style = { ..default_style, height: @types.Length(30.0), }
   let visible2 = @node.Node::leaf("visible2", visible2_style)
-  let root_style = { ..default_style, width: @types.Length(100.0) }
+  let root_style = { ..default_style, width: @types.Length(100.0), }
   let root = @node.Node::new("root", root_style, [
     visible1, hidden1, hidden2, visible2,
   ])
@@ -1513,7 +1513,7 @@ test "block_multiple_display_none" {
 /// From taffy: deeply_nested_block
 test "block_deeply_nested" {
   let default_style = @style.Style::default()
-  let leaf_style = { ..default_style, height: @types.Length(10.0) }
+  let leaf_style = { ..default_style, height: @types.Length(10.0), }
   let leaf = @node.Node::leaf("leaf", leaf_style)
   let level3_style = {
     ..default_style,
@@ -1612,7 +1612,7 @@ test "inline_block_shrink_to_fit" {
   let inline_block = @node.Node::new("inline-block", inline_block_style, [leaf])
 
   // Create parent block container
-  let root_style = { ..default_style, width: @types.Length(400.0) }
+  let root_style = { ..default_style, width: @types.Length(400.0), }
   let root = @node.Node::new("root", root_style, [inline_block])
   let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
@@ -1643,15 +1643,20 @@ test "inline_block_shrink_to_fit_percent_max_width_min_content" {
   }
   let canvas_measure : @layout_types.MeasureFunc = {
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 100.0, max_width: 100.0, min_height: 50.0, max_height: 50.0 }
+      {
+        min_width: 100.0,
+        max_width: 100.0,
+        min_height: 50.0,
+        max_height: 50.0,
+      }
     },
   }
   let canvas = @node.Node::with_measure("canvas", canvas_style, canvas_measure)
-  let inline_block_style = { ..default_style, display: @types.InlineBlock }
+  let inline_block_style = { ..default_style, display: @types.InlineBlock, }
   let inline_block = @node.Node::new("inline-block", inline_block_style, [
     canvas,
   ])
-  let root_style = { ..default_style, width: @types.Length(0.0) }
+  let root_style = { ..default_style, width: @types.Length(0.0), }
   let root = @node.Node::new("root", root_style, [inline_block])
   let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
@@ -1690,7 +1695,7 @@ test "min_content_vertical_child_percent_max_block_size_not_zero" {
     },
   }
   let canvas = @node.Node::with_measure("canvas", canvas_style, canvas_measure)
-  let root_style = { ..default_style, width: @types.MinContent }
+  let root_style = { ..default_style, width: @types.MinContent, }
   let root = @node.Node::new("root", root_style, [canvas])
   let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
@@ -1726,7 +1731,7 @@ test "min_content_vertical_auto_child_percent_max_block_size_keeps_ratio" {
     },
   }
   let canvas = @node.Node::with_measure("canvas", canvas_style, canvas_measure)
-  let root_style = { ..default_style, width: @types.MinContent }
+  let root_style = { ..default_style, width: @types.MinContent, }
   let root = @node.Node::new("root", root_style, [canvas])
   let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
@@ -1783,7 +1788,7 @@ test "vertical_auto_block_with_table_children_uses_block_extent" {
     width: @types.Length(58.0),
     height: @types.Length(58.0),
   }
-  let row_style : @style.Style = { ..default_style, display: @types.TableRow }
+  let row_style : @style.Style = { ..default_style, display: @types.TableRow, }
   let table_style : @style.Style = {
     ..default_style,
     display: @types.Table,
@@ -1795,7 +1800,7 @@ test "vertical_auto_block_with_table_children_uses_block_extent" {
     },
   }
   fn make_table(id : String, w : Double) -> @node.Node {
-    let t_style = { ..table_style, width: @types.Length(w) }
+    let t_style = { ..table_style, width: @types.Length(w), }
     let cell = @node.Node::new(id + "-cell", cell_style, [])
     let row = @node.Node::new(id + "-row", row_style, [cell])
     @node.Node::new(id, t_style, [row])
@@ -1834,7 +1839,12 @@ test "vertical_auto_block_with_percent_replaced_descendant_fills_available_heigh
   }
   let img_measure : @layout_types.MeasureFunc = {
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 100.0, max_width: 100.0, min_height: 50.0, max_height: 50.0 }
+      {
+        min_width: 100.0,
+        max_width: 100.0,
+        min_height: 50.0,
+        max_height: 50.0,
+      }
     },
   }
   let img = @node.Node::with_measure("img", img_style, img_measure)
@@ -1887,29 +1897,29 @@ test "anonymous_block_basic" {
   @dispatch.setup()
   let default_style = @style.Style::default()
   // Create inline element (text-like)
-  let inline_style = { ..default_style, display: @types.Inline }
+  let inline_style = { ..default_style, display: @types.Inline, }
   let inline1_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 50.0, max_width: 50.0, min_height: 16.0, max_height: 16.0 }
+      { min_width: 50.0, max_width: 50.0, min_height: 16.0, max_height: 16.0, }
     },
   }
   let inline1 = @node.Node::with_measure(
     "inline1", inline_style, inline1_measure,
   )
   // Create block element
-  let block_style = { ..default_style, height: @types.Length(20.0) }
+  let block_style = { ..default_style, height: @types.Length(20.0), }
   let block1 = @node.Node::leaf("block1", block_style)
   // Create another inline element
   let inline2_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 30.0, max_width: 30.0, min_height: 16.0, max_height: 16.0 }
+      { min_width: 30.0, max_width: 30.0, min_height: 16.0, max_height: 16.0, }
     },
   }
   let inline2 = @node.Node::with_measure(
     "inline2", inline_style, inline2_measure,
   )
   // Root container
-  let root_style = { ..default_style, width: @types.Length(200.0) }
+  let root_style = { ..default_style, width: @types.Length(200.0), }
   let root = @node.Node::new("root", root_style, [inline1, block1, inline2])
   let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
@@ -1946,11 +1956,11 @@ test "anonymous_block_basic" {
 test "anonymous_block_multiple_inline_in_group" {
   @dispatch.setup()
   let default_style = @style.Style::default()
-  let inline_style = { ..default_style, display: @types.Inline }
+  let inline_style = { ..default_style, display: @types.Inline, }
   // Three inline elements followed by a block
   let inline1_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 30.0, max_width: 30.0, min_height: 16.0, max_height: 16.0 }
+      { min_width: 30.0, max_width: 30.0, min_height: 16.0, max_height: 16.0, }
     },
   }
   let inline1 = @node.Node::with_measure(
@@ -1958,7 +1968,7 @@ test "anonymous_block_multiple_inline_in_group" {
   )
   let inline2_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 40.0, max_width: 40.0, min_height: 16.0, max_height: 16.0 }
+      { min_width: 40.0, max_width: 40.0, min_height: 16.0, max_height: 16.0, }
     },
   }
   let inline2 = @node.Node::with_measure(
@@ -1966,7 +1976,7 @@ test "anonymous_block_multiple_inline_in_group" {
   )
   let inline3_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 20.0, max_width: 20.0, min_height: 16.0, max_height: 16.0 }
+      { min_width: 20.0, max_width: 20.0, min_height: 16.0, max_height: 16.0, }
     },
   }
   let inline3 = @node.Node::with_measure(
@@ -1976,7 +1986,7 @@ test "anonymous_block_multiple_inline_in_group" {
     ..default_style,
     height: @types.Length(30.0),
   })
-  let root_style = { ..default_style, width: @types.Length(200.0) }
+  let root_style = { ..default_style, width: @types.Length(200.0), }
   let root = @node.Node::new("root", root_style, [
     inline1, inline2, inline3, block1,
   ])
@@ -2042,10 +2052,10 @@ test "anonymous_block_respects_justify_items_end_alignment" {
 test "anonymous_block_mixed_does_not_stretch_auto_height_flex" {
   @dispatch.setup()
   let default_style = @style.Style::default()
-  let inline_style = { ..default_style, display: @types.Inline }
+  let inline_style = { ..default_style, display: @types.Inline, }
   let inline_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 40.0, max_width: 40.0, min_height: 16.0, max_height: 16.0 }
+      { min_width: 40.0, max_width: 40.0, min_height: 16.0, max_height: 16.0, }
     },
   }
   let inline = @node.Node::with_measure("inline", inline_style, inline_measure)
@@ -2053,7 +2063,7 @@ test "anonymous_block_mixed_does_not_stretch_auto_height_flex" {
   let grid_item = @node.Node::leaf("grid-item", default_style)
   let grid = @node.Node::new(
     "grid",
-    { ..default_style, display: @types.Grid, flex_grow: 1.0 },
+    { ..default_style, display: @types.Grid, flex_grow: 1.0, },
     [grid_item],
   )
   let flex = @node.Node::new(
@@ -2123,7 +2133,7 @@ test "float_flex_wrap_reverse_align_start" {
   let flex_container = @node.Node::new("flex", flex_style, [item1, item2])
 
   // Parent block
-  let root_style = { ..default_style, width: @types.Length(800.0) }
+  let root_style = { ..default_style, width: @types.Length(800.0), }
   let root = @node.Node::new("root", root_style, [flex_container])
   let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
@@ -2192,7 +2202,7 @@ test "nonfloat_flex_wrap_reverse_align_start" {
   let flex_container = @node.Node::new("flex", flex_style, [item1, item2])
 
   // Parent block
-  let root_style = { ..default_style, width: @types.Length(800.0) }
+  let root_style = { ..default_style, width: @types.Length(800.0), }
   let root = @node.Node::new("root", root_style, [flex_container])
   let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
@@ -2277,7 +2287,7 @@ test "replaced element aspect ratio with percent height" {
   }
   let measure : @layout_types.MeasureFunc = {
     func: fn(_w, _h) {
-      { min_width: 10.0, max_width: 10.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 10.0, max_width: 10.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let canvas = @node.Node::with_measure("canvas", canvas_style, measure)
@@ -2313,7 +2323,7 @@ test "body_auto_height_propagates_viewport_for_percent_child" {
   })
   let body = @node.Node::new(
     "body",
-    { ..default_style, display: @types.Block, width: @types.Length(800.0) },
+    { ..default_style, display: @types.Block, width: @types.Length(800.0), },
     [child],
   )
   let ctx : @layout_types.LayoutContext = {
@@ -2343,7 +2353,7 @@ test "percent_height_with_indefinite_parent_and_max_height_clamps" {
   }
   let scroll_inner = @node.Node::new(
     "scroll-inner",
-    { ..default_style, height: @types.Percent(1.0), overflow_y: @types.Scroll },
+    { ..default_style, height: @types.Percent(1.0), overflow_y: @types.Scroll, },
     lines,
   )
   let scroll_outer = @node.Node::new(
@@ -2358,7 +2368,7 @@ test "percent_height_with_indefinite_parent_and_max_height_clamps" {
   )
   let root = @node.Node::new(
     "root",
-    { ..default_style, width: @types.Length(100.0) },
+    { ..default_style, width: @types.Length(100.0), },
     [scroll_outer],
   )
   let ctx : @layout_types.LayoutContext = {
@@ -2412,7 +2422,7 @@ test "block_contain_size_auto_height_ignores_child_content" {
     "root",
     {
       ..default_style,
-      contain: { ..default_style.contain, size: true },
+      contain: { ..default_style.contain, size: true, },
       border: {
         top: @types.Length(2.0),
         right: @types.Length(2.0),
@@ -2441,12 +2451,12 @@ test "inline_block_contain_size_ifc_auto_height_ignores_child_content" {
   let default_style = @style.Style::default()
   let text_measure : @layout_types.MeasureFunc = {
     func: fn(_w, _h) {
-      { min_width: 10.0, max_width: 10.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 10.0, max_width: 10.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let inline_child = @node.Node::with_measure(
     "inline-child",
-    { ..default_style, display: @types.Inline },
+    { ..default_style, display: @types.Inline, },
     text_measure,
   )
   let root = @node.Node::new(
@@ -2454,7 +2464,7 @@ test "inline_block_contain_size_ifc_auto_height_ignores_child_content" {
     {
       ..default_style,
       display: @types.InlineBlock,
-      contain: { ..default_style.contain, size: true },
+      contain: { ..default_style.contain, size: true, },
       border: {
         top: @types.Length(2.0),
         right: @types.Length(2.0),
@@ -2484,19 +2494,24 @@ test "block_ifc_contain_size_with_aspect_ratio_uses_width" {
   let default_style = @style.Style::default()
   let inline_measure : @layout_types.MeasureFunc = {
     func: fn(_w, _h) {
-      { min_width: 10.0, max_width: 10.0, min_height: 200.0, max_height: 200.0 }
+      {
+        min_width: 10.0,
+        max_width: 10.0,
+        min_height: 200.0,
+        max_height: 200.0,
+      }
     },
   }
   let inline_child = @node.Node::with_measure(
     "inline-child",
-    { ..default_style, display: @types.Inline },
+    { ..default_style, display: @types.Inline, },
     inline_measure,
   )
   let root = @node.Node::new(
     "root",
     {
       ..default_style,
-      contain: { ..default_style.contain, size: true },
+      contain: { ..default_style.contain, size: true, },
       width: @types.Length(100.0),
       aspect_ratio: Some(1.0),
     },
@@ -2533,7 +2548,7 @@ test "block_leaf_measure_contain_size_min_content_uses_border_box_only" {
     {
       ..default_style,
       display: @types.Block,
-      contain: { ..default_style.contain, size: true },
+      contain: { ..default_style.contain, size: true, },
       border: {
         top: @types.Length(3.0),
         right: @types.Length(3.0),
@@ -2577,7 +2592,7 @@ test "block_leaf_measure_contain_size_auto_uses_border_box_only" {
     {
       ..default_style,
       display: @types.Block,
-      contain: { ..default_style.contain, size: true },
+      contain: { ..default_style.contain, size: true, },
       border: {
         top: @types.Length(3.0),
         right: @types.Length(3.0),
@@ -2695,7 +2710,7 @@ test "auto_height_parent_ignores_clipped_descendant_overflow" {
     },
     [grandchild],
   )
-  let root = @node.Node::new("root", { ..default_style }, [child])
+  let root = @node.Node::new("root", { ..default_style, }, [child])
   let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
     available_height: Some(600.0),
@@ -2841,7 +2856,7 @@ test "multicol_inline_br_keeps_inline_advance_and_flows_next_column" {
       _available_width : Double,
       _available_height : Double,
     ) -> @layout_types.IntrinsicSize {
-      { min_width: 96.0, max_width: 96.0, min_height: 20.0, max_height: 20.0 }
+      { min_width: 96.0, max_width: 96.0, min_height: 20.0, max_height: 20.0, }
     },
   }
   let text_b_measure : @layout_types.MeasureFunc = {
@@ -2849,7 +2864,12 @@ test "multicol_inline_br_keeps_inline_advance_and_flows_next_column" {
       _available_width : Double,
       _available_height : Double,
     ) -> @layout_types.IntrinsicSize {
-      { min_width: 104.0, max_width: 104.0, min_height: 20.0, max_height: 20.0 }
+      {
+        min_width: 104.0,
+        max_width: 104.0,
+        min_height: 20.0,
+        max_height: 20.0,
+      }
     },
   }
   let br_measure : @layout_types.MeasureFunc = {
@@ -2857,7 +2877,7 @@ test "multicol_inline_br_keeps_inline_advance_and_flows_next_column" {
       _available_width : Double,
       _available_height : Double,
     ) -> @layout_types.IntrinsicSize {
-      { min_width: 0.0, max_width: 0.0, min_height: 20.0, max_height: 20.0 }
+      { min_width: 0.0, max_width: 0.0, min_height: 20.0, max_height: 20.0, }
     },
   }
 
@@ -2969,7 +2989,7 @@ test "multicol_fragmented_block_reflows_nested_children_across_columns" {
   })
   let fragmented_child = @node.Node::new(
     "div.fragmented",
-    { ..default_style },
+    { ..default_style, },
     [nested1, nested2, nested3],
   )
   let root = @node.Node::new(
@@ -3015,7 +3035,7 @@ test "multicol_display_contents_uses_descendant_height_for_column_flow" {
   })
   let contents_wrapper = @node.Node::new(
     "div.contents",
-    { ..default_style, display: @types.Contents },
+    { ..default_style, display: @types.Contents, },
     [inner_block],
   )
   let item2 = @node.Node::leaf("div", {
@@ -3068,17 +3088,17 @@ test "multicol_balance_moves_third_display_contents_item_to_next_column" {
   })
   let first_inner_contents = @node.Node::new(
     "div.contents",
-    { ..default_style, display: @types.Contents },
+    { ..default_style, display: @types.Contents, },
     [first_leaf],
   )
   let first_contents = @node.Node::new(
     "div.contents",
-    { ..default_style, display: @types.Contents },
+    { ..default_style, display: @types.Contents, },
     [first_inner_contents],
   )
   let second_contents = @node.Node::new(
     "div.contents",
-    { ..default_style, display: @types.Contents },
+    { ..default_style, display: @types.Contents, },
     [
       @node.Node::leaf("div", {
         ..default_style,
@@ -3089,7 +3109,7 @@ test "multicol_balance_moves_third_display_contents_item_to_next_column" {
   )
   let third_contents = @node.Node::new(
     "div.contents",
-    { ..default_style, display: @types.Contents },
+    { ..default_style, display: @types.Contents, },
     [
       @node.Node::leaf("div", {
         ..default_style,
@@ -3137,22 +3157,22 @@ test "multicol_single_display_contents_child_uses_descendant_flow_items" {
   }
   let first_contents = @node.Node::new(
     "div.contents",
-    { ..default_style, display: @types.Contents },
+    { ..default_style, display: @types.Contents, },
     [@node.Node::leaf("div", leaf_style)],
   )
   let second_contents = @node.Node::new(
     "div.contents",
-    { ..default_style, display: @types.Contents },
+    { ..default_style, display: @types.Contents, },
     [@node.Node::leaf("div", leaf_style)],
   )
   let third_contents = @node.Node::new(
     "div.contents",
-    { ..default_style, display: @types.Contents },
+    { ..default_style, display: @types.Contents, },
     [@node.Node::leaf("div", leaf_style)],
   )
   let contents_wrapper = @node.Node::new(
     "div.columns",
-    { ..default_style, display: @types.Contents },
+    { ..default_style, display: @types.Contents, },
     [first_contents, second_contents, third_contents],
   )
   let root = @node.Node::new(
@@ -3208,7 +3228,7 @@ test "empty_inline_with_border_gets_line_height_strut" {
     display: @types.Inline,
     border: border_1px,
   })
-  let root_style = { ..default_style, width: @types.Length(200.0) }
+  let root_style = { ..default_style, width: @types.Length(200.0), }
   let root = @node.Node::new("root", root_style, [empty_span])
   let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,
@@ -3245,7 +3265,7 @@ test "empty_inline_with_margin_gets_line_height_strut" {
     display: @types.Inline,
     margin: margin_left,
   })
-  let root_style = { ..default_style, width: @types.Length(200.0) }
+  let root_style = { ..default_style, width: @types.Length(200.0), }
   let root = @node.Node::new("root", root_style, [empty_span])
   let ctx : @layout_types.LayoutContext = {
     available_width: 800.0,

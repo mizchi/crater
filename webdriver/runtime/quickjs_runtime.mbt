@@ -12,7 +12,7 @@ priv struct QuickJSState {
 }
 
 ///|
-let quickjs_state : QuickJSState = { initialized: false, pending_init: false }
+let quickjs_state : QuickJSState = { initialized: false, pending_init: false, }
 
 ///|
 /// FFI: Initialize QuickJS ASYNCIFY runtime

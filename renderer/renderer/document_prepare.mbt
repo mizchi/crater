@@ -151,7 +151,7 @@ fn external_css_cache_key(external_css : Array[String]) -> String {
   for css in external_css {
     total_len = total_len + css.length() + 16
   }
-  let buf = StringBuilder::new(size_hint=total_len)
+  let buf = StringBuilder(size_hint=total_len)
   for css in external_css {
     buf.write_string(css.length().to_string())
     buf.write_string(":")

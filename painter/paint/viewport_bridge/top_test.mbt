@@ -216,7 +216,7 @@ test "paint viewport bridge prunes fully covered earlier opaque siblings" {
     children: [],
     text: None,
   }
-  let green_layout : @layout_types.Layout = { ..red_layout, id: "green" }
+  let green_layout : @layout_types.Layout = { ..red_layout, id: "green", }
   let root_layout : @layout_types.Layout = {
     ..red_layout,
     id: "root",

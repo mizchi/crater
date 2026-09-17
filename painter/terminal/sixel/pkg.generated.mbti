@@ -50,4 +50,3 @@ pub using @raster {type DynamicPalette}
 pub using @raster {type Framebuffer}
 
 // Traits
-

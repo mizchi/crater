@@ -1,6 +1,6 @@
 ///|
 fn make_paint_node(id : String, background : @types.Color) -> PaintNode {
-  let props = { ..PaintProperties::default(), background_color: background }
+  let props = { ..PaintProperties::default(), background_color: background, }
   PaintNode::new(id, "div", 0.0, 0.0, 16.0, 16.0, props, [])
 }
 

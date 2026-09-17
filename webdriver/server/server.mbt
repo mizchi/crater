@@ -40,7 +40,7 @@ pub(all) struct SessionState {
 ///|
 /// Create new session manager
 pub fn SessionManager::new() -> SessionManager {
-  { sessions: {}, next_id: 1 }
+  { sessions: {}, next_id: 1, }
 }
 
 ///|
@@ -72,12 +72,12 @@ pub fn SessionManager::create_session(
     capabilities,
     current_url: "about:blank",
     title: "",
-    window_rect: { x: 0, y: 0, width: 800, height: 600 },
+    window_rect: { x: 0, y: 0, width: 800, height: 600, },
   }
   self.sessions[id] = state
 
   // Return session info
-  let map : Map[String, WebDriverValue] = {}
+  let map : Map[String, WebDriverValue] = Map([])
   map["sessionId"] = String(id)
   map["capabilities"] = capabilities_to_value(capabilities)
   success_object(map)
@@ -86,7 +86,7 @@ pub fn SessionManager::create_session(
 ///|
 /// Convert capabilities to WebDriverValue
 fn capabilities_to_value(cap : Capabilities) -> WebDriverValue {
-  let map : Map[String, WebDriverValue] = {}
+  let map : Map[String, WebDriverValue] = Map([])
   map["browserName"] = String(cap.browser_name)
   map["browserVersion"] = String(cap.browser_version)
   map["platformName"] = String(cap.platform_name)
@@ -144,7 +144,7 @@ pub fn SessionManager::handle_request(
     GetSession(session_id~) =>
       match self.get_session(session_id) {
         Some(state) => {
-          let map : Map[String, WebDriverValue] = {}
+          let map : Map[String, WebDriverValue] = Map([])
           map["sessionId"] = String(state.id)
           map["capabilities"] = capabilities_to_value(state.capabilities)
           (200, success_object(map))
@@ -160,7 +160,7 @@ pub fn SessionManager::handle_request(
     GetTimeouts(session_id~) =>
       match self.get_session(session_id) {
         Some(state) => {
-          let map : Map[String, WebDriverValue] = {}
+          let map : Map[String, WebDriverValue] = Map([])
           map["script"] = Number(state.capabilities.timeouts.script.to_double())
           map["pageLoad"] = Number(
             state.capabilities.timeouts.page_load.to_double(),
@@ -218,7 +218,7 @@ pub fn SessionManager::handle_request(
     GetWindowRect(session_id~) =>
       match self.get_session(session_id) {
         Some(state) => {
-          let map : Map[String, WebDriverValue] = {}
+          let map : Map[String, WebDriverValue] = Map([])
           map["x"] = Number(state.window_rect.x.to_double())
           map["y"] = Number(state.window_rect.y.to_double())
           map["width"] = Number(state.window_rect.width.to_double())
@@ -243,7 +243,7 @@ pub fn SessionManager::handle_request(
 ///|
 /// Handle status request
 fn handle_status() -> WebDriverResponse {
-  let map : Map[String, WebDriverValue] = {}
+  let map : Map[String, WebDriverValue] = Map([])
   map["ready"] = Bool(true)
   map["message"] = String("Crater WebDriver is ready")
   success_object(map)

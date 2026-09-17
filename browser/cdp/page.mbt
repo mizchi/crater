@@ -64,7 +64,7 @@ pub fn PageDomain::navigate(
     title: self.title,
     transition_type: "typed",
   })
-  Ok({ frame_id: self.frame_id, loader_id, error_text: None })
+  Ok({ frame_id: self.frame_id, loader_id, error_text: None, })
 }
 
 ///|
@@ -146,7 +146,7 @@ pub fn PageDomain::go_forward(self : PageDomain) -> Result[Bool, CdpError] {
 pub fn PageDomain::get_navigation_history(
   self : PageDomain,
 ) -> Result[CdpNavigationHistory, CdpError] {
-  Ok({ current_index: self.history_index, entries: self.history })
+  Ok({ current_index: self.history_index, entries: self.history, })
 }
 
 // =============================================================================

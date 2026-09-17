@@ -160,7 +160,7 @@ fn flatten_first_non_none_contents_child(
     if is_ignorable_table_text_node(node) {
       return None
     }
-    return Some({ child: node, wrappers })
+    return Some({ child: node, wrappers, })
   }
   let next_wrappers = push_table_wrapper_path(wrappers, node)
   for child in node.children {
@@ -269,7 +269,7 @@ fn is_percent_replaced_whitespace_separator(
 
 ///|
 fn zero_layout_rect() -> @types.Rect[Double] {
-  { left: 0.0, right: 0.0, top: 0.0, bottom: 0.0 }
+  { left: 0.0, right: 0.0, top: 0.0, bottom: 0.0, }
 }
 
 ///|
@@ -309,7 +309,7 @@ fn wrap_layout_with_contents_wrappers(
 fn build_occupancy_grid(
   rows : Array[@node.Node],
 ) -> (Map[String, CellOccupancy], Int) {
-  let grid : Map[String, CellOccupancy] = {}
+  let grid : Map[String, CellOccupancy] = Map([])
   let mut num_columns = 0
   for row_idx = 0; row_idx < rows.length(); row_idx = row_idx + 1 {
     let row = rows[row_idx]
@@ -1714,7 +1714,7 @@ fn layout_cell(
   // In border-collapse mode, borders are included in cell dimensions (like border-box)
   // So we use zero border for layout calculations
   let border : @types.Rect[Double] = if border_collapse {
-    @types.Rect::{ left: 0.0, right: 0.0, top: 0.0, bottom: 0.0 }
+    @types.Rect::{ left: 0.0, right: 0.0, top: 0.0, bottom: 0.0, }
   } else {
     @types.resolve_rect(style.border, parent_width)
   }
@@ -1862,7 +1862,7 @@ fn layout_cell(
     } else {
       child_layout.y
     }
-    normalized_child_layouts.push({ ..child_layout, y: normalized_y })
+    normalized_child_layouts.push({ ..child_layout, y: normalized_y, })
   }
   {
     id: cell.id,
@@ -2012,7 +2012,7 @@ fn layout_row(
       cell_width,
       relative_row_height_context,
     )
-    let positioned_cell = { ..cell_layout, x: x_offset + rel_x, y: rel_y }
+    let positioned_cell = { ..cell_layout, x: x_offset + rel_x, y: rel_y, }
     // Only count rowspan=1 cells towards max_height
     // Rowspan cells have their height distributed separately
     let rowspan = if child.style.rowspan > 0 { child.style.rowspan } else { 1 }
@@ -2483,7 +2483,7 @@ fn collect_rowspan_cells(rows : Array[@node.Node]) -> Array[RowspanCellInfo] {
       }
       if rowspan > 1 {
         let cell_height = compute_cell_intrinsic_height(child)
-        cells.push({ start_row: row_idx, rowspan, cell_height })
+        cells.push({ start_row: row_idx, rowspan, cell_height, })
       }
     }
   }
@@ -3199,7 +3199,7 @@ pub fn compute(
   let top_captions : Array[TableChildEntry] = []
   let bottom_captions : Array[TableChildEntry] = []
   let row_children : Array[TableChildEntry] = [] // rows, row groups, cols
-  let effective_child_by_index : Map[Int, @node.Node] = {}
+  let effective_child_by_index : Map[Int, @node.Node] = Map([])
   for i = 0; i < node.children.length(); i = i + 1 {
     let original_child = node.children[i]
     match flatten_first_non_none_contents_child(original_child, []) {
@@ -3227,13 +3227,13 @@ pub fn compute(
       }
       None => {
         effective_child_by_index[i] = original_child
-        row_children.push({ child: original_child, index: i, wrappers: [] })
+        row_children.push({ child: original_child, index: i, wrappers: [], })
       }
     }
   }
 
   // Create a map to store layouts by original index
-  let layout_map : Map[Int, @layout_types.Layout] = {}
+  let layout_map : Map[Int, @layout_types.Layout] = Map([])
 
   // Layout all children (including row groups)
   // y_offset includes top edge spacing
@@ -3437,7 +3437,7 @@ pub fn compute(
         row_layout.height + border_spacing_y
       }
       y_offset = y_offset + advance
-      row_flow_items.push({ indices: run_indices, base_y, advance, bucket: 1 })
+      row_flow_items.push({ indices: run_indices, base_y, advance, bucket: 1, })
       global_row_idx = global_row_idx + 1
       pending_direct_cells = []
     }
@@ -3501,7 +3501,7 @@ pub fn compute(
           positioned_row,
           entry.wrappers,
         )
-        row_flow_items.push({ indices, base_y, advance, bucket: 1 })
+        row_flow_items.push({ indices, base_y, advance, bucket: 1, })
         global_row_idx = global_row_idx + 1
       } else if is_table_row_group(child.style.display) {
         flush_pending_direct_cells()
@@ -3633,7 +3633,7 @@ pub fn compute(
           group_layout,
           entry.wrappers,
         )
-        row_flow_items.push({ indices, base_y, advance, bucket })
+        row_flow_items.push({ indices, base_y, advance, bucket, })
       } else if is_table_column_group(child.style.display) {
         flush_pending_direct_cells()
         // Colgroup: layout with column widths, positioned later
@@ -3785,7 +3785,7 @@ pub fn compute(
           for idx in item.indices {
             match layout_map.get(idx) {
               Some(layout) =>
-                layout_map[idx] = { ..layout, y: layout.y + delta }
+                layout_map[idx] = { ..layout, y: layout.y + delta, }
               None => ()
             }
           }
@@ -3910,7 +3910,7 @@ pub fn compute(
           })
         } else if is_table_column(effective_child.style.display) {
           // Standalone col element
-          final_child_layouts.push({ ..layout, height: row_content_height })
+          final_child_layouts.push({ ..layout, height: row_content_height, })
         } else {
           final_child_layouts.push(layout)
         }
@@ -3947,9 +3947,9 @@ pub fn compute(
       } else {
         normalized_child.y
       }
-      normalized_children.push({ ..normalized_child, y: normalized_y })
+      normalized_children.push({ ..normalized_child, y: normalized_y, })
     }
-    { ..layout, children: normalized_children }
+    { ..layout, children: normalized_children, }
   }
   let normalized_child_layouts : Array[@layout_types.Layout] = []
   for child_layout in final_child_layouts {

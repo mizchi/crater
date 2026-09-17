@@ -40,7 +40,7 @@ fn draw_text_with_glyphs_clipped(
     font_weight~,
     expected_line_count~,
   )
-  let sixel_color = { r: color.r, g: color.g, b: color.b }
+  let sixel_color = { r: color.r, g: color.g, b: color.b, }
   let color_idx = palette.get_or_add(sixel_color)
   for placement in placements {
     let line_top = placement.y.to_int()

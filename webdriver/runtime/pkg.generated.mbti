@@ -2,7 +2,7 @@
 package "mizchi/crater-webdriver-bidi/runtime"
 
 import {
-  "mizchi/js/core",
+  "mizchi/js_core",
 }
 
 // Values
@@ -14,7 +14,7 @@ pub fn encode_base64_utf8(String) -> String
 
 pub fn extract_inline_script_blocks(String) -> Array[String]
 
-pub fn init_quickjs() -> @core.Any
+pub fn init_quickjs() -> @js_core.Any
 
 pub fn is_quickjs_initialized() -> Bool
 
@@ -22,17 +22,17 @@ pub fn json_ensure_ascii(String) -> String
 
 pub fn mark_quickjs_initialized() -> Unit
 
-pub fn quickjs_eval_async(String, Bool) -> @core.Any
+pub fn quickjs_eval_async(String, Bool) -> @js_core.Any
 
-pub fn quickjs_eval_module(String) -> @core.Any
+pub fn quickjs_eval_module(String) -> @js_core.Any
 
 pub fn quickjs_eval_sync(String) -> String
 
-pub fn quickjs_eval_ws(@core.Any, Int, String, String) -> Unit
+pub fn quickjs_eval_ws(@js_core.Any, Int, String, String) -> Unit
 
-pub fn quickjs_fetch(String) -> @core.Any
+pub fn quickjs_fetch(String) -> @js_core.Any
 
-pub fn quickjs_load(String) -> @core.Any
+pub fn quickjs_load(String) -> @js_core.Any
 
 // Errors
 
@@ -41,4 +41,3 @@ pub fn quickjs_load(String) -> @core.Any
 // Type aliases
 
 // Traits
-

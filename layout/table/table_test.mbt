@@ -456,7 +456,12 @@ test "table auto layout treats explicit cell width as minimum" {
   }
   let wide_measure : @layout_types.MeasureFunc = {
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 150.0, max_width: 150.0, min_height: 20.0, max_height: 20.0 }
+      {
+        min_width: 150.0,
+        max_width: 150.0,
+        min_height: 20.0,
+        max_height: 20.0,
+      }
     },
   }
   let wide_text = @node.Node::with_measure("text", text_style, wide_measure)
@@ -744,7 +749,12 @@ test "table-layout fixed keeps explicit width below intrinsic content" {
   }
   let wide_measure : @layout_types.MeasureFunc = {
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 400.0, max_width: 400.0, min_height: 20.0, max_height: 20.0 }
+      {
+        min_width: 400.0,
+        max_width: 400.0,
+        min_height: 20.0,
+        max_height: 20.0,
+      }
     },
   }
   let wide_text = @node.Node::with_measure("text", text_style, wide_measure)
@@ -1319,9 +1329,12 @@ test "table preserves negative descendant offsets inside cell scroll container" 
     align_content: @types.Alignment::Center,
     align_content_unsafe: true,
   }
-  let cell_style : @style.Style = { ..default_style, display: @types.TableCell }
-  let row_style : @style.Style = { ..default_style, display: @types.TableRow }
-  let table_style : @style.Style = { ..default_style, display: @types.Table }
+  let cell_style : @style.Style = {
+    ..default_style,
+    display: @types.TableCell,
+  }
+  let row_style : @style.Style = { ..default_style, display: @types.TableRow, }
+  let table_style : @style.Style = { ..default_style, display: @types.Table, }
 
   let indicator = @node.Node::leaf("div.indicator", indicator_style)
   let scroller = @node.Node::new("div.test", scroller_style, [indicator])

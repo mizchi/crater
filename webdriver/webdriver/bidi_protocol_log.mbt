@@ -35,7 +35,7 @@ fn BidiProtocol::emit_log_entry_with_details(
     self.subscription_state.buffer_log_entry(ctx_id, params)
     return
   }
-  self.outbox.push(Event({ event_method: "log.entryAdded", params }))
+  self.outbox.push(Event({ event_method: "log.entryAdded", params, }))
 }
 
 ///|
@@ -174,7 +174,7 @@ fn BidiProtocol::emit_script_message(
       "context": Json::string(ctx_id),
     }),
   })
-  self.outbox.push(Event({ event_method: event_name, params }))
+  self.outbox.push(Event({ event_method: event_name, params, }))
 }
 
 ///|

@@ -232,7 +232,7 @@ test "wpt_intrinsic_percent_replaced_018_like_table_min_content_ignores_newline_
 /// screen. Column widths must depend on content, not on how many identical
 /// rows appear.
 fn hn_like_rows(n : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let mut i = 0
   while i < n {
     buf.write_string(

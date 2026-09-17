@@ -37,4 +37,3 @@ pub fn update_style(String, String) -> Bool
 // Type aliases
 
 // Traits
-

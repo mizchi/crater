@@ -71,7 +71,7 @@ pub struct ResourceRegistry {
 
 ///|
 pub fn ResourceRegistry::new() -> ResourceRegistry {
-  { next_id: 0, resource_nodes: {}, pending: @hashset.HashSet([]) }
+  { next_id: 0, resource_nodes: {}, pending: @hashset.HashSet([]), }
 }
 
 ///|

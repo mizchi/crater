@@ -102,13 +102,13 @@ fn is_svg_local_name(local_name : String) -> Bool {
 fn normalize_svg_namespace_in_node(node : Json) -> Json {
   match node {
     Object(node_map) => {
-      let out_node : Map[String, Json] = {}
+      let out_node : Map[String, Json] = Map([])
       for key, value in node_map {
         out_node[key] = value
       }
       match node_map.get("value") {
         Some(Object(value_map)) => {
-          let out_value : Map[String, Json] = {}
+          let out_value : Map[String, Json] = Map([])
           for key, value in value_map {
             out_value[key] = value
           }

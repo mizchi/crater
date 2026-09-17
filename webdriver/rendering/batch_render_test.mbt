@@ -90,7 +90,7 @@ test "batch render results serialize to bidi result object" {
   let results = @vrt.render_html_batch_variants(
     "<main>hello</main>",
     @types.Size::new(120.0, 80.0),
-    [{ id: "base", mutations: [] }],
+    [{ id: "base", mutations: [], }],
   )
   match batch_render_results_to_json(results) {
     Object(output) =>

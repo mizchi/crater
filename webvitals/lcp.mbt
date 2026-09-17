@@ -27,7 +27,7 @@ pub impl Show for LCPElementType with fn output(self, logger) {
     BackgroundImage(url~) => logger.write_string("BackgroundImage(url=\{url})")
     Video(poster~) => {
       logger.write_string("Video(poster=")
-      logger.write_object(to_repr(poster))
+      logger.write_object(Repr(poster))
       logger.write_string(")")
     }
     TextBlock => logger.write_string("TextBlock")
@@ -88,7 +88,7 @@ pub fn LCPCandidate::with_resource_loaded(
   self : LCPCandidate,
   loaded : Bool,
 ) -> LCPCandidate {
-  { ..self, resource_loaded: loaded }
+  { ..self, resource_loaded: loaded, }
 }
 
 ///|
@@ -96,7 +96,7 @@ pub fn LCPCandidate::with_render_time(
   self : LCPCandidate,
   time : Double,
 ) -> LCPCandidate {
-  { ..self, render_time: Some(time) }
+  { ..self, render_time: Some(time), }
 }
 
 ///|
@@ -104,7 +104,7 @@ pub fn LCPCandidate::with_load_time(
   self : LCPCandidate,
   time : Double,
 ) -> LCPCandidate {
-  { ..self, load_time: Some(time) }
+  { ..self, load_time: Some(time), }
 }
 
 ///|

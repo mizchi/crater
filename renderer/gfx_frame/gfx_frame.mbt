@@ -78,7 +78,7 @@ pub fn RenderFrame2D::with_opacity(
   factor : Double,
 ) -> RenderFrame2D {
   let f = if factor < 0.0 { 0.0 } else if factor > 1.0 { 1.0 } else { factor }
-  { ..self, opacity: self.opacity * f }
+  { ..self, opacity: self.opacity * f, }
 }
 
 ///|
@@ -101,7 +101,7 @@ pub fn RenderFrame2D::with_clip(
   let y1 = if y1a < y1b { y1a } else { y1b }
   let cw = if x1 > x0 { x1 - x0 } else { 0 }
   let ch = if y1 > y0 { y1 - y0 } else { 0 }
-  { ..self, clip_x: x0, clip_y: y0, clip_w: cw, clip_h: ch }
+  { ..self, clip_x: x0, clip_y: y0, clip_w: cw, clip_h: ch, }
 }
 
 ///|
@@ -294,7 +294,7 @@ pub fn new_primitive_command(
   let effective = if frame.opacity >= 1.0 {
     color
   } else {
-    { ..color, a: color.a * frame.opacity }
+    { ..color, a: color.a * frame.opacity, }
   }
   let uniforms = color_to_uniform_dwords(effective)
   for value in extra_uniforms {
@@ -333,7 +333,7 @@ pub fn RectFill2D::new(
   h~ : Double,
   color~ : @gfx.Color,
 ) -> RectFill2D {
-  { x, y, w, h, color }
+  { x, y, w, h, color, }
 }
 
 ///|
@@ -465,7 +465,7 @@ pub fn RectOutline2D::new(
   line_width? : Double = 1.0,
   color~ : @gfx.Color,
 ) -> RectOutline2D {
-  { x, y, w, h, line_width, color }
+  { x, y, w, h, line_width, color, }
 }
 
 ///|

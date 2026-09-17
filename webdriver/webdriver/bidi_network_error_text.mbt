@@ -4,7 +4,7 @@
 /// Defends against log injection / log forging from malicious response
 /// headers that propagate via HttpError reason strings.
 fn sanitize_for_log(s : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let chars = s.to_array()
   let mut i = 0
   while i < chars.length() {

@@ -57,13 +57,13 @@ pub(all) enum RpcErrorCode {
 ///|
 pub impl Show for RpcRequest with fn output(self, logger) {
   logger.write_string("{jsonrpc: ")
-  self.jsonrpc.output(logger)
+  Show::output(self.jsonrpc, logger)
   logger.write_string(", id: ")
   self.id.output(logger)
   logger.write_string(", method_name: ")
-  self.method_name.output(logger)
+  Show::output(self.method_name, logger)
   logger.write_string(", params: ")
-  logger.write_object(to_repr(self.params))
+  logger.write_object(Repr(self.params))
   logger.write_string("}")
 }
 
@@ -72,12 +72,12 @@ pub impl Show for RpcId with fn output(self, logger) {
   match self {
     Num(value) => {
       logger.write_string("Num(")
-      value.output(logger)
+      Show::output(value, logger)
       logger.write_string(")")
     }
     Str(value) => {
       logger.write_string("Str(")
-      value.output(logger)
+      Show::output(value, logger)
       logger.write_string(")")
     }
     Null => logger.write_string("Null")
@@ -91,18 +91,18 @@ pub impl Show for RpcResponse with fn output(self, logger) {
       logger.write_string("Success(id=")
       id.output(logger)
       logger.write_string(", result=")
-      result.output(logger)
+      Show::output(result, logger)
       logger.write_string(")")
     }
     Error(id~, code~, message~, data~) => {
       logger.write_string("Error(id=")
       id.output(logger)
       logger.write_string(", code=")
-      code.output(logger)
+      Show::output(code, logger)
       logger.write_string(", message=")
-      message.output(logger)
+      Show::output(message, logger)
       logger.write_string(", data=")
-      logger.write_object(to_repr(data))
+      logger.write_object(Repr(data))
       logger.write_string(")")
     }
   }
@@ -180,7 +180,7 @@ pub fn RpcResponse::to_json(self : RpcResponse) -> String {
 ///|
 /// Escape string for JSON
 fn escape_string(s : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for c in s.iter() {
     match c {
       '"' => buf.write_string("\\\"")
@@ -330,7 +330,7 @@ pub fn parse_method(name : String) -> ApiMethod? {
 /// Parse a simple JSON object into a Map
 /// Note: This is a very simplified parser for demo purposes
 pub fn parse_json_object(json : String) -> Map[String, String] {
-  let result : Map[String, String] = {}
+  let result : Map[String, String] = Map([])
   let json = json.trim().to_owned()
 
   // Remove outer braces
@@ -353,7 +353,7 @@ pub fn parse_json_object(json : String) -> Map[String, String] {
 ///|
 /// Get substring
 fn substring(s : String, start : Int, end : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let mut i = 0
   for c in s.iter() {
     if i >= start && i < end {
@@ -368,7 +368,7 @@ fn substring(s : String, start : Int, end : Int) -> String {
 /// Split JSON at top-level commas
 fn split_json_pairs(s : String) -> Array[String] {
   let result : Array[String] = []
-  let current = StringBuilder::new()
+  let current = StringBuilder()
   let mut depth = 0
   let mut in_string = false
   for c in s.iter() {
@@ -411,8 +411,8 @@ fn split_json_pairs(s : String) -> Array[String] {
 fn split_at_colon(s : String) -> Array[String] {
   let result : Array[String] = []
   let mut found = false
-  let before = StringBuilder::new()
-  let after = StringBuilder::new()
+  let before = StringBuilder()
+  let after = StringBuilder()
   for c in s.iter() {
     if c == ':' && !found {
       found = true

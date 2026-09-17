@@ -196,7 +196,7 @@ fn[T] BidiProtocol::resolve_effective_scoped_override(
 ///|
 /// Create new BiDi protocol instance
 fn BidiProtocol::new() -> BidiProtocol {
-  let user_contexts : Map[String, Bool] = {}
+  let user_contexts : Map[String, Bool] = Map([])
   user_contexts["default"] = true
   {
     manager: CdpSessionManager::new(),

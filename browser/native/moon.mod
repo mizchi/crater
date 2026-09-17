@@ -9,7 +9,7 @@ import {
   // This module is its own single-member workspace (`browser/native/moon.work`),
   // so it resolves deps independently of the root workspace. State the async
   // floor here rather than inheriting whatever mizchi/v8 happens to pin.
-  "moonbitlang/async@0.21.3",
+  "moonbitlang/async@0.22.1",
 }
 
 readme = "README.md"

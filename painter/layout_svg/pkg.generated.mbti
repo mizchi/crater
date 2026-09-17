@@ -22,4 +22,3 @@ pub fn is_svg_root_tag(String) -> Bool
 // Type aliases
 
 // Traits
-

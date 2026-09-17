@@ -15,7 +15,7 @@ test "vrt package renders batch variants" {
     #|<html><body><div class="box" style="width: 100px; height: 50px; background: red;">hello</div></body></html>
   let viewport = @types.Size::new(800.0, 600.0)
   let variants : Array[RenderVariant] = [
-    { id: "baseline", mutations: [] },
+    { id: "baseline", mutations: [], },
     {
       id: "wider",
       mutations: [

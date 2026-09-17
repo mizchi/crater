@@ -28,29 +28,29 @@ pub struct CookieJar {
 
 ///|
 pub fn CookieJar::new(enabled? : Bool = false) -> CookieJar {
-  { cookies: [], enabled }
+  { cookies: [], enabled, }
 }
 
 ///|
 pub impl Show for ParsedCookie with fn output(self, logger) {
   logger.write_string("{name: ")
-  self.name.output(logger)
+  Show::output(self.name, logger)
   logger.write_string(", value: ")
-  self.value.output(logger)
+  Show::output(self.value, logger)
   logger.write_string(", domain: ")
-  self.domain.output(logger)
+  Show::output(self.domain, logger)
   logger.write_string(", path: ")
-  self.path.output(logger)
+  Show::output(self.path, logger)
   logger.write_string(", secure: ")
-  self.secure.output(logger)
+  Show::output(self.secure, logger)
   logger.write_string(", http_only: ")
-  self.http_only.output(logger)
+  Show::output(self.http_only, logger)
   logger.write_string(", same_site: ")
-  self.same_site.output(logger)
+  Show::output(self.same_site, logger)
   logger.write_string(", max_age: ")
-  logger.write_object(to_repr(self.max_age))
+  logger.write_object(Repr(self.max_age))
   logger.write_string(", expires: ")
-  logger.write_object(to_repr(self.expires))
+  logger.write_object(Repr(self.expires))
   logger.write_string("}")
 }
 
@@ -278,7 +278,7 @@ pub fn CookieJar::get_cookie_header(
     let site_domain = cookie_extract_domain(site_origin)
     !cookie_same_site(site_domain, req_domain)
   }
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let mut first = true
   for cookie in self.cookies {
     // Domain match (RFC 6265 §5.4)

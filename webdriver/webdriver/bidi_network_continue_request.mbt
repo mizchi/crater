@@ -62,7 +62,8 @@ fn BidiProtocol::handle_network_continue_blocked_request(
         self.normalize_synthetic_network_bytes_value(
           request_id, raw_body, "body",
         ) {
-        Some(body_value) => input = { ..input, request_value: Some(body_value) }
+        Some(body_value) =>
+          input = { ..input, request_value: Some(body_value), }
         None => return
       }
     None => ()
@@ -103,7 +104,7 @@ fn BidiProtocol::handle_network_continue_blocked_request(
       Some(headers) => synthetic_network_merge_header_entries(headers)
       None => return
     }
-    input = { ..input, request_headers: normalized_headers }
+    input = { ..input, request_headers: normalized_headers, }
   }
   if has_cookies {
     let cookies_override = match
@@ -120,13 +121,13 @@ fn BidiProtocol::handle_network_continue_blocked_request(
       request_cookies_override: cookies_override.enabled,
     }
   } else if has_headers {
-    input = { ..input, request_cookies: [], request_cookies_override: true }
+    input = { ..input, request_cookies: [], request_cookies_override: true, }
   }
 
   match map.get("navigation") {
     Some(String(navigation)) =>
-      input = { ..input, navigation: Some(navigation) }
-    Some(Null) => input = { ..input, navigation: None }
+      input = { ..input, navigation: Some(navigation), }
+    Some(Null) => input = { ..input, navigation: None, }
     Some(_) => {
       self.send_error(
         request_id, "invalid argument", "navigation must be a string",
@@ -156,13 +157,13 @@ fn BidiProtocol::handle_network_continue_blocked_request(
   if is_navigation {
     let navigation_id = match input.navigation {
       Some(navigation_id) => {
-        input = { ..input, navigation: Some(navigation_id) }
+        input = { ..input, navigation: Some(navigation_id), }
         navigation_id
       }
       None => {
         let generated_id = self.next_navigation_id.to_string()
         self.next_navigation_id += 1
-        input = { ..input, navigation: Some(generated_id) }
+        input = { ..input, navigation: Some(generated_id), }
         generated_id
       }
     }

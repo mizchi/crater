@@ -66,4 +66,3 @@ pub using @tree {type ResourceId}
 pub using @style {type Style}
 
 // Traits
-

@@ -21,12 +21,12 @@ test "aomx facade extracts content and computes grounding" {
     ),
   )
 
-  let config = { ..ExtractConfig::default(), min_text_length: 1 }
+  let config = { ..ExtractConfig::default(), min_text_length: 1, }
   let extraction = extract_content(tree, config)
   let grounded = find_best(
     grounded_tree,
     SpatialQuery::InRegion(SpatialRegion::Center),
-    { width: 1280.0, height: 720.0 },
+    { width: 1280.0, height: 720.0, },
   )
 
   inspect(extraction.main_content is Some(_), content="true")

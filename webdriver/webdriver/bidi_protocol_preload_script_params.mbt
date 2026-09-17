@@ -212,7 +212,7 @@ fn BidiProtocol::parse_add_preload_script_params(
     return None
   }
 
-  Some({ function_declaration, arguments, sandbox, contexts, user_contexts })
+  Some({ function_declaration, arguments, sandbox, contexts, user_contexts, })
 }
 
 ///|

@@ -82,7 +82,7 @@ fn score_content_block(
     related_penalty *
     heading_bonus *
     layout_bonus
-  { node, score, text_density, visual_score, position_penalty }
+  { node, score, text_density, visual_score, position_penalty, }
 }
 
 ///|

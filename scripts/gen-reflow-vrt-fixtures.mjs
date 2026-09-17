@@ -73,7 +73,7 @@ body += "// Real-world fixture pages + a deterministic synthetic mutation, embed
 body += "// for the js-target reflow-VRT harness (see reflow_vrt_wbtest.mbt).\n\n"
 body += "///|\n"
 body += "/// (name, before, after) corpus derived from real-world fixtures.\n"
-body += "fn reflow_vrt_fixture_corpus() -> Array[(String, String, String)] {\n"
+body += "pub fn reflow_vrt_fixture_corpus() -> Array[(String, String, String)] {\n"
 body += "  [\n"
 for (const e of entries) {
   body += `    (\n`

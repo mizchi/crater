@@ -144,7 +144,7 @@ fn build_styled_element_children(
             continue
           }
           let text_parent_style = if preserve_ws {
-            { ..style, display: @types.Inline }
+            { ..style, display: @types.Inline, }
           } else {
             style
           }

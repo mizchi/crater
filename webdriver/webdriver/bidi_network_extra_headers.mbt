@@ -78,7 +78,7 @@ fn BidiProtocol::resolve_network_extra_header_entries(
   context_id : String,
   request_headers : Array[Json],
 ) -> Array[Json] {
-  let merged : Map[String, String] = {}
+  let merged : Map[String, String] = Map([])
   synthetic_network_merge_string_map(
     merged,
     self.network_state.network_extra_headers_global,
@@ -110,7 +110,7 @@ fn BidiProtocol::build_network_headers_echo_payload(
   context_id : String,
   request_headers : Array[Json],
 ) -> String {
-  let headers : Map[String, Json] = {}
+  let headers : Map[String, Json] = Map([])
   let mut has_user_agent = false
   let mut has_accept_language = false
   for
@@ -150,7 +150,7 @@ fn BidiProtocol::build_network_headers_echo_payload(
 fn synthetic_network_copy_string_map(
   source : Map[String, String],
 ) -> Map[String, String] {
-  let copied : Map[String, String] = {}
+  let copied : Map[String, String] = Map([])
   synthetic_network_merge_string_map(copied, source)
   copied
 }
@@ -184,7 +184,7 @@ fn synthetic_network_merge_string_map(
 fn synthetic_network_header_string_map_from_entries(
   headers : Array[Json],
 ) -> Map[String, String] {
-  let normalized : Map[String, String] = {}
+  let normalized : Map[String, String] = Map([])
   for header in headers {
     let name = match synthetic_network_header_entry_name(header) {
       Some(name) => name.to_lower()

@@ -112,7 +112,7 @@ pub fn collapsed_space_advance(
 /// Split text into words (by whitespace). Preserves newlines as "\n" tokens.
 pub fn split_text_into_words(text : String) -> Array[String] {
   let words : Array[String] = []
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for c in text {
     if c == '\n' {
       if buf.to_string().length() > 0 {

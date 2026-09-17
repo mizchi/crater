@@ -40,7 +40,7 @@ pub impl Show for ResponsiveBreakpoint with fn output(self, logger) {
   logger.write_string(", normalized: ")
   logger.write_string(self.normalized.to_string())
   logger.write_string(", guards: ")
-  logger.write_object(to_repr(self.guards))
+  logger.write_object(Repr(self.guards))
   logger.write_string(", rule_count: ")
   logger.write_string(self.rule_count.to_string())
   logger.write_string("}")
@@ -53,18 +53,18 @@ pub impl Show for BreakpointDiscoveryDiagnostics with fn output(self, logger) {
   logger.write_string(", rule_count: ")
   logger.write_string(self.rule_count.to_string())
   logger.write_string(", external_stylesheet_links: ")
-  logger.write_object(to_repr(self.external_stylesheet_links))
+  logger.write_object(Repr(self.external_stylesheet_links))
   logger.write_string(", ignored_queries: ")
-  logger.write_object(to_repr(self.ignored_queries))
+  logger.write_object(Repr(self.ignored_queries))
   logger.write_string(", unsupported_queries: ")
-  logger.write_object(to_repr(self.unsupported_queries))
+  logger.write_object(Repr(self.unsupported_queries))
   logger.write_string("}")
 }
 
 ///|
 pub impl Show for BreakpointDiscoveryResult with fn output(self, logger) {
   logger.write_string("{breakpoints: ")
-  logger.write_object(to_repr(self.breakpoints))
+  logger.write_object(Repr(self.breakpoints))
   logger.write_string(", diagnostics: ")
   logger.write_string(self.diagnostics.to_string())
   logger.write_string("}")
@@ -81,7 +81,7 @@ pub fn discover_responsive_breakpoints(
   html : String,
 ) -> BreakpointDiscoveryResult {
   let doc = @html.parse_document(html)
-  let aggregated : Map[String, ResponsiveBreakpoint] = {}
+  let aggregated : Map[String, ResponsiveBreakpoint] = Map([])
   let ignored_queries : Array[String] = []
   let unsupported_queries : Array[String] = []
   let external_stylesheet_links : Array[String] = []
@@ -194,7 +194,7 @@ fn collect_media_query(
     )
     match aggregated.get(key) {
       Some(existing) =>
-        aggregated.set(key, { ..existing, rule_count: existing.rule_count + 1 })
+        aggregated.set(key, { ..existing, rule_count: existing.rule_count + 1, })
       None =>
         aggregated.set(key, {
           axis: "width",
@@ -222,13 +222,13 @@ fn classify_feature(feature : @media.MediaFeature) -> FeatureClassification {
     @media.MediaFeature::MinWidth(value) =>
       match media_value_to_px(value) {
         Some(value_px) =>
-          FeatureClassification::Breakpoint({ op: "ge", value_px })
+          FeatureClassification::Breakpoint({ op: "ge", value_px, })
         None => FeatureClassification::Unsupported
       }
     @media.MediaFeature::MaxWidth(value) =>
       match media_value_to_px(value) {
         Some(value_px) =>
-          FeatureClassification::Breakpoint({ op: "le", value_px })
+          FeatureClassification::Breakpoint({ op: "le", value_px, })
         None => FeatureClassification::Unsupported
       }
     @media.MediaFeature::WidthRange(@media.RangeOp::Eq, _) =>
@@ -236,7 +236,10 @@ fn classify_feature(feature : @media.MediaFeature) -> FeatureClassification {
     @media.MediaFeature::WidthRange(op, value) =>
       match media_value_to_px(value) {
         Some(value_px) =>
-          FeatureClassification::Breakpoint({ op: range_op_label(op), value_px })
+          FeatureClassification::Breakpoint({
+            op: range_op_label(op),
+            value_px,
+          })
         None => FeatureClassification::Unsupported
       }
     @media.MediaFeature::Width(_) => FeatureClassification::Unsupported
@@ -260,7 +263,7 @@ fn media_value_to_px(value : @media.MediaValue) -> Int? {
 
 ///|
 fn normalize_guards(guards : Array[String]) -> Array[String] {
-  let seen : Map[String, Bool] = {}
+  let seen : Map[String, Bool] = Map([])
   let normalized : Array[String] = []
   for guard_text in guards {
     if !seen.contains(guard_text) {
@@ -332,7 +335,7 @@ fn media_type_label(media_type : @media.MediaType) -> String {
 
 ///|
 fn describe_query(query : @media.MediaQuery) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   if query.negated {
     buf.write_string("not ")
   }

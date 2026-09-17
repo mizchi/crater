@@ -38,7 +38,7 @@ pub(all) struct GlyphProvider {
 }
 
 ///|
-let glyph_provider_override : Ref[GlyphProvider?] = { val: None }
+let glyph_provider_override : Ref[GlyphProvider?] = { val: None, }
 
 ///|
 pub fn get_glyph_provider() -> GlyphProvider? {

@@ -93,7 +93,7 @@ fn TreeBuilderContext::with_encapsulating_label(
   self : TreeBuilderContext,
   label : @html.Element?,
 ) -> TreeBuilderContext {
-  { ..self, encapsulating_label: label }
+  { ..self, encapsulating_label: label, }
 }
 
 // =============================================================================
@@ -226,7 +226,7 @@ fn extract_class_patterns(selector_text : String) -> Array[String] {
       }
       if end > start {
         // Build substring manually
-        let buf = StringBuilder::new()
+        let buf = StringBuilder()
         for j = start; j < end; j = j + 1 {
           buf.write_char(selector_text[j].to_int().unsafe_to_char())
         }
@@ -253,7 +253,7 @@ fn parse_content_value(value : String) -> String {
     if (first == '"'.to_int().to_uint16() && last == '"'.to_int().to_uint16()) ||
       (first == '\''.to_int().to_uint16() && last == '\''.to_int().to_uint16()) {
       // Remove quotes - build string manually
-      let buf = StringBuilder::new()
+      let buf = StringBuilder()
       for i = 1; i < trimmed.length() - 1; i = i + 1 {
         buf.write_char(trimmed[i].to_int().unsafe_to_char())
       }
@@ -468,7 +468,7 @@ fn build_node(
     Some(n) => {
       let before = get_before_content(element, ctx)
       let after = get_after_content(element, ctx)
-      let buf = StringBuilder::new()
+      let buf = StringBuilder()
       match before {
         Some(b) => buf.write_string(b)
         None => ()
@@ -720,7 +720,7 @@ fn extract_href(element : @html.Element) -> String? {
 /// Build a CSS selector for an element
 fn build_selector(element : @html.Element) -> String? {
   let tag = element.tag.to_lower()
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string(tag)
 
   // Add id if present (most specific)
@@ -823,7 +823,7 @@ fn extract_select_options(element : @html.Element) -> Array[SelectOption] {
           let value = option_elem.attributes.get("value").unwrap_or("")
           let label = get_element_text_content(option_elem)
           let selected = option_elem.attributes.contains("selected")
-          options.push({ value, label, selected })
+          options.push({ value, label, selected, })
         } else if option_tag == "optgroup" {
           // Handle optgroup by extracting its options
           for optgroup_child in option_elem.children {
@@ -833,7 +833,7 @@ fn extract_select_options(element : @html.Element) -> Array[SelectOption] {
                   let value = opt.attributes.get("value").unwrap_or("")
                   let label = get_element_text_content(opt)
                   let selected = opt.attributes.contains("selected")
-                  options.push({ value, label, selected })
+                  options.push({ value, label, selected, })
                 }
               _ => ()
             }
@@ -849,7 +849,7 @@ fn extract_select_options(element : @html.Element) -> Array[SelectOption] {
 ///|
 /// Get text content from an element (recursively)
 fn get_element_text_content(element : @html.Element) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   collect_text_content(element, buf)
   buf.to_string().trim().to_owned()
 }
@@ -1067,7 +1067,7 @@ fn attach_bounds_recursive(
   for child in node.children {
     new_children.push(attach_bounds_recursive(child, bounds_map))
   }
-  { ..node, bounds: new_bounds, children: new_children }
+  { ..node, bounds: new_bounds, children: new_children, }
 }
 
 // =============================================================================
@@ -1185,7 +1185,7 @@ fn find_headings_recursive(
 pub fn extract_bounds_from_node_layout(
   layout : @layout_types.Layout,
 ) -> Map[String, Bounds] {
-  let bounds_map : Map[String, Bounds] = {}
+  let bounds_map : Map[String, Bounds] = Map([])
   extract_node_layout_bounds_recursive(layout, bounds_map)
   bounds_map
 }
@@ -1259,7 +1259,7 @@ priv struct LightweightContext {
 
 ///|
 fn LightweightContext::new() -> LightweightContext {
-  { element_map: {}, label_map: {}, encapsulating_label: None, ref_counter: 1 }
+  { element_map: {}, label_map: {}, encapsulating_label: None, ref_counter: 1, }
 }
 
 ///|
@@ -1274,7 +1274,7 @@ fn LightweightContext::with_encapsulating_label(
   self : LightweightContext,
   label : @html.Element?,
 ) -> LightweightContext {
-  { ..self, encapsulating_label: label }
+  { ..self, encapsulating_label: label, }
 }
 
 ///|
@@ -1316,7 +1316,7 @@ fn lightweight_build_node(
   // Skip script/style/template elements entirely (no text content)
   if tag == "script" || tag == "style" || tag == "template" || tag == "noscript" {
     let node = AccessibilityNode::new(ref_id, Role::Generic)
-    return { ..node, tag_name: Some(tag), visible: false, children: [] }
+    return { ..node, tag_name: Some(tag), visible: false, children: [], }
   }
 
   // Get accessible name (simplified - no pseudo-element content)
@@ -1352,7 +1352,7 @@ fn lightweight_build_node(
         let trimmed = text.trim().to_owned()
         if !trimmed.is_empty() {
           let text_node = AccessibilityNode::new(ctx.next_ref(), Role::Generic)
-          let text_node = { ..text_node, name: Some(trimmed) }
+          let text_node = { ..text_node, name: Some(trimmed), }
           children.push(text_node)
         }
       }
@@ -1502,7 +1502,7 @@ fn lightweight_get_name(
 ///|
 /// Extract text content without pseudo-elements
 fn lightweight_extract_text(element : @html.Element) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for child in element.children {
     match child {
       @html.Node::Text(text) => {
@@ -1573,7 +1573,7 @@ fn lightweight_collect_options(
           let label = lightweight_extract_text(child_elem)
           let value = child_elem.attributes.get("value").unwrap_or(label)
           let selected = child_elem.attributes.get("selected") is Some(_)
-          options.push({ value, label, selected })
+          options.push({ value, label, selected, })
         } else if child_tag == "optgroup" {
           lightweight_collect_options(child_elem, options)
         }

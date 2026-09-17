@@ -688,7 +688,7 @@ fn adjust_inline_span_float_quirk(
 
   let shifted_children : Array[@layout_types.Layout] = []
   for child in layout.children {
-    shifted_children.push({ ..child, x: child.x - layout.width })
+    shifted_children.push({ ..child, x: child.x - layout.width, })
   }
 
   {

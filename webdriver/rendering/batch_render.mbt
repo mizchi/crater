@@ -20,7 +20,7 @@ pub fn normalize_batch_render_options(
     Ok(variants) => variants
     Err(error) => return Err(error)
   }
-  Ok({ base_html, viewport, variants })
+  Ok({ base_html, viewport, variants, })
 }
 
 ///|
@@ -72,7 +72,7 @@ fn normalize_batch_render_variant(raw_variant : Json) -> @vrt.RenderVariant? {
         _ => ""
       }
       let mutations = normalize_batch_render_mutations(variant.get("mutations"))
-      Some({ id, mutations })
+      Some({ id, mutations, })
     }
     _ => None
   }
@@ -111,7 +111,7 @@ fn normalize_batch_render_mutation(raw_mutation : Json) -> @vrt.CssMutation? {
       let action = normalize_batch_render_mutation_action(
         mutation.get("action"),
       )
-      Some({ selector, property, action })
+      Some({ selector, property, action, })
     }
     _ => None
   }
@@ -138,7 +138,7 @@ pub fn batch_render_results_to_json(
 ) -> Json {
   let results_json : Array[Json] = []
   for result in results {
-    let item : Map[String, Json] = {}
+    let item : Map[String, Json] = Map([])
     item["id"] = Json::string(result.id)
     item["paintTree"] = @json.parse(result.paint_tree.to_json_string()) catch {
       _ => Json::null()

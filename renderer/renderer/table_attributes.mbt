@@ -44,7 +44,7 @@ fn apply_table_element_attributes(
     Some(_) => border_spacing
     None => style.border_spacing_vertical
   }
-  { ..style, border_spacing, border_spacing_vertical }
+  { ..style, border_spacing, border_spacing_vertical, }
 }
 
 ///|
@@ -78,7 +78,7 @@ fn apply_table_cell_attributes(
     }
     None => 1
   }
-  let mut next_style = { ..style, rowspan, colspan }
+  let mut next_style = { ..style, rowspan, colspan, }
   let cp = current_cellpadding.val
   if cp >= 0.0 {
     fn is_default_table_cell_padding(dim : @types.Dimension) -> Bool {

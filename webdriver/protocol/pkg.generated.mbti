@@ -59,4 +59,3 @@ pub fn resolve_runtime_context_id(Json?, String, String, Bool) -> String
 // Type aliases
 
 // Traits
-

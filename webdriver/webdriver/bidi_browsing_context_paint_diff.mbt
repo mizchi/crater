@@ -298,7 +298,7 @@ fn mutation_token_is_safe(token : String) -> Bool {
 /// Mutations whose selector / property / value contain CSS-breaking tokens are
 /// skipped so they cannot escape the injected stylesheet.
 fn build_mutation_override_css(mutations : Array[Json]) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("<style>")
   for mutation in mutations {
     match mutation {
@@ -482,7 +482,7 @@ fn BidiProtocol::resolve_mutate_style(
       return None
     }
   }
-  let seen : Map[String, Bool] = {}
+  let seen : Map[String, Bool] = Map([])
   let affected : Array[Json] = []
   let layout_changes : Array[Json] = []
   collect_paint_mutation_changes(

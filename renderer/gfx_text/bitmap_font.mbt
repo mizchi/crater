@@ -18,7 +18,7 @@
 /// their uppercase form.
 fn glyph_rows(ch : Char) -> Array[String]? {
   let c = if ch >= 'a' && ch <= 'z' {
-    Char::from_int(ch.to_int() - 32)
+    Int::unsafe_to_char(ch.to_int() - 32)
   } else {
     ch
   }

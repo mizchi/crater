@@ -216,4 +216,3 @@ pub fn TextMetricsProvider::new((String, Double, Double, @style.WhiteSpace, @sty
 // Type aliases
 
 // Traits
-

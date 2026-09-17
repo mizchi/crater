@@ -44,4 +44,3 @@ pub using @crater-browser-runtime {type ScriptExecutor}
 pub using @crater-browser-runtime {trait JsRuntime}
 
 // Traits
-

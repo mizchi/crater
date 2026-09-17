@@ -31,7 +31,7 @@ pub fn normalize_capture_screenshot_options(
     Ok(_) => ()
     Err(error) => return Err(error)
   }
-  Ok({ origin, clip })
+  Ok({ origin, clip, })
 }
 
 ///|

@@ -1,6 +1,6 @@
 ///|
 fn default_navigation_request(url : String) -> NavigationRequest {
-  { url, http_method: "GET", content_type: "", body: "" }
+  { url, http_method: "GET", content_type: "", body: "", }
 }
 
 ///|

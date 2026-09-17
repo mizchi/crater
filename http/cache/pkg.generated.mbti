@@ -65,4 +65,3 @@ pub(open) trait HttpCacheBackend {
   fn remove(Self, String) -> Unit
   fn clear(Self) -> Unit
 }
-

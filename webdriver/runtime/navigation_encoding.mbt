@@ -31,7 +31,9 @@ extern "js" fn js_json_ensure_ascii(value : String) -> String =
   #| }
 
 ///|
-extern "js" fn js_extract_inline_script_blocks(html : String) -> Array[String] =
+extern "js" fn js_extract_inline_script_blocks(
+  html : String,
+) -> FixedArray[String] =
   #| (html) => {
   #|   if (typeof html !== "string" || html === "") {
   #|     return [];
@@ -69,7 +71,7 @@ pub fn json_ensure_ascii(value : String) -> String {
 
 ///|
 pub fn extract_inline_script_blocks(html : String) -> Array[String] {
-  js_extract_inline_script_blocks(html)
+  Array::from_fixed_array(js_extract_inline_script_blocks(html))
 }
 
 ///|

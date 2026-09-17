@@ -41,4 +41,3 @@ pub fn table_layout(Int, Int) -> String
 // Type aliases
 
 // Traits
-

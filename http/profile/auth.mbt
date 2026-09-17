@@ -113,7 +113,7 @@ pub fn AuthState::set_origin_credentials(
   username : String,
   password : String,
 ) -> Unit {
-  self.origin_credentials[origin] = { username, password }
+  self.origin_credentials[origin] = { username, password, }
 }
 
 ///|

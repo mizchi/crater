@@ -40,7 +40,7 @@ pub fn Document::new(
   let layout = @tree.LayoutTree::new(
     root_layout, viewport_width, viewport_height,
   )
-  { dom, layout, dom_to_layout: {}, layout_to_dom: {}, needs_layout: false }
+  { dom, layout, dom_to_layout: {}, layout_to_dom: {}, needs_layout: false, }
 }
 
 ///|

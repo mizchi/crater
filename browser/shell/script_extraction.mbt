@@ -155,7 +155,7 @@ fn extract_scripts(html : String) -> Array[ScriptInfo] {
       }
       // Add script info if we have source or src
       if source.length() > 0 || src.length() > 0 {
-        scripts.push({ source, src, is_async, is_defer, script_type })
+        scripts.push({ source, src, is_async, is_defer, script_type, })
       }
     }
     i = i + 1

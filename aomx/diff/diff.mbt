@@ -195,7 +195,7 @@ fn build_element_map(
   root : @aom.AccessibilityNode,
   config : DiffConfig,
 ) -> Map[String, ElementSnapshot] {
-  let map : Map[String, ElementSnapshot] = {}
+  let map : Map[String, ElementSnapshot] = Map([])
   collect_elements(root, "", config, map)
   map
 }
@@ -440,7 +440,7 @@ pub fn Difference::to_string(self : Difference) -> String {
 
 ///|
 pub fn DiffResult::to_summary(self : DiffResult) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("=== Structural Diff Result ===\n")
   buf.write_string("Similarity: ")
   buf.write_string((self.similarity * 100.0).to_string())
@@ -466,7 +466,7 @@ pub fn DiffResult::to_summary(self : DiffResult) -> String {
 
 ///|
 pub fn DiffResult::to_json(self : DiffResult) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("{\n")
   buf.write_string("  \"similarity\": ")
   buf.write_string(self.similarity.to_string())
@@ -517,7 +517,7 @@ fn change_type_string(ct : ChangeType) -> String {
 
 ///|
 fn escape_json(s : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for c in s {
     match c {
       '"' => buf.write_string("\\\"")

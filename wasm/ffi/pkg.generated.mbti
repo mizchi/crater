@@ -98,4 +98,3 @@ pub(all) struct Cleanup {
 // Traits
 pub(open) trait Any {
 }
-

@@ -10,7 +10,7 @@ test "no_difference" {
     visible: true,
   }
   let root = @aom.AccessibilityNode::new("root", @aom.Document)
-  let root = { ..root, children: [button], visible: true }
+  let root = { ..root, children: [button], visible: true, }
   let tree1 = @aom.AccessibilityTree::new(root)
   let tree2 = @aom.AccessibilityTree::new(root)
   let result = diff_trees(tree1, tree2, DiffConfig::default())
@@ -30,7 +30,7 @@ test "element_added" {
     visible: true,
   }
   let root1 = @aom.AccessibilityNode::new("root", @aom.Document)
-  let root1 = { ..root1, children: [button1], visible: true }
+  let root1 = { ..root1, children: [button1], visible: true, }
   let button2 = @aom.AccessibilityNode::new("btn-2", @aom.Button).with_name(
     "Button 2",
   )
@@ -41,7 +41,7 @@ test "element_added" {
     visible: true,
   }
   let root2 = @aom.AccessibilityNode::new("root", @aom.Document)
-  let root2 = { ..root2, children: [button1, button2], visible: true }
+  let root2 = { ..root2, children: [button1, button2], visible: true, }
   let tree1 = @aom.AccessibilityTree::new(root1)
   let tree2 = @aom.AccessibilityTree::new(root2)
   let result = diff_trees(tree1, tree2, DiffConfig::default())
@@ -69,9 +69,9 @@ test "element_moved" {
     visible: true,
   }
   let root1 = @aom.AccessibilityNode::new("root", @aom.Document)
-  let root1 = { ..root1, children: [button_before], visible: true }
+  let root1 = { ..root1, children: [button_before], visible: true, }
   let root2 = @aom.AccessibilityNode::new("root", @aom.Document)
-  let root2 = { ..root2, children: [button_after], visible: true }
+  let root2 = { ..root2, children: [button_after], visible: true, }
   let tree1 = @aom.AccessibilityTree::new(root1)
   let tree2 = @aom.AccessibilityTree::new(root2)
   let result = diff_trees(tree1, tree2, DiffConfig::default())
@@ -110,9 +110,9 @@ test "element_resized" {
     visible: true,
   }
   let root1 = @aom.AccessibilityNode::new("root", @aom.Document)
-  let root1 = { ..root1, children: [button_before], visible: true }
+  let root1 = { ..root1, children: [button_before], visible: true, }
   let root2 = @aom.AccessibilityNode::new("root", @aom.Document)
-  let root2 = { ..root2, children: [button_after], visible: true }
+  let root2 = { ..root2, children: [button_after], visible: true, }
   let tree1 = @aom.AccessibilityTree::new(root1)
   let tree2 = @aom.AccessibilityTree::new(root2)
   let result = diff_trees(tree1, tree2, DiffConfig::default())
@@ -132,9 +132,9 @@ test "element_resized" {
 ///|
 test "json_output" {
   let root1 = @aom.AccessibilityNode::new("root", @aom.Document)
-  let root1 = { ..root1, visible: true }
+  let root1 = { ..root1, visible: true, }
   let root2 = @aom.AccessibilityNode::new("root", @aom.Document)
-  let root2 = { ..root2, visible: true }
+  let root2 = { ..root2, visible: true, }
   let tree1 = @aom.AccessibilityTree::new(root1)
   let tree2 = @aom.AccessibilityTree::new(root2)
   let result = diff_trees(tree1, tree2, DiffConfig::default())
@@ -146,7 +146,7 @@ test "json_output" {
 ///|
 test "trees_equal_helper" {
   let root = @aom.AccessibilityNode::new("root", @aom.Document)
-  let root = { ..root, visible: true }
+  let root = { ..root, visible: true, }
   let tree1 = @aom.AccessibilityTree::new(root)
   let tree2 = @aom.AccessibilityTree::new(root)
   inspect(trees_equal(tree1, tree2), content="true")

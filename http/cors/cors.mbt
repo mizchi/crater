@@ -26,7 +26,7 @@ pub impl Show for CorsDecision with fn output(self, logger) {
     }
     Blocked(reason) => {
       logger.write_string("Blocked(")
-      reason.output(logger)
+      Show::output(reason, logger)
       logger.write_string(")")
     }
   }
@@ -48,11 +48,11 @@ pub(all) struct PreflightRequest {
 ///|
 pub impl Show for PreflightRequest with fn output(self, logger) {
   logger.write_string("{url: ")
-  self.url.output(logger)
+  Show::output(self.url, logger)
   logger.write_string(", origin: ")
-  self.origin.output(logger)
+  Show::output(self.origin, logger)
   logger.write_string(", http_method: ")
-  self.http_method.output(logger)
+  Show::output(self.http_method, logger)
   logger.write_string(", request_headers: ")
   logger.write_string("[")
   logger.write_string(self.request_headers.join(", "))
@@ -95,7 +95,7 @@ pub struct PreflightCache {
 /// MemoryCacheBackend's max_entries=1000. Hitting the cap evicts the
 /// oldest entry in FIFO insertion order.
 pub fn PreflightCache::new(max_entries? : Int = 512) -> PreflightCache {
-  PreflightCache::{ entries: {}, insertion_order: [], max_entries }
+  PreflightCache::{ entries: {}, insertion_order: [], max_entries, }
 }
 
 ///|

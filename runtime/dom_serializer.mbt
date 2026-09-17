@@ -17,7 +17,7 @@ let snapshot_form_state_attr_name = "data-crater-form-state-value"
 /// Serialize DomTree to JavaScript object creation code
 /// Returns JS code that reconstructs the DOM tree in the mock DOM
 pub fn serialize_dom_for_mock(dom : @dom.DomTree) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("(function() {\n")
   buf.write_string("  const _nodeMap = new Map();\n")
 
@@ -176,7 +176,7 @@ fn serialize_node_recursive(
 ///|
 /// Escape a string for JavaScript string literal
 fn escape_js_string(s : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for c in s {
     match c {
       '\\' => buf.write_string("\\\\")
@@ -193,7 +193,7 @@ fn escape_js_string(s : String) -> String {
 
 ///|
 fn serialize_shadow_init_js_object(init : @dom.ShadowRootInit) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("{ mode: '")
   buf.write_string(escape_js_string(init.mode))
   buf.write_char('\'')
@@ -335,7 +335,7 @@ fn write_snapshot_form_state_attrs(
 /// Create initialization code that populates mock DOM from DomTree
 /// This builds the HTML structure (html, head, body) with actual content
 pub fn create_dom_init_code(dom : @dom.DomTree) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
 
   // Find body element in DomTree
   let doc_id = dom.get_document()
@@ -350,7 +350,7 @@ pub fn create_dom_init_code(dom : @dom.DomTree) -> String {
 ///|
 /// Serialize DomTree to HTML string for renderer reparse
 pub fn serialize_dom_to_html(dom : @dom.DomTree) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let doc_id = dom.get_document()
   match dom.get_children(doc_id) {
     Ok(children) =>
@@ -364,7 +364,7 @@ pub fn serialize_dom_to_html(dom : @dom.DomTree) -> String {
 
 ///|
 pub fn serialize_dom_to_snapshot_html(dom : @dom.DomTree) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let doc_id = dom.get_document()
   match dom.get_children(doc_id) {
     Ok(children) =>
@@ -594,7 +594,7 @@ fn is_void_html_element(tag : String) -> Bool {
 
 ///|
 fn escape_html_text(s : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder()
   for c in s {
     match c {
       '&' => out.write_string("&amp;")
@@ -608,7 +608,7 @@ fn escape_html_text(s : String) -> String {
 
 ///|
 fn escape_html_attr(s : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder()
   for c in s {
     match c {
       '&' => out.write_string("&amp;")
@@ -624,7 +624,7 @@ fn escape_html_attr(s : String) -> String {
 ///|
 /// Find body element and serialize its children
 fn find_and_serialize_body(dom : @dom.DomTree, start : @dom.NodeId) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let _ = find_body_recursive(dom, start, buf)
   buf.to_string()
 }

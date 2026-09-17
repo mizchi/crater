@@ -27,4 +27,3 @@ pub fn RenderedImage::to_ascii(Self) -> String
 // Type aliases
 
 // Traits
-

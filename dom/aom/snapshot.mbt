@@ -32,7 +32,7 @@ pub fn AccessibilityTree::to_aria_json(self : AccessibilityTree) -> String {
 ///|
 /// Generate an ARIA snapshot in JSON format for a single node
 pub fn AccessibilityNode::to_aria_json(self : AccessibilityNode) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   render_node_json(self, buf, 0)
   buf.to_string()
 }
@@ -326,7 +326,7 @@ fn AccessibilityNode::to_aria_snapshot_with_indent(
   self : AccessibilityNode,
   indent : Int,
 ) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   render_node(self, buf, indent)
   buf.to_string()
 }
@@ -436,7 +436,7 @@ fn write_indent(buf : StringBuilder, level : Int) -> Unit {
 
 ///|
 fn escape_string(s : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for c in s {
     match c {
       '"' => buf.write_string("\\\"")

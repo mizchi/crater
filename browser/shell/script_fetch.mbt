@@ -115,7 +115,7 @@ async fn Browser::fetch_external_script_source(
   // up front (only when classify_request asks for one — see below) and
   // hand the cache a closure that returns the captured response. The
   // mutable slot lets the closure see whatever the async hop produced.
-  let captured_preflight : Ref[@http.HttpResponse?] = { val: None }
+  let captured_preflight : Ref[@http.HttpResponse?] = { val: None, }
   let preflight_fetcher = fn(
     _req : @http_cors.PreflightRequest,
   ) -> @http.HttpResponse {
@@ -124,7 +124,7 @@ async fn Browser::fetch_external_script_source(
       // Defensive: this path runs only when caller forgot to pre-fetch.
       // 0-status forces the validator to raise PreflightFailed with a
       // "missing ACA-Origin" message rather than silently allowing.
-      None => { status: 0, headers: {}, body: "" }
+      None => { status: 0, headers: {}, body: "", }
     }
   }
   // Mirror classify_request's decision once to decide whether to
@@ -165,7 +165,7 @@ async fn Browser::fetch_external_script_source(
           )
         } catch {
           _ =>
-            captured_preflight.val = Some({ status: 0, headers: {}, body: "" })
+            captured_preflight.val = Some({ status: 0, headers: {}, body: "", })
         }
       }
     _ => ()

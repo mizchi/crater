@@ -13,13 +13,13 @@ test "static snapshot benchmark fixtures are renderable and trimmed" {
 
 ///|
 fn synthetic_main_trim_fixture() -> String {
-  let before_main = StringBuilder::new()
+  let before_main = StringBuilder()
   for i = 0; i < 260; i = i + 1 {
     before_main.write_string("<div>preface ")
     before_main.write_string(i.to_string())
     before_main.write_string("</div>")
   }
-  let main = StringBuilder::new()
+  let main = StringBuilder()
   for i = 0; i < 260; i = i + 1 {
     main.write_string("<p>main paragraph ")
     main.write_string(i.to_string())

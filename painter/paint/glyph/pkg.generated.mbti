@@ -81,4 +81,3 @@ pub(all) struct GlyphProvider {
 // Type aliases
 
 // Traits
-

@@ -536,7 +536,7 @@ pub fn DomTree::get_text_content(
         Text | Comment => Ok(n.text_content)
         _ => {
           // For elements, collect all descendant text
-          let buf = StringBuilder::new()
+          let buf = StringBuilder()
           self.collect_text_content(id, buf)
           Ok(buf.to_string())
         }

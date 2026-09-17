@@ -17,7 +17,7 @@ test "attach bounds to AccessibilityTree" {
   // Build accessibility tree
   let a11y_tree = build_accessibility_tree(doc)
   // Create bounds map manually
-  let bounds_map : Map[String, Bounds] = {}
+  let bounds_map : Map[String, Bounds] = Map([])
   bounds_map["container"] = Bounds::new(0.0, 0.0, 800.0, 600.0)
   bounds_map["btn1"] = Bounds::new(10.0, 10.0, 100.0, 40.0)
   bounds_map["link1"] = Bounds::new(10.0, 60.0, 80.0, 20.0)
@@ -68,7 +68,7 @@ test "find interactive elements with bounds" {
   let doc = @html.parse_document(html)
   let a11y_tree = build_accessibility_tree(doc)
   // Create bounds map
-  let bounds_map : Map[String, Bounds] = {}
+  let bounds_map : Map[String, Bounds] = Map([])
   bounds_map["email"] = Bounds::new(10.0, 10.0, 200.0, 30.0)
   bounds_map["submit"] = Bounds::new(10.0, 50.0, 100.0, 40.0)
   bounds_map["cancel"] = Bounds::new(120.0, 50.0, 80.0, 40.0)
@@ -94,7 +94,7 @@ test "find focusable elements with bounds for keyboard navigation" {
   let doc = @html.parse_document(html)
   let a11y_tree = build_accessibility_tree(doc)
   // Create bounds map with vertical layout
-  let bounds_map : Map[String, Bounds] = {}
+  let bounds_map : Map[String, Bounds] = Map([])
   bounds_map["title"] = Bounds::new(10.0, 10.0, 300.0, 50.0)
   bounds_map["btn1"] = Bounds::new(10.0, 70.0, 100.0, 40.0)
   bounds_map["btn2"] = Bounds::new(10.0, 120.0, 100.0, 40.0)
@@ -128,7 +128,7 @@ test "heading navigation with bounds" {
   let doc = @html.parse_document(html)
   let a11y_tree = build_accessibility_tree(doc)
   // Create bounds map
-  let bounds_map : Map[String, Bounds] = {}
+  let bounds_map : Map[String, Bounds] = Map([])
   bounds_map["h1"] = Bounds::new(10.0, 10.0, 400.0, 40.0)
   bounds_map["h2"] = Bounds::new(10.0, 100.0, 300.0, 30.0)
   bounds_map["h3"] = Bounds::new(10.0, 200.0, 300.0, 30.0)
@@ -157,7 +157,7 @@ test "landmark navigation with bounds" {
   let elem = @html.parse(html).unwrap()
   let a11y_tree = build_accessibility_tree_from_element(elem)
   // Create bounds map
-  let bounds_map : Map[String, Bounds] = {}
+  let bounds_map : Map[String, Bounds] = Map([])
   bounds_map["nav"] = Bounds::new(0.0, 0.0, 800.0, 60.0)
   bounds_map["main"] = Bounds::new(0.0, 60.0, 800.0, 500.0)
   bounds_map["footer"] = Bounds::new(0.0, 560.0, 800.0, 40.0)

@@ -33,7 +33,7 @@ fn BidiProtocol::emit_worker_realm_created(
       "origin": Json::string(worker_origin),
     })
   }
-  self.outbox.push(Event({ event_method: event_name, params }))
+  self.outbox.push(Event({ event_method: event_name, params, }))
   Some(worker_realm_id)
 }
 

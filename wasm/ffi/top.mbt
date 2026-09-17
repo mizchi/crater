@@ -228,7 +228,7 @@ pub(all) struct Cleanup {
 /// Convert UTF-16 bytes from component model to MoonBit String
 /// ptr points to UTF-16 code units, len is number of code units
 pub fn utf16_ptr2str(ptr : Int, len : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for i = 0; i < len; i = i + 1 {
     let ch = load16_u(ptr + i * 2)
     buf.write_char(Int::unsafe_to_char(ch))
@@ -240,7 +240,7 @@ pub fn utf16_ptr2str(ptr : Int, len : Int) -> String {
 /// Convert UTF-8 bytes from component model to MoonBit String (UTF-16)
 pub fn utf8_ptr2str(ptr : Int, len : Int) -> String {
   // Build string from UTF-8 bytes
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let mut i = 0
   while i < len {
     let b0 = load8_u(ptr + i)

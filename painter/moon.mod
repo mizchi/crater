@@ -8,8 +8,8 @@ import {
   "mizchi/crater-terminal-protocol@0.19.0",
   "mizchi/font@0.7.4",
   "mizchi/svg@0.2.3",
-  "mizchi/x@0.6.0",
-  "moonbitlang/async@0.21.3",
+"mizchi/x@0.6.1",
+  "moonbitlang/async@0.22.1",
 }
 
 repository = "https://github.com/mizchi/crater"

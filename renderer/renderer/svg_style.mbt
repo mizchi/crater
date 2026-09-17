@@ -55,11 +55,11 @@ fn normalize_svg_display_contents(
   if tag == "svg" && !parent_is_svg {
     // Root-level SVG display:contents should not leak SVG descendants into
     // HTML flow sizing.
-    return { ..style, display: @types.Display::None }
+    return { ..style, display: @types.Display::None, }
   }
   if tag == "text" && parent_is_svg {
     // SVG <text> with display:contents does not create a CSS flow box.
-    return { ..style, display: @types.Display::None }
+    return { ..style, display: @types.Display::None, }
   }
   style
 }
@@ -114,7 +114,7 @@ fn apply_svg_attributes_to_style(
   if result.aspect_ratio is None {
     match viewbox_size {
       Some((vb_w, vb_h)) if vb_w > 0.0 && vb_h > 0.0 =>
-        result = { ..result, aspect_ratio: Some(vb_w / vb_h) }
+        result = { ..result, aspect_ratio: Some(vb_w / vb_h), }
       _ => ()
     }
   }
@@ -132,7 +132,7 @@ fn apply_svg_attributes_to_style(
     Some(w) =>
       match (can_apply_svg_size_attrs, result.width, parse_svg_dimension(w)) {
         (false, _, _) => ()
-        (true, @types.Auto, Some(dim)) => result = { ..result, width: dim }
+        (true, @types.Auto, Some(dim)) => result = { ..result, width: dim, }
         _ => ()
       }
     None => ()
@@ -143,7 +143,7 @@ fn apply_svg_attributes_to_style(
     Some(h) =>
       match (can_apply_svg_size_attrs, result.height, parse_svg_dimension(h)) {
         (false, _, _) => ()
-        (true, @types.Auto, Some(dim)) => result = { ..result, height: dim }
+        (true, @types.Auto, Some(dim)) => result = { ..result, height: dim, }
         _ => ()
       }
     None => ()

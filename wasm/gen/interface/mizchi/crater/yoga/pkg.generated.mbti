@@ -74,4 +74,3 @@ pub fn set_width_percent(String, Double) -> Bool
 // Type aliases
 
 // Traits
-

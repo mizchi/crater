@@ -12,7 +12,7 @@
 pub fn extract_bounds_from_layout(
   layout_tree : @layout.LayoutTree,
 ) -> Map[String, @aom.Bounds] {
-  let bounds_map : Map[String, @aom.Bounds] = {}
+  let bounds_map : Map[String, @aom.Bounds] = Map([])
   extract_bounds_recursive(layout_tree.root, bounds_map)
   bounds_map
 }

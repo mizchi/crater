@@ -95,7 +95,7 @@ pub fn resolve_text_intrinsic_size_from_provider_payload(
 ) -> @layout_types.IntrinsicSize {
   match parse_text_metrics_quad(payload) {
     Some((min_width, max_width, min_height, max_height)) =>
-      { min_width, max_width, min_height, max_height }
+      { min_width, max_width, min_height, max_height, }
     None => fallback_text_intrinsic_size(text, font_size, line_height)
   }
 }
@@ -119,7 +119,12 @@ fn fallback_text_intrinsic_size(
   } else {
     16.0
   }
-  { min_width: width, max_width: width, min_height: height, max_height: height }
+  {
+    min_width: width,
+    max_width: width,
+    min_height: height,
+    max_height: height,
+  }
 }
 
 ///|

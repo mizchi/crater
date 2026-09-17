@@ -39,7 +39,7 @@ fn recon_flatten(l : @layout_types.Layout, buf : StringBuilder) -> Unit {
 
 ///|
 fn recon_sig(l : @layout_types.Layout) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   recon_flatten(l, buf)
   buf.to_string()
 }

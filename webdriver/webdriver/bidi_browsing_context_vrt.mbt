@@ -63,7 +63,7 @@ fn BidiProtocol::resolve_get_css_rule_viewport_map(
   let map = @responsive.discover_css_rule_viewport_map(html, viewport_widths)
   let rules_json : Array[Json] = []
   for entry in map.rules {
-    let item : Map[String, Json] = {}
+    let item : Map[String, Json] = Map([])
     item["selector"] = Json::string(entry.selector)
     item["properties"] = string_array_to_json(entry.properties)
     item["mediaCondition"] = Json::string(entry.media_condition)
@@ -79,7 +79,7 @@ fn BidiProtocol::resolve_get_css_rule_viewport_map(
     item["inactiveAtWidths"] = Json::array(inactive)
     rules_json.push(make_object(item))
   }
-  let result : Map[String, Json] = {}
+  let result : Map[String, Json] = Map([])
   result["rules"] = Json::array(rules_json)
   Some(make_object(result))
 }
@@ -133,7 +133,7 @@ fn BidiProtocol::resolve_get_css_rule_usage(
   )
   let rules_json : Array[Json] = []
   for entry in usage {
-    let item : Map[String, Json] = {}
+    let item : Map[String, Json] = Map([])
     item["selector"] = Json::string(entry.selector)
     item["matched"] = Json::boolean(entry.matched)
     item["elements"] = Json::number(entry.elements.to_double())
@@ -149,9 +149,9 @@ fn BidiProtocol::resolve_get_css_rule_usage(
     }
     rules_json.push(make_object(item))
   }
-  let elements_json : Map[String, Json] = {}
+  let elements_json : Map[String, Json] = Map([])
   effective_sources.each(fn(selector, sources) {
-    let source_json : Map[String, Json] = {}
+    let source_json : Map[String, Json] = Map([])
     sources.each(fn(property, label) {
       source_json[property] = Json::string(label)
     })
@@ -211,12 +211,12 @@ fn BidiProtocol::resolve_get_required_test_viewports(
   let result = @responsive.discover_required_test_viewports(html)
   let viewports_json : Array[Json] = []
   for v in result.viewports {
-    let item : Map[String, Json] = {}
+    let item : Map[String, Json] = Map([])
     item["width"] = Json::number(v.width.to_double())
     item["reason"] = Json::string(v.reason)
     viewports_json.push(make_object(item))
   }
-  let out : Map[String, Json] = {}
+  let out : Map[String, Json] = Map([])
   out["viewports"] = Json::array(viewports_json)
   Some(make_object(out))
 }
@@ -386,9 +386,9 @@ fn BidiProtocol::resolve_get_computed_styles_with_state(
     html, selector, forced_state_names, properties,
   )
   // Build JSON response
-  let normal_json : Map[String, Json] = {}
+  let normal_json : Map[String, Json] = Map([])
   result.normal.each(fn(prop, val) { normal_json.set(prop, Json::string(val)) })
-  let forced_json : Map[String, Json] = {}
+  let forced_json : Map[String, Json] = Map([])
   result.forced.each(fn(prop, val) { forced_json.set(prop, Json::string(val)) })
   let diff_json : Array[Json] = []
   for d in result.diff {
@@ -400,7 +400,7 @@ fn BidiProtocol::resolve_get_computed_styles_with_state(
       }),
     )
   }
-  let out : Map[String, Json] = {}
+  let out : Map[String, Json] = Map([])
   out["normal"] = make_object(normal_json)
   out["forced"] = make_object(forced_json)
   out["diff"] = Json::array(diff_json)

@@ -75,4 +75,3 @@ pub fn RenderFrame2D::with_opacity(Self, Double) -> Self
 // Type aliases
 
 // Traits
-

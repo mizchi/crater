@@ -29,4 +29,3 @@ pub(all) struct CoreIssue {
 // Type aliases
 
 // Traits
-

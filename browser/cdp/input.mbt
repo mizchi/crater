@@ -18,7 +18,7 @@ pub struct InputDomain {
 ///|
 /// Create new Input domain
 pub fn InputDomain::new(tree : @dom.DomTree) -> InputDomain {
-  { tree, mouse_x: 0.0, mouse_y: 0.0, button_pressed: false }
+  { tree, mouse_x: 0.0, mouse_y: 0.0, button_pressed: false, }
 }
 
 ///|

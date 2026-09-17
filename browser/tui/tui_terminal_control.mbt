@@ -44,7 +44,7 @@ pub fn format_status_bar(
   link_count : Int,
   focused : Int,
 ) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("\u001b[7m") // Reverse video
   buf.write_string(" URL: ")
   buf.write_string(url)

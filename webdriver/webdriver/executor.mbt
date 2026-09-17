@@ -203,7 +203,7 @@ pub fn Executor::screenshot(
 fn method_to_request(api_method : ApiMethod) -> RpcRequest {
   let method_name = api_method_to_string(api_method)
   let params = api_method_to_params(api_method)
-  { jsonrpc: "2.0", id: RpcId::Num(0), method_name, params }
+  { jsonrpc: "2.0", id: RpcId::Num(0), method_name, params, }
 }
 
 ///|
@@ -263,7 +263,7 @@ fn api_method_to_string(api_method : ApiMethod) -> String {
 ///|
 /// Extract params from ApiMethod
 fn api_method_to_params(api_method : ApiMethod) -> Map[String, String] {
-  let params : Map[String, String] = {}
+  let params : Map[String, String] = Map([])
   match api_method {
     NewContext => ()
     CloseContext(context_id~) => params["context_id"] = context_id
@@ -399,10 +399,10 @@ fn parse_rpc_request(json : String) -> RpcRequest {
   }
   let method_name = obj.get("method").unwrap_or("")
   // Parse params object if present
-  let params : Map[String, String] = {}
+  let params : Map[String, String] = Map([])
   // For now, use simple key extraction from the JSON
   // A full implementation would parse nested objects
-  { jsonrpc: obj.get("jsonrpc").unwrap_or("2.0"), id, method_name, params }
+  { jsonrpc: obj.get("jsonrpc").unwrap_or("2.0"), id, method_name, params, }
 }
 
 ///|
@@ -410,7 +410,7 @@ fn parse_rpc_request(json : String) -> RpcRequest {
 fn Executor::log_method(self : Executor, api_method : ApiMethod) -> Unit {
   let method_name = api_method_to_string(api_method)
   let params = api_method_to_params(api_method)
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("CALL: ")
   buf.write_string(method_name)
   buf.write_string("(")

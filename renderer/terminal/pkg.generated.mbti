@@ -25,4 +25,3 @@ pub async fn[T : @io.Writer] write_kitty_with_css(T, String, Int, Int, Int, Arra
 // Type aliases
 
 // Traits
-

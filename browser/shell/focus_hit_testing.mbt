@@ -95,9 +95,9 @@ fn find_smallest_a11y_hit_target(
         match best {
           Some(existing) =>
             if area < existing.area {
-              best = Some({ source_id, area })
+              best = Some({ source_id, area, })
             }
-          None => best = Some({ source_id, area })
+          None => best = Some({ source_id, area, })
         }
       }
     _ => ()

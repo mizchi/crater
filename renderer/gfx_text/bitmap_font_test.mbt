@@ -35,7 +35,7 @@ fn render_text_ascii(
     @gfx.GraphicsDriver::draw_triangles(driver, cmd)
   }
   @gfx.GraphicsDriver::end(driver, false)
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for py in 0..<height {
     for px in 0..<width {
       let (r, _g, _b, _a) = driver.pixel_at(px, py)

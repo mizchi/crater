@@ -9,7 +9,7 @@ test "shell package can use MemoryCacheBackend with cached_fetch" {
       _url : String,
       _options : @http.FetchOptions,
     ) -> @http.HttpResponse {
-      { status: 200, headers: { "cache-control": "max-age=60" }, body: "ok" }
+      { status: 200, headers: { "cache-control": "max-age=60" }, body: "ok", }
     },
   )
   inspect(response.body, content="ok")

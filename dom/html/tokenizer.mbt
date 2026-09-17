@@ -62,7 +62,7 @@ fn Tokenizer::consume_raw_text_token(
     }
     None => ()
   }
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   while !self.is_eof() {
     // Check for closing tag
     if self.peek() is Some('<') && self.peek_at(1) is Some('/') {
@@ -377,7 +377,7 @@ fn Tokenizer::skip_comment(self : Tokenizer) -> Token? {
 /// Parse a start tag
 fn Tokenizer::parse_start_tag(self : Tokenizer) -> Token {
   let tag = self.consume_name_lower()
-  let attrs : Map[String, String] = {}
+  let attrs : Map[String, String] = Map([])
   let mut self_closing = false
   // Parse attributes
   while self.pos < self.len {

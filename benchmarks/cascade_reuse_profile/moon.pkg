@@ -1,11 +1,8 @@
 import {
   "mizchi/crater-renderer/renderer",
   "mizchi/crater-dom/html",
-  "mizchi/crater-core/node",
 }
 
 supported_targets = "native"
 
-options(
-  "is-main": true,
-)
+pkgtype(kind: "executable")
