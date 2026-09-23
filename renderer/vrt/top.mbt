@@ -496,7 +496,7 @@ pub fn RenderSession::branch_reusing_layout_diff(
 /// box geometry — i.e. whether a branch carrying only such mutations can reuse
 /// the base layout.
 pub fn CssMutation::is_paint_only(self : CssMutation) -> Bool {
-  not(@dom.is_layout_property(self.property.to_lower()))
+  !(@dom.is_layout_property(self.property.to_lower()))
 }
 
 ///|
@@ -538,7 +538,7 @@ pub(all) struct LayoutBox {
   y : Double
   width : Double
   height : Double
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 ///|
 fn collect_layout_boxes_into(

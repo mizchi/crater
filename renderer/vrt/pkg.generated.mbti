@@ -83,7 +83,7 @@ pub(all) struct LayoutBox {
   y : Double
   width : Double
   height : Double
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 
 pub(all) struct PreparedVrtPage {
   doc : @html.Document

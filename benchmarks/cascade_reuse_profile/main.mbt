@@ -46,7 +46,7 @@ fn main {
   let prepared = @renderer.prepare_render_document(doc, ctx, [])
 
   // Prime the prior-style maps from one reuse pass over the document.
-  @renderer.cascade_reuse_begin(Map::new(), Map::new())
+  @renderer.cascade_reuse_begin(Map([]), Map([]))
   let _ = @renderer.build_render_root_node(doc, ctx, prepared)
   let (prior_styles, prior_sigs, _) = @renderer.cascade_reuse_end()
 

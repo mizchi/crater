@@ -920,11 +920,11 @@ fn paint_node_matches_selector(
   }
   if sel.has_prefix("#") {
     // `#main` matches a node whose id is `<tag>#main`.
-    return id.has_suffix("#" + sel.substring(start=1))
+    return id.has_suffix("#" + sel[1:].to_owned())
   }
   if sel.has_prefix(".") {
     // `.card` matches a node whose id is `<tag>.card`.
-    return id.has_suffix("." + sel.substring(start=1))
+    return id.has_suffix("." + sel[1:].to_owned())
   }
   false
 }

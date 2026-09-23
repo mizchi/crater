@@ -1,31 +1,48 @@
 import "package://pkg.pkl-lang.org/github.com/mizchi/pkfire/pkfire@0.10.0#/Taskfile.pkl" as pkfire
 
+// Shared cache inputs for the workspace release tooling. The repo migrated to
+// the `moon.mod` (TOML) format; `moon.mod.json` remains only for the dev-only
+// conformance module, so both globs are tracked.
+local releaseInputs: Listing<String> = new {
+  "package.json"
+  "scripts/moon-publish-workspace.mjs"
+  "moon.work"
+  "**/moon.mod"
+  "**/moon.mod.json"
+}
+
 releaseCheck: pkfire.Task = new {
   name = "release-check"
   description = "Validate MoonBit publish order without publishing"
   visibility = "internal"
   cmd = "pnpm release:moon:check"
-  inputs {
-    "package.json"
-    "scripts/moon-publish-workspace.mjs"
-    "moon.work"
-    "**/moon.mod.json"
-  }
+  inputs = releaseInputs
 }
 
 releasePlan: pkfire.Task = new {
   name = "release-plan"
   description = "Print MoonBit publish order"
   cmd = "pnpm release:moon:list"
-  inputs {
-    "package.json"
-    "scripts/moon-publish-workspace.mjs"
-    "moon.work"
-    "**/moon.mod.json"
-  }
+  inputs = releaseInputs
+}
+
+releaseDryRun: pkfire.Task = new {
+  name = "release-dry-run"
+  description = "Package every workspace module in publish order (macOS uses `moon package` to avoid the publish --dry-run panic). Cannot fully complete for a never-published version; see docs/release.md."
+  cmd = "pnpm release:moon:dry-run"
+  inputs = releaseInputs
+}
+
+releasePublish: pkfire.Task = new {
+  name = "release-publish"
+  description = "Publish all public workspace modules to mooncakes in dependency order. IRREVERSIBLE. Bump versions first; see docs/release.md."
+  cmd = "pnpm release:moon:publish"
+  inputs = releaseInputs
 }
 
 tasks: Listing<pkfire.Task> = new {
   releaseCheck
   releasePlan
+  releaseDryRun
+  releasePublish
 }

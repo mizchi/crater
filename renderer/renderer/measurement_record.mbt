@@ -233,7 +233,7 @@ pub fn deserialize_text_metrics_recording(
     while i < len && unit_at(i) != stop {
       i = i + 1
     }
-    let s = data[start:i].to_string()
+    let s = data[start:i].to_owned()
     i = i + 1 // consume stop
     s
   }
@@ -243,7 +243,7 @@ pub fn deserialize_text_metrics_recording(
     let mh = @string.parse_double(read_until(sp)) catch { _ => 0.0 }
     let xh = @string.parse_double(read_until(sp)) catch { _ => 0.0 }
     let key_len = @string.parse_int(read_until(colon)) catch { _ => 0 }
-    let key = data[i:i + key_len].to_string()
+    let key = data[i:i + key_len].to_owned()
     i = i + key_len
     result.push({
       key,
@@ -382,7 +382,7 @@ pub fn deserialize_image_intrinsic_recording(
     while i < len && unit_at(i) != stop {
       i = i + 1
     }
-    let s = data[start:i].to_string()
+    let s = data[start:i].to_owned()
     i = i + 1
     s
   }
@@ -391,7 +391,7 @@ pub fn deserialize_image_intrinsic_recording(
     let w = @string.parse_double(read_until(sp)) catch { _ => 0.0 }
     let h = @string.parse_double(read_until(sp)) catch { _ => 0.0 }
     let src_len = @string.parse_int(read_until(colon)) catch { _ => 0 }
-    let src = data[i:i + src_len].to_string()
+    let src = data[i:i + src_len].to_owned()
     i = i + src_len
     result.push({ src, has_size: has, width: w, height: h })
   }
