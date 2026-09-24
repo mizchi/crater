@@ -30,8 +30,8 @@ test "software driver clears then rasterizes a full-frame quad" {
   @gfx.GraphicsDriver::draw_triangles(driver, command)
   @gfx.GraphicsDriver::end(driver, false)
   // every pixel is now red
-  inspect(driver.pixel_at(0, 0), content="(255, 0, 0, 255)")
-  inspect(driver.pixel_at(3, 3), content="(255, 0, 0, 255)")
+  debug_inspect(driver.pixel_at(0, 0), content="(255, 0, 0, 255)")
+  debug_inspect(driver.pixel_at(3, 3), content="(255, 0, 0, 255)")
 }
 
 ///|
@@ -65,11 +65,11 @@ test "software driver fills only the covered sub-rectangle" {
   @gfx.GraphicsDriver::draw_triangles(driver, command)
   @gfx.GraphicsDriver::end(driver, false)
   // covered
-  inspect(driver.pixel_at(0, 0), content="(0, 255, 0, 255)")
-  inspect(driver.pixel_at(1, 1), content="(0, 255, 0, 255)")
+  debug_inspect(driver.pixel_at(0, 0), content="(0, 255, 0, 255)")
+  debug_inspect(driver.pixel_at(1, 1), content="(0, 255, 0, 255)")
   // outside the 2x2 box -> still the clear color
-  inspect(driver.pixel_at(2, 2), content="(0, 0, 0, 255)")
-  inspect(driver.pixel_at(3, 0), content="(0, 0, 0, 255)")
+  debug_inspect(driver.pixel_at(2, 2), content="(0, 0, 0, 255)")
+  debug_inspect(driver.pixel_at(3, 0), content="(0, 0, 0, 255)")
 }
 
 ///|
@@ -82,7 +82,7 @@ test "read_pixels returns the requested RGBA region" {
   )
   @gfx.GraphicsDriver::end(driver, false)
   let pixels = @gfx.GraphicsDriver::read_pixels(driver, 0, 0, 2, 2)
-  inspect(
+  debug_inspect(
     pixels,
     content="Some([0, 0, 255, 255, 0, 0, 255, 255, 0, 0, 255, 255, 0, 0, 255, 255])",
   )
@@ -119,10 +119,10 @@ test "draw is scissored to the command's destination region" {
   @gfx.GraphicsDriver::draw_triangles(driver, command)
   @gfx.GraphicsDriver::end(driver, false)
   // left columns red, right columns remain the clear color
-  inspect(driver.pixel_at(0, 0), content="(255, 0, 0, 255)")
-  inspect(driver.pixel_at(1, 3), content="(255, 0, 0, 255)")
-  inspect(driver.pixel_at(2, 0), content="(0, 0, 0, 255)")
-  inspect(driver.pixel_at(3, 3), content="(0, 0, 0, 255)")
+  debug_inspect(driver.pixel_at(0, 0), content="(255, 0, 0, 255)")
+  debug_inspect(driver.pixel_at(1, 3), content="(255, 0, 0, 255)")
+  debug_inspect(driver.pixel_at(2, 0), content="(0, 0, 0, 255)")
+  debug_inspect(driver.pixel_at(3, 3), content="(0, 0, 0, 255)")
 }
 
 ///|
@@ -155,11 +155,11 @@ test "rounded-rect uniforms carve the corners" {
   @gfx.GraphicsDriver::draw_triangles(driver, command)
   @gfx.GraphicsDriver::end(driver, false)
   // the top-left corner pixel is carved away (still the clear color)
-  inspect(driver.pixel_at(0, 0), content="(255, 255, 255, 255)")
+  debug_inspect(driver.pixel_at(0, 0), content="(255, 255, 255, 255)")
   // the center is filled
-  inspect(driver.pixel_at(4, 4), content="(0, 0, 0, 255)")
+  debug_inspect(driver.pixel_at(4, 4), content="(0, 0, 0, 255)")
   // an edge midpoint is filled (not a corner)
-  inspect(
+  debug_inspect(
     driver.pixel_at(0, 4),
     content=(
       #|(0, 0, 0, 245)

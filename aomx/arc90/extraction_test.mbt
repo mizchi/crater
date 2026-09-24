@@ -55,7 +55,7 @@ test "ad_detection" {
     visible: true,
   }
   let root = @aom.AccessibilityNode::new("root", @aom.Document)
-  let root = { ..root, children: [ad_node], visible: true }
+  let root = { ..root, children: [ad_node], visible: true, }
   let tree = @aom.AccessibilityTree::new(root)
   let result = extract_content(tree, ExtractConfig::default())
 
@@ -100,7 +100,7 @@ test "readability_prefers_paragraph_container" {
     visible: true,
   }
   let root = @aom.AccessibilityNode::new("root", @aom.Document)
-  let root = { ..root, children: [wrapper], visible: true }
+  let root = { ..root, children: [wrapper], visible: true, }
   let tree = @aom.AccessibilityTree::new(root)
   let result = extract_content(tree, ExtractConfig::default())
   match result.main_content {
@@ -112,7 +112,7 @@ test "readability_prefers_paragraph_container" {
 ///|
 test "extraction_result_summary" {
   let root = @aom.AccessibilityNode::new("root", @aom.Document)
-  let root = { ..root, visible: true }
+  let root = { ..root, visible: true, }
   let tree = @aom.AccessibilityTree::new(root)
   let result = extract_content(tree, ExtractConfig::default())
   let summary = result.to_summary()

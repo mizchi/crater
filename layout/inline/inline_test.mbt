@@ -214,7 +214,7 @@ test "ifc_zero_advance_items_stay_on_oversized_line" {
   }
   let gap_measure : @layout_types.MeasureFunc = {
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 0.0, max_width: 0.0, min_height: 0.0, max_height: 0.0 }
+      { min_width: 0.0, max_width: 0.0, min_height: 0.0, max_height: 0.0, }
     },
   }
   let first = @node.Node::leaf("first", first_style)
@@ -455,7 +455,7 @@ test "ifc_contain_size_replaced_auto_size_uses_border_box_only" {
   let replaced_style = {
     ..default_style,
     display: @types.Inline,
-    contain: { ..default_style.contain, size: true },
+    contain: { ..default_style.contain, size: true, },
     border: {
       top: @types.Length(3.0),
       right: @types.Length(3.0),
@@ -492,14 +492,14 @@ test "ifc_contain_size_replaced_uses_explicit_aspect_ratio_for_auto_height" {
   let replaced_style = {
     ..default_style,
     display: @types.Inline,
-    contain: { ..default_style.contain, size: true },
+    contain: { ..default_style.contain, size: true, },
     width: @types.Length(100.0),
     height: @types.Auto,
     aspect_ratio: Some(1.0),
   }
   let replaced_measure : @layout_types.MeasureFunc = {
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 60.0, max_width: 60.0, min_height: 60.0, max_height: 60.0 }
+      { min_width: 60.0, max_width: 60.0, min_height: 60.0, max_height: 60.0, }
     },
   }
   let child = @node.Node::with_measure("img", replaced_style, replaced_measure)
@@ -526,7 +526,7 @@ test "ifc_contain_size_img_with_alt_keeps_taller_mixed_inline_line" {
   }
   let contain_img_style = {
     ..inline_style,
-    contain: { ..default_style.contain, size: true },
+    contain: { ..default_style.contain, size: true, },
     padding: {
       top: @types.Length(50.0),
       right: @types.Length(50.0),
@@ -546,7 +546,7 @@ test "ifc_contain_size_img_with_alt_keeps_taller_mixed_inline_line" {
   }
   let space_measure : @layout_types.MeasureFunc = {
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 8.0, max_width: 8.0, min_height: 19.2, max_height: 19.2 }
+      { min_width: 8.0, max_width: 8.0, min_height: 19.2, max_height: 19.2, }
     },
   }
   let blue = @node.Node::with_measure(
@@ -657,7 +657,7 @@ test "is_inline_level" {
 ///|
 test "should_establish_ifc_all_inline" {
   let default_style = @style.Style::default()
-  let inline_style = { ..default_style, display: @types.InlineBlock }
+  let inline_style = { ..default_style, display: @types.InlineBlock, }
   let child1 = @node.Node::leaf("c1", inline_style)
   let child2 = @node.Node::leaf("c2", inline_style)
   // All inline-level children should establish IFC
@@ -667,8 +667,8 @@ test "should_establish_ifc_all_inline" {
 ///|
 test "should_establish_ifc_mixed" {
   let default_style = @style.Style::default()
-  let inline_style = { ..default_style, display: @types.InlineBlock }
-  let block_style = { ..default_style, display: @types.Block }
+  let inline_style = { ..default_style, display: @types.InlineBlock, }
+  let block_style = { ..default_style, display: @types.Block, }
   let inline_child = @node.Node::leaf("inline", inline_style)
   let block_child = @node.Node::leaf("block", block_style)
   // Mixed inline and block should NOT establish IFC
@@ -686,7 +686,7 @@ test "should_establish_ifc_empty" {
 test "text_width_constrained_by_available_width" {
   // Text node with MeasureFunc should be constrained by available_width
   let default_style = @style.Style::default()
-  let inline_style = { ..default_style, display: @types.Inline }
+  let inline_style = { ..default_style, display: @types.Inline, }
 
   // MeasureFunc that returns wide text (max_width=200) that wraps to 4 lines at width=50
   let measure : @layout_types.MeasureFunc = {
@@ -732,7 +732,7 @@ test "text_width_constrained_by_available_width" {
 test "text_width_unconstrained_when_smaller" {
   // Text node narrower than available_width should use its max_width
   let default_style = @style.Style::default()
-  let inline_style = { ..default_style, display: @types.Inline }
+  let inline_style = { ..default_style, display: @types.Inline, }
 
   // MeasureFunc for short text (max_width=50)
   let measure : @layout_types.MeasureFunc = {
@@ -740,7 +740,7 @@ test "text_width_unconstrained_when_smaller" {
       _available_width : Double,
       _available_height : Double,
     ) -> @layout_types.IntrinsicSize {
-      { min_width: 20.0, max_width: 50.0, min_height: 16.0, max_height: 16.0 }
+      { min_width: 20.0, max_width: 50.0, min_height: 16.0, max_height: 16.0, }
     }, // Single line
   }
   let text_node = @node.Node::with_measure("text", inline_style, measure)
@@ -812,12 +812,12 @@ test "inline_element_with_child_has_size" {
   // An inline element (like <a>) containing a child should have proper size
   // This tests the fix for 0x0 link size issue
   let default_style = @style.Style::default()
-  let inline_style = { ..default_style, display: @types.Inline }
+  let inline_style = { ..default_style, display: @types.Inline, }
 
   // Create a text child with MeasureFunc (simulating text content)
   let child_measure : @layout_types.MeasureFunc = {
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 80.0, max_width: 80.0, min_height: 16.0, max_height: 16.0 }
+      { min_width: 80.0, max_width: 80.0, min_height: 16.0, max_height: 16.0, }
     },
   }
   let text_child = @node.Node::with_measure("text", inline_style, child_measure)
@@ -842,7 +842,7 @@ test "inline_element_with_child_has_size" {
 test "inline_element_with_padding_and_child" {
   // An inline element with padding containing a child
   let default_style = @style.Style::default()
-  let inline_style = { ..default_style, display: @types.Inline }
+  let inline_style = { ..default_style, display: @types.Inline, }
   let inline_with_padding = {
     ..inline_style,
     padding: {
@@ -856,7 +856,12 @@ test "inline_element_with_padding_and_child" {
   // Create a text child with MeasureFunc
   let child_measure : @layout_types.MeasureFunc = {
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 100.0, max_width: 100.0, min_height: 20.0, max_height: 20.0 }
+      {
+        min_width: 100.0,
+        max_width: 100.0,
+        min_height: 20.0,
+        max_height: 20.0,
+      }
     },
   }
   let text_child = @node.Node::with_measure("text", inline_style, child_measure)
@@ -923,7 +928,7 @@ test "br_after_wrapped_text_uses_last_visual_line_position" {
       _available_width : Double,
       _available_height : Double,
     ) -> @layout_types.IntrinsicSize {
-      { min_width: 0.0, max_width: 0.0, min_height: 19.2, max_height: 19.2 }
+      { min_width: 0.0, max_width: 0.0, min_height: 19.2, max_height: 19.2, }
     },
   }
   let br_node = @node.Node::with_measure("br", br_style, br_measure)
@@ -951,7 +956,7 @@ test "br_after_vertical_align_top_tall_inline_block_stays_near_line_top" {
     width: @types.Length(38.0),
     height: @types.Length(50.0),
     vertical_align: @style.VerticalAlign::Top,
-    contain: { ..default_style.contain, size: true },
+    contain: { ..default_style.contain, size: true, },
   }
   let button_node = @node.Node::leaf("button", button_style)
 
@@ -966,7 +971,7 @@ test "br_after_vertical_align_top_tall_inline_block_stays_near_line_top" {
       _available_width : Double,
       _available_height : Double,
     ) -> @layout_types.IntrinsicSize {
-      { min_width: 0.0, max_width: 0.0, min_height: 16.1, max_height: 16.1 }
+      { min_width: 0.0, max_width: 0.0, min_height: 16.1, max_height: 16.1, }
     },
   }
   let br_node = @node.Node::with_measure("br", br_style, br_measure)

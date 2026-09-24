@@ -8,7 +8,7 @@ priv struct WasmStubRuntime {
 }
 
 ///|
-let wasm_stub_runtime : WasmStubRuntime = { _unused: 0 }
+let wasm_stub_runtime : WasmStubRuntime = { _unused: 0, }
 
 ///|
 fn allocate_runtime_context_id() -> Int {
@@ -41,6 +41,10 @@ impl JsRuntime for WasmStubRuntime with fn execute(
   let _ = async_mode
   raise NotSupported
 }
+
+///|
+// Explicitly promote the JsRuntime trait methods for WasmStubRuntime.
+extend WasmStubRuntime with JsRuntime::{init}
 
 ///|
 impl JsRuntime for WasmStubRuntime with fn tick(

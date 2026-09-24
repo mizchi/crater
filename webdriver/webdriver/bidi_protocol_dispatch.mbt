@@ -1,8 +1,8 @@
 ///|
 /// Parse method into (domain, action)
 fn split_method(method_name : String) -> (String, String)? {
-  let domain = StringBuilder::new()
-  let action = StringBuilder::new()
+  let domain = StringBuilder()
+  let action = StringBuilder()
   let mut in_action = false
   for c in method_name.iter() {
     if c == '.' && !in_action {

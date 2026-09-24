@@ -65,7 +65,7 @@ test "tts status message maps unsupported command" {
 ///|
 test "resolve_requested_output_mode keeps kitty when supported" {
   let options = parse_args_list(["--kitty", "https://example.com"])
-  let support = { kitty: true, sixel: true }
+  let support = { kitty: true, sixel: true, }
   inspect(
     output_mode_name(resolve_requested_output_mode(options, support)),
     content="Kitty",
@@ -75,7 +75,7 @@ test "resolve_requested_output_mode keeps kitty when supported" {
 ///|
 test "resolve_requested_output_mode falls back from kitty to sixel" {
   let options = parse_args_list(["--kitty", "https://example.com"])
-  let support = { kitty: false, sixel: true }
+  let support = { kitty: false, sixel: true, }
   inspect(
     output_mode_name(resolve_requested_output_mode(options, support)),
     content="Sixel",
@@ -85,7 +85,7 @@ test "resolve_requested_output_mode falls back from kitty to sixel" {
 ///|
 test "resolve_requested_output_mode falls back from kitty to text when no graphics are supported" {
   let options = parse_args_list(["--kitty", "https://example.com"])
-  let support = { kitty: false, sixel: false }
+  let support = { kitty: false, sixel: false, }
   inspect(
     output_mode_name(resolve_requested_output_mode(options, support)),
     content="Text",
@@ -103,7 +103,7 @@ test "graphics output modes require system glyph provider setup" {
 ///|
 #cfg(target="js")
 test "detect_terminal_graphics_support recognizes kitty envs" {
-  let env : Map[String, String] = {}
+  let env : Map[String, String] = Map([])
   env["KITTY_WINDOW_ID"] = "1"
   env["TERM"] = "xterm-kitty"
   let support = detect_terminal_graphics_support_from_env(env)
@@ -114,7 +114,7 @@ test "detect_terminal_graphics_support recognizes kitty envs" {
 ///|
 #cfg(target="js")
 test "detect_terminal_graphics_support recognizes sixel envs" {
-  let env : Map[String, String] = {}
+  let env : Map[String, String] = Map([])
   env["TERM"] = "xterm-sixel"
   let support = detect_terminal_graphics_support_from_env(env)
   inspect(support.kitty, content="false")

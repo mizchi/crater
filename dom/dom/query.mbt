@@ -157,7 +157,7 @@ fn dom_node_to_selector_element(
       } else {
         let attrs = []
         node.attributes.each(fn(name, value) {
-          attrs.push(@selector.Attribute::{ name, value })
+          attrs.push(@selector.Attribute::{ name, value, })
         })
         attrs
       }

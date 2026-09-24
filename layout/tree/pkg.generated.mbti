@@ -231,4 +231,3 @@ pub fn ResourceRegistry::next_resource_id(Self) -> ResourceId
 // Type aliases
 
 // Traits
-

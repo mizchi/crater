@@ -21,4 +21,3 @@ pub fn from_node_and_layout_with_viewport_rect(@node.Node, @crater-core.Layout, 
 // Type aliases
 
 // Traits
-

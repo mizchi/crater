@@ -14,7 +14,7 @@ struct BlockedSources {
 
 ///|
 fn BlockedSources::new() -> BlockedSources {
-  { sources: @hashset.HashSet([]) }
+  { sources: @hashset.HashSet([]), }
 }
 
 ///|

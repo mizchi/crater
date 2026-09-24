@@ -3,7 +3,7 @@
 
 ///|
 fn make_transparent_framebuffer(width : Int, height : Int) -> Framebuffer {
-  { width, height, pixels: Array::make(width * height, -1) }
+  { width, height, pixels: Array::make(width * height, -1), }
 }
 
 ///|
@@ -67,7 +67,7 @@ fn render_group_opacity_clipped(
 ) -> Unit {
   let group_fb = make_transparent_framebuffer(fb.width, fb.height)
   let group_palette = DynamicPalette::new()
-  let opaque_node = { ..node, paint: { ..node.paint, opacity: 1.0 } }
+  let opaque_node = { ..node, paint: { ..node.paint, opacity: 1.0, }, }
   render_paint_node_clipped(
     group_fb, group_palette, opaque_node, parent_x, parent_y, clip,
   )

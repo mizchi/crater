@@ -24,4 +24,3 @@ pub fn read_file_to_string_via_eval(String) -> String?
 pub using @js_v8 {type V8JsRuntime}
 
 // Traits
-

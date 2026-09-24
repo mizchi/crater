@@ -92,7 +92,7 @@ pub fn ShadowRootInit::new(
   clonable? : Bool = false,
   serializable? : Bool = false,
 ) -> ShadowRootInit {
-  { mode, delegates_focus, slot_assignment, clonable, serializable }
+  { mode, delegates_focus, slot_assignment, clonable, serializable, }
 }
 
 ///|
@@ -230,13 +230,13 @@ pub fn Rect::new(
   width : Double,
   height : Double,
 ) -> Rect {
-  { x, y, width, height }
+  { x, y, width, height, }
 }
 
 ///|
 /// Convert Rect to center point
 pub fn Rect::center(self : Rect) -> Point {
-  { x: self.x + self.width / 2.0, y: self.y + self.height / 2.0 }
+  { x: self.x + self.width / 2.0, y: self.y + self.height / 2.0, }
 }
 
 ///|
@@ -273,25 +273,25 @@ pub fn SVGRect::new(
   width : Double,
   height : Double,
 ) -> SVGRect {
-  { x, y, width, height }
+  { x, y, width, height, }
 }
 
 ///|
 /// Create an empty SVGRect (0, 0, 0, 0)
 pub fn SVGRect::empty() -> SVGRect {
-  { x: 0.0, y: 0.0, width: 0.0, height: 0.0 }
+  { x: 0.0, y: 0.0, width: 0.0, height: 0.0, }
 }
 
 ///|
 /// Convert SVGRect to Rect
 pub fn SVGRect::to_rect(self : SVGRect) -> Rect {
-  { x: self.x, y: self.y, width: self.width, height: self.height }
+  { x: self.x, y: self.y, width: self.width, height: self.height, }
 }
 
 ///|
 /// Create SVGRect from Rect
 pub fn SVGRect::from_rect(rect : Rect) -> SVGRect {
-  { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
+  { x: rect.x, y: rect.y, width: rect.width, height: rect.height, }
 }
 
 ///|
@@ -305,13 +305,13 @@ pub struct SVGPoint {
 ///|
 /// Create a new SVGPoint
 pub fn SVGPoint::new(x : Double, y : Double) -> SVGPoint {
-  { x, y }
+  { x, y, }
 }
 
 ///|
 /// Create an SVGPoint at origin (0, 0)
 pub fn SVGPoint::origin() -> SVGPoint {
-  { x: 0.0, y: 0.0 }
+  { x: 0.0, y: 0.0, }
 }
 
 ///|
@@ -322,7 +322,7 @@ pub fn SVGPoint::matrix_transform(
 ) -> SVGPoint {
   let new_x = matrix.a * self.x + matrix.c * self.y + matrix.e
   let new_y = matrix.b * self.x + matrix.d * self.y + matrix.f
-  { x: new_x, y: new_y }
+  { x: new_x, y: new_y, }
 }
 
 ///|
@@ -434,7 +434,7 @@ pub impl Show for SVGMatrix with fn output(self, logger) {
 ///|
 /// Create an identity matrix
 pub fn SVGMatrix::identity() -> SVGMatrix {
-  { a: 1.0, b: 0.0, c: 0.0, d: 1.0, e: 0.0, f: 0.0 }
+  { a: 1.0, b: 0.0, c: 0.0, d: 1.0, e: 0.0, f: 0.0, }
 }
 
 ///|
@@ -447,7 +447,7 @@ pub fn SVGMatrix::new(
   e : Double,
   f : Double,
 ) -> SVGMatrix {
-  { a, b, c, d, e, f }
+  { a, b, c, d, e, f, }
 }
 
 ///|
@@ -484,13 +484,13 @@ pub fn SVGMatrix::inverse(self : SVGMatrix) -> SVGMatrix? {
 ///|
 /// Create a translation matrix
 pub fn SVGMatrix::translate(tx : Double, ty : Double) -> SVGMatrix {
-  { a: 1.0, b: 0.0, c: 0.0, d: 1.0, e: tx, f: ty }
+  { a: 1.0, b: 0.0, c: 0.0, d: 1.0, e: tx, f: ty, }
 }
 
 ///|
 /// Create a scale matrix
 pub fn SVGMatrix::scale(sx : Double, sy : Double) -> SVGMatrix {
-  { a: sx, b: 0.0, c: 0.0, d: sy, e: 0.0, f: 0.0 }
+  { a: sx, b: 0.0, c: 0.0, d: sy, e: 0.0, f: 0.0, }
 }
 
 ///|
@@ -504,7 +504,7 @@ pub fn SVGMatrix::scale_uniform(s : Double) -> SVGMatrix {
 pub fn SVGMatrix::rotate(angle : Double) -> SVGMatrix {
   let cos_a = @math.cos(angle)
   let sin_a = @math.sin(angle)
-  { a: cos_a, b: sin_a, c: -sin_a, d: cos_a, e: 0.0, f: 0.0 }
+  { a: cos_a, b: sin_a, c: -sin_a, d: cos_a, e: 0.0, f: 0.0, }
 }
 
 ///|
@@ -516,13 +516,13 @@ pub fn SVGMatrix::rotate_deg(angle_deg : Double) -> SVGMatrix {
 ///|
 /// Create a skew X matrix (angle in radians)
 pub fn SVGMatrix::skew_x(angle : Double) -> SVGMatrix {
-  { a: 1.0, b: 0.0, c: @math.tan(angle), d: 1.0, e: 0.0, f: 0.0 }
+  { a: 1.0, b: 0.0, c: @math.tan(angle), d: 1.0, e: 0.0, f: 0.0, }
 }
 
 ///|
 /// Create a skew Y matrix (angle in radians)
 pub fn SVGMatrix::skew_y(angle : Double) -> SVGMatrix {
-  { a: 1.0, b: @math.tan(angle), c: 0.0, d: 1.0, e: 0.0, f: 0.0 }
+  { a: 1.0, b: @math.tan(angle), c: 0.0, d: 1.0, e: 0.0, f: 0.0, }
 }
 
 ///|

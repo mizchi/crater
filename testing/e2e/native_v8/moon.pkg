@@ -6,7 +6,7 @@ import {
   "mizchi/crater-dom/dom",
 }
 
-warnings = "-text_segment_excceed"
+warnings = "-text_segment_excceed-unused_package"
 
 supported_targets = "+native"
 

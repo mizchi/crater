@@ -20,6 +20,12 @@ import {
   "mizchi/crater-dom/layout/html_tree" @layout_html_tree,
 }
 
+// These gfx/renderer imports are retained for JS-link side effects (their JS
+// bodies install runtime globals this facade's exported JS functions rely on),
+// even though no MoonBit symbol from them is referenced directly.
+
+warnings = "-unused_package"
+
 options(
   link: {
     "js": {

@@ -31,20 +31,20 @@ pub impl Show for CssRuleViewportEntry with fn output(self, logger) {
   logger.write_string("{selector: ")
   logger.write_string(self.selector.to_string())
   logger.write_string(", properties: ")
-  logger.write_object(to_repr(self.properties))
+  logger.write_object(Repr(self.properties))
   logger.write_string(", media_condition: ")
   logger.write_string(self.media_condition.to_string())
   logger.write_string(", active_at_widths: ")
-  logger.write_object(to_repr(self.active_at_widths))
+  logger.write_object(Repr(self.active_at_widths))
   logger.write_string(", inactive_at_widths: ")
-  logger.write_object(to_repr(self.inactive_at_widths))
+  logger.write_object(Repr(self.inactive_at_widths))
   logger.write_string("}")
 }
 
 ///|
 pub impl Show for CssRuleViewportMap with fn output(self, logger) {
   logger.write_string("{rules: ")
-  logger.write_object(to_repr(self.rules))
+  logger.write_object(Repr(self.rules))
   logger.write_string("}")
 }
 
@@ -60,7 +60,7 @@ pub impl Show for RequiredTestViewport with fn output(self, logger) {
 ///|
 pub impl Show for RequiredTestViewportsResult with fn output(self, logger) {
   logger.write_string("{viewports: ")
-  logger.write_object(to_repr(self.viewports))
+  logger.write_object(Repr(self.viewports))
   logger.write_string("}")
 }
 
@@ -74,7 +74,7 @@ pub fn discover_css_rule_viewport_map(
   let doc = @html.parse_document(html)
   let rules : Array[CssRuleViewportEntry] = []
   // Track unique entries by (selector, media_condition) to merge properties
-  let seen : Map[String, Int] = {} // key -> index in rules
+  let seen : Map[String, Int] = Map([]) // key -> index in rules
   for css_text in doc.stylesheets {
     let stylesheet = @parser.parse_stylesheet(css_text)
     for rule in stylesheet.rules {
@@ -137,7 +137,7 @@ pub fn discover_required_test_viewports(
 ) -> RequiredTestViewportsResult {
   let bp_result = discover_responsive_breakpoints(html)
   let viewports : Array[RequiredTestViewport] = []
-  let seen_widths : Map[Int, Bool] = {}
+  let seen_widths : Map[Int, Bool] = Map([])
   for bp in bp_result.breakpoints {
     // Test at the breakpoint value itself
     if !seen_widths.contains(bp.value_px) {
@@ -145,7 +145,7 @@ pub fn discover_required_test_viewports(
       let reason = bp.rule_count.to_string() +
         " rules have @media " +
         bp.normalized
-      viewports.push({ width: bp.value_px, reason })
+      viewports.push({ width: bp.value_px, reason, })
     }
     // Test just below the breakpoint for max-width / le
     if bp.op == "le" || bp.op == "lt" {

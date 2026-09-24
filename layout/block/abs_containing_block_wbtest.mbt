@@ -9,14 +9,14 @@ test "filter_establishes_abs_containing_block" {
   // A plain static block is not an abs containing block.
   inspect(establishes_abs_containing_block(base, base.display), content="false")
   // A non-none filter flips has_filter and must establish the CB.
-  let filtered = { ..base, has_filter: true }
+  let filtered = { ..base, has_filter: true, }
   inspect(
     establishes_abs_containing_block(filtered, filtered.display),
     content="true",
   )
   // The filter rule is independent of transform: dropping it would regress the
   // filter-cb-abspos WPT cases even while transform still works.
-  let transformed = { ..base, has_filter: false }
+  let transformed = { ..base, has_filter: false, }
   inspect(
     establishes_abs_containing_block(transformed, transformed.display),
     content="false",

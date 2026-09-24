@@ -446,13 +446,13 @@ fn parse_hex_color(value : String) -> @svgcore.Color {
 fn parse_points(value : String) -> Array[(Double, Double)] {
   let result : Array[(Double, Double)] = []
   let nums : Array[Double] = []
-  let mut buf = StringBuilder::new()
+  let mut buf = StringBuilder()
   for i = 0; i < value.length(); i = i + 1 {
     let c = Int::unsafe_to_char(value[i].to_int())
     if c == ' ' || c == ',' || c == '\n' || c == '\r' || c == '\t' {
       if buf.to_string().length() > 0 {
         nums.push(parse_attr_number(buf.to_string()))
-        buf = StringBuilder::new()
+        buf = StringBuilder()
       }
     } else {
       buf.write_char(c)

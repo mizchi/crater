@@ -95,7 +95,7 @@ fn BidiProtocol::resolve_get_responsive_breakpoints(
 
   let html = responsive_breakpoint_source_html(mode)
   let discovery = @responsive.discover_responsive_breakpoints(html)
-  let result : Map[String, Json] = {}
+  let result : Map[String, Json] = Map([])
   result["breakpoints"] = responsive_breakpoints_to_json(discovery.breakpoints)
   if include_diagnostics {
     result["diagnostics"] = responsive_diagnostics_to_json(
@@ -251,7 +251,7 @@ fn responsive_breakpoints_to_json(
 ) -> Json {
   let items : Array[Json] = []
   for breakpoint in breakpoints {
-    let item : Map[String, Json] = {}
+    let item : Map[String, Json] = Map([])
     item["axis"] = Json::string(breakpoint.axis)
     item["op"] = Json::string(breakpoint.op)
     item["valuePx"] = Json::number(breakpoint.value_px.to_double())
@@ -272,7 +272,7 @@ fn responsive_breakpoints_to_json(
 fn responsive_diagnostics_to_json(
   diagnostics : @responsive.BreakpointDiscoveryDiagnostics,
 ) -> Json {
-  let object : Map[String, Json] = {}
+  let object : Map[String, Json] = Map([])
   object["stylesheetCount"] = Json::number(
     diagnostics.stylesheet_count.to_double(),
   )

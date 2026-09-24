@@ -4,7 +4,7 @@ fn synthetic_navigation_blocked_request_payload(
   phase : String,
   response_event : Json?,
 ) -> Map[String, Json] {
-  let blocked_request : Map[String, Json] = {}
+  let blocked_request : Map[String, Json] = Map([])
   blocked_request["phase"] = Json::string(phase)
   blocked_request["context_id"] = Json::string(input.context_id)
   blocked_request["url"] = Json::string(input.url)
@@ -65,7 +65,7 @@ fn synthetic_navigation_is_unreachable_test_url(url : String) -> Bool {
 fn synthetic_navigation_header_object_from_entries(
   headers : Array[Json],
 ) -> Json {
-  let object : Map[String, Json] = {}
+  let object : Map[String, Json] = Map([])
   for header in headers {
     let name = match synthetic_network_header_entry_name(header) {
       Some(name) => name

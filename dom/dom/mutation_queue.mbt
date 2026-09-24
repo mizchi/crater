@@ -163,7 +163,7 @@ pub fn MutationQueue::optimize(self : MutationQueue) -> Array[MutationRecord] {
   }
 
   // Group records by target node
-  let by_node : Map[Int, Array[MutationRecord]] = {}
+  let by_node : Map[Int, Array[MutationRecord]] = Map([])
   for record in self.records {
     let key = record.target.to_int()
     match by_node.get(key) {
@@ -194,7 +194,7 @@ fn merge_node_records(records : Array[MutationRecord]) -> Array[MutationRecord] 
   let mut has_char_data = false
   let mut char_old : String? = None
   let mut char_new : String? = None
-  let attr_changes : Map[String, (String?, String?)] = {}
+  let attr_changes : Map[String, (String?, String?)] = Map([])
   let target = records[0].target
   for r in records {
     match r.type_ {
@@ -287,7 +287,7 @@ pub fn MutationQueue::flush(
   self : MutationQueue,
 ) -> (Array[MutationRecord], FlushResult) {
   if self.records.is_empty() {
-    return ([], { processed: 0, nodes_affected: 0, needs_layout: false })
+    return ([], { processed: 0, nodes_affected: 0, needs_layout: false, })
   }
   self.is_flushing = true
   let optimized = self.optimize()

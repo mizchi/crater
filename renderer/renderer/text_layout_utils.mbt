@@ -72,14 +72,14 @@ fn apply_browser_normal_line_height_if_needed(
     !inherited_line_height_looks_like_apple_normal(parent_style) {
     style
   } else {
-    { ..style, line_height: apple_system_normal_line_height(style.font_size) }
+    { ..style, line_height: apple_system_normal_line_height(style.font_size), }
   }
 }
 
 ///|
 /// Current cellpadding value from the nearest ancestor <table>.
 /// -1.0 means not set. Updated when entering/leaving table elements.
-let current_cellpadding : Ref[Double] = { val: -1.0 }
+let current_cellpadding : Ref[Double] = { val: -1.0, }
 
 ///|
 /// Check if a character is East Asian Wide (CJK characters that take 2 columns)
@@ -238,7 +238,7 @@ pub fn TextMetricsProvider::new(
 }
 
 ///|
-let text_metrics_provider_override : Ref[TextMetricsProvider?] = { val: None }
+let text_metrics_provider_override : Ref[TextMetricsProvider?] = { val: None, }
 
 ///|
 pub fn set_text_metrics_provider(provider : TextMetricsProvider) -> Unit {
@@ -253,7 +253,7 @@ pub fn clear_text_metrics_provider() -> Unit {
 ///|
 /// Force monospace text metrics regardless of TextMetricsProvider.
 /// Use this for TUI/terminal rendering where proportional metrics are meaningless.
-let force_monospace_metrics_flag : Ref[Bool] = { val: false }
+let force_monospace_metrics_flag : Ref[Bool] = { val: false, }
 
 ///|
 pub fn set_force_monospace_metrics(enabled : Bool) -> Unit {
@@ -320,7 +320,7 @@ pub extern "js" fn clear_builtin_text_advance_ratio_override_for_test() -> Unit 
 
 ///|
 #cfg(not(target="js"))
-let builtin_text_advance_ratio_override : Ref[Double] = { val: -1.0 }
+let builtin_text_advance_ratio_override : Ref[Double] = { val: -1.0, }
 
 ///|
 /// Test-only hook for deterministic built-in text measurement.

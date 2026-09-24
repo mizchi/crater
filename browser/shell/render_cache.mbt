@@ -123,16 +123,16 @@ fn extract_style_blocks(html : String, out : Array[String]) -> Unit {
   let n = lower.length()
   let mut base = 0
   while base < n {
-    match lower.substring(start=base).find("<style") {
+    match lower[base:].find("<style") {
       Some(rel_open) => {
         let open = base + rel_open
-        match lower.substring(start=open).find(">") {
+        match lower[open:].find(">") {
           Some(rel_gt) => {
             let gt = open + rel_gt
-            match lower.substring(start=gt).find("</style") {
+            match lower[gt:].find("</style") {
               Some(rel_close) => {
                 let close = gt + rel_close
-                out.push(html.substring(start=gt + 1, end=close))
+                out.push(html[gt + 1:close].to_owned())
                 base = close + 1
               }
               None => break

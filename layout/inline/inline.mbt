@@ -21,7 +21,7 @@ priv struct LineItem {
 
 ///|
 fn LineBox::new() -> LineBox {
-  { items: [], width: 0.0, height: 0.0, baseline: 0.0 }
+  { items: [], width: 0.0, height: 0.0, baseline: 0.0, }
 }
 
 ///|
@@ -74,7 +74,7 @@ extern "js" fn get_builtin_text_advance_ratio_override() -> Double =
   #|}
 
 ///|
-let builtin_text_advance_ratio_override : Ref[Double] = { val: -1.0 }
+let builtin_text_advance_ratio_override : Ref[Double] = { val: -1.0, }
 
 ///|
 pub fn set_builtin_text_advance_ratio(ratio : Double) -> Unit {
@@ -522,7 +522,7 @@ fn LineBox::add_item(
   margin_left : Double,
   margin_right : Double,
 ) -> Unit {
-  self.items.push({ index, layout, baseline })
+  self.items.push({ index, layout, baseline, })
   self.width = self.width + layout.width + margin_left + margin_right
 
   // Update line box baseline and height based on baseline alignment
@@ -703,7 +703,7 @@ fn shift_layout_subtree(
   for child in layout.children {
     shifted_children.push(shift_layout_subtree(child, dx, dy))
   }
-  { ..layout, x: layout.x + dx, y: layout.y + dy, children: shifted_children }
+  { ..layout, x: layout.x + dx, y: layout.y + dy, children: shifted_children, }
 }
 
 ///|
@@ -741,7 +741,7 @@ fn shift_inline_out_of_flow_descendants(
   for i = min_len; i < layout.children.length(); i = i + 1 {
     shifted_children.push(layout.children[i])
   }
-  { ..layout, children: shifted_children }
+  { ..layout, children: shifted_children, }
 }
 
 ///|
@@ -974,7 +974,7 @@ fn adjust_inline_float_only_wrapper(
     if child.width > 0.0 || child.height > 0.0 {
       has_visible_child = true
     }
-    shifted_children.push({ ..child, x: child.x - layout.width })
+    shifted_children.push({ ..child, x: child.x - layout.width, })
   }
   if !has_visible_child {
     return layout
@@ -1271,7 +1271,7 @@ pub fn compute_ifc(
   container_white_space? : @style.WhiteSpace = @style.WhiteSpace::Normal,
 ) -> InlineLayoutResult {
   if children.length() == 0 {
-    return { layouts: [], total_height: 0.0 }
+    return { layouts: [], total_height: 0.0, }
   }
 
   // Inline progression should follow container writing-mode, not child writing-mode.
@@ -1285,9 +1285,9 @@ pub fn compute_ifc(
     let columns : Array[Array[Int]] = []
     let column_widths : Array[Double] = []
     let column_heights : Array[Double] = []
-    let layout_map : Map[Int, @layout_types.Layout] = {}
-    let child_layout_cache : Map[Int, @layout_types.Layout] = {}
-    let child_margin_cache : Map[Int, @types.Rect[Double]] = {}
+    let layout_map : Map[Int, @layout_types.Layout] = Map([])
+    let child_layout_cache : Map[Int, @layout_types.Layout] = Map([])
+    let child_margin_cache : Map[Int, @types.Rect[Double]] = Map([])
 
     let mut current_column : Array[Int] = []
     let mut current_width = 0.0
@@ -1316,7 +1316,7 @@ pub fn compute_ifc(
       )
       let child_layout = if is_whitespace_text_node(child) {
         // Keep inline advance for whitespace runs but avoid column-height inflation.
-        { ..child_layout, height: 0.0 }
+        { ..child_layout, height: 0.0, }
       } else {
         child_layout
       }
@@ -1442,14 +1442,14 @@ pub fn compute_ifc(
         None => ()
       }
     }
-    return { layouts, total_height }
+    return { layouts, total_height, }
   }
 
   // Collect inline-level children and compute their layouts
   let line_boxes : Array[LineBox] = []
   let mut current_line = LineBox::new()
-  let layout_map : Map[Int, @layout_types.Layout] = {}
-  let child_has_abs_desc_cache : Map[Int, Bool] = {}
+  let layout_map : Map[Int, @layout_types.Layout] = Map([])
+  let child_has_abs_desc_cache : Map[Int, Bool] = Map([])
   let child_has_inflow_block_desc_flag : Array[Bool] = []
   for child in children {
     if child.style.display == @types.Display::None {
@@ -1486,7 +1486,7 @@ pub fn compute_ifc(
     let child_layout = if current_line.items.length() == 0 &&
       is_whitespace_text_node(child) {
       // Collapsible leading whitespace at line start should not shift following items.
-      { ..child_layout, width: 0.0, height: 0.0 }
+      { ..child_layout, width: 0.0, height: 0.0, }
     } else {
       child_layout
     }
@@ -1964,7 +1964,7 @@ pub fn compute_ifc(
       None => ()
     }
   }
-  { layouts, total_height: current_y - content_offset_y }
+  { layouts, total_height: current_y - content_offset_y, }
 }
 
 ///|
@@ -2508,10 +2508,10 @@ fn compute_inline_child(
         is_whitespace_text_node(child)
       let collapse_standalone_whitespace = is_whitespace_text_node(child)
       let child_layout = if collapse_whitespace_after_out_of_flow {
-        { ..raw_child_layout, width: 0.0, height: 0.0 }
+        { ..raw_child_layout, width: 0.0, height: 0.0, }
       } else if collapse_standalone_whitespace {
         // Indentation whitespace should keep inline advance but not inflate line height.
-        { ..raw_child_layout, height: 0.0 }
+        { ..raw_child_layout, height: 0.0, }
       } else {
         raw_child_layout
       }
@@ -2694,7 +2694,7 @@ fn compute_inline_child(
       let child_layout = if child_layout_raw.width <= 0.0 &&
         !style.writing_mode.is_vertical() &&
         (child_layout_raw.height > 0.0 || child_has_intrinsic_content) {
-        { ..child_layout_raw, width: available_width }
+        { ..child_layout_raw, width: available_width, }
       } else {
         child_layout_raw
       }
@@ -2888,11 +2888,11 @@ fn compute_inline_child(
     }
     if top_auto && bottom_auto {
       let abs_layout = children[idx]
-      children[idx] = { ..abs_layout, y: static_y }
+      children[idx] = { ..abs_layout, y: static_y, }
     }
     if left_auto && right_auto {
       let abs_layout = children[idx]
-      children[idx] = { ..abs_layout, x: static_x }
+      children[idx] = { ..abs_layout, x: static_x, }
     }
   }
 
@@ -2949,7 +2949,7 @@ fn compute_inline_child(
         (None, Some(b)) => area_top + area_height - b - abs_layout.height
         (None, None) => area_top + static_y
       }
-      children[idx] = { ..abs_layout, x, y }
+      children[idx] = { ..abs_layout, x, y, }
     }
   }
   let mut has_zero_size_div_child = false
@@ -2972,7 +2972,7 @@ fn compute_inline_child(
         if child_layout.id == "div" &&
           child_layout.width == 0.0 &&
           child_layout.height == 0.0 {
-          children[i] = { ..child_layout, width: available_width }
+          children[i] = { ..child_layout, width: available_width, }
         }
       }
     }

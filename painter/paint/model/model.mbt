@@ -124,7 +124,7 @@ pub impl Show for PaintProperties with fn output(self, logger) {
   logger.write_string(", visibility: ")
   self.visibility.output(logger)
   logger.write_string(", opacity: ")
-  self.opacity.output(logger)
+  Show::output(self.opacity, logger)
   logger.write_string(", pointer_events: ")
   self.pointer_events.output(logger)
   logger.write_string(", color: ")
@@ -236,23 +236,23 @@ pub fn PaintNode::new(
 pub impl Show for PaintNode with fn output(self, logger) {
   logger.write_string(self.id)
   logger.write_string(" (")
-  self.x.output(logger)
+  Show::output(self.x, logger)
   logger.write_string(", ")
-  self.y.output(logger)
+  Show::output(self.y, logger)
   logger.write_string(") ")
-  self.width.output(logger)
+  Show::output(self.width, logger)
   logger.write_string("x")
-  self.height.output(logger)
+  Show::output(self.height, logger)
   if self.stacking_order != 0 {
     logger.write_string(" z:")
-    self.stacking_order.output(logger)
+    Show::output(self.stacking_order, logger)
   }
   if !self.paint.should_render() {
     logger.write_string(" [hidden]")
   }
   if self.paint.opacity < 1.0 {
     logger.write_string(" opacity:")
-    self.paint.opacity.output(logger)
+    Show::output(self.paint.opacity, logger)
   }
   if self.clips_content() {
     logger.write_string(" [clips]")

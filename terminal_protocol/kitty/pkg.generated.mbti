@@ -35,4 +35,3 @@ pub fn Color::rgb(Int, Int, Int) -> Self
 // Type aliases
 
 // Traits
-

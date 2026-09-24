@@ -52,7 +52,7 @@ fn BidiProtocol::emit_synthetic_network_event_sequence_internal(
     match self.build_synthetic_before_request_sent_event_json(0, before_input) {
       Some(event) =>
         self.outbox.push(
-          Event({ event_method: "network.beforeRequestSent", params: event }),
+          Event({ event_method: "network.beforeRequestSent", params: event, }),
         )
       None => return
     }
@@ -77,7 +77,7 @@ fn BidiProtocol::emit_synthetic_network_event_sequence_internal(
         ) {
         Some(event) =>
           self.outbox.push(
-            Event({ event_method: "network.fetchError", params: event }),
+            Event({ event_method: "network.fetchError", params: event, }),
           )
         None => ()
       }
@@ -112,7 +112,7 @@ fn BidiProtocol::emit_synthetic_network_event_sequence_internal(
     match response_started_event {
       Some(event) =>
         self.outbox.push(
-          Event({ event_method: "network.responseStarted", params: event }),
+          Event({ event_method: "network.responseStarted", params: event, }),
         )
       None => return
     }
@@ -178,7 +178,7 @@ fn BidiProtocol::emit_synthetic_network_event_sequence_internal(
     match auth_required_event {
       Some(event) =>
         self.outbox.push(
-          Event({ event_method: "network.authRequired", params: event }),
+          Event({ event_method: "network.authRequired", params: event, }),
         )
       None => return
     }
@@ -203,7 +203,7 @@ fn BidiProtocol::emit_synthetic_network_event_sequence_internal(
       ) {
       Some(event) =>
         self.outbox.push(
-          Event({ event_method: "network.responseCompleted", params: event }),
+          Event({ event_method: "network.responseCompleted", params: event, }),
         )
       None => return
     }

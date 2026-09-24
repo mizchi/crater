@@ -45,4 +45,3 @@ pub fn ExtractionResult::to_summary(Self) -> String
 // Type aliases
 
 // Traits
-

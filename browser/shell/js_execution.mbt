@@ -100,7 +100,7 @@ fn Browser::flush_js_logs(self : Browser) -> Unit {
 
 ///|
 fn escape_js_string(s : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for c in s {
     match c {
       '\\' => buf.write_string("\\\\")

@@ -102,4 +102,3 @@ pub fn RenderingValidationError::name(Self) -> String
 // Type aliases
 
 // Traits
-

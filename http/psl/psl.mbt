@@ -162,7 +162,7 @@ fn split_labels(host : String) -> Array[String] {
 
 ///|
 fn join_labels(labels : Array[String], start : Int, end : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for i = start; i < end; i = i + 1 {
     if i > start {
       buf.write_char('.')

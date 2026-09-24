@@ -4,7 +4,7 @@ version = "0.19.0"
 
 import {
   "mizchi/tui-terminal-protocol@0.1.2",
-  "moonbitlang/async@0.21.3",
+"moonbitlang/async@0.22.1",
 }
 
 repository = "https://github.com/mizchi/crater"

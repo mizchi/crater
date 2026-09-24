@@ -32,7 +32,7 @@ async fn Browser::fetch_navigation_document(
   request : NavigationRequest,
 ) -> @http.HttpResponse raise @http.HttpError {
   let url = request.url
-  let page_headers : Map[String, String] = {}
+  let page_headers : Map[String, String] = Map([])
   let is_secure = url.has_prefix("https://")
   let cookie_jar = self.profile.cookie_jar()
   match navigation_cookie_header(cookie_jar, source_url, url) {

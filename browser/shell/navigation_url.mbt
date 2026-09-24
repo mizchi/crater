@@ -57,7 +57,7 @@ fn resolve_url(base_url : String, href : String) -> String {
 
 ///|
 fn make_substr(chars : Array[Char], start : Int, end : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for i = start; i < end; i = i + 1 {
     buf.write_char(chars[i])
   }
@@ -80,7 +80,7 @@ fn hex_digit_to_int(c : Char) -> Int? {
 ///|
 fn percent_decode_data_url_payload(payload : String) -> String {
   let chars = payload.to_array()
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let mut i = 0
   while i < chars.length() {
     if chars[i] == '%' && i + 2 < chars.length() {

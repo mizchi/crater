@@ -162,7 +162,7 @@ pub fn DomDomain::get_outer_html(
         @dom.Text => Ok(info.node_value)
         @dom.Element | @dom.DocumentFragment | @dom.ShadowRoot => {
           // Build outer HTML
-          let buf = StringBuilder::new()
+          let buf = StringBuilder()
           self.build_outer_html(node, buf)
           Ok(buf.to_string())
         }

@@ -3,7 +3,7 @@
 
 ///|
 fn escape_svg_attr(value : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for c in value.iter() {
     match c {
       '&' => buf.write_string("&amp;")
@@ -18,7 +18,7 @@ fn escape_svg_attr(value : String) -> String {
 
 ///|
 fn escape_svg_text(value : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for c in value.iter() {
     match c {
       '&' => buf.write_string("&amp;")
@@ -56,7 +56,7 @@ fn svg_color_to_hex(color : @types.Color) -> String {
     let clamped = n.max(0).min(255)
     let hi = clamped / 16 % 16
     let lo = clamped % 16
-    let buf = StringBuilder::new()
+    let buf = StringBuilder()
     buf.write_char(hex_char(hi))
     buf.write_char(hex_char(lo))
     buf.to_string()
@@ -275,7 +275,7 @@ fn inline_svg_data_uri(
   style : @style.Style,
   css_vars : Map[String, String],
 ) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   append_serialized_svg_element(
     buf,
     elem,
@@ -944,7 +944,7 @@ fn finalize_special_element_node(
     return match alt_text {
       Some(alt) =>
         if uses_alt_text_overflow_box {
-          @node.Node::new(node_id, { ..img_style, aspect_ratio: None }, [
+          @node.Node::new(node_id, { ..img_style, aspect_ratio: None, }, [
             create_text_node(alt, img_style),
           ])
         } else {

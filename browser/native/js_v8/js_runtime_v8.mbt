@@ -617,12 +617,12 @@ let element_internals_polyfill_js : String =
 /// DOM / global API is pre-injected into the isolate via the snapshot instead of
 /// re-evaluating the (large) setup JS on every runtime; only per-page data
 /// (`create_dom_init_code`) and user code run at execute time.
-let mock_dom_snapshot_cache : Ref[(String, Bytes)?] = { val: None }
+let mock_dom_snapshot_cache : Ref[(String, Bytes)?] = { val: None, }
 
 ///|
 /// Toggle the snapshot path (default on). Set to false to force the
 /// eval-on-init fallback — useful to isolate a snapshot-specific issue.
-let v8_snapshot_enabled : Ref[Bool] = { val: true }
+let v8_snapshot_enabled : Ref[Bool] = { val: true, }
 
 ///|
 /// Enable/disable building runtimes from the pre-injected API snapshot.
@@ -1275,7 +1275,7 @@ fn parse_string_array(json : String) -> Array[String] {
 ///|
 fn unescape_json_string(value : String) -> String {
   let chars = value.to_array()
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let mut i = 0
   while i < chars.length() {
     if chars[i] == '\\' && i + 1 < chars.length() {
@@ -1301,3 +1301,7 @@ fn unescape_json_string(value : String) -> String {
   }
   buf.to_string()
 }
+// Explicitly promote the JsRuntime trait methods for V8JsRuntime.
+
+///|
+pub extend V8JsRuntime with @js.JsRuntime::{init, execute}

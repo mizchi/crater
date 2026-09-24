@@ -23,7 +23,7 @@ fn build_cache_entry(url : String, response : @http.HttpResponse) -> CacheEntry 
 ///|
 /// Convert a CacheEntry back to an @http.HttpResponse.
 fn entry_to_response(entry : CacheEntry) -> @http.HttpResponse {
-  { status: entry.status, headers: entry.headers, body: entry.body }
+  { status: entry.status, headers: entry.headers, body: entry.body, }
 }
 
 ///|
@@ -47,7 +47,7 @@ pub async fn[CacheBackend : HttpCacheBackend] cached_fetch_async(
         return entry_to_response(entry)
       } else {
         println("[cache] STALE (revalidating): " + url)
-        let modified_headers : Map[String, String] = {}
+        let modified_headers : Map[String, String] = Map([])
         for k, v in options.headers {
           modified_headers[k] = v
         }
@@ -66,7 +66,7 @@ pub async fn[CacheBackend : HttpCacheBackend] cached_fetch_async(
         let response = fetcher(url, modified_options)
         if response.status == 304 {
           println("[cache] 304 Not Modified: " + url)
-          let refreshed : CacheEntry = { ..entry, stored_at: now }
+          let refreshed : CacheEntry = { ..entry, stored_at: now, }
           cache.store(refreshed)
           return entry_to_response(entry)
         }
@@ -110,7 +110,7 @@ pub fn[CacheBackend : HttpCacheBackend] cached_fetch(
         return entry_to_response(entry)
       } else {
         // Stale: conditional request
-        let modified_headers : Map[String, String] = {}
+        let modified_headers : Map[String, String] = Map([])
         for k, v in options.headers {
           modified_headers[k] = v
         }
@@ -128,7 +128,7 @@ pub fn[CacheBackend : HttpCacheBackend] cached_fetch(
         }
         let response = fetcher(url, modified_options)
         if response.status == 304 {
-          let refreshed : CacheEntry = { ..entry, stored_at: now }
+          let refreshed : CacheEntry = { ..entry, stored_at: now, }
           cache.store(refreshed)
           return entry_to_response(entry)
         }

@@ -35,4 +35,3 @@ pub using @raster {type Framebuffer}
 pub using @model {type PaintNode}
 
 // Traits
-

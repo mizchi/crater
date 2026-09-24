@@ -9,42 +9,42 @@ pub(all) struct Color {
 ///|
 /// Predefined colors for visualization
 pub fn Color::transparent() -> Color {
-  { r: 0, g: 0, b: 0 }
+  { r: 0, g: 0, b: 0, }
 }
 
 ///|
 pub fn Color::blue() -> Color {
-  { r: 66, g: 133, b: 244 }
+  { r: 66, g: 133, b: 244, }
 }
 
 ///|
 pub fn Color::green() -> Color {
-  { r: 52, g: 168, b: 83 }
+  { r: 52, g: 168, b: 83, }
 }
 
 ///|
 pub fn Color::yellow() -> Color {
-  { r: 251, g: 188, b: 4 }
+  { r: 251, g: 188, b: 4, }
 }
 
 ///|
 pub fn Color::red() -> Color {
-  { r: 234, g: 67, b: 53 }
+  { r: 234, g: 67, b: 53, }
 }
 
 ///|
 pub fn Color::gray() -> Color {
-  { r: 154, g: 160, b: 166 }
+  { r: 154, g: 160, b: 166, }
 }
 
 ///|
 pub fn Color::white() -> Color {
-  { r: 255, g: 255, b: 255 }
+  { r: 255, g: 255, b: 255, }
 }
 
 ///|
 pub fn Color::black() -> Color {
-  { r: 0, g: 0, b: 0 }
+  { r: 0, g: 0, b: 0, }
 }
 
 ///|

@@ -10,7 +10,7 @@ pub struct Framebuffer {
 pub fn Framebuffer::new(width : Int, height : Int) -> Framebuffer {
   let size = width * height
   let pixels : Array[Int] = Array::make(size, 0)
-  { width, height, pixels }
+  { width, height, pixels, }
 }
 
 ///|
@@ -32,7 +32,7 @@ pub fn Framebuffer::crop(
   let cw = if x1 > x0 { x1 - x0 } else { 0 }
   let ch = if y1 > y0 { y1 - y0 } else { 0 }
   if cw == 0 || ch == 0 {
-    return { width: cw, height: ch, pixels: [] }
+    return { width: cw, height: ch, pixels: [], }
   }
   let pixels : Array[Int] = Array::make(cw * ch, 0)
   for row = 0; row < ch; row = row + 1 {
@@ -42,7 +42,7 @@ pub fn Framebuffer::crop(
       pixels[dst_row + col] = self.pixels[src_row + col]
     }
   }
-  { width: cw, height: ch, pixels }
+  { width: cw, height: ch, pixels, }
 }
 
 ///|

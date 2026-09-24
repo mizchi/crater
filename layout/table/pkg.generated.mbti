@@ -18,4 +18,3 @@ pub fn compute_intrinsic_size(@node.Node, Bool) -> Double
 // Type aliases
 
 // Traits
-

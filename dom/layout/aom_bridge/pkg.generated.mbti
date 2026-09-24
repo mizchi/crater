@@ -19,4 +19,3 @@ pub fn extract_bounds_from_layout(@tree.LayoutTree) -> Map[String, @aom.Bounds]
 // Type aliases
 
 // Traits
-

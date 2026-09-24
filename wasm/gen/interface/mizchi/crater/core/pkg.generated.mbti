@@ -11,4 +11,3 @@ pub fn compute_layout(String, UInt, UInt) -> String
 // Type aliases
 
 // Traits
-

@@ -976,7 +976,7 @@ fn shrink_span_to_positive_children_extent(
       layout.height
     }
   }
-  { ..layout, width, height }
+  { ..layout, width, height, }
 }
 
 ///|
@@ -1008,9 +1008,9 @@ fn normalize_fragment_start_margin_boxes(
     } else {
       layout.width
     }
-    { ..layout, y: 0.0, width, children: normalized_children }
+    { ..layout, y: 0.0, width, children: normalized_children, }
   } else {
-    { ..layout, children: normalized_children }
+    { ..layout, children: normalized_children, }
   }
 }
 
@@ -1031,7 +1031,7 @@ fn normalize_display_contents_children_to_column_start(
   if children.length() == 0 || column_step <= 0.0 {
     return children
   }
-  let min_y_by_column : Map[Int, Double] = {}
+  let min_y_by_column : Map[Int, Double] = Map([])
   for child in children {
     let column_index = resolve_column_index(child.x, column_step)
     if column_index <= 0 {

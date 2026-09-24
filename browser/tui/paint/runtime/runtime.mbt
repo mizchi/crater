@@ -25,7 +25,7 @@ pub fn prepare_viewport_paint(
     Some(paint_node) => {
       let tree = @paint_traversal.sort_tree_by_stacking_order(paint_node)
       let scrollable_elements = @paint_scroll.collect_scrollable_elements(tree)
-      Some({ tree, scrollable_elements })
+      Some({ tree, scrollable_elements, })
     }
     None => None
   }

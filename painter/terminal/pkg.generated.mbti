@@ -52,4 +52,3 @@ pub using @svg {type SVGNode}
 pub using @svg {type Scene}
 
 // Traits
-

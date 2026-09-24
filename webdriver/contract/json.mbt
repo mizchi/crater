@@ -146,7 +146,7 @@ pub fn ElementRect::to_json(self : ElementRect) -> String {
 ///|
 /// Escape string for JSON
 pub fn escape_json_string(s : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for c in s {
     match c {
       '"' => buf.write_string("\\\"")
@@ -197,5 +197,5 @@ pub fn success_object(map : Map[String, WebDriverValue]) -> WebDriverResponse {
 ///|
 /// Create error response
 pub fn error_response(code : ErrorCode, message : String) -> WebDriverResponse {
-  Error({ error: code, message, stacktrace: "" })
+  Error({ error: code, message, stacktrace: "", })
 }

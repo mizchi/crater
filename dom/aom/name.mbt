@@ -16,7 +16,7 @@ priv struct NameComputationContext {
 
 ///|
 fn NameComputationContext::new() -> NameComputationContext {
-  { visited: {}, is_referencing: false }
+  { visited: {}, is_referencing: false, }
 }
 
 ///|
@@ -34,7 +34,7 @@ fn NameComputationContext::mark_visited(
 ) -> NameComputationContext {
   let new_visited = self.visited
   new_visited[id] = true
-  { ..self, visited: new_visited }
+  { ..self, visited: new_visited, }
 }
 
 ///|
@@ -475,7 +475,7 @@ fn extract_label_text_excluding_control(
   label : @html.Element,
   control : @html.Element,
 ) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   extract_text_excluding_control_recursive(label, control, buf)
   normalize_whitespace(buf.to_string())
 }
@@ -689,7 +689,7 @@ fn compute_text_content(
   _find_label_for_id : (String) -> @html.Element?,
   is_in_hidden_subtree : (@html.Element) -> Bool,
 ) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   compute_text_content_recursive(element, buf, false)
 
   // Step 2D: Include aria-owns referenced elements
@@ -845,7 +845,7 @@ fn extract_all_text(element : @html.Element) -> String {
 ///|
 /// Extract all text content from element without normalizing
 fn extract_all_text_raw(element : @html.Element) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   extract_text_recursive(element, buf)
   buf.to_string()
 }

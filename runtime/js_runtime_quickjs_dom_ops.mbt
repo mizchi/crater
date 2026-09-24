@@ -35,7 +35,7 @@ fn parse_js_result_with_ops(json : String) -> (JsResult, Array[DomOp]) {
   }
   let logs = extract_json_array(json, "logs")
   let dom_ops = parse_dom_ops(json)
-  ({ value, logs, success }, dom_ops)
+  ({ value, logs, success, }, dom_ops)
 }
 
 ///|
@@ -229,7 +229,7 @@ fn resolve_dom_id(id_map : Map[Int, @dom.NodeId], id : Int) -> @dom.NodeId? {
 /// Apply DOM operations to DomTree
 fn apply_dom_ops(dom : @dom.DomTree, ops : Array[DomOp]) -> Unit {
   // Map mock IDs to real NodeIds
-  let id_map : Map[Int, @dom.NodeId] = {}
+  let id_map : Map[Int, @dom.NodeId] = Map([])
 
   // Pre-populate with body (id=2 in mock)
   match dom.query_selector(dom.get_document(), "body") {
@@ -436,7 +436,7 @@ fn json_index_of(s : String, needle : String, from : Int) -> Int {
 
 ///|
 fn unescape_json_string(value : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder()
   let chars = value.to_array()
   let mut i = 0
   while i < chars.length() {

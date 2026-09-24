@@ -34,7 +34,7 @@ fn BidiProtocol::emit_context_created(
     "userContext": Json::string(user_ctx),
     "originalOpener": opener_json,
   })
-  self.outbox.push(Event({ event_method: event_name, params }))
+  self.outbox.push(Event({ event_method: event_name, params, }))
 }
 
 ///|
@@ -77,7 +77,7 @@ fn BidiProtocol::emit_context_destroyed(
     "userContext": Json::string(user_ctx),
     "originalOpener": opener_json,
   })
-  self.outbox.push(Event({ event_method: event_name, params }))
+  self.outbox.push(Event({ event_method: event_name, params, }))
 }
 
 ///|
@@ -105,7 +105,7 @@ fn BidiProtocol::emit_user_prompt_opened(
     None => ()
   }
   let params = make_object(params_map)
-  self.outbox.push(Event({ event_method: event_name, params }))
+  self.outbox.push(Event({ event_method: event_name, params, }))
 }
 
 ///|
@@ -133,7 +133,7 @@ fn BidiProtocol::emit_user_prompt_closed(
     }
   }
   let params = make_object(params_map)
-  self.outbox.push(Event({ event_method: event_name, params }))
+  self.outbox.push(Event({ event_method: event_name, params, }))
 }
 
 ///|
@@ -160,7 +160,7 @@ fn BidiProtocol::emit_download_will_begin(
     "timestamp": Json::number(input_now_ms()),
     "url": Json::string(url),
   })
-  self.outbox.push(Event({ event_method: event_name, params }))
+  self.outbox.push(Event({ event_method: event_name, params, }))
 }
 
 ///|
@@ -193,7 +193,7 @@ fn BidiProtocol::emit_download_end(
     "timestamp": Json::number(input_now_ms()),
     "url": Json::string(url),
   })
-  self.outbox.push(Event({ event_method: event_name, params }))
+  self.outbox.push(Event({ event_method: event_name, params, }))
 }
 
 ///|
@@ -208,7 +208,7 @@ fn BidiProtocol::emit_realm_destroyed_for_context(
     return
   }
   let params = make_object({ "realm": Json::string(realm_id) })
-  self.outbox.push(Event({ event_method: event_name, params }))
+  self.outbox.push(Event({ event_method: event_name, params, }))
 }
 
 ///|
@@ -234,7 +234,7 @@ fn BidiProtocol::emit_realm_created(
     "origin": Json::string(self.get_context_origin(ctx_id)),
     "sandbox": sandbox_json,
   })
-  self.outbox.push(Event({ event_method: event_name, params }))
+  self.outbox.push(Event({ event_method: event_name, params, }))
 }
 
 ///|

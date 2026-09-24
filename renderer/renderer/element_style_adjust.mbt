@@ -102,11 +102,11 @@ fn adjust_inline_element_display_for_children(
       elem, selector_elem, style, tag_lower, stylesheets, indexed_stylesheets, ctx,
       css_vars,
     ) {
-    { ..style, display: @types.Block }
+    { ..style, display: @types.Block, }
   } else if style.display == @types.Inline &&
     tag_lower != "picture" &&
     contains_replaced_element(elem) {
-    { ..style, display: @types.InlineBlock }
+    { ..style, display: @types.InlineBlock, }
   } else {
     style
   }

@@ -63,7 +63,7 @@ pub fn JsResult::new(
   logs : Array[String],
   success : Bool,
 ) -> JsResult {
-  { value, logs, success }
+  { value, logs, success, }
 }
 
 ///|

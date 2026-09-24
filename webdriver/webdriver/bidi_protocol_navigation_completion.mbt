@@ -230,7 +230,7 @@ fn BidiProtocol::build_navigation_completion_internal(
     "navigation": Json::string(nav_id),
     "url": Json::string(url),
   })
-  { result, navigation_id: nav_id, deferred_response }
+  { result, navigation_id: nav_id, deferred_response, }
 }
 
 ///|

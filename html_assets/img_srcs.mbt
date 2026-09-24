@@ -1,6 +1,6 @@
 ///|
 fn make_substr(chars : Array[Char], start : Int, end : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for i = start; i < end && i < chars.length(); i = i + 1 {
     buf.write_char(chars[i])
   }

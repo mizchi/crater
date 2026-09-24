@@ -96,7 +96,7 @@ fn collect_focusable_items(
       // No explicit tabindex but focusable = implicit tabindex 0
       None => 0
     }
-    items.push({ node, document_order: current_order, effective_tabindex })
+    items.push({ node, document_order: current_order, effective_tabindex, })
     current_order += 1
   }
 
@@ -158,7 +158,7 @@ fn should_come_after(a : FocusableItem, b : FocusableItem) -> Bool {
 /// Create a new FocusManager for an accessibility tree
 pub fn FocusManager::new(tree : AccessibilityTree) -> FocusManager {
   let tab_order = compute_tab_order(tree)
-  { tree, tab_order, current_index: -1 }
+  { tree, tab_order, current_index: -1, }
 }
 
 ///|

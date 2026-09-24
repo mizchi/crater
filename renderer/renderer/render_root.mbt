@@ -110,7 +110,7 @@ fn select_render_root(
 ///|
 fn resolve_root_available_width(
   viewport_width : Double,
-  root_margin : @types.Rect[Double],
+  _root_margin : @types.Rect[Double],
   doc_root_style : @style.Style?,
 ) -> Double {
   // The available width is the root's containing block (the initial containing
@@ -231,7 +231,7 @@ fn adjust_root_height_for_viewport(
     } else {
       min_viewport_height
     }
-    return { ..layout, height: final_height }
+    return { ..layout, height: final_height, }
   }
   let keeps_empty_viewport_height = (
       render_root_tag == "body" || render_root_tag == "html"
@@ -242,7 +242,7 @@ fn adjust_root_height_for_viewport(
     layout.height <= 0.0 &&
     content_extent <= 0.0
   if keeps_empty_viewport_height {
-    return { ..layout, height: viewport_height }
+    return { ..layout, height: viewport_height, }
   }
   layout
 }
@@ -271,7 +271,7 @@ fn stretch_single_frameset_child_to_root(
     },
     height: layout.height,
   })
-  { ..layout, children: adjusted_children }
+  { ..layout, children: adjusted_children, }
 }
 
 ///|
@@ -302,12 +302,12 @@ fn create_zero_layout_from_node(node : @node.Node) -> @layout_types.Layout {
 
 ///|
 let active_before_index : Ref[PseudoRuleIndex] = {
-  val: { rules: [], by_id: {}, by_class: {}, by_tag: {}, universal: [] },
+  val: { rules: [], by_id: {}, by_class: {}, by_tag: {}, universal: [], },
 }
 
 ///|
 let active_after_index : Ref[PseudoRuleIndex] = {
-  val: { rules: [], by_id: {}, by_class: {}, by_tag: {}, universal: [] },
+  val: { rules: [], by_id: {}, by_class: {}, by_tag: {}, universal: [], },
 }
 
 ///|

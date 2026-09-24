@@ -16,7 +16,7 @@ pub fn parse_request(
     _ => HttpMethod::Get // Default to GET for unknown methods
   }
   let command = parse_command(http_method, path)
-  { http_method, command, body }
+  { http_method, command, body, }
 }
 
 ///|
@@ -24,7 +24,7 @@ pub fn parse_request(
 fn parse_command(http_method : HttpMethod, path : String) -> WebDriverCommand {
   // Remove leading slash and split by '/'
   let path : String = if path.has_prefix("/") && path.length() > 1 {
-    let buf = StringBuilder::new()
+    let buf = StringBuilder()
     let mut skip_first = true
     for c in path.iter() {
       if skip_first {
@@ -196,7 +196,7 @@ fn parse_command(http_method : HttpMethod, path : String) -> WebDriverCommand {
 /// Split path by '/'
 fn split_path(path : String) -> Array[String] {
   let parts : Array[String] = []
-  let current = StringBuilder::new()
+  let current = StringBuilder()
   for c in path {
     if c == '/' {
       let s = current.to_string()

@@ -11,4 +11,3 @@ pub fn extract_img_srcs(String) -> Array[String]
 // Type aliases
 
 // Traits
-

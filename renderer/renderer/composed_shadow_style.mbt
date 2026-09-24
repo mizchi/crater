@@ -19,7 +19,7 @@ pub fn compute_composed_shadow_styles(
   tree : @dom.DomTree,
   ctx : RenderContext,
 ) -> Map[Int, @style.Style] {
-  let styles : Map[Int, @style.Style] = {}
+  let styles : Map[Int, @style.Style] = Map([])
   compose_node(tree, tree.get_document(), ctx, styles)
   styles
 }

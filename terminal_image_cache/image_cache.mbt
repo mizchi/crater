@@ -13,7 +13,7 @@ pub struct ImageCache {
 pub fn ImageCache::new(
   max_bytes? : Int = default_image_cache_max_bytes,
 ) -> ImageCache {
-  { data: {}, order: [], total_bytes: 0, max_bytes: max_bytes.max(0) }
+  { data: {}, order: [], total_bytes: 0, max_bytes: max_bytes.max(0), }
 }
 
 ///|

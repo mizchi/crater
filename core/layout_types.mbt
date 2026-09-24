@@ -11,7 +11,7 @@ pub(all) struct IntrinsicSize {
 /// Default intrinsic size for leaf nodes without measure function
 /// Matches Taffy behavior: empty/unmeasured nodes have zero intrinsic size
 pub fn IntrinsicSize::default() -> IntrinsicSize {
-  { min_width: 0.0, max_width: 0.0, min_height: 0.0, max_height: 0.0 }
+  { min_width: 0.0, max_width: 0.0, min_height: 0.0, max_height: 0.0, }
 }
 
 ///|
@@ -71,7 +71,7 @@ pub(all) struct Layout {
 
 ///|
 pub fn Layout::to_bounding_rect(self : Layout) -> @values.BoundingRect {
-  { x: self.x, y: self.y, width: self.width, height: self.height }
+  { x: self.x, y: self.y, width: self.width, height: self.height, }
 }
 
 ///|

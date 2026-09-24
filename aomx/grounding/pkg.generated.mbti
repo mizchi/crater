@@ -61,4 +61,3 @@ pub fn Viewport::default() -> Self
 // Type aliases
 
 // Traits
-

@@ -12,7 +12,7 @@ pub(all) struct DirtyRect {
 
 ///|
 fn DirtyRect::to_plan_rect(self : DirtyRect) -> @tui_buffer.Rect {
-  { x: self.col, y: self.row, w: self.width, h: self.height }
+  { x: self.col, y: self.row, w: self.width, h: self.height, }
 }
 
 ///|
@@ -33,7 +33,7 @@ pub fn buffer_diff_to_ansi(
   prev : CharBuffer,
   max_cols? : Int = 0,
 ) -> String {
-  let sb = StringBuilder::new()
+  let sb = StringBuilder()
   let mut last_row = -1
   let mut last_col = -1
   let style_state = AnsiStyleState::new()
@@ -79,7 +79,7 @@ pub fn buffer_diff_to_ansi_rects(
   if rects.length() == 0 {
     return ""
   }
-  let sb = StringBuilder::new()
+  let sb = StringBuilder()
   let mut last_row = -1
   let mut last_col = -1
   let style_state = AnsiStyleState::new()

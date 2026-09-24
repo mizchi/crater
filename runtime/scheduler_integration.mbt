@@ -15,12 +15,12 @@ pub struct ScriptExecutor {
 ///|
 /// Create a new script executor
 pub fn ScriptExecutor::new(dom : @dom.DomTree) -> ScriptExecutor {
-  { dom, ctx: JsContext::new(dom) }
+  { dom, ctx: JsContext::new(dom), }
 }
 
 ///|
 pub fn ScriptExecutor::new_deferred(dom : @dom.DomTree) -> ScriptExecutor {
-  { dom, ctx: JsContext::new_deferred(dom) }
+  { dom, ctx: JsContext::new_deferred(dom), }
 }
 
 ///|

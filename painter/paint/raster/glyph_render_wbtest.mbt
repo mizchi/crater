@@ -31,7 +31,7 @@ fn kerning_test_provider() -> @glyph.GlyphProvider {
 
 ///|
 fn static_test_ttfont() -> @font.TTFont {
-  let cmap : Map[Int, Int] = {}
+  let cmap : Map[Int, Int] = Map([])
   cmap['A'.to_int()] = 1
   {
     units_per_em: 1000,

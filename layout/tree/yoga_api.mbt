@@ -398,7 +398,7 @@ pub fn LayoutNode::set_grid_row(
   start : @types.GridPlacement,
   end : @types.GridPlacement,
 ) -> LayoutNode {
-  self.style.grid_row = { start, end }
+  self.style.grid_row = { start, end, }
   self.mark_dirty()
   self
 }
@@ -410,7 +410,7 @@ pub fn LayoutNode::set_grid_column(
   start : @types.GridPlacement,
   end : @types.GridPlacement,
 ) -> LayoutNode {
-  self.style.grid_column = { start, end }
+  self.style.grid_column = { start, end, }
   self.mark_dirty()
   self
 }

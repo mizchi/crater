@@ -175,9 +175,7 @@ priv struct ExtentNode {
 
 ///|
 fn precompute_extent_tree(layout : @layout_types.Layout) -> ExtentNode {
-  let children : Array[ExtentNode] = Array::new(
-    capacity=layout.children.length(),
-  )
+  let children : Array[ExtentNode] = Array(capacity=layout.children.length())
   let mut left = 0.0
   let mut top = 0.0
   let mut right = layout.width
@@ -231,7 +229,7 @@ fn cull_rect_intersection(a : CullRect, b : CullRect) -> CullRect? {
   let right = if a.right < b.right { a.right } else { b.right }
   let bottom = if a.bottom < b.bottom { a.bottom } else { b.bottom }
   if right > left && bottom > top {
-    Some({ left, top, right, bottom })
+    Some({ left, top, right, bottom, })
   } else {
     None
   }
@@ -565,7 +563,7 @@ fn from_node_and_layout_with_viewport_inner(
   }
   if tag == "img" {
     if paint.background_color.is_transparent() {
-      paint = { ..paint, background_color: @types.Color::rgb(240, 240, 240) }
+      paint = { ..paint, background_color: @types.Color::rgb(240, 240, 240), }
     }
     match layout.text {
       Some(alt) =>

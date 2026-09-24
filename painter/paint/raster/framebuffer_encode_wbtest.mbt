@@ -16,7 +16,10 @@ test "fused framebuffer base64 matches rgba-expansion reference" {
       pixels.push(i % palette_len)
     }
     let fused = framebuffer_to_rgba_base64_js(
-      pixels, palette_r, palette_g, palette_b,
+      FixedArray::from_array(pixels),
+      FixedArray::from_array(palette_r),
+      FixedArray::from_array(palette_g),
+      FixedArray::from_array(palette_b),
     )
     let rgba : Array[Int] = []
     for idx in pixels {

@@ -87,7 +87,7 @@ pub fn FetchOptions::default() -> FetchOptions {
 ///|
 /// Convert headers map to JSON string
 pub fn headers_to_json(headers : Map[String, String]) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_char('{')
   let mut first = true
   for k, v in headers {
@@ -221,7 +221,7 @@ fn prepare_fetch_options(
   if should_inject_origin {
     if !options.headers.contains("Origin") &&
       !options.headers.contains("origin") {
-      let headers : Map[String, String] = {}
+      let headers : Map[String, String] = Map([])
       for k, v in options.headers {
         headers[k] = v
       }
@@ -286,7 +286,7 @@ fn filter_cors_headers(
   }
   // Wildcard in expose-headers (only if credentials mode is NOT Include)
   let wildcard = exposed_names.contains("*") && credentials_mode != Include
-  let filtered : Map[String, String] = {}
+  let filtered : Map[String, String] = Map([])
   for k, v in headers {
     let lower_k = k.to_lower()
     if is_cors_safelisted_response_header(lower_k) ||
@@ -345,7 +345,7 @@ pub fn enforce_cors_response(
       response.headers,
       options.credentials,
     )
-    return { ..response, headers: filtered_headers }
+    return { ..response, headers: filtered_headers, }
   }
   response
 }

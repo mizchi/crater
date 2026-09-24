@@ -23,9 +23,9 @@ extern "js" fn js_web_end() -> Unit =
 ///|
 #borrow(vertex_data, indices, uniforms)
 extern "js" fn js_web_draw(
-  vertex_data : Array[Double],
-  indices : Array[Int],
-  uniforms : Array[Int],
+  vertex_data : FixedArray[Double],
+  indices : FixedArray[Int],
+  uniforms : FixedArray[Int],
   blend : Int,
   rx : Int,
   ry : Int,
@@ -39,7 +39,7 @@ extern "js" fn js_web_draw(
   #|}
 
 ///|
-extern "js" fn js_web_read_pixels() -> Array[Int] =
+extern "js" fn js_web_read_pixels() -> FixedArray[Int] =
   #|() => (globalThis.__craterGfxWeb ? globalThis.__craterGfxWeb.readPixels() : [])
 
 ///|
@@ -82,9 +82,9 @@ pub fn install_js_web_backend() -> Unit {
           @gfx.new_dst_region(0, 0, 0, 0, 0)
         }
         js_web_draw(
-          command.vertex_data,
-          command.indices,
-          command.uniform_dwords,
+          FixedArray::from_array(command.vertex_data),
+          FixedArray::from_array(command.indices),
+          FixedArray::from_array(command.uniform_dwords),
           command.blend.to_int(),
           region.x,
           region.y,
@@ -102,5 +102,5 @@ pub fn install_js_web_backend() -> Unit {
 /// Read back the JS runtime's framebuffer (row-major RGBA, four 0..255
 /// channels per pixel).
 pub fn web_backend_read_pixels() -> Array[Int] {
-  js_web_read_pixels()
+  Array::from_fixed_array(js_web_read_pixels())
 }

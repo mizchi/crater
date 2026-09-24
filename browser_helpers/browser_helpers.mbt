@@ -30,7 +30,7 @@ pub fn report_css_support(css_list : Array[String]) -> Unit {
   let mut deprecated = 0
   let mut unknown = 0
   let all_diagnostics : Array[@css.Diagnostic] = []
-  let seen : Map[String, Bool] = {}
+  let seen : Map[String, Bool] = Map([])
   // Parse all CSS with diagnostics
   for css in css_list {
     let result = @css.parse_stylesheet_with_diagnostics(css)
@@ -53,7 +53,7 @@ pub fn report_css_support(css_list : Array[String]) -> Unit {
     }
   }
   // Print compact summary
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("\nCSS: ")
   buf.write_string(supported.to_string())
   buf.write_string(" ok")
@@ -207,7 +207,7 @@ pub fn extract_main_text(
 
 ///|
 fn collect_node_text(node : @aom.AccessibilityNode) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   collect_node_text_recursive(node, buf)
   buf.to_string().trim().to_owned()
 }
@@ -261,7 +261,7 @@ pub fn render_grounding_demo(
     width: viewport_width.to_double(),
     height: viewport_height.to_double(),
   }
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("=== Visual Grounding Demo ===\n")
   buf.write_string("Viewport: ")
   buf.write_string(viewport_width.to_string())

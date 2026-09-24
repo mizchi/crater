@@ -95,7 +95,7 @@ pub fn get_map_field_with_alias(
 pub fn canonicalize_serialization_options_map(
   raw_opts : Map[String, Json],
 ) -> Map[String, Json] {
-  let normalized : Map[String, Json] = {}
+  let normalized : Map[String, Json] = Map([])
   for key, value in raw_opts {
     if key != "max_dom_depth" &&
       key != "max_object_depth" &&
@@ -144,7 +144,7 @@ pub fn get_locate_nodes_serialization_options_json(params : Json?) -> String {
     ) {
     Some(Object(opts)) => {
       let normalized_opts = canonicalize_serialization_options_map(opts)
-      let adjusted : Map[String, Json] = {}
+      let adjusted : Map[String, Json] = Map([])
       for key, value in normalized_opts {
         adjusted[key] = value
       }

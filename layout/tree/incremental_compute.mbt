@@ -4,11 +4,11 @@
 ///|
 /// Global cache for mapping uid -> LayoutNode during incremental computation
 /// This enables child nodes to use their cached layouts
-let layout_node_cache_map : Ref[Map[Int, LayoutNode]] = { val: {} }
+let layout_node_cache_map : Ref[Map[Int, LayoutNode]] = { val: {}, }
 
 ///|
 /// Global stats reference for cache tracking during dispatch
-let global_cache_stats : Ref[CacheStats?] = { val: None }
+let global_cache_stats : Ref[CacheStats?] = { val: None, }
 
 ///|
 /// Extended constraint space for cache comparison
@@ -186,7 +186,7 @@ pub struct CacheStats {
 
 ///|
 pub fn CacheStats::new() -> CacheStats {
-  { cache_hits: 0, cache_misses: 0, nodes_computed: 0 }
+  { cache_hits: 0, cache_misses: 0, nodes_computed: 0, }
 }
 
 ///|
@@ -263,7 +263,7 @@ pub fn compute_node(
   let result = @dispatch.compute(immutable_node, ctx, make_cached_dispatch())
 
   // Cache the result
-  node.cached_layout = Some({ constraint: constraint.to_key(), result })
+  node.cached_layout = Some({ constraint: constraint.to_key(), result, })
 
   // Sync child caches from computed result
   sync_child_caches(node, result)
@@ -322,7 +322,7 @@ fn update_cache_by_uid(
         ctx.available_height,
         ctx.sizing_mode,
       )
-      layout_node.cached_layout = Some({ constraint: constraint_key, result })
+      layout_node.cached_layout = Some({ constraint: constraint_key, result, })
       layout_node.clear_dirty()
     }
     None => ()

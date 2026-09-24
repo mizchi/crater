@@ -64,7 +64,7 @@ fn resolve_out_of_flow_root_auto_size(
     (@types.Auto, Some(left), Some(right)) => {
       let used = viewport_width - left - right - margin_left - margin_right
       let used = if used > 0.0 { used } else { 0.0 }
-      next_style = { ..next_style, width: @types.Length(used) }
+      next_style = { ..next_style, width: @types.Length(used), }
     }
     _ => ()
   }
@@ -72,7 +72,7 @@ fn resolve_out_of_flow_root_auto_size(
     (@types.Auto, Some(top), Some(bottom)) => {
       let used = viewport_height - top - bottom - margin_top - margin_bottom
       let used = if used > 0.0 { used } else { 0.0 }
-      next_style = { ..next_style, height: @types.Length(used) }
+      next_style = { ..next_style, height: @types.Length(used), }
     }
     _ => ()
   }

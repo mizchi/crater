@@ -41,7 +41,7 @@ fn detect_terminal_graphics_support_from_env(
   let sixel = xterm_sixel == "1" ||
     term.contains("sixel") ||
     term_program == "mlterm"
-  { kitty, sixel }
+  { kitty, sixel, }
 }
 
 ///|
@@ -64,7 +64,7 @@ extern "C" fn tui_supports_sixel_graphics() -> Int = "tui_supports_sixel_graphic
 ///|
 #cfg(target="js")
 fn detect_terminal_graphics_support() -> GraphicsSupport {
-  let env : Map[String, String] = {}
+  let env : Map[String, String] = Map([])
   env["TERM"] = js_get_env("TERM")
   env["TERM_PROGRAM"] = js_get_env("TERM_PROGRAM")
   env["KITTY_WINDOW_ID"] = js_get_env("KITTY_WINDOW_ID")

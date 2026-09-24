@@ -213,7 +213,7 @@ pub fn parse_data_url(url : String) -> (String, String)? {
 
 ///|
 fn make_substr(chars : Array[Char], start : Int, end : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for i = start; i < end; i = i + 1 {
     buf.write_char(chars[i])
   }

@@ -16,7 +16,7 @@ fn BidiProtocol::validate_network_add_intercept_params(
     }
   }
 
-  let options : Map[String, Json] = {}
+  let options : Map[String, Json] = Map([])
 
   let raw_phases = match map.get("phases") {
     Some(raw) => raw

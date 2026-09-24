@@ -262,7 +262,7 @@ test "viewport_culling_returns_content" {
 /// Test paint_node None issue at different scroll positions
 test "paint_node_none_debug" {
   // Create very tall content (50 paragraphs)
-  let sb = StringBuilder::new()
+  let sb = StringBuilder()
   sb.write_string(
     (
       #|<!DOCTYPE html>

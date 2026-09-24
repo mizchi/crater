@@ -17,7 +17,7 @@ priv struct RequestIdGenerator {
 }
 
 ///|
-let request_id_gen : RequestIdGenerator = { next_id: 0 }
+let request_id_gen : RequestIdGenerator = { next_id: 0, }
 
 ///|
 pub fn RequestId::next() -> RequestId {
@@ -223,7 +223,7 @@ pub fn NetworkResponse::with_body(
   self : NetworkResponse,
   body : String,
 ) -> NetworkResponse {
-  { ..self, body: Some(body), content_length: body.length() }
+  { ..self, body: Some(body), content_length: body.length(), }
 }
 
 ///|
@@ -318,7 +318,7 @@ pub impl Show for NetworkRequest with fn output(self, logger) {
   logger.write_string("\"")
   logger.write_string(", http_method: \{self.http_method}, ")
   logger.write_string("resource_type: \{self.resource_type}, headers: ")
-  logger.write_object(to_repr(self.headers))
+  logger.write_object(Repr(self.headers))
   logger.write_string(", ")
   logger.write_string("document_url: ")
   logger.write_string("\"")
@@ -350,9 +350,9 @@ pub impl Show for NetworkResponse with fn output(self, logger) {
   logger.write_string(self.mime_type)
   logger.write_string("\"")
   logger.write_string(", headers: ")
-  logger.write_object(to_repr(self.headers))
+  logger.write_object(Repr(self.headers))
   logger.write_string(", body: ")
-  logger.write_object(to_repr(self.body))
+  logger.write_object(Repr(self.body))
   logger.write_string(", ")
   logger.write_string(
     "content_length: \{self.content_length}, timestamp: \{self.timestamp}, ",
@@ -423,7 +423,7 @@ pub struct NetworkManager {
 
 ///|
 pub fn NetworkManager::new() -> NetworkManager {
-  { pending_requests: {}, pending_events: [], enabled: false }
+  { pending_requests: {}, pending_events: [], enabled: false, }
 }
 
 ///|

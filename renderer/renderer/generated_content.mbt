@@ -65,7 +65,7 @@ fn ascii_hex_digit_to_int(c : Char) -> Int {
 ///|
 fn split_ascii_whitespace_tokens(value : String) -> Array[String] {
   let tokens : Array[String] = []
-  let current = StringBuilder::new()
+  let current = StringBuilder()
   for c in value.iter() {
     if is_ascii_whitespace(c) {
       if current.to_string().length() > 0 {
@@ -134,7 +134,7 @@ fn parse_counter_directives(
         i += 1
       }
     }
-    directives.push({ name, amount })
+    directives.push({ name, amount, })
   }
   directives
 }
@@ -143,7 +143,7 @@ fn parse_counter_directives(
 fn copy_counter_state(
   state : Map[String, CounterEntry],
 ) -> Map[String, CounterEntry] {
-  let copied : Map[String, CounterEntry] = {}
+  let copied : Map[String, CounterEntry] = Map([])
   state.each(fn(name, entry) { copied[name] = entry })
   copied
 }
@@ -153,7 +153,7 @@ fn filter_counter_state_for_style_containment(
   state : Map[String, CounterEntry],
   owner_id : String,
 ) -> Map[String, CounterEntry] {
-  let filtered : Map[String, CounterEntry] = {}
+  let filtered : Map[String, CounterEntry] = Map([])
   state.each(fn(name, entry) {
     if entry.owner == owner_id {
       filtered[name] = entry
@@ -196,7 +196,7 @@ fn apply_counter_increment_directives(
             owner_is_style_scope,
           }
         } else {
-          state[directive.name] = { ..entry, value: entry.value + amount }
+          state[directive.name] = { ..entry, value: entry.value + amount, }
         }
       None =>
         state[directive.name] = {
@@ -225,7 +225,7 @@ fn parse_css_quoted_string(value : String, start : Int) -> (String, Int)? {
   if quote != '"' && quote != '\'' {
     return None
   }
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let mut i = start + 1
   while i < value.length() {
     let c = value[i].to_int().unsafe_to_char()
@@ -279,7 +279,7 @@ fn parse_css_quoted_string(value : String, start : Int) -> (String, Int)? {
 
 ///|
 fn escape_css_string_content(value : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for c in value.iter() {
     if c == '\\' || c == '"' {
       buf.write_char('\\')
@@ -297,7 +297,7 @@ fn resolve_pseudo_attr_functions(
   if !value.contains("attr(") {
     return value
   }
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let mut i = 0
   while i < value.length() {
     let remaining = value.length() - i
@@ -371,7 +371,7 @@ fn resolve_pseudo_content_value(
   let mut resolved = value
   let mut loop_count = 0
   while loop_count < 16 && resolved.contains("var(") {
-    let buf = StringBuilder::new()
+    let buf = StringBuilder()
     let mut i = 0
     let mut changed = false
     while i < resolved.length() {
@@ -557,7 +557,7 @@ fn evaluate_content_parts(
   parts : Array[ContentPart],
   counters : Map[String, CounterEntry],
 ) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for part in parts {
     match part {
       Text(text) => buf.write_string(text)
@@ -685,7 +685,7 @@ fn apply_generated_pseudo_host_style_offsets(
       {
         ..style,
         position: @types.Relative,
-        inset: { ..style.inset, left: @types.Length(spec.left_offset) },
+        inset: { ..style.inset, left: @types.Length(spec.left_offset), },
       }
     _ =>
       match before_pseudo {
@@ -693,7 +693,7 @@ fn apply_generated_pseudo_host_style_offsets(
           {
             ..style,
             position: @types.Relative,
-            inset: { ..style.inset, left: @types.Length(spec.left_offset) },
+            inset: { ..style.inset, left: @types.Length(spec.left_offset), },
           }
         _ => style
       }
@@ -822,126 +822,6 @@ fn pseudo_base_style_from_host(host_style : @style.Style) -> @style.Style {
     letter_spacing: host_style.letter_spacing,
     word_spacing: host_style.word_spacing,
   }
-}
-
-///|
-fn resolve_pseudo_spec(
-  selector_elem : @css.Element,
-  host_style : @style.Style,
-  stylesheets : Array[@css.Stylesheet],
-  ctx : RenderContext,
-  pseudo_kind : PseudoKind,
-  counters : Map[String, CounterEntry],
-  css_vars : Map[String, String],
-  element_attributes : Map[String, String],
-) -> AfterPseudoSpec? {
-  let media_env = @css.MediaEnvironment::with_color_scheme(
-    ctx.viewport_width,
-    ctx.viewport_height,
-    ctx.color_scheme,
-  )
-  let mut content_parts : Array[ContentPart]? = None
-  let mut content_specified = false
-  let mut content_disabled = false
-  let mut position_relative = false
-  let mut out_of_flow = false
-  let mut left_offset = 0.0
-  let pseudo_css_vars = clone_string_map(css_vars)
-  // ::before/::after inherit text properties, not host box dimensions.
-  let mut generated_style = pseudo_base_style_from_host(host_style)
-
-  // Quick suffix check keyword to skip rules that can't match this pseudo
-  let pseudo_keyword = match pseudo_kind {
-    Before => "before"
-    After => "after"
-  }
-  for stylesheet in stylesheets {
-    for rule in stylesheet.rules {
-      // Fast path: skip rules whose selector text doesn't contain the pseudo keyword
-      if !rule.selector_text.contains(pseudo_keyword) {
-        continue
-      }
-      let media_matches = match rule.media_query {
-        Some(mq) => mq.evaluate(media_env)
-        None => true
-      }
-      if !media_matches {
-        continue
-      }
-      match selector_text_without_pseudo(rule.selector_text, pseudo_kind) {
-        Some(base_selector_text) => {
-          let matches_selector = match @css.parse_selector(base_selector_text) {
-            Some(base_selector) =>
-              @css.matches_selector(selector_elem, base_selector)
-            None =>
-              selector_text_fallback_matches(base_selector_text, selector_elem)
-          }
-          if matches_selector {
-            for decl in rule.declarations {
-              match decl.value {
-                @css.PropertyValue::Value(v) => {
-                  let prop = decl.property.to_lower()
-                  if prop.has_prefix("--") {
-                    pseudo_css_vars[prop] = v
-                  } else if prop == "content" {
-                    content_specified = true
-                    let resolved_value = resolve_pseudo_content_value(
-                      v, pseudo_css_vars, element_attributes,
-                    )
-                    let normalized = resolved_value.trim().to_lower().to_owned()
-                    if normalized == "none" || normalized == "normal" {
-                      content_parts = None
-                      content_disabled = true
-                    } else {
-                      content_parts = parse_content_parts(resolved_value)
-                      content_disabled = false
-                    }
-                  } else if prop == "position" {
-                    let pos = v.trim().to_lower()
-                    if pos == "relative" {
-                      position_relative = true
-                    } else if pos == "absolute" || pos == "fixed" {
-                      out_of_flow = true
-                    }
-                  } else if prop == "left" {
-                    left_offset = parse_relative_left_offset(v, host_style)
-                  }
-                  if prop != "content" && !prop.has_prefix("--") {
-                    generated_style = apply_css_property_with_viewport(
-                      generated_style,
-                      prop,
-                      v,
-                      ctx.viewport_width,
-                      ctx.viewport_height,
-                      pseudo_css_vars,
-                      Some(host_style),
-                    )
-                  }
-                }
-                _ => ()
-              }
-            }
-          }
-        }
-        None => ()
-      }
-    }
-  }
-
-  if content_disabled || !content_specified {
-    return None
-  }
-  let text = match content_parts {
-    Some(parts) => evaluate_content_parts(parts, counters)
-    None => ""
-  }
-  Some({
-    content: text,
-    position_relative,
-    out_of_flow,
-    left_offset,
-    generated_style,
-  })
 }
 
 ///|
@@ -1095,9 +975,9 @@ fn selector_has_generated_pseudo_content(
   // of re-scanning every rule's selector text per element (which on text-heavy
   // pages dominated the render — O(elements x rules) substring searches; #316).
   ignore(stylesheets)
-  let empty_counters : Map[String, CounterEntry] = {}
-  let empty_css_vars : Map[String, String] = {}
-  let empty_attributes : Map[String, String] = {}
+  let empty_counters : Map[String, CounterEntry] = Map([])
+  let empty_css_vars : Map[String, String] = Map([])
+  let empty_attributes : Map[String, String] = Map([])
   let default_style = @style.Style::default()
   let has_before = resolve_pseudo_spec_fast(
       selector_elem,

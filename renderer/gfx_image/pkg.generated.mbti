@@ -27,4 +27,3 @@ pub fn ImageQuad2D::new(x~ : Double, y~ : Double, w~ : Double, h~ : Double, imag
 // Type aliases
 
 // Traits
-

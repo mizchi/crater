@@ -54,7 +54,7 @@ fn large_website_simple_cards(
   sections : Int,
   cards_per_section : Int,
 ) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><body style=\"margin:0\">")
   buf.write_string("<div style=\"display:flex;min-height:100vh\">")
   buf.write_string(
@@ -120,7 +120,7 @@ fn large_website_card_bodies(
   sections : Int,
   cards_per_section : Int,
 ) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><body style=\"margin:0\">")
   buf.write_string("<div style=\"display:flex;min-height:100vh\">")
   buf.write_string(
@@ -203,7 +203,7 @@ fn large_website_card_text_bodies(
   sections : Int,
   cards_per_section : Int,
 ) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><body style=\"margin:0\">")
   buf.write_string("<div style=\"display:flex;min-height:100vh\">")
   buf.write_string(
@@ -276,7 +276,7 @@ fn large_website_card_footer_bodies(
   sections : Int,
   cards_per_section : Int,
 ) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><body style=\"margin:0\">")
   buf.write_string("<div style=\"display:flex;min-height:100vh\">")
   buf.write_string(

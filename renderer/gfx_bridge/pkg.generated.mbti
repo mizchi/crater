@@ -43,4 +43,3 @@ pub using @gfx_frame {type RectOutline2D}
 pub using @gfx_frame {type RenderFrame2D}
 
 // Traits
-

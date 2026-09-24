@@ -22,13 +22,13 @@ pub struct GetBBoxOptions {
 ///|
 /// Default getBBox options (fill only)
 pub fn GetBBoxOptions::default() -> GetBBoxOptions {
-  { fill: true, stroke: false, markers: false, clipped: false }
+  { fill: true, stroke: false, markers: false, clipped: false, }
 }
 
 ///|
 /// Create getBBox options with all geometry
 pub fn GetBBoxOptions::all() -> GetBBoxOptions {
-  { fill: true, stroke: true, markers: true, clipped: false }
+  { fill: true, stroke: true, markers: true, clipped: false, }
 }
 
 // =============================================================================
@@ -180,7 +180,7 @@ pub struct SVGLength {
 ///|
 /// Create a new SVGLength (unitless)
 pub fn SVGLength::new(value : Double) -> SVGLength {
-  { unit_type: Number, value, value_in_specified_units: value }
+  { unit_type: Number, value, value_in_specified_units: value, }
 }
 
 ///|
@@ -237,7 +237,7 @@ pub struct SVGAngle {
 ///|
 /// Create a new SVGAngle (degrees)
 pub fn SVGAngle::new(value : Double) -> SVGAngle {
-  { unit_type: Deg, value, value_in_specified_units: value }
+  { unit_type: Deg, value, value_in_specified_units: value, }
 }
 
 ///|
@@ -376,7 +376,7 @@ pub impl Show for SVGTransform with fn output(self, logger) {
 ///|
 /// Create an SVGTransform from a matrix
 pub fn SVGTransform::from_matrix(matrix : SVGMatrix) -> SVGTransform {
-  { transform_type: Matrix, matrix, angle: 0.0 }
+  { transform_type: Matrix, matrix, angle: 0.0, }
 }
 
 ///|
@@ -392,7 +392,7 @@ pub fn SVGTransform::translate(tx : Double, ty : Double) -> SVGTransform {
 ///|
 /// Create a scale transform
 pub fn SVGTransform::scale(sx : Double, sy : Double) -> SVGTransform {
-  { transform_type: Scale, matrix: SVGMatrix::scale(sx, sy), angle: 0.0 }
+  { transform_type: Scale, matrix: SVGMatrix::scale(sx, sy), angle: 0.0, }
 }
 
 ///|
@@ -413,21 +413,21 @@ pub fn SVGTransform::rotate(
     .multiply(SVGMatrix::rotate(rad))
     .multiply(SVGMatrix::translate(-cx_val, -cy_val))
   }
-  { transform_type: Rotate, matrix, angle }
+  { transform_type: Rotate, matrix, angle, }
 }
 
 ///|
 /// Create a skewX transform (angle in degrees)
 pub fn SVGTransform::skew_x(angle : Double) -> SVGTransform {
   let rad = angle * 3.14159265358979323846 / 180.0
-  { transform_type: SkewX, matrix: SVGMatrix::skew_x(rad), angle }
+  { transform_type: SkewX, matrix: SVGMatrix::skew_x(rad), angle, }
 }
 
 ///|
 /// Create a skewY transform (angle in degrees)
 pub fn SVGTransform::skew_y(angle : Double) -> SVGTransform {
   let rad = angle * 3.14159265358979323846 / 180.0
-  { transform_type: SkewY, matrix: SVGMatrix::skew_y(rad), angle }
+  { transform_type: SkewY, matrix: SVGMatrix::skew_y(rad), angle, }
 }
 
 ///|

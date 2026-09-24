@@ -753,7 +753,7 @@ pub fn reset_runtime_event_buffers(ctx_id : String) -> Unit {
 /// Set frame window contexts for current runtime context.
 extern "js" fn js_set_runtime_context_frames(
   ctx_id : String,
-  frame_ctx_ids : Array[String],
+  frame_ctx_ids : FixedArray[String],
 ) -> Unit =
   #| (ctxId, frameCtxIds) => {
   #|   if (!globalThis.__bidiContextWindows) globalThis.__bidiContextWindows = new Map();
@@ -820,7 +820,7 @@ pub fn set_runtime_context_frames(
   ctx_id : String,
   frame_ctx_ids : Array[String],
 ) -> Unit {
-  js_set_runtime_context_frames(ctx_id, frame_ctx_ids)
+  js_set_runtime_context_frames(ctx_id, FixedArray::from_array(frame_ctx_ids))
 }
 
 ///|
@@ -1779,7 +1779,7 @@ pub fn runtime_write_text_file(path : String, content : String) -> Unit {
 
 ///|
 /// Collect iframe src values from runtime document.
-extern "js" fn js_runtime_iframe_sources() -> Array[String] =
+extern "js" fn js_runtime_iframe_sources() -> FixedArray[String] =
   #| () => {
   #|   const doc = globalThis.document;
   #|   if (!doc || typeof doc.querySelectorAll !== "function") return [];
@@ -1807,7 +1807,7 @@ extern "js" fn js_runtime_iframe_sources() -> Array[String] =
 ///|
 /// Collect iframe src values from runtime document.
 pub fn get_runtime_iframe_sources() -> Array[String] {
-  js_runtime_iframe_sources()
+  Array::from_fixed_array(js_runtime_iframe_sources())
 }
 
 ///|

@@ -172,7 +172,7 @@ fn adjust_for_box_sizing(style : @style.Style) -> @style.Style {
     }
     @types.ContentBox => {
       if has_zero_box_offsets(style) {
-        return { ..style, box_sizing: @types.BorderBox }
+        return { ..style, box_sizing: @types.BorderBox, }
       }
       let percent_basis = match style.width {
         @types.Length(w) =>

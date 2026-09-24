@@ -28,7 +28,7 @@ fn BidiProtocol::dispatch_session(
                 Some(String(handler)) =>
                   match normalize_unhandled_prompt_handler_name(handler) {
                     Some(normalized) => {
-                      let behavior : Map[String, Json] = {}
+                      let behavior : Map[String, Json] = Map([])
                       behavior["default"] = Json::string(normalized)
                       default_prompt_behavior = Some(make_object(behavior))
                     }

@@ -25,4 +25,3 @@ pub using @model {type PaintNode}
 pub using @scroll {type ScrollableElement}
 
 // Traits
-

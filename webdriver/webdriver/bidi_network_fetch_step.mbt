@@ -57,9 +57,9 @@ fn BidiProtocol::perform_synthetic_fetch_step(
       ) {
       Some(event) =>
         self.outbox.push(
-          Event({ event_method: "network.beforeRequestSent", params: event }),
+          Event({ event_method: "network.beforeRequestSent", params: event, }),
         )
-      None => return { blocked_text: None, response_value: None }
+      None => return { blocked_text: None, response_value: None, }
     }
   }
   if before_blocked {
@@ -100,12 +100,12 @@ fn BidiProtocol::perform_synthetic_fetch_step(
         ) {
         Some(event) =>
           self.outbox.push(
-            Event({ event_method: "network.fetchError", params: event }),
+            Event({ event_method: "network.fetchError", params: event, }),
           )
         None => ()
       }
     }
-    return { blocked_text: None, response_value: None }
+    return { blocked_text: None, response_value: None, }
   }
 
   let response_started_intercepts = self.resolve_matching_network_intercepts_internal(
@@ -134,9 +134,9 @@ fn BidiProtocol::perform_synthetic_fetch_step(
     match response_started_event {
       Some(event) =>
         self.outbox.push(
-          Event({ event_method: "network.responseStarted", params: event }),
+          Event({ event_method: "network.responseStarted", params: event, }),
         )
-      None => return { blocked_text: None, response_value: None }
+      None => return { blocked_text: None, response_value: None, }
     }
   }
   if response_started_blocked {
@@ -204,9 +204,9 @@ fn BidiProtocol::perform_synthetic_fetch_step(
     match auth_required_event {
       Some(event) =>
         self.outbox.push(
-          Event({ event_method: "network.authRequired", params: event }),
+          Event({ event_method: "network.authRequired", params: event, }),
         )
-      None => return { blocked_text: None, response_value: None }
+      None => return { blocked_text: None, response_value: None, }
     }
   }
   if auth_required_blocked {
@@ -250,12 +250,12 @@ fn BidiProtocol::perform_synthetic_fetch_step(
       ) {
       Some(event) =>
         self.outbox.push(
-          Event({ event_method: "network.responseCompleted", params: event }),
+          Event({ event_method: "network.responseCompleted", params: event, }),
         )
       None =>
-        return { blocked_text: None, response_value: Some(response_value) }
+        return { blocked_text: None, response_value: Some(response_value), }
     }
   }
 
-  { blocked_text: None, response_value: Some(response_value) }
+  { blocked_text: None, response_value: Some(response_value), }
 }

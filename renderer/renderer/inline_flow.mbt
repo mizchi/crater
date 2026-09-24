@@ -308,7 +308,7 @@ fn trim_collapsible_whitespace_edges(text : String) -> String {
   while end > start && is_collapsible_whitespace_char(chars[end - 1]) {
     end = end - 1
   }
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for i = start; i < end; i = i + 1 {
     buf.write_char(chars[i])
   }
@@ -339,7 +339,7 @@ fn trim_trailing_collapsible_whitespace(text : String) -> String {
       break
     }
   }
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for c in chars {
     buf.write_char(c)
   }
@@ -356,7 +356,7 @@ fn trim_leading_collapsible_whitespace(text : String) -> String {
   while start < chars.length() && is_collapsible_whitespace_char(chars[start]) {
     start = start + 1
   }
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for i = start; i < chars.length(); i = i + 1 {
     buf.write_char(chars[i])
   }
@@ -1079,7 +1079,7 @@ fn collect_inline_content(
   preserve_inline_elements : Bool,
   parent_selector : @css.Element,
 ) -> (String, Array[@html.Node]) {
-  let text_builder = StringBuilder::new()
+  let text_builder = StringBuilder()
   let remaining : Array[@html.Node] = []
   let mut has_inline_content = false
   let mut element_sibling_count = 0

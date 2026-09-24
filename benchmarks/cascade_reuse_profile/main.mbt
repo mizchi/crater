@@ -8,7 +8,7 @@
 /// A reuse-safe stylesheet (only class/tag/descendant selectors) with `rules`
 /// class rules, inlined as a <style> block so the whole page is one document.
 fn build_page(blocks : Int, rules : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><head><style>")
   buf.write_string("body{margin:0}.row .cell{margin:2px}")
   for i = 0; i < rules; i = i + 1 {
@@ -46,7 +46,7 @@ fn main {
   let prepared = @renderer.prepare_render_document(doc, ctx, [])
 
   // Prime the prior-style maps from one reuse pass over the document.
-  @renderer.cascade_reuse_begin(Map::new(), Map::new())
+  @renderer.cascade_reuse_begin(Map([]), Map([]))
   let _ = @renderer.build_render_root_node(doc, ctx, prepared)
   let (prior_styles, prior_sigs, _) = @renderer.cascade_reuse_end()
 

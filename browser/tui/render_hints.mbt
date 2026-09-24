@@ -82,7 +82,7 @@ fn draw_hint_mode_status_bar(
     }
     buf.set_cell(col, y, cell)
   }
-  let sb = StringBuilder::new()
+  let sb = StringBuilder()
   sb.write_string(" HINT [")
   sb.write_string(hint_input)
   sb.write_string("]: ")

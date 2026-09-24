@@ -27,11 +27,11 @@ pub(all) struct LayoutShift {
 ///|
 pub impl Show for LayoutShift with fn output(self, logger) {
   logger.write_string("LayoutShift { impact: ")
-  self.impact_fraction.output(logger)
+  Show::output(self.impact_fraction, logger)
   logger.write_string(", distance: ")
-  self.distance_fraction.output(logger)
+  Show::output(self.distance_fraction, logger)
   logger.write_string(", score: ")
-  self.score.output(logger)
+  Show::output(self.score, logger)
   logger.write_string(" }")
 }
 
@@ -56,7 +56,7 @@ pub fn compute_element_shift(
   let max_viewport_dim = max(viewport.width, viewport.height)
   let distance_fraction = max_distance / max_viewport_dim
   let score = impact_fraction * distance_fraction
-  { impact_fraction, distance_fraction, score }
+  { impact_fraction, distance_fraction, score, }
 }
 
 ///|

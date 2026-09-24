@@ -57,7 +57,7 @@ test "AuthState cannot be debug-printed with secrets exposed" {
   state.set_origin_header("https://api.example.com", "Bearer secret-token")
   // Verify the type does not have a Debug derive that would dump origin_headers verbatim.
   // The Show impl is the only way to render AuthState; it redacts.
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   state.output(buf)
   inspect(buf.to_string().contains("secret-token"), content="false")
 }
@@ -66,7 +66,7 @@ test "AuthState cannot be debug-printed with secrets exposed" {
 test "Show impl redacts header values" {
   let state = AuthState::default()
   state.set_origin_header("https://api.example.com", "Bearer secret-token")
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   state.output(buf)
   let rendered = buf.to_string()
   inspect(rendered.contains("secret-token"), content="false")

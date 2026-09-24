@@ -53,4 +53,3 @@ pub(all) struct GlyphAtlasEntry {
 // Type aliases
 
 // Traits
-

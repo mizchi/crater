@@ -223,7 +223,7 @@ fn create_cascade_declarations(
       } else {
         @css.Importance::Normal
       },
-      specificity: { a: 0, b: i % 5, c: i % 3 },
+      specificity: { a: 0, b: i % 5, c: i % 3, },
       source_order: i,
     })
   }

@@ -6,7 +6,7 @@
 /// Used for --no-color mode
 /// Preserves underline attribute for links
 pub fn buffer_to_plain(buf : CharBuffer) -> String {
-  let sb = StringBuilder::new()
+  let sb = StringBuilder()
   let style_state = PlainStyleState::new()
   for row = 0; row < buf.height; row = row + 1 {
     // Move to start of row (1-indexed)
@@ -35,7 +35,7 @@ priv struct PlainStyleState {
 
 ///|
 fn PlainStyleState::new() -> PlainStyleState {
-  { underline: false }
+  { underline: false, }
 }
 
 ///|
@@ -80,15 +80,15 @@ pub fn buffer_to_plain_with_links(
   links : Array[PlainLink],
 ) -> String {
   // Build a map of link start positions for quick lookup
-  let link_starts : Map[Int, PlainLink] = {}
-  let link_ends : Map[Int, Bool] = {}
+  let link_starts : Map[Int, PlainLink] = Map([])
+  let link_ends : Map[Int, Bool] = Map([])
   for link in links {
     let start_key = link.row * buf.width + link.col
     link_starts.set(start_key, link)
     let end_key = link.row * buf.width + link.col + link.width
     link_ends.set(end_key, true)
   }
-  let sb = StringBuilder::new()
+  let sb = StringBuilder()
   let style_state = PlainStyleState::new()
   let mut in_hyperlink = false
   for row = 0; row < buf.height; row = row + 1 {

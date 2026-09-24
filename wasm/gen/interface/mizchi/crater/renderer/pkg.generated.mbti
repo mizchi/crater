@@ -15,4 +15,3 @@ pub fn render_html_to_paint_tree(String, UInt, UInt) -> String
 // Type aliases
 
 // Traits
-

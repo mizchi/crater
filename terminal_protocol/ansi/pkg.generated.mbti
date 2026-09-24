@@ -29,4 +29,3 @@ pub fn rgb_to_256(Int, Int, Int) -> Int
 // Type aliases
 
 // Traits
-

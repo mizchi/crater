@@ -53,7 +53,7 @@ pub impl HttpCacheBackend for MemoryCacheBackend with fn clear(
 
 ///|
 pub fn MemoryCacheBackend::new(max_entries? : Int = 1000) -> MemoryCacheBackend {
-  { entries: {}, max_entries }
+  { entries: {}, max_entries, }
 }
 
 ///|

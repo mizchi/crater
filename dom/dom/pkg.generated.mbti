@@ -34,6 +34,8 @@ pub fn create_svg_transform_scale(Double, Double) -> SVGTransform
 
 pub fn create_svg_transform_translate(Double, Double) -> SVGTransform
 
+pub fn is_layout_property(String) -> Bool
+
 // Errors
 
 // Types and methods
@@ -375,4 +377,3 @@ pub fn ShadowRootInit::new(mode~ : String, delegates_focus? : Bool, slot_assignm
 // Type aliases
 
 // Traits
-

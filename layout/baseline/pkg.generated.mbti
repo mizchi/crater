@@ -15,4 +15,3 @@ pub fn compute_node_baseline(@node.Node, Double) -> Double
 // Type aliases
 
 // Traits
-

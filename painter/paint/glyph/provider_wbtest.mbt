@@ -25,7 +25,7 @@ fn recording_provider_by_weight(recorded : Ref[Double]) -> GlyphProvider {
 
 ///|
 test "glyph_from_provider forwards numeric font_weight 500 without collapsing" {
-  let recorded : Ref[Double] = { val: 0.0 }
+  let recorded : Ref[Double] = { val: 0.0, }
   let provider = recording_provider_by_weight(recorded)
   let _ = glyph_from_provider(provider, 'A'.to_int(), 16.0, false, "", 500.0)
   inspect(recorded.val, content="500")
@@ -33,7 +33,7 @@ test "glyph_from_provider forwards numeric font_weight 500 without collapsing" {
 
 ///|
 test "glyph_from_provider forwards numeric font_weight 600 without collapsing" {
-  let recorded : Ref[Double] = { val: 0.0 }
+  let recorded : Ref[Double] = { val: 0.0, }
   let provider = recording_provider_by_weight(recorded)
   let _ = glyph_from_provider(provider, 'A'.to_int(), 16.0, false, "", 600.0)
   inspect(recorded.val, content="600")
@@ -41,7 +41,7 @@ test "glyph_from_provider forwards numeric font_weight 600 without collapsing" {
 
 ///|
 test "glyph_from_provider forwards numeric font_weight 400 distinctly from 700" {
-  let recorded400 : Ref[Double] = { val: 0.0 }
+  let recorded400 : Ref[Double] = { val: 0.0, }
   let _ = glyph_from_provider(
     recording_provider_by_weight(recorded400),
     'A'.to_int(),
@@ -50,7 +50,7 @@ test "glyph_from_provider forwards numeric font_weight 400 distinctly from 700" 
     "",
     400.0,
   )
-  let recorded700 : Ref[Double] = { val: 0.0 }
+  let recorded700 : Ref[Double] = { val: 0.0, }
   let _ = glyph_from_provider(
     recording_provider_by_weight(recorded700),
     'A'.to_int(),
@@ -85,7 +85,7 @@ fn legacy_bold_provider(recorded_bold : Ref[Bool]) -> GlyphProvider {
 
 ///|
 test "legacy bool-only providers still receive is_bold when no by_weight slot" {
-  let recorded : Ref[Bool] = { val: false }
+  let recorded : Ref[Bool] = { val: false, }
   let _ = glyph_from_provider(
     legacy_bold_provider(recorded),
     'A'.to_int(),

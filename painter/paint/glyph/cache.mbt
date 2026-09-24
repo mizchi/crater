@@ -4,7 +4,7 @@
 ///|
 /// Bitmap cache for rasterized glyphs.
 /// Key: "cp:fs_int:weight:bold:family" -> GlyphBitmap
-let glyph_bitmap_cache : Ref[Map[String, GlyphBitmap]] = { val: {} }
+let glyph_bitmap_cache : Ref[Map[String, GlyphBitmap]] = { val: {}, }
 
 ///|
 let glyph_subpixel_steps : Int = 8

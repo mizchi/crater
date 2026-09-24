@@ -44,7 +44,7 @@ fn write_rect_json(buf : StringBuilder, rect : @types.Rect[Double]) -> Unit {
 ///|
 /// Convert layout to JSON string (with Box Model)
 pub fn layout_to_json(layout : @layout_types.Layout) -> String {
-  let buf = StringBuilder::new(size_hint=estimate_layout_json_size(layout))
+  let buf = StringBuilder(size_hint=estimate_layout_json_size(layout))
   layout_to_json_impl(layout, buf)
   buf.to_string()
 }
@@ -92,7 +92,7 @@ fn layout_to_json_impl(
 ///|
 /// Escape special characters in JSON string
 fn escape_json_string(s : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for c in s {
     match c {
       '"' => buf.write_string("\\\"")

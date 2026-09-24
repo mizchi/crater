@@ -1241,7 +1241,7 @@ fn BidiProtocol::build_script_fetch_headers_echo_payload(
   context_id : String,
   request_headers : Array[Json],
 ) -> String {
-  let headers : Map[String, Json] = {}
+  let headers : Map[String, Json] = Map([])
   for
     header in self.resolve_network_extra_header_entries(
       context_id, request_headers,

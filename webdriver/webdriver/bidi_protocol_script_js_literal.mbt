@@ -187,7 +187,7 @@ fn bidi_value_to_js_literal(value : Json) -> String {
 ///|
 /// Escape special characters in JS string
 fn escape_js_string(s : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for c in s.iter() {
     match c {
       '\\' => buf.write_string("\\\\")

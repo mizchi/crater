@@ -17,7 +17,7 @@ pub(all) struct ImageProvider {
 }
 
 ///|
-let image_provider_override : Ref[ImageProvider?] = { val: None }
+let image_provider_override : Ref[ImageProvider?] = { val: None, }
 
 ///|
 pub fn set_image_provider(provider : ImageProvider) -> Unit {

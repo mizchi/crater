@@ -74,7 +74,7 @@ fn storage_cookie_value_json(value_text : String) -> Json {
 
 ///|
 fn storage_cookie_to_json(cookie : StoredCookie) -> Json {
-  let obj : Map[String, Json] = {}
+  let obj : Map[String, Json] = Map([])
   obj["name"] = Json::string(cookie.name)
   obj["value"] = storage_cookie_value_json(cookie.value_text)
   obj["domain"] = Json::string(
@@ -776,7 +776,7 @@ fn BidiProtocol::normalize_storage_partition(
           return None
         }
         let user_context = self.resolve_storage_user_context(context_id)
-        let partition_key : Map[String, Json] = {}
+        let partition_key : Map[String, Json] = Map([])
         partition_key["userContext"] = Json::string(user_context)
         match
           storage_cookie_origin_from_base_url(
@@ -798,7 +798,7 @@ fn BidiProtocol::normalize_storage_partition(
           partition_key,
         })
       } else if partition_type == "storageKey" {
-        let partition_key : Map[String, Json] = {}
+        let partition_key : Map[String, Json] = Map([])
         let mut user_context : String? = None
         let mut source_origin : String? = None
 
@@ -889,7 +889,7 @@ fn BidiProtocol::storage_context_ancestry(
   ctx_id : String,
 ) -> Array[String] {
   let chain : Array[String] = []
-  let seen : Map[String, Bool] = {}
+  let seen : Map[String, Bool] = Map([])
   let mut current : String? = Some(ctx_id)
   while current != None {
     match current {
@@ -1378,7 +1378,7 @@ fn BidiProtocol::resolve_storage_request_cookies(
   request_url : String?,
 ) -> Array[Json] {
   self.prune_expired_storage_cookies()
-  let merged : Map[String, StoredCookie] = {}
+  let merged : Map[String, StoredCookie] = Map([])
   for scope_id in self.storage_context_ancestry(ctx_id) {
     match self.storage_cookies_by_scope.get(scope_id) {
       Some(jar) =>
@@ -1407,7 +1407,7 @@ fn BidiProtocol::cookies_for_context_full_json(
   ctx_id : String,
 ) -> Array[Json] {
   self.prune_expired_storage_cookies()
-  let merged : Map[String, StoredCookie] = {}
+  let merged : Map[String, StoredCookie] = Map([])
   for scope_id in self.storage_context_ancestry(ctx_id) {
     match self.storage_cookies_by_scope.get(scope_id) {
       Some(jar) =>
@@ -1652,7 +1652,7 @@ fn BidiProtocol::resolve_document_cookie(
   ctx_id : String,
 ) -> String? {
   self.prune_expired_storage_cookies()
-  let merged : Map[String, StoredCookie] = {}
+  let merged : Map[String, StoredCookie] = Map([])
   for scope_id in self.storage_context_ancestry(ctx_id) {
     match self.storage_cookies_by_scope.get(scope_id) {
       Some(jar) =>

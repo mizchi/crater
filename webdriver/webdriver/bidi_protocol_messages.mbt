@@ -80,7 +80,7 @@ fn BidiProtocol::send_success(
   id : Int,
   result : Json?,
 ) -> Unit {
-  let resp : BidiResponse = { id, result, error: None }
+  let resp : BidiResponse = { id, result, error: None, }
   self.outbox.push(Response(resp))
 }
 
@@ -98,8 +98,8 @@ fn BidiProtocol::send_error(
   code : String,
   message : String,
 ) -> Unit {
-  let err : BidiError = { error: code, message, stacktrace: "" }
-  let resp : BidiResponse = { id, result: None, error: Some(err) }
+  let err : BidiError = { error: code, message, stacktrace: "", }
+  let resp : BidiResponse = { id, result: None, error: Some(err), }
   self.outbox.push(Response(resp))
 }
 

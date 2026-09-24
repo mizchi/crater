@@ -215,7 +215,7 @@ pub impl Show for RenderVariant with fn output(self, logger) {
   logger.write_string(self.id)
   logger.write_string("\"")
   logger.write_string(", mutations: ")
-  logger.write_object(to_repr(self.mutations))
+  logger.write_object(Repr(self.mutations))
   logger.write_string("}")
 }
 
@@ -248,7 +248,7 @@ pub fn render_html_batch_variants(
       doc, ctx, external_css,
     )
     let paint_tree = paint_tree_from_node_layout(node, layout, viewport)
-    results.push({ id: variant.id, paint_tree })
+    results.push({ id: variant.id, paint_tree, })
   }
   results
 }
@@ -258,7 +258,7 @@ fn mutations_to_css(mutations : Array[CssMutation]) -> String {
   if mutations.is_empty() {
     return ""
   }
-  let by_selector : Map[String, Array[(String, String)]] = {}
+  let by_selector : Map[String, Array[(String, String)]] = Map([])
   for mutation in mutations {
     let value = match mutation.action {
       CssMutationAction::Remove => "unset"
@@ -269,7 +269,7 @@ fn mutations_to_css(mutations : Array[CssMutation]) -> String {
       None => by_selector.set(mutation.selector, [(mutation.property, value)])
     }
   }
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   by_selector.each(fn(selector, props) {
     buf.write_string(selector)
     buf.write_string(" { ")
@@ -496,7 +496,7 @@ pub fn RenderSession::branch_reusing_layout_diff(
 /// box geometry — i.e. whether a branch carrying only such mutations can reuse
 /// the base layout.
 pub fn CssMutation::is_paint_only(self : CssMutation) -> Bool {
-  not(@dom.is_layout_property(self.property.to_lower()))
+  !@dom.is_layout_property(self.property.to_lower())
 }
 
 ///|
@@ -538,7 +538,7 @@ pub(all) struct LayoutBox {
   y : Double
   width : Double
   height : Double
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 ///|
 fn collect_layout_boxes_into(
@@ -569,7 +569,7 @@ fn collect_layout_boxes_into(
 /// inline-style heuristic the runtime uses today).
 pub fn collect_layout_boxes(layout : @layout_types.Layout) -> Array[LayoutBox] {
   let out : Array[LayoutBox] = []
-  collect_layout_boxes_into(layout, { val: 0 }, out)
+  collect_layout_boxes_into(layout, { val: 0, }, out)
   out
 }
 
@@ -696,7 +696,7 @@ pub(all) struct ComputedStyleEntry {
   z_index : String
   color : String
   background_color : String
-} derive(Eq, Show)
+} derive(Eq, Debug)
 
 ///|
 fn collect_computed_styles_into(
@@ -735,7 +735,7 @@ pub fn collect_computed_styles(
   node : @layout.Node,
 ) -> Array[ComputedStyleEntry] {
   let out : Array[ComputedStyleEntry] = []
-  collect_computed_styles_into(node, { val: 0 }, out)
+  collect_computed_styles_into(node, { val: 0, }, out)
   out
 }
 
@@ -769,7 +769,7 @@ pub fn RenderSession::element_computed_styles(
 /// that would break the literal. Node ids and CSS value strings can carry `"`
 /// (rare) or backslashes, so escape both plus the line terminators.
 fn bridge_js_string(s : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_char('"')
   for c in s.iter() {
     match c {
@@ -806,7 +806,7 @@ pub fn layout_bridge_init_js(
   boxes : Array[LayoutBox],
   styles : Array[ComputedStyleEntry],
 ) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("globalThis.__craterLayoutBoxes = [")
   for i, b in boxes {
     if i > 0 {

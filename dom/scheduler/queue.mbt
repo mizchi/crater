@@ -15,7 +15,7 @@ pub struct TaskQueue {
 
 ///|
 pub fn TaskQueue::new() -> TaskQueue {
-  { tasks: [] }
+  { tasks: [], }
 }
 
 ///|
@@ -118,7 +118,7 @@ pub struct SourceQueueManager {
 
 ///|
 pub fn SourceQueueManager::new() -> SourceQueueManager {
-  let queues : Map[TaskSource, TaskQueue] = {}
+  let queues : Map[TaskSource, TaskQueue] = Map([])
   // Initialize queues for each source
   queues[DOM] = TaskQueue::new()
   queues[Styling] = TaskQueue::new()

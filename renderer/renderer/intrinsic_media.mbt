@@ -25,7 +25,7 @@ fn parse_html_dimension(value : String) -> Double? {
 ///|
 /// Simple URL decode for common SVG data URI characters
 fn url_decode(s : String) -> String {
-  let result = StringBuilder::new()
+  let result = StringBuilder()
   let mut i = 0
   while i < s.length() {
     let c = s[i].to_int().unsafe_to_char()
@@ -106,13 +106,13 @@ fn extract_svg_attribute(svg : String, attr_name : String) -> String? {
 fn parse_viewbox(viewbox : String) -> (Double, Double)? {
   // Split by spaces
   let parts : Array[String] = []
-  let mut current = StringBuilder::new()
+  let mut current = StringBuilder()
   for i = 0; i < viewbox.length(); i = i + 1 {
     let c = viewbox[i].to_int().unsafe_to_char()
     if c == ' ' {
       if current.to_string().length() > 0 {
         parts.push(current.to_string())
-        current = StringBuilder::new()
+        current = StringBuilder()
       }
     } else {
       current.write_char(c)

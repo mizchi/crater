@@ -18,7 +18,7 @@ pub struct CdpSessionManager {
 ///|
 /// Create a new CDP session manager
 pub fn CdpSessionManager::new() -> CdpSessionManager {
-  { sessions: {}, next_id: 1 }
+  { sessions: {}, next_id: 1, }
 }
 
 ///|
@@ -289,24 +289,24 @@ pub impl Show for CdpHandlerError with fn output(self, logger) {
   match self {
     NoSuchElement(selector~) => {
       logger.write_string("NoSuchElement(selector=")
-      selector.output(logger)
+      Show::output(selector, logger)
       logger.write_string(")")
     }
     InvalidSelector(selector~) => {
       logger.write_string("InvalidSelector(selector=")
-      selector.output(logger)
+      Show::output(selector, logger)
       logger.write_string(")")
     }
     NavigationFailed(url~, reason~) => {
       logger.write_string("NavigationFailed(url=")
-      url.output(logger)
+      Show::output(url, logger)
       logger.write_string(", reason=")
-      reason.output(logger)
+      Show::output(reason, logger)
       logger.write_string(")")
     }
     InternalCdpError(message~) => {
       logger.write_string("InternalCdpError(message=")
-      message.output(logger)
+      Show::output(message, logger)
       logger.write_string(")")
     }
   }

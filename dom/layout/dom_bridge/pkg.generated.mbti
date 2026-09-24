@@ -39,4 +39,3 @@ pub fn Document::update(Self) -> @crater-core.Layout
 // Type aliases
 
 // Traits
-

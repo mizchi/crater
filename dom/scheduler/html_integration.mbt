@@ -40,7 +40,7 @@ pub(all) struct InlineScript {
 
 ///|
 pub fn ResourceDiscoveryResult::new() -> ResourceDiscoveryResult {
-  { resources: [], inline_styles: [], inline_scripts: [] }
+  { resources: [], inline_styles: [], inline_scripts: [], }
 }
 
 // =============================================================================
@@ -157,7 +157,7 @@ fn discover_resources_recursive(
 ///|
 /// 要素からテキストコンテンツを抽出
 fn extract_text_content(element : @html.Element) -> String {
-  let sb = StringBuilder::new()
+  let sb = StringBuilder()
   for child in element.children {
     match child {
       @html.Text(text) => sb.write_string(text)
@@ -188,7 +188,7 @@ pub fn DocumentParser::new(
   scheduler : Scheduler,
   base_url? : String = "",
 ) -> DocumentParser {
-  { scheduler, parsed_root: None, discovered: None, base_url }
+  { scheduler, parsed_root: None, discovered: None, base_url, }
 }
 
 ///|

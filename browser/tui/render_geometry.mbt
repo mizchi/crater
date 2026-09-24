@@ -102,7 +102,7 @@ pub fn dirty_rects_to_cells(
     if w <= 0 || h <= 0 {
       continue
     }
-    result.push({ col, row, width: w, height: h })
+    result.push({ col, row, width: w, height: h, })
   }
   result
 }

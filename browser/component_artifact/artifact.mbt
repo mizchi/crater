@@ -109,7 +109,7 @@ fn html_to_selector_element(
     selector_children.push(child_selector)
     prev_child = Some(child_selector)
   }
-  { ..selector_element, children: selector_children }
+  { ..selector_element, children: selector_children, }
 }
 
 ///|
@@ -184,7 +184,7 @@ fn resolve_target(request : RenderRequest) -> Result[ResolvedTarget, String] {
   match request.target_id {
     Some(target_id) =>
       match find_component_element_by_id(doc.root, target_id) {
-        Some(element) => Ok({ element, target_id })
+        Some(element) => Ok({ element, target_id, })
         None => Err("Target element not found: #" + target_id)
       }
     None =>
@@ -207,7 +207,7 @@ fn resolve_target(request : RenderRequest) -> Result[ResolvedTarget, String] {
                 ) {
                 Some(element) =>
                   match element.id {
-                    Some(target_id) => Ok({ element, target_id })
+                    Some(target_id) => Ok({ element, target_id, })
                     None =>
                       Err(
                         "Target element is missing a resolved id: " +
@@ -250,7 +250,7 @@ fn collect_landmark_forest(
 
 ///|
 fn json_escape_string(s : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for c in s {
     match c {
       '"' => buf.write_string("\\\"")
@@ -297,7 +297,7 @@ fn render_landmark_node_json(node : LandmarkTree, buf : StringBuilder) -> Unit {
 
 ///|
 fn render_landmark_forest_json(forest : Array[LandmarkTree]) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("[")
   for i = 0; i < forest.length(); i = i + 1 {
     if i > 0 {
@@ -364,7 +364,7 @@ fn find_component_subtree(
 fn normalize_component_layout(
   layout : @layout_types.Layout,
 ) -> @layout_types.Layout {
-  { ..layout, x: 0.0, y: 0.0 }
+  { ..layout, x: 0.0, y: 0.0, }
 }
 
 ///|
@@ -413,7 +413,7 @@ fn render_component_subtree(
 fn render_layout_artifact(request : RenderRequest) -> Result[String, String] {
   match render_component_subtree(request) {
     Ok((_node, layout, target_id)) => {
-      let buf = StringBuilder::new()
+      let buf = StringBuilder()
       write_artifact_metadata_prefix(
         buf,
         target_id,
@@ -459,7 +459,7 @@ fn build_image_artifact_json(
   width : Int,
   height : Int,
 ) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   write_artifact_metadata_prefix(
     buf, target_id, viewport_width, viewport_height, "image",
   )
@@ -498,7 +498,7 @@ fn render_landmark_artifact(request : RenderRequest) -> Result[String, String] {
   match resolve_target(request) {
     Ok(target) => {
       let tree = @aom.build_accessibility_tree_from_element(target.element)
-      let buf = StringBuilder::new()
+      let buf = StringBuilder()
       write_artifact_metadata_prefix(
         buf,
         target.target_id,

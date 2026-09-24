@@ -1,5 +1,7 @@
 ///|
-let inline_style_display_cache : Ref[Map[String, @types.Display?]] = { val: {} }
+let inline_style_display_cache : Ref[Map[String, @types.Display?]] = {
+  val: {},
+}
 
 ///|
 let inline_declaration_cache : Ref[Map[String, Array[(String, String)]]] = {
@@ -13,7 +15,7 @@ let inline_only_style_cache : Ref[Map[String, Map[String, @style.Style]]] = {
 
 ///|
 fn view_to_string(v : StringView) -> String {
-  let sb = StringBuilder::new()
+  let sb = StringBuilder()
   sb.write_stringview(v)
   sb.to_string()
 }
@@ -25,7 +27,7 @@ pub fn make_inline_only_style_cache_variant_key(
   viewport_width : Double,
   viewport_height : Double,
 ) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string(tag.to_lower())
   buf.write_string("|")
   buf.write_string(if is_root { "1" } else { "0" })

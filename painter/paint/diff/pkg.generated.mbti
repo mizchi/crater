@@ -36,4 +36,3 @@ pub(all) struct PaintTreeDiff {
 // Type aliases
 
 // Traits
-

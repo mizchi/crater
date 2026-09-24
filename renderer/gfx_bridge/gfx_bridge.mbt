@@ -334,7 +334,7 @@ pub fn collect_paint_commands(
   ) -> Unit {
     let abs_x = off_x + node.x
     let abs_y = off_y + node.y
-    let pnode = { ..node, x: abs_x, y: abs_y }
+    let pnode = { ..node, x: abs_x, y: abs_y, }
     let node_frame = frame.with_opacity(node.paint.opacity)
     append_paint_node_shadows(commands, node_frame, pnode)
     append_paint_node_background(commands, node_frame, pnode)

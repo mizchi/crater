@@ -47,7 +47,7 @@ pub fn ansi_move_to(row : Int, col : Int) -> String {
 ///|
 /// Convert CharBuffer to ANSI-encoded string
 pub fn buffer_to_ansi(buf : CharBuffer, max_cols? : Int = 0) -> String {
-  let sb = StringBuilder::new()
+  let sb = StringBuilder()
   let style_state = AnsiStyleState::new()
   let mut current_row = -1
   for coord in @tui_buffer.plan_buffer_cells(buf.width, buf.height, max_cols) {

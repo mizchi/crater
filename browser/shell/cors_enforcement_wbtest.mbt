@@ -21,11 +21,11 @@ fn cors_test_response(
   aca_origin? : String,
   body? : String = "/*js*/",
 ) -> @http.HttpResponse {
-  let h : Map[String, String] = {}
+  let h : Map[String, String] = Map([])
   if aca_origin is Some(v) {
     h["access-control-allow-origin"] = v
   }
-  { status, headers: h, body }
+  { status, headers: h, body, }
 }
 
 ///|
@@ -59,9 +59,7 @@ async fn cors_test_fetch_response(
   calls : Array[Int],
   response : @http.HttpResponse,
 ) -> @http.HttpResponse raise @http.HttpError {
-  @async.sleep(0) catch {
-    _ => ()
-  }
+  @async.sleep(0)
   if calls.length() > 0 {
     calls[0] = calls[0] + 1
   }
@@ -161,7 +159,7 @@ async test "script_fetch_with_cors: PreflightRequired path invokes preflight fet
       "access-control-allow-headers": "x-csrf",
       "access-control-max-age": "600",
     }
-    { status: 204, headers: h, body: "" }
+    { status: 204, headers: h, body: "", }
   }
   let fetcher = async fn(
     u : String,
@@ -208,7 +206,7 @@ async test "script_fetch_with_cors: cached preflight skips preflight fetcher on 
       "access-control-allow-headers": "x-csrf",
       "access-control-max-age": "600",
     }
-    { status: 204, headers: h, body: "" }
+    { status: 204, headers: h, body: "", }
   }
   let fetcher = async fn(
     u : String,

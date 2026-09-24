@@ -16,7 +16,7 @@ fn clip_intersect(a : ClipRect, b : ClipRect) -> ClipRect? {
   let x2 = @cmp.minimum(a.x + a.w, b.x + b.w)
   let y2 = @cmp.minimum(a.y + a.h, b.y + b.h)
   if x2 > x1 && y2 > y1 {
-    Some({ x: x1, y: y1, w: x2 - x1, h: y2 - y1 })
+    Some({ x: x1, y: y1, w: x2 - x1, h: y2 - y1, })
   } else {
     None
   }

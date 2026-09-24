@@ -91,4 +91,3 @@ pub fn upsert_bluetooth_device(Array[Json], Json, String) -> Array[Json]
 // Type aliases
 
 // Traits
-

@@ -51,4 +51,3 @@ pub fn Profile::set_cookie_jar(Self, @cookie_jar.CookieJar) -> Unit
 // Type aliases
 
 // Traits
-

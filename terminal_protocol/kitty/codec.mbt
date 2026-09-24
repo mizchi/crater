@@ -7,7 +7,7 @@ pub(all) struct Color {
 
 ///|
 pub fn Color::rgb(r : Int, g : Int, b : Int) -> Color {
-  { r, g, b }
+  { r, g, b, }
 }
 
 ///|

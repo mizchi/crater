@@ -11,7 +11,7 @@ priv struct AnsiStyleState {
 
 ///|
 fn AnsiStyleState::new() -> AnsiStyleState {
-  { fg: -1, bg: -1, bold: false, underline: false }
+  { fg: -1, bg: -1, bold: false, underline: false, }
 }
 
 ///|

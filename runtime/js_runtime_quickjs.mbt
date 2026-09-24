@@ -41,7 +41,7 @@ priv struct QuickJsRuntime {
 }
 
 ///|
-let quickjs_runtime : QuickJsRuntime = { _unused: 0 }
+let quickjs_runtime : QuickJsRuntime = { _unused: 0, }
 
 ///|
 fn default_js_runtime() -> &JsRuntime {
@@ -111,3 +111,7 @@ impl JsRuntime for QuickJsRuntime with fn tick(
 pub fn init_js_runtime() -> Unit {
   quickjs_runtime.init()
 }
+// Explicitly promote the JsRuntime trait methods for QuickJsRuntime.
+
+///|
+extend QuickJsRuntime with JsRuntime::{init}

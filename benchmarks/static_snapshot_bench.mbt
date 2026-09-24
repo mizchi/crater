@@ -147,7 +147,7 @@ fn static_snapshot_html(
   sections : Int,
   related_items : Int,
 ) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   static_snapshot_head(buf)
   static_snapshot_topbar(buf)
   static_snapshot_sidebar(buf, nav_items)
@@ -251,7 +251,7 @@ fn static_snapshot_scale_shell(inner : String) -> String {
 
 ///|
 fn static_snapshot_long_paragraph_html(words : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("<p>")
   for i = 0; i < words; i = i + 1 {
     buf.write_string("inlineword")
@@ -264,7 +264,7 @@ fn static_snapshot_long_paragraph_html(words : Int) -> String {
 
 ///|
 fn static_snapshot_inline_links_html(count : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("<p class=\"links\">")
   for i = 0; i < count; i = i + 1 {
     buf.write_string("<a href=\"#")
@@ -279,7 +279,7 @@ fn static_snapshot_inline_links_html(count : Int) -> String {
 
 ///|
 fn static_snapshot_block_paragraphs_html(count : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for i = 0; i < count; i = i + 1 {
     buf.write_string("<p>Paragraph ")
     buf.write_string(i.to_string())
@@ -318,7 +318,7 @@ fn static_snapshot_inline_measure(
 ///|
 fn static_snapshot_pathological_whitespace_nodes(count : Int) -> @tree.Node {
   let default_style = @style.Style::default()
-  let inline_style = { ..default_style, display: @types.Inline }
+  let inline_style = { ..default_style, display: @types.Inline, }
   let space_measure = static_snapshot_inline_measure(0.0, 20.0)
   let children : Array[@tree.Node] = []
   for i = 0; i < count; i = i + 1 {
@@ -328,7 +328,7 @@ fn static_snapshot_pathological_whitespace_nodes(count : Int) -> @tree.Node {
   }
   @tree.Node::new(
     "pathological-whitespace",
-    { ..default_style, width: @types.Length(680.0) },
+    { ..default_style, width: @types.Length(680.0), },
     children,
   )
 }

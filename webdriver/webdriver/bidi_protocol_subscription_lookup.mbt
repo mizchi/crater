@@ -69,7 +69,7 @@ fn BidiProtocol::is_subscribed_for_context_chain(
 ///|
 /// Normalize subscription key
 fn get_subscription_key(name : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for c in name.iter() {
     if c == '.' {
       break

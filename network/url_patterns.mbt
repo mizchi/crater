@@ -190,7 +190,7 @@ pub fn canonicalize_network_http_url(url : String) -> CanonicalNetworkHttpUrl? {
   }
   let path = extract_http_url_path(url).unwrap_or("/")
   let query = extract_network_url_query(url)
-  Some({ scheme, host, port, path, query })
+  Some({ scheme, host, port, path, query, })
 }
 
 ///|

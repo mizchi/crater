@@ -14,7 +14,7 @@ pub fn ContentBlock::to_string(self : ContentBlock) -> String {
 
 ///|
 pub fn ExtractionResult::to_summary(self : ExtractionResult) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("=== Content Extraction Result ===\n")
   match self.main_content {
     Some(node) => {

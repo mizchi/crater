@@ -57,4 +57,3 @@ pub impl Show for PreflightRequest
 // Type aliases
 
 // Traits
-

@@ -4,8 +4,8 @@ version = "0.19.0"
 
 import {
   "mizchi/crater-webdriver-bidi@0.19.0",
-  "mizchi/js@0.12.2",
-  "mizchi/js_deno@0.12.2",
+"mizchi/js@0.13.0",
+  "mizchi/js_deno@0.13.0",
 }
 
 repository = "https://github.com/mizchi/crater"

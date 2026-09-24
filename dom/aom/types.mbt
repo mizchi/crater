@@ -465,12 +465,12 @@ pub fn Bounds::new(
   width : Double,
   height : Double,
 ) -> Bounds {
-  { x, y, width, height }
+  { x, y, width, height, }
 }
 
 ///|
 pub fn Bounds::default() -> Bounds {
-  { x: 0.0, y: 0.0, width: 0.0, height: 0.0 }
+  { x: 0.0, y: 0.0, width: 0.0, height: 0.0, }
 }
 
 ///|
@@ -607,7 +607,7 @@ pub fn AccessibilityNode::with_name(
   self : AccessibilityNode,
   name : String,
 ) -> AccessibilityNode {
-  { ..self, name: Some(name) }
+  { ..self, name: Some(name), }
 }
 
 ///|
@@ -615,7 +615,7 @@ pub fn AccessibilityNode::with_bounds(
   self : AccessibilityNode,
   bounds : Bounds,
 ) -> AccessibilityNode {
-  { ..self, bounds: Some(bounds) }
+  { ..self, bounds: Some(bounds), }
 }
 
 ///|
@@ -623,7 +623,7 @@ pub fn AccessibilityNode::with_level(
   self : AccessibilityNode,
   level : Int,
 ) -> AccessibilityNode {
-  { ..self, level: Some(level) }
+  { ..self, level: Some(level), }
 }
 
 ///|
@@ -633,7 +633,7 @@ pub fn AccessibilityNode::add_state(
 ) -> AccessibilityNode {
   let new_states = self.states.copy()
   new_states.push(state)
-  { ..self, states: new_states }
+  { ..self, states: new_states, }
 }
 
 ///|
@@ -643,7 +643,7 @@ pub fn AccessibilityNode::add_child(
 ) -> AccessibilityNode {
   let new_children = self.children.copy()
   new_children.push(child)
-  { ..self, children: new_children }
+  { ..self, children: new_children, }
 }
 
 ///|
@@ -659,7 +659,7 @@ pub fn AccessibilityNode::with_tabindex(
   self : AccessibilityNode,
   tabindex : Int,
 ) -> AccessibilityNode {
-  { ..self, tabindex: Some(tabindex) }
+  { ..self, tabindex: Some(tabindex), }
 }
 
 // =============================================================================
@@ -676,9 +676,9 @@ pub(all) struct AccessibilityTree {
 
 ///|
 pub fn AccessibilityTree::new(root : AccessibilityNode) -> AccessibilityTree {
-  let node_map : Map[String, AccessibilityNode] = {}
+  let node_map : Map[String, AccessibilityNode] = Map([])
   build_node_map(root, node_map)
-  { root, node_map }
+  { root, node_map, }
 }
 
 ///|

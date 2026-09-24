@@ -29,15 +29,15 @@ priv struct CollapsedMargin {
 
 ///|
 fn collapsed_margin_zero() -> CollapsedMargin {
-  { max_positive: 0.0, min_negative: 0.0 }
+  { max_positive: 0.0, min_negative: 0.0, }
 }
 
 ///|
 fn collapsed_margin_of(value : Double) -> CollapsedMargin {
   if value >= 0.0 {
-    { max_positive: value, min_negative: 0.0 }
+    { max_positive: value, min_negative: 0.0, }
   } else {
-    { max_positive: 0.0, min_negative: value }
+    { max_positive: 0.0, min_negative: value, }
   }
 }
 

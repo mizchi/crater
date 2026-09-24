@@ -30,4 +30,3 @@ pub(all) struct RenderRequest {
 // Type aliases
 
 // Traits
-

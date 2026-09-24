@@ -3,7 +3,7 @@
 
 ///|
 /// Get command line arguments (after --)
-extern "js" fn js_get_args() -> Array[String] =
+extern "js" fn js_get_args() -> FixedArray[String] =
   #| () => {
   #|   if (typeof process === 'undefined') return [];
   #|   const args = process.argv.slice(2);
@@ -17,5 +17,9 @@ extern "js" fn js_get_args() -> Array[String] =
 ///|
 /// Get command line arguments
 pub fn get_args() -> Array[String] {
-  js_get_args()
+  let out : Array[String] = []
+  for s in js_get_args() {
+    out.push(s)
+  }
+  out
 }

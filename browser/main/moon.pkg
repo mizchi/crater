@@ -1,6 +1,5 @@
 import {
   "mizchi/crater-browser/interaction",
-  "mizchi/crater-browser-http",
   "mizchi/crater-browser/font_provider",
   "mizchi/crater-browser/shell",
   "mizchi/crater-browser/tui",
@@ -10,7 +9,8 @@ import {
 
 supported_targets = "js+native"
 
+pkgtype(kind: "executable")
+
 options(
-  "is-main": true,
   link: { "native": { "cc-link-flags": "tui/tui_native.c" } },
 )

@@ -45,14 +45,14 @@ fn same_kitty_placement(lhs : KittyPlacement, rhs : KittyPlacement) -> Bool {
 ///|
 /// Build kitty graphics overlay commands for image regions
 fn Browser::build_kitty_image_overlay(self : Browser) -> String {
-  let next_visible : Map[String, KittyPlacement] = {}
+  let next_visible : Map[String, KittyPlacement] = Map([])
   let render_specs : Array[KittyRenderSpec] = []
   for region in self.image_regions {
     match self.image_cache.get(region.src) {
       Some(cached_data) => {
         let placement = current_kitty_placement(region)
         next_visible.set(region.source_id, placement)
-        render_specs.push({ region, cached_data, placement })
+        render_specs.push({ region, cached_data, placement, })
       }
       None => ()
     }
@@ -60,7 +60,7 @@ fn Browser::build_kitty_image_overlay(self : Browser) -> String {
   if next_visible.is_empty() && self.kitty_visible_placements.is_empty() {
     return ""
   }
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for source_id, previous in self.kitty_visible_placements {
     match next_visible.get(source_id) {
       Some(current) if current.image_id == previous.image_id => ()

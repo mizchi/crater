@@ -68,10 +68,10 @@ fn Browser::dispatch_click_to_source_id(
   let result = self.execute_inline_js(source)
   let _ = self.sync_render_state_from_dom_tree()
   match result {
-    Some("prevent") => { handled: true, allow_default: false }
-    Some("allow") => { handled: true, allow_default: true }
-    Some(_) => { handled: false, allow_default: true }
-    None => { handled: false, allow_default: true }
+    Some("prevent") => { handled: true, allow_default: false, }
+    Some("allow") => { handled: true, allow_default: true, }
+    Some(_) => { handled: false, allow_default: true, }
+    None => { handled: false, allow_default: true, }
   }
 }
 
@@ -119,10 +119,10 @@ fn Browser::dispatch_click_only_to_source_id(
   let result = self.execute_inline_js(source)
   let _ = self.sync_render_state_from_dom_tree()
   match result {
-    Some("prevent") => { handled: true, allow_default: false }
-    Some("allow") => { handled: true, allow_default: true }
-    Some(_) => { handled: false, allow_default: true }
-    None => { handled: false, allow_default: true }
+    Some("prevent") => { handled: true, allow_default: false, }
+    Some("allow") => { handled: true, allow_default: true, }
+    Some(_) => { handled: false, allow_default: true, }
+    None => { handled: false, allow_default: true, }
   }
 }
 

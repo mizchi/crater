@@ -345,7 +345,7 @@ pub(all) struct Timeouts {
 ///|
 /// Default timeouts
 pub fn Timeouts::default() -> Timeouts {
-  { script: 30000, page_load: 300000, implicit: 0 }
+  { script: 30000, page_load: 300000, implicit: 0, }
 }
 
 ///|

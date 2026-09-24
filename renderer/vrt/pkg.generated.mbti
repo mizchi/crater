@@ -60,7 +60,7 @@ pub(all) struct ComputedStyleEntry {
   z_index : String
   color : String
   background_color : String
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 
 pub(all) struct CssMutation {
   selector : String
@@ -83,7 +83,7 @@ pub(all) struct LayoutBox {
   y : Double
   width : Double
   height : Double
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 
 pub(all) struct PreparedVrtPage {
   doc : @html.Document
@@ -132,4 +132,3 @@ pub impl Show for RenderVariantResult
 // Type aliases
 
 // Traits
-

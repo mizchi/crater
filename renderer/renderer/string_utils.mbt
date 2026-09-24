@@ -8,7 +8,7 @@ fn remove_suffix(s : String, len : Int) -> String {
   if end <= 0 {
     return ""
   }
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for i = 0; i < end; i = i + 1 {
     buf.write_char(s[i].to_int().unsafe_to_char())
   }

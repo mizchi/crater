@@ -18,4 +18,3 @@ pub fn from_node_and_layout(@node.Node, @crater-core.Layout) -> @model.PaintNode
 pub using @model {type PaintNode}
 
 // Traits
-

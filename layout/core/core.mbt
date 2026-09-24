@@ -81,7 +81,7 @@ fn to_layout_dimension(dimension : @types.Dimension) -> @lt.Dimension {
 
 ///|
 fn to_layout_rect_double(rect : @types.Rect[Double]) -> @lt.Rect[Double] {
-  { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom }
+  { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, }
 }
 
 ///|
@@ -98,12 +98,20 @@ fn to_layout_rect_dimension(
 
 ///|
 fn to_layout_track(track : ContentTrack) -> @layout_kernel.ContentTrack {
-  { position: track.position, size: track.size, stretchable: track.stretchable }
+  {
+    position: track.position,
+    size: track.size,
+    stretchable: track.stretchable,
+  }
 }
 
 ///|
 fn from_layout_track(track : @layout_kernel.ContentTrack) -> ContentTrack {
-  { position: track.position, size: track.size, stretchable: track.stretchable }
+  {
+    position: track.position,
+    size: track.size,
+    stretchable: track.stretchable,
+  }
 }
 
 ///|

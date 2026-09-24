@@ -7,7 +7,7 @@ pub(all) struct RgbaCacheEntry {
 
 ///|
 fn make_substr(chars : Array[Char], start : Int, end : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for i = start; i < end && i < chars.length(); i = i + 1 {
     buf.write_char(chars[i])
   }
@@ -133,7 +133,7 @@ fn parse_kitty_rgba_cache_entry(entry : String) -> RgbaCacheEntry? {
           let width = parse_int_ascii(width_str)
           let height = parse_int_ascii(height_str)
           if width > 0 && height > 0 && rgba_base64.length() > 0 {
-            Some({ width, height, rgba_base64 })
+            Some({ width, height, rgba_base64, })
           } else {
             None
           }
@@ -411,7 +411,7 @@ fn hex_digit_to_int(c : Char) -> Int? {
 ///|
 fn percent_decode_data_url_payload(payload : String) -> String {
   let chars = payload.to_array()
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let mut i = 0
   while i < chars.length() {
     if chars[i] == '%' && i + 2 < chars.length() {
@@ -447,7 +447,7 @@ fn data_url_payload_end(chars : Array[Char], start : Int) -> Int {
 
 ///|
 fn remove_ascii_whitespace(s : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for c in s {
     if !c.is_ascii_whitespace() {
       buf.write_char(c)

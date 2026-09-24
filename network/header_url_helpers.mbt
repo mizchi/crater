@@ -19,8 +19,8 @@ pub fn synthetic_network_merge_header_entries(
   headers : Array[Json],
 ) -> Array[Json] {
   let order : Array[String] = []
-  let names : Map[String, String] = {}
-  let values : Map[String, String] = {}
+  let names : Map[String, String] = Map([])
+  let values : Map[String, String] = Map([])
   for header in headers {
     let name = match synthetic_network_header_entry_name(header) {
       Some(name) => name
@@ -539,7 +539,7 @@ pub fn synthetic_network_normalize_response_overrides(
 pub fn synthetic_network_response_overrides_to_json(
   overrides : SyntheticNetworkResponseOverrides,
 ) -> Json {
-  let result : Map[String, Json] = {}
+  let result : Map[String, Json] = Map([])
   result["fromCache"] = Json::boolean(overrides.from_cache)
   result["headers"] = Json::array(overrides.headers)
   result["mimeType"] = Json::string(overrides.mime_type)

@@ -57,7 +57,10 @@ test "incremental reflow: a text mutation matches a full rebuild" {
     t +
     "</div></body></html>"
   }
-  inspect(incremental_mutation_matches_full(mk("b"), mk("bbbbb changed")), content="true")
+  inspect(
+    incremental_mutation_matches_full(mk("b"), mk("bbbbb changed")),
+    content="true",
+  )
 }
 
 ///|
@@ -72,7 +75,10 @@ test "incremental reflow: a flex-item mutation matches a full rebuild" {
     "<div style=\"width:60px;height:40px\">c</div>" +
     "</div></body></html>"
   }
-  inspect(incremental_mutation_matches_full(mk("60px"), mk("120px")), content="true")
+  inspect(
+    incremental_mutation_matches_full(mk("60px"), mk("120px")),
+    content="true",
+  )
 }
 
 ///|
@@ -88,7 +94,10 @@ test "incremental reflow: a deep nested mutation matches a full rebuild" {
     "</div></div>" +
     "<div style=\"width:200px;height:25px\">footer</div></body></html>"
   }
-  inspect(incremental_mutation_matches_full(mk("40px"), mk("90px")), content="true")
+  inspect(
+    incremental_mutation_matches_full(mk("40px"), mk("90px")),
+    content="true",
+  )
 }
 
 ///|
@@ -101,7 +110,10 @@ test "incremental reflow: a size mutation matches a full rebuild" {
     "\">b</div>" +
     "<div style=\"width:60px;height:20px\">c</div></body></html>"
   }
-  inspect(incremental_mutation_matches_full(mk("60px"), mk("120px")), content="true")
+  inspect(
+    incremental_mutation_matches_full(mk("60px"), mk("120px")),
+    content="true",
+  )
 }
 
 ///|
@@ -115,16 +127,17 @@ test "incremental reflow: a paint-only mutation matches a full rebuild" {
   }
   // color is paint-only: layout_eq holds, so the node stays clean — and the
   // rendered layout still matches a full rebuild.
-  inspect(incremental_mutation_matches_full(mk("red"), mk("blue")), content="true")
+  inspect(
+    incremental_mutation_matches_full(mk("red"), mk("blue")),
+    content="true",
+  )
 }
 
 ///|
 test "incremental reflow: appending a child matches a full rebuild" {
-  let v1 =
-    "<html><body style=\"margin:0\">" +
+  let v1 = "<html><body style=\"margin:0\">" +
     "<div style=\"width:120px;height:40px\">a</div></body></html>"
-  let v2 =
-    "<html><body style=\"margin:0\">" +
+  let v2 = "<html><body style=\"margin:0\">" +
     "<div style=\"width:120px;height:40px\">a</div>" +
     "<div style=\"width:80px;height:60px\">b</div></body></html>"
   inspect(incremental_mutation_matches_full(v1, v2), content="true")
@@ -140,43 +153,35 @@ test "incremental reflow: broad equivalence sweep (layout modes x mutations)" {
   let cases : Array[(String, String, String)] = [
     // (name, v1, v2)
     (
-      "block: resize middle (shifts following)",
-      "<html><body style=\"margin:0\"><div style=\"width:200px\"><div style=\"width:100px;height:30px\">a</div><div style=\"width:100px;height:30px\">b</div><div style=\"width:100px;height:30px\">c</div></div></body></html>",
+      "block: resize middle (shifts following)", "<html><body style=\"margin:0\"><div style=\"width:200px\"><div style=\"width:100px;height:30px\">a</div><div style=\"width:100px;height:30px\">b</div><div style=\"width:100px;height:30px\">c</div></div></body></html>",
       "<html><body style=\"margin:0\"><div style=\"width:200px\"><div style=\"width:100px;height:30px\">a</div><div style=\"width:100px;height:80px\">b</div><div style=\"width:100px;height:30px\">c</div></div></body></html>",
     ),
     (
-      "flex column: wrap toggle",
-      "<html><body style=\"margin:0\"><div style=\"display:flex;flex-direction:column;width:200px;height:300px\"><div style=\"width:80px;height:40px\">a</div><div style=\"width:80px;height:40px\">b</div></div></body></html>",
+      "flex column: wrap toggle", "<html><body style=\"margin:0\"><div style=\"display:flex;flex-direction:column;width:200px;height:300px\"><div style=\"width:80px;height:40px\">a</div><div style=\"width:80px;height:40px\">b</div></div></body></html>",
       "<html><body style=\"margin:0\"><div style=\"display:flex;flex-direction:row;width:200px;height:300px\"><div style=\"width:80px;height:40px\">a</div><div style=\"width:80px;height:40px\">b</div></div></body></html>",
     ),
     (
-      "flex wrap: item width grows past wrap",
-      "<html><body style=\"margin:0\"><div style=\"display:flex;flex-wrap:wrap;width:200px\"><div style=\"width:80px;height:30px\">a</div><div style=\"width:80px;height:30px\">b</div><div style=\"width:80px;height:30px\">c</div></div></body></html>",
+      "flex wrap: item width grows past wrap", "<html><body style=\"margin:0\"><div style=\"display:flex;flex-wrap:wrap;width:200px\"><div style=\"width:80px;height:30px\">a</div><div style=\"width:80px;height:30px\">b</div><div style=\"width:80px;height:30px\">c</div></div></body></html>",
       "<html><body style=\"margin:0\"><div style=\"display:flex;flex-wrap:wrap;width:200px\"><div style=\"width:150px;height:30px\">a</div><div style=\"width:80px;height:30px\">b</div><div style=\"width:80px;height:30px\">c</div></div></body></html>",
     ),
     (
-      "text: wrapping width change",
-      "<html><body style=\"margin:0\"><div style=\"width:200px\">the quick brown fox jumps over the lazy dog</div></body></html>",
+      "text: wrapping width change", "<html><body style=\"margin:0\"><div style=\"width:200px\">the quick brown fox jumps over the lazy dog</div></body></html>",
       "<html><body style=\"margin:0\"><div style=\"width:90px\">the quick brown fox jumps over the lazy dog</div></body></html>",
     ),
     (
-      "margins: collapse change",
-      "<html><body style=\"margin:0\"><div style=\"width:200px\"><div style=\"width:100px;height:20px;margin-bottom:10px\">a</div><div style=\"width:100px;height:20px;margin-top:10px\">b</div></div></body></html>",
+      "margins: collapse change", "<html><body style=\"margin:0\"><div style=\"width:200px\"><div style=\"width:100px;height:20px;margin-bottom:10px\">a</div><div style=\"width:100px;height:20px;margin-top:10px\">b</div></div></body></html>",
       "<html><body style=\"margin:0\"><div style=\"width:200px\"><div style=\"width:100px;height:20px;margin-bottom:40px\">a</div><div style=\"width:100px;height:20px;margin-top:10px\">b</div></div></body></html>",
     ),
     (
-      "nested: deep insert + sibling shift",
-      "<html><body style=\"margin:0\"><div style=\"width:200px\"><div style=\"width:180px;height:20px\">h</div><div style=\"width:180px\"><div style=\"width:160px;height:30px\">x</div></div><div style=\"width:200px;height:20px\">f</div></div></body></html>",
+      "nested: deep insert + sibling shift", "<html><body style=\"margin:0\"><div style=\"width:200px\"><div style=\"width:180px;height:20px\">h</div><div style=\"width:180px\"><div style=\"width:160px;height:30px\">x</div></div><div style=\"width:200px;height:20px\">f</div></div></body></html>",
       "<html><body style=\"margin:0\"><div style=\"width:200px\"><div style=\"width:180px;height:20px\">h</div><div style=\"width:180px\"><div style=\"width:160px;height:30px\">x</div><div style=\"width:160px;height:50px\">y</div></div><div style=\"width:200px;height:20px\">f</div></div></body></html>",
     ),
     (
-      "multiple simultaneous mutations",
-      "<html><body style=\"margin:0\"><div style=\"width:200px\"><div style=\"width:100px;height:30px\">a</div><div style=\"width:100px;height:30px\">b</div><div style=\"width:100px;height:30px\">c</div></div></body></html>",
+      "multiple simultaneous mutations", "<html><body style=\"margin:0\"><div style=\"width:200px\"><div style=\"width:100px;height:30px\">a</div><div style=\"width:100px;height:30px\">b</div><div style=\"width:100px;height:30px\">c</div></div></body></html>",
       "<html><body style=\"margin:0\"><div style=\"width:200px\"><div style=\"width:140px;height:30px\">a</div><div style=\"width:100px;height:70px\">b</div><div style=\"width:60px;height:30px\">c changed</div></div></body></html>",
     ),
     (
-      "no-op re-render (identical)",
-      "<html><body style=\"margin:0\"><div style=\"width:120px;height:40px\">a</div><div style=\"width:80px;height:60px\">b</div></body></html>",
+      "no-op re-render (identical)", "<html><body style=\"margin:0\"><div style=\"width:120px;height:40px\">a</div><div style=\"width:80px;height:60px\">b</div></body></html>",
       "<html><body style=\"margin:0\"><div style=\"width:120px;height:40px\">a</div><div style=\"width:80px;height:60px\">b</div></body></html>",
     ),
   ]
@@ -187,7 +192,7 @@ test "incremental reflow: broad equivalence sweep (layout modes x mutations)" {
       failures.push(name)
     }
   }
-  inspect(failures, content="[]")
+  debug_inspect(failures, content="[]")
 }
 
 ///|
@@ -211,14 +216,14 @@ fn seed_box_colored(uid : Int, w : Double, h : Double) -> @node.Node {
     ..@style.Style::default(),
     width: @types.Length(w),
     height: @types.Length(h),
-    color: @types.Color::{ r: 255, g: 0, b: 0, a: 1.0 },
+    color: @types.Color::{ r: 255, g: 0, b: 0, a: 1.0, },
   }
   @node.Node::with_uid("b" + uid.to_string(), uid, style, [])
 }
 
 ///|
 fn seed_uids_for(prev : @node.Node, next : @node.Node) -> Array[Int] {
-  let by_uid : Map[Int, @node.Node] = {}
+  let by_uid : Map[Int, @node.Node] = Map([])
   index_nodes_by_uid(prev, by_uid)
   let seeds : Array[Int] = []
   collect_changed_seed_uids(next, by_uid, seeds)
@@ -236,7 +241,7 @@ test "incremental reflow seed: a layout change seeds exactly the changed node" {
     seed_box(1, 150.0, 40.0),
     seed_box(2, 80.0, 60.0),
   ])
-  inspect(seed_uids_for(prev, next), content="[1]")
+  debug_inspect(seed_uids_for(prev, next), content="[1]")
 }
 
 ///|
@@ -250,17 +255,15 @@ test "incremental reflow seed: a paint-only change seeds nothing (layout_eq hold
     seed_box_colored(1, 100.0, 40.0),
     seed_box(2, 80.0, 60.0),
   ])
-  inspect(seed_uids_for(prev, next), content="[]")
+  debug_inspect(seed_uids_for(prev, next), content="[]")
 }
 
 ///|
 test "incremental reflow: removing a child matches a full rebuild" {
-  let v1 =
-    "<html><body style=\"margin:0\">" +
+  let v1 = "<html><body style=\"margin:0\">" +
     "<div style=\"width:120px;height:40px\">a</div>" +
     "<div style=\"width:80px;height:60px\">b</div></body></html>"
-  let v2 =
-    "<html><body style=\"margin:0\">" +
+  let v2 = "<html><body style=\"margin:0\">" +
     "<div style=\"width:120px;height:40px\">a</div></body></html>"
   inspect(incremental_mutation_matches_full(v1, v2), content="true")
 }

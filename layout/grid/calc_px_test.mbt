@@ -263,7 +263,7 @@ test "grid display:contents wrapper keeps following sibling" {
   let b = @node.Node::leaf("b", col(2))
   let wrap = @node.Node::new(
     "wrap",
-    { ..default_style, display: @types.Contents },
+    { ..default_style, display: @types.Contents, },
     [a, b],
   )
   let c = @node.Node::leaf("c", col(3))

@@ -172,7 +172,7 @@ pub fn synthetic_network_normalize_set_cookie_override_entry(
   let mut secure = false
   let mut same_site = "none"
   let mut expiry : Int? = None
-  let header_entry : Map[String, Json] = {}
+  let header_entry : Map[String, Json] = Map([])
   header_entry["name"] = Json::string(name)
   header_entry["value"] = Json::string(value_text)
 
@@ -277,8 +277,8 @@ pub fn synthetic_network_normalize_request_cookie_entries(
   raw_cookies : Json?,
 ) -> Result[SyntheticNetworkCookieOverride, String] {
   match raw_cookies {
-    None => Ok({ enabled: false, cookies: [] })
-    Some(Null) => Ok({ enabled: true, cookies: [] })
+    None => Ok({ enabled: false, cookies: [], })
+    Some(Null) => Ok({ enabled: true, cookies: [], })
     Some(Array(items)) => {
       let cookies : Array[Json] = []
       for item in items {
@@ -314,7 +314,7 @@ pub fn synthetic_network_normalize_request_cookie_entries(
           Json::object({ "name": Json::string(name), "value": value }),
         )
       }
-      Ok({ enabled: true, cookies })
+      Ok({ enabled: true, cookies, })
     }
     Some(_) => Err("requestCookies must be an array")
   }

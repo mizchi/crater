@@ -13,7 +13,7 @@ test "register pending resource and resolve later" {
   // Create a simple tree with an "image" node
   let img = LayoutNode::leaf(
     "img",
-    @style.Style::{ ..@style.Style::default() },
+    @style.Style::{ ..@style.Style::default(), },
     // No explicit width/height - will be determined by intrinsic size
   )
   let root = LayoutNode::new(

@@ -22,7 +22,7 @@ pub(all) struct RecordedMetric {
 
 ///|
 /// When Some, every measurement is appended here (recording mode).
-let measurement_record_buffer : Ref[Array[RecordedMetric]?] = { val: None }
+let measurement_record_buffer : Ref[Array[RecordedMetric]?] = { val: None, }
 
 ///|
 /// When Some, measurements are served from here (replay mode); a miss falls
@@ -162,7 +162,7 @@ pub fn take_text_metrics_recording() -> Array[RecordedMetric] {
 /// the recording falls back to the live measure func. Clears any active
 /// recording.
 pub fn install_text_metrics_replay(metrics : Array[RecordedMetric]) -> Unit {
-  let table : Map[String, @layout_types.IntrinsicSize] = {}
+  let table : Map[String, @layout_types.IntrinsicSize] = Map([])
   for m in metrics {
     let size : @layout_types.IntrinsicSize = {
       min_width: m.min_width,
@@ -189,7 +189,7 @@ pub fn clear_text_metrics_record_replay() -> Unit {
 pub fn serialize_text_metrics_recording(
   metrics : Array[RecordedMetric],
 ) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string(metrics.length().to_string())
   buf.write_char('\n')
   for m in metrics {
@@ -233,7 +233,7 @@ pub fn deserialize_text_metrics_recording(
     while i < len && unit_at(i) != stop {
       i = i + 1
     }
-    let s = data[start:i].to_string()
+    let s = data[start:i].to_owned()
     i = i + 1 // consume stop
     s
   }
@@ -243,7 +243,7 @@ pub fn deserialize_text_metrics_recording(
     let mh = @string.parse_double(read_until(sp)) catch { _ => 0.0 }
     let xh = @string.parse_double(read_until(sp)) catch { _ => 0.0 }
     let key_len = @string.parse_int(read_until(colon)) catch { _ => 0 }
-    let key = data[i:i + key_len].to_string()
+    let key = data[i:i + key_len].to_owned()
     i = i + key_len
     result.push({
       key,
@@ -267,10 +267,10 @@ pub(all) struct RecordedImage {
 }
 
 ///|
-let image_record_buffer : Ref[Array[RecordedImage]?] = { val: None }
+let image_record_buffer : Ref[Array[RecordedImage]?] = { val: None, }
 
 ///|
-let image_replay_table : Ref[Map[String, (Double, Double)?]?] = { val: None }
+let image_replay_table : Ref[Map[String, (Double, Double)?]?] = { val: None, }
 
 ///|
 /// Resolve an image intrinsic size through the record/replay layer. Returns
@@ -298,8 +298,8 @@ fn note_image_intrinsic_result(
     Some(buffer) =>
       match result {
         Some((w, h)) =>
-          buffer.push({ src, has_size: true, width: w, height: h })
-        None => buffer.push({ src, has_size: false, width: 0.0, height: 0.0 })
+          buffer.push({ src, has_size: true, width: w, height: h, })
+        None => buffer.push({ src, has_size: false, width: 0.0, height: 0.0, })
       }
     None => ()
   }
@@ -324,7 +324,7 @@ pub fn take_image_intrinsic_recording() -> Array[RecordedImage] {
 
 ///|
 pub fn install_image_intrinsic_replay(images : Array[RecordedImage]) -> Unit {
-  let table : Map[String, (Double, Double)?] = {}
+  let table : Map[String, (Double, Double)?] = Map([])
   for im in images {
     table[im.src] = if im.has_size { Some((im.width, im.height)) } else { None }
   }
@@ -343,7 +343,7 @@ pub fn clear_image_intrinsic_record_replay() -> Unit {
 pub fn serialize_image_intrinsic_recording(
   images : Array[RecordedImage],
 ) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string(images.length().to_string())
   buf.write_char('\n')
   for im in images {
@@ -382,7 +382,7 @@ pub fn deserialize_image_intrinsic_recording(
     while i < len && unit_at(i) != stop {
       i = i + 1
     }
-    let s = data[start:i].to_string()
+    let s = data[start:i].to_owned()
     i = i + 1
     s
   }
@@ -391,9 +391,9 @@ pub fn deserialize_image_intrinsic_recording(
     let w = @string.parse_double(read_until(sp)) catch { _ => 0.0 }
     let h = @string.parse_double(read_until(sp)) catch { _ => 0.0 }
     let src_len = @string.parse_int(read_until(colon)) catch { _ => 0 }
-    let src = data[i:i + src_len].to_string()
+    let src = data[i:i + src_len].to_owned()
     i = i + src_len
-    result.push({ src, has_size: has, width: w, height: h })
+    result.push({ src, has_size: has, width: w, height: h, })
   }
   result
 }

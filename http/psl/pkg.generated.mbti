@@ -23,4 +23,3 @@ pub fn registrable_domain(String) -> String
 // Type aliases
 
 // Traits
-

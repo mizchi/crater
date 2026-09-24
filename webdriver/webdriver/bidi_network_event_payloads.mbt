@@ -77,7 +77,7 @@ fn BidiProtocol::build_synthetic_network_request_payload_json(
   } else {
     self.resolve_storage_request_cookies(input.context_id, Some(input.url))
   }
-  let request : Map[String, Json] = {}
+  let request : Map[String, Json] = Map([])
   request["method"] = Json::string(input.http_method)
   request["bodySize"] = Json::number(body_size.to_double())
   request["cookies"] = Json::array(cookies)
@@ -102,7 +102,7 @@ fn BidiProtocol::build_synthetic_network_event_base_map(
   now : Double,
 ) -> Map[String, Json] {
   let _ = self
-  let event : Map[String, Json] = {}
+  let event : Map[String, Json] = Map([])
   event["context"] = Json::string(input.context_id)
   event["isBlocked"] = Json::boolean(input.intercepts.length() > 0)
   event["navigation"] = match input.navigation {
@@ -152,7 +152,7 @@ fn BidiProtocol::build_synthetic_network_response_payload_json(
   response_overrides : @crater_network.SyntheticNetworkResponseOverrides,
 ) -> Json {
   let _ = self
-  let response : Map[String, Json] = {}
+  let response : Map[String, Json] = Map([])
   response["bodySize"] = Json::number(0.0)
   response["bytesReceived"] = Json::number(0.0)
   response["content"] = make_object({ "size": Json::number(0.0) })

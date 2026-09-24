@@ -110,9 +110,9 @@ fn BidiProtocol::resolve_get_computed_styles(
     [],
     properties,
   )
-  let styles_json : Map[String, Json] = {}
+  let styles_json : Map[String, Json] = Map([])
   result.normal.each(fn(prop, val) { styles_json[prop] = Json::string(val) })
-  let out : Map[String, Json] = {}
+  let out : Map[String, Json] = Map([])
   out["styles"] = make_object(styles_json)
   Some(make_object(out))
 }
@@ -195,13 +195,13 @@ fn BidiProtocol::resolve_get_all_computed_styles(
 
   let html = responsive_breakpoint_source_html(mode)
   let styles = @responsive.discover_all_computed_styles(html, properties)
-  let styles_json : Map[String, Json] = {}
+  let styles_json : Map[String, Json] = Map([])
   styles.each(fn(selector, style_map) {
-    let entry_json : Map[String, Json] = {}
+    let entry_json : Map[String, Json] = Map([])
     style_map.each(fn(prop, value) { entry_json[prop] = Json::string(value) })
     styles_json[selector] = make_object(entry_json)
   })
-  let out : Map[String, Json] = {}
+  let out : Map[String, Json] = Map([])
   out["styles"] = make_object(styles_json)
   Some(make_object(out))
 }

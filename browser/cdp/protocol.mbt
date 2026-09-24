@@ -37,7 +37,7 @@ pub fn CdpResponse::new(
   error : CdpResponseError?,
   session_id : String?,
 ) -> CdpResponse {
-  { id, result, error, session_id }
+  { id, result, error, session_id, }
 }
 
 ///|
@@ -55,7 +55,7 @@ pub fn CdpEvent::new(
   params : Json?,
   session_id : String?,
 ) -> CdpEvent {
-  { event_method, params, session_id }
+  { event_method, params, session_id, }
 }
 
 ///|
@@ -118,7 +118,7 @@ pub fn CdpProtocol::process_message(
   let params = get_field(json, "params")
   let session_id = get_string_field(json, "sessionId")
   // Create request
-  let request : CdpRequest = { id, request_method, params, session_id }
+  let request : CdpRequest = { id, request_method, params, session_id, }
   // Dispatch
   self.dispatch(request)
 }
@@ -1194,7 +1194,7 @@ fn CdpProtocol::send_result(
   session_id : String?,
   result : Json?,
 ) -> Unit {
-  self.outbox.push(Response({ id, result, error: None, session_id }))
+  self.outbox.push(Response({ id, result, error: None, session_id, }))
 }
 
 ///|
@@ -1206,7 +1206,7 @@ fn CdpProtocol::send_error(
   message : String,
 ) -> Unit {
   self.outbox.push(
-    Response({ id, result: None, error: Some({ code, message }), session_id }),
+    Response({ id, result: None, error: Some({ code, message, }), session_id, }),
   )
 }
 
@@ -1217,7 +1217,7 @@ fn CdpProtocol::send_event(
   session_id : String?,
   params : Json?,
 ) -> Unit {
-  self.outbox.push(Event({ event_method, params, session_id }))
+  self.outbox.push(Event({ event_method, params, session_id, }))
 }
 
 // =============================================================================
@@ -1239,7 +1239,7 @@ fn split_method(input : String) -> (String, String)? {
 
 ///|
 fn substring_arr(chars : Array[Char], start : Int, end : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for i = start; i < end; i = i + 1 {
     buf.write_char(chars[i])
   }
@@ -1318,7 +1318,7 @@ fn make_object(map : Map[String, Json]) -> Json {
 
 ///|
 fn response_to_json(resp : CdpResponse) -> String {
-  let obj : Map[String, Json] = {}
+  let obj : Map[String, Json] = Map([])
   match resp.id {
     Some(id) => obj["id"] = Json::number(id.to_double())
     None => ()
@@ -1348,7 +1348,7 @@ fn response_to_json(resp : CdpResponse) -> String {
 
 ///|
 fn event_to_json(evt : CdpEvent) -> String {
-  let obj : Map[String, Json] = {}
+  let obj : Map[String, Json] = Map([])
   obj["method"] = Json::string(evt.event_method)
   match evt.params {
     Some(p) => obj["params"] = p
@@ -1363,7 +1363,7 @@ fn event_to_json(evt : CdpEvent) -> String {
 
 ///|
 fn target_info_to_json(info : TargetInfo) -> Json {
-  let obj : Map[String, Json] = {}
+  let obj : Map[String, Json] = Map([])
   obj["targetId"] = Json::string(info.target_id)
   obj["type"] = Json::string(info.target_type)
   obj["title"] = Json::string(info.title)
@@ -1379,7 +1379,7 @@ fn target_info_to_json(info : TargetInfo) -> Json {
 
 ///|
 fn cdp_node_to_json(node : CdpNode) -> Json {
-  let obj : Map[String, Json] = {}
+  let obj : Map[String, Json] = Map([])
   obj["nodeId"] = Json::number(node.node_id.to_double())
   obj["backendNodeId"] = Json::number(node.backend_node_id.to_double())
   obj["nodeType"] = Json::number(node.node_type.to_double())
@@ -1638,7 +1638,7 @@ fn loading_failed_to_json(
 
 ///|
 fn headers_to_json(headers : Map[String, String]) -> Json {
-  let obj : Map[String, Json] = {}
+  let obj : Map[String, Json] = Map([])
   headers.each(fn(k, v) { obj[k] = Json::string(v) })
   make_object(obj)
 }

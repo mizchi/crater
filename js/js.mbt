@@ -12,7 +12,7 @@ pub fn renderHtml(html : String, width : Int, height : Int) -> String {
     color_scheme: @media.ColorScheme::Light,
   }
   let layout = @renderer.render(html, ctx)
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   format_layout(layout, buf, 0)
   buf.to_string()
 }
@@ -77,7 +77,7 @@ pub fn renderHtmlToPaintTree(
 
 ///|
 fn paint_node_to_json(node : @paint.PaintNode) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   write_paint_node(node, buf)
   buf.to_string()
 }
@@ -124,7 +124,7 @@ fn write_paint_node(node : @paint.PaintNode, buf : StringBuilder) -> Unit {
 
 ///|
 fn color_to_css(color : @types.Color) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("rgba(")
   buf.write_string(color.r.to_string())
   buf.write_string(",")
@@ -141,7 +141,7 @@ fn color_to_css(color : @types.Color) -> String {
 
 ///|
 fn escape_json_string(s : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for c in s {
     match c {
       '"' => buf.write_string("\\\"")
@@ -177,11 +177,11 @@ pub fn renderHtmlToSixelWithStyles(
 
 ///|
 /// Global layout tree for incremental updates
-let global_tree : Ref[@tree.LayoutTree?] = { val: None }
+let global_tree : Ref[@tree.LayoutTree?] = { val: None, }
 
 ///|
 /// Global cache stats for performance tracking
-let global_stats : Ref[@tree.CacheStats?] = { val: None }
+let global_stats : Ref[@tree.CacheStats?] = { val: None, }
 
 ///|
 /// Create a new layout tree from HTML
@@ -295,7 +295,7 @@ pub fn resizeViewport(width : Int, height : Int) -> Unit {
 pub fn getCacheStats() -> String {
   match global_stats.val {
     Some(stats) => {
-      let buf = StringBuilder::new()
+      let buf = StringBuilder()
       buf.write_string("{\"hits\":")
       buf.write_string(stats.cache_hits.to_string())
       buf.write_string(",\"misses\":")
@@ -848,7 +848,7 @@ pub fn getAccessibilityTree(html : String) -> String {
 
 ///|
 fn accessibility_tree_to_json(tree : @aom.AccessibilityTree) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   write_accessibility_node(tree.root, buf, 0)
   buf.to_string()
 }
@@ -1004,7 +1004,7 @@ pub(all) struct FlatLayoutResult {
 pub fn flatten_layout(layout : @layout_types.Layout) -> FlatLayoutResult {
   let nodes : Array[FlatLayoutNode] = []
   flatten_layout_rec(layout, "", 0, nodes)
-  { nodes, root_id: layout.id }
+  { nodes, root_id: layout.id, }
 }
 
 ///|
@@ -1106,7 +1106,7 @@ pub fn computeStructured() -> FlatLayoutResult {
       let layout = tree.compute_with_stats(stats)
       flatten_layout(layout)
     }
-    None => { nodes: [], root_id: "" }
+    None => { nodes: [], root_id: "", }
   }
 }
 
@@ -1118,7 +1118,7 @@ pub fn computeFullStructured() -> FlatLayoutResult {
       let layout = tree.compute_full()
       flatten_layout(layout)
     }
-    None => { nodes: [], root_id: "" }
+    None => { nodes: [], root_id: "", }
   }
 }
 
@@ -1137,7 +1137,7 @@ pub fn calculateLayoutStructured(
       let layout = tree.calculate_layout(width, height)
       flatten_layout(layout)
     }
-    None => { nodes: [], root_id: "" }
+    None => { nodes: [], root_id: "", }
   }
 }
 
@@ -1202,7 +1202,7 @@ fn extraction_result_to_json_with_fallback(
   result : @arc90.ExtractionResult,
   fallback_text : String?,
 ) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("{\n")
 
   // Main content text
@@ -1256,7 +1256,7 @@ fn extraction_result_to_json_with_fallback(
 
 ///|
 fn strip_html_to_text(html : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let mut i = 0
   let len = html.length()
   let mut in_script = false
@@ -1314,7 +1314,7 @@ fn parse_tag_name(tag : String) -> (String, Bool) {
   while i < len && is_ascii_whitespace(char_at(tag, i)) {
     i = i + 1
   }
-  let name_buf = StringBuilder::new()
+  let name_buf = StringBuilder()
   while i < len {
     let c = char_at(tag, i)
     if is_ascii_whitespace(c) || c == '/' {
@@ -1328,7 +1328,7 @@ fn parse_tag_name(tag : String) -> (String, Bool) {
 
 ///|
 fn normalize_spaces(text : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let mut last_space = true
   for c in text {
     if is_ascii_whitespace(c) {
@@ -1378,7 +1378,7 @@ fn collect_all_text(node : @aom.AccessibilityNode) -> String {
   }
 
   // Otherwise collect from name and children, excluding navigation elements
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   if is_article_root {
     // For article/main, collect all text without navigation filtering
     collect_text_simple(node, buf)

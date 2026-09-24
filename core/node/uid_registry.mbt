@@ -25,7 +25,7 @@ pub struct UidRegistry {
 
 ///|
 pub fn UidRegistry::new() -> UidRegistry {
-  { dom_to_uid: {}, anon_to_uid: {}, next: 0 }
+  { dom_to_uid: {}, anon_to_uid: {}, next: 0, }
 }
 
 ///|

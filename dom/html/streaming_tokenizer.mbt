@@ -17,7 +17,7 @@ pub(all) struct StreamingTokenizer {
 ///|
 pub fn StreamingTokenizer::new() -> StreamingTokenizer {
   {
-    buffer: StringBuilder::new(),
+    buffer: StringBuilder(),
     cached_str: "",
     cache_valid: true,
     pos: 0,
@@ -274,7 +274,7 @@ fn StreamingTokenizer::parse_start_tag_with_str(
   s : String,
 ) -> Token {
   let tag = self.consume_name_with_str(s).to_lower()
-  let attrs : Map[String, String] = {}
+  let attrs : Map[String, String] = Map([])
   let mut self_closing = false
   while self.pos < s.length() {
     self.skip_whitespace_with_str(s)

@@ -62,7 +62,7 @@ test "streaming_parser/article structure" {
 
 ///|
 test "streaming_parser/many paragraphs" {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("<html><body>")
   for i = 0; i < 100; i = i + 1 {
     buf.write_string("<p>Paragraph ")
@@ -180,7 +180,7 @@ test "streaming_parser/mixed content" {
 
 ///|
 fn stb_collect_text(elem : @html.Element) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   fn walk(e : @html.Element) {
     for child in e.children {
       match child {

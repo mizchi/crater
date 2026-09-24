@@ -4,13 +4,13 @@
 
 ///|
 fn build_readability_scores(root : @aom.AccessibilityNode) -> ReadabilityScores {
-  let scores : Map[String, Double] = {}
+  let scores : Map[String, Double] = Map([])
   let candidates : Array[@aom.AccessibilityNode] = []
-  let seen : Map[String, Bool] = {}
+  let seen : Map[String, Bool] = Map([])
   let ancestors : Array[@aom.AccessibilityNode] = []
   collect_readability_candidates(root, ancestors, scores, candidates, seen)
   adjust_readability_scores(candidates, scores)
-  { scores, candidates }
+  { scores, candidates, }
 }
 
 ///|
@@ -460,7 +460,7 @@ fn calculate_repetition_penalty(text_content : String) -> Double {
   let parts = text_content.to_lower().split(" ")
   let mut total = 0
   let mut unique = 0
-  let seen : Map[String, Bool] = {}
+  let seen : Map[String, Bool] = Map([])
   for part in parts {
     let word = part.trim().to_owned()
     if word.length() < 3 {

@@ -10,7 +10,7 @@ priv struct NativeStubRuntime {
 }
 
 ///|
-let native_stub_runtime : NativeStubRuntime = { _unused: 0 }
+let native_stub_runtime : NativeStubRuntime = { _unused: 0, }
 
 ///|
 fn allocate_runtime_context_id() -> Int {
@@ -53,3 +53,7 @@ impl JsRuntime for NativeStubRuntime with fn tick(
 pub fn init_js_runtime() -> Unit {
   native_stub_runtime.init()
 }
+// Explicitly promote the JsRuntime trait methods for NativeStubRuntime.
+
+///|
+extend NativeStubRuntime with JsRuntime::{init}

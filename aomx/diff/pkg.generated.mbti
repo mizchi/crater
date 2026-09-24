@@ -57,4 +57,3 @@ pub fn Difference::to_string(Self) -> String
 // Type aliases
 
 // Traits
-

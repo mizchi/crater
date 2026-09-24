@@ -34,4 +34,3 @@ pub(all) struct ScrollableHitResult {
 // Type aliases
 
 // Traits
-

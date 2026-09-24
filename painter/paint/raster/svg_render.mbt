@@ -5,7 +5,7 @@
 ///|
 /// Convert SVG Color to framebuffer Color
 fn svg_color_to_image(c : @svg.Color) -> Color {
-  { r: c.r, g: c.g, b: c.b }
+  { r: c.r, g: c.g, b: c.b, }
 }
 
 ///|

@@ -354,4 +354,3 @@ pub fn WindowRect::to_json(Self) -> String
 // Type aliases
 
 // Traits
-

@@ -40,8 +40,8 @@ pub fn LayoutTree::new(
   viewport_width : Double,
   viewport_height : Double,
 ) -> LayoutTree {
-  let parent_map : Map[Int, Int] = {}
-  let node_map : Map[Int, LayoutNode] = {}
+  let parent_map : Map[Int, Int] = Map([])
+  let node_map : Map[Int, LayoutNode] = Map([])
   build_maps_internal(root, None, parent_map, node_map)
   let tree : LayoutTree = {
     root,
@@ -408,7 +408,7 @@ pub fn LayoutTree::get_pending_resources(
 pub fn LayoutTree::register_pending_images(
   self : LayoutTree,
 ) -> Map[String, ResourceId] {
-  let uid_to_rid : Map[String, ResourceId] = {}
+  let uid_to_rid : Map[String, ResourceId] = Map([])
   self.node_map.each(fn(_uid, node) {
     match node.intrinsic_state {
       Some(Pending(_)) => {
@@ -439,7 +439,7 @@ pub fn LayoutTree::register_pending_images_with_src(
   self : LayoutTree,
   uid_to_src : Map[Int, String],
 ) -> Map[String, ResourceId] {
-  let src_to_rid : Map[String, ResourceId] = {}
+  let src_to_rid : Map[String, ResourceId] = Map([])
   self.node_map.each(fn(uid, node) {
     match node.intrinsic_state {
       Some(Pending(_)) =>

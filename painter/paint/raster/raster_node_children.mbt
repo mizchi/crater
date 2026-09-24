@@ -15,7 +15,7 @@ fn render_node_children_clipped(
   clip : ClipRect?,
 ) -> Unit {
   let child_clip = if node.clips_content() {
-    let node_clip : ClipRect = { x, y, w, h }
+    let node_clip : ClipRect = { x, y, w, h, }
     match clip {
       None => Some(node_clip)
       Some(parent_clip) => clip_intersect(parent_clip, node_clip)

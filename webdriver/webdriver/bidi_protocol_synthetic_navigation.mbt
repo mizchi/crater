@@ -87,7 +87,7 @@ fn BidiProtocol::emit_history_updated_event(
     "timestamp": Json::number(input_now_ms()),
   })
   self.outbox.push(
-    Event({ event_method: "browsingContext.historyUpdated", params }),
+    Event({ event_method: "browsingContext.historyUpdated", params, }),
   )
 }
 
@@ -313,5 +313,5 @@ fn BidiProtocol::emit_fragment_navigated_event(
     "timestamp": Json::number(input_now_ms()),
     "navigation": navigation_json,
   })
-  self.outbox.push(Event({ event_method: event_name, params }))
+  self.outbox.push(Event({ event_method: event_name, params, }))
 }

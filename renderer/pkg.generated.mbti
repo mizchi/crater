@@ -59,4 +59,3 @@ pub using @vrt {type RenderVariantResult}
 pub using @gfx_vrt {type RenderedImage}
 
 // Traits
-

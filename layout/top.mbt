@@ -165,7 +165,7 @@ fn dispatch_compute_with_warnings(
       @block.compute_with_warnings(node, ctx, dispatch)
     _ => {
       let layout = @dispatch.compute_layout(node, ctx)
-      { layout, warnings: [] }
+      { layout, warnings: [], }
     }
   }
 }

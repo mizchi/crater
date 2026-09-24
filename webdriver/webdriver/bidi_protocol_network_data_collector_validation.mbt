@@ -34,7 +34,7 @@ fn BidiProtocol::validate_network_add_data_collector_params(
     return None
   }
 
-  let options : Map[String, Json] = {}
+  let options : Map[String, Json] = Map([])
 
   match self.validate_network_data_collector_data_types(request_id, map) {
     Some(data_types) => options["dataTypes"] = data_types

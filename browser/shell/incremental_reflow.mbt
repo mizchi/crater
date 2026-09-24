@@ -40,7 +40,7 @@ pub fn Browser::layout_box_snapshot(self : Browser) -> String {
   match self.layout_tree {
     Some(tree) => {
       let layout = tree.compute_incremental()
-      let buf = StringBuilder::new()
+      let buf = StringBuilder()
       for b in @vrt.collect_layout_boxes(layout) {
         buf.write_string(b.id)
         buf.write_string(":")
@@ -93,7 +93,7 @@ fn Browser::build_dynamic_layout_tree(
   @node.stabilize_uids(node, self.uid_registry)
   let tree = match (self.incremental_prev_tree, self.incremental_prev_node) {
     (Some(prev), Some(prev_node)) => {
-      let prev_by_uid : Map[Int, @node.Node] = {}
+      let prev_by_uid : Map[Int, @node.Node] = Map([])
       index_nodes_by_uid(prev_node, prev_by_uid)
       let seeds : Array[Int] = []
       collect_changed_seed_uids(node, prev_by_uid, seeds)

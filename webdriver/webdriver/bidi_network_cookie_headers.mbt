@@ -73,5 +73,5 @@ fn BidiProtocol::normalize_synthetic_network_set_cookie_entries(
       ),
     )
   }
-  Some({ headers, cookies })
+  Some({ headers, cookies, })
 }

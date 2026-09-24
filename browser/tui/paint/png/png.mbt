@@ -6,10 +6,10 @@ pub using @paint_export {type PaintNode, type Framebuffer, type DynamicPalette}
 extern "js" fn framebuffer_to_png_base64_js(
   width : Int,
   height : Int,
-  pixels : Array[Int],
-  palette_r : Array[Int],
-  palette_g : Array[Int],
-  palette_b : Array[Int],
+  pixels : FixedArray[Int],
+  palette_r : FixedArray[Int],
+  palette_g : FixedArray[Int],
+  palette_b : FixedArray[Int],
 ) -> String =
   #|(width, height, pixels, pr, pg, pb) => {
   #|  const zlib = typeof require === "function" ? require("node:zlib") : null;
@@ -158,10 +158,10 @@ pub fn framebuffer_to_png_base64(
   framebuffer_to_png_base64_js(
     fb.width,
     fb.height,
-    fb.pixels,
-    palette_r,
-    palette_g,
-    palette_b,
+    FixedArray::from_array(fb.pixels),
+    FixedArray::from_array(palette_r),
+    FixedArray::from_array(palette_g),
+    FixedArray::from_array(palette_b),
   )
 }
 

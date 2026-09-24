@@ -92,7 +92,7 @@ let pending_messages : Array[@cdp.CdpOutMessage] = []
 
 ///|
 fn escape_json(s : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for c in s {
     match c {
       '"' => buf.write_string("\\\"")
@@ -227,7 +227,7 @@ pub fn isNetworkEnabled() -> Bool {
 ///|
 /// Parse headers JSON string to Map
 fn parse_headers_json(json_str : String) -> Map[String, String] {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   if json_str.length() == 0 || json_str == "{}" {
     return headers
   }

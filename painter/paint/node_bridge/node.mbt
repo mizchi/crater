@@ -191,12 +191,15 @@ pub fn from_node_and_layout(
     let child_node = node.children[node_index]
     let child_layout = layout.children[layout_index]
     let mut child = from_node_and_layout(child_node, child_layout)
-    child = { ..child, paint: inherit_text_paint(paint, child.paint) }
+    child = { ..child, paint: inherit_text_paint(paint, child.paint), }
     let child_tag = extract_tag_from_id(child_node.id)
     if child_tag == "li" {
       match generate_list_marker(tag, layout_index) {
         Some(marker_text) => {
-          let marker_paint = { ..child.paint, font_size: child.paint.font_size }
+          let marker_paint = {
+            ..child.paint,
+            font_size: child.paint.font_size,
+          }
           let marker_node = @model.PaintNode::new(
             "#list-marker",
             "#text",
@@ -233,7 +236,7 @@ pub fn from_node_and_layout(
   }
   if tag == "img" {
     if paint.background_color.is_transparent() {
-      paint = { ..paint, background_color: @types.Color::rgb(240, 240, 240) }
+      paint = { ..paint, background_color: @types.Color::rgb(240, 240, 240), }
     }
     match layout.text {
       Some(alt) =>

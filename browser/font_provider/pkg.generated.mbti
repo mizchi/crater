@@ -17,4 +17,3 @@ pub fn load_system_glyph_provider() -> @glyph.GlyphProvider?
 // Type aliases
 
 // Traits
-

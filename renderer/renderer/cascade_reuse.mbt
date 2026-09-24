@@ -58,7 +58,7 @@ priv struct CascadeReuseCtx {
 }
 
 ///|
-let cascade_reuse_ctx : Ref[CascadeReuseCtx?] = { val: None }
+let cascade_reuse_ctx : Ref[CascadeReuseCtx?] = { val: None, }
 
 ///|
 /// Start a cascade-reuse pass. `prior_styles` / `prior_sigs` are keyed by
@@ -112,7 +112,7 @@ fn cascade_reuse_sig(
   elem : @html.Element,
   include_child_structure : Bool,
 ) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string(elem.tag)
   buf.write_char('|')
   match elem.id {
@@ -175,7 +175,7 @@ fn cascade_reuse_sig(
 /// Returns None for a top-level key (no `/`).
 fn cascade_reuse_parent_key(owner_id : String) -> String? {
   match owner_id.rev_find("/") {
-    Some(idx) => Some(owner_id.substring(start=0, end=idx))
+    Some(idx) => Some(owner_id[0:idx].to_owned())
     None => None
   }
 }
@@ -209,7 +209,7 @@ fn cascade_reuse_try(owner_id : String, elem : @html.Element) -> @style.Style? {
       let preceding_ok = if ctx.uses_sibling {
         match parent {
           None => true
-          Some(pk) => not(ctx.preceding_clean.get(pk) is Some(false))
+          Some(pk) => !(ctx.preceding_clean.get(pk) is Some(false))
         }
       } else {
         true

@@ -35,4 +35,3 @@ pub fn tableSizes() -> String
 // Type aliases
 
 // Traits
-

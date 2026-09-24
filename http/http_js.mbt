@@ -68,7 +68,7 @@ extern "js" fn js_fetch_internal(
 
 ///|
 fn escape_json_string(s : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for c in s {
     match c {
       '"' => buf.write_string("\\\"")
@@ -96,13 +96,13 @@ fn parse_response_json(json : String) -> HttpResponse raise HttpError {
   let status = extract_json_int(json, "status")
   let body = extract_json_string(json, "body")
   let headers = parse_headers_json(json)
-  { status, headers, body }
+  { status, headers, body, }
 }
 
 ///|
 /// Parse headers object from JSON response
 fn parse_headers_json(json_str : String) -> Map[String, String] {
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   if json_str.length() == 0 || json_str == "{}" {
     return headers
   }
@@ -171,7 +171,7 @@ fn extract_json_string(json : String, key : String) -> String {
 ///|
 /// Unescape JSON string
 fn unescape_json_string(s : String) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let chars = s.to_array()
   let mut i = 0
   while i < chars.length() {

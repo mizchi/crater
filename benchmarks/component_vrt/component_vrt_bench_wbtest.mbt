@@ -83,7 +83,7 @@ fn component_baseline_css() -> String {
 
 ///|
 fn build_noise_blocks(count : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("<fixture-noise>")
   for i = 0; i < count; i = i + 1 {
     buf.write_string("<div data-noise=\"")
@@ -101,7 +101,7 @@ fn wrap_component_fixture(
   noise_before : Int,
   noise_after : Int,
 ) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><body><main-shell>")
   buf.write_string(build_noise_blocks(noise_before))
   buf.write_string("<vrt-target id=\"")
@@ -310,7 +310,7 @@ fn component_fixture_s() -> ComponentFixture {
 
 ///|
 fn component_fixture_m() -> ComponentFixture {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string(
     "<section class=\"dialog\" role=\"main\" aria-label=\"Release Checklist\">",
   )
@@ -466,7 +466,7 @@ fn component_fixture_m() -> ComponentFixture {
 
 ///|
 fn component_fixture_l() -> ComponentFixture {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string(
     "<section class=\"dashboard\" role=\"main\" aria-label=\"Operations Overview\">",
   )
@@ -734,7 +734,7 @@ fn render_landmark_node_json(node : LandmarkTree, buf : StringBuilder) -> Unit {
 
 ///|
 fn render_landmark_forest_json(forest : Array[LandmarkTree]) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("[")
   for i = 0; i < forest.length(); i = i + 1 {
     if i > 0 {
@@ -780,7 +780,7 @@ fn find_component_subtree(
 fn normalize_component_layout(
   layout : @layout_types.Layout,
 ) -> @layout_types.Layout {
-  { ..layout, x: 0.0, y: 0.0 }
+  { ..layout, x: 0.0, y: 0.0, }
 }
 
 ///|

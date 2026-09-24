@@ -78,5 +78,11 @@ pub fn render_to_buffer_with_hints(
   render_paint_node(ctx, prepared.tree, 0.0, 0.0, false)
   draw_hints(buf, hints, content_height)
   draw_hint_mode_status_bar(buf, content_height, hint_input, hints)
-  { buffer: buf, link_regions, hit_regions, scrollable_elements, image_regions }
+  {
+    buffer: buf,
+    link_regions,
+    hit_regions,
+    scrollable_elements,
+    image_regions,
+  }
 }

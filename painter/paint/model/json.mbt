@@ -2,7 +2,7 @@
 /// PaintNode JSON serialization for native paint renderer.
 /// Produces a compact JSON string without external JSON library dependency.
 pub fn PaintNode::to_json_string(self : PaintNode) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   write_paint_node_json(buf, self)
   buf.to_string()
 }

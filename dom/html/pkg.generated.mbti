@@ -149,4 +149,3 @@ pub fn TreeBuilder::new(Tokenizer) -> Self
 // Type aliases
 
 // Traits
-

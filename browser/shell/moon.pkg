@@ -54,5 +54,7 @@ options(
     "perf_js.mbt": [ "js" ],
     "perf_js_wbtest.mbt": [ "js" ],
     "perf_native.mbt": [ "native" ],
+    "reflow_vrt_fixtures.mbt": [ "js" ],
+    "reflow_vrt_wbtest.mbt": [ "js" ],
   },
 )

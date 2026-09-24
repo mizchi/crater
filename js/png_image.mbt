@@ -8,7 +8,7 @@
 extern "js" fn rgba_to_png_base64_js(
   width : Int,
   height : Int,
-  rgba : Array[Int],
+  rgba : FixedArray[Int],
 ) -> String =
   #|(width, height, rgba) => {
   #|  const zlib = typeof require === "function" ? require("node:zlib") : null;
@@ -121,7 +121,11 @@ pub fn renderHtmlToImagePngBase64(
     html,
     @types.Size::new(width.to_double(), height.to_double()),
   )
-  rgba_to_png_base64_js(image.width, image.height, image.pixels)
+  rgba_to_png_base64_js(
+    image.width,
+    image.height,
+    FixedArray::from_array(image.pixels),
+  )
 }
 
 ///|
@@ -149,7 +153,11 @@ pub fn renderTextToImagePngBase64(
   scale : Int,
 ) -> String {
   let image = @gfx_vrt.render_text_to_image(text, width, height, scale~)
-  rgba_to_png_base64_js(image.width, image.height, image.pixels)
+  rgba_to_png_base64_js(
+    image.width,
+    image.height,
+    FixedArray::from_array(image.pixels),
+  )
 }
 
 ///|
@@ -198,5 +206,5 @@ pub fn renderHtmlViaWebBackendPngBase64(
   height : Int,
 ) -> String {
   let pixels = renderHtmlViaWebBackendRgba(html, width, height)
-  rgba_to_png_base64_js(width, height, pixels)
+  rgba_to_png_base64_js(width, height, FixedArray::from_array(pixels))
 }

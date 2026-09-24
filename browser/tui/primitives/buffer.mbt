@@ -15,7 +15,7 @@ pub struct CharBuffer {
 pub fn CharBuffer::new(width : Int, height : Int) -> CharBuffer {
   let size = width * height
   let cells : Array[CharCell] = Array::make(size, CharCell::default())
-  { width, height, cells }
+  { width, height, cells, }
 }
 
 ///|
@@ -90,7 +90,7 @@ pub fn CharBuffer::get_row_text(self : CharBuffer, row : Int) -> String {
   if row < 0 || row >= self.height {
     return ""
   }
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   for col = 0; col < self.width; col = col + 1 {
     let cell = self.get_cell(col, row)
     // Skip null placeholder (second half of wide character)

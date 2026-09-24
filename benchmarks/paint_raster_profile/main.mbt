@@ -5,7 +5,7 @@
 
 ///|
 fn build_css(rules : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("body{margin:0;font-family:sans-serif}")
   buf.write_string("section{display:block;padding:8px}")
   buf.write_string(".row{display:flex;gap:8px}")
@@ -25,7 +25,7 @@ fn build_css(rules : Int) -> String {
 
 ///|
 fn build_html(blocks : Int, rules : Int) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><body><main-shell>")
   for i = 0; i < blocks; i = i + 1 {
     let c = i % rules

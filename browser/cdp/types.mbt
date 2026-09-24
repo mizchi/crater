@@ -77,7 +77,7 @@ pub fn CdpError::from_code(code : CdpErrorCode, message : String) -> CdpError {
     NodeNotFound => -32000
     NoSuchElement => -32000
   }
-  { code: code_num, message }
+  { code: code_num, message, }
 }
 
 ///|
