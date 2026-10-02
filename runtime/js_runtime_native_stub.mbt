@@ -1,8 +1,13 @@
 ///|
 /// JavaScript Runtime - Native target
 ///
-/// Default is stub (NotSupported). To enable V8, use JsContext::new_with_runtime()
-/// with the V8JsRuntime from mizchi/crater-browser-native/js_v8.
+/// Default stub raises NotSupported. Opt-in backends:
+///
+///   - js_engine (pure MoonBit): browser.set_js_runtime(jsengine_runtime_ref())
+///     See runtime/js_runtime_jsengine.mbt
+///
+///   - V8 (native FFI):          browser.set_js_runtime(V8JsRuntime::new())
+///     See browser/native/js_v8/js_runtime_v8.mbt
 
 ///|
 priv struct NativeStubRuntime {
