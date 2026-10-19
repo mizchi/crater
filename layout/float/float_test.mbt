@@ -2,7 +2,7 @@
 test "vertical_rl_ltr_float_context_places_left_at_top_and_right_at_bottom" {
   let ctx = FloatContext::new_vertical(160.0, 0.0, 240.0, 0.0, true, true)
   let (left_x, left_y) = ctx.place_float(
-    @types.Float::Left,
+    @types.CssFloat::Left,
     80.0,
     56.0,
     0.0,
@@ -12,7 +12,7 @@ test "vertical_rl_ltr_float_context_places_left_at_top_and_right_at_bottom" {
     0.0,
   )
   let (right_x, right_y) = ctx.place_float(
-    @types.Float::Right,
+    @types.CssFloat::Right,
     48.0,
     40.0,
     0.0,
@@ -33,7 +33,7 @@ test "vertical_rl_ltr_float_context_places_left_at_top_and_right_at_bottom" {
 test "vertical_rl_rtl_float_context_flips_line_left_to_bottom" {
   let ctx = FloatContext::new_vertical(160.0, 0.0, 240.0, 0.0, true, false)
   let (left_x, left_y) = ctx.place_float(
-    @types.Float::Left,
+    @types.CssFloat::Left,
     32.0,
     40.0,
     0.0,
@@ -43,7 +43,7 @@ test "vertical_rl_rtl_float_context_flips_line_left_to_bottom" {
     0.0,
   )
   let (right_x, right_y) = ctx.place_float(
-    @types.Float::Right,
+    @types.CssFloat::Right,
     64.0,
     56.0,
     0.0,

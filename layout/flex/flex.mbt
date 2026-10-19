@@ -416,8 +416,8 @@ fn calculate_children_max_content_width(
       continue
     }
     match child.style.float {
-      @types.Float::Left | @types.Float::Right => continue
-      @types.Float::None => ()
+      @types.CssFloat::Left | @types.CssFloat::Right => continue
+      @types.CssFloat::None => ()
     }
     let child_style = child.style
     let child_margin_left = resolve_dimension_intrinsic(child_style.margin.left)
@@ -1304,8 +1304,8 @@ fn compute_column_cross_baseline(
       continue
     }
     match child_style.float {
-      @types.Float::Left | @types.Float::Right => continue
-      @types.Float::None => ()
+      @types.CssFloat::Left | @types.CssFloat::Right => continue
+      @types.CssFloat::None => ()
     }
     let child_resolved = child.resolved_rects(own_cross)
     let child_cross = compute_intrinsic_main_size(
@@ -1333,8 +1333,8 @@ fn is_in_flow_baseline_child(node : @node.Node) -> Bool {
     return false
   }
   match node.style.float {
-    @types.Float::Left | @types.Float::Right => false
-    @types.Float::None => true
+    @types.CssFloat::Left | @types.CssFloat::Right => false
+    @types.CssFloat::None => true
   }
 }
 
@@ -1667,8 +1667,8 @@ fn compute_inline_flow_height(
       continue
     }
     match child_style.float {
-      @types.Float::Left | @types.Float::Right => continue
-      @types.Float::None => ()
+      @types.CssFloat::Left | @types.CssFloat::Right => continue
+      @types.CssFloat::None => ()
     }
     flow_inline_children.push(child)
   }
@@ -3993,8 +3993,8 @@ fn compute_intrinsic_block_main_size(
           continue
         }
         match child_style.float {
-          @types.Float::Left | @types.Float::Right => continue
-          @types.Float::None => ()
+          @types.CssFloat::Left | @types.CssFloat::Right => continue
+          @types.CssFloat::None => ()
         }
         has_flow_child = true
         if !@inline.is_inline_level(child_style.display) {
@@ -4046,8 +4046,8 @@ fn compute_intrinsic_block_main_size(
           continue
         }
         match child_style.float {
-          @types.Float::Left | @types.Float::Right => continue
-          @types.Float::None => ()
+          @types.CssFloat::Left | @types.CssFloat::Right => continue
+          @types.CssFloat::None => ()
         }
         has_flow_child = true
         if child.id == "br" {
@@ -4241,7 +4241,7 @@ fn try_layout_simple_row_space_between_fixed_leaves(
       child.measure is Some(_) ||
       child_style.display == @types.Display::None ||
       child_style.position != @types.Static ||
-      child_style.float != @types.Float::None ||
+      child_style.float != @types.CssFloat::None ||
       child_style.order != 0 ||
       child_style.flex_grow != 0.0 ||
       child_style.align_self != @types.AlignSelf::Auto ||
@@ -4470,9 +4470,9 @@ fn compute_internal(
 
   // Check for unsupported features
   match style.float {
-    @types.Float::Left | @types.Float::Right =>
+    @types.CssFloat::Left | @types.CssFloat::Right =>
       warnings.push(@layout_types.UnsupportedFloat(node.id))
-    @types.Float::None => ()
+    @types.CssFloat::None => ()
   }
   let available_width = ctx.available_width
   let parent_width = if percent_base_width > 0.0 {

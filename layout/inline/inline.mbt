@@ -934,11 +934,11 @@ fn inline_source_children_only_contribute_floats(
       continue
     }
     match child.style.float {
-      @types.Float::Left | @types.Float::Right => {
+      @types.CssFloat::Left | @types.CssFloat::Right => {
         has_float_contribution = true
         continue
       }
-      @types.Float::None => ()
+      @types.CssFloat::None => ()
     }
     if child.children.length() == 0 ||
       is_inline_level(child.style.display) ||

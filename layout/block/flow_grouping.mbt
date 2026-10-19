@@ -71,8 +71,8 @@ fn contents_is_inline_flow(node : @node.Node) -> Bool {
       continue
     }
     match child.style.float {
-      @types.Float::Left | @types.Float::Right => return false
-      @types.Float::None => ()
+      @types.CssFloat::Left | @types.CssFloat::Right => return false
+      @types.CssFloat::None => ()
     }
     if child.style.display == @types.Contents {
       if !contents_is_inline_flow(child) {
@@ -107,8 +107,8 @@ fn should_establish_ifc_with_contents(children : Array[@node.Node]) -> Bool {
       continue
     }
     match child.style.float {
-      @types.Float::Left | @types.Float::Right => continue
-      @types.Float::None => ()
+      @types.CssFloat::Left | @types.CssFloat::Right => continue
+      @types.CssFloat::None => ()
     }
     if @inline.is_inline_level(child.style.display) {
       has_inline = true

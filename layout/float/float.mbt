@@ -1,5 +1,5 @@
 ///|
-/// Float Layout Module
+/// CssFloat Layout Module
 /// Implements CSS float and clear properties
 
 ///|
@@ -14,7 +14,7 @@ pub(all) struct FloatBox {
   /// Height of the float (including margin)
   height : Double
   /// The float direction (Left or Right)
-  float_type : @types.Float
+  float_type : @types.CssFloat
 }
 
 ///|
@@ -312,7 +312,7 @@ pub fn FloatContext::find_y_with_space(
 /// Returns (x, y) position for the float
 pub fn FloatContext::place_float(
   self : FloatContext,
-  float_type : @types.Float,
+  float_type : @types.CssFloat,
   width : Double,
   height : Double,
   margin_left : Double,
@@ -331,19 +331,19 @@ pub fn FloatContext::place_float(
       block_pos, total_block_size,
     )
     let outer_main_pos = match float_type {
-      @types.Float::Left =>
+      @types.CssFloat::Left =>
         if self.line_left_is_top {
           main_start
         } else {
           main_end - total_main_size
         }
-      @types.Float::Right =>
+      @types.CssFloat::Right =>
         if self.line_left_is_top {
           main_end - total_main_size
         } else {
           main_start
         }
-      @types.Float::None => main_start
+      @types.CssFloat::None => main_start
     }
     let outer_x = if self.block_rtl {
       self.container_left + self.container_width - block_pos - total_block_size
@@ -358,9 +358,9 @@ pub fn FloatContext::place_float(
       float_type,
     }
     match float_type {
-      @types.Float::Left => self.left_floats.push(float_box)
-      @types.Float::Right => self.right_floats.push(float_box)
-      @types.Float::None => ()
+      @types.CssFloat::Left => self.left_floats.push(float_box)
+      @types.CssFloat::Right => self.right_floats.push(float_box)
+      @types.CssFloat::None => ()
     }
     return (outer_x + margin_left, outer_main_pos + margin_top)
   }
@@ -374,9 +374,9 @@ pub fn FloatContext::place_float(
 
   // Position based on float type
   let x = match float_type {
-    @types.Float::Left => left_edge + margin_left
-    @types.Float::Right => right_edge - width - margin_right
-    @types.Float::None => left_edge + margin_left // Shouldn't happen
+    @types.CssFloat::Left => left_edge + margin_left
+    @types.CssFloat::Right => right_edge - width - margin_right
+    @types.CssFloat::None => left_edge + margin_left // Shouldn't happen
   }
 
   // Add to float list
@@ -388,9 +388,9 @@ pub fn FloatContext::place_float(
     float_type,
   }
   match float_type {
-    @types.Float::Left => self.left_floats.push(float_box)
-    @types.Float::Right => self.right_floats.push(float_box)
-    @types.Float::None => ()
+    @types.CssFloat::Left => self.left_floats.push(float_box)
+    @types.CssFloat::Right => self.right_floats.push(float_box)
+    @types.CssFloat::None => ()
   }
   (x, y + margin_top)
 }

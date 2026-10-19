@@ -67,7 +67,7 @@ fn validate_style(
   if style.position != @types.Position::Static {
     add_issue(issues, node_id, "position", "only position: static is supported")
   }
-  if style.float != @types.Float::None {
+  if style.float != @types.CssFloat::None {
     add_issue(issues, node_id, "float", "float layout is outside core subset")
   }
   if style.clear != @types.Clear::None {

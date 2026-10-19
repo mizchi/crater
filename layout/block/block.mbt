@@ -410,8 +410,8 @@ fn participates_inline_for_flow_whitespace(node : @node.Node) -> Bool {
     return false
   }
   match node.style.float {
-    @types.Float::Left | @types.Float::Right => return false
-    @types.Float::None => ()
+    @types.CssFloat::Left | @types.CssFloat::Right => return false
+    @types.CssFloat::None => ()
   }
   if @node.str_has_prefix(node.id, "#text") {
     match node.text {
@@ -735,19 +735,19 @@ fn shift_direct_float_children_for_intrusion(
     }
     let layout_child = layout.children[matched_index]
     let adjusted_child = match node_child.style.float {
-      @types.Float::Right =>
+      @types.CssFloat::Right =>
         if shift_right > 0.0 {
           shift_layout_subtree(layout_child, -shift_right, 0.0)
         } else {
           layout_child
         }
-      @types.Float::Left =>
+      @types.CssFloat::Left =>
         if shift_left > 0.0 {
           shift_layout_subtree(layout_child, shift_left, 0.0)
         } else {
           layout_child
         }
-      @types.Float::None =>
+      @types.CssFloat::None =>
         if node_child.style.position == @types.Static &&
           !block_flow_establishes_bfc(node_child.style) &&
           !@inline.is_inline_level(node_child.style.display) {
@@ -1017,7 +1017,7 @@ fn is_simple_block_stack_child(style : @style.Style) -> Bool {
   }
   is_simple_display &&
   style.position == @types.Static &&
-  style.float == @types.Float::None &&
+  style.float == @types.CssFloat::None &&
   style.clear == @types.Clear::None &&
   !style.writing_mode.is_vertical() &&
   default_justify_self &&
@@ -1351,8 +1351,8 @@ fn calculate_children_max_content_width_uncached(
       continue
     }
     match child.style.float {
-      @types.Float::Left | @types.Float::Right => continue
-      @types.Float::None => ()
+      @types.CssFloat::Left | @types.CssFloat::Right => continue
+      @types.CssFloat::None => ()
     }
     flow_children.push(child)
   }
@@ -1552,8 +1552,8 @@ fn calculate_children_min_content_width_uncached(
       continue
     }
     match child.style.float {
-      @types.Float::Left | @types.Float::Right => continue
-      @types.Float::None => ()
+      @types.CssFloat::Left | @types.CssFloat::Right => continue
+      @types.CssFloat::None => ()
     }
     flow_children.push(child)
   }
@@ -1972,8 +1972,8 @@ fn calculate_children_max_content_height(
     }
     // Skip floats for height calculation in normal flow
     match child.style.float {
-      @types.Float::Left | @types.Float::Right => continue
-      @types.Float::None => ()
+      @types.CssFloat::Left | @types.CssFloat::Right => continue
+      @types.CssFloat::None => ()
     }
     let child_style = child.style
     // Calculate child's vertical margins (percentages resolve to parent WIDTH, not height)
@@ -2497,7 +2497,7 @@ fn try_layout_empty_block_leaf_with_definite_height(
     !is_simple_display ||
     !has_definite_height ||
     style.position != @types.Static ||
-    style.float != @types.Float::None ||
+    style.float != @types.CssFloat::None ||
     style.clear != @types.Clear::None ||
     style.writing_mode.is_vertical() ||
     style.aspect_ratio is Some(_) ||
@@ -2722,7 +2722,7 @@ fn adjust_float_only_inline_wrapper_for_parent(
 ) -> @layout_types.Layout {
   let parent_is_floated_auto_block = !is_vertical_writing &&
     parent_style.height == @types.Auto &&
-    parent_style.float != @types.Float::None
+    parent_style.float != @types.CssFloat::None
   if parent_is_floated_auto_block &&
     id_matches_tag(child_node.id, "span") &&
     source_children_only_contribute_floats(child_node.children) &&
@@ -2917,11 +2917,11 @@ fn layout_no_principal_box(
       break
     }
     match child.style.float {
-      @types.Float::Left | @types.Float::Right => {
+      @types.CssFloat::Left | @types.CssFloat::Right => {
         has_out_of_flow = true
         break
       }
-      @types.Float::None => ()
+      @types.CssFloat::None => ()
     }
     flow_inline_nodes.push(child)
   }
@@ -4520,7 +4520,7 @@ fn compute_with_collapse(
     return layout_no_principal_box(node, ctx, warnings, dispatch)
   }
 
-  // Note: Float is now supported - no warning needed
+  // Note: CssFloat is now supported - no warning needed
 
   // Handle leaf nodes with MeasureFunc (e.g., text nodes)
   // These nodes have no children but need intrinsic size from their measure function
@@ -4566,7 +4566,7 @@ fn compute_with_collapse(
   // Collapse blocked by: border/padding, BFC-establishing properties.
   // contain:layout/paint/size also establish an independent formatting context.
   let is_float_container = match style.float {
-    @types.Float::None => false
+    @types.CssFloat::None => false
     _ => true
   }
   let establishes_bfc = is_float_container || block_flow_establishes_bfc(style)
@@ -5084,14 +5084,14 @@ fn compute_with_collapse(
     }
     // Check if this is a float element
     match child.style.float {
-      @types.Float::Left | @types.Float::Right => {
+      @types.CssFloat::Left | @types.CssFloat::Right => {
         float_nodes.push(child)
         float_indices.push(i)
         has_non_flow_children = true
-        // Float elements still advance flow position for absolute static positioning
+        // CssFloat elements still advance flow position for absolute static positioning
         flow_position = flow_position + 1
       }
-      @types.Float::None => {
+      @types.CssFloat::None => {
         flow_nodes.push(child)
         flow_styles.push(child.style)
         flow_indices.push(i)
@@ -5860,7 +5860,7 @@ fn compute_with_collapse(
         let child_style = flow_nodes[i].style
         let skip_out_of_flow = child_style.position is @types.Absolute ||
           child_style.position is @types.Fixed ||
-          !(child_style.float is @types.Float::None)
+          !(child_style.float is @types.CssFloat::None)
         if skip_out_of_flow {
           continue
         }
@@ -7119,7 +7119,7 @@ fn compute_with_collapse(
       }
     }
 
-    // Float clearance shifts the flow cursor even when the element collapses
+    // CssFloat clearance shifts the flow cursor even when the element collapses
     // through and contributes no own block-size.
     if float_clearance_offset > 0.0 {
       current_pos = current_pos + float_clearance_offset
@@ -7213,7 +7213,7 @@ fn compute_with_collapse(
       let child_layout = flow_children[i].layout
       if child_style.position is @types.Absolute ||
         child_style.position is @types.Fixed ||
-        !(child_style.float is @types.Float::None) ||
+        !(child_style.float is @types.CssFloat::None) ||
         @inline.is_inline_level(child_style.display) ||
         child_layout.children.length() > 0 {
         simple_vertical_multicol = false
@@ -7574,7 +7574,7 @@ fn compute_with_collapse(
         let skip_out_of_flow = child_style.position is @types.Absolute ||
           child_style.position is @types.Fixed ||
           child_style.position is @types.Relative ||
-          !(child_style.float is @types.Float::None)
+          !(child_style.float is @types.CssFloat::None)
         if !skip_out_of_flow {
           let descendant_h = get_child_descendant_flow_extent_for_auto_height(
             child_node, adjusted_layout,
@@ -8675,5 +8675,5 @@ fn contributes_to_no_principal_intrinsic_size(
 ) -> Bool {
   child_style.position != @types.Absolute &&
   child_style.position != @types.Fixed &&
-  child_style.float == @types.Float::None
+  child_style.float == @types.CssFloat::None
 }

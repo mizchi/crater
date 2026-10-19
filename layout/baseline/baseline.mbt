@@ -72,8 +72,8 @@ fn first_in_flow_child_baseline(
       continue
     }
     match child.style.float {
-      @types.Float::Left | @types.Float::Right => continue
-      @types.Float::None => ()
+      @types.CssFloat::Left | @types.CssFloat::Right => continue
+      @types.CssFloat::None => ()
     }
     let child_height = infer_baseline_height(child, fallback_height)
     return Some(compute_node_baseline(child, child_height))
@@ -173,8 +173,8 @@ fn fieldset_non_legend_baseline(
       continue
     }
     match child.style.float {
-      @types.Float::Left | @types.Float::Right => continue
-      @types.Float::None => ()
+      @types.CssFloat::Left | @types.CssFloat::Right => continue
+      @types.CssFloat::None => ()
     }
     let margin_top = resolve_margin_top(child.style)
     let margin_bottom = resolve_margin_bottom(child.style)
@@ -257,8 +257,8 @@ pub fn compute_node_baseline(node : @node.Node, node_height : Double) -> Double 
                   continue
                 }
                 match child.style.float {
-                  @types.Float::Left | @types.Float::Right => continue
-                  @types.Float::None => ()
+                  @types.CssFloat::Left | @types.CssFloat::Right => continue
+                  @types.CssFloat::None => ()
                 }
                 child_margin_top = match child.style.margin.top {
                   @types.Length(v) => v

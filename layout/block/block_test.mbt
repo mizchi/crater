@@ -635,11 +635,11 @@ test "block_bfc_with_single_collapse_through_child_counts_collapsed_margin_once"
 
 ///|
 test "block_float_supported" {
-  // Float is now supported - no warnings should be emitted
+  // CssFloat is now supported - no warnings should be emitted
   let default_style = @style.Style::default()
   let float_child_style = {
     ..default_style,
-    float: @types.Float::Left,
+    float: @types.CssFloat::Left,
     width: @types.Length(50.0),
     height: @types.Length(30.0),
   }
@@ -657,7 +657,7 @@ test "block_float_supported" {
   }
   let result = compute_with_warnings(root, ctx, default_dispatch())
 
-  // Float is laid out correctly
+  // CssFloat is laid out correctly
   inspect(result.layout.children[0].width, content="50")
   inspect(result.layout.children[0].height, content="30")
 
@@ -670,19 +670,19 @@ test "block_flow_root_is_pushed_below_float_stack_when_tall" {
   let default_style = @style.Style::default()
   let float1_style = {
     ..default_style,
-    float: @types.Float::Right,
+    float: @types.CssFloat::Right,
     width: @types.Length(200.0),
     height: @types.Length(100.0),
   }
   let float2_style = {
     ..default_style,
-    float: @types.Float::Left,
+    float: @types.CssFloat::Left,
     width: @types.Length(250.0),
     height: @types.Length(100.0),
   }
   let float3_style = {
     ..default_style,
-    float: @types.Float::Right,
+    float: @types.CssFloat::Right,
     width: @types.Length(300.0),
     height: @types.Length(100.0),
   }
@@ -720,19 +720,19 @@ test "block_flow_root_stays_at_top_when_short_enough_between_floats" {
   let default_style = @style.Style::default()
   let float1_style = {
     ..default_style,
-    float: @types.Float::Right,
+    float: @types.CssFloat::Right,
     width: @types.Length(200.0),
     height: @types.Length(100.0),
   }
   let float2_style = {
     ..default_style,
-    float: @types.Float::Left,
+    float: @types.CssFloat::Left,
     width: @types.Length(250.0),
     height: @types.Length(100.0),
   }
   let float3_style = {
     ..default_style,
-    float: @types.Float::Right,
+    float: @types.CssFloat::Right,
     width: @types.Length(300.0),
     height: @types.Length(100.0),
   }
@@ -770,19 +770,19 @@ test "block_align_content_start_establishes_bfc_against_outer_floats" {
   let default_style = @style.Style::default()
   let float1_style = {
     ..default_style,
-    float: @types.Float::Right,
+    float: @types.CssFloat::Right,
     width: @types.Length(200.0),
     height: @types.Length(100.0),
   }
   let float2_style = {
     ..default_style,
-    float: @types.Float::Left,
+    float: @types.CssFloat::Left,
     width: @types.Length(250.0),
     height: @types.Length(100.0),
   }
   let float3_style = {
     ..default_style,
-    float: @types.Float::Right,
+    float: @types.CssFloat::Right,
     width: @types.Length(300.0),
     height: @types.Length(100.0),
   }
@@ -851,13 +851,13 @@ test "block_non_bfc_wrapper_propagates_float_intrusion_to_nested_float_child" {
   let default_style = @style.Style::default()
   let outer_float = @node.Node::leaf("outer-float", {
     ..default_style,
-    float: @types.Float::Left,
+    float: @types.CssFloat::Left,
     width: @types.Length(30.0),
     height: @types.Length(80.0),
   })
   let inner_float = @node.Node::leaf("inner-float", {
     ..default_style,
-    float: @types.Float::Left,
+    float: @types.CssFloat::Left,
     width: @types.Length(20.0),
     height: @types.Length(20.0),
   })
@@ -921,13 +921,13 @@ test "block_flow_root_zero_width_avoids_float_overlap_with_inline_offset" {
   let default_style = @style.Style::default()
   let right_float_style = {
     ..default_style,
-    float: @types.Float::Right,
+    float: @types.CssFloat::Right,
     width: @types.Length(250.0),
     height: @types.Length(100.0),
   }
   let left_float_style = {
     ..default_style,
-    float: @types.Float::Left,
+    float: @types.CssFloat::Left,
     width: @types.Length(250.0),
     height: @types.Length(100.0),
   }
@@ -965,13 +965,13 @@ test "block_first_inflow_child_clear_left_starts_below_left_float" {
   let default_style = @style.Style::default()
   let left_float_style = {
     ..default_style,
-    float: @types.Float::Left,
+    float: @types.CssFloat::Left,
     width: @types.Length(56.0),
     height: @types.Length(80.0),
   }
   let right_float_style = {
     ..default_style,
-    float: @types.Float::Right,
+    float: @types.CssFloat::Right,
     width: @types.Length(40.0),
     height: @types.Length(48.0),
   }
@@ -1013,7 +1013,7 @@ test "block_float_after_inline_run_flushes_previous_line_progress" {
   }
   let float1_style = {
     ..default_style,
-    float: @types.Float::Left,
+    float: @types.CssFloat::Left,
     width: @types.Length(20.0),
     height: @types.Length(10.0),
   }
@@ -1025,7 +1025,7 @@ test "block_float_after_inline_run_flushes_previous_line_progress" {
   }
   let float2_style = {
     ..default_style,
-    float: @types.Float::Left,
+    float: @types.CssFloat::Left,
     width: @types.Length(20.0),
     height: @types.Length(10.0),
   }
@@ -2120,7 +2120,7 @@ test "float_flex_wrap_reverse_align_start" {
     display: @types.Flex,
     flex_wrap: @types.WrapReverse,
     align_content: @types.Start,
-    float: @types.Float::Left,
+    float: @types.CssFloat::Left,
     width: @types.Length(75.0),
     height: @types.Length(150.0),
     border: {
@@ -2277,7 +2277,7 @@ test "replaced element aspect ratio with percent height" {
     display: @types.Block,
     height: @types.Length(100.0),
     width: @types.Auto,
-    float: @types.Float::Left,
+    float: @types.CssFloat::Left,
   }
   let body_style : @style.Style = {
     ..@style.Style::default(),
@@ -2309,7 +2309,7 @@ test "replaced element aspect ratio with percent height" {
   // Canvas should have width=100 (from aspect ratio 1:1 with height 100)
   inspect(canvas_layout.width, content="100")
   inspect(canvas_layout.height, content="100")
-  // Float should shrink-to-fit to canvas width
+  // CssFloat should shrink-to-fit to canvas width
   inspect(float_layout.width, content="100")
 }
 
