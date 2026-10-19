@@ -15,7 +15,7 @@ pub(all) struct FloatBox {
   y : Double
   width : Double
   height : Double
-  float_type : @values.Float
+  float_type : @values.CssFloat
 }
 pub fn FloatBox::bottom(Self) -> Double
 pub fn FloatBox::right(Self) -> Double
@@ -38,7 +38,7 @@ pub fn FloatContext::get_float_height(Self) -> Double
 pub fn FloatContext::has_floats(Self) -> Bool
 pub fn FloatContext::new(Double, Double) -> Self
 pub fn FloatContext::new_vertical(Double, Double, Double, Double, Bool, Bool) -> Self
-pub fn FloatContext::place_float(Self, @values.Float, Double, Double, Double, Double, Double, Double, Double) -> (Double, Double)
+pub fn FloatContext::place_float(Self, @values.CssFloat, Double, Double, Double, Double, Double, Double, Double) -> (Double, Double)
 pub fn FloatContext::prune_floats_above(Self, Double) -> Unit
 
 // Type aliases

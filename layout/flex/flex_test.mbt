@@ -666,9 +666,9 @@ test "flex_item_block_child_negative_margin_keeps_offsets_in_vertical_rl" {
     ..default_style,
     width: @types.Length(24.0),
     height: @types.Length(24.0),
-    float: @types.Float::Left,
+    float: @types.CssFloat::Left,
   }
-  let tile_right = { ..tile_left, float: @types.Float::Right }
+  let tile_right = { ..tile_left, float: @types.CssFloat::Right }
   let tile_left_clear = { ..tile_left, clear: @types.Clear::Both }
   let indicator = @node.Node::new(
     "indicator",
@@ -745,9 +745,9 @@ test "flex_item_block_child_negative_margin_keeps_offsets_in_vertical_lr" {
     ..default_style,
     width: @types.Length(24.0),
     height: @types.Length(24.0),
-    float: @types.Float::Left,
+    float: @types.CssFloat::Left,
   }
-  let tile_right = { ..tile_left, float: @types.Float::Right }
+  let tile_right = { ..tile_left, float: @types.CssFloat::Right }
   let tile_left_clear = { ..tile_left, clear: @types.Clear::Both }
   let indicator = @node.Node::new(
     "indicator",

@@ -613,8 +613,8 @@ fn is_inline_intrinsic_child(node : @node.Node) -> Bool {
         continue
       }
       match child.style.float {
-        @types.Float::Left | @types.Float::Right => return false
-        @types.Float::None => ()
+        @types.CssFloat::Left | @types.CssFloat::Right => return false
+        @types.CssFloat::None => ()
       }
       has_in_flow_child = true
       if !is_inline_intrinsic_child(child) {
@@ -664,8 +664,8 @@ fn is_in_flow_intrinsic_child(child : @node.Node) -> Bool {
     return false
   }
   match child.style.float {
-    @types.Float::Left | @types.Float::Right => false
-    @types.Float::None => true
+    @types.CssFloat::Left | @types.CssFloat::Right => false
+    @types.CssFloat::None => true
   }
 }
 
@@ -1778,7 +1778,7 @@ fn layout_cell(
     margin: zero_dim_rect,
     padding: zero_dim_rect,
     border: zero_dim_rect,
-    float: @types.Float::None,
+    float: @types.CssFloat::None,
     position: @types.Static,
   }
   let anon_content = @node.Node::new(
@@ -2214,9 +2214,9 @@ pub fn compute_intrinsic_size(
         }
         let child_width = measure_node_intrinsic_width(child)
         match child.style.float {
-          @types.Float::Left | @types.Float::Right =>
+          @types.CssFloat::Left | @types.CssFloat::Right =>
             float_total_width = float_total_width + child_width
-          @types.Float::None =>
+          @types.CssFloat::None =>
             if child_width > anon_flow_intrinsic_width {
               anon_flow_intrinsic_width = child_width
             }
@@ -2271,11 +2271,11 @@ pub fn compute_intrinsic_size(
         }
         let child_height = measure_node_intrinsic_height(child)
         match child.style.float {
-          @types.Float::Left | @types.Float::Right =>
+          @types.CssFloat::Left | @types.CssFloat::Right =>
             if child_height > float_max_height {
               float_max_height = child_height
             }
-          @types.Float::None =>
+          @types.CssFloat::None =>
             anon_flow_intrinsic_height = anon_flow_intrinsic_height +
               child_height
         }
@@ -2815,9 +2815,9 @@ pub fn compute(
       }
       let child_width = measure_node_intrinsic_width(child)
       match child.style.float {
-        @types.Float::Left | @types.Float::Right =>
+        @types.CssFloat::Left | @types.CssFloat::Right =>
           float_total_width = float_total_width + child_width
-        @types.Float::None =>
+        @types.CssFloat::None =>
           if child_width > anon_flow_intrinsic_width {
             anon_flow_intrinsic_width = child_width
           }

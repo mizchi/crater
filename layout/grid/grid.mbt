@@ -2971,8 +2971,8 @@ fn try_compute_simple_block_intrinsic_height(
     return None
   }
   match child.style.float {
-    @types.Float::Left | @types.Float::Right => return None
-    @types.Float::None => ()
+    @types.CssFloat::Left | @types.CssFloat::Right => return None
+    @types.CssFloat::None => ()
   }
   match child.style.height {
     @types.Percent(_)
@@ -3006,8 +3006,8 @@ fn try_compute_simple_block_intrinsic_height(
       return None
     }
     match grand_style.float {
-      @types.Float::Left | @types.Float::Right => return None
-      @types.Float::None => ()
+      @types.CssFloat::Left | @types.CssFloat::Right => return None
+      @types.CssFloat::None => ()
     }
     match grand_style.height {
       @types.Percent(_)
@@ -3040,8 +3040,8 @@ fn try_compute_simple_block_intrinsic_width(
     return None
   }
   match child.style.float {
-    @types.Float::Left | @types.Float::Right => return None
-    @types.Float::None => ()
+    @types.CssFloat::Left | @types.CssFloat::Right => return None
+    @types.CssFloat::None => ()
   }
   let pl = resolve_dimension(child.style.padding.left, container_width, 0.0)
   let pr = resolve_dimension(child.style.padding.right, container_width, 0.0)
@@ -3065,8 +3065,8 @@ fn try_compute_simple_block_intrinsic_width(
       return None
     }
     match grand_style.float {
-      @types.Float::Left | @types.Float::Right => return None
-      @types.Float::None => ()
+      @types.CssFloat::Left | @types.CssFloat::Right => return None
+      @types.CssFloat::None => ()
     }
     let (child_min_width, child_max_width, margin_left, margin_right) = calculate_item_intrinsic_sizes(
       grand_child, true, container_width, container_height, margin_percent_base,
@@ -3098,8 +3098,8 @@ fn try_compute_simple_flex_intrinsic_height(
     return None
   }
   match child.style.float {
-    @types.Float::Left | @types.Float::Right => return None
-    @types.Float::None => ()
+    @types.CssFloat::Left | @types.CssFloat::Right => return None
+    @types.CssFloat::None => ()
   }
   match child.style.flex_direction {
     @types.Row | @types.RowReverse => ()
@@ -3128,8 +3128,8 @@ fn try_compute_simple_flex_intrinsic_height(
       return None
     }
     match flex_style.float {
-      @types.Float::Left | @types.Float::Right => return None
-      @types.Float::None => ()
+      @types.CssFloat::Left | @types.CssFloat::Right => return None
+      @types.CssFloat::None => ()
     }
     match flex_style.align_self {
       @types.Baseline => return None

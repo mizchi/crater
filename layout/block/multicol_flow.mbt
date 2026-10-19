@@ -785,7 +785,7 @@ fn has_inflow_fragment_child(children : Array[@node.Node]) -> Bool {
       child.style.position == @types.Fixed {
       continue
     }
-    if child.style.float != @types.Float::None {
+    if child.style.float != @types.CssFloat::None {
       continue
     }
     if is_whitespace_only_flow_text(child) &&
@@ -807,7 +807,7 @@ fn has_direct_inflow_float(children : Array[@node.Node]) -> Bool {
       child.style.position == @types.Fixed {
       continue
     }
-    if child.style.float != @types.Float::None {
+    if child.style.float != @types.CssFloat::None {
       return true
     }
   }
@@ -1134,7 +1134,7 @@ fn starts_with_forced_column_break_descendant(
       child.style.position == @types.Fixed {
       continue
     }
-    if child.style.float != @types.Float::None {
+    if child.style.float != @types.CssFloat::None {
       return false
     }
     if is_whitespace_only_flow_text(child) &&
@@ -1170,7 +1170,7 @@ fn ends_with_forced_column_break_descendant(
       child.style.position == @types.Fixed {
       continue
     }
-    if child.style.float != @types.Float::None {
+    if child.style.float != @types.CssFloat::None {
       return false
     }
     if is_whitespace_only_flow_text(child) &&
@@ -1202,7 +1202,7 @@ fn starts_with_break_avoid_descendant(children : Array[@node.Node]) -> Bool {
       child.style.position == @types.Fixed {
       continue
     }
-    if child.style.float != @types.Float::None {
+    if child.style.float != @types.CssFloat::None {
       return false
     }
     if is_whitespace_only_flow_text(child) &&
@@ -1233,7 +1233,7 @@ fn ends_with_break_avoid_descendant(children : Array[@node.Node]) -> Bool {
       child.style.position == @types.Fixed {
       continue
     }
-    if child.style.float != @types.Float::None {
+    if child.style.float != @types.CssFloat::None {
       return false
     }
     if is_whitespace_only_flow_text(child) &&
@@ -1887,7 +1887,7 @@ fn process_multicol_flow_child(
                 nested_visual_margin_top +
                 nested_layout.margin.bottom
               let nested_is_inflow_float = nested_style.float !=
-                @types.Float::None &&
+                @types.CssFloat::None &&
                 nested_style.position != @types.Absolute &&
                 nested_style.position != @types.Fixed
               let nested_is_hr = nested_layout.id == "hr"
@@ -1985,7 +1985,7 @@ fn process_multicol_flow_child(
                 let nested_grand_source_children : Array[@node.Node] = []
                 for g = 0; g < nested_source_node.children.length(); g = g + 1 {
                   let source_grand = nested_source_node.children[g]
-                  if source_grand.style.float != @types.Float::None &&
+                  if source_grand.style.float != @types.CssFloat::None &&
                     source_grand.style.position != @types.Absolute &&
                     source_grand.style.position != @types.Fixed {
                     nested_has_direct_inflow_float = true

@@ -44,7 +44,7 @@ fn is_unbreakable_fragment_unit(
       child.style.position == @types.Fixed {
       continue
     }
-    if child.style.float != @types.Float::None {
+    if child.style.float != @types.CssFloat::None {
       continue
     }
     if !@inline.is_inline_level(child.style.display) {
@@ -183,7 +183,7 @@ fn reflow_fragmented_children_with_offset(
         j, child_layouts, source_children,
       )
     }
-    let child_is_inflow_float = child_style.float != @types.Float::None &&
+    let child_is_inflow_float = child_style.float != @types.CssFloat::None &&
       child_style.position != @types.Absolute &&
       child_style.position != @types.Fixed
     let child_unbreakable = if j < source_children.length() {
@@ -331,7 +331,7 @@ fn reflow_fragmented_children_with_offset(
       let source_child = source_children[j]
       for g = 0; g < source_child.children.length(); g = g + 1 {
         let source_grand = source_child.children[g]
-        if source_grand.style.float != @types.Float::None &&
+        if source_grand.style.float != @types.CssFloat::None &&
           source_grand.style.position != @types.Absolute &&
           source_grand.style.position != @types.Fixed {
           child_has_direct_inflow_float = true
@@ -633,11 +633,11 @@ fn source_children_only_contribute_floats(children : Array[@node.Node]) -> Bool 
       continue
     }
     match child.style.float {
-      @types.Float::Left | @types.Float::Right => {
+      @types.CssFloat::Left | @types.CssFloat::Right => {
         has_float_contribution = true
         continue
       }
-      @types.Float::None => ()
+      @types.CssFloat::None => ()
     }
     if child.children.length() == 0 ||
       @inline.is_inline_level(child.style.display) ||
