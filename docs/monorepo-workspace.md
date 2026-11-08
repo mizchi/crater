@@ -179,6 +179,8 @@ nested modules and local `moon.work` files are excluded from its copy. Archives
 are written to `_build/release/publish/` for inspection before publication.
 The release commands require Git and `unzip`; before upload they verify that
 each archive includes its manifest, MoonBit packages and any prebuild script.
+Publication allows dependency synchronization because Moon also validates a
+freshly extracted archive before uploading it.
 
 The default release set includes public workspace modules in dependency order.
 Internal modules such as `mizchi/crater-benchmarks` and

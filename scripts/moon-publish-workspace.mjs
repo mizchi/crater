@@ -249,7 +249,7 @@ Options:
   --publish            Run \`moon publish\` for each selected module
   --only-crater-star   Select only modules named \`mizchi/crater-*\`
   --include-internal   Include internal modules such as benchmarks/testing
-  --no-frozen          Do not pass --frozen to moon publish
+  --no-frozen          Do not pass --frozen to moon publish (default)
   --force-publish-dry-run
                        On macOS, use \`moon publish --dry-run\` instead of the
                        safer \`moon package\` fallback
@@ -373,7 +373,8 @@ export function runCli({
   let action = 'list'
   let includeInternal = false
   let onlyCraterStar = false
-  let frozen = true
+  // Publication validates a freshly extracted archive whose dependencies must sync.
+  let frozen = false
   let forcePublishDryRun = false
 
   for (const arg of scriptArgs) {
