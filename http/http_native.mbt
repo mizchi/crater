@@ -52,11 +52,11 @@ pub async fn fetch(
   // Create HTTP client with just the host.
   // @async_http keys headers by `CaseInsensitiveString`, so lift the plain
   // `Map[String, String]` the crater API exposes into that key type.
-  let request_headers : Map[@async_http.CaseInsensitiveString, String] = {}
+  let request_headers : Map[@async_http.CaseInsensitiveString, String] = Map([])
   for k, v in prepared.headers {
     request_headers[@async_http.CaseInsensitiveString(k)] = v
   }
-  let client = @async_http.Client::new(host_url, headers=request_headers) catch {
+  let client = @async_http.Client(host_url, headers=request_headers) catch {
     _ => raise InvalidUrl(url)
   }
   // Perform request based on method
@@ -83,7 +83,7 @@ pub async fn fetch(
   let body = body_data.text() catch { _ => "" }
   client.close()
   // Convert headers back to the plain lowercase-keyed map crater exposes
-  let headers : Map[String, String] = {}
+  let headers : Map[String, String] = Map([])
   for k, v in response.headers {
     headers[k.0.to_lower()] = v
   }
