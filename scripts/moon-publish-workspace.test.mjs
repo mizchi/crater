@@ -16,9 +16,15 @@ import {
   runCommands,
   resolveCheckTarget,
   shouldUsePackageFallback,
+  shouldRetryRegistryPropagation,
 } from './moon-publish-workspace.mjs'
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+
+test('publication retries a version missing during registry propagation', () => {
+  assert.ok(shouldRetryRegistryPropagation("Failed to resolve registry dependency `mizchi/crater-core`: version `0.19.2` was not found in the registry"))
+  assert.ok(!shouldRetryRegistryPropagation('Server status: 403 Forbidden'))
+})
 
 test('release archives require metadata, a package and any declared prebuild script', () => {
   const module = { name: 'mizchi/crater-browser-native' }

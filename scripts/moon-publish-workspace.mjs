@@ -276,7 +276,7 @@ export function shouldUsePackageFallback({
 }
 
 export function shouldRetryRegistryPropagation(output) {
-  return /module was not found in the registry|no version satisfies requirement/i.test(
+  return /module was not found in the registry|no version satisfies requirement|version .+ was not found in the registry/i.test(
     output,
   )
 }
@@ -306,7 +306,7 @@ export function runCommands(
     spawn = spawnSync,
     sleep = sleepMs,
     retryDelayMs = 5000,
-    maxPublishAttempts = 5,
+    maxPublishAttempts = 12,
   } = {},
 ) {
   for (const [index, { module, args, command }] of commands.entries()) {
