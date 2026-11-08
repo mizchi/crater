@@ -661,6 +661,9 @@ jobs:
       - name: Typecheck Playwright adapter TypeScript
         run: pnpm typecheck
 
+      - name: Validate Chromium cache detection
+        run: pnpm exec vitest run scripts/chromium-cache-present.test.ts
+
       - name: Restore Playwright Chromium browser cache
         id: playwright_bidi_playwright_cache
         uses: actions/cache@v6

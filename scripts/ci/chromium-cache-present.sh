@@ -1,24 +1,41 @@
 #!/usr/bin/env bash
-# Print "true" if a Playwright Chromium browser binary is already present in the
-# cache directory (e.g. restored from actions/cache via restore-keys), else
-# "false".
-#
-# The CI jobs that drive Chrome cache ~/.cache/ms-playwright keyed on
-# package.json/pnpm-lock.yaml. Any dependency change invalidates the exact key
-# for every job at once; with restore-keys the previous browser is still
-# restored, but the install step was gated on the *exact* cache hit and so re-ran
-# `playwright install`, forcing a fresh, flaky download that fails the strict WPT
-# gates. Gating the install step on this check instead lets a restored browser
-# (exact or partial) skip the download entirely — the same path that is already
-# proven green when the exact cache hits.
+# A restored cache is usable only when it contains the Chromium revision that
+# the installed Playwright requires, including the executable headless shell.
+# An older browser restored through a cache prefix must trigger a new install.
 set -euo pipefail
 
-cache_dir="${PLAYWRIGHT_BROWSERS_PATH:-$HOME/.cache/ms-playwright}"
+if ! chrome_path="$(pnpm exec node -e 'process.stdout.write(require("playwright").chromium.executablePath())' 2>/dev/null)"; then
+  echo "false"
+  exit 0
+fi
+if [ ! -x "$chrome_path" ]; then
+  echo "false"
+  exit 0
+fi
+
+if ! dry_run="$(pnpm exec playwright install --dry-run chromium 2>/dev/null)"; then
+  echo "false"
+  exit 0
+fi
+headless_location="$(printf '%s\n' "$dry_run" | awk '
+  /Install location:/ {
+    sub(/^[[:space:]]*Install location:[[:space:]]*/, "")
+    if ($0 ~ /\/chromium_headless_shell-[0-9]+$/) { print; exit }
+  }
+')"
+if [ -z "$headless_location" ]; then
+  echo "false"
+  exit 0
+fi
 
 shopt -s nullglob
-matches=("$cache_dir"/chromium-*/chrome-linux*/chrome)
-if [ "${#matches[@]}" -gt 0 ] && [ -x "${matches[0]}" ]; then
-  echo "true"
-else
-  echo "false"
-fi
+for executable in \
+  "$headless_location"/chrome-headless-shell-*/chrome-headless-shell \
+  "$headless_location"/chrome-*/headless_shell \
+  "$headless_location"/headless_shell; do
+  if [ -f "$executable" ] && [ -x "$executable" ]; then
+    echo "true"
+    exit 0
+  fi
+done
+echo "false"
