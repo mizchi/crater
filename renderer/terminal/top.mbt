@@ -1,5 +1,8 @@
 ///|
-fn default_render_context(width : Int, height : Int) -> @renderer.RenderContext {
+fn default_render_context(
+  width : Int32,
+  height : Int32,
+) -> @renderer.RenderContext {
   {
     viewport_width: width.to_double(),
     viewport_height: height.to_double(),
@@ -10,7 +13,7 @@ fn default_render_context(width : Int, height : Int) -> @renderer.RenderContext 
 
 ///|
 /// Render HTML to Sixel string (legacy, depth-based colors).
-pub fn render_to_sixel(html : String, width : Int, height : Int) -> String {
+pub fn render_to_sixel(html : String, width : Int32, height : Int32) -> String {
   let layout = @renderer.render(html, default_render_context(width, height))
   @sixel.render_layout(layout, width, height)
 }
@@ -19,8 +22,8 @@ pub fn render_to_sixel(html : String, width : Int, height : Int) -> String {
 /// Render HTML to Sixel string with actual CSS colors.
 pub fn render_to_sixel_with_styles(
   html : String,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
 ) -> String {
   render_to_sixel_with_scroll(html, width, height, 0)
 }
@@ -29,9 +32,9 @@ pub fn render_to_sixel_with_styles(
 /// Render HTML to Sixel string with actual CSS colors and scroll offset.
 pub fn render_to_sixel_with_scroll(
   html : String,
-  width : Int,
-  height : Int,
-  scroll_y : Int,
+  width : Int32,
+  height : Int32,
+  scroll_y : Int32,
 ) -> String {
   render_to_sixel_with_css(html, width, height, scroll_y, [])
 }
@@ -40,9 +43,9 @@ pub fn render_to_sixel_with_scroll(
 /// Render HTML to Sixel with external CSS and scroll offset.
 pub fn render_to_sixel_with_css(
   html : String,
-  width : Int,
-  height : Int,
-  scroll_y : Int,
+  width : Int32,
+  height : Int32,
+  scroll_y : Int32,
   external_css : Array[String],
 ) -> String {
   let (node, layout) = @renderer.render_to_node_and_layout_with_external_css(
@@ -57,9 +60,9 @@ pub fn render_to_sixel_with_css(
 /// Render HTML to Kitty graphics output with external CSS and scroll offset.
 pub fn render_to_kitty_with_css(
   html : String,
-  width : Int,
-  height : Int,
-  scroll_y : Int,
+  width : Int32,
+  height : Int32,
+  scroll_y : Int32,
   external_css : Array[String],
 ) -> String {
   let (node, layout) = @renderer.render_to_node_and_layout_with_external_css(
@@ -77,9 +80,9 @@ pub fn render_to_kitty_with_css(
 pub async fn[T : @io.Writer] write_kitty_with_css(
   writer : T,
   html : String,
-  width : Int,
-  height : Int,
-  scroll_y : Int,
+  width : Int32,
+  height : Int32,
+  scroll_y : Int32,
   external_css : Array[String],
 ) -> Unit {
   let (node, layout) = @renderer.render_to_node_and_layout_with_external_css(

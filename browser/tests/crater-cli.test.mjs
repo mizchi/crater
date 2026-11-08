@@ -30,10 +30,10 @@ function runCrater(args, options = {}) {
 
 test.before(() => {
   execFileSync("moon", [
+    "-C",
+    repoRoot,
     "build",
-    "--manifest-path",
-    path.join(repoRoot, "moon.mod.json"),
-    path.join(repoRoot, "cmd", "crater"),
+    "cmd/crater",
     "--target",
     "js",
     "--release",

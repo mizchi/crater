@@ -1,8 +1,8 @@
 ///|
 /// Build a renderer context from viewport and color mode
 pub fn create_render_context(
-  viewport_width : Int,
-  viewport_height : Int,
+  viewport_width : Int32,
+  viewport_height : Int32,
   dark_mode : Bool,
 ) -> @renderer.RenderContext {
   let color_scheme : @css.ColorScheme = if dark_mode {
@@ -156,8 +156,8 @@ pub fn report_css_support(css_list : Array[String]) -> Unit {
 
 ///|
 fn default_extract_config(
-  viewport_width : Int,
-  viewport_height : Int,
+  viewport_width : Int32,
+  viewport_height : Int32,
 ) -> @arc90.ExtractConfig {
   {
     min_text_length: 50,
@@ -178,8 +178,8 @@ fn default_extract_config(
 /// Run Arc90 extraction and return summary
 pub fn render_arc90_summary(
   tree : @aom.AccessibilityTree,
-  viewport_width : Int,
-  viewport_height : Int,
+  viewport_width : Int32,
+  viewport_height : Int32,
 ) -> String {
   let result = @arc90.extract_content(
     tree,
@@ -192,8 +192,8 @@ pub fn render_arc90_summary(
 /// Extract main content text from accessibility tree
 pub fn extract_main_text(
   tree : @aom.AccessibilityTree,
-  viewport_width : Int,
-  viewport_height : Int,
+  viewport_width : Int32,
+  viewport_height : Int32,
 ) -> String {
   let result = @arc90.extract_content(
     tree,
@@ -254,8 +254,8 @@ fn collect_node_text_recursive(
 /// Run visual grounding demo and return formatted output
 pub fn render_grounding_demo(
   tree : @aom.AccessibilityTree,
-  viewport_width : Int,
-  viewport_height : Int,
+  viewport_width : Int32,
+  viewport_height : Int32,
 ) -> String {
   let viewport : @grounding.Viewport = {
     width: viewport_width.to_double(),

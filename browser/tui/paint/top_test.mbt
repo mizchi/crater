@@ -24,7 +24,7 @@ test "tui paint keeps node conversion" {
     children: [],
     text: None,
   }
-  let paint_node = from_node_and_layout(node, layout)
+  let paint_node = @paint.from_node_and_layout(node, layout)
   inspect(paint_node.id, content="root")
   inspect(paint_node.width, content="100")
 }
@@ -90,7 +90,9 @@ test "tui paint prepares sorted viewport paint" {
     text: None,
   }
 
-  let prepared = prepare_viewport_paint(root, root_layout, 0.0, 60.0, 0.0)
+  let prepared = @paint.prepare_viewport_paint(
+    root, root_layout, 0.0, 60.0, 0.0,
+  )
   inspect(prepared is Some(_), content="true")
   match prepared {
     Some(p) => {

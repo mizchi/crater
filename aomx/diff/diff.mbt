@@ -30,16 +30,16 @@ pub(all) struct Difference {
   /// Description of the change
   description : String
   /// Severity: 0 = info, 1 = minor, 2 = major, 3 = breaking
-  severity : Int
+  severity : Int32
 }
 
 ///|
 /// Complete diff result
 pub(all) struct DiffResult {
   differences : Array[Difference]
-  added_count : Int
-  removed_count : Int
-  changed_count : Int
+  added_count : Int32
+  removed_count : Int32
+  changed_count : Int32
   /// Overall similarity score (0.0 - 1.0)
   similarity : Double
 }

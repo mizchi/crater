@@ -1168,16 +1168,16 @@ test "img_alt_text_propagation" {
     #|  <p>After</p>
     #|</body>
     #|</html>
-  let ctx : RenderContext = {
+  let ctx : @renderer.RenderContext = {
     viewport_width: 640.0,
     viewport_height: 400.0,
     root_font_size: 16.0,
     color_scheme: @css.ColorScheme::Light,
   }
-  let node = render_to_node(html, ctx)
-  let layout = render(html, ctx)
+  let node = @renderer.render_to_node(html, ctx)
+  let layout = @renderer.render(html, ctx)
   // Debug: print all node IDs
-  fn print_nodes(n : @node.Node, depth : Int) -> Unit {
+  fn print_nodes(n : @node.Node, depth : Int32) -> Unit {
     let _ = String::make(depth * 2, ' ')
     let _ = match n.text {
       Some(t) => " text=\"" + t + "\""

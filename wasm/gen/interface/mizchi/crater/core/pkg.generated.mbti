@@ -2,7 +2,7 @@
 package "mizchi/crater-wasm/gen/interface/mizchi/crater/core"
 
 // Values
-pub fn compute_layout(String, UInt, UInt) -> String
+pub fn compute_layout(String, UInt32, UInt32) -> String
 
 // Errors
 

@@ -366,7 +366,7 @@ fn trim_leading_collapsible_whitespace(text : String) -> String {
 ///|
 fn sibling_participates_inline_flow(
   siblings : Array[@html.Node],
-  sibling_index : Int,
+  sibling_index : Int32,
   parent_selector : @css.Element,
   parent_style : @style.Style,
   indexed_stylesheets : Array[@css.IndexedStylesheet],
@@ -413,7 +413,7 @@ fn sibling_participates_inline_flow(
 ///|
 fn trim_boundary_collapsible_whitespace_for_inline_context(
   siblings : Array[@html.Node],
-  index : Int,
+  index : Int32,
   parent_selector : @css.Element,
   parent_style : @style.Style,
   indexed_stylesheets : Array[@css.IndexedStylesheet],
@@ -481,7 +481,7 @@ fn trim_boundary_collapsible_whitespace_for_inline_context(
 /// Keep collapsed whitespace text between inline-participating element siblings.
 fn should_preserve_inter_element_whitespace(
   siblings : Array[@html.Node],
-  index : Int,
+  index : Int32,
   parent_selector : @css.Element,
   parent_style : @style.Style,
   indexed_stylesheets : Array[@css.IndexedStylesheet],

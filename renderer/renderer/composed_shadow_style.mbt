@@ -18,8 +18,8 @@
 pub fn compute_composed_shadow_styles(
   tree : @dom.DomTree,
   ctx : RenderContext,
-) -> Map[Int, @style.Style] {
-  let styles : Map[Int, @style.Style] = Map([])
+) -> Map[Int32, @style.Style] {
+  let styles : Map[Int32, @style.Style] = Map([])
   compose_node(tree, tree.get_document(), ctx, styles)
   styles
 }
@@ -33,7 +33,7 @@ fn compose_node(
   tree : @dom.DomTree,
   node : @dom.NodeId,
   ctx : RenderContext,
-  styles : Map[Int, @style.Style],
+  styles : Map[Int32, @style.Style],
 ) -> Unit {
   if tree.get_shadow_root(node) is Ok(Some(_)) {
     compose_host(tree, node, styles.get(node.to_int()), ctx, styles)
@@ -64,7 +64,7 @@ fn compose_host(
   host : @dom.NodeId,
   host_parent_style : @style.Style?,
   ctx : RenderContext,
-  styles : Map[Int, @style.Style],
+  styles : Map[Int32, @style.Style],
 ) -> Unit {
   let shadow_root = match tree.get_shadow_root(host) {
     Ok(Some(root)) => root

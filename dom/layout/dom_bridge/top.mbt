@@ -16,9 +16,9 @@ pub struct Document {
   /// The layout tree (computed layout)
   layout : @tree.LayoutTree
   /// Mapping from DOM NodeId to @tree.LayoutTree uid
-  dom_to_layout : Map[Int, Int]
+  dom_to_layout : Map[Int32, Int32]
   /// Mapping from @tree.LayoutTree uid to DOM NodeId
-  layout_to_dom : Map[Int, Int]
+  layout_to_dom : Map[Int32, Int32]
   /// Whether layout needs recomputation
   mut needs_layout : Bool
 }
@@ -64,7 +64,7 @@ pub fn Document::needs_layout(self : Document) -> Bool {
 ///|
 /// Process pending DOM mutations and apply them to the layout tree
 /// Returns the number of mutations processed
-pub fn Document::process_mutations(self : Document) -> Int {
+pub fn Document::process_mutations(self : Document) -> Int32 {
   let (records, result) = self.dom.flush_mutations()
   if records.is_empty() {
     return 0
@@ -268,7 +268,7 @@ fn Document::apply_style_change_mutation(
 /// Create a @tree.LayoutNode for a DOM node
 fn Document::create_layout_node_for_dom(
   self : Document,
-  dom_id : Int,
+  dom_id : Int32,
 ) -> @tree.LayoutNode? {
   let node_id = @dom.NodeId::from_int(dom_id)
   match self.dom.get_node_info(node_id) {
@@ -330,7 +330,7 @@ fn Document::rebuild_layout_from_dom(self : Document) -> Unit {
 fn Document::register_layout_subtree(
   self : Document,
   node : @tree.LayoutNode,
-  parent_uid : Int,
+  parent_uid : Int32,
 ) -> Unit {
   let dom_id = Some(@string.parse_int(node.id)) catch { _ => None }
   match dom_id {
@@ -414,7 +414,7 @@ fn Document::build_layout_nodes_for_dom(
 
 ///|
 /// Remove a node and its descendants from the maps
-fn Document::remove_from_maps(self : Document, uid : Int) -> Unit {
+fn Document::remove_from_maps(self : Document, uid : Int32) -> Unit {
   match self.layout.node_map.get(uid) {
     Some(node) => {
       // Remove children first

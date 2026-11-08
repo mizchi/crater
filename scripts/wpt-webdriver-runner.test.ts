@@ -58,7 +58,7 @@ describe("resolveBidiServerPath", () => {
     expect(resolveBidiServerPath(cwd)).toBe(serverPath);
   });
 
-  it("prefers webdriver/_build over legacy paths", () => {
+  it("prefers current workspace output over stale module builds", () => {
     const cwd = mkTempProject();
     const localBuildPath = path.join(cwd, "webdriver/_build/js/release/build/bidi_main/bidi_main.js");
     const workspacePath = path.join(cwd, "_build/js/release/build/mizchi/crater-webdriver-bidi/bidi_main/bidi_main.js");
@@ -67,7 +67,7 @@ describe("resolveBidiServerPath", () => {
     touch(workspacePath);
     touch(targetPath);
 
-    expect(resolveBidiServerPath(cwd)).toBe(localBuildPath);
+    expect(resolveBidiServerPath(cwd)).toBe(workspacePath);
   });
 
   it("returns null when no server file exists", () => {

@@ -18,7 +18,7 @@
 /// their uppercase form.
 fn glyph_rows(ch : Char) -> Array[String]? {
   let c = if ch >= 'a' && ch <= 'z' {
-    Int::unsafe_to_char(ch.to_int() - 32)
+    Int32::unsafe_to_char(ch.to_int() - 32)
   } else {
     ch
   }
@@ -67,10 +67,10 @@ fn glyph_rows(ch : Char) -> Array[String]? {
 ///|
 /// Width / height of a single glyph cell, and the inter-glyph advance, in
 /// font cells (multiply by the pixel scale).
-pub let bitmap_glyph_w : Int = 5
+pub let bitmap_glyph_w : Int32 = 5
 
 ///|
-pub let bitmap_glyph_h : Int = 7
+pub let bitmap_glyph_h : Int32 = 7
 
 ///|
 /// Lower `text` into solid fill commands using the built-in 5x7 font, at
@@ -80,9 +80,9 @@ pub let bitmap_glyph_h : Int = 7
 pub fn bitmap_text_commands(
   frame : @gfx_frame.RenderFrame2D,
   text : String,
-  x : Int,
-  y : Int,
-  scale : Int,
+  x : Int32,
+  y : Int32,
+  scale : Int32,
   color : @gfx.Color,
 ) -> Array[@gfx.DrawTrianglesCommand] {
   let commands : Array[@gfx.DrawTrianglesCommand] = []

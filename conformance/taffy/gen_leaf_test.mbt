@@ -15,7 +15,12 @@ test "taffy/leaf_overflow_scrollbars_affect_available_space_x_axis" {
   }
   let root_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 210.0, max_width: 210.0, min_height: 10.0, max_height: 10.0 }
+      {
+        min_width: 210.0,
+        max_width: 210.0,
+        min_height: 10.0,
+        max_height: 10.0,
+      }
     },
   }
   let root = @node.Node::with_measure("test-root", root_style, root_measure)
@@ -39,7 +44,12 @@ test "taffy/leaf_overflow_scrollbars_affect_available_space_y_axis" {
   }
   let root_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 210.0, max_width: 210.0, min_height: 10.0, max_height: 10.0 }
+      {
+        min_width: 210.0,
+        max_width: 210.0,
+        min_height: 10.0,
+        max_height: 10.0,
+      }
     },
   }
   let root = @node.Node::with_measure("test-root", root_style, root_measure)
@@ -136,7 +146,7 @@ test "taffy/leaf_overflow_scrollbars_take_up_space_both_axis" {
   }
   let root_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let root = @node.Node::with_measure("test-root", root_style, root_measure)
@@ -158,7 +168,7 @@ test "taffy/leaf_overflow_scrollbars_take_up_space_x_axis" {
   }
   let root_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let root = @node.Node::with_measure("test-root", root_style, root_measure)
@@ -180,7 +190,7 @@ test "taffy/leaf_overflow_scrollbars_take_up_space_y_axis" {
   }
   let root_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let root = @node.Node::with_measure("test-root", root_style, root_measure)
@@ -297,7 +307,7 @@ test "taffy/leaf_with_content_and_border" {
   }
   let root_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 40.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 40.0, max_width: 40.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let root = @node.Node::with_measure("test-root", root_style, root_measure)
@@ -324,7 +334,7 @@ test "taffy/leaf_with_content_and_padding" {
   }
   let root_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 40.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 40.0, max_width: 40.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let root = @node.Node::with_measure("test-root", root_style, root_measure)
@@ -357,7 +367,7 @@ test "taffy/leaf_with_content_and_padding_border" {
   }
   let root_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 40.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 40.0, max_width: 40.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let root = @node.Node::with_measure("test-root", root_style, root_measure)

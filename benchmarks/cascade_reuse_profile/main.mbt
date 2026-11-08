@@ -7,7 +7,7 @@
 ///|
 /// A reuse-safe stylesheet (only class/tag/descendant selectors) with `rules`
 /// class rules, inlined as a <style> block so the whole page is one document.
-fn build_page(blocks : Int, rules : Int) -> String {
+fn build_page(blocks : Int32, rules : Int32) -> String {
   let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><head><style>")
   buf.write_string("body{margin:0}.row .cell{margin:2px}")

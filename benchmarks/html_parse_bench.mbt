@@ -9,7 +9,7 @@
 
 ///|
 /// Generate simple HTML with N elements
-fn generate_simple_html(n : Int) -> String {
+fn generate_simple_html(n : Int32) -> String {
   let buf = StringBuilder()
   buf.write_string("<div>")
   for i = 0; i < n; i = i + 1 {
@@ -23,7 +23,7 @@ fn generate_simple_html(n : Int) -> String {
 
 ///|
 /// Generate nested HTML with depth D
-fn generate_nested_html(depth : Int) -> String {
+fn generate_nested_html(depth : Int32) -> String {
   let buf = StringBuilder()
   for i = 0; i < depth; i = i + 1 {
     buf.write_string("<div class=\"level-")
@@ -39,7 +39,7 @@ fn generate_nested_html(depth : Int) -> String {
 
 ///|
 /// Generate HTML with many attributes
-fn generate_attribute_heavy_html(n : Int) -> String {
+fn generate_attribute_heavy_html(n : Int32) -> String {
   let buf = StringBuilder()
   buf.write_string("<div>")
   for i = 0; i < n; i = i + 1 {
@@ -60,7 +60,7 @@ fn generate_attribute_heavy_html(n : Int) -> String {
 
 ///|
 /// Generate a table with R rows and C columns
-fn generate_table_html(rows : Int, cols : Int) -> String {
+fn generate_table_html(rows : Int32, cols : Int32) -> String {
   let buf = StringBuilder()
   buf.write_string("<table>")
   buf.write_string("<thead><tr>")
@@ -89,7 +89,10 @@ fn generate_table_html(rows : Int, cols : Int) -> String {
 
 ///|
 /// Generate a complex page layout (header, nav, main, footer)
-fn generate_page_layout(sidebar_items : Int, content_sections : Int) -> String {
+fn generate_page_layout(
+  sidebar_items : Int32,
+  content_sections : Int32,
+) -> String {
   let buf = StringBuilder()
   buf.write_string(
     "<!DOCTYPE html><html><head><title>Page</title></head><body>",
@@ -135,7 +138,7 @@ fn generate_page_layout(sidebar_items : Int, content_sections : Int) -> String {
 
 ///|
 /// Generate HTML with inline styles (CSS in style attribute)
-fn generate_styled_html(n : Int) -> String {
+fn generate_styled_html(n : Int32) -> String {
   let buf = StringBuilder()
   buf.write_string("<div style=\"display: flex; flex-direction: column;\">")
   for i = 0; i < n; i = i + 1 {
@@ -156,7 +159,7 @@ fn generate_styled_html(n : Int) -> String {
 
 ///|
 /// Generate HTML with script and style tags (to test extraction)
-fn generate_resource_heavy_html(styles : Int, scripts : Int) -> String {
+fn generate_resource_heavy_html(styles : Int32, scripts : Int32) -> String {
   let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><head>")
   for i = 0; i < styles; i = i + 1 {
@@ -179,7 +182,7 @@ fn generate_resource_heavy_html(styles : Int, scripts : Int) -> String {
 
 ///|
 /// Generate form HTML with various input types
-fn generate_form_html(fields : Int) -> String {
+fn generate_form_html(fields : Int32) -> String {
   let buf = StringBuilder()
   buf.write_string("<form action=\"/submit\" method=\"post\">")
   for i = 0; i < fields; i = i + 1 {
@@ -212,7 +215,7 @@ fn generate_form_html(fields : Int) -> String {
 
 ///|
 /// Generate HTML with malformed/edge case content (for error recovery testing)
-fn generate_malformed_html(n : Int) -> String {
+fn generate_malformed_html(n : Int32) -> String {
   let buf = StringBuilder()
   buf.write_string("<div>")
   for i = 0; i < n; i = i + 1 {
@@ -455,7 +458,7 @@ test "bench_parse_fragment_list" (b : @bench.T) {
 // =============================================================================
 
 ///|
-fn generate_card_grid(cards : Int) -> String {
+fn generate_card_grid(cards : Int32) -> String {
   let buf = StringBuilder()
   buf.write_string(
     "<div class=\"grid\" style=\"display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;\">",
@@ -557,8 +560,8 @@ test "bench_tokenize_styled_100" (b : @bench.T) {
 
 ///|
 fn generate_large_document(
-  sections : Int,
-  paragraphs_per_section : Int,
+  sections : Int32,
+  paragraphs_per_section : Int32,
 ) -> String {
   let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><head><title>Large Document</title>")

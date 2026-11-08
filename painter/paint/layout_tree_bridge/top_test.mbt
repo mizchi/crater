@@ -22,7 +22,7 @@ test "paint layout tree bridge owns from_layout" {
     children: [],
     text: None,
   }
-  let paint_node = from_layout(layout)
+  let paint_node = @layout_tree_bridge.from_layout(layout)
   inspect(paint_node.id, content="root")
   inspect(paint_node.width, content="100")
 }

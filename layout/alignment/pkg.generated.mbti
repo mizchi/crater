@@ -23,7 +23,7 @@ pub fn compute_align_offset(@values.Alignment, Double) -> Double
 
 pub fn compute_align_self_offset(@values.AlignSelf, @values.Alignment, Double) -> Double
 
-pub fn compute_justify(@values.Alignment, Double, Int) -> (Double, Double)
+pub fn compute_justify(@values.Alignment, Double, Int32) -> (Double, Double)
 
 pub fn resolve_align_self(@values.AlignSelf, @values.Alignment) -> @values.Alignment
 

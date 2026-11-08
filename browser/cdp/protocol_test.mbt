@@ -5,7 +5,7 @@
 
 ///|
 test "CdpProtocol processes Target.createBrowserContext" {
-  let protocol = CdpProtocol::new()
+  let protocol = @cdp.CdpProtocol::new()
   let json =
     #|{"id":1,"method":"Target.createBrowserContext"}
   let result = protocol.process_message(json)
@@ -16,7 +16,7 @@ test "CdpProtocol processes Target.createBrowserContext" {
 
 ///|
 test "CdpProtocol processes Target.createTarget" {
-  let protocol = CdpProtocol::new()
+  let protocol = @cdp.CdpProtocol::new()
   // First create a context
   let json1 =
     #|{"id":1,"method":"Target.createBrowserContext"}
@@ -33,14 +33,14 @@ test "CdpProtocol processes Target.createTarget" {
 
 ///|
 test "CdpProtocol handles invalid JSON" {
-  let protocol = CdpProtocol::new()
+  let protocol = @cdp.CdpProtocol::new()
   let result = protocol.process_message("not json")
   inspect(result is Err(_), content="true")
 }
 
 ///|
 test "CdpProtocol handles missing method" {
-  let protocol = CdpProtocol::new()
+  let protocol = @cdp.CdpProtocol::new()
   let json =
     #|{"id":1}
   let result = protocol.process_message(json)
@@ -49,7 +49,7 @@ test "CdpProtocol handles missing method" {
 
 ///|
 test "CdpProtocol handles unknown domain" {
-  let protocol = CdpProtocol::new()
+  let protocol = @cdp.CdpProtocol::new()
   let json =
     #|{"id":1,"method":"Unknown.method"}
   let result = protocol.process_message(json)
@@ -66,7 +66,7 @@ test "CdpProtocol handles unknown domain" {
 
 ///|
 test "CdpProtocol processes Browser.getVersion" {
-  let protocol = CdpProtocol::new()
+  let protocol = @cdp.CdpProtocol::new()
   let json =
     #|{"id":1,"method":"Browser.getVersion"}
   let result = protocol.process_message(json)
@@ -77,7 +77,7 @@ test "CdpProtocol processes Browser.getVersion" {
 
 ///|
 test "CdpProtocol processes Page.navigate" {
-  let protocol = CdpProtocol::new()
+  let protocol = @cdp.CdpProtocol::new()
   // First create context and target
   let json1 =
     #|{"id":1,"method":"Target.createBrowserContext"}
@@ -98,7 +98,7 @@ test "CdpProtocol processes Page.navigate" {
 
 ///|
 test "CdpProtocol processes DOM.getDocument" {
-  let protocol = CdpProtocol::new()
+  let protocol = @cdp.CdpProtocol::new()
   // First create context, target, and load HTML
   let json1 =
     #|{"id":1,"method":"Target.createBrowserContext"}
@@ -119,13 +119,13 @@ test "CdpProtocol processes DOM.getDocument" {
 
 ///|
 test "CdpOutMessage.to_json serializes response" {
-  let resp = CdpResponse::new(
+  let resp = @cdp.CdpResponse::new(
     Some(1),
     Some(Json::object({ "test": Json::boolean(true) })),
     None,
     None,
   )
-  let msg = CdpOutMessage::response(resp)
+  let msg = @cdp.CdpOutMessage::response(resp)
   let json_str = msg.to_json()
   inspect(json_str.contains("\"id\":1"), content="true")
   inspect(json_str.contains("\"result\""), content="true")
@@ -133,12 +133,12 @@ test "CdpOutMessage.to_json serializes response" {
 
 ///|
 test "CdpOutMessage.to_json serializes event" {
-  let evt = CdpEvent::new(
+  let evt = @cdp.CdpEvent::new(
     "Target.targetCreated",
     Some(Json::object({ "targetId": Json::string("TID-1") })),
     None,
   )
-  let msg = CdpOutMessage::event(evt)
+  let msg = @cdp.CdpOutMessage::event(evt)
   let json_str = msg.to_json()
   inspect(
     json_str.contains("\"method\":\"Target.targetCreated\""),
@@ -149,7 +149,7 @@ test "CdpOutMessage.to_json serializes event" {
 
 ///|
 test "CdpProtocol processes Target.attachToTarget" {
-  let protocol = CdpProtocol::new()
+  let protocol = @cdp.CdpProtocol::new()
   // Create context and target
   let json1 =
     #|{"id":1,"method":"Target.createBrowserContext"}
@@ -185,7 +185,7 @@ test "CdpProtocol processes Target.attachToTarget" {
 
 ///|
 test "CdpProtocol processes enable/disable methods" {
-  let protocol = CdpProtocol::new()
+  let protocol = @cdp.CdpProtocol::new()
   // Create a target first (needed for Runtime.enable to send events)
   let _ = protocol.process_message(
     "{\"id\":0,\"method\":\"Target.createTarget\",\"params\":{\"url\":\"about:blank\"}}",

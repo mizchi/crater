@@ -3,6 +3,7 @@
 
 ///|
 /// What a node's layout depends on
+#derive(Eq, Debug)
 pub(all) enum DependencyKind {
   /// Only fixed values (Length) - never needs re-layout due to parent changes
   Static
@@ -16,7 +17,13 @@ pub(all) enum DependencyKind {
   Intrinsic
   /// Depends on viewport (vw/vh - future extension)
   Viewport
-} derive(Eq, Debug)
+}
+
+///|
+pub extend DependencyKind with Eq::{not_equal, equal}
+
+///|
+pub extend DependencyKind with @debug.Debug::{to_repr}
 
 ///|
 pub impl Show for DependencyKind with fn output(self, logger) {
@@ -29,6 +36,9 @@ pub impl Show for DependencyKind with fn output(self, logger) {
     Viewport => logger.write_string("Viewport")
   }
 }
+
+///|
+pub extend DependencyKind with Show::{to_string, output}
 
 ///|
 /// Merge two dependency kinds into a combined dependency

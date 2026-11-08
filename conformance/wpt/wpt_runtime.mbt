@@ -3,8 +3,8 @@
 /// Avoids linking the full JS surface that currently hits compiler ICE.
 pub fn renderHtmlToJsonForWpt(
   html : String,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
 ) -> String {
   install_wpt_external_measurement_providers()
   let ctx : @renderer.RenderContext = {

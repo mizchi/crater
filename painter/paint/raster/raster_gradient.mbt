@@ -45,17 +45,17 @@ fn sample_gradient(grad : @types.LinearGradient, t : Double) -> @types.Color {
 fn fill_linear_gradient_clipped(
   fb : Framebuffer,
   palette : DynamicPalette,
-  x : Int,
-  y : Int,
-  w : Int,
-  h : Int,
+  x : Int32,
+  y : Int32,
+  w : Int32,
+  h : Int32,
   grad : @types.LinearGradient,
   opacity : Double,
   clip : ClipRect?,
-  tl : Int,
-  tr : Int,
-  br : Int,
-  bl : Int,
+  tl : Int32,
+  tr : Int32,
+  br : Int32,
+  bl : Int32,
 ) -> Unit {
   // Determine draw bounds
   let x1 = match clip {

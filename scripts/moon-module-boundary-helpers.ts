@@ -17,14 +17,14 @@ const SKIP_DIRS = new Set([
 ]);
 
 export const DIRECT_TUI_TERMINAL_PROTOCOL_FILES = new Set([
-  "terminal_protocol/moon.mod.json",
+  "terminal_protocol/moon.mod",
   "terminal_protocol/ansi/moon.pkg",
   "terminal_protocol/kitty/moon.pkg",
   "terminal_protocol/sixel/moon.pkg",
 ]);
 
 export const BROWSER_TERMINAL_PROTOCOL_ANSI_FILES = new Set([
-  "browser/moon.mod.json",
+  "browser/moon.mod",
   "browser/tui/primitives/moon.pkg",
 ]);
 
@@ -36,7 +36,7 @@ export function collectMoonPackageFiles(dir: string, out: string[] = []): string
       }
       continue;
     }
-    if (dirent.name === "moon.pkg" || dirent.name === "moon.mod.json") {
+    if (dirent.name === "moon.pkg" || dirent.name === "moon.mod") {
       out.push(path.join(dir, dirent.name));
     }
   }

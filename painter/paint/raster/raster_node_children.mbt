@@ -8,10 +8,10 @@ fn render_node_children_clipped(
   node : @paint_model.PaintNode,
   abs_x : Double,
   abs_y : Double,
-  x : Int,
-  y : Int,
-  w : Int,
-  h : Int,
+  x : Int32,
+  y : Int32,
+  w : Int32,
+  h : Int32,
   clip : ClipRect?,
 ) -> Unit {
   let child_clip = if node.clips_content() {

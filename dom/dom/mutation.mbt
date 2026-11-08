@@ -6,6 +6,7 @@
 
 ///|
 /// Type of DOM mutation
+#derive(Eq, Debug)
 pub enum MutationType {
   /// Child nodes added or removed
   ChildList
@@ -15,10 +16,17 @@ pub enum MutationType {
   CharacterData
   /// Style property changed (extension for layout optimization)
   StyleChange
-} derive(Eq, Debug)
+}
+
+///|
+pub extend MutationType with Eq::{not_equal, equal}
+
+///|
+pub extend MutationType with @debug.Debug::{to_repr}
 
 ///|
 /// Record of a single DOM mutation
+#derive(Debug)
 pub struct MutationRecord {
   /// Type of mutation
   type_ : MutationType
@@ -36,7 +44,10 @@ pub struct MutationRecord {
   new_value : String?
   /// For StyleChange: which CSS properties changed
   changed_properties : Array[String]
-} derive(Debug)
+}
+
+///|
+pub extend MutationRecord with @debug.Debug::{to_repr}
 
 ///|
 pub impl Show for MutationType with fn output(self, logger) {
@@ -48,6 +59,9 @@ pub impl Show for MutationType with fn output(self, logger) {
   }
   logger.write_string(name)
 }
+
+///|
+pub extend MutationType with Show::{to_string, output}
 
 ///|
 pub impl Show for MutationRecord with fn output(self, logger) {
@@ -68,11 +82,14 @@ pub impl Show for MutationRecord with fn output(self, logger) {
 }
 
 ///|
+pub extend MutationRecord with Show::{to_string, output}
+
+///|
 /// Create a ChildList mutation record
 pub fn MutationRecord::child_list(
   target : NodeId,
-  added? : Array[NodeId] = [],
-  removed? : Array[NodeId] = [],
+  added~ : Array[NodeId] = [],
+  removed~ : Array[NodeId] = [],
 ) -> MutationRecord {
   {
     type_: ChildList,
@@ -91,8 +108,8 @@ pub fn MutationRecord::child_list(
 pub fn MutationRecord::attribute(
   target : NodeId,
   name : String,
-  old_value? : String? = None,
-  new_value? : String? = None,
+  old_value~ : String? = None,
+  new_value~ : String? = None,
 ) -> MutationRecord {
   {
     type_: Attributes,
@@ -110,8 +127,8 @@ pub fn MutationRecord::attribute(
 /// Create a CharacterData mutation record
 pub fn MutationRecord::character_data(
   target : NodeId,
-  old_value? : String? = None,
-  new_value? : String? = None,
+  old_value~ : String? = None,
+  new_value~ : String? = None,
 ) -> MutationRecord {
   {
     type_: CharacterData,

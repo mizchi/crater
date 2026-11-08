@@ -1,8 +1,8 @@
 ///|
 /// Helper: create a deep Layout tree simulating MDN-like structure
 fn make_deep_layout(
-  depth : Int,
-  breadth : Int,
+  depth : Int32,
+  breadth : Int32,
   y_offset : Double,
 ) -> @layout_types.Layout {
   if depth <= 0 {
@@ -47,7 +47,7 @@ fn make_deep_layout(
 
 ///|
 /// Helper: create a matching Node tree for the Layout tree
-fn make_deep_node(depth : Int, breadth : Int) -> @node.Node {
+fn make_deep_node(depth : Int32, breadth : Int32) -> @node.Node {
   if depth <= 0 {
     return @node.Node::leaf("#text", @style.Style::default())
   }
@@ -60,7 +60,7 @@ fn make_deep_node(depth : Int, breadth : Int) -> @node.Node {
 
 ///|
 /// Count nodes in a Layout tree
-fn count_layout_nodes(layout : @layout_types.Layout) -> Int {
+fn count_layout_nodes(layout : @layout_types.Layout) -> Int32 {
   let mut count = 1
   for child in layout.children {
     count = count + count_layout_nodes(child)

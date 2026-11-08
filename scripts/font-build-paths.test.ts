@@ -6,6 +6,11 @@ import {
 } from "./font-build-paths.mjs";
 
 describe("font build paths", () => {
+  it("prefers current workspace output over stale module builds", () => {
+    const workspacePath = "/repo/_build/js/release/build/mizchi/crater-webdriver-bidi/font_runtime/font_runtime.js";
+    expect(resolveFontRuntimeBuildPath("/repo", () => true)).toBe(workspacePath);
+  });
+
   it("resolves the first existing candidate", () => {
     const cwd = "/repo";
     const expected = `${cwd}/${FONT_RUNTIME_BUILD_CANDIDATES[1]}`;

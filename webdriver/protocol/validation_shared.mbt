@@ -1,6 +1,6 @@
 ///|
 /// Parse decimal ASCII digits to an int.
-pub fn parse_decimal_string(value : String) -> Int? {
+pub fn parse_decimal_string(value : String) -> Int32? {
   if value.length() == 0 {
     return None
   }
@@ -17,7 +17,7 @@ pub fn parse_decimal_string(value : String) -> Int? {
 
 ///|
 /// Parse safe integer JSON value.
-pub fn json_as_safe_int(value : Json, min : Double, max : Double) -> Int? {
+pub fn json_as_safe_int(value : Json, min : Double, max : Double) -> Int32? {
   match value {
     Number(n, ..) =>
       if n == n.to_int64().to_double() && n >= min && n <= max {

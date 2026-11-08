@@ -1,7 +1,7 @@
 ///|
 fn BidiProtocol::normalize_synthetic_network_header_entries(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   raw_headers : Json?,
 ) -> Array[Json]? {
   match

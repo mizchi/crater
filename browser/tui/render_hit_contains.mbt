@@ -28,7 +28,11 @@ fn HitRegion::contains_pixel(
 }
 
 ///|
-fn HitRegion::has_cell_coverage(self : HitRegion, col : Int, row : Int) -> Bool {
+fn HitRegion::has_cell_coverage(
+  self : HitRegion,
+  col : Int32,
+  row : Int32,
+) -> Bool {
   if !self.allows_cell_coverage_sampling() {
     return false
   }
@@ -77,7 +81,7 @@ fn HitRegion::allows_cell_coverage_sampling(self : HitRegion) -> Bool {
 }
 
 ///|
-pub fn HitRegion::contains(self : HitRegion, col : Int, row : Int) -> Bool {
+pub fn HitRegion::contains(self : HitRegion, col : Int32, row : Int32) -> Bool {
   let pixel_x = col.to_double() * font_width + font_width / 2.0
   let pixel_y = (row + self.scroll_y).to_double() * font_height +
     font_height / 2.0

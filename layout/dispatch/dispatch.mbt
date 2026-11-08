@@ -183,7 +183,7 @@ pub fn compute_layout(
 ///|
 /// Clear intrinsic size cache for a specific node.
 /// Call this when a node is marked dirty.
-pub fn clear_intrinsic_cache_for_node(uid : Int) -> Unit {
+pub fn clear_intrinsic_cache_for_node(uid : Int32) -> Unit {
   @flex.clear_intrinsic_cache_for_node(uid)
 }
 

@@ -20,11 +20,11 @@
 /// Create a WebGPU `GraphicsDriver` backed by an offscreen-sized surface.
 /// Drive it with `gfx_bridge.render_paint_tree` (or any gfx command queue).
 pub fn webgpu_driver(
-  width : Int,
-  height : Int,
-  opaque_id? : Int = 0,
-  device_scale? : Double = 1.0,
-  options? : @gfx.GraphicsBackendOptions = @gfx.default_graphics_backend_options(),
+  width : Int32,
+  height : Int32,
+  opaque_id~ : Int32 = 0,
+  device_scale~ : Double = 1.0,
+  options~ : @gfx.GraphicsBackendOptions = @gfx.default_graphics_backend_options(),
 ) -> @gfx.StubGraphicsDriver {
   let surface = @gfx.create_webgpu_surface_token(
     opaque_id, width, height, device_scale,
@@ -35,11 +35,11 @@ pub fn webgpu_driver(
 ///|
 /// Create a WebGL2 `GraphicsDriver` backed by an offscreen-sized surface.
 pub fn webgl_driver(
-  width : Int,
-  height : Int,
-  opaque_id? : Int = 0,
-  device_scale? : Double = 1.0,
-  options? : @gfx.GraphicsBackendOptions = @gfx.default_graphics_backend_options(),
+  width : Int32,
+  height : Int32,
+  opaque_id~ : Int32 = 0,
+  device_scale~ : Double = 1.0,
+  options~ : @gfx.GraphicsBackendOptions = @gfx.default_graphics_backend_options(),
 ) -> @gfx.StubGraphicsDriver {
   let surface = @gfx.create_webgl_surface_token(
     opaque_id, width, height, device_scale,
@@ -52,16 +52,16 @@ pub fn webgl_driver(
 /// the host GPU layer so the wiring can be asserted without a real device.
 pub struct CaptureSink {
   mut initialized : Bool
-  mut begin_count : Int
-  mut end_count : Int
-  mut resize_count : Int
+  mut begin_count : Int32
+  mut end_count : Int32
+  mut resize_count : Int32
   mut last_present : Bool
   draws : Array[@gfx.DrawTrianglesCommand]
 }
 
 ///|
 /// Number of draw commands captured.
-pub fn CaptureSink::draw_count(self : CaptureSink) -> Int {
+pub fn CaptureSink::draw_count(self : CaptureSink) -> Int32 {
   self.draws.length()
 }
 

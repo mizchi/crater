@@ -17,7 +17,7 @@ fn get_string_field(json : Json, key : String) -> String? {
 }
 
 ///|
-fn get_int_field(json : Json, key : String) -> Int? {
+fn get_int_field(json : Json, key : String) -> Int32? {
   @protocol.get_int_field(json, key)
 }
 

@@ -34,7 +34,7 @@ fn adv_proto() -> BidiProtocol {
 }
 
 ///|
-fn adv_eval(proto : BidiProtocol, request_id : Int, expr : String) -> Unit {
+fn adv_eval(proto : BidiProtocol, request_id : Int32, expr : String) -> Unit {
   let payload = "{\"id\":" +
     request_id.to_string() +
     ",\"method\":\"script.evaluate\",\"params\":{\"expression\":" +

@@ -1,5 +1,5 @@
 ///|
-fn stable_kitty_id(seed : String) -> Int {
+fn stable_kitty_id(seed : String) -> Int32 {
   let mut hash = 5381
   let modulus = 16777213
   for c in seed {
@@ -9,12 +9,12 @@ fn stable_kitty_id(seed : String) -> Int {
 }
 
 ///|
-fn kitty_image_id_for_src(src : String) -> Int {
+fn kitty_image_id_for_src(src : String) -> Int32 {
   stable_kitty_id("image:" + src)
 }
 
 ///|
-fn kitty_placement_id_for_source(source_id : String) -> Int {
+fn kitty_placement_id_for_source(source_id : String) -> Int32 {
   stable_kitty_id("placement:" + source_id)
 }
 
@@ -271,8 +271,8 @@ fn extract_img_srcs(html : String) -> Array[String] {
 fn render_cached_kitty_image_with_placement(
   cached_data : String,
   region : @tui.ImageRegion,
-  image_id : Int,
-  placement_id : Int,
+  image_id : Int32,
+  placement_id : Int32,
 ) -> String {
   match @terminal_image_cache.parse_terminal_image_cache_entry(cached_data) {
     Some(@terminal_image_cache.TerminalImageCacheEntry::Svg(svg_text)) => {

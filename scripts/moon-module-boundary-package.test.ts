@@ -27,7 +27,8 @@ describe("MoonBit package and compatibility boundaries", () => {
         const relativeFile = path.relative(REPO_ROOT, file);
         const allowedAnsiFacade = BROWSER_TERMINAL_PROTOCOL_ANSI_FILES.has(relativeFile) &&
           (source.includes("mizchi/crater-terminal-protocol/ansi") ||
-            source.includes('"mizchi/crater-terminal-protocol"')) &&
+            source.includes('"mizchi/crater-terminal-protocol"') ||
+            source.includes('"mizchi/crater-terminal-protocol@')) &&
           !source.includes("mizchi/crater-terminal-protocol/kitty") &&
           !source.includes("mizchi/crater-terminal-protocol/sixel");
         return (source.includes("mizchi/crater-terminal-protocol") && !allowedAnsiFacade) ||
@@ -44,7 +45,7 @@ describe("MoonBit package and compatibility boundaries", () => {
       .filter((file) => {
         const relativeFile = path.relative(REPO_ROOT, file);
         if (relativeFile.startsWith("painter/terminal/")) return false;
-        if (relativeFile === "painter/moon.mod.json") return false;
+        if (relativeFile === "painter/moon.mod") return false;
         const source = fs.readFileSync(file, "utf8");
         return source.includes("mizchi/crater-terminal-protocol") ||
           source.includes("mizchi/crater-painter/x/kitty");

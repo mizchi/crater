@@ -25,6 +25,7 @@ pub fn success_string(String) -> WebDriverResponse
 // Errors
 
 // Types and methods
+#derive(@debug.Debug)
 pub(all) enum ApiError {
   ElementNotFound(selector~ : String)
   PageNotFound(page_id~ : String)
@@ -37,9 +38,13 @@ pub(all) enum ApiError {
   InvalidArgument(message~ : String)
   NotSupported(message~ : String)
   InternalError(message~ : String)
-} derive(@debug.Debug)
+}
+pub fn ApiError::output(Self, &Logger) -> Unit
+pub fn ApiError::to_repr(Self) -> @debug.Repr
+pub fn ApiError::to_string(Self) -> String
 pub impl Show for ApiError
 
+#derive(@debug.Debug)
 pub(all) enum ApiMethod {
   NewContext
   CloseContext(context_id~ : String)
@@ -54,7 +59,7 @@ pub(all) enum ApiMethod {
   Title(page_id~ : String)
   Query(page_id~ : String, selector~ : String)
   QueryAll(page_id~ : String, selector~ : String)
-  WaitFor(page_id~ : String, selector~ : String, timeout~ : Int)
+  WaitFor(page_id~ : String, selector~ : String, timeout~ : Int32)
   BoundingBox(element_id~ : String)
   TextContent(element_id~ : String)
   InnerText(element_id~ : String)
@@ -83,19 +88,25 @@ pub(all) enum ApiMethod {
   Content(page_id~ : String)
   SetContent(page_id~ : String, html~ : String)
   ViewportSize(page_id~ : String)
-  SetViewportSize(page_id~ : String, width~ : Int, height~ : Int)
+  SetViewportSize(page_id~ : String, width~ : Int32, height~ : Int32)
   Evaluate(page_id~ : String, expression~ : String)
   Screenshot(page_id~ : String)
   ElementScreenshot(element_id~ : String)
   AccessibilitySnapshot(page_id~ : String)
-} derive(@debug.Debug)
+}
+pub fn ApiMethod::output(Self, &Logger) -> Unit
+pub fn ApiMethod::to_repr(Self) -> @debug.Repr
+pub fn ApiMethod::to_string(Self) -> String
 pub impl Show for ApiMethod
 
+#derive(@debug.Debug)
 pub(all) enum ApiResult[T] {
   Ok(T)
   Err(ApiError)
-} derive(@debug.Debug)
+}
+pub fn[T : @debug.Debug] ApiResult::to_repr(Self[T]) -> @debug.Repr
 
+#derive(@debug.Debug)
 pub(all) struct Capabilities {
   browser_name : String
   browser_version : String
@@ -104,25 +115,37 @@ pub(all) struct Capabilities {
   page_load_strategy : PageLoadStrategy
   proxy : ProxyConfig?
   timeouts : Timeouts
-} derive(@debug.Debug)
+}
 pub fn Capabilities::to_json(Self) -> String
+pub fn Capabilities::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct ContextId {
   id : String
-} derive(Eq, @debug.Debug)
+}
+pub fn ContextId::equal(Self, Self) -> Bool
+pub fn ContextId::not_equal(Self, Self) -> Bool
+pub fn ContextId::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct ElementId {
   id : String
-} derive(Eq, @debug.Debug)
+}
+pub fn ElementId::equal(Self, Self) -> Bool
+pub fn ElementId::not_equal(Self, Self) -> Bool
+pub fn ElementId::to_repr(Self) -> @debug.Repr
 
+#derive(@debug.Debug)
 pub(all) struct ElementRect {
   x : Double
   y : Double
   width : Double
   height : Double
-} derive(@debug.Debug)
+}
 pub fn ElementRect::to_json(Self) -> String
+pub fn ElementRect::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) enum ErrorCode {
   ElementClickIntercepted
   ElementNotInteractable
@@ -150,56 +173,84 @@ pub(all) enum ErrorCode {
   UnknownError
   UnknownMethod
   UnsupportedOperation
-} derive(Eq, @debug.Debug)
-pub fn ErrorCode::http_status(Self) -> Int
+}
+pub fn ErrorCode::equal(Self, Self) -> Bool
+pub fn ErrorCode::http_status(Self) -> Int32
+pub fn ErrorCode::not_equal(Self, Self) -> Bool
+pub fn ErrorCode::to_repr(Self) -> @debug.Repr
 pub fn ErrorCode::to_string(Self) -> String
 
+#derive(Eq, @debug.Debug)
 pub(all) enum HttpMethod {
   Get
   Post
   Delete
-} derive(Eq, @debug.Debug)
+}
+pub fn HttpMethod::equal(Self, Self) -> Bool
+pub fn HttpMethod::not_equal(Self, Self) -> Bool
+pub fn HttpMethod::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) enum LocatorStrategy {
   CssSelector
   LinkText
   PartialLinkText
   TagName
   XPath
-} derive(Eq, @debug.Debug)
+}
+pub fn LocatorStrategy::equal(Self, Self) -> Bool
 pub fn LocatorStrategy::from_string(String) -> Self?
+pub fn LocatorStrategy::not_equal(Self, Self) -> Bool
+pub fn LocatorStrategy::to_repr(Self) -> @debug.Repr
 pub fn LocatorStrategy::to_string(Self) -> String
 
+#derive(@debug.Debug)
 pub(all) struct Modifiers {
   ctrl : Bool
   shift : Bool
   alt : Bool
   meta : Bool
-} derive(@debug.Debug)
+}
 pub fn Modifiers::none() -> Self
+pub fn Modifiers::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) enum MouseButton {
   Left
   Right
   Middle
-} derive(Eq, @debug.Debug)
+}
+pub fn MouseButton::equal(Self, Self) -> Bool
+pub fn MouseButton::not_equal(Self, Self) -> Bool
+pub fn MouseButton::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct PageId {
   id : String
-} derive(Eq, @debug.Debug)
+}
+pub fn PageId::equal(Self, Self) -> Bool
+pub fn PageId::not_equal(Self, Self) -> Bool
+pub fn PageId::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) enum PageLoadStrategy {
   None
   Eager
   Normal
-} derive(Eq, @debug.Debug)
+}
+pub fn PageLoadStrategy::equal(Self, Self) -> Bool
+pub fn PageLoadStrategy::not_equal(Self, Self) -> Bool
 pub fn PageLoadStrategy::to_json_string(Self) -> String
+pub fn PageLoadStrategy::to_repr(Self) -> @debug.Repr
 
+#derive(@debug.Debug)
 pub(all) struct Point {
   x : Double
   y : Double
-} derive(@debug.Debug)
+}
+pub fn Point::to_repr(Self) -> @debug.Repr
 
+#derive(@debug.Debug)
 pub(all) struct ProxyConfig {
   proxy_type : String
   proxy_autoconfig_url : String?
@@ -208,16 +259,20 @@ pub(all) struct ProxyConfig {
   no_proxy : Array[String]
   ssl_proxy : String?
   socks_proxy : String?
-  socks_version : Int?
-} derive(@debug.Debug)
+  socks_version : Int32?
+}
+pub fn ProxyConfig::to_repr(Self) -> @debug.Repr
 
+#derive(@debug.Debug)
 pub(all) struct Rect {
   x : Double
   y : Double
   width : Double
   height : Double
-} derive(@debug.Debug)
+}
+pub fn Rect::to_repr(Self) -> @debug.Repr
 
+#derive(@debug.Debug)
 pub(all) enum Selector {
   Css(String)
   XPath(String)
@@ -229,28 +284,36 @@ pub(all) enum Selector {
   Placeholder(String)
   AltText(String)
   Title(String)
-} derive(@debug.Debug)
+}
+pub fn Selector::to_repr(Self) -> @debug.Repr
 pub fn Selector::to_string(Self) -> String
 
+#derive(@debug.Debug)
 pub(all) struct Session {
   id : String
   capabilities : Capabilities
-} derive(@debug.Debug)
+}
 pub fn Session::to_json(Self) -> String
+pub fn Session::to_repr(Self) -> @debug.Repr
 
+#derive(@debug.Debug)
 pub(all) struct Timeouts {
-  script : Int
-  page_load : Int
-  implicit : Int
-} derive(@debug.Debug)
+  script : Int32
+  page_load : Int32
+  implicit : Int32
+}
 pub fn Timeouts::default() -> Self
 pub fn Timeouts::to_json(Self) -> String
+pub fn Timeouts::to_repr(Self) -> @debug.Repr
 
+#derive(@debug.Debug)
 pub(all) struct Viewport {
-  width : Int
-  height : Int
-} derive(@debug.Debug)
+  width : Int32
+  height : Int32
+}
+pub fn Viewport::to_repr(Self) -> @debug.Repr
 
+#derive(@debug.Debug)
 pub(all) enum WebDriverCommand {
   Status
   NewSession
@@ -310,28 +373,38 @@ pub(all) enum WebDriverCommand {
   TakeElementScreenshot(session_id~ : String, element_id~ : String)
   PrintPage(session_id~ : String)
   Unknown(path~ : String)
-} derive(@debug.Debug)
+}
+pub fn WebDriverCommand::output(Self, &Logger) -> Unit
+pub fn WebDriverCommand::to_repr(Self) -> @debug.Repr
+pub fn WebDriverCommand::to_string(Self) -> String
 pub impl Show for WebDriverCommand
 
+#derive(@debug.Debug)
 pub(all) struct WebDriverError {
   error : ErrorCode
   message : String
   stacktrace : String
-} derive(@debug.Debug)
+}
 pub fn WebDriverError::to_json(Self) -> String
+pub fn WebDriverError::to_repr(Self) -> @debug.Repr
 
+#derive(@debug.Debug)
 pub(all) struct WebDriverRequest {
   http_method : HttpMethod
   command : WebDriverCommand
   body : String
-} derive(@debug.Debug)
+}
+pub fn WebDriverRequest::to_repr(Self) -> @debug.Repr
 
+#derive(@debug.Debug)
 pub(all) enum WebDriverResponse {
   Success(WebDriverValue)
   Error(WebDriverError)
-} derive(@debug.Debug)
+}
 pub fn WebDriverResponse::to_json(Self) -> String
+pub fn WebDriverResponse::to_repr(Self) -> @debug.Repr
 
+#derive(@debug.Debug)
 pub(all) enum WebDriverValue {
   Null
   Bool(Bool)
@@ -340,16 +413,19 @@ pub(all) enum WebDriverValue {
   Array(Array[WebDriverValue])
   Object(Map[String, WebDriverValue])
   Element(element_id~ : String)
-} derive(@debug.Debug)
+}
 pub fn WebDriverValue::to_json(Self) -> String
+pub fn WebDriverValue::to_repr(Self) -> @debug.Repr
 
+#derive(@debug.Debug)
 pub(all) struct WindowRect {
-  x : Int
-  y : Int
-  width : Int
-  height : Int
-} derive(@debug.Debug)
+  x : Int32
+  y : Int32
+  width : Int32
+  height : Int32
+}
 pub fn WindowRect::to_json(Self) -> String
+pub fn WindowRect::to_repr(Self) -> @debug.Repr
 
 // Type aliases
 

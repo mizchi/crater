@@ -14,18 +14,18 @@
 ///|
 /// A rendered RGBA framebuffer: row-major, four 0..255 channels per pixel.
 pub(all) struct RenderedImage {
-  width : Int
-  height : Int
-  pixels : Array[Int]
+  width : Int32
+  height : Int32
+  pixels : Array[Int32]
 }
 
 ///|
 /// Read back a single pixel as (r, g, b, a).
 pub fn RenderedImage::pixel_at(
   self : RenderedImage,
-  x : Int,
-  y : Int,
-) -> (Int, Int, Int, Int) {
+  x : Int32,
+  y : Int32,
+) -> (Int32, Int32, Int32, Int32) {
   if x < 0 || y < 0 || x >= self.width || y >= self.height {
     return (0, 0, 0, 0)
   }
@@ -44,8 +44,8 @@ pub fn RenderedImage::pixel_at(
 /// (its root box matching the viewport).
 pub fn render_paint_tree_to_image(
   root : @paint_model.PaintNode,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
 ) -> RenderedImage {
   let driver = @gfx_software.SoftwareDriver::new(width, height)
   // The software backend never actually raises; keep the public API total.
@@ -113,11 +113,11 @@ pub fn RenderedImage::to_ascii(self : RenderedImage) -> String {
 /// font.
 pub fn render_text_to_image(
   text : String,
-  width : Int,
-  height : Int,
-  x? : Int = 0,
-  y? : Int = 0,
-  scale? : Int = 1,
+  width : Int32,
+  height : Int32,
+  x~ : Int32 = 0,
+  y~ : Int32 = 0,
+  scale~ : Int32 = 1,
 ) -> RenderedImage {
   let driver = @gfx_software.SoftwareDriver::new(width, height)
   let pixels = try {

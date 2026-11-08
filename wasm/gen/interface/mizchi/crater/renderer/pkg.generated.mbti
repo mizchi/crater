@@ -2,11 +2,11 @@
 package "mizchi/crater-wasm/gen/interface/mizchi/crater/renderer"
 
 // Values
-pub fn render_html(String, UInt, UInt) -> String
+pub fn render_html(String, UInt32, UInt32) -> String
 
-pub fn render_html_to_json(String, UInt, UInt) -> String
+pub fn render_html_to_json(String, UInt32, UInt32) -> String
 
-pub fn render_html_to_paint_tree(String, UInt, UInt) -> String
+pub fn render_html_to_paint_tree(String, UInt32, UInt32) -> String
 
 // Errors
 

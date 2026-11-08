@@ -24,7 +24,7 @@ test "paint node bridge owns from_node_and_layout" {
     children: [],
     text: None,
   }
-  let paint_node = from_node_and_layout(node, layout)
+  let paint_node = @node_bridge.from_node_and_layout(node, layout)
   inspect(paint_node.id, content="root")
   inspect(paint_node.width, content="100")
 }
@@ -79,7 +79,7 @@ test "paint node bridge does not apply translated layout twice" {
     children: [child_layout],
     text: None,
   }
-  let paint_node = from_node_and_layout(node, layout)
+  let paint_node = @node_bridge.from_node_and_layout(node, layout)
   inspect(paint_node.children[0].x, content="26")
   inspect(paint_node.children[0].width, content="36")
   inspect(paint_node.children[0].height, content="9")

@@ -36,7 +36,10 @@ test "compute_composed_shadow_styles composes nested shadow and slotted nodes" {
   let tagged = tree.create_element("span")
   let _ = tree.set_attribute(tagged, "class", "tag")
   let _ = tree.append_child(host, tagged)
-  let styles = compute_composed_shadow_styles(tree, RenderContext::default())
+  let styles = @renderer.compute_composed_shadow_styles(
+    tree,
+    @renderer.RenderContext::default(),
+  )
 
   // Host's :host rule reaches its computed style.
   inspect(styles.get(host.to_int()).unwrap().display, content="Flex")

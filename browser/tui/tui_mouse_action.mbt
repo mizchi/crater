@@ -14,8 +14,8 @@ priv enum MouseActionKind {
 ///|
 fn MouseActionKind::to_action(
   self : MouseActionKind,
-  col : Int,
-  row : Int,
+  col : Int32,
+  row : Int32,
 ) -> BrowserAction {
   match self {
     MouseClickKind => MouseClick(col, row)

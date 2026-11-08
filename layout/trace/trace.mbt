@@ -7,34 +7,45 @@
 
 ///|
 /// The type of dependency a node has on another value
+#derive(Eq, Debug)
 pub(all) enum DependencyKind {
   /// Read parent's available width
   ParentWidth
   /// Read parent's available height
   ParentHeight
   /// Read child's intrinsic main size
-  ChildIntrinsicMain(Int) // child uid
+  ChildIntrinsicMain(Int32) // child uid
   /// Read child's intrinsic cross size
-  ChildIntrinsicCross(Int) // child uid
+  ChildIntrinsicCross(Int32) // child uid
   /// Read sibling's computed size (for flex space distribution)
-  SiblingSize(Int) // sibling uid
+  SiblingSize(Int32) // sibling uid
   /// Read own style property
   OwnStyle
-} derive(Eq, Debug)
+}
+
+///|
+pub extend DependencyKind with Eq::{not_equal, equal}
+
+///|
+pub extend DependencyKind with @debug.Debug::{to_repr}
 
 ///|
 /// A single dependency record
+#derive(Debug)
 pub(all) struct Dependency {
   /// The node that has this dependency
-  node_uid : Int
+  node_uid : Int32
   /// What kind of dependency
   kind : DependencyKind
-} derive(Debug)
+}
+
+///|
+pub extend Dependency with @debug.Debug::{to_repr}
 
 ///|
 /// Input context snapshot for a node's layout computation
 pub(all) struct ComputeInput {
-  node_uid : Int
+  node_uid : Int32
   available_width : Double
   available_height : Double?
   sizing_mode : @layout_types.SizingMode
@@ -42,11 +53,15 @@ pub(all) struct ComputeInput {
 
 ///|
 /// Output snapshot for a node's layout computation
+#derive(Debug)
 pub(all) struct ComputeOutput {
-  node_uid : Int
+  node_uid : Int32
   width : Double
   height : Double
-} derive(Debug)
+}
+
+///|
+pub extend ComputeOutput with @debug.Debug::{to_repr}
 
 ///|
 pub impl Show for DependencyKind with fn output(self, logger) {
@@ -62,9 +77,15 @@ pub impl Show for DependencyKind with fn output(self, logger) {
 }
 
 ///|
+pub extend DependencyKind with Show::{to_string, output}
+
+///|
 pub impl Show for Dependency with fn output(self, logger) {
   logger.write_string("{node_uid: \{self.node_uid}, kind: \{self.kind}}")
 }
+
+///|
+pub extend Dependency with Show::{to_string, output}
 
 ///|
 pub impl Show for ComputeOutput with fn output(self, logger) {
@@ -72,6 +93,9 @@ pub impl Show for ComputeOutput with fn output(self, logger) {
     "{node_uid: \{self.node_uid}, width: \{self.width}, height: \{self.height}}",
   )
 }
+
+///|
+pub extend ComputeOutput with Show::{to_string, output}
 
 ///|
 /// A trace record for one node's computation
@@ -85,7 +109,7 @@ pub(all) struct NodeTrace {
 /// Collector for layout traces during computation
 pub struct LayoutTracer {
   /// Map from node_uid to its trace
-  traces : Map[Int, NodeTrace]
+  traces : Map[Int32, NodeTrace]
   /// Whether tracing is enabled
   enabled : Bool
 }
@@ -111,7 +135,7 @@ pub fn LayoutTracer::is_enabled(self : LayoutTracer) -> Bool {
 /// Record computation input for a node
 pub fn LayoutTracer::begin_compute(
   self : LayoutTracer,
-  node_uid : Int,
+  node_uid : Int32,
   ctx : @layout_types.LayoutContext,
 ) -> Unit {
   if !self.enabled {
@@ -136,7 +160,7 @@ pub fn LayoutTracer::begin_compute(
 /// Record computation output for a node
 pub fn LayoutTracer::end_compute(
   self : LayoutTracer,
-  node_uid : Int,
+  node_uid : Int32,
   width : Double,
   height : Double,
 ) -> Unit {
@@ -160,7 +184,7 @@ pub fn LayoutTracer::end_compute(
 /// Record a dependency for the current node
 pub fn LayoutTracer::add_dependency(
   self : LayoutTracer,
-  node_uid : Int,
+  node_uid : Int32,
   kind : DependencyKind,
 ) -> Unit {
   if !self.enabled {
@@ -174,7 +198,7 @@ pub fn LayoutTracer::add_dependency(
 
 ///|
 /// Get all recorded traces
-pub fn LayoutTracer::get_traces(self : LayoutTracer) -> Map[Int, NodeTrace] {
+pub fn LayoutTracer::get_traces(self : LayoutTracer) -> Map[Int32, NodeTrace] {
   self.traces
 }
 
@@ -182,15 +206,15 @@ pub fn LayoutTracer::get_traces(self : LayoutTracer) -> Map[Int, NodeTrace] {
 /// Get trace for a specific node
 pub fn LayoutTracer::get_trace(
   self : LayoutTracer,
-  node_uid : Int,
+  node_uid : Int32,
 ) -> NodeTrace? {
   self.traces.get(node_uid)
 }
 
 ///|
 /// Get all node UIDs that were traced
-pub fn LayoutTracer::get_traced_nodes(self : LayoutTracer) -> Array[Int] {
-  let result : Array[Int] = []
+pub fn LayoutTracer::get_traced_nodes(self : LayoutTracer) -> Array[Int32] {
+  let result : Array[Int32] = []
   self.traces.each(fn(uid, _) { result.push(uid) })
   result
 }
@@ -200,7 +224,7 @@ pub fn LayoutTracer::get_traced_nodes(self : LayoutTracer) -> Array[Int] {
 /// Returns true if recomputation is needed
 pub fn LayoutTracer::needs_recompute(
   self : LayoutTracer,
-  node_uid : Int,
+  node_uid : Int32,
   new_ctx : @layout_types.LayoutContext,
 ) -> Bool {
   match self.traces.get(node_uid) {

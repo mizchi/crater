@@ -93,10 +93,10 @@ describe("MoonBit WebDriver browser_domain boundaries", () => {
     ]) {
       expect(browserDomainPackage).not.toContain(forbidden);
     }
-    expect(browserDomainPackage).toContain('"mizchi/crater-webdriver-bidi/protocol" @protocol');
+    expect(browserDomainPackage).toContain('"mizchi/crater-webdriver-bidi/protocol"');
 
     const webdriverPackage = read("webdriver/webdriver/moon.pkg");
-    expect(webdriverPackage).toContain('"mizchi/crater-webdriver-bidi/browser_domain" @browser_domain');
+    expect(webdriverPackage).toContain('"mizchi/crater-webdriver-bidi/browser_domain"');
 
     for (const [callerPath, marker] of SYNTHETIC_CALLERS) {
       expect(read(callerPath)).toContain(marker);

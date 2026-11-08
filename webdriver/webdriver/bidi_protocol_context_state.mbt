@@ -95,13 +95,13 @@ fn BidiProtocol::is_context_visible(
 
 ///|
 /// Default viewport width used when no override is configured.
-fn default_viewport_width() -> Int {
+fn default_viewport_width() -> Int32 {
   1024
 }
 
 ///|
 /// Default viewport height used when no override is configured.
-fn default_viewport_height() -> Int {
+fn default_viewport_height() -> Int32 {
   768
 }
 
@@ -116,7 +116,7 @@ fn default_device_pixel_ratio() -> Double {
 fn BidiProtocol::resolve_effective_viewport_width(
   self : BidiProtocol,
   ctx_id : String,
-) -> Int {
+) -> Int32 {
   match self.context_viewport_width.get(ctx_id) {
     Some(width) => width
     None => {
@@ -135,7 +135,7 @@ fn BidiProtocol::resolve_effective_viewport_width(
 fn BidiProtocol::resolve_effective_viewport_height(
   self : BidiProtocol,
   ctx_id : String,
-) -> Int {
+) -> Int32 {
   match self.context_viewport_height.get(ctx_id) {
     Some(height) => height
     None => {
@@ -186,8 +186,8 @@ fn BidiProtocol::build_context_entry(
   self : BidiProtocol,
   ctx_id : String,
   include_parent : Bool,
-  depth : Int,
-  max_depth : Int?,
+  depth : Int32,
+  max_depth : Int32?,
 ) -> Json? {
   match self.manager.get_session(ctx_id) {
     Some(session) => {
@@ -281,7 +281,7 @@ fn derive_realm_origin(url : String) -> String {
 
 ///|
 /// Extract scheme + host + slash origin from an absolute HTTP(S) URL.
-fn extract_http_origin(url : String, scheme : String, start : Int) -> String {
+fn extract_http_origin(url : String, scheme : String, start : Int32) -> String {
   let chars = url.to_array()
   let mut end = chars.length()
   for i = start; i < chars.length(); i = i + 1 {

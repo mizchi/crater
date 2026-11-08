@@ -2,7 +2,7 @@
 /// Native terminal output, mode, and size operations.
 
 ///|
-fn env_int_or(key : String, fallback : Int) -> Int {
+fn env_int_or(key : String, fallback : Int32) -> Int32 {
   match @sys.get_env_var(key) {
     Some(value) => @string.parse_int(value) catch { _ => fallback }
     None => fallback
@@ -49,7 +49,7 @@ pub fn cleanup_stdin() -> Unit {
 }
 
 ///|
-pub fn get_terminal_size() -> (Int, Int) {
+pub fn get_terminal_size() -> (Int32, Int32) {
   let cols = tui_get_terminal_cols()
   let rows = tui_get_terminal_rows()
   let resolved_cols = if cols > 0 { cols } else { env_int_or("COLUMNS", 80) }

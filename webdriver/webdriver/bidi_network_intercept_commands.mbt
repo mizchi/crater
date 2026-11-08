@@ -1,7 +1,7 @@
 ///|
 fn BidiProtocol::handle_network_prepare_navigation_request(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map = match params {
@@ -46,7 +46,7 @@ fn BidiProtocol::handle_network_prepare_navigation_request(
 ///|
 fn BidiProtocol::prepare_navigation_request_internal(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   context_id : String,
   url : String,
 ) -> Json? {
@@ -119,7 +119,7 @@ fn BidiProtocol::prepare_navigation_request_internal(
 /// spec name and the internal alias share a single implementation.
 fn BidiProtocol::handle_network_continue_response(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let forwarded = match params {
@@ -148,7 +148,7 @@ fn BidiProtocol::handle_network_continue_response(
 /// spec name and the internal alias share a single implementation.
 fn BidiProtocol::handle_network_provide_response(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let forwarded = match params {
@@ -173,7 +173,7 @@ fn BidiProtocol::handle_network_provide_response(
 ///|
 fn BidiProtocol::handle_network_fail_blocked_request(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let blocked_request_id = match
@@ -243,7 +243,7 @@ fn BidiProtocol::handle_network_fail_blocked_request(
 ///|
 fn BidiProtocol::handle_network_continue_auth_request(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map = match params {

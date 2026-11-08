@@ -11,11 +11,15 @@ pub fn render_artifact_or_error(RenderRequest, ArtifactMode) -> Result[String, S
 // Errors
 
 // Types and methods
+#derive(@debug.Debug)
 pub(all) enum ArtifactMode {
   Layout
   Image
   Landmarks
-} derive(@debug.Debug)
+}
+pub fn ArtifactMode::output(Self, &Logger) -> Unit
+pub fn ArtifactMode::to_repr(Self) -> @debug.Repr
+pub fn ArtifactMode::to_string(Self) -> String
 pub impl Show for ArtifactMode
 
 pub(all) struct RenderRequest {
@@ -23,8 +27,8 @@ pub(all) struct RenderRequest {
   css : Array[String]
   target_id : String?
   target_selector : String?
-  viewport_width : Int
-  viewport_height : Int
+  viewport_width : Int32
+  viewport_height : Int32
 }
 
 // Type aliases

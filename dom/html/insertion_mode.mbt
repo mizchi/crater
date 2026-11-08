@@ -1281,7 +1281,7 @@ fn TreeBuilder::reconstruct_active_formatting_elements(
 fn TreeBuilder::find_open_element_index(
   self : TreeBuilder,
   tag : String,
-) -> Int {
+) -> Int32 {
   for i = self.open_elements.length() - 1; i >= 0; i = i - 1 {
     if self.open_elements[i].tag == tag {
       return i
@@ -1293,8 +1293,8 @@ fn TreeBuilder::find_open_element_index(
 ///|
 fn TreeBuilder::find_furthest_special_after(
   self : TreeBuilder,
-  stack_index : Int,
-) -> Int {
+  stack_index : Int32,
+) -> Int32 {
   for i = stack_index + 1; i < self.open_elements.length(); i = i + 1 {
     if is_special_element(self.open_elements[i].tag) {
       return i
@@ -1367,8 +1367,8 @@ fn wrap_children_in_formatting_clone(
 ///|
 fn TreeBuilder::reparent_formatting_around_block(
   self : TreeBuilder,
-  formatting_index : Int,
-  block_index : Int,
+  formatting_index : Int32,
+  block_index : Int32,
 ) -> Unit {
   if formatting_index <= 0 ||
     block_index <= formatting_index ||

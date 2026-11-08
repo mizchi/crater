@@ -231,7 +231,7 @@ fn Browser::focus_source_id(self : Browser, source_id : String) -> Unit {
 
 ///|
 /// Get number of visible focusable elements currently on screen
-fn Browser::get_visible_focusable_count(self : Browser) -> Int {
+fn Browser::get_visible_focusable_count(self : Browser) -> Int32 {
   if self.a11y_tree is None || self.focus_manager is None {
     self.build_accessibility_tree()
   }
@@ -251,7 +251,7 @@ fn Browser::get_visible_focusable_count(self : Browser) -> Int {
 
 ///|
 /// Get current focus index among visible focusable elements (-1 if not visible)
-fn Browser::get_visible_focus_index(self : Browser) -> Int {
+fn Browser::get_visible_focus_index(self : Browser) -> Int32 {
   if self.a11y_tree is None || self.focus_manager is None {
     self.build_accessibility_tree()
   }

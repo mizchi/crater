@@ -10,6 +10,18 @@ pub impl @view.LayoutView for LayoutNode with fn uid(self) {
 }
 
 ///|
+pub extend LayoutNode with @mizchi/crater-core/layout_view.LayoutView::{
+  uid,
+  text,
+  computed_y,
+  computed_width,
+  resource_state,
+  computed_height,
+  children,
+  computed_x,
+}
+
+///|
 pub impl @view.LayoutView for LayoutNode with fn computed_x(self) {
   self.computed_x
 }

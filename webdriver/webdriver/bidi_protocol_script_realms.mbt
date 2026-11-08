@@ -1,7 +1,7 @@
 ///|
 fn BidiProtocol::resolve_realms_list(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Array[Json]? {
   let context_filter = match get_param_raw(params, "context") {

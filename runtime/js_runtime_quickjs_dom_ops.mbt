@@ -8,10 +8,10 @@
 /// DOM operation type
 priv struct DomOp {
   op : String
-  id : Int
-  parent_id : Int
-  child_id : Int
-  ref_id : Int // Reference node ID for insertBefore
+  id : Int32
+  parent_id : Int32
+  child_id : Int32
+  ref_id : Int32 // Reference node ID for insertBefore
   tag_name : String
   text : String
   name : String
@@ -212,7 +212,7 @@ fn parse_custom_states_value(value : String) -> Array[String] {
 ///|
 /// Resolve ID to NodeId for apply_dom_ops
 /// If ID is in map, use mapped value; otherwise treat as direct DomTree NodeId
-fn resolve_dom_id(id_map : Map[Int, @dom.NodeId], id : Int) -> @dom.NodeId? {
+fn resolve_dom_id(id_map : Map[Int32, @dom.NodeId], id : Int32) -> @dom.NodeId? {
   match id_map.get(id) {
     Some(node_id) => Some(node_id)
     None =>
@@ -229,7 +229,7 @@ fn resolve_dom_id(id_map : Map[Int, @dom.NodeId], id : Int) -> @dom.NodeId? {
 /// Apply DOM operations to DomTree
 fn apply_dom_ops(dom : @dom.DomTree, ops : Array[DomOp]) -> Unit {
   // Map mock IDs to real NodeIds
-  let id_map : Map[Int, @dom.NodeId] = Map([])
+  let id_map : Map[Int32, @dom.NodeId] = Map([])
 
   // Pre-populate with body (id=2 in mock)
   match dom.query_selector(dom.get_document(), "body") {
@@ -416,7 +416,7 @@ fn extract_json_field(json : String, field : String) -> String {
 /// Allocation-free substring index search (naive). `String::find` uses
 /// Boyer-Moore-Horspool and allocates an ~850-byte skip table per call; the
 /// DOM-ops parser calls it ~8 times per op, which dominated parse allocation.
-fn json_index_of(s : String, needle : String, from : Int) -> Int {
+fn json_index_of(s : String, needle : String, from : Int32) -> Int32 {
   let slen = s.length()
   let nlen = needle.length()
   if nlen == 0 || from + nlen > slen {
@@ -489,7 +489,7 @@ fn unescape_json_string(value : String) -> String {
 }
 
 ///|
-fn parse_json_hex_digit(c : Char) -> Int? {
+fn parse_json_hex_digit(c : Char) -> Int32? {
   if c >= '0' && c <= '9' {
     Some(c.to_int() - '0'.to_int())
   } else if c >= 'a' && c <= 'f' {
@@ -502,7 +502,7 @@ fn parse_json_hex_digit(c : Char) -> Int? {
 }
 
 ///|
-fn parse_json_hex4(c0 : Char, c1 : Char, c2 : Char, c3 : Char) -> Int? {
+fn parse_json_hex4(c0 : Char, c1 : Char, c2 : Char, c3 : Char) -> Int32? {
   match
     (
       parse_json_hex_digit(c0),

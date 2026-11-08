@@ -26,7 +26,7 @@ pub fn connect_v8(browser : @shell.Browser) -> Unit {
 ///|
 /// Create a `Browser` of the given viewport already connected to the native V8
 /// runtime — the one-call setup for V8-backed dynamic rendering.
-pub fn new_v8_browser(width : Int, height : Int) -> @shell.Browser {
+pub fn new_v8_browser(width : Int32, height : Int32) -> @shell.Browser {
   let browser = @shell.Browser::new(width, height)
   connect_v8(browser)
   browser

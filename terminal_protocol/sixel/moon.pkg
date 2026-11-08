@@ -1,3 +1,3 @@
 import {
-  "mizchi/tui-terminal-protocol/sixel" @tui_sixel,
+  "mizchi/crater-terminal-protocol/internal/sixel" @tui_sixel,
 }

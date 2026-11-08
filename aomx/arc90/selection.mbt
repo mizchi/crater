@@ -341,8 +341,8 @@ fn select_readability_node(
 
 ///|
 fn should_prefer_smaller_container(
-  main_len : Int,
-  candidate_len : Int,
+  main_len : Int32,
+  candidate_len : Int32,
   main_readability : Double,
   candidate_readability : Double,
 ) -> Bool {

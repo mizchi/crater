@@ -1,13 +1,13 @@
 ///|
 test "PaintNode clips_content with overflow hidden" {
-  let node = PaintNode::new(
+  let node = @paint.PaintNode::new(
     "test",
     "div",
     0.0,
     0.0,
     100.0,
     100.0,
-    PaintProperties::default(),
+    @paint.PaintProperties::default(),
     [],
     overflow_x=@types.Hidden,
     overflow_y=@types.Hidden,
@@ -17,14 +17,14 @@ test "PaintNode clips_content with overflow hidden" {
 
 ///|
 test "PaintNode clips_content with overflow visible" {
-  let node = PaintNode::new(
+  let node = @paint.PaintNode::new(
     "test",
     "div",
     0.0,
     0.0,
     100.0,
     100.0,
-    PaintProperties::default(),
+    @paint.PaintProperties::default(),
     [],
     overflow_x=@types.Visible,
     overflow_y=@types.Visible,
@@ -34,14 +34,14 @@ test "PaintNode clips_content with overflow visible" {
 
 ///|
 test "PaintNode get_clip_rect returns rect when clipping" {
-  let node = PaintNode::new(
+  let node = @paint.PaintNode::new(
     "test",
     "div",
     10.0,
     20.0,
     100.0,
     50.0,
-    PaintProperties::default(),
+    @paint.PaintProperties::default(),
     [],
     overflow_x=@types.Hidden,
     overflow_y=@types.Visible,
@@ -51,14 +51,14 @@ test "PaintNode get_clip_rect returns rect when clipping" {
 
 ///|
 test "PaintNode get_clip_rect returns None when not clipping" {
-  let node = PaintNode::new(
+  let node = @paint.PaintNode::new(
     "test",
     "div",
     10.0,
     20.0,
     100.0,
     50.0,
-    PaintProperties::default(),
+    @paint.PaintProperties::default(),
     [],
   )
   debug_inspect(node.get_clip_rect(), content="None")
@@ -66,14 +66,14 @@ test "PaintNode get_clip_rect returns None when not clipping" {
 
 ///|
 test "PaintNode Show includes clips marker" {
-  let node = PaintNode::new(
+  let node = @paint.PaintNode::new(
     "clipped",
     "div",
     0.0,
     0.0,
     1.0,
     1.0,
-    PaintProperties::default(),
+    @paint.PaintProperties::default(),
     [],
     overflow_x=@types.Hidden,
     overflow_y=@types.Hidden,
@@ -84,14 +84,14 @@ test "PaintNode Show includes clips marker" {
 
 ///|
 test "PaintNode with legacy clip rect" {
-  let node = PaintNode::new(
+  let node = @paint.PaintNode::new(
     "test",
     "div",
     10.0,
     20.0,
     100.0,
     50.0,
-    PaintProperties::default(),
+    @paint.PaintProperties::default(),
     [],
     clip=@types.ClipRect::Rect(top=1.0, right=1.0, bottom=1.0, left=1.0),
   )
@@ -103,14 +103,14 @@ test "PaintNode with legacy clip rect" {
 
 ///|
 test "PaintNode legacy clip values" {
-  let node = PaintNode::new(
+  let node = @paint.PaintNode::new(
     "test",
     "div",
     0.0,
     0.0,
     100.0,
     100.0,
-    PaintProperties::default(),
+    @paint.PaintProperties::default(),
     [],
     clip=@types.ClipRect::Rect(top=10.0, right=90.0, bottom=90.0, left=10.0),
   )
@@ -206,7 +206,7 @@ test "viewport_culling_basic" {
   }
 
   // Test 1: Viewport 0-50 (should see root, child1)
-  let paint1 = from_node_and_layout_with_viewport(
+  let paint1 = @paint.from_node_and_layout_with_viewport(
     root, root_layout, 0.0, 50.0, 0.0,
   )
   inspect(paint1 is Some(_), content="true")
@@ -220,7 +220,7 @@ test "viewport_culling_basic" {
   }
 
   // Test 2: Viewport 150-250 (should see root, child2, child3)
-  let paint2 = from_node_and_layout_with_viewport(
+  let paint2 = @paint.from_node_and_layout_with_viewport(
     root, root_layout, 150.0, 250.0, 0.0,
   )
   inspect(paint2 is Some(_), content="true")
@@ -234,7 +234,7 @@ test "viewport_culling_basic" {
   }
 
   // Test 3: Viewport 400-500 (way past content, should return None)
-  let paint3 = from_node_and_layout_with_viewport(
+  let paint3 = @paint.from_node_and_layout_with_viewport(
     root, root_layout, 400.0, 500.0, 0.0,
   )
   // Root spans 0-300, viewport starts at 400, so root should be culled
@@ -325,7 +325,7 @@ test "from_node_and_layout skips ignorable whitespace text nodes when aligning c
     children: [input_layout, control_layout, label_layout],
     text: None,
   }
-  let paint = from_node_and_layout(root, root_layout)
+  let paint = @paint.from_node_and_layout(root, root_layout)
   inspect(paint.children.length(), content="3")
   inspect(paint.children[0].id, content="input#check")
   inspect(paint.children[1].id, content="span#control")
@@ -412,7 +412,7 @@ test "list_marker_disc_for_ul" {
     children: [li1_layout, li2_layout],
     text: None,
   }
-  let paint = from_node_and_layout(ul, ul_layout)
+  let paint = @paint.from_node_and_layout(ul, ul_layout)
   // ul should have 2 li children
   inspect(paint.children.length(), content="2")
   let li1_paint = paint.children[0]
@@ -505,7 +505,7 @@ test "list_marker_decimal_for_ol" {
     children: li_layouts,
     text: None,
   }
-  let paint = from_node_and_layout(ol, ol_layout)
+  let paint = @paint.from_node_and_layout(ol, ol_layout)
   // Check markers have correct decimal text
   let marker1 = paint.children[0].children[1]
   debug_inspect(
@@ -574,7 +574,7 @@ test "no_marker_for_div" {
     children: [child_layout],
     text: None,
   }
-  let paint = from_node_and_layout(div, div_layout)
+  let paint = @paint.from_node_and_layout(div, div_layout)
   // div should only have the span child, no marker
   inspect(paint.children.length(), content="1")
 }
@@ -630,7 +630,7 @@ test "viewport_culling_zero_height_container" {
   }
 
   // Scroll = 0: viewport 0-400 - should see content
-  let paint0 = from_node_and_layout_with_viewport(
+  let paint0 = @paint.from_node_and_layout_with_viewport(
     container, container_layout, 0.0, 400.0, 0.0,
   )
   inspect(paint0 is Some(_), content="true")
@@ -640,19 +640,19 @@ test "viewport_culling_zero_height_container" {
   //   0 < 200 = true -> body culled, children lost!
   // After fix: effective_bottom = max(child.y + child.height) = 1000
   //   1000 < 200 = false -> body not culled
-  let paint1 = from_node_and_layout_with_viewport(
+  let paint1 = @paint.from_node_and_layout_with_viewport(
     container, container_layout, 200.0, 600.0, 0.0,
   )
   inspect(paint1 is Some(_), content="true")
 
   // Scroll = 500px: viewport 500-900 - should STILL see content
-  let paint2 = from_node_and_layout_with_viewport(
+  let paint2 = @paint.from_node_and_layout_with_viewport(
     container, container_layout, 500.0, 900.0, 0.0,
   )
   inspect(paint2 is Some(_), content="true")
 
   // Scroll = 1200px: viewport 1200-1600 - should NOT see content (past 1000)
-  let paint3 = from_node_and_layout_with_viewport(
+  let paint3 = @paint.from_node_and_layout_with_viewport(
     container, container_layout, 1200.0, 1600.0, 0.0,
   )
   inspect(paint3 is None, content="true")
@@ -698,7 +698,7 @@ test "viewport_culling_scroll_simulation" {
   let scroll0 = 0
   let vp_top0 = scroll0.to_double() * font_height
   let vp_bottom0 = (scroll0 + viewport_height_chars).to_double() * font_height
-  let paint0 = from_node_and_layout_with_viewport(
+  let paint0 = @paint.from_node_and_layout_with_viewport(
     root, root_layout, vp_top0, vp_bottom0, 0.0,
   )
   inspect(paint0 is Some(_), content="true")
@@ -707,7 +707,7 @@ test "viewport_culling_scroll_simulation" {
   let scroll1 = 6
   let vp_top1 = scroll1.to_double() * font_height
   let vp_bottom1 = (scroll1 + viewport_height_chars).to_double() * font_height
-  let paint1 = from_node_and_layout_with_viewport(
+  let paint1 = @paint.from_node_and_layout_with_viewport(
     root, root_layout, vp_top1, vp_bottom1, 0.0,
   )
   inspect(paint1 is Some(_), content="true")
@@ -716,7 +716,7 @@ test "viewport_culling_scroll_simulation" {
   let scroll2 = 12
   let vp_top2 = scroll2.to_double() * font_height
   let vp_bottom2 = (scroll2 + viewport_height_chars).to_double() * font_height
-  let paint2 = from_node_and_layout_with_viewport(
+  let paint2 = @paint.from_node_and_layout_with_viewport(
     root, root_layout, vp_top2, vp_bottom2, 0.0,
   )
   inspect(paint2 is Some(_), content="true")
@@ -726,7 +726,7 @@ test "viewport_culling_scroll_simulation" {
   let scroll3 = 13
   let vp_top3 = scroll3.to_double() * font_height
   let vp_bottom3 = (scroll3 + viewport_height_chars).to_double() * font_height
-  let paint3 = from_node_and_layout_with_viewport(
+  let paint3 = @paint.from_node_and_layout_with_viewport(
     root, root_layout, vp_top3, vp_bottom3, 0.0,
   )
   // Root ends at 300, viewport starts at 208, ends at 304
@@ -737,7 +737,7 @@ test "viewport_culling_scroll_simulation" {
   let scroll4 = 20
   let vp_top4 = scroll4.to_double() * font_height
   let vp_bottom4 = (scroll4 + viewport_height_chars).to_double() * font_height
-  let paint4 = from_node_and_layout_with_viewport(
+  let paint4 = @paint.from_node_and_layout_with_viewport(
     root, root_layout, vp_top4, vp_bottom4, 0.0,
   )
   // Root ends at 300, viewport starts at 320 -> no overlap
@@ -780,7 +780,7 @@ test "PaintNode src propagation from Node" {
     scroll_width: 50.0,
     scroll_height: 50.0,
   }
-  let paint_node = from_node_and_layout(node, layout)
+  let paint_node = @paint.from_node_and_layout(node, layout)
   inspect(paint_node.tag, content="img")
   debug_inspect(paint_node.src, content="Some(\"data:test\")")
 }

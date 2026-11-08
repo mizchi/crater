@@ -6,17 +6,17 @@ import {
 }
 
 // Values
-pub fn render_to_kitty_with_css(String, Int, Int, Int, Array[String]) -> String
+pub fn render_to_kitty_with_css(String, Int32, Int32, Int32, Array[String]) -> String
 
-pub fn render_to_sixel(String, Int, Int) -> String
+pub fn render_to_sixel(String, Int32, Int32) -> String
 
-pub fn render_to_sixel_with_css(String, Int, Int, Int, Array[String]) -> String
+pub fn render_to_sixel_with_css(String, Int32, Int32, Int32, Array[String]) -> String
 
-pub fn render_to_sixel_with_scroll(String, Int, Int, Int) -> String
+pub fn render_to_sixel_with_scroll(String, Int32, Int32, Int32) -> String
 
-pub fn render_to_sixel_with_styles(String, Int, Int) -> String
+pub fn render_to_sixel_with_styles(String, Int32, Int32) -> String
 
-pub async fn[T : @io.Writer] write_kitty_with_css(T, String, Int, Int, Int, Array[String]) -> Unit
+pub async fn[T : @io.Writer] write_kitty_with_css(T, String, Int32, Int32, Int32, Array[String]) -> Unit
 
 // Errors
 

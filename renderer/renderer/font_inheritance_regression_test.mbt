@@ -6,7 +6,7 @@ test "ua default line-height does not reset inherited font metrics on inline des
     #|#host { font-size: 20px; line-height: 30px; }
     #|</style>
     #|<div id="host"><span id="child">hello</span></div>
-  let node = render_to_node(html, RenderContext::default())
+  let node = @renderer.render_to_node(html, @renderer.RenderContext::default())
   let host = node.children[0]
   inspect(host.id, content="div#host")
   inspect(host.style.font_size, content="20")

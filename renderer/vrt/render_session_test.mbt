@@ -11,18 +11,18 @@ test "render session: layout-reusing paint-only branch matches full re-layout" {
     #|</style>
     #|<div class="row"><div class="box">one</div><div class="box">two</div></div>
   let viewport = @types.Size::new(400.0, 200.0)
-  let session = RenderSession::open(html, viewport, [])
+  let session = @vrt.RenderSession::open(html, viewport, [])
   // Paint-only mutation: recolor .box backgrounds (no geometry change).
-  let mutations : Array[CssMutation] = [
+  let mutations : Array[@vrt.CssMutation] = [
     {
       selector: ".box",
       property: "background",
-      action: CssMutationAction::Override("#3366ff"),
+      action: @vrt.CssMutationAction::Override("#3366ff"),
     },
     {
       selector: ".box",
       property: "color",
-      action: CssMutationAction::Override("#ffffff"),
+      action: @vrt.CssMutationAction::Override("#ffffff"),
     },
   ]
   let reuse = session.branch_reusing_layout(mutations).to_json_string()
@@ -38,12 +38,12 @@ test "render session: paint-only branch diff is non-empty vs base" {
     #|<!DOCTYPE html><style>body{margin:0}.b{width:50px;height:50px;background:#000}</style>
     #|<div class="b"></div>
   let viewport = @types.Size::new(100.0, 100.0)
-  let session = RenderSession::open(html, viewport, [])
-  let mutations : Array[CssMutation] = [
+  let session = @vrt.RenderSession::open(html, viewport, [])
+  let mutations : Array[@vrt.CssMutation] = [
     {
       selector: ".b",
       property: "background",
-      action: CssMutationAction::Override("#ff0000"),
+      action: @vrt.CssMutationAction::Override("#ff0000"),
     },
   ]
   let diff = session.branch_reusing_layout_diff(mutations)
@@ -61,12 +61,12 @@ test "render session records measurements and restores from them" {
     #|<!DOCTYPE html><style>body{margin:0}.box{display:inline-block;color:#111}</style>
     #|<div class="box">Hello snapshot world</div>
   let viewport = @types.Size::new(400.0, 200.0)
-  let session = RenderSession::open(html, viewport, [])
+  let session = @vrt.RenderSession::open(html, viewport, [])
   let recording = session.recorded_measurements()
   inspect(recording.length() > 0, content="true")
 
   // Restore from the recording (replay-only) and compare the base render.
-  let restored = RenderSession::open_with_recording(
+  let restored = @vrt.RenderSession::open_with_recording(
     html,
     viewport,
     [],
@@ -80,11 +80,11 @@ test "render session records measurements and restores from them" {
   )
 
   // A paint-only branch on the restored session matches the original session.
-  let mutations : Array[CssMutation] = [
+  let mutations : Array[@vrt.CssMutation] = [
     {
       selector: ".box",
       property: "color",
-      action: CssMutationAction::Override("#ff0000"),
+      action: @vrt.CssMutationAction::Override("#ff0000"),
     },
   ]
   inspect(
@@ -102,13 +102,13 @@ test "render session branch() auto-selects strategy by mutation kind" {
     #|<!DOCTYPE html><style>body{margin:0}.b{display:inline-block;width:80px;height:20px;background:#000}</style>
     #|<div class="b">x</div>
   let viewport = @types.Size::new(300.0, 100.0)
-  let session = RenderSession::open(html, viewport, [])
+  let session = @vrt.RenderSession::open(html, viewport, [])
   // paint-only
-  let paint_mut : Array[CssMutation] = [
+  let paint_mut : Array[@vrt.CssMutation] = [
     {
       selector: ".b",
       property: "background",
-      action: CssMutationAction::Override("#0f0"),
+      action: @vrt.CssMutationAction::Override("#0f0"),
     },
   ]
   inspect(paint_mut[0].is_paint_only(), content="true")
@@ -118,11 +118,11 @@ test "render session branch() auto-selects strategy by mutation kind" {
     content="true",
   )
   // layout-affecting
-  let layout_mut : Array[CssMutation] = [
+  let layout_mut : Array[@vrt.CssMutation] = [
     {
       selector: ".b",
       property: "width",
-      action: CssMutationAction::Override("200px"),
+      action: @vrt.CssMutationAction::Override("200px"),
     },
   ]
   inspect(layout_mut[0].is_paint_only(), content="false")
@@ -151,9 +151,9 @@ test "layout box geometry index matches the real layout" {
     viewport_height: 200.0,
   }
   let layout = @renderer.render(html, ctx)
-  let a = layout_box_by_id(layout, "#a").unwrap()
+  let a = @vrt.layout_box_by_id(layout, "#a").unwrap()
   inspect("\{a.x},\{a.width},\{a.height}", content="0,100,40")
-  let b = layout_box_by_id(layout, "#b").unwrap()
+  let b = @vrt.layout_box_by_id(layout, "#b").unwrap()
   inspect("\{b.x},\{b.width},\{b.height}", content="100,80,40")
   // The flatten is document-order and includes the container; b comes after a.
   inspect(b.index > a.index, content="true")
@@ -177,7 +177,7 @@ test "computed style index matches the resolved style" {
     viewport_height: 200.0,
   }
   let node = @renderer.render_to_node(html, ctx)
-  let card = computed_style_by_id(node, "#card").unwrap()
+  let card = @vrt.computed_style_by_id(node, "#card").unwrap()
   debug_inspect(
     card,
     content=(
@@ -205,11 +205,11 @@ test "computed style index matches the resolved style" {
 /// caught: integral geometry serializes without a trailing `.0`, CSS value
 /// strings are quoted, and getComputedStyle's camelCase keys are used.
 test "layout bridge serializes both page-realm globals" {
-  let boxes : Array[LayoutBox] = [
+  let boxes : Array[@vrt.LayoutBox] = [
     { id: "div#a", index: 0, x: 0.0, y: 0.0, width: 100.0, height: 40.0, },
     { id: "div#b", index: 1, x: 100.0, y: 0.0, width: 80.5, height: 40.0, },
   ]
-  let styles : Array[ComputedStyleEntry] = [
+  let styles : Array[@vrt.ComputedStyleEntry] = [
     {
       id: "div#a",
       index: 0,
@@ -224,7 +224,7 @@ test "layout bridge serializes both page-realm globals" {
       background_color: "rgba(0, 0, 0, 0)",
     },
   ]
-  let js = layout_bridge_init_js(boxes, styles)
+  let js = @vrt.layout_bridge_init_js(boxes, styles)
   let expected = "globalThis.__craterLayoutBoxes = [" +
     "{\"index\":0,\"id\":\"div#a\",\"x\":0,\"y\":0,\"width\":100,\"height\":40}," +
     "{\"index\":1,\"id\":\"div#b\",\"x\":100,\"y\":0,\"width\":80.5,\"height\":40}];\n" +
@@ -249,7 +249,7 @@ test "render session emits bridge init js for the real layout" {
     #|  <div id="b" style="width:80px;height:40px"></div>
     #|</div>
   let viewport = @types.Size::new(400.0, 200.0)
-  let session = RenderSession::open(html, viewport, [])
+  let session = @vrt.RenderSession::open(html, viewport, [])
   let js = session.layout_bridge_init_js()
   inspect(js.contains("globalThis.__craterLayoutBoxes = ["), content="true")
   inspect(js.contains("globalThis.__craterComputedStyles = ["), content="true")

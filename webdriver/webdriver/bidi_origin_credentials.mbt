@@ -2,7 +2,7 @@
 /// Maximum length in bytes for stored credential fields. RFC 7617 / 7616
 /// don't impose a fixed limit, but capping at 1 KB each prevents a
 /// malicious or accidental write from filling the per-session profile.
-const CREDENTIAL_FIELD_LIMIT : Int = 1024
+const CREDENTIAL_FIELD_LIMIT : Int32 = 1024
 
 ///|
 /// Validate a candidate credential string (username or password).
@@ -40,7 +40,7 @@ fn validate_credential_field(
 /// never sent unsolicited.
 fn BidiProtocol::handle_crater_set_origin_credentials(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map = match params {
@@ -117,7 +117,7 @@ fn BidiProtocol::handle_crater_set_origin_credentials(
 /// credentials for the normalized origin from the per-session profile.
 fn BidiProtocol::handle_crater_clear_origin_credentials(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map = match params {
@@ -162,7 +162,7 @@ fn BidiProtocol::handle_crater_clear_origin_credentials(
 /// origins without exposing any username or password.
 fn BidiProtocol::handle_crater_list_origin_credentials(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map : Map[String, Json] = match params {

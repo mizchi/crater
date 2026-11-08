@@ -34,12 +34,12 @@ priv struct ParityCase {
 /// the fields they care about so cases stay short.
 fn make_stored(
   name~ : String,
-  value? : String = "v",
+  value~ : String = "v",
   domain~ : String,
-  path? : String = "/",
-  secure? : Bool = false,
-  same_site? : String = "lax",
-  expiry? : Int? = None,
+  path~ : String = "/",
+  secure~ : Bool = false,
+  same_site~ : String = "lax",
+  expiry~ : Int32? = None,
 ) -> StoredCookie {
   {
     name,
@@ -75,7 +75,7 @@ fn seed_parity_cookie(proto : BidiProtocol, cookie_json : String) -> Unit {
 /// i.e. whether the JS side decided the cookie attaches.
 fn js_bridge_matches(
   proto : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   cookie_name : String,
   request_url : String,
 ) -> Bool {

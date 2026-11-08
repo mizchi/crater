@@ -1,7 +1,7 @@
 ///|
 /// Parsed BiDi request shape used by the implementation dispatcher.
 pub(all) struct BidiWireRequest {
-  id : Int
+  id : Int32
   method_name : String
   params : Json?
 }
@@ -20,13 +20,13 @@ pub fn parse_request(json_str : String) -> Result[BidiWireRequest, String] {
 }
 
 ///|
-pub fn success_response_to_json(id : Int, result : Json?) -> String {
+pub fn success_response_to_json(id : Int32, result : Json?) -> String {
   @bidi_wire.success_response_to_json(id, result)
 }
 
 ///|
 pub fn error_response_to_json(
-  id : Int,
+  id : Int32,
   error : String,
   message : String,
   stacktrace : String,

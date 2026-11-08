@@ -32,9 +32,9 @@ pub(all) struct GlyphAtlasEntry {
 /// `width * height` array of 0..255 alpha values, `image` is the handle the
 /// backend samples, and `entries` locates each inked glyph.
 pub(all) struct GlyphAtlas {
-  width : Int
-  height : Int
-  coverage : Array[Int]
+  width : Int32
+  height : Int32
+  coverage : Array[Int32]
   image : @gfx.ImageHandle
   entries : Array[GlyphAtlasEntry]
 }

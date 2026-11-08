@@ -12,13 +12,13 @@
 /// モック非同期ランタイム - 外部の非同期処理をシミュレート
 struct MockAsyncRuntime {
   /// 保留中のネットワークリクエスト (task_id -> url)
-  pending_fetches : Map[Int, String]
+  pending_fetches : Map[Int32, String]
   /// 保留中の画像デコード (task_id -> resource_id)
-  pending_decodes : Map[Int, Int]
+  pending_decodes : Map[Int32, Int32]
   /// 完了したレスポンス (url -> response)
   responses : Map[String, String]
   /// 画像サイズ (resource_id -> (width, height))
-  image_sizes : Map[Int, (Double, Double)]
+  image_sizes : Map[Int32, (Double, Double)]
   /// 処理ログ
   logs : Array[String]
 }
@@ -48,7 +48,7 @@ fn MockAsyncRuntime::set_response(
 /// 画像サイズを事前に設定
 fn MockAsyncRuntime::set_image_size(
   self : MockAsyncRuntime,
-  resource_id : Int,
+  resource_id : Int32,
   width : Double,
   height : Double,
 ) -> Unit {
@@ -72,7 +72,7 @@ fn MockAsyncRuntime::register_fetch(
 fn MockAsyncRuntime::register_decode(
   self : MockAsyncRuntime,
   task_id : TaskId,
-  resource_id : Int,
+  resource_id : Int32,
 ) -> Unit {
   let TaskId(id) = task_id
   self.pending_decodes[id] = resource_id
@@ -86,7 +86,7 @@ fn MockAsyncRuntime::complete_fetch(
   scheduler : Scheduler,
   url : String,
 ) -> Bool {
-  let mut found_id : Int? = None
+  let mut found_id : Int32? = None
   self.pending_fetches.each(fn(id, u) { if u == url { found_id = Some(id) } })
   match found_id {
     Some(id) => {
@@ -113,9 +113,9 @@ fn MockAsyncRuntime::complete_fetch(
 fn MockAsyncRuntime::complete_decode(
   self : MockAsyncRuntime,
   scheduler : Scheduler,
-  resource_id : Int,
+  resource_id : Int32,
 ) -> Bool {
-  let mut found_id : Int? = None
+  let mut found_id : Int32? = None
   self.pending_decodes.each(fn(id, rid) {
     if rid == resource_id {
       found_id = Some(id)
@@ -134,7 +134,7 @@ fn MockAsyncRuntime::complete_decode(
 
 ///|
 /// 保留中のタスク数
-fn MockAsyncRuntime::pending_count(self : MockAsyncRuntime) -> Int {
+fn MockAsyncRuntime::pending_count(self : MockAsyncRuntime) -> Int32 {
   self.pending_fetches.length() + self.pending_decodes.length()
 }
 

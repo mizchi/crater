@@ -40,7 +40,7 @@ pub fn find_interactive(AccessibilityTree) -> Array[AccessibilityNode]
 
 pub fn find_landmarks(AccessibilityTree) -> Array[AccessibilityNode]
 
-pub fn get_heading_level(@html.Element) -> Int?
+pub fn get_heading_level(@html.Element) -> Int32?
 
 pub fn get_tab_order_ids(AccessibilityTree) -> Array[String]
 
@@ -62,13 +62,13 @@ pub(all) struct AccessibilityNode {
   role : Role
   name : String?
   description : String?
-  level : Int?
+  level : Int32?
   states : Array[State]
   properties : Map[String, String]
   bounds : Bounds?
   children : Array[AccessibilityNode]
   focusable : Bool
-  tabindex : Int?
+  tabindex : Int32?
   source_id : String?
   href : String?
   tag_name : String?
@@ -90,9 +90,9 @@ pub fn AccessibilityNode::set_focusable(Self, Bool) -> Self
 pub fn AccessibilityNode::to_aria_json(Self) -> String
 pub fn AccessibilityNode::to_aria_snapshot(Self) -> String
 pub fn AccessibilityNode::with_bounds(Self, Bounds) -> Self
-pub fn AccessibilityNode::with_level(Self, Int) -> Self
+pub fn AccessibilityNode::with_level(Self, Int32) -> Self
 pub fn AccessibilityNode::with_name(Self, String) -> Self
-pub fn AccessibilityNode::with_tabindex(Self, Int) -> Self
+pub fn AccessibilityNode::with_tabindex(Self, Int32) -> Self
 
 pub(all) struct AccessibilityTree {
   root : AccessibilityNode
@@ -118,7 +118,7 @@ pub fn Bounds::new(Double, Double, Double, Double) -> Self
 pub(all) struct FocusManager {
   tree : AccessibilityTree
   tab_order : Array[FocusableItem]
-  mut current_index : Int
+  mut current_index : Int32
 }
 pub fn FocusManager::blur(Self) -> Unit
 pub fn FocusManager::current(Self) -> AccessibilityNode?
@@ -129,17 +129,18 @@ pub fn FocusManager::focus_first(Self) -> AccessibilityNode?
 pub fn FocusManager::focus_last(Self) -> AccessibilityNode?
 pub fn FocusManager::focus_next(Self) -> AccessibilityNode?
 pub fn FocusManager::focus_prev(Self) -> AccessibilityNode?
-pub fn FocusManager::focusable_count(Self) -> Int
+pub fn FocusManager::focusable_count(Self) -> Int32
 pub fn FocusManager::get_tab_order(Self) -> Array[FocusableItem]
 pub fn FocusManager::has_focus(Self) -> Bool
 pub fn FocusManager::new(AccessibilityTree) -> Self
 
 pub(all) struct FocusableItem {
   node : AccessibilityNode
-  document_order : Int
-  effective_tabindex : Int
+  document_order : Int32
+  effective_tabindex : Int32
 }
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Role {
   Article
   Blockquote
@@ -229,8 +230,12 @@ pub(all) enum Role {
   HtmlCanvas
   HtmlLabel
   HtmlSummary
-} derive(Eq, @debug.Debug)
+}
+pub fn Role::equal(Self, Self) -> Bool
 pub fn Role::from_string(String) -> Self?
+pub fn Role::not_equal(Self, Self) -> Bool
+pub fn Role::output(Self, &Logger) -> Unit
+pub fn Role::to_repr(Self) -> @debug.Repr
 pub fn Role::to_string(Self) -> String
 pub impl Show for Role
 
@@ -247,6 +252,7 @@ pub(all) struct SelectOption {
   selected : Bool
 }
 
+#derive(Eq, @debug.Debug)
 pub(all) enum State {
   Busy
   Checked
@@ -259,7 +265,11 @@ pub(all) enum State {
   Selected
   CheckedMixed
   PressedMixed
-} derive(Eq, @debug.Debug)
+}
+pub fn State::equal(Self, Self) -> Bool
+pub fn State::not_equal(Self, Self) -> Bool
+pub fn State::output(Self, &Logger) -> Unit
+pub fn State::to_repr(Self) -> @debug.Repr
 pub fn State::to_string(Self) -> String
 pub impl Show for State
 

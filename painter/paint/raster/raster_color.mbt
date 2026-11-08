@@ -1,9 +1,9 @@
 ///|
 /// RGB Color (0-255 range)
 pub(all) struct Color {
-  r : Int
-  g : Int
-  b : Int
+  r : Int32
+  g : Int32
+  b : Int32
 }
 
 ///|
@@ -49,7 +49,7 @@ pub fn Color::black() -> Color {
 
 ///|
 /// Get color by depth level
-pub fn get_depth_color(depth : Int) -> Color {
+pub fn get_depth_color(depth : Int32) -> Color {
   let colors = [
     Color::blue(),
     Color::green(),
@@ -62,7 +62,7 @@ pub fn get_depth_color(depth : Int) -> Color {
 
 ///|
 /// Blend color with alpha (0-255)
-pub fn Color::blend(self : Color, bg : Color, alpha : Int) -> Color {
+pub fn Color::blend(self : Color, bg : Color, alpha : Int32) -> Color {
   let a = alpha.to_double() / 255.0
   let inv_a = 1.0 - a
   {

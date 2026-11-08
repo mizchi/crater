@@ -6,10 +6,10 @@ fn render_node_box_decorations(
   fb : Framebuffer,
   palette : DynamicPalette,
   node : @paint_model.PaintNode,
-  x : Int,
-  y : Int,
-  w : Int,
-  h : Int,
+  x : Int32,
+  y : Int32,
+  w : Int32,
+  h : Int32,
   clip : ClipRect?,
 ) -> Unit {
   let min_dim = @cmp.minimum(w, h)

@@ -4,7 +4,7 @@
 ///|
 /// Global cache for mapping uid -> LayoutNode during incremental computation
 /// This enables child nodes to use their cached layouts
-let layout_node_cache_map : Ref[Map[Int, LayoutNode]] = { val: {}, }
+let layout_node_cache_map : Ref[Map[Int32, LayoutNode]] = { val: {}, }
 
 ///|
 /// Global stats reference for cache tracking during dispatch
@@ -31,8 +31,8 @@ pub fn ConstraintSpace::new(
   sizing_mode : @layout_types.SizingMode,
   parent_width : Double,
   parent_height : Double?,
-  viewport_width? : Double = 0.0,
-  viewport_height? : Double = 0.0,
+  viewport_width~ : Double = 0.0,
+  viewport_height~ : Double = 0.0,
 ) -> ConstraintSpace {
   {
     available_width,
@@ -179,9 +179,9 @@ fn can_use_cache(node : LayoutNode, constraint : ConstraintSpace) -> Bool {
 ///|
 /// Statistics for cache performance
 pub struct CacheStats {
-  mut cache_hits : Int
-  mut cache_misses : Int
-  mut nodes_computed : Int
+  mut cache_hits : Int32
+  mut cache_misses : Int32
+  mut nodes_computed : Int32
 }
 
 ///|
@@ -276,7 +276,7 @@ pub fn compute_node(
 ///|
 /// Check if we can use cache for a node based on uid lookup
 fn try_cache_by_uid(
-  uid : Int,
+  uid : Int32,
   ctx : @layout_types.LayoutContext,
 ) -> @layout_types.Layout? {
   let map = layout_node_cache_map.val
@@ -310,7 +310,7 @@ fn try_cache_by_uid(
 ///|
 /// Update cache for a node after computation
 fn update_cache_by_uid(
-  uid : Int,
+  uid : Int32,
   ctx : @layout_types.LayoutContext,
   result : @layout_types.Layout,
 ) -> Unit {

@@ -2,7 +2,7 @@
 /// Handle script.disown.
 fn BidiProtocol::handle_script_disown(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match self.validate_script_target(request_id, params) {
@@ -57,7 +57,7 @@ fn BidiProtocol::handle_script_disown(
 /// Handle script.addPreloadScript variants.
 fn BidiProtocol::handle_script_add_preload_script(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
   id_only : Bool,
 ) -> Result[Unit, String] {
@@ -80,7 +80,7 @@ fn BidiProtocol::handle_script_add_preload_script(
 /// Handle script.removePreloadScript.
 fn BidiProtocol::handle_script_remove_preload_script(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let script_id = match get_param_raw(params, "script") {

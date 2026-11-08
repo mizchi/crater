@@ -97,7 +97,7 @@ fn registrable_domain_via_psl(host : String) -> String? {
   let literals = literal_map()
   let wildcards = wildcard_map()
   let exceptions = exception_map()
-  let mut best_match : Int = 0
+  let mut best_match : Int32 = 0
   let mut best_is_exception = false
   for i = 1; i <= n; i = i + 1 {
     let suffix = join_labels(labels, n - i, n)
@@ -161,7 +161,7 @@ fn split_labels(host : String) -> Array[String] {
 }
 
 ///|
-fn join_labels(labels : Array[String], start : Int, end : Int) -> String {
+fn join_labels(labels : Array[String], start : Int32, end : Int32) -> String {
   let buf = StringBuilder()
   for i = start; i < end; i = i + 1 {
     if i > start {

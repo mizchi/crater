@@ -7,10 +7,10 @@
 let glyph_bitmap_cache : Ref[Map[String, GlyphBitmap]] = { val: {}, }
 
 ///|
-let glyph_subpixel_steps : Int = 8
+let glyph_subpixel_steps : Int32 = 8
 
 ///|
-fn glyph_subpixel_bucket(value : Double) -> Int {
+fn glyph_subpixel_bucket(value : Double) -> Int32 {
   let base = value.floor()
   let frac = value - base
   let raw = (frac * glyph_subpixel_steps.to_double()).to_int()
@@ -24,7 +24,7 @@ fn glyph_subpixel_bucket(value : Double) -> Int {
 }
 
 ///|
-fn glyph_subpixel_offset_from_bucket(bucket : Int) -> Double {
+fn glyph_subpixel_offset_from_bucket(bucket : Int32) -> Double {
   bucket.to_double() / glyph_subpixel_steps.to_double()
 }
 
@@ -42,13 +42,13 @@ let glyph_cache : Ref[Map[String, (Array[@svg.PathCommand], Double)]] = {
 
 ///|
 fn glyph_cache_key(
-  cp : Int,
+  cp : Int32,
   font_size : Double,
   is_bold : Bool,
   font_family : String,
-  font_weight? : Double = 400.0,
-  subpixel_x_bucket? : Int = 0,
-  subpixel_y_bucket? : Int = 0,
+  font_weight~ : Double = 400.0,
+  subpixel_x_bucket~ : Int32 = 0,
+  subpixel_y_bucket~ : Int32 = 0,
 ) -> String {
   let bold_flag = if is_bold { 1 } else { 0 }
   let fs_key = (font_size * 10.0).to_int()
@@ -77,14 +77,14 @@ pub fn clear_glyph_caches() -> Unit {
 ///|
 pub fn cached_glyph_bitmap(
   provider : GlyphProvider,
-  codepoint : Int,
+  codepoint : Int32,
   font_size : Double,
   is_bold : Bool,
   font_family : String,
   font_weight : Double,
   baseline_offset : Double,
-  subpixel_x? : Double = 0.0,
-  subpixel_y? : Double = 0.0,
+  subpixel_x~ : Double = 0.0,
+  subpixel_y~ : Double = 0.0,
 ) -> GlyphBitmap {
   let subpixel_x_bucket = glyph_subpixel_bucket(subpixel_x)
   let subpixel_y_bucket = glyph_subpixel_bucket(subpixel_y)
@@ -120,8 +120,8 @@ pub fn cached_glyph_bitmap(
 /// Call after set_glyph_provider to warm the bitmap cache.
 pub fn pre_rasterize_glyphs(
   font_sizes : Array[Double],
-  font_family? : String = "",
-) -> Int {
+  font_family~ : String = "",
+) -> Int32 {
   let provider = match get_glyph_provider() {
     Some(p) => p
     None => return 0

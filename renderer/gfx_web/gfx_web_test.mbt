@@ -1,7 +1,7 @@
 ///|
 test "webgpu driver forwards a flushed command stream to the hooks" {
-  let sink = install_capture_hooks()
-  let driver = webgpu_driver(8, 8)
+  let sink = @gfx_web.install_capture_hooks()
+  let driver = @gfx_web.webgpu_driver(8, 8)
   @gfx.GraphicsDriver::initialize(driver)
   let dst = @gfx.GraphicsDriver::new_image(driver, 8, 8)
   let shader = @gfx.GraphicsDriver::new_shader(driver, "s")
@@ -28,12 +28,12 @@ test "webgpu driver forwards a flushed command stream to the hooks" {
   inspect(sink.begin_count, content="1")
   inspect(sink.end_count, content="1")
   inspect(sink.draw_count(), content="1")
-  reset_hooks()
+  @gfx_web.reset_hooks()
 }
 
 ///|
 test "paint tree dispatches through the webgpu backend hooks" {
-  let sink = install_capture_hooks()
+  let sink = @gfx_web.install_capture_hooks()
   let root = @paint_model.PaintNode::new(
     "root",
     "div",
@@ -61,7 +61,7 @@ test "paint tree dispatches through the webgpu backend hooks" {
       ),
     ],
   )
-  let driver = webgpu_driver(16, 16)
+  let driver = @gfx_web.webgpu_driver(16, 16)
   // The assembler drives the gfx web driver unchanged; the host GPU layer
   // (or, here, the capture sink) receives the same command stream a real
   // backend would.
@@ -69,5 +69,5 @@ test "paint tree dispatches through the webgpu backend hooks" {
   // root background + red box = two fill commands
   inspect(sink.draw_count(), content="2")
   inspect(sink.begin_count, content="1")
-  reset_hooks()
+  @gfx_web.reset_hooks()
 }

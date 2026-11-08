@@ -8,12 +8,22 @@
 
 ///|
 /// Unique task identifier
-pub(all) struct TaskId(Int) derive(Eq, Hash, Debug)
+#derive(Eq, Hash, Debug)
+pub(all) struct TaskId(Int32)
+
+///|
+pub extend TaskId with Eq::{not_equal, equal}
+
+///|
+pub extend TaskId with Hash::{hash, hash_combine}
+
+///|
+pub extend TaskId with @debug.Debug::{to_repr}
 
 ///|
 /// ID generator (mutable state in struct)
 priv struct TaskIdGenerator {
-  mut next_id : Int
+  mut next_id : Int32
 }
 
 ///|
@@ -38,6 +48,7 @@ pub fn reset_task_id_counter() -> Unit {
 
 ///|
 /// タスクの発生源
+#derive(Eq, Hash, Debug)
 pub(all) enum TaskSource {
   /// DOM操作（パース、ツリー構築）
   DOM
@@ -51,14 +62,24 @@ pub(all) enum TaskSource {
   Scripting
   /// 画像デコード（外部委譲）
   ImageDecode
-} derive(Eq, Hash, Debug)
+}
 
 // =============================================================================
 // Task Constraint (実行制約)
 // =============================================================================
 
 ///|
+pub extend TaskSource with Eq::{not_equal, equal}
+
+///|
+pub extend TaskSource with Hash::{hash, hash_combine}
+
+///|
+pub extend TaskSource with @debug.Debug::{to_repr}
+
+///|
 /// タスクの実行制約
+#derive(Debug)
 pub(all) enum TaskConstraint {
   /// メインスレッド必須（DOM操作など）
   MainThreadOnly
@@ -66,7 +87,10 @@ pub(all) enum TaskConstraint {
   Parallel
   /// 他のタスクソースをブロック（parser-blocking script）
   Blocking(Array[TaskSource])
-} derive(Debug)
+}
+
+///|
+pub extend TaskConstraint with @debug.Debug::{to_repr}
 
 ///|
 /// Check if a task can run in parallel
@@ -95,6 +119,7 @@ pub fn TaskConstraint::blocks(
 
 ///|
 /// リソースの種類
+#derive(Eq, Debug)
 pub(all) enum ResourceType {
   /// HTML ドキュメント
   Document
@@ -108,14 +133,21 @@ pub(all) enum ResourceType {
   Font
   /// その他
   Other
-} derive(Eq, Debug)
+}
 
 // =============================================================================
 // Task State
 // =============================================================================
 
 ///|
+pub extend ResourceType with Eq::{not_equal, equal}
+
+///|
+pub extend ResourceType with @debug.Debug::{to_repr}
+
+///|
 /// タスクの状態
+#derive(Debug)
 pub(all) enum TaskState {
   /// 依存タスク待ち
   Pending
@@ -129,7 +161,10 @@ pub(all) enum TaskState {
   Cancelled
   /// 失敗
   Failed(String)
-} derive(Debug)
+}
+
+///|
+pub extend TaskState with @debug.Debug::{to_repr}
 
 ///|
 pub fn TaskState::is_terminal(self : TaskState) -> Bool {
@@ -153,6 +188,7 @@ pub fn TaskState::is_runnable(self : TaskState) -> Bool {
 
 ///|
 /// タスクの実行内容
+#derive(Debug)
 pub(all) enum TaskAction {
   // -------------------------------------------------------------------------
   // 内部実行可能（同期的に実行可能）
@@ -172,15 +208,21 @@ pub(all) enum TaskAction {
   /// リソースフェッチ
   FetchResource(url~ : String, resource_type~ : ResourceType)
   /// 画像デコード
-  DecodeImage(resource_id~ : Int)
+  DecodeImage(resource_id~ : Int32)
   /// スクリプト実行
   ExecuteScript(source~ : String)
-} derive(Debug)
+}
+
+///|
+pub extend TaskAction with @debug.Debug::{to_repr}
 
 ///|
 pub impl Show for TaskId with fn output(self, logger) {
   logger.write_string("TaskId(\{self.0})")
 }
+
+///|
+pub extend TaskId with Show::{to_string, output}
 
 ///|
 pub impl Show for TaskSource with fn output(self, logger) {
@@ -196,6 +238,9 @@ pub impl Show for TaskSource with fn output(self, logger) {
 }
 
 ///|
+pub extend TaskSource with Show::{to_string, output}
+
+///|
 pub impl Show for TaskConstraint with fn output(self, logger) {
   match self {
     MainThreadOnly => logger.write_string("MainThreadOnly")
@@ -203,6 +248,9 @@ pub impl Show for TaskConstraint with fn output(self, logger) {
     Blocking(sources) => logger.write_string("Blocking(\{Repr(sources)})")
   }
 }
+
+///|
+pub extend TaskConstraint with Show::{to_string, output}
 
 ///|
 pub impl Show for ResourceType with fn output(self, logger) {
@@ -216,6 +264,9 @@ pub impl Show for ResourceType with fn output(self, logger) {
   }
   logger.write_string(name)
 }
+
+///|
+pub extend ResourceType with Show::{to_string, output}
 
 ///|
 pub impl Show for TaskState with fn output(self, logger) {
@@ -234,6 +285,9 @@ pub impl Show for TaskState with fn output(self, logger) {
     }
   }
 }
+
+///|
+pub extend TaskState with Show::{to_string, output}
 
 ///|
 pub impl Show for TaskAction with fn output(self, logger) {
@@ -275,6 +329,9 @@ pub impl Show for TaskAction with fn output(self, logger) {
 }
 
 ///|
+pub extend TaskAction with Show::{to_string, output}
+
+///|
 pub impl Show for TaskResult with fn output(self, logger) {
   match self {
     Success(new_tasks~) =>
@@ -289,6 +346,9 @@ pub impl Show for TaskResult with fn output(self, logger) {
     Cancelled => logger.write_string("Cancelled")
   }
 }
+
+///|
+pub extend TaskResult with Show::{to_string, output}
 
 ///|
 /// Check if action can be executed internally (synchronously)
@@ -319,6 +379,7 @@ pub fn TaskAction::source(self : TaskAction) -> TaskSource {
 
 ///|
 /// タスクの実行結果
+#derive(Debug)
 pub(all) enum TaskResult {
   /// 成功（追加タスクを生成する場合がある）
   Success(new_tasks~ : Array[TaskAction])
@@ -326,11 +387,14 @@ pub(all) enum TaskResult {
   Failure(error~ : String)
   /// キャンセル
   Cancelled
-} derive(Debug)
+}
 
 // =============================================================================
 // Task
 // =============================================================================
+
+///|
+pub extend TaskResult with @debug.Debug::{to_repr}
 
 ///|
 /// タスク本体
@@ -348,15 +412,15 @@ pub(all) struct Task {
   /// 現在の状態
   mut state : TaskState
   /// 優先度（高いほど優先）
-  priority : Int
+  priority : Int32
 }
 
 ///|
 pub fn Task::new(
   action : TaskAction,
   constraint : TaskConstraint,
-  dependencies? : Array[TaskId] = [],
-  priority? : Int = 0,
+  dependencies~ : Array[TaskId] = [],
+  priority~ : Int32 = 0,
 ) -> Task {
   {
     id: TaskId::next(),

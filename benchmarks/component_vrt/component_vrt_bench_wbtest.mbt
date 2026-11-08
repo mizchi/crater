@@ -4,12 +4,12 @@ struct ComponentFixture {
   html : String
   baseline_css : String
   component_css : String
-  viewport_width : Int
-  viewport_height : Int
+  viewport_width : Int32
+  viewport_height : Int32
 }
 
 ///|
-fn make_render_ctx(width : Int, height : Int) -> @renderer.RenderContext {
+fn make_render_ctx(width : Int32, height : Int32) -> @renderer.RenderContext {
   {
     viewport_width: width.to_double(),
     viewport_height: height.to_double(),
@@ -82,7 +82,7 @@ fn component_baseline_css() -> String {
 }
 
 ///|
-fn build_noise_blocks(count : Int) -> String {
+fn build_noise_blocks(count : Int32) -> String {
   let buf = StringBuilder()
   buf.write_string("<fixture-noise>")
   for i = 0; i < count; i = i + 1 {
@@ -98,8 +98,8 @@ fn build_noise_blocks(count : Int) -> String {
 fn wrap_component_fixture(
   target_id : String,
   component_inner : String,
-  noise_before : Int,
-  noise_after : Int,
+  noise_before : Int32,
+  noise_after : Int32,
 ) -> String {
   let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><body><main-shell>")
@@ -784,7 +784,7 @@ fn normalize_component_layout(
 }
 
 ///|
-fn pixel_span(value : Double) -> Int {
+fn pixel_span(value : Double) -> Int32 {
   let rounded = value.ceil().to_int()
   if rounded > 0 {
     rounded
@@ -835,7 +835,7 @@ fn render_component_layout_artifact(fixture : ComponentFixture) -> String {
 ///|
 fn render_component_paint_node(
   fixture : ComponentFixture,
-) -> (@tui_paint_plain.PaintNode, Int, Int) {
+) -> (@tui_paint_plain.PaintNode, Int32, Int32) {
   let (node, layout) = render_component_subtree(fixture)
   let normalized = normalize_component_layout(layout)
   let paint_node = @tui_paint_plain.from_node_and_layout(node, normalized)
@@ -847,8 +847,8 @@ fn render_component_paint_node(
 ///|
 fn raster_component_paint(
   paint_node : @tui_paint_plain.PaintNode,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
 ) -> (@raster.Framebuffer, @raster.DynamicPalette) {
   @tui_paint_export.raster_to_framebuffer(paint_node, width, height)
 }

@@ -18,10 +18,10 @@ fn prepare_viewport_paint(
 pub fn render_to_ansi(
   node : @node.Node,
   layout : @layout_types.Layout,
-  width : Int,
-  height : Int,
-  scroll_y : Int,
-  focused_element_name? : String? = None,
+  width : Int32,
+  height : Int32,
+  scroll_y : Int32,
+  focused_element_name~ : String? = None,
 ) -> RenderResult {
   let result = render_to_buffer(
     node,
@@ -39,10 +39,10 @@ pub fn render_to_ansi(
 pub fn render_to_buffer(
   node : @node.Node,
   layout : @layout_types.Layout,
-  width : Int,
-  height : Int,
-  scroll_y : Int,
-  focused_element_name? : String? = None,
+  width : Int32,
+  height : Int32,
+  scroll_y : Int32,
+  focused_element_name~ : String? = None,
 ) -> BufferRenderResult {
   let buf = CharBuffer::new(width, height)
   let white_cell : CharCell = {
@@ -88,7 +88,7 @@ pub fn render_to_buffer(
 
 ///|
 /// Get total content height in character rows.
-pub fn get_content_height_chars(layout : @layout_types.Layout) -> Int {
+pub fn get_content_height_chars(layout : @layout_types.Layout) -> Int32 {
   px_to_row(layout.height)
 }
 

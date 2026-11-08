@@ -3,7 +3,7 @@
 ///|
 /// Compute layout from HTML (returns JSON string with flat layout)
 /// JSON format: { "nodes": [...], "rootId": "..." }
-pub fn compute_layout(html : String, width : UInt, height : UInt) -> String {
+pub fn compute_layout(html : String, width : UInt32, height : UInt32) -> String {
   let result = @crater.computeLayout(
     html,
     width.reinterpret_as_int(),

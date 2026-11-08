@@ -1,7 +1,7 @@
 ///|
 fn BidiProtocol::handle_network_emit_navigation_request_sequence(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map = match params {
@@ -62,7 +62,7 @@ fn BidiProtocol::emit_synthetic_navigation_request_sequence(
   context_id : String,
   url : String,
   navigation : String?,
-) -> Int {
+) -> Int32 {
   let requests = self.build_synthetic_navigation_request_entries(
     context_id, url, navigation,
   )
@@ -78,7 +78,7 @@ fn BidiProtocol::emit_synthetic_navigation_request_sequence_for_test(
   context_id : String,
   url : String,
   navigation : String?,
-) -> Int {
+) -> Int32 {
   let requests = self.build_synthetic_navigation_request_entries(
     context_id, url, navigation,
   )

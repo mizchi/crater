@@ -122,8 +122,8 @@ pub fn render_html_to_image(
 /// software backend.
 pub fn render_paint_tree_to_image(
   root : @paint_model.PaintNode,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
 ) -> RenderedImage {
   @gfx_vrt.render_paint_tree_to_image(root, width, height)
 }
@@ -133,11 +133,11 @@ pub fn render_paint_tree_to_image(
 /// white) via the gfx software backend. Self-contained: needs no font file.
 pub fn render_text_to_image(
   text : String,
-  width : Int,
-  height : Int,
-  x? : Int = 0,
-  y? : Int = 0,
-  scale? : Int = 1,
+  width : Int32,
+  height : Int32,
+  x~ : Int32 = 0,
+  y~ : Int32 = 0,
+  scale~ : Int32 = 1,
 ) -> RenderedImage {
   @gfx_vrt.render_text_to_image(text, width, height, x~, y~, scale~)
 }

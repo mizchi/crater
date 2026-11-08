@@ -6,33 +6,33 @@
 pub(all) struct GlyphProvider {
   /// Get SVG path commands for a glyph. Args: (codepoint, font_size, is_bold).
   /// Returns (commands, advance_width).
-  get_glyph : (Int, Double, Bool) -> (Array[@svg.PathCommand], Double)
+  get_glyph : (Int32, Double, Bool) -> (Array[@svg.PathCommand], Double)
   /// Get kerning adjustment between two codepoints. Args: (cp1, cp2, font_size, is_bold).
-  get_kern : (Int, Int, Double, Bool) -> Double
+  get_kern : (Int32, Int32, Double, Bool) -> Double
   /// Weight-aware glyph provider. Args: (codepoint, font_size, font_weight).
-  get_glyph_by_weight : ((Int, Double, Double) -> (
+  get_glyph_by_weight : ((Int32, Double, Double) -> (
     Array[@svg.PathCommand],
     Double,
   ))?
   /// Weight-aware kerning. Args: (cp1, cp2, font_size, font_weight).
-  get_kern_by_weight : ((Int, Int, Double, Double) -> Double)?
+  get_kern_by_weight : ((Int32, Int32, Double, Double) -> Double)?
   /// Font ascent in pixels at font_size=1. Multiply by actual font_size.
   ascent_ratio : Double // ascent / units_per_em (e.g. 1854/2048 ~= 0.905)
   /// Multi-font glyph provider. Args: (codepoint, font_size, is_bold, font_family).
   /// Returns (commands, advance_width) or None to fall back to get_glyph.
-  get_glyph_for_family : ((Int, Double, Bool, String) -> (
+  get_glyph_for_family : ((Int32, Double, Bool, String) -> (
     Array[@svg.PathCommand],
     Double,
   )?)?
   /// Multi-font kerning. Args: (cp1, cp2, font_size, is_bold, font_family).
-  get_kern_for_family : ((Int, Int, Double, Bool, String) -> Double)?
+  get_kern_for_family : ((Int32, Int32, Double, Bool, String) -> Double)?
   /// Weight-aware multi-font glyph provider.
-  get_glyph_for_family_by_weight : ((Int, Double, Double, String) -> (
+  get_glyph_for_family_by_weight : ((Int32, Double, Double, String) -> (
     Array[@svg.PathCommand],
     Double,
   )?)?
   /// Weight-aware multi-font kerning.
-  get_kern_for_family_by_weight : ((Int, Int, Double, Double, String) -> Double)?
+  get_kern_for_family_by_weight : ((Int32, Int32, Double, Double, String) -> Double)?
   /// Multi-font ascent ratio. Args: (font_family) -> ratio.
   get_ascent_for_family : ((String) -> Double)?
 }
@@ -134,7 +134,7 @@ pub fn is_bold_font_weight(font_weight : Double) -> Bool {
 ///|
 fn glyph_from_provider(
   provider : GlyphProvider,
-  codepoint : Int,
+  codepoint : Int32,
   font_size : Double,
   is_bold : Bool,
   font_family : String,
@@ -165,8 +165,8 @@ fn glyph_from_provider(
 ///|
 pub fn kern_from_provider(
   provider : GlyphProvider,
-  cp1 : Int,
-  cp2 : Int,
+  cp1 : Int32,
+  cp2 : Int32,
   font_size : Double,
   is_bold : Bool,
   font_family : String,
@@ -191,11 +191,11 @@ pub fn kern_from_provider(
 ///|
 fn get_advance(
   provider : GlyphProvider,
-  codepoint : Int,
+  codepoint : Int32,
   font_size : Double,
   is_bold : Bool,
-  font_family? : String = "",
-  font_weight? : Double = 400.0,
+  font_family~ : String = "",
+  font_weight~ : Double = 400.0,
 ) -> Double {
   let effective_font_weight = resolve_effective_font_weight(
     is_bold, font_weight,

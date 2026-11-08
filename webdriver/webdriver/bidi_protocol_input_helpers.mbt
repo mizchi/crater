@@ -2,7 +2,7 @@
 /// Validate input context parameter and return context ID.
 fn BidiProtocol::validate_input_context(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> String? {
   let ctx_id = match get_param_raw(params, "context") {
@@ -29,7 +29,7 @@ fn BidiProtocol::validate_input_context(
 /// Validate pointer common property types/ranges.
 fn BidiProtocol::validate_pointer_common_properties(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   action_map : Map[String, Json],
 ) -> Bool {
   match action_map.get("width") {
@@ -109,7 +109,7 @@ fn BidiProtocol::validate_pointer_common_properties(
 /// Resolve pointer/wheel origin with integer offsets.
 fn BidiProtocol::resolve_pointer_origin(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   origin : Json?,
   offset_x : Double,
@@ -210,7 +210,7 @@ fn BidiProtocol::resolve_pointer_origin(
 /// Validate pointer target coordinates against viewport.
 fn BidiProtocol::ensure_pointer_within_viewport(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   x : Double,
   y : Double,
 ) -> Bool {
@@ -356,7 +356,7 @@ fn BidiProtocol::resolve_input_modifiers(
 
 ///|
 /// Convert pointer button to bit mask compatible with MouseEvent.buttons.
-fn button_to_mask(button : Int) -> Int {
+fn button_to_mask(button : Int32) -> Int32 {
   match button {
     0 => 1
     1 => 4
@@ -367,7 +367,7 @@ fn button_to_mask(button : Int) -> Int {
 
 ///|
 /// Check whether button bit mask exists in state.
-fn button_state_contains(state : Int, mask : Int) -> Bool {
+fn button_state_contains(state : Int32, mask : Int32) -> Bool {
   if mask == 1 {
     state % 2 == 1
   } else if mask == 2 {
@@ -381,7 +381,7 @@ fn button_state_contains(state : Int, mask : Int) -> Bool {
 
 ///|
 /// Add button into button state bitfield.
-fn button_state_add(state : Int, button : Int) -> Int {
+fn button_state_add(state : Int32, button : Int32) -> Int32 {
   let mask = button_to_mask(button)
   if mask == 0 || button_state_contains(state, mask) {
     state
@@ -392,7 +392,7 @@ fn button_state_add(state : Int, button : Int) -> Int {
 
 ///|
 /// Remove button from button state bitfield.
-fn button_state_remove(state : Int, button : Int) -> Int {
+fn button_state_remove(state : Int32, button : Int32) -> Int32 {
   let mask = button_to_mask(button)
   if mask == 0 || !button_state_contains(state, mask) {
     state

@@ -73,7 +73,7 @@ fn calculate_readability_content_score(text_content : String) -> Double {
 }
 
 ///|
-fn count_readability_commas(text_content : String) -> Int {
+fn count_readability_commas(text_content : String) -> Int32 {
   let mut count = 0
   for c in text_content {
     if c == ',' {
@@ -277,7 +277,7 @@ fn calculate_readability_paragraph_factor(
 }
 
 ///|
-fn calculate_readability_length_penalty(text_len : Int) -> Double {
+fn calculate_readability_length_penalty(text_len : Int32) -> Double {
   if text_len < 120 {
     0.4
   } else if text_len < 200 {

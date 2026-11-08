@@ -231,7 +231,7 @@ test "wpt_intrinsic_percent_replaced_018_like_table_min_content_ignores_newline_
 /// inflate from ~10px to several hundred px, pushing the whole table off
 /// screen. Column widths must depend on content, not on how many identical
 /// rows appear.
-fn hn_like_rows(n : Int) -> String {
+fn hn_like_rows(n : Int32) -> String {
   let buf = StringBuilder()
   let mut i = 0
   while i < n {
@@ -249,7 +249,7 @@ fn hn_like_rows(n : Int) -> String {
 }
 
 ///|
-fn render_hn_like(n : Int) -> @layout_types.Layout {
+fn render_hn_like(n : Int32) -> @layout_types.Layout {
   let html = "<!DOCTYPE html><html><head><style>" +
     "body { margin: 0; font-family: Verdana; font-size: 10pt; }" +
     "table { border-collapse: collapse; }" +

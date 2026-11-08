@@ -13,10 +13,15 @@ pub fn should_attach_cookie(@cookie_jar.ParsedCookie, SiteContext, Bool) -> Bool
 // Errors
 
 // Types and methods
+#derive(Eq)
 pub(all) enum SiteContext {
   SameSite
   CrossSite
-} derive(Eq)
+}
+pub fn SiteContext::equal(Self, Self) -> Bool
+pub fn SiteContext::not_equal(Self, Self) -> Bool
+pub fn SiteContext::output(Self, &Logger) -> Unit
+pub fn SiteContext::to_string(Self) -> String
 pub impl Show for SiteContext
 
 // Type aliases

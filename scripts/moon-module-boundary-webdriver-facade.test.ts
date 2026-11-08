@@ -72,7 +72,7 @@ describe("MoonBit WebDriver facade and contract boundaries", () => {
       expect(topSource).toContain(`type ${typeName}`);
     }
     const topPackage = read("webdriver/moon.pkg");
-    expect(topPackage).toContain('"mizchi/crater-webdriver-bidi/contract" @contract');
+    expect(topPackage).toContain('"mizchi/crater-webdriver-bidi/contract"');
   });
 
   it("keeps JSON-RPC protocol helpers outside the implementation facade", () => {
@@ -89,7 +89,7 @@ describe("MoonBit WebDriver facade and contract boundaries", () => {
     expect(fs.existsSync(path.join(REPO_ROOT, "webdriver/webdriver/rpc_test.mbt"))).toBe(false);
 
     const rpcPackage = read("webdriver/rpc/moon.pkg");
-    expect(rpcPackage).toContain('"mizchi/crater-webdriver-bidi/contract" @contract');
+    expect(rpcPackage).toContain('"mizchi/crater-webdriver-bidi/contract"');
     expect(rpcPackage).not.toContain("mizchi/crater\"");
     expect(rpcPackage).not.toContain("mizchi/webdriver");
     expect(rpcPackage).not.toContain("mizchi/js");
@@ -97,7 +97,7 @@ describe("MoonBit WebDriver facade and contract boundaries", () => {
     const webdriverPackage = read("webdriver/webdriver/moon.pkg");
     const facadeSource = read("webdriver/webdriver/contract.mbt");
     const topSource = read("webdriver/top.mbt");
-    expect(webdriverPackage).toContain('"mizchi/crater-webdriver-bidi/rpc" @rpc');
+    expect(webdriverPackage).toContain('"mizchi/crater-webdriver-bidi/rpc"');
     // RPC types are now re-exported from the top-level facade directly.
     expect(topSource).toContain("pub using @rpc");
     for (const typeName of [
@@ -128,12 +128,12 @@ describe("MoonBit WebDriver facade and contract boundaries", () => {
     ).toBe(false);
 
     const runtimePackage = read("webdriver/runtime/moon.pkg");
-    expect(runtimePackage).toContain('"mizchi/js/core"');
+    expect(runtimePackage).toContain('"mizchi/js_core" @core');
     expect(runtimePackage).not.toContain("mizchi/crater\"");
     expect(runtimePackage).not.toContain("mizchi/webdriver");
 
     const webdriverPackage = read("webdriver/webdriver/moon.pkg");
-    expect(webdriverPackage).toContain('"mizchi/crater-webdriver-bidi/runtime" @runtime');
+    expect(webdriverPackage).toContain('"mizchi/crater-webdriver-bidi/runtime"');
     // The compatibility re-export layer in `webdriver/webdriver/runtime.mbt`
     // has been dropped. Internal callers now reach quickjs helpers via
     // `@runtime.<name>` directly. Confirm no shim leaks back in.
@@ -172,7 +172,7 @@ describe("MoonBit WebDriver facade and contract boundaries", () => {
     expect(protocolPackage).not.toContain("mizchi/js");
 
     const webdriverPackage = read("webdriver/webdriver/moon.pkg");
-    expect(webdriverPackage).toContain('"mizchi/crater-webdriver-bidi/protocol" @protocol');
+    expect(webdriverPackage).toContain('"mizchi/crater-webdriver-bidi/protocol"');
 
     const jsonFacade = read("webdriver/webdriver/bidi_protocol_json.mbt");
     const validationFacade = read("webdriver/webdriver/bidi_protocol_validation_shared.mbt");
@@ -241,8 +241,8 @@ describe("MoonBit WebDriver facade and contract boundaries", () => {
     const moonWork = read("moon.work");
     expect(moonWork).toContain('"./network"');
 
-    const networkModule = read("network/moon.mod.json");
-    expect(networkModule).toContain('"name": "mizchi/crater-network"');
+    const networkModule = read("network/moon.mod");
+    expect(networkModule).toContain('name = "mizchi/crater-network"');
     expect(fs.existsSync(path.join(REPO_ROOT, "network/state.mbt"))).toBe(true);
     expect(fs.existsSync(path.join(REPO_ROOT, "network/encoding.mbt"))).toBe(true);
     expect(fs.existsSync(path.join(REPO_ROOT, "network/event_types.mbt"))).toBe(true);
@@ -272,7 +272,7 @@ describe("MoonBit WebDriver facade and contract boundaries", () => {
 
     const webdriverPackage = read("webdriver/webdriver/moon.pkg");
     expect(webdriverPackage).toContain('"mizchi/crater-network" @crater_network');
-    expect(webdriverPackage).not.toContain('"mizchi/crater-webdriver-bidi/network" @network');
+    expect(webdriverPackage).not.toContain('"mizchi/crater-webdriver-bidi/network"');
   });
 
   it("keeps adapter-shared network URL pattern matching in crater-network", () => {

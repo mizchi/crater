@@ -1,7 +1,7 @@
 ///|
 fn BidiProtocol::handle_browsing_context_create_synthetic_child_context(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map = match params {
@@ -144,7 +144,7 @@ fn BidiProtocol::create_synthetic_child_context_result(
 ///|
 fn BidiProtocol::handle_browsing_context_create_and_get_info(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match self.create_top_level_context_from_params(request_id, params) {
@@ -165,7 +165,7 @@ fn BidiProtocol::handle_browsing_context_create_and_get_info(
 ///|
 fn BidiProtocol::handle_browsing_context_create_and_get_info_value(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match self.create_top_level_context_from_params(request_id, params) {
@@ -186,7 +186,7 @@ fn BidiProtocol::handle_browsing_context_create_and_get_info_value(
 ///|
 fn BidiProtocol::handle_browsing_context_create_context_id(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match self.create_top_level_context_from_params(request_id, params) {
@@ -198,7 +198,7 @@ fn BidiProtocol::handle_browsing_context_create_context_id(
 ///|
 fn BidiProtocol::create_top_level_context_from_params(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> String? {
   let map = match params {

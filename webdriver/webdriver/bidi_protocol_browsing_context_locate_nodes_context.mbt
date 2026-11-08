@@ -3,8 +3,8 @@
 fn BidiProtocol::locate_nodes_context(
   self : BidiProtocol,
   ctx_id : String,
-  target_index : Int,
-  max_node_count : Int,
+  target_index : Int32,
+  max_node_count : Int32,
   serialization_options_json : String,
 ) -> Json {
   let target_index_literal = target_index.to_string()

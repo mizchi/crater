@@ -4,7 +4,7 @@
 ///|
 test "execute simple expression" {
   let dom = @dom.DomTree::new()
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let result = ctx.execute("1 + 2")
   inspect(result.success, content="true")
   inspect(result.value, content="3")
@@ -13,7 +13,7 @@ test "execute simple expression" {
 ///|
 test "execute console.log" {
   let dom = @dom.DomTree::new()
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let result = ctx.execute("console.log('hello'); 42")
   inspect(result.success, content="true")
   inspect(result.value, content="42")
@@ -24,7 +24,7 @@ test "execute console.log" {
 ///|
 test "execute document.createElement" {
   let dom = @dom.DomTree::new()
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const div = document.createElement('div');
     #|div.setAttribute('id', 'test-div');
@@ -46,7 +46,7 @@ test "execute DOM manipulation" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const div = document.createElement('div');
     #|div.setAttribute('id', 'my-div');
@@ -68,7 +68,7 @@ test "DOM operations are applied to DomTree" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const div = document.createElement('div');
     #|div.setAttribute('id', 'created-by-js');
@@ -96,6 +96,8 @@ test "DOM operations are applied to DomTree" {
 ///|
 test "JS DOM operations produce mutation records" {
   let dom = @dom.DomTree::new()
+  // Standalone trees leave incremental-layout mutation recording disabled.
+  dom.set_mutation_recording(true)
 
   // Create initial structure
   let html = dom.create_element("html")
@@ -106,7 +108,7 @@ test "JS DOM operations produce mutation records" {
   // Ignore setup-time mutations
   dom.clear_mutations()
 
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const p = document.createElement('p');
     #|p.setAttribute('id', 'm1');
@@ -157,7 +159,7 @@ test "insertBefore inserts element before reference node" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
 
   // Create two elements and use insertBefore
   let code =
@@ -200,7 +202,7 @@ test "insertBefore with null reference appends to end" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
 
   // insertBefore with null should append
   let code =
@@ -239,7 +241,7 @@ test "replaceChild replaces old child with new child" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
 
   // Create three elements and replace the second one
   let code =
@@ -291,7 +293,7 @@ test "cloneNode shallow clone copies element and attributes" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const original = document.createElement('div');
     #|original.setAttribute('id', 'original');
@@ -345,7 +347,7 @@ test "cloneNode deep clone copies element with children" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const original = document.createElement('div');
     #|original.setAttribute('id', 'original');
@@ -394,7 +396,7 @@ test "classList manipulation" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const div = document.createElement('div');
     #|div.classList.add('foo', 'bar');
@@ -417,7 +419,7 @@ test "hasAttribute and hasAttributes" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const div = document.createElement('div');
     #|const hasNone = div.hasAttributes();
@@ -439,7 +441,7 @@ test "contains method" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const parent = document.createElement('div');
     #|const child = document.createElement('span');
@@ -467,7 +469,7 @@ test "matches and closest" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const div = document.createElement('div');
     #|div.setAttribute('id', 'myDiv');
@@ -496,7 +498,7 @@ test "getElementsByTagName and getElementsByClassName" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const div1 = document.createElement('div');
     #|div1.className = 'item';
@@ -524,7 +526,7 @@ test "createComment" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const comment = document.createComment('This is a comment');
     #|document.body.appendChild(comment);
@@ -542,7 +544,7 @@ test "createDocumentFragment" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const frag = document.createDocumentFragment();
     #|const div1 = document.createElement('div');
@@ -565,7 +567,7 @@ test "previousSibling and lastChild" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const div = document.createElement('div');
     #|const span1 = document.createElement('span');
@@ -596,7 +598,7 @@ test "append and prepend" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const div = document.createElement('div');
     #|const span1 = document.createElement('span');
@@ -620,7 +622,7 @@ test "remove method" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const div = document.createElement('div');
     #|const span = document.createElement('span');
@@ -643,7 +645,7 @@ test "nodeType constants" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const el = document.createElement('div');
     #|const text = document.createTextNode('hello');
@@ -663,7 +665,7 @@ test "isEqualNode and isSameNode" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const div1 = document.createElement('div');
     #|div1.setAttribute('id', 'test');
@@ -692,7 +694,7 @@ test "normalize merges adjacent text nodes" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const div = document.createElement('div');
     #|const t1 = document.createTextNode('Hello');
@@ -718,7 +720,7 @@ test "splitText divides text node" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const div = document.createElement('div');
     #|const text = document.createTextNode('HelloWorld');
@@ -738,7 +740,7 @@ test "wholeText returns combined adjacent text" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const div = document.createElement('div');
     #|const t1 = document.createTextNode('Hello');
@@ -761,7 +763,7 @@ test "attributes collection" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const div = document.createElement('div');
     #|div.setAttribute('id', 'myId');
@@ -784,7 +786,7 @@ test "document properties" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|[
     #|  document.URL,
@@ -805,7 +807,7 @@ test "getRootNode returns root" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const div = document.createElement('div');
     #|const span = document.createElement('span');
@@ -828,7 +830,7 @@ test "namespaceURI and baseURI" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const div = document.createElement('div');
     #|[div.namespaceURI, div.baseURI, div.prefix === null ? 'null' : div.prefix].join('|')
@@ -845,7 +847,7 @@ test "insertAdjacentElement" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const container = document.createElement('div');
     #|const middle = document.createElement('span');
@@ -878,7 +880,7 @@ test "lookupNamespaceURI and isDefaultNamespace" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const div = document.createElement('div');
     #|[
@@ -899,7 +901,7 @@ test "createRange" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const range = document.createRange();
     #|const div = document.createElement('div');
@@ -918,7 +920,7 @@ test "createTreeWalker" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const div = document.createElement('div');
     #|const span = document.createElement('span');
@@ -938,7 +940,7 @@ test "importNode and adoptNode" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const original = document.createElement('div');
     #|original.setAttribute('id', 'original');
@@ -960,7 +962,7 @@ test "attachShadow" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const host = document.createElement('div');
     #|const shadow = host.attachShadow({ mode: 'open' });
@@ -980,7 +982,7 @@ test "attachShadow closed mode hides host.shadowRoot and preserves root access" 
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const host = document.createElement('div');
     #|document.body.appendChild(host);
@@ -1006,7 +1008,7 @@ test "attachShadow tracks clonable serializable metadata and deep clone copies c
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const host = document.createElement('div');
     #|const shadow = host.attachShadow({
@@ -1048,7 +1050,7 @@ test "getRootNode supports shadow root composed option" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const host = document.createElement('div');
     #|document.body.appendChild(host);
@@ -1073,7 +1075,7 @@ test "shadow root persists across execute calls" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let setup =
     #|const host = document.createElement('div');
     #|host.id = 'host';
@@ -1108,7 +1110,7 @@ test "shadowRoot querySelector supports :host pseudo-class" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|(() => {
     #|  const host = document.createElement('div');
@@ -1138,7 +1140,7 @@ test "customElements define get whenDefined" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|globalThis.__ceResolved = 'pending';
     #|const before = customElements.get('x-define-check') === undefined;
@@ -1165,7 +1167,7 @@ test "customElements.define reads observedAttributes and form-associated callbac
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|function OrderedElement() {}
     #|OrderedElement.prototype = Object.create(HTMLElement.prototype);
@@ -1207,7 +1209,7 @@ test "customElements.define does not read observedAttributes without attributeCh
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|function NoObservedElement() {}
     #|NoObservedElement.prototype = Object.create(HTMLElement.prototype);
@@ -1238,7 +1240,7 @@ test "customElements getName and upgrade detached subtree explicitly" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|globalThis.__explicitUpgradeLog = [];
     #|const host = document.createElement('div');
@@ -1313,7 +1315,7 @@ test "custom element lifecycle for connected attributeChanged disconnected" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|globalThis.__ceLifecycle = [];
     #|class LifecycleElement extends HTMLElement {
@@ -1354,7 +1356,7 @@ test "customElements define upgrades existing connected elements" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|globalThis.__upgradeCount = 0;
     #|const early = document.createElement('x-upgrade-check');
@@ -1380,7 +1382,7 @@ test "customElements upgrade existing connected elements fires initial observed 
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|globalThis.__upgradeAttrLifecycle = [];
     #|const early = document.createElement('x-upgrade-attrs');
@@ -1420,7 +1422,7 @@ test "parser-created custom element connects when detached host is inserted" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|globalThis.__parserLifecycle = [];
     #|class ParserLifecycleElement extends HTMLElement {
@@ -1447,7 +1449,7 @@ test "parser-created custom element disconnects when innerHTML replaces subtree"
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|globalThis.__parserReplaceLifecycle = [];
     #|class ParserReplaceElement extends HTMLElement {
@@ -1477,7 +1479,7 @@ test "disconnectedCallback observes detached state on removeChild" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|globalThis.__disconnectState = 'unset';
     #|class DisconnectStateElement extends HTMLElement {
@@ -1503,7 +1505,7 @@ test "custom element appended into connected shadow root gets connectedCallback"
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|globalThis.__shadowCeLifecycle = [];
     #|class ShadowLifecycleElement extends HTMLElement {
@@ -1531,7 +1533,7 @@ test "shadow event with composed false stays inside shadow root" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|globalThis.__shadowEventLog = [];
     #|const host = document.createElement('div');
@@ -1570,7 +1572,7 @@ test "shadow event with composed true bubbles outward and retargets target" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|globalThis.__shadowEventLog = [];
     #|const host = document.createElement('div');
@@ -1615,7 +1617,7 @@ test "shadow event capture listeners and document listeners observe retargeted p
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|globalThis.__shadowCaptureLog = [];
     #|const host = document.createElement('div');
@@ -1659,7 +1661,7 @@ test "focus inside shadow root updates document and shadowRoot activeElement" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const host = document.createElement('div');
     #|document.body.appendChild(host);
@@ -1684,7 +1686,7 @@ test "blur inside shadow root clears shadowRoot activeElement and restores body 
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const host = document.createElement('div');
     #|document.body.appendChild(host);
@@ -1710,7 +1712,7 @@ test "Tab moves focus through named slotted control in shadow tree" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const first = document.createElement('input');
     #|first.id = 'first';
@@ -1747,7 +1749,7 @@ test "Shift+Tab moves focus from named slotted control to previous light DOM con
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const first = document.createElement('input');
     #|first.id = 'first';
@@ -1779,7 +1781,7 @@ test "focus on shadow host delegates to first focusable descendant when delegate
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const host = document.createElement('div');
     #|document.body.appendChild(host);
@@ -1806,7 +1808,7 @@ test "focus on delegatesFocus host reaches slotted focusable descendant" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const host = document.createElement('div');
     #|document.body.appendChild(host);
@@ -1836,7 +1838,7 @@ test "click on delegatesFocus host reaches first shadow descendant" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const host = document.createElement('div');
     #|document.body.appendChild(host);
@@ -1862,7 +1864,7 @@ test "click on delegatesFocus host reaches slotted focusable descendant" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const host = document.createElement('div');
     #|document.body.appendChild(host);
@@ -1892,7 +1894,7 @@ test "focus and blur on delegatesFocus host dispatch focus-family events on shad
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|(() => {
     #|  const host = document.createElement('div');
@@ -1921,7 +1923,7 @@ test "focus and blur on delegatesFocus host dispatch focus-family events on slot
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|(() => {
     #|  const host = document.createElement('div');
@@ -1954,7 +1956,7 @@ test "focus-family bubbling retargets delegatesFocus shadow descendant to host o
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|(() => {
     #|  const host = document.createElement('div');
@@ -1986,7 +1988,7 @@ test "focus-family bubbling keeps slotted delegatesFocus target as light DOM nod
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|(() => {
     #|  const host = document.createElement('div');
@@ -2018,7 +2020,7 @@ test "focusout and focusin between slotted descendants keep light DOM target and
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|(() => {
     #|  const host = document.createElement('div');
@@ -2062,7 +2064,7 @@ test "focusout and focusin between shadow descendants stay inside shadow root" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|(() => {
     #|  const host = document.createElement('div');
@@ -2103,7 +2105,7 @@ test "click on shadow descendant bubbles across shadow boundary and retargets to
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|(() => {
     #|  const host = document.createElement('div');
@@ -2135,7 +2137,7 @@ test "click on slotted descendant keeps light DOM target outside shadow root" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|(() => {
     #|  const host = document.createElement('div');
@@ -2167,7 +2169,7 @@ test "click on submit button dispatches SubmitEvent with submitter" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|(() => {
     #|  document.body.innerHTML = '<form id="form"><button id="btn" name="go" value="Go">Go</button></form>';
@@ -2200,7 +2202,7 @@ test "click on reset button dispatches reset and restores controls" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|(() => {
     #|  document.body.innerHTML = '<form id="form"><input id="field" value="seed"><input id="check" type="checkbox" checked><button id="reset" type="reset">Reset</button></form>';
@@ -2228,7 +2230,7 @@ test "pointer and mouse down/up on shadow descendant retarget to host outside sh
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|(() => {
     #|  const host = document.createElement('div');
@@ -2265,7 +2267,7 @@ test "pointer and mouse down/up on slotted descendant keep light DOM target" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|(() => {
     #|  const host = document.createElement('div');
@@ -2305,7 +2307,7 @@ test "pointerover/out and mouseover/out on shadow descendant retarget to host ou
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|(() => {
     #|  const host = document.createElement('div');
@@ -2342,7 +2344,7 @@ test "pointerover/out and mouseover/out on slotted descendant keep light DOM tar
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|(() => {
     #|  const host = document.createElement('div');
@@ -2382,7 +2384,7 @@ test "pointerenter/leave and mouseenter/leave on shadow descendant do not bubble
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|(() => {
     #|  const host = document.createElement('div');
@@ -2419,7 +2421,7 @@ test "pointerenter/leave and mouseenter/leave on slotted descendant keep light D
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|(() => {
     #|  const host = document.createElement('div');
@@ -2459,7 +2461,7 @@ test "pointerover/out between shadow descendants stays inside shadow root" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|(() => {
     #|  const host = document.createElement('div');
@@ -2503,7 +2505,7 @@ test "pointerover/out between slotted descendants keeps light DOM target and rel
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|(() => {
     #|  const host = document.createElement('div');
@@ -2551,7 +2553,7 @@ test "pointerenter/leave between slotted descendants keeps relatedTarget and doe
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|(() => {
     #|  const host = document.createElement('div');
@@ -2599,7 +2601,7 @@ test "slot assignedNodes distributes default and named light DOM children" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const host = document.createElement('div');
     #|document.body.appendChild(host);
@@ -2639,7 +2641,7 @@ test "slot assignedNodes is empty without assignment; flatten yields fallback" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const host = document.createElement('div');
     #|document.body.appendChild(host);
@@ -2664,7 +2666,7 @@ test "slot assignedNodes with flatten traverses nested fallback slots" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const host = document.createElement('div');
     #|document.body.appendChild(host);
@@ -2696,7 +2698,7 @@ test "slot assignedNodes with flatten resolves nested slot assignments" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const host = document.createElement('div');
     #|document.body.appendChild(host);
@@ -2730,7 +2732,7 @@ test "slotable nodes expose assignedSlot for default and named slots" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const host = document.createElement('div');
     #|document.body.appendChild(host);
@@ -2762,7 +2764,7 @@ test "assignedSlot prefers the first matching slot and ignores unmatched nodes" 
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const host = document.createElement('div');
     #|document.body.appendChild(host);
@@ -2799,7 +2801,7 @@ test "slotchange fires after default slot assignment changes" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let setup =
     #|globalThis.__slotChangeCount = 0;
     #|globalThis.__slotAssignedLength = 0;
@@ -2833,7 +2835,7 @@ test "slotchange fires for old and new slot when slot attribute reassigns node" 
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let setup =
     #|globalThis.__slotReassignLog = [];
     #|const host = document.createElement('div');
@@ -2871,7 +2873,7 @@ test "slot.assign supports manual slot assignment and assignedSlot" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const host = document.createElement('div');
     #|const shadow = host.attachShadow({ mode: 'open', slotAssignment: 'manual' });
@@ -2910,7 +2912,7 @@ test "slot.assign does not throw in a named-assignment shadow root" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const host = document.createElement('div');
     #|const shadow = host.attachShadow({ mode: 'open' });
@@ -2940,7 +2942,7 @@ test "insertAdjacent validates element arguments and detached beforebegin return
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const detached = document.createElement('div');
     #|const typeError = (() => {
@@ -2962,7 +2964,7 @@ test "insertAdjacent validates element arguments and detached beforebegin return
 ///|
 test "SVG script fetchPriority reflects attribute values" {
   let dom = @dom.DomTree::new()
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const SVGNS = 'http://www.w3.org/2000/svg';
     #|const high = document.createElementNS(SVGNS, 'script');
@@ -2984,7 +2986,7 @@ test "dispatchEvent evaluates inline handlers with element unscopables" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|window.remove = 'Hello there';
     #|let result1;
@@ -3011,7 +3013,7 @@ test "WPT: CharacterData.appendData" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|// Test Text.appendData
@@ -3040,7 +3042,7 @@ test "WPT: CharacterData.deleteData" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const text = document.createTextNode('test');
@@ -3063,7 +3065,7 @@ test "WPT: CharacterData.insertData" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const text = document.createTextNode('test');
@@ -3089,7 +3091,7 @@ test "WPT: CharacterData.replaceData" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const text = document.createTextNode('test');
@@ -3112,7 +3114,7 @@ test "WPT: CharacterData.substringData" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const text = document.createTextNode('test');
@@ -3133,7 +3135,7 @@ test "WPT: Document.createComment properties" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const c = document.createComment('test');
@@ -3164,7 +3166,7 @@ test "WPT: Document.createTextNode properties" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const t = document.createTextNode('test');
@@ -3188,7 +3190,7 @@ test "WPT: ChildNode.before basic" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|// before() with text
@@ -3219,7 +3221,7 @@ test "WPT: ChildNode.after basic" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const parent = document.createElement('div');
@@ -3249,7 +3251,7 @@ test "WPT: ChildNode.replaceWith" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const parent = document.createElement('div');
@@ -3274,7 +3276,7 @@ test "WPT: ParentNode.append" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const parent = document.createElement('div');
@@ -3299,7 +3301,7 @@ test "WPT: ParentNode.prepend" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const parent = document.createElement('div');
@@ -3325,7 +3327,7 @@ test "WPT: ParentNode.append/prepend coerce null and undefined" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const elementParent = document.createElement('div');
@@ -3352,7 +3354,7 @@ test "WPT: ParentNode.replaceChildren coerces null and preserves order" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const elementParent = document.createElement('div');
@@ -3379,7 +3381,7 @@ test "WPT: ParentNode.replaceChildren validates document hierarchy before mutati
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const target = document.implementation.createHTMLDocument('title');
     #|const originalDoctype = target.doctype;
@@ -3409,7 +3411,7 @@ test "WPT: ParentNode.replaceChildren rejects duplicate document element before 
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const target = document.implementation.createHTMLDocument('title');
     #|const originalDoctype = target.doctype;
@@ -3439,7 +3441,7 @@ test "JS runtime DOM internals are isolated from page getNodeType shadowing" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|function getNodeType() { throw new Error('shadowed'); }
     #|const doc2 = document.implementation.createHTMLDocument('title');
@@ -3462,7 +3464,7 @@ test "HTMLCollection.item coerces non-numeric strings to index 0" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const parent = document.createElement('div');
     #|parent.innerHTML = '<img><img id="foo"><img id="foo"><img name="bar">';
@@ -3484,7 +3486,7 @@ test "closest(':invalid') uses select value semantics before ancestors" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|document.body.innerHTML = `
     #|  <form id="test5">
@@ -3510,7 +3512,7 @@ test "matches supports wildcard namespace selectors" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const element = document.createElementNS('urn:ns', 'h');
     #|[
@@ -3531,7 +3533,7 @@ test "window property assignment exposes a global identifier" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|window.tests = [1, 2, 3];
     #|typeof tests + ':' + tests.length
@@ -3548,7 +3550,7 @@ test "ownerSVGElement stops at foreignObject boundaries" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const top = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     #|top.setAttribute('id', 'top');
@@ -3579,7 +3581,7 @@ test "WPT: Node.cloneNode shallow" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const div = document.createElement('div');
@@ -3606,7 +3608,7 @@ test "WPT: Node.cloneNode deep" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const div = document.createElement('div');
@@ -3631,7 +3633,7 @@ test "WPT: Node.contains" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const parent = document.createElement('div');
@@ -3658,7 +3660,7 @@ test "HTMLElement: title, lang, dir properties" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const div = document.createElement('div');
@@ -3685,7 +3687,7 @@ test "HTMLElement: hidden, inert properties" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const div = document.createElement('div');
@@ -3713,7 +3715,7 @@ test "HTMLElement: draggable, spellcheck properties" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const div = document.createElement('div');
@@ -3737,7 +3739,7 @@ test "HTMLElement: innerText, outerText properties" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const div = document.createElement('div');
@@ -3760,7 +3762,7 @@ test "HTMLElement: dataset property" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const div = document.createElement('div');
@@ -3785,7 +3787,7 @@ test "HTMLElement: popover methods" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const div = document.createElement('div');
@@ -3812,7 +3814,7 @@ test "HTMLElement: tabIndex, contentEditable properties" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const div = document.createElement('div');
@@ -3837,7 +3839,7 @@ test "HTMLElement: attachInternals" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|class InternalsElement extends HTMLElement {
@@ -3892,7 +3894,7 @@ test "ElementInternals.form resolves associated form for form-associated custom 
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|class AssociatedControl extends HTMLElement {
     #|  static get formAssociated() { return true; }
@@ -3929,7 +3931,7 @@ test "FormData(form) includes form-associated custom element values via setFormV
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|class ValueControl extends HTMLElement {
     #|  static get formAssociated() { return true; }
@@ -3967,7 +3969,7 @@ test "ElementInternals form APIs throw for non-form-associated custom elements" 
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|class PlainControl extends HTMLElement {
     #|  constructor() {
@@ -4004,7 +4006,7 @@ test "formAssociatedCallback tracks association changes on connect remove and fo
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|class CallbackControl extends HTMLElement {
     #|  static get formAssociated() { return true; }
@@ -4049,7 +4051,7 @@ test "document.forms and form.elements include form-associated custom elements" 
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|class ListedControl extends HTMLElement {
     #|  static get formAssociated() { return true; }
@@ -4097,7 +4099,7 @@ test "ElementInternals.labels resolves implicit and explicit labels" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|class LabeledControl extends HTMLElement {
     #|  static get formAssociated() { return true; }
@@ -4139,7 +4141,7 @@ test "fieldset.elements includes descendant listed controls and form-associated 
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|class FieldsetControl extends HTMLElement {
     #|  static get formAssociated() { return true; }
@@ -4183,7 +4185,7 @@ test "formDisabledCallback tracks host and fieldset disabled state changes" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|class DisabledAwareControl extends HTMLElement {
     #|  static get formAssociated() { return true; }
@@ -4221,7 +4223,7 @@ test "form.reset invokes formResetCallback on form-associated custom elements" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|class ResetAwareControl extends HTMLElement {
     #|  static get formAssociated() { return true; }
@@ -4265,7 +4267,7 @@ test "form.reset restores standard form controls" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|(() => {
     #|  document.body.innerHTML = '<form id="form"><input id="field" value="seed"><input id="check" type="checkbox" checked><textarea id="area">hello</textarea><select id="select"><option value="a" selected>A</option><option value="b">B</option></select></form>';
@@ -4310,7 +4312,7 @@ test "ElementInternals formStateRestoreCallback restores state in a new JsContex
   let _ = dom.set_attribute(control, "id", "control")
   let _ = dom.set_attribute(control, "name", "token")
   let _ = dom.append_child(form, control)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let bootstrap =
     #|class RestoreAwareControl extends HTMLElement {
     #|  static get formAssociated() { return true; }
@@ -4335,7 +4337,7 @@ test "ElementInternals formStateRestoreCallback restores state in a new JsContex
   inspect(first.success, content="true")
   inspect(first.value, content="[0,\"draft-value\"]")
 
-  let restored_ctx = JsContext::new(dom)
+  let restored_ctx = @js.JsContext::new(dom)
   let restored_code =
     #|class RestoreAwareControl extends HTMLElement {
     #|  static get formAssociated() { return true; }
@@ -4372,7 +4374,7 @@ test "ElementInternals.states exposes a stable CustomStateSet" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|class StatefulElement extends HTMLElement {
     #|  constructor() {
@@ -4424,7 +4426,7 @@ test ":state() matches and querySelector reflect CustomStateSet changes" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|class StatefulSelectorElement extends HTMLElement {
     #|  constructor() {
@@ -4463,7 +4465,7 @@ test "customized built-in custom elements upgrade via createElement options.is" 
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const ceLogs = [];
     #|class FancyButton extends HTMLButtonElement {
@@ -4501,7 +4503,7 @@ test "customized built-in custom elements upgrade via innerHTML parser" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const parserLogs = [];
     #|class ParserFancyButton extends HTMLButtonElement {
@@ -4539,7 +4541,7 @@ test "declarative shadow DOM attaches shadow root during innerHTML parsing" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const host = document.createElement('div');
     #|document.body.appendChild(host);
@@ -4568,7 +4570,7 @@ test "declarative shadow DOM attaches shadow root during insertAdjacentHTML" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const host = document.createElement('div');
     #|document.body.appendChild(host);
@@ -4599,7 +4601,7 @@ test "declarative shadow DOM metadata and getHTML serialization work together" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const host = document.createElement('div');
     #|host.setHTMLUnsafe(
@@ -4629,7 +4631,7 @@ test "HTMLElement: offset properties" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const div = document.createElement('div');
@@ -4651,7 +4653,7 @@ test "Event: constructor and properties" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const evt = new Event('click', { bubbles: true, cancelable: true });
@@ -4675,7 +4677,7 @@ test "Event: preventDefault and stopPropagation" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const evt = new Event('click', { cancelable: true });
@@ -4702,7 +4704,7 @@ test "Event: initEvent" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const evt = new Event('');
@@ -4724,7 +4726,7 @@ test "HTMLFormElement.requestSubmit dispatches SubmitEvent with submitter" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|document.body.innerHTML = '<form id="form"><button id="btn" name="go" value="Go">Go</button></form>';
     #|const form = document.getElementById('form');
@@ -4762,7 +4764,7 @@ test "HTMLFormElement.requestSubmit validates submitter" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|document.body.innerHTML = `
     #|  <form id="form">
@@ -4809,7 +4811,7 @@ test "HTMLFormElement.requestSubmit validates controls and honors formnovalidate
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|document.body.innerHTML = `
     #|  <form id="form">
@@ -4855,7 +4857,7 @@ test "HTMLFormElement.submit bypasses submit event" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|document.body.innerHTML = '<form id="form"><input id="field" required><button id="btn" type="submit">Go</button></form>';
     #|const form = document.getElementById('form');
@@ -4888,7 +4890,7 @@ test "HTMLInputElement exposes basic validation API" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|document.body.innerHTML = '<input id="field" required>';
     #|const field = document.getElementById('field');
@@ -4935,7 +4937,7 @@ test "Window: basic properties" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|results.push(window.window === window);
@@ -4958,7 +4960,7 @@ test "Window: location and navigator" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|results.push(window.location.href === 'about:blank');
@@ -4980,7 +4982,7 @@ test "Window: timers" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const timeoutId = setTimeout(() => {}, 100);
@@ -5007,7 +5009,7 @@ test "Window: scroll methods" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|results.push(window.scrollX === 0);
@@ -5034,7 +5036,7 @@ test "Window: getComputedStyle and matchMedia" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const div = document.createElement('div');
@@ -5058,7 +5060,7 @@ test "Window: alert" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|alert('Hello World');
     #|'done'
@@ -5076,7 +5078,7 @@ test "Storage: localStorage basic operations" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|localStorage.setItem('key1', 'value1');
@@ -5103,7 +5105,7 @@ test "FormData: basic operations" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const fd = new FormData();
@@ -5130,7 +5132,7 @@ test "URLSearchParams: basic operations" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const params = new URLSearchParams('a=1&b=2');
@@ -5155,7 +5157,7 @@ test "URL: basic parsing" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const url = new URL('https://example.com:8080/path?query=1#hash');
@@ -5180,7 +5182,7 @@ test "MutationObserver: basic usage" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|let callbackCalled = false;
@@ -5206,7 +5208,7 @@ test "MutationObserver.observe validates option combinations" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const observer = new MutationObserver(function() {});
@@ -5249,7 +5251,7 @@ test "MutationObserver.takeRecords captures attribute childList and characterDat
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const target = document.createElement('p');
@@ -5289,7 +5291,7 @@ test "MutationObserver on document subtree sees dynamic inline script side effec
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const host = document.createElement('div');
@@ -5321,7 +5323,7 @@ test "setAttributeNode throws InUseAttributeError for bound attr" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const el1 = document.createElement('div');
@@ -5350,7 +5352,7 @@ test "NamedNodeMap own properties expose only lowercase HTML qualified names" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const el = document.createElement('div');
     #|el.setAttributeNS('foo', 'A:B', '');
@@ -5373,7 +5375,7 @@ test "MutationObserver reports callback exceptions to callback realm onerror" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const calls = [];
     #|window.onerror = () => { calls.push('top'); };
@@ -5399,7 +5401,7 @@ test "DOMRect: basic usage" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const rect = new DOMRect(10, 20, 100, 50);
@@ -5425,7 +5427,7 @@ test "IntersectionObserver: basic usage" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const observer = new IntersectionObserver(function(entries) {}, { threshold: 0.5 });
@@ -5464,7 +5466,7 @@ test "DOM init: scripts can see existing body content" {
   let _ = dom.append_child(html, body)
   let _ = dom.append_child(body, div)
   let _ = dom.append_child(div, text)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
 
   // Script should be able to see the existing content
   let code =
@@ -5500,7 +5502,7 @@ test "DOM init: scripts can query existing elements" {
   let _ = dom.append_child(body, div1)
   let _ = dom.append_child(body, div2)
   let _ = dom.append_child(body, span)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const results = [];
     #|const items = document.getElementsByClassName('item');
@@ -5534,7 +5536,7 @@ test "DOM init: scripts can traverse existing elements" {
   let _ = dom.append_child(body, container)
   let _ = dom.append_child(container, child1)
   let _ = dom.append_child(container, child2)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
 
   // Script traverses the existing structure
   let code =
@@ -5566,7 +5568,7 @@ test "DOM init: modifications to existing elements sync back to DomTree" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let _ = dom.append_child(body, div)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
 
   // Script modifies the existing element
   let code =
@@ -5606,7 +5608,7 @@ test "DOM init: _mockId is correctly set for existing elements" {
 
   // Get the actual node ID
   let div_id = div.to_int()
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
 
   // Check that _mockId matches DomTree node ID
   let code =
@@ -5625,7 +5627,7 @@ test "DOM init: _mockId is correctly set for existing elements" {
 ///|
 test "queueMicrotask: exists and is a function" {
   let dom = @dom.DomTree::new()
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|typeof queueMicrotask
   let result = ctx.execute(code)
@@ -5636,7 +5638,7 @@ test "queueMicrotask: exists and is a function" {
 ///|
 test "queueMicrotask: throws TypeError for non-function" {
   let dom = @dom.DomTree::new()
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|let threw = false;
     #|try { queueMicrotask(null); } catch (e) { threw = e instanceof TypeError; }
@@ -5649,7 +5651,7 @@ test "queueMicrotask: throws TypeError for non-function" {
 ///|
 test "queueMicrotask: callback is called" {
   let dom = @dom.DomTree::new()
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|let called = false;
     #|queueMicrotask(() => { called = true; });
@@ -5665,7 +5667,7 @@ test "queueMicrotask: callback is called" {
 ///|
 test "queueMicrotask: interleaves with Promise.then" {
   let dom = @dom.DomTree::new()
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const order = [];
     #|Promise.resolve().then(() => order.push('a'));
@@ -5683,7 +5685,7 @@ test "queueMicrotask: interleaves with Promise.then" {
 ///|
 test "Promise.then: basic ordering (script end -> promise1 -> promise2)" {
   let dom = @dom.DomTree::new()
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const order = [];
     #|order.push('script start');
@@ -5701,7 +5703,7 @@ test "Promise.then: basic ordering (script end -> promise1 -> promise2)" {
 ///|
 test "Promise and queueMicrotask: mixed ordering" {
   let dom = @dom.DomTree::new()
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const order = [];
     #|queueMicrotask(() => order.push('qm1'));
@@ -5727,7 +5729,7 @@ test "Promise and queueMicrotask: mixed ordering" {
 ///|
 test "setTimeout: callback is executed" {
   let dom = @dom.DomTree::new()
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|let called = false;
     #|setTimeout(() => { called = true; console.log('timeout executed'); }, 0);
@@ -5746,7 +5748,7 @@ test "setTimeout: callback is executed" {
 ///|
 test "requestAnimationFrame: callback is executed" {
   let dom = @dom.DomTree::new()
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|let called = false;
     #|requestAnimationFrame(() => { called = true; console.log('raf executed'); });
@@ -5761,7 +5763,7 @@ test "requestAnimationFrame: callback is executed" {
 ///|
 test "requestAnimationFrame: deferred context advances on tick" {
   let dom = @dom.DomTree::new()
-  let ctx = JsContext::new_deferred(dom)
+  let ctx = @js.JsContext::new_deferred(dom)
   let setup =
     #|globalThis.__craterRafCount = 0;
     #|globalThis.__craterStep = function () {
@@ -5785,7 +5787,7 @@ test "requestAnimationFrame: deferred context advances on tick" {
 ///|
 test "setTimeout: multiple timeouts execute in order" {
   let dom = @dom.DomTree::new()
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const order = [];
     #|setTimeout(() => order.push('t1'), 0);
@@ -5805,7 +5807,7 @@ test "setTimeout: multiple timeouts execute in order" {
 ///|
 test "setTimeout: runs after microtasks (Promise.then)" {
   let dom = @dom.DomTree::new()
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const order = [];
     #|order.push('script start');
@@ -5831,7 +5833,7 @@ test "setTimeout: runs after microtasks (Promise.then)" {
 ///|
 test "setTimeout: can be cancelled with clearTimeout" {
   let dom = @dom.DomTree::new()
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|let called = false;
     #|const id = setTimeout(() => { called = true; }, 0);
@@ -5850,7 +5852,7 @@ test "setTimeout: can be cancelled with clearTimeout" {
 ///|
 test "setTimeout: nested setTimeout works" {
   let dom = @dom.DomTree::new()
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const order = [];
     #|setTimeout(() => {
@@ -5873,7 +5875,7 @@ test "setTimeout: nested setTimeout works" {
 ///|
 test "setTimeout: microtasks scheduled from timeout run before next timeout" {
   let dom = @dom.DomTree::new()
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const order = [];
     #|setTimeout(() => {
@@ -5902,7 +5904,7 @@ test "setTimeout: microtasks scheduled from timeout run before next timeout" {
 ///|
 test "fetch: exists and is a function" {
   let dom = @dom.DomTree::new()
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|typeof fetch
   let result = ctx.execute(code)
@@ -5913,7 +5915,7 @@ test "fetch: exists and is a function" {
 ///|
 test "fetch: returns a Promise" {
   let dom = @dom.DomTree::new()
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const p = fetch('/test');
     #|p instanceof Promise
@@ -5930,7 +5932,7 @@ test "persisted input listener survives later execution" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let setup =
     #|const input = document.createElement('input');
     #|input.id = 'field';
@@ -5962,7 +5964,7 @@ test "persisted change listener survives later execution" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let setup =
     #|const input = document.createElement('input');
     #|input.id = 'field';
@@ -5993,7 +5995,7 @@ test "top-level JS state survives later execution in same context" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let first = ctx.execute("let counter = 0; counter += 1; String(counter)")
   inspect(first.success, content="true")
   inspect(first.value, content="1")
@@ -6011,7 +6013,7 @@ test "persisted change listener sees reflected input value" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let setup =
     #|const input = document.createElement('input');
     #|input.id = 'field';
@@ -6043,7 +6045,7 @@ test "select exposes reflected value and selectedIndex" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const select = document.createElement('select');
     #|const a = document.createElement('option');
@@ -6070,7 +6072,7 @@ test "persisted submit listener survives later execution" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let setup =
     #|const form = document.createElement('form');
     #|form.id = 'form';
@@ -6103,7 +6105,7 @@ test "persisted keydown listener survives later execution" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let setup =
     #|const input = document.createElement('input');
     #|input.id = 'field';
@@ -6134,7 +6136,7 @@ test "persisted keypress listener survives later execution" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let setup =
     #|const input = document.createElement('input');
     #|input.id = 'field';
@@ -6165,7 +6167,7 @@ test "persisted keyup listener survives later execution" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let setup =
     #|const input = document.createElement('input');
     #|input.id = 'field';
@@ -6196,7 +6198,7 @@ test "persisted focus-family listeners survive later execution" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let setup =
     #|const field = document.createElement('input');
     #|field.id = 'field';
@@ -6243,7 +6245,7 @@ test "persisted composition listeners survive later execution" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let setup =
     #|const field = document.createElement('input');
     #|field.id = 'field';
@@ -6283,7 +6285,7 @@ test "persisted beforeinput listeners survive later execution" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let setup =
     #|const field = document.createElement('input');
     #|field.id = 'field';
@@ -6324,7 +6326,7 @@ test "text controls expose selectionStart and setSelectionRange" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const input = document.createElement('input');
     #|input.value = 'abcd';
@@ -6352,7 +6354,7 @@ test "text controls select() selects entire value" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const input = document.createElement('input');
     #|input.value = 'abcd';
@@ -6379,7 +6381,7 @@ test "text controls setRangeText replaces range and updates selection" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const input = document.createElement('input');
     #|input.value = 'abcd';
@@ -6404,7 +6406,7 @@ test "text controls expose selectionDirection and preserve selection on setRange
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const input = document.createElement('input');
     #|input.value = 'abcdef';
@@ -6430,7 +6432,7 @@ test "persisted pointer listeners survive later execution" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let setup =
     #|const btn = document.createElement('button');
     #|btn.id = 'btn';
@@ -6470,7 +6472,7 @@ test "persisted hover listeners survive later execution" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let setup =
     #|const left = document.createElement('div');
     #|const right = document.createElement('div');
@@ -6522,7 +6524,7 @@ test "persisted drag listeners survive later execution" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let setup =
     #|const source = document.createElement('div');
     #|const target = document.createElement('div');
@@ -6573,7 +6575,7 @@ test "persisted clipboard listeners survive later execution" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let setup =
     #|const target = document.createElement('div');
     #|target.id = 'target';
@@ -6614,7 +6616,7 @@ test "DataTransfer stores and clears string data" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const dt = new DataTransfer();
     #|dt.setData('text/plain', 'hello');
@@ -6638,7 +6640,7 @@ test "DragEvent exposes relatedTarget and shared DataTransfer state" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|(function () {
     #|  const source = document.createElement('div');
@@ -6673,7 +6675,7 @@ test "DragEvent exposes relatedTarget and shared DataTransfer state" {
 ///|
 test "fetch: Response has required methods" {
   let dom = @dom.DomTree::new()
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   // Register a mock response
   let code =
     #|// Set up mock response
@@ -6698,7 +6700,7 @@ test "fetch: Response has required methods" {
 ///|
 test "fetch: can parse JSON response" {
   let dom = @dom.DomTree::new()
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|_fetchMocks.set('/api/data', { body: '{"name": "test", "value": 42}', status: 200 });
     #|fetch('/api/data')
@@ -6718,7 +6720,7 @@ test "fetch: can parse JSON response" {
 ///|
 test "fetch: can get text response" {
   let dom = @dom.DomTree::new()
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|_fetchMocks.set('/api/text', { body: 'Hello World', status: 200 });
     #|fetch('/api/text')
@@ -6738,7 +6740,7 @@ test "fetch: can get text response" {
 ///|
 test "fetch: handles 404 response" {
   let dom = @dom.DomTree::new()
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|_fetchMocks.set('/api/notfound', { body: 'Not Found', status: 404 });
     #|fetch('/api/notfound')
@@ -6757,7 +6759,7 @@ test "fetch: handles 404 response" {
 ///|
 test "fetch: handles network error" {
   let dom = @dom.DomTree::new()
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|// No mock registered, should fail
     #|let caught = false;
@@ -6777,7 +6779,7 @@ test "fetch: handles network error" {
 ///|
 test "fetch: works with chained promises (like async/await)" {
   let dom = @dom.DomTree::new()
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   // Note: async/await uses native Promise in Node.js vm, so we test with .then() chains
   // which use our custom _SyncPromise and work synchronously
   let code =
@@ -6813,7 +6815,7 @@ test "fetch: dynamic content - fetch data and insert into DOM" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let _ = dom.append_child(body, container)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
 
   // Mock API response with article data
   let code =
@@ -6860,7 +6862,7 @@ test "fetch: dynamic content - multiple fetch calls in sequence" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|_fetchMocks.set('/api/user', { body: '{"name": "Alice"}', status: 200 });
     #|_fetchMocks.set('/api/posts', { body: '{"count": 5}', status: 200 });
@@ -6889,7 +6891,7 @@ test "fetch: dynamic content - multiple fetch calls in sequence" {
 ///|
 test "fetch: dynamic content - parallel fetch with Promise.all" {
   let dom = @dom.DomTree::new()
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|_fetchMocks.set('/api/a', { body: '{"value": "A"}', status: 200 });
     #|_fetchMocks.set('/api/b', { body: '{"value": "B"}', status: 200 });
@@ -6924,7 +6926,7 @@ test "fetch: zenn-like page - fetch user articles and render" {
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
   let _ = dom.append_child(body, content)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
 
   // Mock API response with 3 articles
   let code =
@@ -6979,7 +6981,7 @@ test "createElementNS preserves HTML namespace qualified name case" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const plain = document.createElementNS('http://www.w3.org/1999/xhtml', 'SPAN');
     #|const prefixed = document.createElementNS('http://www.w3.org/1999/xhtml', 'html:span');
@@ -7005,7 +7007,7 @@ test "getElementsByTagName and NS keep HTML namespace createElementNS case-sensi
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const root = document.createElement('div');
     #|const upper = document.createElementNS('http://www.w3.org/1999/xhtml', 'I');
@@ -7025,7 +7027,7 @@ test "getElementsByTagName and NS keep HTML namespace createElementNS case-sensi
 ///|
 test "XHTML createDocument preserves createElement localName case" {
   let dom = @dom.DomTree::new()
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const doc = document.implementation.createDocument('http://www.w3.org/1999/xhtml', 'html', null);
     #|const el = doc.createElement('DIV');
@@ -7038,7 +7040,7 @@ test "XHTML createDocument preserves createElement localName case" {
 ///|
 test "createDocument rejects multi-colon qualified name without namespace" {
   let dom = @dom.DomTree::new()
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|try {
     #|  document.implementation.createDocument(null, 'f:o:o', null);
@@ -7054,7 +7056,7 @@ test "createDocument rejects multi-colon qualified name without namespace" {
 ///|
 test "createElementNS keeps first-colon split for qualified name" {
   let dom = @dom.DomTree::new()
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const el = document.createElementNS('http://example.com/', 'f:o:o');
     #|[el.prefix, el.localName, el.tagName].join('|')
@@ -7066,7 +7068,7 @@ test "createElementNS keeps first-colon split for qualified name" {
 ///|
 test "cloneNode preserves namespaced attribute metadata" {
   let dom = @dom.DomTree::new()
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const SVGNS = 'http://www.w3.org/2000/svg';
     #|const XMLNS = 'http://www.w3.org/2000/xmlns/';
@@ -7100,7 +7102,7 @@ test "cloneNode preserves namespaced attribute metadata" {
 ///|
 test "isEqualNode compares attribute namespaces" {
   let dom = @dom.DomTree::new()
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const left = document.createElement('div');
     #|left.setAttributeNS('urn:left', 'p:name', 'value');
@@ -7115,7 +7117,7 @@ test "isEqualNode compares attribute namespaces" {
 ///|
 test "appendChild adopting into another document updates attribute ownerDocument" {
   let dom = @dom.DomTree::new()
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|const oldDoc = document.implementation.createHTMLDocument('');
     #|const otherDoc = document.implementation.createHTMLDocument('');

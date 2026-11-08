@@ -232,7 +232,7 @@ fn BidiProtocol::refresh_effective_timezone_for_all_contexts(
 ///|
 fn BidiProtocol::try_handle_synthetic_user_agent_fetch_eval(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   realm_id : String,
   expression : String,
@@ -271,7 +271,7 @@ fn BidiProtocol::try_handle_synthetic_user_agent_fetch_eval(
 ///|
 fn BidiProtocol::try_handle_synthetic_locale_eval(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   realm_id : String,
   expression : String,
@@ -326,7 +326,7 @@ fn BidiProtocol::try_handle_synthetic_locale_eval(
 ///|
 fn BidiProtocol::try_handle_synthetic_timezone_eval(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   realm_id : String,
   expression : String,
@@ -367,7 +367,7 @@ fn BidiProtocol::extract_emulation_timezone_offset(
   self : BidiProtocol,
   ctx_id : String,
   expression : String,
-) -> Int? {
+) -> Int32? {
   let prefix = "(new Date("
   let suffix = ")).getTimezoneOffset()"
   if !expression.has_prefix(prefix) || !expression.has_suffix(suffix) {
@@ -380,7 +380,7 @@ fn BidiProtocol::extract_emulation_timezone_offset(
 ///|
 fn BidiProtocol::resolve_emulation_set_user_agent_override(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Bool? {
   let map = match params {
@@ -540,7 +540,7 @@ fn BidiProtocol::resolve_emulation_set_user_agent_override(
 ///|
 fn BidiProtocol::resolve_emulation_set_locale_override(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Bool? {
   let map = match params {
@@ -704,7 +704,7 @@ fn BidiProtocol::resolve_emulation_set_locale_override(
 ///|
 fn BidiProtocol::resolve_emulation_set_timezone_override(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Bool? {
   let map = match params {

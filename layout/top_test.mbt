@@ -11,13 +11,16 @@ test "layout package preserves display_contents root children" {
     width: @types.Length(40.0),
     height: @types.Length(20.0),
   }
-  let child1 = Node::leaf("child1", child1_style)
-  let child2 = Node::leaf("child2", child2_style)
+  let child1 = @crater-layout.Node::leaf("child1", child1_style)
+  let child2 = @crater-layout.Node::leaf("child2", child2_style)
   let root_style = @style.Style::default()
   root_style.display = @types.Contents
-  let root = Node::new("root", root_style, [child1, child2])
+  let root = @crater-layout.Node::new("root", root_style, [child1, child2])
 
-  let layout = compute_layout(root, @types.Size::new(300.0, 200.0))
+  let layout = @crater-layout.compute_layout(
+    root,
+    @types.Size::new(300.0, 200.0),
+  )
 
   inspect(layout.width, content="0")
   inspect(layout.height, content="0")

@@ -2,7 +2,7 @@
 /// Return canonical responsive breakpoints for the current browsing context.
 fn BidiProtocol::handle_get_responsive_breakpoints(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match self.resolve_get_responsive_breakpoints(request_id, params) {
@@ -14,7 +14,7 @@ fn BidiProtocol::handle_get_responsive_breakpoints(
 ///|
 fn BidiProtocol::resolve_get_responsive_breakpoints(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Json? {
   let params = match params {

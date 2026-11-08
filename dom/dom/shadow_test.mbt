@@ -1,6 +1,6 @@
 ///|
 test "DomTree tracks shadow roots separately from light DOM" {
-  let tree = DomTree::new()
+  let tree = @dom.DomTree::new()
   let doc = tree.get_document()
   let html = tree.create_element("html")
   let body = tree.create_element("body")
@@ -53,7 +53,7 @@ test "DomTree tracks shadow roots separately from light DOM" {
 
 ///|
 test "DomTree get_composed_children uses shadow tree and slot assignment" {
-  let tree = DomTree::new()
+  let tree = @dom.DomTree::new()
   let doc = tree.get_document()
   let html = tree.create_element("html")
   let body = tree.create_element("body")
@@ -101,7 +101,7 @@ test "DomTree get_composed_children uses shadow tree and slot assignment" {
 
 ///|
 test "DomTree get_composed_children falls back through nested slots" {
-  let tree = DomTree::new()
+  let tree = @dom.DomTree::new()
   let doc = tree.get_document()
   let html = tree.create_element("html")
   let body = tree.create_element("body")
@@ -132,7 +132,7 @@ test "DomTree get_composed_children falls back through nested slots" {
 
 ///|
 test "DomTree slot assignment API: assignedNodes / assignedElements / assignedSlot" {
-  let tree = DomTree::new()
+  let tree = @dom.DomTree::new()
   let doc = tree.get_document()
   let html = tree.create_element("html")
   let body = tree.create_element("body")
@@ -190,11 +190,13 @@ test "DomTree slot assignment API: assignedNodes / assignedElements / assignedSl
 
   // assignedSlot points each light node at the slot it lands in.
   inspect(
-    tree.assigned_slot(plain).map(NodeId::to_int) == Some(default_slot.to_int()),
+    tree.assigned_slot(plain).map(@dom.NodeId::to_int) ==
+    Some(default_slot.to_int()),
     content="true",
   )
   inspect(
-    tree.assigned_slot(named).map(NodeId::to_int) == Some(named_slot.to_int()),
+    tree.assigned_slot(named).map(@dom.NodeId::to_int) ==
+    Some(named_slot.to_int()),
     content="true",
   )
   // A node with no matching slot, and a non-slot element, have no assignment.

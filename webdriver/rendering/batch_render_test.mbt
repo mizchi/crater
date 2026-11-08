@@ -14,7 +14,7 @@ test "batch render options normalize defaults and mutations" {
       }),
     ]),
   }
-  match normalize_batch_render_options(params, "<html></html>") {
+  match @rendering.normalize_batch_render_options(params, "<html></html>") {
     Ok(options) => {
       inspect(options.base_html, content="<html></html>")
       inspect(options.viewport.width, content="1280")
@@ -47,7 +47,8 @@ test "batch render options preserve explicit base html and viewport" {
     }),
     "variants": Json::array([]),
   }
-  match normalize_batch_render_options(params, "<fallback></fallback>") {
+  match
+    @rendering.normalize_batch_render_options(params, "<fallback></fallback>") {
     Ok(options) => {
       inspect(options.base_html, content="<main></main>")
       inspect(options.viewport.width, content="375")
@@ -65,7 +66,7 @@ test "batch render options reject non string base html" {
     "baseHtml": Json::number(1.0),
     "variants": Json::array([]),
   }
-  match normalize_batch_render_options(params, "<html></html>") {
+  match @rendering.normalize_batch_render_options(params, "<html></html>") {
     Ok(_) => fail("expected invalid baseHtml")
     Err(error) => {
       inspect(error.name(), content="invalid argument")
@@ -76,7 +77,7 @@ test "batch render options reject non string base html" {
 
 ///|
 test "batch render options require variants array" {
-  match normalize_batch_render_options({}, "<html></html>") {
+  match @rendering.normalize_batch_render_options({}, "<html></html>") {
     Ok(_) => fail("expected invalid variants")
     Err(error) => {
       inspect(error.name(), content="invalid argument")
@@ -92,7 +93,7 @@ test "batch render results serialize to bidi result object" {
     @types.Size::new(120.0, 80.0),
     [{ id: "base", mutations: [], }],
   )
-  match batch_render_results_to_json(results) {
+  match @rendering.batch_render_results_to_json(results) {
     Object(output) =>
       match output.get("results") {
         Some(Array(items)) => {

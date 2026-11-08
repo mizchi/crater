@@ -6,7 +6,7 @@
 ///|
 /// Layout with DOM index for sorting
 priv struct IndexedLayout {
-  dom_index : Int
+  dom_index : Int32
   layout : @layout_types.Layout
 }
 
@@ -22,23 +22,23 @@ priv struct SimpleFixedLeafFlexItem {
 /// Key: (node_uid * 2 + is_row_flag)
 /// This dramatically reduces redundant calculations in deep nesting.
 priv struct IntrinsicCache {
-  data : Map[Int, Double]
+  data : Map[Int32, Double]
 }
 
 ///|
 fn IntrinsicCache::new() -> IntrinsicCache {
-  { data: {} }
+  { data: {}, }
 }
 
 ///|
 /// Global intrinsic cache that persists across incremental layout updates.
 /// This avoids recomputing intrinsic sizes for unchanged nodes.
-let global_intrinsic_cache : Ref[Map[Int, Double]] = { val: {} }
+let global_intrinsic_cache : Ref[Map[Int32, Double]] = { val: {}, }
 
 ///|
 /// Clear intrinsic cache entries for a specific node.
 /// Call this when a node is marked dirty.
-pub fn clear_intrinsic_cache_for_node(uid : Int) -> Unit {
+pub fn clear_intrinsic_cache_for_node(uid : Int32) -> Unit {
   let cache = global_intrinsic_cache.val
   // Clear both width and height entries (uid*2 and uid*2+1)
   cache.remove(uid * 2)
@@ -100,7 +100,7 @@ fn has_flex_grow_descendant(node : @node.Node) -> Bool {
 ///|
 fn IntrinsicCache::get(
   self : IntrinsicCache,
-  node_uid : Int,
+  node_uid : Int32,
   is_row : Bool,
 ) -> Double? {
   let key = node_uid * 2 + (if is_row { 1 } else { 0 })
@@ -114,7 +114,7 @@ fn IntrinsicCache::get(
 ///|
 fn IntrinsicCache::set(
   self : IntrinsicCache,
-  node_uid : Int,
+  node_uid : Int32,
   is_row : Bool,
   value : Double,
 ) -> Unit {

@@ -62,7 +62,7 @@ fn network_collector_data_types(options : Map[String, Json]) -> Array[String] {
 }
 
 ///|
-fn network_collector_max_encoded_size(options : Map[String, Json]) -> Int {
+fn network_collector_max_encoded_size(options : Map[String, Json]) -> Int32 {
   match options.get("maxEncodedDataSize") {
     Some(Number(n, ..)) => n.to_int()
     _ => 1000
@@ -70,7 +70,7 @@ fn network_collector_max_encoded_size(options : Map[String, Json]) -> Int {
 }
 
 ///|
-fn network_bytes_value_encoded_size(value : Json) -> Int {
+fn network_bytes_value_encoded_size(value : Json) -> Int32 {
   match value {
     Object(map) =>
       match map.get("value") {

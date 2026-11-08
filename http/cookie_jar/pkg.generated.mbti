@@ -18,9 +18,10 @@ pub struct CookieJar {
 pub fn CookieJar::clear(Self) -> Unit
 pub fn CookieJar::get_cookie_header(Self, String, Bool, Bool, site_origin? : String, is_top_level_navigation? : Bool) -> String?
 pub fn CookieJar::new(enabled? : Bool) -> Self
-pub fn CookieJar::size(Self) -> Int
+pub fn CookieJar::size(Self) -> Int32
 pub fn CookieJar::store_from_header(Self, String, String, Bool) -> Unit
 
+#derive(@debug.Debug)
 pub(all) struct ParsedCookie {
   name : String
   value : String
@@ -29,9 +30,12 @@ pub(all) struct ParsedCookie {
   secure : Bool
   http_only : Bool
   same_site : String
-  max_age : Int?
+  max_age : Int32?
   expires : String?
-} derive(@debug.Debug)
+}
+pub fn ParsedCookie::output(Self, &Logger) -> Unit
+pub fn ParsedCookie::to_repr(Self) -> @debug.Repr
+pub fn ParsedCookie::to_string(Self) -> String
 pub impl Show for ParsedCookie
 
 // Type aliases

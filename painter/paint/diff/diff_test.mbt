@@ -1,6 +1,6 @@
 ///|
 fn has_property_change(
-  diff : PaintTreeDiff,
+  diff : @diff.PaintTreeDiff,
   node_id : String,
   property : String,
 ) -> Bool {
@@ -90,7 +90,7 @@ test "paint diff owns diff_trees behavior" {
     ],
   )
 
-  let diff = diff_trees(before, after)
+  let diff = @diff.diff_trees(before, after)
   inspect(diff.layout_shifts.length(), content="1")
   inspect(
     has_property_change(diff, "div.card", "background_color"),

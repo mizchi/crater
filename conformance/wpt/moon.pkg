@@ -3,7 +3,7 @@ import {
   "mizchi/css/values" @types,
   "mizchi/crater-core" @layout_types,
   "mizchi/crater-renderer/renderer",
-  "mizchi/css" @css,
+  "mizchi/css",
 }
 
 warnings = "-unused_package"
@@ -11,5 +11,14 @@ warnings = "-unused_package"
 supported_targets = "js+wasm+wasm-gc"
 
 options(
-  link: { "js": { "exports": [ "renderHtmlToJsonForWpt", "recordRenderSideEffectsForWpt", "renderHtmlWithReplayForWpt" ], "format": "esm" } },
+  link: {
+    "js": {
+      "exports": [
+        "renderHtmlToJsonForWpt",
+        "recordRenderSideEffectsForWpt",
+        "renderHtmlWithReplayForWpt",
+      ],
+      "format": "esm",
+    },
+  },
 )

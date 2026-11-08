@@ -12,20 +12,20 @@ pub using @types {
 }
 
 ///|
-pub fn compute_layout(html : String, width : UInt, height : UInt) -> String {
+pub fn compute_layout(html : String, width : UInt32, height : UInt32) -> String {
   @core.compute_layout(html, width, height)
 }
 
 ///|
-pub fn render_html(html : String, width : UInt, height : UInt) -> String {
+pub fn render_html(html : String, width : UInt32, height : UInt32) -> String {
   @renderer.render_html(html, width, height)
 }
 
 ///|
 pub fn render_html_to_json(
   html : String,
-  width : UInt,
-  height : UInt,
+  width : UInt32,
+  height : UInt32,
 ) -> String {
   @renderer.render_html_to_json(html, width, height)
 }
@@ -33,14 +33,14 @@ pub fn render_html_to_json(
 ///|
 pub fn render_html_to_paint_tree(
   html : String,
-  width : UInt,
-  height : UInt,
+  width : UInt32,
+  height : UInt32,
 ) -> String {
   @renderer.render_html_to_paint_tree(html, width, height)
 }
 
 ///|
-pub fn create_tree(html : String, width : UInt, height : UInt) -> UInt {
+pub fn create_tree(html : String, width : UInt32, height : UInt32) -> UInt32 {
   @incremental.create_tree(html, width, height)
 }
 
@@ -90,7 +90,7 @@ pub fn reset_cache_stats() -> Unit {
 }
 
 ///|
-pub fn resize_viewport(width : UInt, height : UInt) -> Unit {
+pub fn resize_viewport(width : UInt32, height : UInt32) -> Unit {
   @incremental.resize_viewport(width, height)
 }
 
@@ -100,7 +100,7 @@ pub fn update_style(node_id : String, css : String) -> Bool {
 }
 
 ///|
-pub fn create_node(node_id : String) -> UInt {
+pub fn create_node(node_id : String) -> UInt32 {
   @yoga.create_node(node_id)
 }
 
@@ -113,18 +113,18 @@ pub fn add_child(parent_id : String, child_id : String) -> Bool {
 pub fn insert_child(
   parent_id : String,
   child_id : String,
-  index : UInt,
+  index : UInt32,
 ) -> Bool {
   @yoga.insert_child(parent_id, child_id, index)
 }
 
 ///|
-pub fn remove_child(parent_id : String, index : UInt) -> Bool {
+pub fn remove_child(parent_id : String, index : UInt32) -> Bool {
   @yoga.remove_child(parent_id, index)
 }
 
 ///|
-pub fn get_child_count(node_id : String) -> UInt {
+pub fn get_child_count(node_id : String) -> UInt32 {
   @yoga.get_child_count(node_id)
 }
 
@@ -279,8 +279,8 @@ pub fn extract_main_content(html : String) -> String {
 ///|
 pub fn extract_main_content_with_layout(
   html : String,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
 ) -> String {
   @accessibility.extract_main_content_with_layout(html, width, height)
 }

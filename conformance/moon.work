@@ -1,0 +1,10 @@
+members = [
+  ".",
+  "../core",
+  "../dom",
+  "../layout",
+  "../painter",
+  "../renderer",
+  "../terminal_protocol",
+  "../webvitals",
+]

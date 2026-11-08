@@ -5,10 +5,10 @@
 fn render_image_node(
   ctx : TuiContext,
   node : @tui_paint_runtime.PaintNode,
-  col : Int,
-  row : Int,
-  w : Int,
-  h : Int,
+  col : Int32,
+  row : Int32,
+  w : Int32,
+  h : Int32,
 ) -> Unit {
   let draw_row = row.max(0)
   let draw_h = (row + h).min(ctx.viewport_height) - draw_row
@@ -22,10 +22,10 @@ fn render_image_node(
 fn render_image_region(
   ctx : TuiContext,
   node : @tui_paint_runtime.PaintNode,
-  col : Int,
-  draw_row : Int,
-  w : Int,
-  draw_h : Int,
+  col : Int32,
+  draw_row : Int32,
+  w : Int32,
+  draw_h : Int32,
   src : String,
 ) -> Unit {
   if draw_h <= 0 {
@@ -55,10 +55,10 @@ fn render_image_region(
 fn draw_image_placeholder(
   ctx : TuiContext,
   node : @tui_paint_runtime.PaintNode,
-  col : Int,
-  draw_row : Int,
-  w : Int,
-  draw_h : Int,
+  col : Int32,
+  draw_row : Int32,
+  w : Int32,
+  draw_h : Int32,
 ) -> Unit {
   let img_bg = @types.Color::rgb(200, 200, 210)
   let border_color = @types.Color::rgb(150, 150, 160)
@@ -78,10 +78,10 @@ fn draw_image_placeholder(
 ///|
 fn draw_image_placeholder_border(
   ctx : TuiContext,
-  col : Int,
-  draw_row : Int,
-  w : Int,
-  draw_h : Int,
+  col : Int32,
+  draw_row : Int32,
+  w : Int32,
+  draw_h : Int32,
   border_style : TextStyle,
 ) -> Unit {
   if draw_row >= 0 && draw_row < ctx.viewport_height {
@@ -101,10 +101,10 @@ fn draw_image_placeholder_border(
 fn draw_image_placeholder_label(
   ctx : TuiContext,
   node : @tui_paint_runtime.PaintNode,
-  col : Int,
-  draw_row : Int,
-  w : Int,
-  draw_h : Int,
+  col : Int32,
+  draw_row : Int32,
+  w : Int32,
+  draw_h : Int32,
   img_bg : @types.Color,
 ) -> Unit {
   if draw_row < 0 || draw_row >= ctx.viewport_height || draw_h <= 0 {

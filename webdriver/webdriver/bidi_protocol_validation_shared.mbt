@@ -2,12 +2,12 @@
 /// Compatibility wrappers for pure BiDi protocol validation helpers.
 
 ///|
-fn parse_decimal_string(value : String) -> Int? {
+fn parse_decimal_string(value : String) -> Int32? {
   @protocol.parse_decimal_string(value)
 }
 
 ///|
-fn json_as_safe_int(value : Json, min : Double, max : Double) -> Int? {
+fn json_as_safe_int(value : Json, min : Double, max : Double) -> Int32? {
   @protocol.json_as_safe_int(value, min, max)
 }
 

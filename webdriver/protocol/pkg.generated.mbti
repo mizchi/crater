@@ -1,34 +1,38 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "mizchi/crater-webdriver-bidi/protocol"
 
+import {
+  "moonbitlang/core/json",
+}
+
 // Values
-pub fn canonicalize_serialization_options_map(Map[String, Json]) -> Map[String, Json]
+pub fn canonicalize_serialization_options_map(Map[String, @json.Json]) -> Map[String, @json.Json]
 
 pub fn extract_quoted_after_marker(String, String) -> String?
 
 pub fn extract_string_value_from_evaluate_result(String) -> String
 
-pub fn find_substring(String, String, Int) -> Int?
+pub fn find_substring(String, String, Int32) -> Int32?
 
-pub fn get_field(Json, String) -> Json?
+pub fn get_field(@json.Json, String) -> @json.Json?
 
-pub fn get_int_field(Json, String) -> Int?
+pub fn get_int_field(@json.Json, String) -> Int32?
 
-pub fn get_locate_nodes_serialization_options_json(Json?) -> String
+pub fn get_locate_nodes_serialization_options_json(@json.Json?) -> String
 
-pub fn get_map_field_with_alias(Map[String, Json], String, String) -> Json?
+pub fn get_map_field_with_alias(Map[String, @json.Json], String, String) -> @json.Json?
 
-pub fn get_param_raw(Json?, String) -> Json?
+pub fn get_param_raw(@json.Json?, String) -> @json.Json?
 
-pub fn get_param_raw_with_alias(Json?, String, String) -> Json?
+pub fn get_param_raw_with_alias(@json.Json?, String, String) -> @json.Json?
 
-pub fn get_serialization_options_json(Json?) -> String
+pub fn get_serialization_options_json(@json.Json?) -> String
 
-pub fn get_string_field(Json, String) -> String?
+pub fn get_string_field(@json.Json, String) -> String?
 
-pub fn get_string_param(Json?, String) -> String?
+pub fn get_string_param(@json.Json?, String) -> String?
 
-pub fn has_serialization_options_param(Json?) -> Bool
+pub fn has_serialization_options_param(@json.Json?) -> Bool
 
 pub fn is_ascii_alnum(Char) -> Bool
 
@@ -36,21 +40,21 @@ pub fn is_ascii_alpha(Char) -> Bool
 
 pub fn is_ascii_case_insensitive_equal(String, String) -> Bool
 
-pub fn json_as_safe_int(Json, Double, Double) -> Int?
+pub fn json_as_safe_int(@json.Json, Double, Double) -> Int32?
 
-pub fn json_as_safe_number(Json, Double, Double) -> Double?
+pub fn json_as_safe_number(@json.Json, Double, Double) -> Double?
 
-pub fn make_object(Map[String, Json]) -> Json
+pub fn make_object(Map[String, @json.Json]) -> @json.Json
 
-pub fn parse_decimal_string(String) -> Int?
+pub fn parse_decimal_string(String) -> Int32?
 
-pub fn remote_value_as_bool(Json) -> Bool?
+pub fn remote_value_as_bool(@json.Json) -> Bool?
 
-pub fn remote_value_as_number(Json) -> Double?
+pub fn remote_value_as_number(@json.Json) -> Double?
 
-pub fn remote_value_as_string(Json) -> String?
+pub fn remote_value_as_string(@json.Json) -> String?
 
-pub fn resolve_runtime_context_id(Json?, String, String, Bool) -> String
+pub fn resolve_runtime_context_id(@json.Json?, String, String, Bool) -> String
 
 // Errors
 

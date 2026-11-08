@@ -337,7 +337,7 @@ fn parse_attr_number(s : String) -> Double {
   let len = s.length()
   // Skip leading whitespace
   while i < len {
-    let c = Int::unsafe_to_char(s[i].to_int())
+    let c = Int32::unsafe_to_char(s[i].to_int())
     if c == ' ' || c == '\t' {
       i = i + 1
     } else {
@@ -345,15 +345,15 @@ fn parse_attr_number(s : String) -> Double {
     }
   }
   // Sign
-  if i < len && Int::unsafe_to_char(s[i].to_int()) == '-' {
+  if i < len && Int32::unsafe_to_char(s[i].to_int()) == '-' {
     sign = -1.0
     i = i + 1
-  } else if i < len && Int::unsafe_to_char(s[i].to_int()) == '+' {
+  } else if i < len && Int32::unsafe_to_char(s[i].to_int()) == '+' {
     i = i + 1
   }
   // Integer part
   while i < len {
-    let c = Int::unsafe_to_char(s[i].to_int())
+    let c = Int32::unsafe_to_char(s[i].to_int())
     if c >= '0' && c <= '9' {
       result = result * 10.0 + (c.to_int() - 48).to_double()
       i = i + 1
@@ -362,11 +362,11 @@ fn parse_attr_number(s : String) -> Double {
     }
   }
   // Fractional part
-  if i < len && Int::unsafe_to_char(s[i].to_int()) == '.' {
+  if i < len && Int32::unsafe_to_char(s[i].to_int()) == '.' {
     i = i + 1
     let mut frac = 0.1
     while i < len {
-      let c = Int::unsafe_to_char(s[i].to_int())
+      let c = Int32::unsafe_to_char(s[i].to_int())
       if c >= '0' && c <= '9' {
         result = result + (c.to_int() - 48).to_double() * frac
         frac = frac * 0.1
@@ -403,7 +403,7 @@ fn parse_color(value : String) -> @svgcore.Color {
     _ => ()
   }
   // Hex color
-  if value.length() > 0 && Int::unsafe_to_char(value[0].to_int()) == '#' {
+  if value.length() > 0 && Int32::unsafe_to_char(value[0].to_int()) == '#' {
     return parse_hex_color(value)
   }
   @svgcore.Color::black()
@@ -411,7 +411,7 @@ fn parse_color(value : String) -> @svgcore.Color {
 
 ///|
 fn parse_hex_color(value : String) -> @svgcore.Color {
-  fn hex_digit(c : Char) -> Int {
+  fn hex_digit(c : Char) -> Int32 {
     if c >= '0' && c <= '9' {
       c.to_int() - 48
     } else if c >= 'a' && c <= 'f' {
@@ -423,8 +423,8 @@ fn parse_hex_color(value : String) -> @svgcore.Color {
     }
   }
 
-  fn char_at(s : String, i : Int) -> Char {
-    Int::unsafe_to_char(s[i].to_int())
+  fn char_at(s : String, i : Int32) -> Char {
+    Int32::unsafe_to_char(s[i].to_int())
   }
 
   if value.length() == 4 {
@@ -448,7 +448,7 @@ fn parse_points(value : String) -> Array[(Double, Double)] {
   let nums : Array[Double] = []
   let mut buf = StringBuilder()
   for i = 0; i < value.length(); i = i + 1 {
-    let c = Int::unsafe_to_char(value[i].to_int())
+    let c = Int32::unsafe_to_char(value[i].to_int())
     if c == ' ' || c == ',' || c == '\n' || c == '\r' || c == '\t' {
       if buf.to_string().length() > 0 {
         nums.push(parse_attr_number(buf.to_string()))

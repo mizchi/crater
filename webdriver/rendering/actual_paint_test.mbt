@@ -1,28 +1,30 @@
 ///|
 test "font aware text provider is used for generic and named families" {
-  assert_true(should_use_font_aware_text_provider("serif"))
-  assert_true(should_use_font_aware_text_provider("sans-serif"))
-  assert_true(should_use_font_aware_text_provider("monospace"))
-  assert_true(should_use_font_aware_text_provider("Times New Roman"))
-  assert_true(should_use_font_aware_text_provider("\"Georgia\", serif"))
+  assert_true(@rendering.should_use_font_aware_text_provider("serif"))
+  assert_true(@rendering.should_use_font_aware_text_provider("sans-serif"))
+  assert_true(@rendering.should_use_font_aware_text_provider("monospace"))
+  assert_true(@rendering.should_use_font_aware_text_provider("Times New Roman"))
+  assert_true(
+    @rendering.should_use_font_aware_text_provider("\"Georgia\", serif"),
+  )
 }
 
 ///|
 test "font aware text provider skips empty and inherited keywords" {
-  assert_false(should_use_font_aware_text_provider(""))
-  assert_false(should_use_font_aware_text_provider("   "))
-  assert_false(should_use_font_aware_text_provider("inherit"))
-  assert_false(should_use_font_aware_text_provider("initial"))
-  assert_false(should_use_font_aware_text_provider("unset"))
-  assert_false(should_use_font_aware_text_provider("revert"))
-  assert_false(should_use_font_aware_text_provider("revert-layer"))
+  assert_false(@rendering.should_use_font_aware_text_provider(""))
+  assert_false(@rendering.should_use_font_aware_text_provider("   "))
+  assert_false(@rendering.should_use_font_aware_text_provider("inherit"))
+  assert_false(@rendering.should_use_font_aware_text_provider("initial"))
+  assert_false(@rendering.should_use_font_aware_text_provider("unset"))
+  assert_false(@rendering.should_use_font_aware_text_provider("revert"))
+  assert_false(@rendering.should_use_font_aware_text_provider("revert-layer"))
 }
 
 ///|
 test "actual paint screenshot predicate accepts default and document png" {
-  assert_true(can_use_actual_paint_for_screenshot_data({}))
+  assert_true(@rendering.can_use_actual_paint_for_screenshot_data({}))
   assert_true(
-    can_use_actual_paint_for_screenshot_data({
+    @rendering.can_use_actual_paint_for_screenshot_data({
       "origin": Json::string("document"),
       "format": Json::object({ "type": Json::string("image/png") }),
     }),
@@ -32,17 +34,17 @@ test "actual paint screenshot predicate accepts default and document png" {
 ///|
 test "actual paint screenshot predicate rejects synthetic clip and jpeg" {
   assert_false(
-    can_use_actual_paint_for_screenshot_data({
+    @rendering.can_use_actual_paint_for_screenshot_data({
       "backend": Json::string("synthetic"),
     }),
   )
   assert_false(
-    can_use_actual_paint_for_screenshot_data({
+    @rendering.can_use_actual_paint_for_screenshot_data({
       "clip": Json::object({ "type": Json::string("box") }),
     }),
   )
   assert_false(
-    can_use_actual_paint_for_screenshot_data({
+    @rendering.can_use_actual_paint_for_screenshot_data({
       "format": Json::object({ "type": Json::string("image/jpeg") }),
     }),
   )
@@ -50,12 +52,14 @@ test "actual paint screenshot predicate rejects synthetic clip and jpeg" {
 
 ///|
 test "capture paint data options validate viewport only origin" {
-  match normalize_capture_paint_data_options({}) {
+  match @rendering.normalize_capture_paint_data_options({}) {
     Ok(origin) => inspect(origin, content="viewport")
     Err(error) => fail("unexpected paint data option error: " + error.message())
   }
   match
-    normalize_capture_paint_data_options({ "origin": Json::string("document") }) {
+    @rendering.normalize_capture_paint_data_options({
+      "origin": Json::string("document"),
+    }) {
     Ok(_) => fail("expected unsupported document origin")
     Err(error) => {
       inspect(error.name(), content="unsupported operation")
@@ -65,7 +69,10 @@ test "capture paint data options validate viewport only origin" {
       )
     }
   }
-  match normalize_capture_paint_data_options({ "origin": Json::number(1.0) }) {
+  match
+    @rendering.normalize_capture_paint_data_options({
+      "origin": Json::number(1.0),
+    }) {
     Ok(_) => fail("expected invalid origin")
     Err(error) => {
       inspect(error.name(), content="invalid argument")
@@ -73,14 +80,17 @@ test "capture paint data options validate viewport only origin" {
     }
   }
   match
-    normalize_capture_paint_data_options({
+    @rendering.normalize_capture_paint_data_options({
       "origin": Json::string("viewport"),
       "html": Json::string("<p>static</p>"),
     }) {
     Ok(origin) => inspect(origin, content="viewport")
     Err(error) => fail("unexpected html option error: " + error.message())
   }
-  match normalize_capture_paint_data_options({ "html": Json::number(1.0) }) {
+  match
+    @rendering.normalize_capture_paint_data_options({
+      "html": Json::number(1.0),
+    }) {
     Ok(_) => fail("expected invalid html")
     Err(error) => {
       inspect(error.name(), content="invalid argument")
@@ -92,12 +102,16 @@ test "capture paint data options validate viewport only origin" {
 ///|
 test "capture paint tree options validate viewport and document origins" {
   match
-    normalize_capture_paint_tree_options({ "origin": Json::string("document") }) {
+    @rendering.normalize_capture_paint_tree_options({
+      "origin": Json::string("document"),
+    }) {
     Ok(origin) => inspect(origin, content="document")
     Err(error) => fail("unexpected paint tree option error: " + error.message())
   }
   match
-    normalize_capture_paint_tree_options({ "origin": Json::string("bad") }) {
+    @rendering.normalize_capture_paint_tree_options({
+      "origin": Json::string("bad"),
+    }) {
     Ok(_) => fail("expected invalid origin")
     Err(error) => {
       inspect(error.name(), content="invalid argument")
@@ -107,7 +121,10 @@ test "capture paint tree options validate viewport and document origins" {
       )
     }
   }
-  match normalize_capture_paint_tree_options({ "origin": Json::number(1.0) }) {
+  match
+    @rendering.normalize_capture_paint_tree_options({
+      "origin": Json::number(1.0),
+    }) {
     Ok(_) => fail("expected invalid origin type")
     Err(error) => inspect(error.message(), content="origin must be a string")
   }
@@ -115,7 +132,7 @@ test "capture paint tree options validate viewport and document origins" {
 
 ///|
 test "text metrics quad parser accepts provider csv" {
-  match parse_text_metrics_quad("1.5,2.5,3.5,4.5") {
+  match @rendering.parse_text_metrics_quad("1.5,2.5,3.5,4.5") {
     Some((min_w, max_w, min_h, max_h)) => {
       inspect(min_w, content="1.5")
       inspect(max_w, content="2.5")
@@ -128,13 +145,13 @@ test "text metrics quad parser accepts provider csv" {
 
 ///|
 test "text metrics quad parser rejects incomplete or invalid csv" {
-  assert_true(parse_text_metrics_quad("1,2,3") is None)
-  assert_true(parse_text_metrics_quad("1,2,nope,4") is None)
+  assert_true(@rendering.parse_text_metrics_quad("1,2,3") is None)
+  assert_true(@rendering.parse_text_metrics_quad("1,2,nope,4") is None)
 }
 
 ///|
 test "text intrinsic size prefers provider payload" {
-  let size = resolve_text_intrinsic_size_from_provider_payload(
+  let size = @rendering.resolve_text_intrinsic_size_from_provider_payload(
     "1,2,3,4", "abc", 10.0, 12.0,
   )
   inspect(size.min_width, content="1")
@@ -145,7 +162,7 @@ test "text intrinsic size prefers provider payload" {
 
 ///|
 test "text intrinsic size falls back to character count and line metrics" {
-  let size = resolve_text_intrinsic_size_from_provider_payload(
+  let size = @rendering.resolve_text_intrinsic_size_from_provider_payload(
     "", "abcd", 10.0, 0.0,
   )
   inspect(size.min_width, content="20")
@@ -158,7 +175,7 @@ test "text intrinsic size falls back to character count and line metrics" {
 test "glyph outline command parser accepts move line curve and close" {
   let json =
     #|[["M",1,2],["L",3,4],["Q",5,6,7,8],["C",9,10,11,12,13,14],["Z"]]
-  let commands = parse_glyph_outline_commands_json(json)
+  let commands = @rendering.parse_glyph_outline_commands_json(json)
   inspect(commands.length(), content="5")
   match commands[0] {
     @svg.MoveTo(x, y) => {
@@ -186,7 +203,7 @@ test "glyph outline command parser accepts move line curve and close" {
 test "glyph outline command parser skips malformed entries" {
   let json =
     #|[["M",1],["unknown",1,2],["L",3,4],42]
-  let commands = parse_glyph_outline_commands_json(json)
+  let commands = @rendering.parse_glyph_outline_commands_json(json)
   inspect(commands.length(), content="1")
   match commands[0] {
     @svg.LineTo(x, y) => {
@@ -200,15 +217,15 @@ test "glyph outline command parser skips malformed entries" {
 ///|
 fn actual_paint_test_layout(
   id : String,
-  x? : Double = 0.0,
-  y? : Double = 0.0,
+  x~ : Double = 0.0,
+  y~ : Double = 0.0,
   width~ : Double,
   height~ : Double,
-  overflow_x? : @types.Overflow = @types.Visible,
-  overflow_y? : @types.Overflow = @types.Visible,
-  scroll_width? : Double = 0.0,
-  scroll_height? : Double = 0.0,
-  children? : Array[@layout_types.Layout] = [],
+  overflow_x~ : @types.Overflow = @types.Visible,
+  overflow_y~ : @types.Overflow = @types.Visible,
+  scroll_width~ : Double = 0.0,
+  scroll_height~ : Double = 0.0,
+  children~ : Array[@layout_types.Layout] = [],
 ) -> @layout_types.Layout {
   {
     id,
@@ -231,11 +248,15 @@ fn actual_paint_test_layout(
 ///|
 fn actual_paint_test_document_dimensions_from_layout(
   layout : @layout_types.Layout,
-  viewport_width : Int,
-  viewport_height : Int,
-) -> (Int, Int) {
-  let width = actual_paint_layout_content_right(layout).ceil().to_int()
-  let height = actual_paint_layout_content_bottom(layout).ceil().to_int()
+  viewport_width : Int32,
+  viewport_height : Int32,
+) -> (Int32, Int32) {
+  let width = @rendering.actual_paint_layout_content_right(layout)
+    .ceil()
+    .to_int()
+  let height = @rendering.actual_paint_layout_content_bottom(layout)
+    .ceil()
+    .to_int()
   (width.max(viewport_width).max(1), height.max(viewport_height).max(1))
 }
 

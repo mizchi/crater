@@ -1,4 +1,8 @@
 import {
+  "moonbitlang/core/debug",
+}
+
+import {
   "mizchi/css/cascade",
   "mizchi/css/computed",
   "mizchi/css/media",

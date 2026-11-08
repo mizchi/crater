@@ -17,7 +17,7 @@
 /// Helper: navigate session-1 to a data: URL and drain the response.
 fn navigate_to_html(
   proto : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   html : String,
 ) -> Unit {
   let payload = "{\"id\":" +
@@ -31,7 +31,7 @@ fn navigate_to_html(
 
 ///|
 /// Helper: getTree and return the full response JSON for inspection.
-fn get_tree_json(proto : BidiProtocol, request_id : Int) -> String {
+fn get_tree_json(proto : BidiProtocol, request_id : Int32) -> String {
   let _ = proto.process_message(
     "{\"id\":" +
     request_id.to_string() +

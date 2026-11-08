@@ -41,7 +41,7 @@ pub fn AccessibilityNode::to_aria_json(self : AccessibilityNode) -> String {
 fn render_node_json(
   node : AccessibilityNode,
   buf : StringBuilder,
-  indent : Int,
+  indent : Int32,
 ) -> Unit {
   write_indent(buf, indent)
   buf.write_string("{\n")
@@ -324,7 +324,7 @@ fn state_to_json_string(state : State) -> String {
 ///|
 fn AccessibilityNode::to_aria_snapshot_with_indent(
   self : AccessibilityNode,
-  indent : Int,
+  indent : Int32,
 ) -> String {
   let buf = StringBuilder()
   render_node(self, buf, indent)
@@ -335,7 +335,7 @@ fn AccessibilityNode::to_aria_snapshot_with_indent(
 fn render_node(
   node : AccessibilityNode,
   buf : StringBuilder,
-  indent : Int,
+  indent : Int32,
 ) -> Unit {
   // Skip nodes with no role or generic role
   if node.role == Generic && node.name is None && node.children.is_empty() {
@@ -428,7 +428,7 @@ fn render_attributes(node : AccessibilityNode, buf : StringBuilder) -> Unit {
 }
 
 ///|
-fn write_indent(buf : StringBuilder, level : Int) -> Unit {
+fn write_indent(buf : StringBuilder, level : Int32) -> Unit {
   for _ in 0..<level {
     buf.write_string("  ")
   }

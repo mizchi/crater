@@ -2,7 +2,7 @@
 /// Validate awaitPromise parameter (must be boolean)
 fn BidiProtocol::validate_await_promise(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit? {
   match get_param_raw_with_alias(params, "awaitPromise", "await_promise") {
@@ -22,7 +22,7 @@ fn BidiProtocol::validate_await_promise(
 /// Validate resultOwnership parameter (must be "root" or "none")
 fn BidiProtocol::validate_result_ownership(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit? {
   match
@@ -49,7 +49,7 @@ fn BidiProtocol::validate_result_ownership(
 /// Validate serializationOptions parameter
 fn BidiProtocol::validate_serialization_options(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit? {
   match
@@ -75,7 +75,7 @@ fn BidiProtocol::validate_serialization_options(
 ///|
 fn BidiProtocol::validate_serialization_options_map(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   opts : Map[String, Json],
 ) -> Unit? {
   match opts.get("maxDomDepth") {
@@ -136,7 +136,7 @@ fn BidiProtocol::validate_serialization_options_map(
 /// Validate userActivation parameter (must be boolean)
 fn BidiProtocol::validate_user_activation(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit? {
   match get_param_raw_with_alias(params, "userActivation", "user_activation") {

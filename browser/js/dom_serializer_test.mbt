@@ -21,7 +21,7 @@ test "serialize_dom_to_html uses shadow root composed children instead of light 
   let _ = dom.append_child(shadow, inner)
 
   inspect(
-    serialize_dom_to_html(dom),
+    @js.serialize_dom_to_html(dom),
     content="<html><body><div id=\"host\"><p>shadow</p></div></body></html>",
   )
 }
@@ -57,7 +57,7 @@ test "serialize_dom_to_html distributes slotted light DOM into shadow content" {
   let _ = dom.append_child(host, named)
 
   inspect(
-    serialize_dom_to_html(dom),
+    @js.serialize_dom_to_html(dom),
     content="<html><body><div><section id=\"wrap\"><span>plain</span><em slot=\"label\">named</em></section></div></body></html>",
   )
 }
@@ -85,7 +85,7 @@ test "serialize_dom_to_html flattens nested fallback slots in shadow content" {
   let _ = dom.append_child(inner, fallback)
 
   inspect(
-    serialize_dom_to_html(dom),
+    @js.serialize_dom_to_html(dom),
     content="<html><body><div><span>fallback</span></div></body></html>",
   )
 }
@@ -106,7 +106,7 @@ test "serialize_dom_to_html reflects shadow DOM created through JsContext" {
   let _ = dom.append_child(light, light_text)
   let _ = dom.append_child(host, light)
 
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   let code =
     #|(() => {
     #|  const host = document.getElementById('host');
@@ -118,7 +118,7 @@ test "serialize_dom_to_html reflects shadow DOM created through JsContext" {
   inspect(result.success, content="true")
   inspect(result.value, content="shadow-text")
   inspect(
-    serialize_dom_to_html(dom),
+    @js.serialize_dom_to_html(dom),
     content="<html><body><div id=\"host\"><p>shadow-text</p></div></body></html>",
   )
 }
@@ -151,7 +151,7 @@ test "serialize_dom_for_mock preserves full shadow root init metadata" {
   let _ = dom.append_child(shadow, inner)
   let _ = dom.append_child(inner, text)
 
-  let js = serialize_dom_for_mock(dom)
+  let js = @js.serialize_dom_for_mock(dom)
   assert_true(
     js.contains(
       "attachShadow({ mode: 'closed', delegatesFocus: true, slotAssignment: 'manual', clonable: true, serializable: true })",
@@ -193,7 +193,7 @@ test "serialize_dom_to_snapshot_html emits serializable shadow roots as declarat
   let _ = dom.append_child(host, light)
 
   inspect(
-    serialize_dom_to_snapshot_html(dom),
+    @js.serialize_dom_to_snapshot_html(dom),
     content="<html><body><div id=\"host\"><template shadowrootmode=\"closed\" shadowrootdelegatesfocus shadowrootslotassignment=\"manual\" shadowrootclonable shadowrootserializable><span>inside</span></template><em>outside</em></div></body></html>",
   )
 }
@@ -215,14 +215,14 @@ test "serialize_dom_to_html carries custom states through internal render attrib
   let _ = dom.append_child(panel, text)
 
   inspect(
-    serialize_dom_to_html(dom),
+    @js.serialize_dom_to_html(dom),
     content="<html><body><x-panel id=\"panel\" data-crater-custom-states=\"open busy\">open</x-panel></body></html>",
   )
   inspect(
-    serialize_dom_to_snapshot_html(dom),
+    @js.serialize_dom_to_snapshot_html(dom),
     content="<html><body><x-panel id=\"panel\">open</x-panel></body></html>",
   )
-  let js = serialize_dom_for_mock(dom)
+  let js = @js.serialize_dom_for_mock(dom)
   assert_true(js.contains("__customStates = new Set(['open', 'busy'])"))
 }
 
@@ -251,11 +251,11 @@ test "serialize_dom_to_snapshot_html carries form-associated restore state only 
   let _ = dom.append_child(control, text)
 
   inspect(
-    serialize_dom_to_html(dom),
+    @js.serialize_dom_to_html(dom),
     content="<html><body><form id=\"form\"><x-form-control id=\"control\" name=\"token\">draft</x-form-control></form></body></html>",
   )
   inspect(
-    serialize_dom_to_snapshot_html(dom),
+    @js.serialize_dom_to_snapshot_html(dom),
     content="<html><body><form id=\"form\"><x-form-control id=\"control\" name=\"token\" data-crater-form-value=\"draft-value\" data-crater-form-state-value=\"draft-state\">draft</x-form-control></form></body></html>",
   )
 }
@@ -282,7 +282,7 @@ test "create_dom_init_code preserves form-associated restore state for mock rein
     Some("draft-state"),
   )
 
-  let js = create_dom_init_code(dom)
+  let js = @js.create_dom_init_code(dom)
   assert_true(
     js.contains(
       "__craterRestoreFormAssociatedState(el_\{control.to_int()}, true, 'draft-value', true, 'draft-state');",

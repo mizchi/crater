@@ -94,7 +94,7 @@ fn synthetic_navigation_response_headers_from_event(
 }
 
 ///|
-fn synthetic_navigation_response_status_from_event(event : Json) -> Int {
+fn synthetic_navigation_response_status_from_event(event : Json) -> Int32 {
   match get_field(event, "response") {
     Some(Object(response)) =>
       match response.get("status") {

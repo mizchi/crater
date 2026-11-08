@@ -10,8 +10,8 @@
 fn BidiProtocol::render_html_to_paint_node(
   self : BidiProtocol,
   html : String,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
 ) -> @paint_model.PaintNode? {
   let _ = self
   let ctx = @browser_helpers.create_render_context(width, height, false)
@@ -166,7 +166,7 @@ fn paint_diff_variant_html(params : Map[String, Json], key : String) -> String? 
 ///|
 fn BidiProtocol::handle_diff_paint_tree(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match self.resolve_diff_paint_tree(request_id, params) {
@@ -178,7 +178,7 @@ fn BidiProtocol::handle_diff_paint_tree(
 ///|
 fn BidiProtocol::resolve_diff_paint_tree(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Json? {
   let params = match params {
@@ -401,7 +401,7 @@ fn collect_paint_mutation_changes(
 ///|
 fn BidiProtocol::handle_mutate_style(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match self.resolve_mutate_style(request_id, params) {
@@ -417,7 +417,7 @@ fn BidiProtocol::handle_mutate_style(
 /// analysis without editing the source.
 fn BidiProtocol::resolve_mutate_style(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Json? {
   let params = match params {

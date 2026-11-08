@@ -1,7 +1,7 @@
 ///|
 fn BidiProtocol::handle_network_build_before_request_sent_event(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let input = match
@@ -20,7 +20,7 @@ fn BidiProtocol::handle_network_build_before_request_sent_event(
 ///|
 fn BidiProtocol::handle_network_build_response_event(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let input = match
@@ -49,7 +49,7 @@ fn BidiProtocol::handle_network_build_response_event(
 ///|
 fn BidiProtocol::handle_network_build_fetch_error_event(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let input = match
@@ -78,7 +78,7 @@ fn BidiProtocol::handle_network_build_fetch_error_event(
 ///|
 fn BidiProtocol::handle_network_build_headers_echo_payload(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map = match params {

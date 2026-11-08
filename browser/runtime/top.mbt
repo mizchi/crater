@@ -49,7 +49,7 @@ pub fn init_js_runtime() -> Unit {
 pub fn process_script_tasks(
   scheduler : @scheduler.Scheduler,
   dom : @dom.DomTree,
-) -> Int {
+) -> Int32 {
   @runtime_impl.process_script_tasks(scheduler, dom)
 }
 

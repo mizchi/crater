@@ -13,10 +13,10 @@ pub struct PseudoRule {
 /// Indexed pseudo rules for fast lookup (same strategy as SelectorIndex)
 pub struct PseudoRuleIndex {
   rules : Array[PseudoRule]
-  by_id : Map[String, Array[Int]]
-  by_class : Map[String, Array[Int]]
-  by_tag : Map[String, Array[Int]]
-  universal : Array[Int]
+  by_id : Map[String, Array[Int32]]
+  by_class : Map[String, Array[Int32]]
+  by_tag : Map[String, Array[Int32]]
+  universal : Array[Int32]
 }
 
 ///|
@@ -93,8 +93,8 @@ fn PseudoRuleIndex::build(rules : Array[PseudoRule]) -> PseudoRuleIndex {
 fn PseudoRuleIndex::get_candidates(
   self : PseudoRuleIndex,
   element : @css.Element,
-) -> Array[Int] {
-  let candidates : Array[Int] = []
+) -> Array[Int32] {
+  let candidates : Array[Int32] = []
   match element.id {
     Some(id) =>
       match self.by_id.get(id) {
@@ -137,7 +137,7 @@ pub struct PreparedExternalCss {
   after_rules : Array[PseudoRule]
   before_index : PseudoRuleIndex
   after_index : PseudoRuleIndex
-  total_rules : Int
+  total_rules : Int32
 }
 
 ///|

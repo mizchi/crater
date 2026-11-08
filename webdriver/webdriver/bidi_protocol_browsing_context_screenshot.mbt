@@ -16,7 +16,7 @@ fn BidiProtocol::handle_capture_screenshot(
 ///|
 fn BidiProtocol::handle_capture_screenshot_data(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match self.resolve_capture_screenshot_data(request_id, params) {
@@ -28,7 +28,7 @@ fn BidiProtocol::handle_capture_screenshot_data(
 ///|
 fn BidiProtocol::resolve_capture_screenshot_data(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> String? {
   let raw_params = params

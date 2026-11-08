@@ -1,5 +1,5 @@
 ///|
-extern "js" fn js_png_color_type(encoded : String) -> Int =
+extern "js" fn js_png_color_type(encoded : String) -> Int32 =
   #| (encoded) => {
   #|   try {
   #|     const buf = Buffer.from(String(encoded || ""), "base64");
@@ -36,7 +36,7 @@ test "tui paint png export exports png" {
     text: None,
   }
   let paint_node = @paint_plain.from_node_and_layout(node, layout)
-  let png = raster_to_png_base64(paint_node, 8, 4)
+  let png = @png.raster_to_png_base64(paint_node, 8, 4)
   inspect(png.length() > 0, content="true")
   inspect(js_png_color_type(png), content="3")
 }

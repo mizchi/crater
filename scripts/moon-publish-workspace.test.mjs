@@ -1,8 +1,11 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import os from 'node:os'
+import { execFileSync } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { assertReleaseArchiveEntries, prepareReleaseWorkspace } from './moon-release-workspace.mjs'
 
 import {
   buildPublishPlan,
@@ -16,6 +19,61 @@ import {
 } from './moon-publish-workspace.mjs'
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+
+test('release archives require metadata, a package and any declared prebuild script', () => {
+  const module = { name: 'mizchi/crater-browser-native' }
+  assert.throws(() => assertReleaseArchiveEntries(module, []), /missing moon.mod/)
+  assert.throws(() => assertReleaseArchiveEntries(module, ['moon.mod']), /contains no MoonBit package/)
+  assert.throws(() => assertReleaseArchiveEntries(module, ['moon.mod', 'moon.pkg'], 'scripts/prebuild.mjs'), /missing prebuild script/)
+  assert.doesNotThrow(() => assertReleaseArchiveEntries(module, ['moon.mod', 'moon.pkg', 'scripts/prebuild.mjs'], 'scripts/prebuild.mjs'))
+  assert.doesNotThrow(() => assertReleaseArchiveEntries({ name: 'mizchi/crater' }, ['moon.mod']))
+})
+
+test('release staging separates module ignore rules and includes module-owned build scripts', () => {
+  const source = mkdtempSync(path.join(os.tmpdir(), 'crater-release-test-'))
+  let release
+  try {
+    execFileSync('git', ['init', '--quiet', source])
+    const write = (file, content) => {
+      const target = path.join(source, file)
+      mkdirSync(path.dirname(target), { recursive: true })
+      writeFileSync(target, content)
+    }
+    write('.moonignore', 'browser\njs\n')
+    write('.gitignore', '_build/\nnode_modules/\n')
+    write('moon.mod', 'name = "mizchi/crater"\nversion = "0.19.2"\n')
+    write('js/moon.mod', 'name = "mizchi/crater-js"\nversion = "0.19.2"\n')
+    write('js/top.mbt', 'pub fn answer() -> Int32 { 42 }\n')
+    write('js/_build/stale.js', 'generated')
+    write('browser/native/moon.mod', 'name = "mizchi/crater-browser-native"\nversion = "0.19.2"\n')
+    write('browser/native/scripts/prebuild.mjs', 'export const build = true\n')
+    write('moon.work', 'members = [".", "js", "browser/native"]\n')
+    const modules = loadWorkspaceModules(source)
+    release = prepareReleaseWorkspace({ sourceRoot: source, modules })
+    const stagedJs = release.moduleRoots.get('mizchi/crater-js')
+    const stagedNative = release.moduleRoots.get('mizchi/crater-browser-native')
+    const stagedRoot = release.moduleRoots.get('mizchi/crater')
+
+    assert.equal(readFileSync(path.join(stagedJs, 'top.mbt'), 'utf8'), 'pub fn answer() -> Int32 { 42 }\n')
+    assert.ok(existsSync(path.join(stagedNative, 'scripts/prebuild.mjs')))
+    assert.ok(!existsSync(path.join(stagedJs, '_build')))
+    assert.ok(!existsSync(path.join(stagedRoot, 'js')))
+    assert.ok(!existsSync(path.join(stagedJs, 'moon.work')))
+    assert.notEqual(path.dirname(stagedJs), stagedRoot)
+    assert.equal(loadWorkspaceModules(release.workspaceRoot).length, modules.length)
+  } finally {
+    release?.cleanup()
+    rmSync(source, { recursive: true, force: true })
+  }
+})
+
+test('native prebuild entry point is owned by the published native module', () => {
+  const source = readFileSync(path.join(rootDir, 'browser/native/moon.mod'), 'utf8')
+  const script = source.match(/"--moonbit-unstable-prebuild": "([^"]+)"/)?.[1]
+  assert.ok(script)
+  assert.ok(!script.startsWith('../'))
+  assert.ok(existsSync(path.join(rootDir, 'browser/native', script)))
+})
 
 function assertBefore(names, before, after) {
   const beforeIndex = names.indexOf(before)
@@ -34,6 +92,23 @@ members = [
 ]
 `)
   assert.deepEqual(members, ['.', './layout', './browser/native'])
+})
+
+test('workspace releases keep module versions and internal dependency floors in lockstep', () => {
+  const modules = loadWorkspaceModules(rootDir)
+  const byName = new Map(modules.map((module) => [module.name, module]))
+  const releaseVersion = byName.get('mizchi/crater').version
+
+  for (const module of modules) {
+    assert.equal(module.version, releaseVersion, `${module.name} must follow the workspace release version`)
+    const source = readFileSync(path.join(rootDir, module.manifestRel), 'utf8')
+    for (const [, dependency, version] of source.matchAll(/"([^"@]+)@([^"\n]+)"/g)) {
+      const local = byName.get(dependency)
+      if (local) {
+        assert.equal(version, local.version, `${module.name} must require ${dependency}@${local.version}`)
+      }
+    }
+  }
 })
 
 test('default publish plan excludes internal modules and respects dependency order', () => {

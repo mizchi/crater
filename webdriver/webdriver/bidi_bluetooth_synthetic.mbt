@@ -140,7 +140,7 @@ fn BidiProtocol::dispatch_bluetooth(
 ///|
 fn BidiProtocol::resolve_bluetooth_simulate_adapter(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Bool? {
   let ctx_id = match self.validate_input_context(request_id, params) {
@@ -172,7 +172,7 @@ fn BidiProtocol::resolve_bluetooth_simulate_adapter(
 ///|
 fn BidiProtocol::resolve_bluetooth_disable_simulation(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Bool? {
   let ctx_id = match self.validate_input_context(request_id, params) {
@@ -186,7 +186,7 @@ fn BidiProtocol::resolve_bluetooth_disable_simulation(
 ///|
 fn BidiProtocol::resolve_bluetooth_simulate_preconnected_peripheral(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Bool? {
   let ctx_id = match self.validate_input_context(request_id, params) {
@@ -251,7 +251,7 @@ fn BidiProtocol::resolve_bluetooth_simulate_preconnected_peripheral(
 ///|
 fn BidiProtocol::resolve_bluetooth_handle_request_device_prompt(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Bool? {
   let ctx_id = match self.validate_input_context(request_id, params) {
@@ -356,7 +356,7 @@ fn BidiProtocol::resolve_bluetooth_handle_request_device_prompt(
 ///|
 fn BidiProtocol::resolve_bluetooth_simulate_gatt_connection_response(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Bool? {
   let ctx_id = match self.validate_input_context(request_id, params) {
@@ -432,7 +432,7 @@ fn BidiProtocol::resolve_bluetooth_simulate_gatt_connection_response(
 ///|
 fn BidiProtocol::resolve_bluetooth_simulate_gatt_disconnection(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Bool? {
   let ctx_id = match self.validate_input_context(request_id, params) {
@@ -461,7 +461,7 @@ fn BidiProtocol::resolve_bluetooth_simulate_gatt_disconnection(
 ///|
 fn BidiProtocol::resolve_bluetooth_simulate_service(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Bool? {
   let ctx_id = match self.validate_input_context(request_id, params) {
@@ -547,7 +547,7 @@ fn BidiProtocol::resolve_bluetooth_simulate_service(
 ///|
 fn BidiProtocol::resolve_bluetooth_simulate_characteristic(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Bool? {
   let ctx_id = match self.validate_input_context(request_id, params) {
@@ -676,7 +676,7 @@ fn BidiProtocol::resolve_bluetooth_simulate_characteristic(
 ///|
 fn BidiProtocol::resolve_bluetooth_simulate_characteristic_response(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Bool? {
   let ctx_id = match self.validate_input_context(request_id, params) {
@@ -854,7 +854,7 @@ fn BidiProtocol::resolve_bluetooth_simulate_characteristic_response(
 ///|
 fn BidiProtocol::resolve_bluetooth_simulate_descriptor(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Bool? {
   let ctx_id = match self.validate_input_context(request_id, params) {
@@ -985,7 +985,7 @@ fn BidiProtocol::resolve_bluetooth_simulate_descriptor(
 ///|
 fn BidiProtocol::resolve_bluetooth_simulate_descriptor_response(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Bool? {
   let ctx_id = match self.validate_input_context(request_id, params) {
@@ -1173,7 +1173,7 @@ fn BidiProtocol::resolve_bluetooth_simulate_descriptor_response(
 ///|
 fn BidiProtocol::try_handle_synthetic_bluetooth_availability_eval(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   realm_id : String,
   expression : String,
@@ -1205,7 +1205,7 @@ fn BidiProtocol::try_handle_synthetic_bluetooth_availability_eval(
 ///|
 fn BidiProtocol::try_handle_synthetic_bluetooth_request_device_call(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   realm_id : String,
   function_declaration : String,
@@ -1258,7 +1258,7 @@ fn BidiProtocol::try_handle_synthetic_bluetooth_request_device_call(
 ///|
 fn BidiProtocol::try_handle_synthetic_bluetooth_gatt_call(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   realm_id : String,
   function_declaration : String,
@@ -1759,7 +1759,7 @@ fn BidiProtocol::emit_bluetooth_descriptor_event_generated(
 ///|
 fn BidiProtocol::validate_bluetooth_manufacturer_data(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Array[Json]? {
   match
@@ -1840,7 +1840,7 @@ fn BidiProtocol::validate_bluetooth_manufacturer_data(
 ///|
 fn BidiProtocol::validate_bluetooth_known_service_uuids(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Array[Json]? {
   match
@@ -1907,7 +1907,7 @@ fn BidiProtocol::has_bluetooth_device_descriptor(
 ///|
 fn BidiProtocol::validate_bluetooth_characteristic_properties(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Json? {
   match
@@ -1948,7 +1948,7 @@ fn BidiProtocol::validate_bluetooth_characteristic_properties(
 ///|
 fn BidiProtocol::validate_bluetooth_response_data(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
   required : Bool,
 ) -> Array[Json]? {

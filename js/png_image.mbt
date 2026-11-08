@@ -6,9 +6,9 @@
 /// VRT tooling.
 #borrow(rgba)
 extern "js" fn rgba_to_png_base64_js(
-  width : Int,
-  height : Int,
-  rgba : FixedArray[Int],
+  width : Int32,
+  height : Int32,
+  rgba : FixedArray[Int32],
 ) -> String =
   #|(width, height, rgba) => {
   #|  const zlib = typeof require === "function" ? require("node:zlib") : null;
@@ -114,8 +114,8 @@ extern "js" fn rgba_to_png_base64_js(
 /// this returns true-color pixels.
 pub fn renderHtmlToImagePngBase64(
   html : String,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
 ) -> String {
   let image = @gfx_vrt.render_html_to_image(
     html,
@@ -133,9 +133,9 @@ pub fn renderHtmlToImagePngBase64(
 /// 0..255 channels per pixel) via the gfx software backend.
 pub fn renderHtmlToImageRgba(
   html : String,
-  width : Int,
-  height : Int,
-) -> Array[Int] {
+  width : Int32,
+  height : Int32,
+) -> Array[Int32] {
   @gfx_vrt.render_html_to_image(
     html,
     @types.Size::new(width.to_double(), height.to_double()),
@@ -148,9 +148,9 @@ pub fn renderHtmlToImageRgba(
 /// of each font cell.
 pub fn renderTextToImagePngBase64(
   text : String,
-  width : Int,
-  height : Int,
-  scale : Int,
+  width : Int32,
+  height : Int32,
+  scale : Int32,
 ) -> String {
   let image = @gfx_vrt.render_text_to_image(text, width, height, scale~)
   rgba_to_png_base64_js(
@@ -164,7 +164,7 @@ pub fn renderTextToImagePngBase64(
 /// Install a TrueType/OpenType font (raw bytes as 0..255 ints) as the
 /// global glyph provider, so HTML text renders real glyph shapes through
 /// the gfx pipeline. Returns false if the font could not be parsed.
-pub fn setFontProviderFromBytes(data : Array[Int]) -> Bool {
+pub fn setFontProviderFromBytes(data : Array[Int32]) -> Bool {
   let bytes = Bytes::from_array(data.map(fn(i) { (i & 0xff).to_byte() }))
   match @glyph.glyph_provider_from_bytes(bytes) {
     Some(provider) => {
@@ -182,9 +182,9 @@ pub fn setFontProviderFromBytes(data : Array[Int]) -> Bool {
 /// device uses; the JS runtime rasterizes (CPU today, GPU when available).
 pub fn renderHtmlViaWebBackendRgba(
   html : String,
-  width : Int,
-  height : Int,
-) -> Array[Int] {
+  width : Int32,
+  height : Int32,
+) -> Array[Int32] {
   @gfx_web.install_js_web_backend()
   let driver = @gfx_web.webgpu_driver(width, height)
   let root = @renderer_vrt.render_html_to_paint_tree(
@@ -202,8 +202,8 @@ pub fn renderHtmlViaWebBackendRgba(
 /// `renderHtmlViaWebBackendRgba`).
 pub fn renderHtmlViaWebBackendPngBase64(
   html : String,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
 ) -> String {
   let pixels = renderHtmlViaWebBackendRgba(html, width, height)
   rgba_to_png_base64_js(width, height, FixedArray::from_array(pixels))

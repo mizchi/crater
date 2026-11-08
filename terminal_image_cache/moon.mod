@@ -1,6 +1,6 @@
 name = "mizchi/crater-terminal-image-cache"
 
-version = "0.19.0"
+version = "0.19.2"
 
 repository = "https://github.com/mizchi/crater"
 

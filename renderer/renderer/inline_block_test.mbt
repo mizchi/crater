@@ -9,14 +9,14 @@ test "inline_block_rendering" {
     #|</body></html>
   let css =
     #|.authors { display: inline-block; }
-  let ctx : RenderContext = {
+  let ctx : @renderer.RenderContext = {
     viewport_width: 640.0,
     viewport_height: 400.0,
     root_font_size: 16.0,
     color_scheme: @css.ColorScheme::Light,
   }
-  let node = render_to_node_with_external_css(html, ctx, [css])
-  fn show_all(n : @node.Node, depth : Int) -> Unit {
+  let node = @renderer.render_to_node_with_external_css(html, ctx, [css])
+  fn show_all(n : @node.Node, depth : Int32) -> Unit {
     let _ = String::make(depth * 2, ' ')
     let _ = n.style.display.to_string()
     let text_content = n.text.unwrap_or("")
@@ -63,14 +63,14 @@ test "inline_block_layout" {
   let css =
     #|.container { width: 400px; }
     #|.author { display: inline-block; }
-  let ctx : RenderContext = {
+  let ctx : @renderer.RenderContext = {
     viewport_width: 640.0,
     viewport_height: 400.0,
     root_font_size: 16.0,
     color_scheme: @css.ColorScheme::Light,
   }
-  let layout = render_with_external_css(html, ctx, [css])
-  fn show_layout(l : @layout_types.Layout, depth : Int) -> Unit {
+  let layout = @renderer.render_with_external_css(html, ctx, [css])
+  fn show_layout(l : @layout_types.Layout, depth : Int32) -> Unit {
     let _ = String::make(depth * 2, ' ')
     for child in l.children {
       show_layout(child, depth + 1)

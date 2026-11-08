@@ -155,7 +155,7 @@ pub async fn Browser::execute_inline_js_async(
 }
 
 ///|
-fn Browser::process_pending_script_tasks(self : Browser) -> Int {
+fn Browser::process_pending_script_tasks(self : Browser) -> Int32 {
   let ready_tasks = self.scheduler.poll_ready()
   // Make crater's real layout visible to page JS before the batch runs.
   if ready_tasks.length() > 0 {
@@ -232,7 +232,7 @@ pub fn Browser::tick_js(self : Browser) -> Bool {
 /// the loop and reports settled.
 pub fn Browser::run_event_loop(
   self : Browser,
-  max_iterations? : Int = 1000,
+  max_iterations~ : Int32 = 1000,
 ) -> Bool {
   if !self.enable_js {
     return true
@@ -276,7 +276,7 @@ pub fn Browser::run_event_loop(
 ///|
 /// Execute scripts from the page (inline only, sync version)
 /// Requires enable_js to be set to true (use --enable-js flag)
-pub fn Browser::execute_scripts(self : Browser) -> Int {
+pub fn Browser::execute_scripts(self : Browser) -> Int32 {
   // Check if JS execution is enabled
   if !self.enable_js {
     return 0
@@ -327,7 +327,7 @@ pub fn Browser::execute_scripts(self : Browser) -> Int {
 ///|
 /// Execute scripts from the page (including external scripts, async version)
 /// Requires enable_js to be set to true (use --enable-js flag)
-async fn Browser::execute_scripts_async(self : Browser) -> Int {
+async fn Browser::execute_scripts_async(self : Browser) -> Int32 {
   // Check if JS execution is enabled
   if !self.enable_js {
     return 0

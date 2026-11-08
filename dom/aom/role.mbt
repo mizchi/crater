@@ -261,7 +261,7 @@ fn compute_select_role(element : @html.Element) -> Role {
 
 ///|
 /// Parse size attribute value (returns 1 if invalid)
-fn parse_size_attr(s : String) -> Int {
+fn parse_size_attr(s : String) -> Int32 {
   let mut result = 0
   for c in s {
     if c >= '0' && c <= '9' {
@@ -393,7 +393,7 @@ pub fn is_sectioning_content(tag : String) -> Bool {
 
 ///|
 /// Get heading level from tag name or aria-level
-pub fn get_heading_level(element : @html.Element) -> Int? {
+pub fn get_heading_level(element : @html.Element) -> Int32? {
   // First check aria-level
   match element.attributes.get("aria-level") {
     Some(level_str) => {

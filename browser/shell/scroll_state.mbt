@@ -1,18 +1,18 @@
 ///|
 /// Get maximum scroll position
-fn Browser::max_scroll(self : Browser) -> Int {
+fn Browser::max_scroll(self : Browser) -> Int32 {
   (self.content_height - self.viewport_height).max(0)
 }
 
 ///|
 /// Scroll down
-pub fn Browser::scroll_down(self : Browser, amount : Int) -> Unit {
+pub fn Browser::scroll_down(self : Browser, amount : Int32) -> Unit {
   self.scroll_y = (self.scroll_y + amount).min(self.max_scroll())
 }
 
 ///|
 /// Scroll up
-pub fn Browser::scroll_up(self : Browser, amount : Int) -> Unit {
+pub fn Browser::scroll_up(self : Browser, amount : Int32) -> Unit {
   self.scroll_y = (self.scroll_y - amount).max(0)
 }
 

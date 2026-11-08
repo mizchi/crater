@@ -2,7 +2,7 @@
 /// Handle input.releaseActions.
 fn BidiProtocol::handle_input_release_actions(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Bool {
   let ctx_id = match self.validate_input_context(request_id, params) {

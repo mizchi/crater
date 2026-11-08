@@ -50,8 +50,8 @@ fn to_sixel_protocol_colors(
 fn encode_framebuffer_to_sixel(
   fb : Framebuffer,
   colors : Array[Color],
-  include_all_colors? : Bool = false,
-  compress? : Bool = true,
+  include_all_colors~ : Bool = false,
+  compress~ : Bool = true,
 ) -> String {
   @sixel_protocol.encode_indexed_pixels_to_sixel(
     fb.width,
@@ -93,8 +93,8 @@ pub fn to_sixel_dynamic(fb : Framebuffer, palette : DynamicPalette) -> String {
 ///|
 pub fn render_layout(
   layout : @layout_types.Layout,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
 ) -> String {
   render_layout_with_options(layout, width, height, false)
 }
@@ -102,8 +102,8 @@ pub fn render_layout(
 ///|
 pub fn render_layout_with_options(
   layout : @layout_types.Layout,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
   show_box_model : Bool,
 ) -> String {
   let fb = Framebuffer::new(width, height)
@@ -128,7 +128,7 @@ fn render_node_simple(
   layout : @layout_types.Layout,
   parent_x : Double,
   parent_y : Double,
-  depth : Int,
+  depth : Int32,
 ) -> Unit {
   let abs_x = parent_x + layout.x
   let abs_y = parent_y + layout.y
@@ -170,7 +170,7 @@ fn render_node_with_box_model(
   layout : @layout_types.Layout,
   parent_x : Double,
   parent_y : Double,
-  depth : Int,
+  depth : Int32,
   show_box_model : Bool,
 ) -> Unit {
   let abs_x = parent_x + layout.x
@@ -290,8 +290,8 @@ fn render_node_with_box_model(
 ///|
 pub fn print_layout(
   layout : @layout_types.Layout,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
 ) -> Unit {
   let _ = render_layout(layout, width, height)
 }
@@ -299,8 +299,8 @@ pub fn print_layout(
 ///|
 pub fn render_paint_node_to_sixel(
   node : @paint_model.PaintNode,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
 ) -> String {
   let fb = Framebuffer::new(width, height)
   let palette = DynamicPalette::new()
@@ -313,8 +313,8 @@ pub fn render_paint_node_to_sixel(
 pub fn render_with_styles(
   node : @node.Node,
   layout : @layout_types.Layout,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
 ) -> String {
   let paint_node = @paint_node.from_node_and_layout(node, layout)
   render_paint_node_to_sixel(paint_node, width, height)
@@ -323,9 +323,9 @@ pub fn render_with_styles(
 ///|
 pub fn render_paint_node_to_sixel_scrolled(
   node : @paint_model.PaintNode,
-  width : Int,
-  height : Int,
-  scroll_y : Int,
+  width : Int32,
+  height : Int32,
+  scroll_y : Int32,
 ) -> String {
   let fb = Framebuffer::new(width, height)
   let palette = DynamicPalette::new()
@@ -337,9 +337,9 @@ pub fn render_paint_node_to_sixel_scrolled(
 pub fn render_with_styles_scrolled(
   node : @node.Node,
   layout : @layout_types.Layout,
-  width : Int,
-  height : Int,
-  scroll_y : Int,
+  width : Int32,
+  height : Int32,
+  scroll_y : Int32,
 ) -> String {
   let paint_node = @paint_node.from_node_and_layout(node, layout)
   render_paint_node_to_sixel_scrolled(paint_node, width, height, scroll_y)
@@ -348,8 +348,8 @@ pub fn render_with_styles_scrolled(
 ///|
 pub fn render_svg_to_sixel(
   scene : @svg.Scene,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
 ) -> String {
   let fb = Framebuffer::new(width, height)
   let palette = DynamicPalette::new()
@@ -361,8 +361,8 @@ pub fn render_svg_to_sixel(
 ///|
 pub fn render_svg_node_to_sixel(
   node : @svg.SVGNode,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
 ) -> String {
   let scene = @svg.Scene::new(node)
   render_svg_to_sixel(scene, width, height)
@@ -373,8 +373,8 @@ pub fn render_svg_path_to_sixel(
   path_data : String,
   fill_color : Color?,
   stroke_color : Color?,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
 ) -> String {
   let commands = @svg.parse_path(path_data)
   let node = @svg.SVGNode::new(@svg.Path(commands~))

@@ -3,7 +3,7 @@
 
 ///|
 /// Print layout tree for debugging
-pub fn print_layout_tree(layout : @layout_types.Layout, indent : Int) -> Unit {
+pub fn print_layout_tree(layout : @layout_types.Layout, indent : Int32) -> Unit {
   print_layout_tree_with_options(layout, indent, false)
 }
 
@@ -11,7 +11,7 @@ pub fn print_layout_tree(layout : @layout_types.Layout, indent : Int) -> Unit {
 /// Print layout tree with optional detailed box model info
 pub fn print_layout_tree_with_options(
   layout : @layout_types.Layout,
-  indent : Int,
+  indent : Int32,
   show_box_model : Bool,
 ) -> Unit {
   let prefix = "  ".repeat(indent)

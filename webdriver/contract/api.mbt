@@ -15,61 +15,105 @@
 
 ///|
 /// Unique identifier for browser elements
+#derive(Debug, Eq)
 pub(all) struct ElementId {
   id : String
-} derive(Debug, Eq)
+}
+
+///|
+pub extend ElementId with @debug.Debug::{to_repr}
+
+///|
+pub extend ElementId with Eq::{not_equal, equal}
 
 ///|
 /// Unique identifier for browser pages/tabs
+#derive(Debug, Eq)
 pub(all) struct PageId {
   id : String
-} derive(Debug, Eq)
+}
+
+///|
+pub extend PageId with @debug.Debug::{to_repr}
+
+///|
+pub extend PageId with Eq::{not_equal, equal}
 
 ///|
 /// Unique identifier for browser contexts
+#derive(Debug, Eq)
 pub(all) struct ContextId {
   id : String
-} derive(Debug, Eq)
+}
+
+///|
+pub extend ContextId with @debug.Debug::{to_repr}
+
+///|
+pub extend ContextId with Eq::{not_equal, equal}
 
 ///|
 /// Point in 2D space
+#derive(Debug)
 pub(all) struct Point {
   x : Double
   y : Double
-} derive(Debug)
+}
+
+///|
+pub extend Point with @debug.Debug::{to_repr}
 
 ///|
 /// Rectangle with position and size
+#derive(Debug)
 pub(all) struct Rect {
   x : Double
   y : Double
   width : Double
   height : Double
-} derive(Debug)
+}
+
+///|
+pub extend Rect with @debug.Debug::{to_repr}
 
 ///|
 /// Viewport size
+#derive(Debug)
 pub(all) struct Viewport {
-  width : Int
-  height : Int
-} derive(Debug)
+  width : Int32
+  height : Int32
+}
+
+///|
+pub extend Viewport with @debug.Debug::{to_repr}
 
 ///|
 /// Mouse button
+#derive(Debug, Eq)
 pub(all) enum MouseButton {
   Left
   Right
   Middle
-} derive(Debug, Eq)
+}
+
+///|
+pub extend MouseButton with @debug.Debug::{to_repr}
+
+///|
+pub extend MouseButton with Eq::{not_equal, equal}
 
 ///|
 /// Keyboard modifier keys
+#derive(Debug)
 pub(all) struct Modifiers {
   ctrl : Bool
   shift : Bool
   alt : Bool
   meta : Bool
-} derive(Debug)
+}
+
+///|
+pub extend Modifiers with @debug.Debug::{to_repr}
 
 ///|
 /// Default modifiers (none pressed)
@@ -83,6 +127,7 @@ pub fn Modifiers::none() -> Modifiers {
 
 ///|
 /// Element selector strategy
+#derive(Debug)
 pub(all) enum Selector {
   /// CSS selector (e.g., "#id", ".class", "div > p")
   Css(String)
@@ -104,7 +149,10 @@ pub(all) enum Selector {
   AltText(String)
   /// Title attribute
   Title(String)
-} derive(Debug)
+}
+
+///|
+pub extend Selector with @debug.Debug::{to_repr}
 
 ///|
 /// Convert selector to string representation
@@ -133,6 +181,7 @@ pub fn Selector::to_string(self : Selector) -> String {
 
 ///|
 /// API error
+#derive(Debug)
 pub(all) enum ApiError {
   /// Element not found
   ElementNotFound(selector~ : String)
@@ -156,7 +205,10 @@ pub(all) enum ApiError {
   NotSupported(message~ : String)
   /// Internal error
   InternalError(message~ : String)
-} derive(Debug)
+}
+
+///|
+pub extend ApiError with @debug.Debug::{to_repr}
 
 ///|
 pub impl Show for ApiError with fn output(self, logger) {
@@ -222,18 +274,26 @@ pub impl Show for ApiError with fn output(self, logger) {
 }
 
 ///|
+pub extend ApiError with Show::{to_string, output}
+
+///|
 /// API result - success or error
+#derive(Debug)
 pub(all) enum ApiResult[T] {
   Ok(T)
   Err(ApiError)
-} derive(Debug)
+}
 
 // =============================================================================
 // API Method Enum (for JSON-RPC dispatch)
 // =============================================================================
 
 ///|
+pub extend ApiResult with @debug.Debug::{to_repr}
+
+///|
 /// All API methods as an enum for JSON-RPC dispatch
+#derive(Debug)
 pub(all) enum ApiMethod {
   // Context
   NewContext
@@ -252,7 +312,7 @@ pub(all) enum ApiMethod {
   // Element queries
   Query(page_id~ : String, selector~ : String)
   QueryAll(page_id~ : String, selector~ : String)
-  WaitFor(page_id~ : String, selector~ : String, timeout~ : Int)
+  WaitFor(page_id~ : String, selector~ : String, timeout~ : Int32)
   // Element properties
   BoundingBox(element_id~ : String)
   TextContent(element_id~ : String)
@@ -286,7 +346,7 @@ pub(all) enum ApiMethod {
   Content(page_id~ : String)
   SetContent(page_id~ : String, html~ : String)
   ViewportSize(page_id~ : String)
-  SetViewportSize(page_id~ : String, width~ : Int, height~ : Int)
+  SetViewportSize(page_id~ : String, width~ : Int32, height~ : Int32)
   // JavaScript
   Evaluate(page_id~ : String, expression~ : String)
   // Screenshots
@@ -294,7 +354,10 @@ pub(all) enum ApiMethod {
   ElementScreenshot(element_id~ : String)
   // Accessibility
   AccessibilitySnapshot(page_id~ : String)
-} derive(Debug)
+}
+
+///|
+pub extend ApiMethod with @debug.Debug::{to_repr}
 
 ///|
 pub impl Show for ApiMethod with fn output(self, logger) {
@@ -576,3 +639,6 @@ pub impl Show for ApiMethod with fn output(self, logger) {
     }
   }
 }
+
+///|
+pub extend ApiMethod with Show::{to_string, output}

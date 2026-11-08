@@ -1,10 +1,10 @@
 name = "mizchi/crater-webvitals"
 
-version = "0.19.0"
+version = "0.19.2"
 
 import {
-  "mizchi/css@0.7.3",
-  "mizchi/crater-core@0.19.0",
+  "mizchi/css@0.8.0",
+  "mizchi/crater-core@0.19.2",
 }
 
 readme = "README.md"

@@ -36,7 +36,7 @@ test "content_extraction_basic" {
     visible: true,
   }
   let tree = @aom.AccessibilityTree::new(root)
-  let result = extract_content(tree, ExtractConfig::default())
+  let result = @arc90.extract_content(tree, @arc90.ExtractConfig::default())
 
   // Navigation should be detected (at least 1)
   assert_true(result.detected_navigation.length() >= 1)
@@ -57,7 +57,7 @@ test "ad_detection" {
   let root = @aom.AccessibilityNode::new("root", @aom.Document)
   let root = { ..root, children: [ad_node], visible: true, }
   let tree = @aom.AccessibilityTree::new(root)
-  let result = extract_content(tree, ExtractConfig::default())
+  let result = @arc90.extract_content(tree, @arc90.ExtractConfig::default())
 
   // Should detect as ad
   inspect(result.detected_ads.length(), content="1")
@@ -102,7 +102,7 @@ test "readability_prefers_paragraph_container" {
   let root = @aom.AccessibilityNode::new("root", @aom.Document)
   let root = { ..root, children: [wrapper], visible: true, }
   let tree = @aom.AccessibilityTree::new(root)
-  let result = extract_content(tree, ExtractConfig::default())
+  let result = @arc90.extract_content(tree, @arc90.ExtractConfig::default())
   match result.main_content {
     Some(node) => inspect(node.id, content="article-1")
     None => assert_true(false)
@@ -114,7 +114,7 @@ test "extraction_result_summary" {
   let root = @aom.AccessibilityNode::new("root", @aom.Document)
   let root = { ..root, visible: true, }
   let tree = @aom.AccessibilityTree::new(root)
-  let result = extract_content(tree, ExtractConfig::default())
+  let result = @arc90.extract_content(tree, @arc90.ExtractConfig::default())
   let summary = result.to_summary()
 
   // Should produce valid summary

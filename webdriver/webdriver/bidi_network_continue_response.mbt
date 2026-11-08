@@ -1,7 +1,7 @@
 ///|
 fn BidiProtocol::handle_network_continue_blocked_response(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map = match params {

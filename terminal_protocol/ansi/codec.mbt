@@ -19,22 +19,22 @@ pub fn ansi_reverse() -> String {
 }
 
 ///|
-pub fn ansi_fg_256(color_idx : Int) -> String {
+pub fn ansi_fg_256(color_idx : Int32) -> String {
   @tui_ansi.ansi_fg_256(color_idx)
 }
 
 ///|
-pub fn ansi_bg_256(color_idx : Int) -> String {
+pub fn ansi_bg_256(color_idx : Int32) -> String {
   @tui_ansi.ansi_bg_256(color_idx)
 }
 
 ///|
-pub fn ansi_move_to(row : Int, col : Int) -> String {
+pub fn ansi_move_to(row : Int32, col : Int32) -> String {
   @tui_ansi.ansi_move_to(row, col)
 }
 
 ///|
-pub fn rgb_to_256(r : Int, g : Int, b : Int) -> Int {
+pub fn rgb_to_256(r : Int32, g : Int32, b : Int32) -> Int32 {
   @tui_ansi.rgb_to_256(r, g, b)
 }
 

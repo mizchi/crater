@@ -1,9 +1,9 @@
 ///|
 test "MutationRecord::child_list creates correct record" {
-  let target = NodeId::from_int(1)
-  let child1 = NodeId::from_int(2)
-  let child2 = NodeId::from_int(3)
-  let record = MutationRecord::child_list(target, added=[child1, child2], removed=[])
+  let target = @dom.NodeId::from_int(1)
+  let child1 = @dom.NodeId::from_int(2)
+  let child2 = @dom.NodeId::from_int(3)
+  let record = @dom.MutationRecord::child_list(target, added=[child1, child2], removed=[])
   inspect(record.type_, content="ChildList")
   inspect(record.target.to_int(), content="1")
   inspect(record.added_nodes.length(), content="2")
@@ -12,8 +12,8 @@ test "MutationRecord::child_list creates correct record" {
 
 ///|
 test "MutationRecord::attribute creates correct record" {
-  let target = NodeId::from_int(1)
-  let record = MutationRecord::attribute(
+  let target = @dom.NodeId::from_int(1)
+  let record = @dom.MutationRecord::attribute(
     target,
     "class",
     old_value=Some("foo"),
@@ -27,54 +27,56 @@ test "MutationRecord::attribute creates correct record" {
 
 ///|
 test "MutationRecord::style_change creates correct record" {
-  let target = NodeId::from_int(1)
-  let record = MutationRecord::style_change(target, ["width", "height"])
+  let target = @dom.NodeId::from_int(1)
+  let record = @dom.MutationRecord::style_change(target, ["width", "height"])
   inspect(record.type_, content="StyleChange")
   inspect(record.changed_properties.length(), content="2")
 }
 
 ///|
 test "MutationRecord::affects_layout detects layout properties" {
-  let target = NodeId::from_int(1)
+  let target = @dom.NodeId::from_int(1)
 
   // Layout-affecting style change
-  let layout_record = MutationRecord::style_change(target, ["width", "margin"])
+  let layout_record = @dom.MutationRecord::style_change(target, [
+    "width", "margin",
+  ])
   inspect(layout_record.affects_layout(), content="true")
 
   // Paint-only style change
-  let paint_record = MutationRecord::style_change(target, [
+  let paint_record = @dom.MutationRecord::style_change(target, [
     "color", "background",
   ])
   inspect(paint_record.affects_layout(), content="false")
 
   // ChildList always affects layout
-  let child_record = MutationRecord::child_list(target)
+  let child_record = @dom.MutationRecord::child_list(target)
   inspect(child_record.affects_layout(), content="true")
 }
 
 ///|
 test "MutationQueue basic operations" {
-  let queue = MutationQueue::new()
+  let queue = @dom.MutationQueue::new()
   queue.set_recording(true)
   inspect(queue.is_empty(), content="true")
-  let target = NodeId::from_int(1)
-  queue.push(MutationRecord::style_change(target, ["width"]))
+  let target = @dom.NodeId::from_int(1)
+  queue.push(@dom.MutationRecord::style_change(target, ["width"]))
   inspect(queue.is_empty(), content="false")
   inspect(queue.length(), content="1")
   inspect(queue.has_pending(target), content="true")
-  inspect(queue.has_pending(NodeId::from_int(2)), content="false")
+  inspect(queue.has_pending(@dom.NodeId::from_int(2)), content="false")
 }
 
 ///|
 test "MutationQueue flush returns optimized records" {
-  let queue = MutationQueue::new()
+  let queue = @dom.MutationQueue::new()
   queue.set_recording(true)
-  let target = NodeId::from_int(1)
+  let target = @dom.NodeId::from_int(1)
 
   // Add multiple style changes to same node
-  queue.push(MutationRecord::style_change(target, ["width"]))
-  queue.push(MutationRecord::style_change(target, ["height"]))
-  queue.push(MutationRecord::style_change(target, ["margin"]))
+  queue.push(@dom.MutationRecord::style_change(target, ["width"]))
+  queue.push(@dom.MutationRecord::style_change(target, ["height"]))
+  queue.push(@dom.MutationRecord::style_change(target, ["margin"]))
   let (records, result) = queue.flush()
 
   // Should be merged into one record
@@ -89,14 +91,14 @@ test "MutationQueue flush returns optimized records" {
 
 ///|
 test "MutationQueue merges add/remove pairs" {
-  let queue = MutationQueue::new()
+  let queue = @dom.MutationQueue::new()
   queue.set_recording(true)
-  let parent = NodeId::from_int(1)
-  let child = NodeId::from_int(2)
+  let parent = @dom.NodeId::from_int(1)
+  let child = @dom.NodeId::from_int(2)
 
   // Add then remove same child - should cancel out
-  queue.push(MutationRecord::child_list(parent, added=[child]))
-  queue.push(MutationRecord::child_list(parent, removed=[child]))
+  queue.push(@dom.MutationRecord::child_list(parent, added=[child]))
+  queue.push(@dom.MutationRecord::child_list(parent, removed=[child]))
   let (records, _result) = queue.flush()
 
   // The child_list records should be merged, and add/remove should cancel
@@ -114,10 +116,10 @@ test "MutationQueue merges add/remove pairs" {
 
 ///|
 test "MutationQueue handles deferred mutations during flush" {
-  let queue = MutationQueue::new()
+  let queue = @dom.MutationQueue::new()
   queue.set_recording(true)
-  let target = NodeId::from_int(1)
-  queue.push(MutationRecord::style_change(target, ["width"]))
+  let target = @dom.NodeId::from_int(1)
+  queue.push(@dom.MutationRecord::style_change(target, ["width"]))
 
   // Simulate flush
   let (_records, _result) = queue.flush()
@@ -132,7 +134,7 @@ test "MutationQueue handles deferred mutations during flush" {
 
 ///|
 test "DomTree records append_child mutations" {
-  let tree = DomTree::new()
+  let tree = @dom.DomTree::new()
   tree.set_mutation_recording(true)
   let doc = tree.get_document()
   let div = tree.create_element("div")
@@ -153,7 +155,7 @@ test "DomTree records append_child mutations" {
 
 ///|
 test "DomTree records remove_child mutations" {
-  let tree = DomTree::new()
+  let tree = @dom.DomTree::new()
   tree.set_mutation_recording(true)
   let doc = tree.get_document()
   let div = tree.create_element("div")
@@ -171,7 +173,7 @@ test "DomTree records remove_child mutations" {
 
 ///|
 test "DomTree records set_attribute mutations" {
-  let tree = DomTree::new()
+  let tree = @dom.DomTree::new()
   tree.set_mutation_recording(true)
   let doc = tree.get_document()
   let div = tree.create_element("div")
@@ -189,7 +191,7 @@ test "DomTree records set_attribute mutations" {
 
 ///|
 test "DomTree records attribute update with old value" {
-  let tree = DomTree::new()
+  let tree = @dom.DomTree::new()
   tree.set_mutation_recording(true)
   let doc = tree.get_document()
   let div = tree.create_element("div")
@@ -205,7 +207,7 @@ test "DomTree records attribute update with old value" {
 
 ///|
 test "DomTree records set_text_content mutations for text nodes" {
-  let tree = DomTree::new()
+  let tree = @dom.DomTree::new()
   tree.set_mutation_recording(true)
   let text = tree.create_text("hello")
   tree.clear_mutations()
@@ -220,7 +222,7 @@ test "DomTree records set_text_content mutations for text nodes" {
 
 ///|
 test "DomTree batches multiple mutations" {
-  let tree = DomTree::new()
+  let tree = @dom.DomTree::new()
   tree.set_mutation_recording(true)
   let doc = tree.get_document()
 
@@ -250,7 +252,7 @@ test "DomTree batches multiple mutations" {
 
 ///|
 test "DomTree move child records both removal and addition" {
-  let tree = DomTree::new()
+  let tree = @dom.DomTree::new()
   tree.set_mutation_recording(true)
   let doc = tree.get_document()
   let parent1 = tree.create_element("div")

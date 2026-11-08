@@ -17,7 +17,7 @@ pub fn execute_script_task(@scheduler.Task, @dom.DomTree) -> @scheduler.TaskResu
 
 pub fn init_js_runtime() -> Unit
 
-pub fn process_script_tasks(@scheduler.Scheduler, @dom.DomTree) -> Int
+pub fn process_script_tasks(@scheduler.Scheduler, @dom.DomTree) -> Int32
 
 pub fn serialize_dom_for_mock(@dom.DomTree) -> String
 
@@ -33,6 +33,8 @@ pub suberror JsError {
   ReferenceError(String)
 }
 pub fn JsError::execution_error(String) -> Self
+pub fn JsError::output(Self, &Logger) -> Unit
+pub fn JsError::to_string(Self) -> String
 pub impl Show for JsError
 
 // Types and methods
@@ -42,7 +44,7 @@ pub(all) enum AsyncExecutionMode {
 }
 
 pub struct JsContext {
-  context_id : Int
+  context_id : Int32
   async_mode : AsyncExecutionMode
   dom : @dom.DomTree
   mut logs : Array[String]
@@ -83,6 +85,6 @@ pub fn ScriptExecutor::tick(Self) -> Bool raise JsError
 // Traits
 pub(open) trait JsRuntime {
   fn init(Self) -> Unit
-  fn execute(Self, Int, @dom.DomTree, String, AsyncExecutionMode) -> JsResult raise JsError
-  fn tick(Self, Int, @dom.DomTree) -> JsResult raise JsError
+  fn execute(Self, Int32, @dom.DomTree, String, AsyncExecutionMode) -> JsResult raise JsError
+  fn tick(Self, Int32, @dom.DomTree) -> JsResult raise JsError
 }

@@ -2,7 +2,7 @@
 /// Build tree result for browsingContext.getTree
 fn BidiProtocol::build_context_tree(
   self : BidiProtocol,
-  max_depth : Int?,
+  max_depth : Int32?,
 ) -> Array[Json] {
   let contexts : Array[Json] = []
   for ctx_id in self.manager.list_sessions() {
@@ -19,7 +19,7 @@ fn BidiProtocol::build_context_tree(
 ///|
 fn BidiProtocol::resolve_get_tree_contexts(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Array[Json]? {
   match get_param_raw_with_alias(params, "maxDepth", "max_depth") {

@@ -6,17 +6,17 @@ pub using @raster {type Framebuffer, type DynamicPalette}
 
 ///|
 pub(all) struct VisualStats {
-  pixel_count : Int
-  non_white_pixels : Int
-  distinct_colors : Int
+  pixel_count : Int32
+  non_white_pixels : Int32
+  distinct_colors : Int32
   is_blank : Bool
 }
 
 ///|
 pub fn raster_to_framebuffer(
   paint_node : PaintNode,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
 ) -> (Framebuffer, DynamicPalette) {
   let fb = @raster.Framebuffer::new(width, height)
   let palette = @raster.DynamicPalette::new()
@@ -33,7 +33,7 @@ pub fn framebuffer_to_rgba_base64(
 }
 
 ///|
-fn color_rgb_key(c : @raster.Color) -> Int {
+fn color_rgb_key(c : @raster.Color) -> Int32 {
   c.r * 65536 + c.g * 256 + c.b
 }
 
@@ -43,7 +43,7 @@ pub fn framebuffer_visual_stats(
   palette : DynamicPalette,
 ) -> VisualStats {
   let white_key = 255 * 65536 + 255 * 256 + 255
-  let palette_keys : Array[Int] = []
+  let palette_keys : Array[Int32] = []
   for color in palette.colors {
     palette_keys.push(color_rgb_key(color))
   }
@@ -76,8 +76,8 @@ pub fn framebuffer_visual_stats(
 ///|
 pub fn raster_to_rgba_base64(
   paint_node : PaintNode,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
 ) -> String {
   let (fb, palette) = raster_to_framebuffer(paint_node, width, height)
   framebuffer_to_rgba_base64(fb, palette)

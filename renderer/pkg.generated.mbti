@@ -31,13 +31,13 @@ pub fn render_html_to_paint_tree_with_external_css(String, @values.Size[Double],
 
 pub fn render_html_to_paint_tree_with_prepared_external_css(String, @values.Size[Double], @renderer.PreparedExternalCss) -> @model.PaintNode
 
-pub fn render_paint_tree_to_image(@model.PaintNode, Int, Int) -> @gfx_vrt.RenderedImage
+pub fn render_paint_tree_to_image(@model.PaintNode, Int32, Int32) -> @gfx_vrt.RenderedImage
 
 pub fn render_prepared_vrt_page_to_paint_tree(@vrt.PreparedVrtPage) -> @model.PaintNode
 
 pub fn render_prepared_vrt_page_to_paint_tree_json(@vrt.PreparedVrtPage) -> String
 
-pub fn render_text_to_image(String, Int, Int, x? : Int, y? : Int, scale? : Int) -> @gfx_vrt.RenderedImage
+pub fn render_text_to_image(String, Int32, Int32, x? : Int32, y? : Int32, scale? : Int32) -> @gfx_vrt.RenderedImage
 
 // Errors
 

@@ -1,11 +1,11 @@
 ///|
 test "webdriver-bidi facade parses api method names" {
-  match parse_method("newContext") {
-    Some(ApiMethod::NewContext) => ()
+  match @crater-webdriver-bidi.parse_method("newContext") {
+    Some(@crater-webdriver-bidi.ApiMethod::NewContext) => ()
     _ => fail("expected newContext to parse as NewContext")
   }
-  match parse_method("Page.navigate") {
-    Some(ApiMethod::Goto(page_id~, url~)) => {
+  match @crater-webdriver-bidi.parse_method("Page.navigate") {
+    Some(@crater-webdriver-bidi.ApiMethod::Goto(page_id~, url~)) => {
       inspect(page_id, content="")
       inspect(url, content="")
     }
@@ -15,7 +15,7 @@ test "webdriver-bidi facade parses api method names" {
 
 ///|
 test "webdriver-bidi facade exposes server configuration without cdp handlers" {
-  let config = BidiServerConfig::{
+  let config = @crater-webdriver-bidi.BidiServerConfig::{
     host: "127.0.0.1",
     port: 9222,
     auth_token: "test-token",
@@ -25,5 +25,5 @@ test "webdriver-bidi facade exposes server configuration without cdp handlers" {
     config.web_socket_url(),
     content="ws://127.0.0.1:9222/session/test-token",
   )
-  let _server = BidiServer::new(config~)
+  let _server = @crater-webdriver-bidi.BidiServer::new(config~)
 }

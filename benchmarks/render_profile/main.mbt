@@ -1,7 +1,7 @@
 ///|
 /// Build a stylesheet with `rules` class rules plus a handful of descendant /
 /// tag rules, so the selector-matching side of the cascade has real work.
-fn build_css(rules : Int) -> String {
+fn build_css(rules : Int32) -> String {
   let buf = StringBuilder()
   buf.write_string("body{margin:0;font-family:sans-serif}")
   buf.write_string("section{display:block;padding:8px}")
@@ -28,7 +28,7 @@ fn build_css(rules : Int) -> String {
 /// Build a page of `blocks` cards, each a small nested subtree carrying a mix
 /// of classes so many selectors partially match. Mirrors the shape of the
 /// component_vrt "m" fixture (noise blocks around a component subtree).
-fn build_html(blocks : Int, rules : Int) -> String {
+fn build_html(blocks : Int32, rules : Int32) -> String {
   let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><body><main-shell>")
   for i = 0; i < blocks; i = i + 1 {

@@ -201,7 +201,7 @@ test "incremental reflow: broad equivalence sweep (layout modes x mutations)" {
 /// A layout change seeds exactly that node; a paint-only change seeds nothing
 /// (the precondition for the dynamic-path speedup, and a regression guard against
 /// the seed silently collapsing back to "all uids").
-fn seed_box(uid : Int, w : Double, h : Double) -> @node.Node {
+fn seed_box(uid : Int32, w : Double, h : Double) -> @node.Node {
   let style = @style.Style::{
     ..@style.Style::default(),
     width: @types.Length(w),
@@ -211,7 +211,7 @@ fn seed_box(uid : Int, w : Double, h : Double) -> @node.Node {
 }
 
 ///|
-fn seed_box_colored(uid : Int, w : Double, h : Double) -> @node.Node {
+fn seed_box_colored(uid : Int32, w : Double, h : Double) -> @node.Node {
   let style = @style.Style::{
     ..@style.Style::default(),
     width: @types.Length(w),
@@ -222,10 +222,10 @@ fn seed_box_colored(uid : Int, w : Double, h : Double) -> @node.Node {
 }
 
 ///|
-fn seed_uids_for(prev : @node.Node, next : @node.Node) -> Array[Int] {
-  let by_uid : Map[Int, @node.Node] = Map([])
+fn seed_uids_for(prev : @node.Node, next : @node.Node) -> Array[Int32] {
+  let by_uid : Map[Int32, @node.Node] = Map([])
   index_nodes_by_uid(prev, by_uid)
-  let seeds : Array[Int] = []
+  let seeds : Array[Int32] = []
   collect_changed_seed_uids(next, by_uid, seeds)
   seeds
 }

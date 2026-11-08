@@ -471,7 +471,7 @@ pub fn evaluate_js_async(expression : String) -> @core.Any {
 /// This runs the evaluation, awaits any Promise result, and sends response directly
 extern "js" fn js_eval_and_send_async(
   socket : @core.Any,
-  request_id : Int,
+  request_id : Int32,
   expression : String,
   ctx_id : String,
   realm_id : String,
@@ -988,7 +988,7 @@ extern "js" fn js_eval_and_send_async(
 /// Evaluate expression asynchronously and send result via WebSocket
 fn eval_and_send_async_with_console(
   socket : @core.Any,
-  request_id : Int,
+  request_id : Int32,
   expression : String,
   ctx_id : String,
   realm_id : String,
@@ -1007,7 +1007,7 @@ fn eval_and_send_async_with_console(
 /// Evaluate expression asynchronously and send result via WebSocket
 pub fn eval_and_send_async(
   socket : @core.Any,
-  request_id : Int,
+  request_id : Int32,
   expression : String,
   ctx_id : String,
 ) -> Unit {

@@ -21,7 +21,7 @@ test "paint diff wraps diff_trees" {
     [],
   )
 
-  let diff = diff_trees(before, after)
+  let diff = @diff.diff_trees(before, after)
   inspect(diff.changes.length(), content="1")
   inspect(diff.changes[0].property, content="opacity")
 }

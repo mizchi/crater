@@ -6,12 +6,12 @@
 pub fn render_to_ansi_with_hints(
   node : @node.Node,
   layout : @layout_types.Layout,
-  width : Int,
-  height : Int,
-  scroll_y : Int,
+  width : Int32,
+  height : Int32,
+  scroll_y : Int32,
   hints : Array[HintData],
   hint_input : String,
-  focused_element_name? : String? = None,
+  focused_element_name~ : String? = None,
 ) -> RenderResult {
   let result = render_to_buffer_with_hints(
     node,
@@ -31,12 +31,12 @@ pub fn render_to_ansi_with_hints(
 pub fn render_to_buffer_with_hints(
   node : @node.Node,
   layout : @layout_types.Layout,
-  width : Int,
-  height : Int,
-  scroll_y : Int,
+  width : Int32,
+  height : Int32,
+  scroll_y : Int32,
   hints : Array[HintData],
   hint_input : String,
-  focused_element_name? : String? = None,
+  focused_element_name~ : String? = None,
 ) -> BufferRenderResult {
   let content_height = height - 1
   let buf = CharBuffer::new(width, height)

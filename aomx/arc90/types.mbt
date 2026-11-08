@@ -29,7 +29,7 @@ pub(all) struct ExtractionResult {
 /// Configuration for extraction
 pub(all) struct ExtractConfig {
   /// Minimum text length to consider as content
-  min_text_length : Int
+  min_text_length : Int32
   /// Viewport width for position analysis
   viewport_width : Double
   /// Viewport height for position analysis

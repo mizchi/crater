@@ -7,7 +7,7 @@ fn extract_tag_from_id(id : String) -> String {
   if id == "#text" {
     return "#text"
   }
-  let mut end_pos : Int? = None
+  let mut end_pos : Int32? = None
   for i, c in id {
     if c == '#' || c == '.' {
       end_pos = Some(i)

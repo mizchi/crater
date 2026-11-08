@@ -59,10 +59,10 @@ pub fn DomTree::query_selector_all(
 /// but still propagate scope to their element children.
 fn DomTree::query_match_node(
   self : DomTree,
-  node_id : Int,
+  node_id : Int32,
   parent_sel : @selector.Element?,
-  sibling_index : Int,
-  sibling_count : Int,
+  sibling_index : Int32,
+  sibling_count : Int32,
   prev_sel : @selector.Element?,
   is_root : Bool,
   list : @selector.SelectorList,
@@ -87,7 +87,7 @@ fn DomTree::query_match_node(
     Some(_) => my_sel
     None => parent_sel
   }
-  let element_children : Array[Int] = []
+  let element_children : Array[Int32] = []
   for child_id in node.children {
     match self.nodes.get(child_id) {
       Some(child) if child.node_type == Element =>
@@ -133,8 +133,8 @@ fn dom_node_to_selector_element(
   node : DomNode,
   parent : @selector.Element?,
   prev_sibling : @selector.Element?,
-  sibling_index : Int,
-  sibling_count : Int,
+  sibling_index : Int32,
+  sibling_count : Int32,
 ) -> @selector.Element {
   // Reuse the parsed class list / attribute array across queries; both are
   // invalidated when the node's attributes change.
@@ -188,7 +188,7 @@ fn dom_node_to_selector_element(
 }
 
 ///|
-fn is_whitespace_code(code : Int) -> Bool {
+fn is_whitespace_code(code : Int32) -> Bool {
   code == 32 || code == 9 || code == 10 || code == 13
 }
 

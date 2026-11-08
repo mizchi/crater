@@ -64,6 +64,9 @@ pub impl Show for AuthState with fn output(self, logger) {
 }
 
 ///|
+pub extend AuthState with Show::{to_string, output}
+
+///|
 pub fn AuthState::default() -> AuthState {
   AuthState::{
     origin_headers: Map([], capacity=0),

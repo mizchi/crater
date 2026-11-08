@@ -44,8 +44,8 @@ fn synthetic_network_query_values(url : String, key : String) -> Array[String] {
 fn synthetic_network_int_query_param(
   url : String,
   key : String,
-  default_value : Int,
-) -> Int {
+  default_value : Int32,
+) -> Int32 {
   @crater_network.synthetic_network_int_query_param(url, key, default_value)
 }
 
@@ -68,6 +68,6 @@ fn synthetic_network_infer_mime_type(url : String, path : String) -> String {
 }
 
 ///|
-fn synthetic_network_status_text_for_code(status : Int) -> String {
+fn synthetic_network_status_text_for_code(status : Int32) -> String {
   @crater_network.synthetic_network_status_text_for_code(status)
 }

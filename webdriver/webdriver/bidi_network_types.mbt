@@ -1,5 +1,5 @@
 ///|
-fn js_utf8_byte_length(value : String) -> Int {
+fn js_utf8_byte_length(value : String) -> Int32 {
   @crater_network.utf8_byte_length(value)
 }
 

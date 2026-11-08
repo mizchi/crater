@@ -12,7 +12,7 @@ pub fn parse(String) -> Element?
 
 pub fn parse_document(String) -> Document
 
-pub fn parse_document_streaming(String, Int) -> Document
+pub fn parse_document_streaming(String, Int32) -> Document
 
 pub fn parse_document_v2(String) -> Element
 
@@ -79,7 +79,7 @@ pub(all) struct StreamingTokenizer {
   buffer : StringBuilder
   mut cached_str : String
   mut cache_valid : Bool
-  mut pos : Int
+  mut pos : Int32
   mut finished : Bool
 }
 pub fn StreamingTokenizer::compact(Self) -> Unit
@@ -118,8 +118,8 @@ pub(all) enum Token {
 
 pub(all) struct Tokenizer {
   input : String
-  mut pos : Int
-  len : Int
+  mut pos : Int32
+  len : Int32
   mut raw_text_end_tag : String?
   mut pending_end_tag : String?
 }

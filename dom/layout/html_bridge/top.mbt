@@ -9,9 +9,9 @@
 ///|
 /// Represents a change to the layout tree
 pub(all) enum TreeChange {
-  AddNode(String, Int, @tree.LayoutNode) // parent_id, index, node
+  AddNode(String, Int32, @tree.LayoutNode) // parent_id, index, node
   RemoveNode(String) // node_id
-  MoveNode(String, String, Int) // node_id, new_parent_id, index
+  MoveNode(String, String, Int32) // node_id, new_parent_id, index
   UpdateStyle(String) // node_id
   ReplaceChildren(String, Array[@tree.LayoutNode]) // node_id, children
 }
@@ -41,7 +41,7 @@ pub fn update_node_style(
 pub fn batch_update_styles(
   tree : @tree.LayoutTree,
   updates : Array[(String, @css.CascadedValues)],
-) -> Int {
+) -> Int32 {
   @style_bridge.batch_update_styles(tree, updates)
 }
 
@@ -49,7 +49,7 @@ pub fn batch_update_styles(
 pub fn add_node(
   tree : @tree.LayoutTree,
   parent_id : String,
-  index : Int,
+  index : Int32,
   node : @tree.LayoutNode,
 ) -> Bool {
   @style_bridge.add_node(tree, parent_id, index, node)

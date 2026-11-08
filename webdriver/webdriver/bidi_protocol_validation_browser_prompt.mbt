@@ -15,7 +15,7 @@ fn normalize_unhandled_prompt_handler_name(raw_handler : String) -> String? {
 /// Validate unhandledPromptBehavior object.
 fn BidiProtocol::validate_browser_unhandled_prompt_behavior(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   behavior : Map[String, Json],
 ) -> Unit? {
   for key, raw_value in behavior {

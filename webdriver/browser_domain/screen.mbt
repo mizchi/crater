@@ -2,7 +2,7 @@
 /// Pure helpers for synthetic screen domain JSON payloads.
 
 ///|
-pub fn build_screen_area_json(width : Int, height : Int) -> Json {
+pub fn build_screen_area_json(width : Int32, height : Int32) -> Json {
   @protocol.make_object({
     "width": Json::number(width.to_double()),
     "height": Json::number(height.to_double()),

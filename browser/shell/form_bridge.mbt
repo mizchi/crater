@@ -344,8 +344,8 @@ fn Browser::shift_pending_form_submission_navigation(self : Browser) -> String? 
 fn Browser::dispatch_submit_to_source_id(
   self : Browser,
   source_id : String,
-  client_x? : Int = 0,
-  client_y? : Int = 0,
+  client_x~ : Int32 = 0,
+  client_y~ : Int32 = 0,
 ) -> SubmitDispatchResult {
   if !self.enable_js {
     return NotSubmittable

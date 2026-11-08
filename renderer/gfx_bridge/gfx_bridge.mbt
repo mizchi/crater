@@ -413,10 +413,10 @@ pub fn default_fill_shader_source() -> String {
 pub fn[D : @gfx.GraphicsDriver] render_paint_tree(
   driver : D,
   root : @paint_model.PaintNode,
-  clear_color? : @gfx.Color = @gfx.new_color(1.0, 1.0, 1.0, 1.0),
-  present? : Bool = false,
-  width? : Int = -1,
-  height? : Int = -1,
+  clear_color~ : @gfx.Color = @gfx.new_color(1.0, 1.0, 1.0, 1.0),
+  present~ : Bool = false,
+  width~ : Int32 = -1,
+  height~ : Int32 = -1,
 ) -> Unit raise {
   driver.initialize()
   // The frame's NDC normalization must match the destination framebuffer.

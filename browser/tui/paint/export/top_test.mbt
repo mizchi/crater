@@ -25,8 +25,8 @@ test "tui paint export exports json and rgba" {
     text: None,
   }
   let paint_node = @paint_plain.from_node_and_layout(node, layout)
-  let json_str = to_json_string(paint_node)
-  let rgba = raster_to_rgba_base64(paint_node, 8, 4)
+  let json_str = @export.to_json_string(paint_node)
+  let rgba = @export.raster_to_rgba_base64(paint_node, 8, 4)
   inspect(json_str.length() > 0, content="true")
   inspect(rgba.length() > 0, content="true")
 }
@@ -58,8 +58,8 @@ test "tui paint export visual stats detect non-white pixels" {
     text: None,
   }
   let paint_node = @paint_plain.from_node_and_layout(node, layout)
-  let (fb, palette) = raster_to_framebuffer(paint_node, 8, 4)
-  let blank = framebuffer_visual_stats(fb, palette)
+  let (fb, palette) = @export.raster_to_framebuffer(paint_node, 8, 4)
+  let blank = @export.framebuffer_visual_stats(fb, palette)
   inspect(blank.pixel_count, content="32")
   inspect(blank.non_white_pixels, content="0")
   inspect(blank.is_blank, content="true")
@@ -67,8 +67,10 @@ test "tui paint export visual stats detect non-white pixels" {
   red_style.background_color = @types.Color::rgb(255, 0, 0)
   let red_node = @node.Node::new("root", red_style, [])
   let red_paint_node = @paint_plain.from_node_and_layout(red_node, layout)
-  let (red_fb, red_palette) = raster_to_framebuffer(red_paint_node, 8, 4)
-  let visible = framebuffer_visual_stats(red_fb, red_palette)
+  let (red_fb, red_palette) = @export.raster_to_framebuffer(
+    red_paint_node, 8, 4,
+  )
+  let visible = @export.framebuffer_visual_stats(red_fb, red_palette)
   inspect(visible.non_white_pixels, content="32")
   inspect(visible.is_blank, content="false")
 }

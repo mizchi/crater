@@ -51,7 +51,7 @@ fn builtin_github_snapshot_fixture() -> String {
 }
 
 ///|
-fn make_render_ctx(width : Int, height : Int) -> @renderer.RenderContext {
+fn make_render_ctx(width : Int32, height : Int32) -> @renderer.RenderContext {
   {
     viewport_width: width.to_double(),
     viewport_height: height.to_double(),

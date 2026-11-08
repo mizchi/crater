@@ -1,4 +1,8 @@
 import {
+  "moonbitlang/core/debug",
+}
+
+import {
   "mizchi/crater-core/node",
   "mizchi/crater-core" @layout_types,
 }

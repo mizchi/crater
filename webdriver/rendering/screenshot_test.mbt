@@ -1,6 +1,6 @@
 ///|
 test "capture screenshot options normalize default origin" {
-  match normalize_capture_screenshot_options({}) {
+  match @rendering.normalize_capture_screenshot_options({}) {
     Ok(options) => {
       inspect(options.origin, content="viewport")
       match options.clip {
@@ -21,7 +21,7 @@ test "capture screenshot options preserve element clip shared id" {
       "element": Json::object({ "sharedId": Json::string("node-1") }),
     }),
   }
-  match normalize_capture_screenshot_options(params) {
+  match @rendering.normalize_capture_screenshot_options(params) {
     Ok(options) =>
       match options.clip {
         ElementClip(shared_id) => inspect(shared_id, content="node-1")
@@ -43,7 +43,7 @@ test "capture screenshot options validate box clip dimensions" {
       "height": Json::number(20.0),
     }),
   }
-  match normalize_capture_screenshot_options(params) {
+  match @rendering.normalize_capture_screenshot_options(params) {
     Ok(options) =>
       match options.clip {
         BoxClip(width~, height~) => {
@@ -68,7 +68,7 @@ test "capture screenshot options reject zero box dimensions as capture error" {
       "height": Json::number(20.0),
     }),
   }
-  match normalize_capture_screenshot_options(params) {
+  match @rendering.normalize_capture_screenshot_options(params) {
     Ok(_) => fail("expected invalid box clip")
     Err(error) => {
       inspect(error.name(), content="unable to capture screen")
@@ -82,7 +82,7 @@ test "capture screenshot options validate format type" {
   let params : Map[String, Json] = {
     "format": Json::object({ "type": Json::string("image/webp") }),
   }
-  match normalize_capture_screenshot_options(params) {
+  match @rendering.normalize_capture_screenshot_options(params) {
     Ok(_) => fail("expected invalid format")
     Err(error) => {
       inspect(error.name(), content="invalid argument")

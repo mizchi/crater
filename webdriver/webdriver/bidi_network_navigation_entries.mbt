@@ -3,7 +3,7 @@ priv struct SyntheticNavigationRequestEntry {
   context_id : String
   url : String
   request_token : String
-  redirect_count : Int
+  redirect_count : Int32
   navigation : String?
   destination : String
   initiator_type : String?

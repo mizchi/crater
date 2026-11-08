@@ -10,7 +10,7 @@ pub(all) struct StreamingTokenizer {
   mut cached_str : String
   /// Whether cached_str is valid
   mut cache_valid : Bool
-  mut pos : Int
+  mut pos : Int32
   mut finished : Bool
 }
 

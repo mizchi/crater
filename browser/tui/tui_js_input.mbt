@@ -5,7 +5,7 @@
 /// Read a single key from stdin (keeps raw mode on for smooth rendering)
 /// Also handles mouse events when mouse tracking is enabled
 extern "js" fn js_read_key_with_timeout(
-  timeout_ms : Int,
+  timeout_ms : Int32,
 ) -> @js_async.Promise[String] =
   #| async (timeout_ms) => {
   #|   const timeoutMs = timeout_ms;
@@ -132,7 +132,7 @@ pub async fn read_key() -> String {
 
 ///|
 /// Read a key asynchronously, returning empty string on timeout
-pub async fn read_key_with_timeout(timeout_ms : Int) -> String {
+pub async fn read_key_with_timeout(timeout_ms : Int32) -> String {
   @js_async.Promise::wait(js_read_key_with_timeout(timeout_ms))
 }
 

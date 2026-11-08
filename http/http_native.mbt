@@ -2,7 +2,7 @@
 /// Native HTTP client using moonbitlang/async's @async_http.Client
 
 ///|
-fn find_path_start(url : String) -> Int? {
+fn find_path_start(url : String) -> Int32? {
   // Skip protocol (http:// or https://)
   let start = if url.has_prefix("https://") {
     8
@@ -43,7 +43,7 @@ fn extract_path_from_url(url : String) -> String {
 /// Fetch URL using native HTTP client
 pub async fn fetch(
   url : String,
-  options? : FetchOptions = FetchOptions::default(),
+  options~ : FetchOptions = FetchOptions::default(),
 ) -> HttpResponse raise HttpError {
   let prepared = prepare_fetch_options(url, options)
   // Extract host URL (without path) and path separately
@@ -87,6 +87,6 @@ pub async fn fetch(
   for k, v in response.headers {
     headers[k.0.to_lower()] = v
   }
-  let result = { status: response.code, headers, body }
+  let result = { status: response.code, headers, body, }
   enforce_cors_response(url, prepared, result)
 }

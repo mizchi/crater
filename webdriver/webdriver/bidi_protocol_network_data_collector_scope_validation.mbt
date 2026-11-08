@@ -2,7 +2,7 @@
 /// Validate the optional top-level browsing context scope.
 fn BidiProtocol::validate_network_data_collector_contexts(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   raw_contexts : Json?,
 ) -> Json?? {
   match raw_contexts {
@@ -56,7 +56,7 @@ fn BidiProtocol::validate_network_data_collector_contexts(
 /// Validate the optional user context scope.
 fn BidiProtocol::validate_network_data_collector_user_contexts(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   raw_user_contexts : Json?,
 ) -> Json?? {
   match raw_user_contexts {

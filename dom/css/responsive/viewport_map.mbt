@@ -2,29 +2,57 @@
 /// CSS rule-to-viewport mapping for VRT test coverage.
 
 ///|
+#derive(Eq, Debug)
 pub struct CssRuleViewportEntry {
   selector : String
   properties : Array[String]
   media_condition : String
-  active_at_widths : Array[Int]
-  inactive_at_widths : Array[Int]
-} derive(Eq, Debug)
+  active_at_widths : Array[Int32]
+  inactive_at_widths : Array[Int32]
+}
 
 ///|
+pub extend CssRuleViewportEntry with Eq::{not_equal, equal}
+
+///|
+pub extend CssRuleViewportEntry with @debug.Debug::{to_repr}
+
+///|
+#derive(Eq, Debug)
 pub struct CssRuleViewportMap {
   rules : Array[CssRuleViewportEntry]
-} derive(Eq, Debug)
+}
 
 ///|
+pub extend CssRuleViewportMap with Eq::{not_equal, equal}
+
+///|
+pub extend CssRuleViewportMap with @debug.Debug::{to_repr}
+
+///|
+#derive(Eq, Debug)
 pub struct RequiredTestViewport {
-  width : Int
+  width : Int32
   reason : String
-} derive(Eq, Debug)
+}
 
 ///|
+pub extend RequiredTestViewport with Eq::{not_equal, equal}
+
+///|
+pub extend RequiredTestViewport with @debug.Debug::{to_repr}
+
+///|
+#derive(Eq, Debug)
 pub struct RequiredTestViewportsResult {
   viewports : Array[RequiredTestViewport]
-} derive(Eq, Debug)
+}
+
+///|
+pub extend RequiredTestViewportsResult with Eq::{not_equal, equal}
+
+///|
+pub extend RequiredTestViewportsResult with @debug.Debug::{to_repr}
 
 ///|
 pub impl Show for CssRuleViewportEntry with fn output(self, logger) {
@@ -42,11 +70,17 @@ pub impl Show for CssRuleViewportEntry with fn output(self, logger) {
 }
 
 ///|
+pub extend CssRuleViewportEntry with Show::{to_string, output}
+
+///|
 pub impl Show for CssRuleViewportMap with fn output(self, logger) {
   logger.write_string("{rules: ")
   logger.write_object(Repr(self.rules))
   logger.write_string("}")
 }
+
+///|
+pub extend CssRuleViewportMap with Show::{to_string, output}
 
 ///|
 pub impl Show for RequiredTestViewport with fn output(self, logger) {
@@ -58,6 +92,9 @@ pub impl Show for RequiredTestViewport with fn output(self, logger) {
 }
 
 ///|
+pub extend RequiredTestViewport with Show::{to_string, output}
+
+///|
 pub impl Show for RequiredTestViewportsResult with fn output(self, logger) {
   logger.write_string("{viewports: ")
   logger.write_object(Repr(self.viewports))
@@ -65,16 +102,19 @@ pub impl Show for RequiredTestViewportsResult with fn output(self, logger) {
 }
 
 ///|
+pub extend RequiredTestViewportsResult with Show::{to_string, output}
+
+///|
 /// Discover which CSS rules are active at which viewport widths.
 /// For each media-query-scoped rule, evaluates the query at each given width.
 pub fn discover_css_rule_viewport_map(
   html : String,
-  viewport_widths : Array[Int],
+  viewport_widths : Array[Int32],
 ) -> CssRuleViewportMap {
   let doc = @html.parse_document(html)
   let rules : Array[CssRuleViewportEntry] = []
   // Track unique entries by (selector, media_condition) to merge properties
-  let seen : Map[String, Int] = Map([]) // key -> index in rules
+  let seen : Map[String, Int32] = Map([]) // key -> index in rules
   for css_text in doc.stylesheets {
     let stylesheet = @parser.parse_stylesheet(css_text)
     for rule in stylesheet.rules {
@@ -92,8 +132,8 @@ pub fn discover_css_rule_viewport_map(
           if properties.is_empty() {
             continue
           }
-          let active : Array[Int] = []
-          let inactive : Array[Int] = []
+          let active : Array[Int32] = []
+          let inactive : Array[Int32] = []
           for w in viewport_widths {
             let env = @media.MediaEnvironment::new(w.to_double(), 900.0)
             if media_query.evaluate(env) {
@@ -137,7 +177,7 @@ pub fn discover_required_test_viewports(
 ) -> RequiredTestViewportsResult {
   let bp_result = discover_responsive_breakpoints(html)
   let viewports : Array[RequiredTestViewport] = []
-  let seen_widths : Map[Int, Bool] = Map([])
+  let seen_widths : Map[Int32, Bool] = Map([])
   for bp in bp_result.breakpoints {
     // Test at the breakpoint value itself
     if !seen_widths.contains(bp.value_px) {

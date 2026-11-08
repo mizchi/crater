@@ -2,7 +2,7 @@
 /// Send script.evaluate success response with `undefined` result.
 fn BidiProtocol::send_script_undefined_result(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   realm_id : String,
 ) -> Unit {
   self.send_script_remote_value_result(
@@ -15,7 +15,7 @@ fn BidiProtocol::send_script_undefined_result(
 ///|
 fn BidiProtocol::send_script_remote_value_result(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   realm_id : String,
   remote_value : Json,
 ) -> Unit {
@@ -29,7 +29,7 @@ fn BidiProtocol::send_script_remote_value_result(
 ///|
 fn BidiProtocol::send_script_synthetic_value_response(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   remote_value : Json,
 ) -> Unit {
   let payload_value = match remote_value {
@@ -53,7 +53,7 @@ fn BidiProtocol::send_script_synthetic_value_response(
 ///|
 fn BidiProtocol::send_script_remote_value_response(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   realm_id : String,
   remote_value : Json,
   unwrap_result : Bool,
@@ -68,7 +68,7 @@ fn BidiProtocol::send_script_remote_value_response(
 ///|
 fn BidiProtocol::send_script_exception_result(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   realm_id : String,
   eval_result : Json,
 ) -> Unit {
@@ -85,7 +85,7 @@ fn BidiProtocol::send_script_exception_result(
 ///|
 fn BidiProtocol::send_script_undefined_response(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   realm_id : String,
   unwrap_result : Bool,
 ) -> Unit {
@@ -102,7 +102,7 @@ fn BidiProtocol::send_script_undefined_response(
 ///|
 fn BidiProtocol::send_script_eval_result_mode(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   realm_id : String,
   eval_result : Json,
   unwrap_result : Bool,
@@ -269,7 +269,7 @@ fn BidiProtocol::register_navigation_prompt_from_url(
 /// Build script.evaluate result payload for a handled user prompt.
 fn BidiProtocol::send_script_prompt_result(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   realm_id : String,
   prompt_type : String,
   accepted : Bool,

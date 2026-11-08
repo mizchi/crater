@@ -1,5 +1,8 @@
 ///|
-fn center_of_hit_source_id(browser : Browser, source_id : String) -> (Int, Int) {
+fn center_of_hit_source_id(
+  browser : Browser,
+  source_id : String,
+) -> (Int32, Int32) {
   for region in browser.hit_regions {
     if region.source_id == source_id {
       return (region.col + region.width / 2, region.row + region.height / 2)
@@ -22,7 +25,10 @@ fn hit_region_of_source_id(
 }
 
 ///|
-fn first_shared_hit_cell(a : @tui.HitRegion, b : @tui.HitRegion) -> (Int, Int) {
+fn first_shared_hit_cell(
+  a : @tui.HitRegion,
+  b : @tui.HitRegion,
+) -> (Int32, Int32) {
   let left = a.col.max(b.col)
   let top = a.row.max(b.row)
   let right = (a.col + a.width).min(b.col + b.width)

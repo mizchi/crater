@@ -1,5 +1,5 @@
 ///|
-fn test_frame(w : Int, h : Int) -> @gfx_frame.RenderFrame2D {
+fn test_frame(w : Int32, h : Int32) -> @gfx_frame.RenderFrame2D {
   @gfx_frame.RenderFrame2D::new(
     dst=@gfx.new_image_handle(1, w, h),
     shader=@gfx.new_shader_handle(2, "shader"),
@@ -12,10 +12,10 @@ fn test_frame(w : Int, h : Int) -> @gfx_frame.RenderFrame2D {
 fn glyph(
   x : Double,
   y : Double,
-  w : Int,
-  h : Int,
-  offset_x : Int,
-  offset_y : Int,
+  w : Int32,
+  h : Int32,
+  offset_x : Int32,
+  offset_y : Int32,
 ) -> @glyph.GlyphPlacement {
   let bitmap : @glyph.GlyphBitmap = {
     width: w,
@@ -39,7 +39,9 @@ test "glyph_placements_to_commands emits one quad per inked glyph" {
     glyph(6.0, 0.0, 0, 0, 0, 0), // whitespace: zero ink box -> skipped
     glyph(10.0, 0.0, 6, 8, 1, 2), // inked, with bitmap offset
   ]
-  let commands = glyph_placements_to_commands(frame, placements, color)
+  let commands = @gfx_text.glyph_placements_to_commands(
+    frame, placements, color,
+  )
   inspect(commands.length(), content="2")
   // each glyph is a single quad
   debug_inspect(commands.map(fn(c) { c.indices.length() }), content="[6, 6]")

@@ -5,7 +5,7 @@
 let char_width_ratio : Double = 0.5 // Conservative ratio for text fitting
 
 ///|
-let chars_per_line : Int = 80 // Default wrap width in characters (single-width)
+let chars_per_line : Int32 = 80 // Default wrap width in characters (single-width)
 
 ///|
 /// Ahem/fallback-font-like glyph width ratio observed in WPT harness rendering.
@@ -103,7 +103,7 @@ fn is_wide_char(c : Char) -> Bool {
 
 ///|
 /// Calculate display width of a character (1 for narrow, 2 for wide)
-fn char_display_width(c : Char) -> Int {
+fn char_display_width(c : Char) -> Int32 {
   let cp = c.to_int()
   // U+2003 EM SPACE should advance by one full em in monospace-like metrics.
   if cp == 0x2003 {
@@ -125,17 +125,17 @@ fn char_display_width(c : Char) -> Int {
 /// tuple return is a heap allocation on the wasm backend, one per word. See
 /// the twin of this type in `mizchi/crater-layout/inline`.
 priv struct WrapCursor {
-  mut lines : Int
-  mut line_width : Int
+  mut lines : Int32
+  mut line_width : Int32
 }
 
 ///|
 fn place_word_with_wrap(
   out : WrapCursor,
-  lines : Int,
-  line_width : Int,
-  word_width : Int,
-  cols_available : Int,
+  lines : Int32,
+  line_width : Int32,
+  word_width : Int32,
+  cols_available : Int32,
   needs_space : Bool,
 ) -> Unit {
   if cols_available <= 0 {
@@ -379,10 +379,10 @@ fn create_text_measure_with_provider(
   text_line_height : Double,
   white_space : @style.WhiteSpace,
   writing_mode : @style.WritingMode,
-  font_weight? : Double = 400.0,
-  font_family? : String = "",
-  letter_spacing? : Double = 0.0,
-  word_spacing? : Double = 0.0,
+  font_weight~ : Double = 400.0,
+  font_family~ : String = "",
+  letter_spacing~ : Double = 0.0,
+  word_spacing~ : Double = 0.0,
 ) -> @layout_types.MeasureFunc {
   fn white_space_collapses_edges(white_space : @style.WhiteSpace) -> Bool {
     match white_space {
@@ -551,7 +551,7 @@ fn create_text_measure(
   text_line_height : Double,
   white_space : @style.WhiteSpace,
   writing_mode : @style.WritingMode,
-  font_family? : String = "",
+  font_family~ : String = "",
 ) -> @layout_types.MeasureFunc {
   let raw_trimmed = trim_collapsible_whitespace_edges(text)
   let mut trimmed = if raw_trimmed.is_empty() && !text.is_empty() {
@@ -707,7 +707,7 @@ fn create_text_measure(
       if use_word_wrap && !no_wrap {
         // Greedy word wrapping with long-word hard-wrap fallback.
         // One scratch cursor for the whole scan; see `WrapCursor`.
-        let wrap_out = WrapCursor::{ lines: 0, line_width: 0 }
+        let wrap_out = WrapCursor::{ lines: 0, line_width: 0, }
         let mut current_line_width = 0
         let mut current_word_width = 0
         let mut has_pending_space = false

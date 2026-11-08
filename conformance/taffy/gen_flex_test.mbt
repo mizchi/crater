@@ -13322,7 +13322,7 @@ test "taffy/aspect_ratio_flex_column_fill_max_width" {
   }
   let root_child0_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 20.0, max_width: 80.0, min_height: 40.0, max_height: 40.0 }
+      { min_width: 20.0, max_width: 80.0, min_height: 40.0, max_height: 40.0, }
     },
   }
   let root_child0 = @node.Node::with_measure(
@@ -13672,7 +13672,7 @@ test "taffy/aspect_ratio_flex_column_stretch_fill_max_width" {
   }
   let root_child0_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 20.0, max_width: 80.0, min_height: 40.0, max_height: 40.0 }
+      { min_width: 20.0, max_width: 80.0, min_height: 40.0, max_height: 40.0, }
     },
   }
   let root_child0 = @node.Node::with_measure(
@@ -13879,7 +13879,7 @@ test "taffy/aspect_ratio_flex_row_fill_max_width" {
   }
   let root_child0_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 20.0, max_width: 80.0, min_height: 40.0, max_height: 40.0 }
+      { min_width: 20.0, max_width: 80.0, min_height: 40.0, max_height: 40.0, }
     },
   }
   let root_child0 = @node.Node::with_measure(
@@ -14223,7 +14223,7 @@ test "taffy/aspect_ratio_flex_row_stretch_fill_max_width" {
   }
   let root_child0_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 20.0, max_width: 80.0, min_height: 40.0, max_height: 40.0 }
+      { min_width: 20.0, max_width: 80.0, min_height: 40.0, max_height: 40.0, }
     },
   }
   let root_child0 = @node.Node::with_measure(
@@ -15559,7 +15559,12 @@ test "taffy/bevy_issue_9530" {
   }
   let root_child1_child1_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 40.0, max_width: 4680.0, min_height: 10.0, max_height: 10.0 }
+      {
+        min_width: 40.0,
+        max_width: 4680.0,
+        min_height: 10.0,
+        max_height: 10.0,
+      }
     },
   }
   let root_child1_child1 = @node.Node::with_measure(
@@ -15650,7 +15655,7 @@ test "taffy/bevy_issue_9530_reduced" {
   }
   let root_child0_child0_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 20.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 20.0, max_width: 80.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let root_child0_child0 = @node.Node::with_measure(
@@ -15725,7 +15730,7 @@ test "taffy/bevy_issue_9530_reduced2" {
   }
   let root_child0_child0_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 20.0, max_width: 160.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 20.0, max_width: 160.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let root_child0_child0 = @node.Node::with_measure(
@@ -15791,7 +15796,7 @@ test "taffy/bevy_issue_9530_reduced3" {
   }
   let root_child0_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 20.0, max_width: 160.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 20.0, max_width: 160.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let root_child0 = @node.Node::with_measure(
@@ -15848,7 +15853,7 @@ test "taffy/bevy_issue_9530_reduced4" {
   }
   let root_child0_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 20.0, max_width: 160.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 20.0, max_width: 160.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let root_child0 = @node.Node::with_measure(
@@ -15916,7 +15921,7 @@ test "taffy/blitz_issue_88" {
   }
   let root_child0_child0_child0_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 40.0, max_width: 200.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 40.0, max_width: 200.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let root_child0_child0_child0 = @node.Node::with_measure(
@@ -16444,7 +16449,7 @@ test "taffy/content_size" {
   }
   let root_child0_child0_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 40.0, max_width: 80.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 40.0, max_width: 80.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let root_child0_child0 = @node.Node::with_measure(
@@ -18967,7 +18972,7 @@ test "taffy/flex_grow_0_min_size" {
   }
   let root_child0_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 30.0, max_width: 30.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 30.0, max_width: 30.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let root_child0 = @node.Node::with_measure(
@@ -18984,7 +18989,7 @@ test "taffy/flex_grow_0_min_size" {
   }
   let root_child1_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 30.0, max_width: 30.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 30.0, max_width: 30.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let root_child1 = @node.Node::with_measure(
@@ -19001,7 +19006,7 @@ test "taffy/flex_grow_0_min_size" {
   }
   let root_child2_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 50.0, max_width: 50.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 50.0, max_width: 50.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let root_child2 = @node.Node::with_measure(
@@ -19018,7 +19023,7 @@ test "taffy/flex_grow_0_min_size" {
   }
   let root_child3_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 40.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 40.0, max_width: 40.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let root_child3 = @node.Node::with_measure(
@@ -23837,7 +23842,7 @@ test "taffy/intrinsic_sizing_cross_size_column" {
   }
   let root_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let root = @node.Node::with_measure("test-root", root_style, root_measure)
@@ -23872,7 +23877,7 @@ test "taffy/intrinsic_sizing_main_size_column" {
   }
   let root_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 10.0, max_width: 10.0, min_height: 40.0, max_height: 40.0 }
+      { min_width: 10.0, max_width: 10.0, min_height: 40.0, max_height: 40.0, }
     },
   }
   let root = @node.Node::with_measure("test-root", root_style, root_measure)
@@ -23915,7 +23920,7 @@ test "taffy/intrinsic_sizing_main_size_column_nested" {
   }
   let root_child0_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 10.0, max_width: 10.0, min_height: 40.0, max_height: 40.0 }
+      { min_width: 10.0, max_width: 10.0, min_height: 40.0, max_height: 40.0, }
     },
   }
   let root_child0 = @node.Node::with_measure(
@@ -23967,7 +23972,7 @@ test "taffy/intrinsic_sizing_main_size_column_wrap" {
   }
   let root_child0_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 10.0, max_width: 10.0, min_height: 40.0, max_height: 40.0 }
+      { min_width: 10.0, max_width: 10.0, min_height: 40.0, max_height: 40.0, }
     },
   }
   let root_child0 = @node.Node::with_measure(
@@ -23983,7 +23988,7 @@ test "taffy/intrinsic_sizing_main_size_column_wrap" {
   }
   let root_child1_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 10.0, max_width: 10.0, min_height: 40.0, max_height: 40.0 }
+      { min_width: 10.0, max_width: 10.0, min_height: 40.0, max_height: 40.0, }
     },
   }
   let root_child1 = @node.Node::with_measure(
@@ -24111,7 +24116,7 @@ test "taffy/intrinsic_sizing_main_size_row" {
   }
   let root_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let root = @node.Node::with_measure("test-root", root_style, root_measure)
@@ -24152,7 +24157,7 @@ test "taffy/intrinsic_sizing_main_size_row_nested" {
   }
   let root_child0_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let root_child0 = @node.Node::with_measure(
@@ -24202,7 +24207,7 @@ test "taffy/intrinsic_sizing_main_size_row_wrap" {
   }
   let root_child0_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let root_child0 = @node.Node::with_measure(
@@ -24217,7 +24222,7 @@ test "taffy/intrinsic_sizing_main_size_row_wrap" {
   }
   let root_child1_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 20.0, max_width: 40.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let root_child1 = @node.Node::with_measure(
@@ -29610,7 +29615,7 @@ test "taffy/measure_child" {
   }
   let root_child0_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 60.0, max_width: 60.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 60.0, max_width: 60.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let root_child0 = @node.Node::with_measure(
@@ -29661,7 +29666,7 @@ test "taffy/measure_child_absolute" {
   }
   let root_child0_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 60.0, max_width: 60.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 60.0, max_width: 60.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let root_child0 = @node.Node::with_measure(
@@ -29840,7 +29845,7 @@ test "taffy/measure_child_with_flex_grow" {
   }
   let root_child1_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 10.0, max_width: 50.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 10.0, max_width: 50.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let root_child1 = @node.Node::with_measure(
@@ -29905,7 +29910,12 @@ test "taffy/measure_child_with_flex_shrink" {
   }
   let root_child1_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 100.0, max_width: 500.0, min_height: 10.0, max_height: 10.0 }
+      {
+        min_width: 100.0,
+        max_width: 500.0,
+        min_height: 10.0,
+        max_height: 10.0,
+      }
     },
   }
   let root_child1 = @node.Node::with_measure(
@@ -29972,7 +29982,12 @@ test "taffy/measure_child_with_flex_shrink_hidden" {
   }
   let root_child1_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 100.0, max_width: 500.0, min_height: 10.0, max_height: 10.0 }
+      {
+        min_width: 100.0,
+        max_width: 500.0,
+        min_height: 10.0,
+        max_height: 10.0,
+      }
     },
   }
   let root_child1 = @node.Node::with_measure(
@@ -30028,7 +30043,7 @@ test "taffy/measure_child_with_min_size_greater_than_available_space" {
   }
   let root_child0_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 80.0, max_width: 160.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 80.0, max_width: 160.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let root_child0 = @node.Node::with_measure(
@@ -30079,7 +30094,7 @@ test "taffy/measure_flex_basis_overrides_measure" {
   }
   let root_child0_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 10.0, max_width: 10.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 10.0, max_width: 10.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let root_child0 = @node.Node::with_measure(
@@ -30129,7 +30144,7 @@ test "taffy/measure_height_overrides_measure" {
   }
   let root_child0_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 10.0, max_width: 10.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 10.0, max_width: 10.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let root_child0 = @node.Node::with_measure(
@@ -30191,7 +30206,7 @@ test "taffy/measure_remeasure_child_after_growing" {
   }
   let root_child1_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let root_child1 = @node.Node::with_measure(
@@ -30258,7 +30273,7 @@ test "taffy/measure_remeasure_child_after_shrinking" {
   }
   let root_child1_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let root_child1 = @node.Node::with_measure(
@@ -30313,7 +30328,7 @@ test "taffy/measure_remeasure_child_after_stretching" {
   }
   let root_child0_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 20.0, max_width: 20.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let root_child0 = @node.Node::with_measure(
@@ -30355,7 +30370,7 @@ test "taffy/measure_root" {
   }
   let root_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 60.0, max_width: 60.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 60.0, max_width: 60.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let root = @node.Node::with_measure("test-root", root_style, root_measure)
@@ -30410,7 +30425,7 @@ test "taffy/measure_stretch_overrides_measure" {
   }
   let root_child1_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 10.0, max_width: 10.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 10.0, max_width: 10.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let root_child1 = @node.Node::with_measure(
@@ -30464,7 +30479,12 @@ test "taffy/measure_width_overrides_measure" {
   }
   let root_child0_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 100.0, max_width: 100.0, min_height: 10.0, max_height: 10.0 }
+      {
+        min_width: 100.0,
+        max_width: 100.0,
+        min_height: 10.0,
+        max_height: 10.0,
+      }
     },
   }
   let root_child0 = @node.Node::with_measure(
@@ -32315,7 +32335,12 @@ test "taffy/overflow_main_axis_shrink_hidden" {
   }
   let root_child0_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 100.0, max_width: 100.0, min_height: 10.0, max_height: 10.0 }
+      {
+        min_width: 100.0,
+        max_width: 100.0,
+        min_height: 10.0,
+        max_height: 10.0,
+      }
     },
   }
   let root_child0 = @node.Node::with_measure(
@@ -32368,7 +32393,12 @@ test "taffy/overflow_main_axis_shrink_scroll" {
   }
   let root_child0_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 100.0, max_width: 100.0, min_height: 10.0, max_height: 10.0 }
+      {
+        min_width: 100.0,
+        max_width: 100.0,
+        min_height: 10.0,
+        max_height: 10.0,
+      }
     },
   }
   let root_child0 = @node.Node::with_measure(
@@ -32419,7 +32449,12 @@ test "taffy/overflow_main_axis_shrink_visible" {
   }
   let root_child0_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 100.0, max_width: 100.0, min_height: 10.0, max_height: 10.0 }
+      {
+        min_width: 100.0,
+        max_width: 100.0,
+        min_height: 10.0,
+        max_height: 10.0,
+      }
     },
   }
   let root_child0 = @node.Node::with_measure(

@@ -66,7 +66,7 @@ pub fn render_paint_node_to_framebuffer_scrolled(
   node : @paint_model.PaintNode,
   fb : Framebuffer,
   palette : DynamicPalette,
-  scroll_y : Int,
+  scroll_y : Int32,
 ) -> Unit {
   // Fill with white background
   fb.fill_rect(0, 0, fb.width, fb.height, 0)

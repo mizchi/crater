@@ -1,25 +1,25 @@
 name = "mizchi/crater-webdriver-bidi"
 
-version = "0.19.0"
+version = "0.19.2"
 
 import {
-  "mizchi/css@0.7.3",
-  "mizchi/crater-core@0.19.0",
-  "mizchi/crater-network@0.19.0",
+  "mizchi/css@0.8.0",
+  "mizchi/crater-core@0.19.2",
+  "mizchi/crater-network@0.19.2",
   "mizchi/font@0.7.4",
   "mizchi/svg@0.2.3",
-  "mizchi/crater-dom@0.19.0",
-  "mizchi/crater-layout@0.19.0",
-  "mizchi/crater-painter@0.19.0",
-  "mizchi/crater-renderer@0.19.0",
-  "mizchi/crater-browser@0.19.0",
-  "mizchi/crater-browser-http@0.19.0",
-  "mizchi/crater-browser-helpers@0.19.0",
-  "mizchi/webdriver@0.2.6",
-"mizchi/js@0.13.0",
+  "mizchi/crater-dom@0.19.2",
+  "mizchi/crater-layout@0.19.2",
+  "mizchi/crater-painter@0.19.2",
+  "mizchi/crater-renderer@0.19.2",
+  "mizchi/crater-browser@0.19.2",
+  "mizchi/crater-browser-http@0.19.2",
+  "mizchi/crater-browser-helpers@0.19.2",
+  "mizchi/webdriver@0.2.7",
+  "mizchi/js@0.13.0",
   "mizchi/js_core@0.13.0",
   "mizchi/js_deno@0.13.0",
-  "moonbitlang/async@0.22.1",
+  "moonbitlang/async@0.22.7",
 }
 
 readme = "README.md"

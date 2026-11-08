@@ -1,7 +1,7 @@
 ///|
 fn BidiProtocol::handle_browser_has_user_context(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match self.resolve_browser_has_user_context_known(request_id, params) {
@@ -17,7 +17,7 @@ fn BidiProtocol::handle_browser_has_user_context(
 ///|
 fn BidiProtocol::handle_browser_has_user_context_value(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match self.resolve_browser_has_user_context_known(request_id, params) {
@@ -29,7 +29,7 @@ fn BidiProtocol::handle_browser_has_user_context_value(
 ///|
 fn BidiProtocol::resolve_browser_has_user_context_known(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Bool? {
   let map = match params {
@@ -121,7 +121,7 @@ fn BidiProtocol::resolve_browser_client_windows_list(
 ///|
 fn BidiProtocol::resolve_browser_create_user_context(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> String? {
   match self.validate_browser_create_user_context(request_id, params) {

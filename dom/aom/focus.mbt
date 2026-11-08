@@ -12,9 +12,9 @@ pub(all) struct FocusableItem {
   // Reference to the accessibility node
   node : AccessibilityNode
   // Document order index (for sorting)
-  document_order : Int
+  document_order : Int32
   // Effective tabindex for sorting (0 for inherently focusable, actual value otherwise)
-  effective_tabindex : Int
+  effective_tabindex : Int32
 }
 
 ///|
@@ -25,7 +25,7 @@ pub(all) struct FocusManager {
   // Computed tab order (cached)
   tab_order : Array[FocusableItem]
   // Current focus index in tab_order (-1 if no focus)
-  mut current_index : Int
+  mut current_index : Int32
 }
 
 // =============================================================================
@@ -84,8 +84,8 @@ pub fn compute_tab_order(tree : AccessibilityTree) -> Array[FocusableItem] {
 fn collect_focusable_items(
   node : AccessibilityNode,
   items : Array[FocusableItem],
-  doc_order : Int,
-) -> Int {
+  doc_order : Int32,
+) -> Int32 {
   let mut current_order = doc_order
 
   // Check if this node is focusable
@@ -256,7 +256,7 @@ pub fn FocusManager::has_focus(self : FocusManager) -> Bool {
 
 ///|
 /// Get the number of focusable elements
-pub fn FocusManager::focusable_count(self : FocusManager) -> Int {
+pub fn FocusManager::focusable_count(self : FocusManager) -> Int32 {
   self.tab_order.length()
 }
 

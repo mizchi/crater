@@ -1,9 +1,9 @@
 name = "mizchi/crater-core"
 
-version = "0.19.0"
+version = "0.19.2"
 
 import {
-  "mizchi/css@0.7.3",
+  "mizchi/css@0.8.0",
 }
 
 repository = "https://github.com/mizchi/crater"

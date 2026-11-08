@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, test } from "vitest";
+import { extractWorkflowJob, extractWorkflowStep } from "./ci-workflow-test-helpers";
 
 function readRepoFile(relativePath: string): string {
   return readFileSync(new URL(`../${relativePath}`, import.meta.url), "utf8");
@@ -15,14 +16,31 @@ describe("CI compatible font setup", () => {
 
   test("restores Playwright browser cache for browser-backed workflows", () => {
     const workflow = readRepoFile(".github/workflows/ci.yml");
-    const matches = workflow.match(/Restore Playwright Chromium browser cache/g) ?? [];
-    expect(matches).toHaveLength(3);
-    expect(workflow).toContain("id: paint_vrt_playwright_cache");
-    expect(workflow).toContain("id: playwright_bidi_playwright_cache");
-    expect(workflow).toContain("id: wpt_vrt_playwright_cache");
-    expect(workflow).toContain("if: steps.paint_vrt_playwright_cache.outputs.cache-hit != 'true'");
-    expect(workflow).toContain("if: steps.playwright_bidi_playwright_cache.outputs.cache-hit != 'true'");
-    expect(workflow).toContain("if: steps.wpt_vrt_playwright_cache.outputs.cache-hit != 'true'");
+    const browserJobs = [
+      ["js-package", "js_chromium_present", "Install Chromium (Playwright) for the browser gates"],
+      ["wpt-css-tests", "wpt_css_chromium_present", "Install Chromium (Playwright) for the WPT runner"],
+      ["playwright-bidi-tests", "playwright_bidi_chromium_present", "Install Playwright Chromium browser"],
+      ["playwright-paint-vrt", "paint_vrt_chromium_present", "Install Playwright browsers for VRT"],
+      ["playwright-wpt-vrt", "wpt_vrt_chromium_present", "Install Playwright browsers for VRT"],
+    ];
+    for (const [jobName, detectorId, installName] of browserJobs) {
+      const job = extractWorkflowJob(workflow, jobName);
+      const restore = extractWorkflowStep(job, "Restore Playwright Chromium browser cache");
+      const detect = extractWorkflowStep(job, "Detect cached Chromium browser");
+      const install = extractWorkflowStep(job, installName);
+
+      expect(restore, jobName).toContain("uses: actions/cache@");
+      expect(restore, jobName).toContain("path: ~/.cache/ms-playwright");
+      expect(restore, jobName).toContain("restore-keys:");
+      expect(detect, jobName).toContain(`id: ${detectorId}`);
+      expect(detect, jobName).toContain("bash scripts/ci/chromium-cache-present.sh");
+      // Partial cache restores can contain Chromium even without an exact key hit.
+      expect(install, jobName).toContain(`steps.${detectorId}.outputs.present != 'true'`);
+      expect(install, jobName).not.toContain(".outputs.cache-hit");
+      expect(install, jobName).toContain("run: bash scripts/ci/install-playwright-chromium.sh");
+      expect(job.indexOf(restore), jobName).toBeLessThan(job.indexOf(detect));
+      expect(job.indexOf(detect), jobName).toBeLessThan(job.indexOf(install));
+    }
   });
 
   test("restores rusty_v8 source binding cache in all native or BiDi jobs", () => {
@@ -36,8 +54,16 @@ describe("CI compatible font setup", () => {
     expect(action).toContain("default: v146.8.0");
 
     // The workflow opts into rusty_v8 prefetch in every native / BiDi-backed job
-    const usages = workflow.match(/uses: \.\/\.github\/actions\/rusty-v8-prefetch/g) ?? [];
-    expect(usages).toHaveLength(6);
+    for (const jobName of [
+      "test",
+      "wpt-webdriver-tests",
+      "playwright-bidi-tests",
+      "playwright-paint-vrt",
+      "playwright-wpt-vrt",
+    ]) {
+      const job = extractWorkflowJob(workflow, jobName);
+      expect(job, jobName).toContain("uses: ./.github/actions/rusty-v8-prefetch");
+    }
   });
 
   test("uses Deno 2 in BiDi and VRT workflows for lockfile v5 compatibility", () => {

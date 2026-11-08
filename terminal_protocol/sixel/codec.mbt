@@ -1,12 +1,12 @@
 ///|
 pub(all) struct Color {
-  r : Int
-  g : Int
-  b : Int
+  r : Int32
+  g : Int32
+  b : Int32
 }
 
 ///|
-pub fn Color::rgb(r : Int, g : Int, b : Int) -> Color {
+pub fn Color::rgb(r : Int32, g : Int32, b : Int32) -> Color {
   { r, g, b, }
 }
 
@@ -17,12 +17,12 @@ fn to_tui_colors(colors : Array[Color]) -> Array[@tui_sixel.Color] {
 
 ///|
 pub fn encode_indexed_pixels_to_sixel(
-  width : Int,
-  height : Int,
-  pixels : Array[Int],
+  width : Int32,
+  height : Int32,
+  pixels : Array[Int32],
   colors : Array[Color],
-  include_all_colors? : Bool = false,
-  compress? : Bool = true,
+  include_all_colors~ : Bool = false,
+  compress~ : Bool = true,
 ) -> String {
   @tui_sixel.encode_indexed_pixels_to_sixel(
     width,

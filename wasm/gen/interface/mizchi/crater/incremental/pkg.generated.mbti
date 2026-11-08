@@ -14,7 +14,7 @@ pub fn compute_full_structured() -> @crater-js.FlatLayoutResult
 
 pub fn compute_incremental() -> String
 
-pub fn create_tree(String, UInt, UInt) -> UInt
+pub fn create_tree(String, UInt32, UInt32) -> UInt32
 
 pub fn destroy_tree() -> Unit
 
@@ -26,7 +26,7 @@ pub fn needs_layout() -> Bool
 
 pub fn reset_cache_stats() -> Unit
 
-pub fn resize_viewport(UInt, UInt) -> Unit
+pub fn resize_viewport(UInt32, UInt32) -> Unit
 
 pub fn update_style(String, String) -> Bool
 

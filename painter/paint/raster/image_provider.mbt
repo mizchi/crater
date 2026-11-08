@@ -1,8 +1,8 @@
 ///|
 pub(all) struct RasterImage {
-  width : Int
-  height : Int
-  rgba : Array[Int]
+  width : Int32
+  height : Int32
+  rgba : Array[Int32]
 }
 
 ///|

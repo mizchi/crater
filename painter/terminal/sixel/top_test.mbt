@@ -1,21 +1,21 @@
 ///|
 test "to_sixel basic output" {
-  let fb = Framebuffer::new(4, 6)
+  let fb = @sixel.Framebuffer::new(4, 6)
   fb.fill_rect(0, 0, 4, 6, 1)
-  let result = to_sixel(fb)
+  let result = @sixel.to_sixel(fb)
   inspect(result.has_prefix("\u001bPq"), content="true")
   inspect(result.has_suffix("\u001b\\"), content="true")
 }
 
 ///|
 test "to_sixel_dynamic preserves deterministic mixed color rows" {
-  let fb = Framebuffer::new(2, 6)
-  let palette = DynamicPalette::new()
-  palette.colors.push(Color::blue())
-  palette.colors.push(Color::red())
+  let fb = @sixel.Framebuffer::new(2, 6)
+  let palette = @sixel.DynamicPalette::new()
+  palette.colors.push(@sixel.Color::blue())
+  palette.colors.push(@sixel.Color::red())
   fb.fill_rect(0, 0, 1, 6, 1)
   fb.fill_rect(1, 0, 1, 6, 2)
-  let result = to_sixel_dynamic(fb, palette)
+  let result = @sixel.to_sixel_dynamic(fb, palette)
   assert_eq(
     result, "\u001bPq#0;2;100;100;100#1;2;25;52;95#2;2;91;26;20#1~?$#2?~$-\u001b\\",
   )
@@ -23,11 +23,11 @@ test "to_sixel_dynamic preserves deterministic mixed color rows" {
 
 ///|
 test "to_sixel_dynamic compresses repeated columns with repeat introducer" {
-  let fb = Framebuffer::new(4, 6)
-  let palette = DynamicPalette::new()
-  palette.colors.push(Color::blue())
+  let fb = @sixel.Framebuffer::new(4, 6)
+  let palette = @sixel.DynamicPalette::new()
+  palette.colors.push(@sixel.Color::blue())
   fb.fill_rect(0, 0, 4, 6, 1)
-  let result = to_sixel_dynamic(fb, palette)
+  let result = @sixel.to_sixel_dynamic(fb, palette)
   assert_eq(result, "\u001bPq#0;2;100;100;100#1;2;25;52;95#1!4~$-\u001b\\")
 }
 
@@ -49,7 +49,7 @@ test "render_layout simple" {
     children: [],
     text: None,
   }
-  let sixel = render_layout(layout, 100, 100)
+  let sixel = @sixel.render_layout(layout, 100, 100)
   inspect(sixel.has_prefix("\u001bPq"), content="true")
   inspect(sixel.has_suffix("\u001b\\"), content="true")
 }

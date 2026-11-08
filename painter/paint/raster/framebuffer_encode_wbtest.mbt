@@ -11,7 +11,7 @@ test "fused framebuffer base64 matches rgba-expansion reference" {
   let palette_b = [70, 80, 90, 255, 0]
   let palette_len = palette_r.length()
   for n = 1; n <= 12; n = n + 1 {
-    let pixels : Array[Int] = []
+    let pixels : Array[Int32] = []
     for i = 0; i < n; i = i + 1 {
       pixels.push(i % palette_len)
     }
@@ -21,7 +21,7 @@ test "fused framebuffer base64 matches rgba-expansion reference" {
       FixedArray::from_array(palette_g),
       FixedArray::from_array(palette_b),
     )
-    let rgba : Array[Int] = []
+    let rgba : Array[Int32] = []
     for idx in pixels {
       rgba.push(palette_r[idx])
       rgba.push(palette_g[idx])

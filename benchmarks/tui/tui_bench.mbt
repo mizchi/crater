@@ -10,7 +10,7 @@
 
 ///|
 /// Create a simple vertical flex layout with N children
-fn create_vertical_flex(n : Int) -> @layout.Node {
+fn create_vertical_flex(n : Int32) -> @layout.Node {
   let root_style = @layout.Style::default()
   root_style.display = @types.Flex
   root_style.flex_direction = @types.Column
@@ -27,7 +27,7 @@ fn create_vertical_flex(n : Int) -> @layout.Node {
 
 ///|
 /// Create a horizontal flex layout with N children
-fn create_horizontal_flex(n : Int) -> @layout.Node {
+fn create_horizontal_flex(n : Int32) -> @layout.Node {
   let root_style = @layout.Style::default()
   root_style.display = @types.Flex
   root_style.flex_direction = @types.Row
@@ -117,8 +117,8 @@ fn create_tui_app_layout() -> @layout.Node {
 
 ///|
 /// Create a deeply nested TUI layout
-fn create_nested_tui_layout(depth : Int) -> @layout.Node {
-  fn build(d : Int, is_row : Bool) -> @layout.Node {
+fn create_nested_tui_layout(depth : Int32) -> @layout.Node {
+  fn build(d : Int32, is_row : Bool) -> @layout.Node {
     if d == 0 {
       let leaf_style = @layout.Style::default()
       leaf_style.width = @types.Length(10.0)
@@ -273,7 +273,7 @@ fn create_text_node(text : String) -> @layout.Node {
 
 ///|
 /// Create a layout with many text nodes
-fn create_text_list(n : Int) -> @layout.Node {
+fn create_text_list(n : Int32) -> @layout.Node {
   let root_style = @layout.Style::default()
   root_style.display = @types.Flex
   root_style.flex_direction = @types.Column
@@ -309,7 +309,7 @@ test "bench_tui_text_list_50" (b : @bench.T) {
 
 ///|
 /// Create a LayoutNode tree for incremental benchmarks
-fn create_layout_node_tree(n_items : Int) -> @layout.LayoutNode {
+fn create_layout_node_tree(n_items : Int32) -> @layout.LayoutNode {
   let root = @layout.layout_node_create("root")
     .set_display(@types.Flex)
     .set_flex_direction(@types.Column)
@@ -372,7 +372,7 @@ test "bench_tui_incremental_single_dirty_20" (b : @bench.T) {
 
 ///|
 /// Create a file browser TUI layout
-fn create_file_browser_layout(n_files : Int) -> @layout.Node {
+fn create_file_browser_layout(n_files : Int32) -> @layout.Node {
   // Root: vertical flex
   let root_style = @layout.Style::default()
   root_style.display = @types.Flex
@@ -507,7 +507,7 @@ test "bench_tui_dashboard" (b : @bench.T) {
 
 ///|
 /// Create a large scrollable list TUI
-fn create_large_list(n : Int) -> @layout.LayoutNode {
+fn create_large_list(n : Int32) -> @layout.LayoutNode {
   let root = @layout.layout_node_create("root")
     .set_display(@types.Flex)
     .set_flex_direction(@types.Column)

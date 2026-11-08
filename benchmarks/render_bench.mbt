@@ -50,9 +50,9 @@ fn large_2k5_node_build_bench_external_css() -> Array[String] {
 
 ///|
 fn large_website_simple_cards(
-  sidebar_items : Int,
-  sections : Int,
-  cards_per_section : Int,
+  sidebar_items : Int32,
+  sections : Int32,
+  cards_per_section : Int32,
 ) -> String {
   let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><body style=\"margin:0\">")
@@ -116,9 +116,9 @@ fn large_website_simple_cards(
 
 ///|
 fn large_website_card_bodies(
-  sidebar_items : Int,
-  sections : Int,
-  cards_per_section : Int,
+  sidebar_items : Int32,
+  sections : Int32,
+  cards_per_section : Int32,
 ) -> String {
   let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><body style=\"margin:0\">")
@@ -199,9 +199,9 @@ fn large_website_card_bodies(
 
 ///|
 fn large_website_card_text_bodies(
-  sidebar_items : Int,
-  sections : Int,
-  cards_per_section : Int,
+  sidebar_items : Int32,
+  sections : Int32,
+  cards_per_section : Int32,
 ) -> String {
   let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><body style=\"margin:0\">")
@@ -272,9 +272,9 @@ fn large_website_card_text_bodies(
 
 ///|
 fn large_website_card_footer_bodies(
-  sidebar_items : Int,
-  sections : Int,
-  cards_per_section : Int,
+  sidebar_items : Int32,
+  sections : Int32,
+  cards_per_section : Int32,
 ) -> String {
   let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><body style=\"margin:0\">")

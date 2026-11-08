@@ -6,6 +6,7 @@
 
 ///|
 /// Parsed Set-Cookie attributes
+#derive(Debug)
 pub(all) struct ParsedCookie {
   name : String
   value : String
@@ -14,9 +15,12 @@ pub(all) struct ParsedCookie {
   secure : Bool
   http_only : Bool
   same_site : String // "strict" | "lax" | "none" | ""
-  max_age : Int? // seconds
+  max_age : Int32? // seconds
   expires : String? // raw date string
-} derive(Debug)
+}
+
+///|
+pub extend ParsedCookie with @debug.Debug::{to_repr}
 
 ///|
 /// Cookie Jar — stores cookies per-domain with security enforcement
@@ -27,7 +31,7 @@ pub struct CookieJar {
 }
 
 ///|
-pub fn CookieJar::new(enabled? : Bool = false) -> CookieJar {
+pub fn CookieJar::new(enabled~ : Bool = false) -> CookieJar {
   { cookies: [], enabled, }
 }
 
@@ -55,6 +59,9 @@ pub impl Show for ParsedCookie with fn output(self, logger) {
 }
 
 ///|
+pub extend ParsedCookie with Show::{to_string, output}
+
+///|
 /// Parse a Set-Cookie header value into a ParsedCookie.
 /// Returns None if the cookie is malformed.
 pub fn parse_set_cookie(
@@ -75,7 +82,7 @@ pub fn parse_set_cookie(
   let mut secure = false
   let mut http_only = false
   let mut same_site = ""
-  let mut max_age : Int? = None
+  let mut max_age : Int32? = None
   let mut expires : String? = None
   let mut domain_set = false
   let mut path_set = false
@@ -173,7 +180,7 @@ fn cookie_default_path(request_path : String) -> String {
 
 ///|
 /// Parse an integer for cookie max-age (allows negative values)
-fn parse_cookie_int(s : String) -> Int? {
+fn parse_cookie_int(s : String) -> Int32? {
   if s.is_empty() {
     return None
   }
@@ -264,8 +271,8 @@ pub fn CookieJar::get_cookie_header(
   request_url : String,
   is_secure : Bool,
   is_http_api : Bool,
-  site_origin? : String = "",
-  is_top_level_navigation? : Bool = false,
+  site_origin~ : String = "",
+  is_top_level_navigation~ : Bool = false,
 ) -> String? {
   if !self.enabled {
     return None
@@ -382,7 +389,7 @@ pub fn CookieJar::clear(self : CookieJar) -> Unit {
 
 ///|
 /// Get number of stored cookies
-pub fn CookieJar::size(self : CookieJar) -> Int {
+pub fn CookieJar::size(self : CookieJar) -> Int32 {
   self.cookies.length()
 }
 

@@ -1,4 +1,8 @@
 import {
+  "moonbitlang/core/debug",
+}
+
+import {
   "moonbitlang/core/double",
   "mizchi/crater-layout/core",
   "moonbitlang/core/hashmap",

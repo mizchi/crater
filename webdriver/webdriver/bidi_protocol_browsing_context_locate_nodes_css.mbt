@@ -5,7 +5,7 @@ fn BidiProtocol::locate_nodes_css(
   ctx_id : String,
   selector : String,
   start_node_shared_ids : Array[String],
-  max_node_count : Int,
+  max_node_count : Int32,
   serialization_options_json : String,
 ) -> Json {
   if start_node_shared_ids.length() == 0 {

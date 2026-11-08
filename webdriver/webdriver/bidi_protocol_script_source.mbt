@@ -1,6 +1,6 @@
 ///|
 /// Compatibility facade for the canonical find_substring in @protocol.
-fn find_substring(haystack : String, needle : String, start : Int) -> Int? {
+fn find_substring(haystack : String, needle : String, start : Int32) -> Int32? {
   @protocol.find_substring(haystack, needle, start)
 }
 

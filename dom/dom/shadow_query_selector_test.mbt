@@ -4,7 +4,7 @@
 /// through the host, scopes to the shadow tree (never crossing nested shadow
 /// roots), and reports invalid input as errors.
 test "shadow_query_selector handles compounds, combinators, and :host scoping" {
-  let tree = DomTree::new()
+  let tree = @dom.DomTree::new()
   let doc = tree.get_document()
   let host = tree.create_element("section")
   let _ = tree.set_attribute(host, "class", "theme")
@@ -53,7 +53,7 @@ test "shadow_query_selector handles compounds, combinators, and :host scoping" {
 /// A shadow-root query stays within its own shadow tree: a nested shadow host's
 /// shadow content is never visited.
 test "shadow_query_selector does not cross into nested shadow roots" {
-  let tree = DomTree::new()
+  let tree = @dom.DomTree::new()
   let doc = tree.get_document()
   let host = tree.create_element("div")
   let _ = tree.append_child(doc, host)
@@ -81,7 +81,7 @@ test "shadow_query_selector does not cross into nested shadow roots" {
 /// Invalid input is reported, not silently empty: a non-shadow-root scope and an
 /// unparseable selector both error.
 test "shadow_query_selector rejects non-shadow-root scope and invalid selector" {
-  let tree = DomTree::new()
+  let tree = @dom.DomTree::new()
   let doc = tree.get_document()
   let host = tree.create_element("div")
   let _ = tree.append_child(doc, host)

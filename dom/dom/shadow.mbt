@@ -159,7 +159,7 @@ pub fn DomTree::get_shadow_init(
 pub fn DomTree::get_root_node(
   self : DomTree,
   node : NodeId,
-  composed? : Bool = false,
+  composed~ : Bool = false,
 ) -> Result[NodeId, CoreError] {
   let id = node.to_int()
   guard self.nodes.contains(id) else { return Err(NodeNotFound(node_id=node)) }
@@ -179,7 +179,7 @@ pub fn DomTree::get_root_node(
 }
 
 ///|
-fn DomTree::get_root_node_internal(self : DomTree, node_id : Int) -> Int {
+fn DomTree::get_root_node_internal(self : DomTree, node_id : Int32) -> Int32 {
   match self.nodes.get(node_id) {
     Some(node) =>
       match node.parent_id {
@@ -191,7 +191,10 @@ fn DomTree::get_root_node_internal(self : DomTree, node_id : Int) -> Int {
 }
 
 ///|
-fn DomTree::get_invalidation_parent_id(self : DomTree, node_id : Int) -> Int? {
+fn DomTree::get_invalidation_parent_id(
+  self : DomTree,
+  node_id : Int32,
+) -> Int32? {
   match self.nodes.get(node_id) {
     Some(node) =>
       match node.parent_id {
@@ -234,7 +237,7 @@ pub fn DomTree::is_slot_element(self : DomTree, node : NodeId) -> Bool {
 pub fn DomTree::get_composed_children(
   self : DomTree,
   node : NodeId,
-  shadow_host? : NodeId? = None,
+  shadow_host~ : NodeId? = None,
 ) -> Array[NodeId] {
   match self.get_shadow_root(node) {
     Ok(Some(shadow_root)) =>
@@ -402,7 +405,7 @@ fn DomTree::slot_assigned_nodes_raw(
 pub fn DomTree::slot_assigned_nodes(
   self : DomTree,
   slot : NodeId,
-  flatten? : Bool = false,
+  flatten~ : Bool = false,
 ) -> Array[NodeId] {
   guard self.is_slot_element(slot) else { return [] }
   let assigned = self.slot_assigned_nodes_raw(slot)
@@ -436,7 +439,7 @@ pub fn DomTree::slot_assigned_nodes(
 pub fn DomTree::slot_assigned_elements(
   self : DomTree,
   slot : NodeId,
-  flatten? : Bool = false,
+  flatten~ : Bool = false,
 ) -> Array[NodeId] {
   let result : Array[NodeId] = []
   for n in self.slot_assigned_nodes(slot, flatten~) {

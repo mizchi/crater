@@ -28,16 +28,18 @@ pub(all) enum CorsDecision {
   PreflightRequired(PreflightRequest)
   Blocked(String)
 }
+pub fn CorsDecision::output(Self, &Logger) -> Unit
+pub fn CorsDecision::to_string(Self) -> String
 pub impl Show for CorsDecision
 
 pub struct PreflightCache {
   entries : Map[String, PreflightEntry]
   insertion_order : Array[String]
-  max_entries : Int
+  max_entries : Int32
 }
 pub fn PreflightCache::contains_fresh(Self, PreflightRequest, () -> Double) -> Bool
 pub fn PreflightCache::get_or_validate(Self, PreflightRequest, () -> Double, (PreflightRequest) -> @crater-browser-http.HttpResponse) -> Result[Unit, String]
-pub fn PreflightCache::new(max_entries? : Int) -> Self
+pub fn PreflightCache::new(max_entries? : Int32) -> Self
 
 pub(all) struct PreflightEntry {
   allowed_methods : Array[String]
@@ -52,6 +54,8 @@ pub(all) struct PreflightRequest {
   http_method : String
   request_headers : Array[String]
 }
+pub fn PreflightRequest::output(Self, &Logger) -> Unit
+pub fn PreflightRequest::to_string(Self) -> String
 pub impl Show for PreflightRequest
 
 // Type aliases

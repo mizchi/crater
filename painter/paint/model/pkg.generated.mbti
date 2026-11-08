@@ -24,7 +24,7 @@ pub(all) struct PaintNode {
   scroll_height : Double
   clip : @values.ClipRect
   paint : PaintProperties
-  stacking_order : Int
+  stacking_order : Int32
   text : String?
   src : String?
   visual_polygon : Array[(Double, Double)]
@@ -39,7 +39,9 @@ pub fn PaintNode::has_legacy_clip(Self) -> Bool
 pub fn PaintNode::has_vertical_scrollbar(Self) -> Bool
 pub fn PaintNode::is_scrollable(Self) -> Bool
 pub fn PaintNode::new(String, String, Double, Double, Double, Double, PaintProperties, Array[Self], text? : String?, src? : String?, overflow_x? : @values.Overflow, overflow_y? : @values.Overflow, scroll_width? : Double, scroll_height? : Double, clip? : @values.ClipRect, visual_polygon? : Array[(Double, Double)]) -> Self
+pub fn PaintNode::output(Self, &Logger) -> Unit
 pub fn PaintNode::to_json_string(Self) -> String
+pub fn PaintNode::to_string(Self) -> String
 pub impl Show for PaintNode
 
 pub(all) struct PaintProperties {
@@ -80,8 +82,10 @@ pub(all) struct PaintProperties {
 pub fn PaintProperties::clips_overflow(Self) -> Bool
 pub fn PaintProperties::default() -> Self
 pub fn PaintProperties::from_style(@style.Style) -> Self
+pub fn PaintProperties::output(Self, &Logger) -> Unit
 pub fn PaintProperties::should_render(Self) -> Bool
-pub fn PaintProperties::z_index_value(Self) -> Int
+pub fn PaintProperties::to_string(Self) -> String
+pub fn PaintProperties::z_index_value(Self) -> Int32
 pub impl Show for PaintProperties
 
 // Type aliases

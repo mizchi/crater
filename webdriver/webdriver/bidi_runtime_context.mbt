@@ -827,8 +827,8 @@ pub fn set_runtime_context_frames(
 /// Set runtime viewport metrics for a specific context.
 extern "js" fn js_set_runtime_context_viewport(
   ctx_id : String,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
   device_pixel_ratio : Double,
 ) -> Unit =
   #| (ctxId, width, height, devicePixelRatio) => {
@@ -865,8 +865,8 @@ extern "js" fn js_set_runtime_context_viewport(
 /// Set runtime viewport metrics for a specific context.
 pub fn set_runtime_context_viewport(
   ctx_id : String,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
   device_pixel_ratio : Double,
 ) -> Unit {
   js_set_runtime_context_viewport(ctx_id, width, height, device_pixel_ratio)
@@ -995,7 +995,7 @@ pub fn set_runtime_context_network_online(
 extern "js" fn js_set_runtime_context_screen_orientation(
   ctx_id : String,
   orientation_type : String,
-  angle : Int,
+  angle : Int32,
 ) -> Unit =
   #| (ctxId, orientationType, angle) => {
   #|   if (!globalThis.__bidiContextScreenOrientationState) {
@@ -1091,7 +1091,7 @@ extern "js" fn js_set_runtime_context_screen_orientation(
 pub fn set_runtime_context_screen_orientation(
   ctx_id : String,
   orientation_type : String,
-  angle : Int,
+  angle : Int32,
 ) -> Unit {
   js_set_runtime_context_screen_orientation(ctx_id, orientation_type, angle)
 }
@@ -1099,10 +1099,10 @@ pub fn set_runtime_context_screen_orientation(
 ///|
 extern "js" fn js_set_runtime_context_screen_area(
   ctx_id : String,
-  width : Int,
-  height : Int,
-  avail_width : Int,
-  avail_height : Int,
+  width : Int32,
+  height : Int32,
+  avail_width : Int32,
+  avail_height : Int32,
 ) -> Unit =
   #| (ctxId, width, height, availWidth, availHeight) => {
   #|   if (!globalThis.__bidiContextScreenAreaState) {
@@ -1151,10 +1151,10 @@ extern "js" fn js_set_runtime_context_screen_area(
 ///|
 pub fn set_runtime_context_screen_area(
   ctx_id : String,
-  width : Int,
-  height : Int,
-  avail_width : Int,
-  avail_height : Int,
+  width : Int32,
+  height : Int32,
+  avail_width : Int32,
+  avail_height : Int32,
 ) -> Unit {
   js_set_runtime_context_screen_area(
     ctx_id, width, height, avail_width, avail_height,

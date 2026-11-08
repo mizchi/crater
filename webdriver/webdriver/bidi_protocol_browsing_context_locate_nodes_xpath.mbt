@@ -5,7 +5,7 @@ fn BidiProtocol::locate_nodes_xpath(
   ctx_id : String,
   selector : String,
   start_node_shared_ids : Array[String],
-  max_node_count : Int,
+  max_node_count : Int32,
   serialization_options_json : String,
 ) -> Json {
   let selector_literal = "\"" + escape_js_string(selector) + "\""

@@ -6,10 +6,10 @@ let base64_chars : String = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxy
 #cfg(not(target="js"))
 fn write_base64_quad(
   buf : StringBuilder,
-  b0 : Int,
-  b1 : Int,
-  b2 : Int,
-  padding : Int,
+  b0 : Int32,
+  b1 : Int32,
+  b2 : Int32,
+  padding : Int32,
 ) -> Unit {
   let c0 = (b0 >> 2) & 0x3F
   let c1 = ((b0 << 4) | (b1 >> 4)) & 0x3F
@@ -31,7 +31,7 @@ fn write_base64_quad(
 
 ///|
 #cfg(not(target="js"))
-fn encode_bytes_base64(bytes : Array[Int]) -> String {
+fn encode_bytes_base64(bytes : Array[Int32]) -> String {
   let out = StringBuilder()
   let mut i = 0
   while i < bytes.length() {

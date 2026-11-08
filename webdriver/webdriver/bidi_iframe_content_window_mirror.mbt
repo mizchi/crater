@@ -37,7 +37,10 @@ fn is_iframe_mirror_whitespace(c : Char) -> Bool {
 }
 
 ///|
-fn read_iframe_mirror_identifier_end(chars : Array[Char], start : Int) -> Int {
+fn read_iframe_mirror_identifier_end(
+  chars : Array[Char],
+  start : Int32,
+) -> Int32 {
   let mut end = start
   while end < chars.length() && is_iframe_mirror_identifier_char(chars[end]) {
     end += 1
@@ -46,7 +49,7 @@ fn read_iframe_mirror_identifier_end(chars : Array[Char], start : Int) -> Int {
 }
 
 ///|
-fn read_iframe_mirror_bracket_end(chars : Array[Char], start : Int) -> Int? {
+fn read_iframe_mirror_bracket_end(chars : Array[Char], start : Int32) -> Int32? {
   let mut cursor = start + 1
   let mut quote : Char? = None
   let mut escaped = false
@@ -76,7 +79,7 @@ fn read_iframe_mirror_bracket_end(chars : Array[Char], start : Int) -> Int? {
 }
 
 ///|
-fn skip_iframe_mirror_whitespace(chars : Array[Char], start : Int) -> Int {
+fn skip_iframe_mirror_whitespace(chars : Array[Char], start : Int32) -> Int32 {
   let mut cursor = start
   while cursor < chars.length() && is_iframe_mirror_whitespace(chars[cursor]) {
     cursor += 1

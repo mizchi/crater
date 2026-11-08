@@ -1,4 +1,8 @@
 import {
+  "moonbitlang/core/debug",
+}
+
+import {
   "moonbitlang/core/hashset",
   "mizchi/crater-dom/html",
   "mizchi/css",

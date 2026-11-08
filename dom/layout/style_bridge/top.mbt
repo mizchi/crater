@@ -291,7 +291,7 @@ pub fn update_node_style(
 pub fn batch_update_styles(
   tree : @tree.LayoutTree,
   updates : Array[(String, @css.CascadedValues)],
-) -> Int {
+) -> Int32 {
   let mut count = 0
   for update in updates {
     let (node_id, values) = update
@@ -307,7 +307,7 @@ pub fn batch_update_styles(
 pub fn add_node(
   tree : @tree.LayoutTree,
   parent_id : String,
-  index : Int,
+  index : Int32,
   node : @tree.LayoutNode,
 ) -> Bool {
   match tree.find_node_by_id(parent_id) {
@@ -334,9 +334,9 @@ pub fn add_node(
 ///|
 fn add_subtree_to_maps(
   node : @tree.LayoutNode,
-  parent_uid : Int,
-  parent_map : Map[Int, Int],
-  node_map : Map[Int, @tree.LayoutNode],
+  parent_uid : Int32,
+  parent_map : Map[Int32, Int32],
+  node_map : Map[Int32, @tree.LayoutNode],
 ) -> Unit {
   node_map[node.uid] = node
   parent_map[node.uid] = parent_uid
@@ -385,9 +385,9 @@ pub fn remove_node(tree : @tree.LayoutTree, node_id : String) -> Bool {
 
 ///|
 fn remove_subtree_from_maps(
-  uid : Int,
-  parent_map : Map[Int, Int],
-  node_map : Map[Int, @tree.LayoutNode],
+  uid : Int32,
+  parent_map : Map[Int32, Int32],
+  node_map : Map[Int32, @tree.LayoutNode],
 ) -> Unit {
   match node_map.get(uid) {
     Some(node) => {

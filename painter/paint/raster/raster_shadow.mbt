@@ -5,18 +5,18 @@
 fn fill_box_shadow_clipped(
   fb : Framebuffer,
   palette : DynamicPalette,
-  x : Int,
-  y : Int,
-  w : Int,
-  h : Int,
+  x : Int32,
+  y : Int32,
+  w : Int32,
+  h : Int32,
   color : @types.Color,
   opacity : Double,
   clip : ClipRect?,
-  spread : Int,
-  tl : Int,
-  tr : Int,
-  br : Int,
-  bl : Int,
+  spread : Int32,
+  tl : Int32,
+  tr : Int32,
+  br : Int32,
+  bl : Int32,
 ) -> Unit {
   if w <= 0 || h <= 0 || color.is_transparent() {
     return
@@ -36,7 +36,7 @@ fn fill_box_shadow_clipped(
 }
 
 ///|
-fn blurred_shadow_layer_count(blur : Int) -> Int {
+fn blurred_shadow_layer_count(blur : Int32) -> Int32 {
   let by_radius = blur / 8 + 4
   if by_radius < 4 {
     4
@@ -51,19 +51,19 @@ fn blurred_shadow_layer_count(blur : Int) -> Int {
 fn fill_blurred_box_shadow_clipped(
   fb : Framebuffer,
   palette : DynamicPalette,
-  x : Int,
-  y : Int,
-  w : Int,
-  h : Int,
+  x : Int32,
+  y : Int32,
+  w : Int32,
+  h : Int32,
   color : @types.Color,
   opacity : Double,
   clip : ClipRect?,
-  spread : Int,
-  blur : Int,
-  tl : Int,
-  tr : Int,
-  br : Int,
-  bl : Int,
+  spread : Int32,
+  blur : Int32,
+  tl : Int32,
+  tr : Int32,
+  br : Int32,
+  bl : Int32,
 ) -> Unit {
   if blur <= 0 {
     fill_box_shadow_clipped(

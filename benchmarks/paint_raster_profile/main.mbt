@@ -4,7 +4,7 @@
 /// repeatedly rasterizes the paint tree and base64-encodes the framebuffer.
 
 ///|
-fn build_css(rules : Int) -> String {
+fn build_css(rules : Int32) -> String {
   let buf = StringBuilder()
   buf.write_string("body{margin:0;font-family:sans-serif}")
   buf.write_string("section{display:block;padding:8px}")
@@ -24,7 +24,7 @@ fn build_css(rules : Int) -> String {
 }
 
 ///|
-fn build_html(blocks : Int, rules : Int) -> String {
+fn build_html(blocks : Int32, rules : Int32) -> String {
   let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><body><main-shell>")
   for i = 0; i < blocks; i = i + 1 {

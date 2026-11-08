@@ -1,7 +1,7 @@
 ///|
 /// HTTP Response structure
 pub(all) struct HttpResponse {
-  status : Int
+  status : Int32
   headers : Map[String, String]
   body : String
 }
@@ -33,29 +33,50 @@ pub impl Show for HttpError with fn output(self, logger) {
 }
 
 ///|
+pub extend HttpError with Show::{to_string, output}
+
+///|
 /// Request mode (subset of Fetch spec)
+#derive(Eq, Debug)
 pub(all) enum RequestMode {
   Navigate
   SameOrigin
   NoCors
   Cors
-} derive(Eq, Debug)
+}
+
+///|
+pub extend RequestMode with Eq::{not_equal, equal}
+
+///|
+pub extend RequestMode with @debug.Debug::{to_repr}
 
 ///|
 /// Credentials mode for CORS checks
+#derive(Eq, Debug)
 pub(all) enum CredentialsMode {
   Omit
   SameOrigin
   Include
-} derive(Eq, Debug)
+}
+
+///|
+pub extend CredentialsMode with Eq::{not_equal, equal}
+
+///|
+pub extend CredentialsMode with @debug.Debug::{to_repr}
 
 ///|
 /// Request sandbox policy
+#derive(Debug)
 pub(all) enum RequestSandbox {
   Open
   SameOrigin
   Allowlist(Array[String])
-} derive(Debug)
+}
+
+///|
+pub extend RequestSandbox with @debug.Debug::{to_repr}
 
 ///|
 /// Fetch options
@@ -63,7 +84,7 @@ pub(all) struct FetchOptions {
   http_method : String
   headers : Map[String, String]
   body : String
-  timeout_ms : Int
+  timeout_ms : Int32
   mode : RequestMode
   credentials : CredentialsMode
   origin : String

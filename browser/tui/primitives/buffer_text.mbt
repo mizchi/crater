@@ -3,15 +3,15 @@
 
 ///|
 /// Get display width of a character (1 for narrow, 2 for wide)
-pub fn char_display_width(c : Char) -> Int {
+pub fn char_display_width(c : Char) -> Int32 {
   @tui_buffer.char_display_width(c)
 }
 
 ///|
 fn CharBuffer::styled_cell_at(
   self : CharBuffer,
-  x : Int,
-  y : Int,
+  x : Int32,
+  y : Int32,
   c : Char,
   style : TextStyle,
 ) -> CharCell {
@@ -51,12 +51,12 @@ fn CharBuffer::apply_text_write_plan(
 /// Note: If style.bg is transparent, preserves existing cell background
 pub fn CharBuffer::write_text(
   self : CharBuffer,
-  x : Int,
-  y : Int,
+  x : Int32,
+  y : Int32,
   text : String,
   style : TextStyle,
-  max_width : Int,
-) -> Int {
+  max_width : Int32,
+) -> Int32 {
   let plan = @tui_buffer.plan_write_text(x, y, text, max_width)
   self.apply_text_write_plan(plan, style)
   plan.columns
@@ -69,13 +69,13 @@ pub fn CharBuffer::write_text(
 /// Note: If style.bg is transparent, preserves existing cell background
 pub fn CharBuffer::write_text_pre(
   self : CharBuffer,
-  x : Int,
-  y : Int,
+  x : Int32,
+  y : Int32,
   text : String,
   style : TextStyle,
-  max_width : Int,
-  max_height : Int,
-) -> Int {
+  max_width : Int32,
+  max_height : Int32,
+) -> Int32 {
   let plan = @tui_buffer.plan_write_text_pre(x, y, text, max_width, max_height)
   self.apply_text_write_plan(plan, style)
   plan.lines
@@ -87,13 +87,13 @@ pub fn CharBuffer::write_text_pre(
 /// Note: If style.bg is transparent, preserves existing cell background
 pub fn CharBuffer::write_text_wrapped(
   self : CharBuffer,
-  x : Int,
-  y : Int,
+  x : Int32,
+  y : Int32,
   text : String,
   style : TextStyle,
-  max_width : Int,
-  max_height : Int,
-) -> Int {
+  max_width : Int32,
+  max_height : Int32,
+) -> Int32 {
   let plan = @tui_buffer.plan_write_text_wrapped(
     x, y, text, max_width, max_height,
   )

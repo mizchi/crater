@@ -45,7 +45,7 @@ test "real glyph rasterization lowers to coverage fills" {
     screen_w=w,
     screen_h=h,
   )
-  let commands = text_run_coverage_commands(
+  let commands = @gfx_text.text_run_coverage_commands(
     frame,
     triangle_provider(),
     "A",

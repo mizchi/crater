@@ -1,15 +1,15 @@
 ///|
 test "PaintNode::to_json_string basic" {
-  let node = PaintNode::new(
+  let node = @paint.PaintNode::new(
     "body",
     "body",
     0.0,
     0.0,
     800.0,
     600.0,
-    PaintProperties::default(),
+    @paint.PaintProperties::default(),
     [
-      PaintNode::new(
+      @paint.PaintNode::new(
         "div.box",
         "div",
         10.0,
@@ -17,7 +17,7 @@ test "PaintNode::to_json_string basic" {
         100.0,
         50.0,
         {
-          ..PaintProperties::default(),
+          ..@paint.PaintProperties::default(),
           background_color: @types.Color::rgb(238, 238, 238),
         },
         [],
@@ -36,7 +36,7 @@ test "PaintNode::to_json_string basic" {
 
 ///|
 test "PaintNode::to_json_string includes decoration flags" {
-  let node = PaintNode::new(
+  let node = @paint.PaintNode::new(
     "#text",
     "#text",
     0.0,
@@ -44,7 +44,7 @@ test "PaintNode::to_json_string includes decoration flags" {
     80.0,
     20.0,
     {
-      ..PaintProperties::default(),
+      ..@paint.PaintProperties::default(),
       is_bold: true,
       font_family: "ahem",
       text_decoration_underline: true,
@@ -64,14 +64,14 @@ test "PaintNode::to_json_string includes decoration flags" {
 
 ///|
 test "PaintNode::to_json_string preserves numeric font weight" {
-  let node = PaintNode::new(
+  let node = @paint.PaintNode::new(
     "#text",
     "#text",
     0.0,
     0.0,
     80.0,
     20.0,
-    { ..PaintProperties::default(), font_weight: 500.0, is_bold: false, },
+    { ..@paint.PaintProperties::default(), font_weight: 500.0, is_bold: false, },
     [],
     text=Some("Medium"),
   )

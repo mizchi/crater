@@ -2,7 +2,7 @@
 /// Validate arguments parameter for callFunction (must be array of serialized values)
 fn BidiProtocol::validate_arguments_param(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit? {
   match get_param_raw(params, "arguments") {
@@ -50,7 +50,7 @@ fn BidiProtocol::validate_arguments_param(
 /// Validate channel-specific serialized argument fields.
 fn BidiProtocol::validate_channel_argument_value(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   arg_map : Map[String, Json],
 ) -> Unit? {
   match arg_map.get("type") {
@@ -79,7 +79,7 @@ fn BidiProtocol::validate_channel_argument_value(
 /// Validate channel argument options.
 fn BidiProtocol::validate_channel_argument_options(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   channel_val : Map[String, Json],
 ) -> Unit? {
   match channel_val.get("channel") {

@@ -1,6 +1,6 @@
 ///|
 fn has_property_change(
-  diff : PaintTreeDiff,
+  diff : @paint.PaintTreeDiff,
   node_id : String,
   property : String,
 ) -> Bool {
@@ -19,8 +19,8 @@ fn make_text_node(
   underline : Bool,
   line_through : Bool,
   overline : Bool,
-) -> PaintNode {
-  PaintNode::new(
+) -> @paint.PaintNode {
+  @paint.PaintNode::new(
     "#text",
     "#text",
     0.0,
@@ -28,7 +28,7 @@ fn make_text_node(
     64.0,
     16.0,
     {
-      ..PaintProperties::default(),
+      ..@paint.PaintProperties::default(),
       is_bold: bold,
       text_decoration_underline: underline,
       text_decoration_line_through: line_through,
@@ -41,16 +41,16 @@ fn make_text_node(
 
 ///|
 test "diff_trees reports paint property changes and layout shifts" {
-  let before = PaintNode::new(
+  let before = @paint.PaintNode::new(
     "body",
     "body",
     0.0,
     0.0,
     200.0,
     120.0,
-    PaintProperties::default(),
+    @paint.PaintProperties::default(),
     [
-      PaintNode::new(
+      @paint.PaintNode::new(
         "div.card",
         "div",
         10.0,
@@ -58,23 +58,23 @@ test "diff_trees reports paint property changes and layout shifts" {
         100.0,
         50.0,
         {
-          ..PaintProperties::default(),
+          ..@paint.PaintProperties::default(),
           background_color: @types.Color::rgb(240, 240, 240),
         },
         [make_text_node("Hello", false, false, false, false)],
       ),
     ],
   )
-  let after = PaintNode::new(
+  let after = @paint.PaintNode::new(
     "body",
     "body",
     0.0,
     0.0,
     200.0,
     120.0,
-    PaintProperties::default(),
+    @paint.PaintProperties::default(),
     [
-      PaintNode::new(
+      @paint.PaintNode::new(
         "div.card",
         "div",
         14.0,
@@ -82,7 +82,7 @@ test "diff_trees reports paint property changes and layout shifts" {
         100.0,
         60.0,
         {
-          ..PaintProperties::default(),
+          ..@paint.PaintProperties::default(),
           background_color: @types.Color::rgb(255, 0, 0),
         },
         [make_text_node("Hello", true, true, true, true)],
@@ -90,7 +90,7 @@ test "diff_trees reports paint property changes and layout shifts" {
     ],
   )
 
-  let diff = diff_trees(before, after)
+  let diff = @paint.diff_trees(before, after)
   inspect(diff.layout_shifts.length(), content="1")
   inspect(
     has_property_change(diff, "div.card", "background_color"),

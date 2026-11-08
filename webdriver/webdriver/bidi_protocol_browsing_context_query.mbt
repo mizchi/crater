@@ -1,7 +1,7 @@
 ///|
 fn BidiProtocol::handle_browsing_context_get_context_scope_info(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map = match params {
@@ -31,7 +31,7 @@ fn BidiProtocol::handle_browsing_context_get_context_scope_info(
 ///|
 fn BidiProtocol::handle_browsing_context_is_known_context(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map = match params {
@@ -61,7 +61,7 @@ fn BidiProtocol::handle_browsing_context_is_known_context(
 ///|
 fn BidiProtocol::handle_browsing_context_get_requested_navigation_url(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map = match params {
@@ -103,7 +103,7 @@ fn BidiProtocol::handle_browsing_context_get_requested_navigation_url(
 ///|
 fn BidiProtocol::handle_browsing_context_get_context_info(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map = match params {
@@ -146,7 +146,7 @@ fn BidiProtocol::handle_browsing_context_get_context_info(
 ///|
 fn BidiProtocol::handle_browsing_context_get_tree_contexts(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match self.resolve_get_tree_contexts(request_id, params) {
@@ -158,7 +158,7 @@ fn BidiProtocol::handle_browsing_context_get_tree_contexts(
 ///|
 fn BidiProtocol::handle_browsing_context_get_current_url(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match self.resolve_current_context_url(request_id, params) {
@@ -179,7 +179,7 @@ fn BidiProtocol::handle_browsing_context_get_current_url(
 ///|
 fn BidiProtocol::handle_browsing_context_get_current_url_value(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match self.resolve_current_context_url(request_id, params) {
@@ -191,7 +191,7 @@ fn BidiProtocol::handle_browsing_context_get_current_url_value(
 ///|
 fn BidiProtocol::resolve_current_context_url(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> (String, String)? {
   let map = match params {

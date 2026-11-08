@@ -40,6 +40,9 @@ pub impl Show for JsError with fn output(self, logger) {
 }
 
 ///|
+pub extend JsError with Show::{to_string, output}
+
+///|
 /// Result of JS execution
 pub struct JsResult {
   /// Return value (JSON serialized)
@@ -79,17 +82,17 @@ pub(open) trait JsRuntime {
   fn init(Self) -> Unit
 
   /// Execute JS against DomTree and return result
-  fn execute(Self, Int, @dom.DomTree, String, AsyncExecutionMode) -> JsResult raise JsError
+  fn execute(Self, Int32, @dom.DomTree, String, AsyncExecutionMode) -> JsResult raise JsError
 
   /// Run one pending async step for an existing context
-  fn tick(Self, Int, @dom.DomTree) -> JsResult raise JsError
+  fn tick(Self, Int32, @dom.DomTree) -> JsResult raise JsError
 }
 
 ///|
 /// JavaScript execution context bound to a DomTree
 pub struct JsContext {
   /// Stable runtime context id for persistent VM backends
-  context_id : Int
+  context_id : Int32
   /// Async flush policy for execution
   async_mode : AsyncExecutionMode
   /// The DOM tree this context operates on

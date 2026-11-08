@@ -26,7 +26,7 @@ pub fn Profile::default() -> Profile {
 /// Construct a Profile with explicit HTTP-state overrides. WebDriver
 /// sessions use this with `jar_enabled=true` (the default) so login flows
 /// work without the operator having to opt in.
-pub fn Profile::new(jar_enabled? : Bool = true) -> Profile {
+pub fn Profile::new(jar_enabled~ : Bool = true) -> Profile {
   Profile::{
     cookie_jar: @cookie_jar.CookieJar::new(enabled=jar_enabled),
     http_cache: @cache.MemoryCacheBackend::new(max_entries=1000),

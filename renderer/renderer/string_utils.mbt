@@ -3,7 +3,7 @@
 
 ///|
 /// Remove suffix of given length from string
-fn remove_suffix(s : String, len : Int) -> String {
+fn remove_suffix(s : String, len : Int32) -> String {
   let end = s.length() - len
   if end <= 0 {
     return ""

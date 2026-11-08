@@ -24,9 +24,9 @@ test-js:
 # Run `moon test` with the mizchi/v8 native dep excluded, for environments where
 # rusty_v8 can't be built (e.g. the web sandbox; see #312). Args pass through:
 #   just test-no-v8 -p mizchi/crater-dom/html
-#   just test-no-v8 -p mizchi/crater-layout/grid --target js
+# just test-no-v8 -p mizchi/crater-layout/grid --target js
 test-no-v8 *ARGS:
-    scripts/moon-test-no-v8.sh {{ARGS}}
+    scripts/moon-test-no-v8.sh {{ ARGS }}
 
 # Dynamic-reflow VRT harness: assert incremental re-render geometry == full
 # rebuild across a corpus of (before, after) page states. Runs on the js target
@@ -75,7 +75,7 @@ test-wasm-mbt:
 
 # Run JS-target tests for a specific package
 test-pkg-js pkg:
-    moon test -p {{pkg}} --target js
+    moon test -p {{ pkg }} --target js
 
 # Run the image-VRT suite (paint tree -> gfx software backend -> pixels)
 test-gfx-vrt:
@@ -104,15 +104,15 @@ test-webgpu-e2e:
 
 # Run native-target tests for a specific browser/native package
 test-pkg-native pkg:
-    moon -C browser/native test -p {{pkg}} --target native -j 1
+    moon -C browser/native test -p {{ pkg }} --target native -j 1
 
 # Run wasm-target tests for a specific wasm package
 test-pkg-wasm pkg:
-    moon -C wasm test -p {{pkg}} --target wasm -j 1
+    moon -C wasm test -p {{ pkg }} --target wasm -j 1
 
 # Run tests for a specific package with auto target selection.
 test-pkg pkg target='auto':
-    if [ "{{target}}" = "auto" ]; then case "{{pkg}}" in mizchi/crater-browser-native*) moon -C browser/native test -p {{pkg}} --target native -j 1 ;; mizchi/crater-testing/e2e/native_v8) moon -C testing test -p {{pkg}} --target native -j 1 ;; mizchi/crater-wasm*) moon -C wasm test -p {{pkg}} --target wasm -j 1 ;; *) moon test -p {{pkg}} --target js ;; esac; elif [ "{{target}}" = "native" ]; then case "{{pkg}}" in mizchi/crater-browser-native*) moon -C browser/native test -p {{pkg}} --target native -j 1 ;; *) moon -C testing test -p {{pkg}} --target native -j 1 ;; esac; elif [ "{{target}}" = "wasm" ]; then moon -C wasm test -p {{pkg}} --target wasm -j 1; else moon test -p {{pkg}} --target {{target}}; fi
+    if [ "{{ target }}" = "auto" ]; then case "{{ pkg }}" in mizchi/crater-browser-native*) moon -C browser/native test -p {{ pkg }} --target native -j 1 ;; mizchi/crater-testing/e2e/native_v8) moon -C testing test -p {{ pkg }} --target native -j 1 ;; mizchi/crater-wasm*) moon -C wasm test -p {{ pkg }} --target wasm -j 1 ;; *) moon test -p {{ pkg }} --target js ;; esac; elif [ "{{ target }}" = "native" ]; then case "{{ pkg }}" in mizchi/crater-browser-native*) moon -C browser/native test -p {{ pkg }} --target native -j 1 ;; *) moon -C testing test -p {{ pkg }} --target native -j 1 ;; esac; elif [ "{{ target }}" = "wasm" ]; then moon -C wasm test -p {{ pkg }} --target wasm -j 1; else moon test -p {{ pkg }} --target {{ target }}; fi
 
 # Update test snapshots
 test-update:
@@ -147,23 +147,23 @@ wpt-baseline-update:
 # Check compilation (main + browser + js)
 check:
     moon info --target js
-    moon -C browser/native info --target native
-    moon -C wasm info --target wasm
-    moon -C aomx check --target js -j 1
-    moon -C benchmarks check --target js -j 1
-    moon -C browser_helpers check --target js -j 1
-    moon -C testing check --target js -j 1
-    moon -C webvitals check --target js -j 1
-    moon -C http check --target js -j 1
-    moon -C dom check --target js -j 1
-    moon -C layout check --target js -j 1
-    moon -C painter check --target js -j 1
-    moon -C renderer check --target js -j 1
-    moon -C runtime check --target js -j 1
-    moon -C browser check --target js -j 1
-    moon -C browser/native check --target native -j 1
-    moon -C js check --target js
-    moon -C wasm check --target wasm -j 1
+    moon info browser/native --target native
+    moon info wasm --target wasm
+    moon check aomx --target js -j 1
+    moon check benchmarks --target js -j 1
+    moon check browser_helpers --target js -j 1
+    moon check testing --target js -j 1
+    moon check webvitals --target js -j 1
+    moon check http --target js -j 1
+    moon check dom --target js -j 1
+    moon check layout --target js -j 1
+    moon check painter --target js -j 1
+    moon check renderer --target js -j 1
+    moon check runtime --target js -j 1
+    moon check browser --target js -j 1
+    moon check browser/native --target native -j 1
+    moon check js --target js
+    moon check wasm --target wasm -j 1
 
 # Format code
 fmt:
@@ -209,11 +209,11 @@ status:
 
 # Generate MoonBit tests from taffy fixtures
 gen-taffy-tests input output *args:
-    npx tsx scripts/gen-taffy-tests.ts {{input}} {{output}} {{args}}
+    npx tsx scripts/gen-taffy-tests.ts {{ input }} {{ output }} {{ args }}
 
 # Generate html5lib tests
 gen-html5lib-tests *args:
-    npx tsx scripts/gen-html5lib-tests.ts {{args}}
+    npx tsx scripts/gen-html5lib-tests.ts {{ args }}
 
 # === WPT (Web Platform Tests) ===
 # Uses wpt/ submodule directly
@@ -224,7 +224,7 @@ wpt-list:
 
 # Run WPT CSS tests for a module (e.g., css-flexbox)
 wpt module:
-    npx tsx scripts/wpt-runner.ts {{module}}
+    npx tsx scripts/wpt-runner.ts {{ module }}
 
 # Run all WPT CSS tests
 wpt-all:
@@ -236,7 +236,7 @@ wpt-run-all:
 
 # Run WPT CSS tests and emit CI shard report JSON
 wpt-css-report module report *args:
-    npx tsx scripts/wpt-runner.ts {{module}} --json {{report}} {{args}}
+    npx tsx scripts/wpt-runner.ts {{ module }} --json {{ report }} {{ args }}
 
 # Update WPT README
 wpt-update-readme:
@@ -246,18 +246,18 @@ wpt-update-readme:
 # No args runs the built-in fixture matrix; pass an HTML file to diff one page.
 # Non-zero exit on any mismatch, so it doubles as a CI gate.
 calc-diff *args:
-    npx tsx scripts/calc-layout-diff.ts {{args}}
+    npx tsx scripts/calc-layout-diff.ts {{ args }}
 
 # Aggregate Crater-vs-Chromium layout match rate on real-world snapshots
 # (github-mizchi, example-com). No args measures all; pass a snapshot name.
 match-rate *args:
-    npx tsx scripts/real-world-match-rate.ts {{args}}
+    npx tsx scripts/real-world-match-rate.ts {{ args }}
 
 # === WPT DOM Tests ===
 
 # Run WPT DOM tests (single file or pattern)
 wpt-dom pattern:
-    npx tsx scripts/wpt-dom-runner.ts {{pattern}}
+    npx tsx scripts/wpt-dom-runner.ts {{ pattern }}
 
 # Run all WPT DOM tests
 wpt-dom-all:
@@ -265,7 +265,7 @@ wpt-dom-all:
 
 # Run WPT DOM tests and emit CI shard report JSON
 wpt-dom-report target report *args:
-    npx tsx scripts/wpt-dom-runner.ts {{target}} --json {{report}} {{args}}
+    npx tsx scripts/wpt-dom-runner.ts {{ target }} --json {{ report }} {{ args }}
 
 # Run WPT SVG DOM tests
 wpt-svg:
@@ -291,11 +291,11 @@ wpt-compositing:
 
 # Aggregate WPT CI shard reports and render markdown/json summary
 wpt-ci-summary input json markdown:
-    npx tsx scripts/wpt-ci-summary.ts --input {{input}} --json {{json}} --markdown {{markdown}}
+    npx tsx scripts/wpt-ci-summary.ts --input {{ input }} --json {{ json }} --markdown {{ markdown }}
 
 # Aggregate CI job timing report from GitHub run jobs JSON
 ci-timing-summary input json markdown:
-    npx tsx scripts/ci-timing-summary.ts --input {{input}} --json {{json}} --markdown {{markdown}}
+    npx tsx scripts/ci-timing-summary.ts --input {{ input }} --json {{ json }} --markdown {{ markdown }}
 
 # === WebDriver BiDi Server ===
 
@@ -307,7 +307,7 @@ build-bidi:
 
 # Start BiDi server (Deno)
 start-bidi:
-    bash -lc 'set -euo pipefail; for candidate in "webdriver/_build/js/release/build/bidi_main/bidi_main.js" "_build/js/release/build/mizchi/crater-webdriver-bidi/bidi_main/bidi_main.js" "webdriver/target/js/release/build/bidi_main/bidi_main.js"; do if [ -f "$candidate" ]; then exec deno run -A "$candidate"; fi; done; echo "BiDi server not built. Run: just build-bidi" >&2; exit 1'
+    bash -lc 'set -euo pipefail; for candidate in "_build/js/release/build/mizchi/crater-webdriver-bidi/bidi_main/bidi_main.js" "webdriver/_build/js/release/build/bidi_main/bidi_main.js" "webdriver/target/js/release/build/bidi_main/bidi_main.js"; do if [ -f "$candidate" ]; then exec deno run -A "$candidate"; fi; done; echo "BiDi server not built. Run: just build-bidi" >&2; exit 1'
 
 # Start BiDi server with font metrics (for VRT)
 start-bidi-with-font:
@@ -321,15 +321,15 @@ wpt-webdriver-list:
 
 # Run WebDriver BiDi tests for a module (e.g., session/status)
 wpt-webdriver module:
-    npx tsx scripts/wpt-webdriver-runner.ts {{module}}
+    npx tsx scripts/wpt-webdriver-runner.ts {{ module }}
 
 # Run WebDriver BiDi tests and emit CI shard report JSON
 wpt-webdriver-report module report *args:
-    npx tsx scripts/wpt-webdriver-runner.ts {{module}} --json {{report}} {{args}}
+    npx tsx scripts/wpt-webdriver-runner.ts {{ module }} --json {{ report }} {{ args }}
 
 # Run a predefined WebDriver BiDi profile (e.g., strict, network-no-auth)
 wpt-webdriver-profile profile:
-    npx tsx scripts/wpt-webdriver-runner.ts --profile {{profile}}
+    npx tsx scripts/wpt-webdriver-runner.ts --profile {{ profile }}
 
 # Run all WebDriver BiDi tests
 wpt-webdriver-all:
@@ -355,11 +355,11 @@ test-website:
 
 # Compare a URL between Chromium and Crater (one-command VRT)
 vrt-url *args:
-    npx tsx scripts/vrt-url.ts {{args}}
+    npx tsx scripts/vrt-url.ts {{ args }}
 
 # Compare a URL using native paint backend
 vrt-url-native *args:
-    npx tsx scripts/vrt-url.ts {{args}} --backend native
+    npx tsx scripts/vrt-url.ts {{ args }} --backend native
 
 # Run relaxed paint visual regression tests against Chromium screenshots
 test-vrt:
@@ -379,7 +379,7 @@ test-vrt-levels:
 
 # Capture a real-world snapshot for VRT testing
 vrt-capture *args:
-    npx tsx scripts/capture-real-world-snapshot.ts {{args}}
+    npx tsx scripts/capture-real-world-snapshot.ts {{ args }}
 
 # Re-capture all URL snapshots
 vrt-capture-all:
@@ -415,16 +415,16 @@ bench-vrt-all:
 
 # List resolved VRT benchmark indices
 bench-vrt-list group="all":
-    npx tsx scripts/vrt-bench.ts --group {{group}} --list
+    npx tsx scripts/vrt-bench.ts --group {{ group }} --list
 
 # Run VRT benchmarks and write parsed reports
 bench-vrt-report group output_dir="vrt-bench":
-    mkdir -p {{output_dir}}
-    bash -lc 'set -euo pipefail; npx tsx scripts/vrt-bench.ts --group {{group}} --json {{output_dir}}/{{group}}.json --markdown {{output_dir}}/{{group}}.md | tee {{output_dir}}/{{group}}.log'
+    mkdir -p {{ output_dir }}
+    bash -lc 'set -euo pipefail; npx tsx scripts/vrt-bench.ts --group {{ group }} --json {{ output_dir }}/{{ group }}.json --markdown {{ output_dir }}/{{ group }}.md | tee {{ output_dir }}/{{ group }}.log'
 
 # Compact flaker entrypoint
 flaker *args:
-    node scripts/flaker-entry.ts {{args}}
+    node scripts/flaker-entry.ts {{ args }}
 
 # List flaker-managed Playwright tasks
 flaker-list:
@@ -436,51 +436,51 @@ flaker-check:
 
 # Resolve affected Playwright tasks from changed repo paths
 flaker-affected *paths:
-    node scripts/flaker-entry.ts config affected {{paths}}
+    node scripts/flaker-entry.ts config affected {{ paths }}
 
 # Generate a task-scoped flaker.toml from flaker.star
 flaker-task-config task_id output="":
-    if [ -n "{{output}}" ]; then node scripts/flaker-task-config.ts --task {{task_id}} --write {{output}}; else node scripts/flaker-task-config.ts --task {{task_id}}; fi
+    if [ -n "{{ output }}" ]; then node scripts/flaker-task-config.ts --task {{ task_id }} --write {{ output }}; else node scripts/flaker-task-config.ts --task {{ task_id }}; fi
 
 # Run flaker with a task-scoped generated config
 flaker-task task_id *args:
-    node scripts/flaker-task-run.ts --task {{task_id}} -- {{args}}
+    node scripts/flaker-task-run.ts --task {{ task_id }} -- {{ args }}
 
 # Sample tests using flaker for a single task
 flaker-task-sample task_id *args:
-    node scripts/flaker-entry.ts task sample {{task_id}} {{args}}
+    node scripts/flaker-entry.ts task sample {{ task_id }} {{ args }}
 
 # Import a Playwright JSON report into the shared flaker store for a task
 flaker-task-import task_id report_path *args:
-    node scripts/flaker-entry.ts task import {{task_id}} {{report_path}} {{args}}
+    node scripts/flaker-entry.ts task import {{ task_id }} {{ report_path }} {{ args }}
 
 # Run a Playwright task, persist its JSON report, and import it into flaker
 flaker-task-record task_id report_path="" summary_dir="" vrt_summary_dir="" *args:
-    bash -lc 'set -euo pipefail; cmd=(node scripts/flaker-task-record.ts --task "$1"); report_path="$2"; summary_dir="$3"; vrt_summary_dir="$4"; shift 4; if [ -n "$report_path" ]; then cmd+=(--report-path "$report_path"); fi; if [ -n "$summary_dir" ]; then cmd+=(--summary-dir "$summary_dir"); fi; if [ -n "$vrt_summary_dir" ]; then cmd+=(--vrt-summary-dir "$vrt_summary_dir"); fi; if [ "$#" -gt 0 ]; then cmd+=(-- "$@"); fi; "${cmd[@]}"' -- {{task_id}} {{report_path}} {{summary_dir}} {{vrt_summary_dir}} {{args}}
+    bash -lc 'set -euo pipefail; cmd=(node scripts/flaker-task-record.ts --task "$1"); report_path="$2"; summary_dir="$3"; vrt_summary_dir="$4"; shift 4; if [ -n "$report_path" ]; then cmd+=(--report-path "$report_path"); fi; if [ -n "$summary_dir" ]; then cmd+=(--summary-dir "$summary_dir"); fi; if [ -n "$vrt_summary_dir" ]; then cmd+=(--vrt-summary-dir "$vrt_summary_dir"); fi; if [ "$#" -gt 0 ]; then cmd+=(-- "$@"); fi; "${cmd[@]}"' -- {{ task_id }} {{ report_path }} {{ summary_dir }} {{ vrt_summary_dir }} {{ args }}
 
 # Run tests using flaker for a single task
 flaker-task-run task_id *args:
-    node scripts/flaker-entry.ts task run {{task_id}} {{args}}
+    node scripts/flaker-entry.ts task run {{ task_id }} {{ args }}
 
 # Render task-scoped flaker eval/reason summary
 flaker-task-summary task_id output_dir=".flaker/task-summary":
-    mkdir -p {{output_dir}}
-    node scripts/flaker-task-summary.ts --task {{task_id}} --json {{output_dir}}/{{task_id}}.json --markdown {{output_dir}}/{{task_id}}.md | tee {{output_dir}}/{{task_id}}.log
+    mkdir -p {{ output_dir }}
+    node scripts/flaker-task-summary.ts --task {{ task_id }} --json {{ output_dir }}/{{ task_id }}.json --markdown {{ output_dir }}/{{ task_id }}.md | tee {{ output_dir }}/{{ task_id }}.log
 
 # Render full-batch plan for scheduled flaker runs
 flaker-batch-plan output_dir=".flaker/batch-plan" tasks="" nodes="":
-    mkdir -p {{output_dir}}
-    if [ -n "{{tasks}}" ] && [ -n "{{nodes}}" ]; then node scripts/flaker-batch-plan.ts --tasks {{tasks}} --nodes {{nodes}} --json {{output_dir}}/plan.json --markdown {{output_dir}}/plan.md | tee {{output_dir}}/plan.log; elif [ -n "{{tasks}}" ]; then node scripts/flaker-batch-plan.ts --tasks {{tasks}} --json {{output_dir}}/plan.json --markdown {{output_dir}}/plan.md | tee {{output_dir}}/plan.log; elif [ -n "{{nodes}}" ]; then node scripts/flaker-batch-plan.ts --nodes {{nodes}} --json {{output_dir}}/plan.json --markdown {{output_dir}}/plan.md | tee {{output_dir}}/plan.log; else node scripts/flaker-batch-plan.ts --json {{output_dir}}/plan.json --markdown {{output_dir}}/plan.md | tee {{output_dir}}/plan.log; fi
+    mkdir -p {{ output_dir }}
+    if [ -n "{{ tasks }}" ] && [ -n "{{ nodes }}" ]; then node scripts/flaker-batch-plan.ts --tasks {{ tasks }} --nodes {{ nodes }} --json {{ output_dir }}/plan.json --markdown {{ output_dir }}/plan.md | tee {{ output_dir }}/plan.log; elif [ -n "{{ tasks }}" ]; then node scripts/flaker-batch-plan.ts --tasks {{ tasks }} --json {{ output_dir }}/plan.json --markdown {{ output_dir }}/plan.md | tee {{ output_dir }}/plan.log; elif [ -n "{{ nodes }}" ]; then node scripts/flaker-batch-plan.ts --nodes {{ nodes }} --json {{ output_dir }}/plan.json --markdown {{ output_dir }}/plan.md | tee {{ output_dir }}/plan.log; else node scripts/flaker-batch-plan.ts --json {{ output_dir }}/plan.json --markdown {{ output_dir }}/plan.md | tee {{ output_dir }}/plan.log; fi
 
 # Aggregate full-batch flaker artifacts
 flaker-batch-summary input_dir output_dir=".flaker/batch-summary" collect_task_id="":
-    mkdir -p {{output_dir}}
-    if [ -n "{{collect_task_id}}" ]; then node scripts/flaker-batch-summary.ts --input {{input_dir}} --collect-task-id {{collect_task_id}} --json {{output_dir}}/summary.json --markdown {{output_dir}}/summary.md; else node scripts/flaker-batch-summary.ts --input {{input_dir}} --json {{output_dir}}/summary.json --markdown {{output_dir}}/summary.md; fi | tee {{output_dir}}/summary.log
+    mkdir -p {{ output_dir }}
+    if [ -n "{{ collect_task_id }}" ]; then node scripts/flaker-batch-summary.ts --input {{ input_dir }} --collect-task-id {{ collect_task_id }} --json {{ output_dir }}/summary.json --markdown {{ output_dir }}/summary.md; else node scripts/flaker-batch-summary.ts --input {{ input_dir }} --json {{ output_dir }}/summary.json --markdown {{ output_dir }}/summary.md; fi | tee {{ output_dir }}/summary.log
 
 # Render flaker config summary for CI or local inspection
 flaker-report output_dir=".flaker/report":
-    mkdir -p {{output_dir}}
-    node scripts/flaker-entry.ts config report {{output_dir}} | tee {{output_dir}}/summary.log
+    mkdir -p {{ output_dir }}
+    node scripts/flaker-entry.ts config report {{ output_dir }} | tee {{ output_dir }}/summary.log
 
 # Validate tracked flaker quarantine entries
 flaker-quarantine-check:
@@ -488,59 +488,59 @@ flaker-quarantine-check:
 
 # Render flaker quarantine summary for CI or local inspection
 flaker-quarantine-report output_dir=".flaker/quarantine":
-    mkdir -p {{output_dir}}
-    node scripts/flaker-entry.ts quarantine report {{output_dir}} | tee {{output_dir}}/quarantine.log
+    mkdir -p {{ output_dir }}
+    node scripts/flaker-entry.ts quarantine report {{ output_dir }} | tee {{ output_dir }}/quarantine.log
 
 # Render upstream ownership inventory for flaker/crater boundaries
 flaker-upstream-inventory output_dir=".flaker/upstream":
-    mkdir -p {{output_dir}}
-    node scripts/flaker-entry.ts upstream inventory {{output_dir}} | tee {{output_dir}}/inventory.log
+    mkdir -p {{ output_dir }}
+    node scripts/flaker-entry.ts upstream inventory {{ output_dir }} | tee {{ output_dir }}/inventory.log
 
 # Stage one ready-to-upstream group into an export directory
 flaker-upstream-export group output_dir=".flaker/upstream-export":
-    mkdir -p {{output_dir}}
-    node scripts/flaker-entry.ts upstream export {{group}} {{output_dir}} | tee {{output_dir}}/{{group}}.log
+    mkdir -p {{ output_dir }}
+    node scripts/flaker-entry.ts upstream export {{ group }} {{ output_dir }} | tee {{ output_dir }}/{{ group }}.log
 
 # Normalize a Playwright JSON report into JSON/Markdown summary
 playwright-report-summary input label output_dir=".playwright-report" collect_task_id="":
-    mkdir -p {{output_dir}}
-    if [ -n "{{collect_task_id}}" ]; then npx tsx scripts/playwright-report-summary.ts --input {{input}} --label {{label}} --collect-task-id {{collect_task_id}} --json {{output_dir}}/{{label}}.json --markdown {{output_dir}}/{{label}}.md; else npx tsx scripts/playwright-report-summary.ts --input {{input}} --label {{label}} --json {{output_dir}}/{{label}}.json --markdown {{output_dir}}/{{label}}.md; fi | tee {{output_dir}}/{{label}}.log
+    mkdir -p {{ output_dir }}
+    if [ -n "{{ collect_task_id }}" ]; then npx tsx scripts/playwright-report-summary.ts --input {{ input }} --label {{ label }} --collect-task-id {{ collect_task_id }} --json {{ output_dir }}/{{ label }}.json --markdown {{ output_dir }}/{{ label }}.md; else npx tsx scripts/playwright-report-summary.ts --input {{ input }} --label {{ label }} --json {{ output_dir }}/{{ label }}.json --markdown {{ output_dir }}/{{ label }}.md; fi | tee {{ output_dir }}/{{ label }}.log
 
 # Compare normalized Playwright summaries against a baseline
 playwright-report-diff base_input head_input label output_dir=".playwright-report":
-    mkdir -p {{output_dir}}
-    npx tsx scripts/playwright-report-diff.ts --base {{base_input}} --head {{head_input}} --label {{label}} --json {{output_dir}}/{{label}}-diff.json --markdown {{output_dir}}/{{label}}-diff.md | tee {{output_dir}}/{{label}}-diff.log
+    mkdir -p {{ output_dir }}
+    npx tsx scripts/playwright-report-diff.ts --base {{ base_input }} --head {{ head_input }} --label {{ label }} --json {{ output_dir }}/{{ label }}-diff.json --markdown {{ output_dir }}/{{ label }}-diff.md | tee {{ output_dir }}/{{ label }}-diff.log
 
 # Summarize a WPT VRT shard result JSON
 wpt-vrt-report input label output_dir="wpt-vrt-summary" collect_task_id="":
-    mkdir -p {{output_dir}}
-    if [ -n "{{collect_task_id}}" ]; then npx tsx scripts/wpt-vrt-summary.ts --input {{input}} --label {{label}} --collect-task-id {{collect_task_id}} --json {{output_dir}}/{{label}}.json --markdown {{output_dir}}/{{label}}.md; else npx tsx scripts/wpt-vrt-summary.ts --input {{input}} --label {{label}} --json {{output_dir}}/{{label}}.json --markdown {{output_dir}}/{{label}}.md; fi | tee {{output_dir}}/{{label}}.log
+    mkdir -p {{ output_dir }}
+    if [ -n "{{ collect_task_id }}" ]; then npx tsx scripts/wpt-vrt-summary.ts --input {{ input }} --label {{ label }} --collect-task-id {{ collect_task_id }} --json {{ output_dir }}/{{ label }}.json --markdown {{ output_dir }}/{{ label }}.md; else npx tsx scripts/wpt-vrt-summary.ts --input {{ input }} --label {{ label }} --json {{ output_dir }}/{{ label }}.json --markdown {{ output_dir }}/{{ label }}.md; fi | tee {{ output_dir }}/{{ label }}.log
 
 # Aggregate WPT VRT shard summaries
 wpt-vrt-report-aggregate input_dir output_dir="wpt-vrt-summary" collect_task_id="":
-    mkdir -p {{output_dir}}
-    if [ -n "{{collect_task_id}}" ]; then npx tsx scripts/wpt-vrt-summary.ts --aggregate {{input_dir}} --collect-task-id {{collect_task_id}} --json {{output_dir}}/wpt-vrt-summary.json --markdown {{output_dir}}/wpt-vrt-summary.md; else npx tsx scripts/wpt-vrt-summary.ts --aggregate {{input_dir}} --json {{output_dir}}/wpt-vrt-summary.json --markdown {{output_dir}}/wpt-vrt-summary.md; fi | tee {{output_dir}}/wpt-vrt-summary.log
+    mkdir -p {{ output_dir }}
+    if [ -n "{{ collect_task_id }}" ]; then npx tsx scripts/wpt-vrt-summary.ts --aggregate {{ input_dir }} --collect-task-id {{ collect_task_id }} --json {{ output_dir }}/wpt-vrt-summary.json --markdown {{ output_dir }}/wpt-vrt-summary.md; else npx tsx scripts/wpt-vrt-summary.ts --aggregate {{ input_dir }} --json {{ output_dir }}/wpt-vrt-summary.json --markdown {{ output_dir }}/wpt-vrt-summary.md; fi | tee {{ output_dir }}/wpt-vrt-summary.log
 
 # Aggregate VRT artifact report.json files under an output directory
 vrt-report-summary input_dir label="vrt-artifacts" output_dir="vrt-report-summary" collect_task_id="":
-    mkdir -p {{output_dir}}
-    if [ -n "{{collect_task_id}}" ]; then node --import tsx scripts/vrt-report-summary.ts --input {{input_dir}} --label {{label}} --collect-task-id {{collect_task_id}} --json {{output_dir}}/{{label}}.json --markdown {{output_dir}}/{{label}}.md; else node --import tsx scripts/vrt-report-summary.ts --input {{input_dir}} --label {{label}} --json {{output_dir}}/{{label}}.json --markdown {{output_dir}}/{{label}}.md; fi | tee {{output_dir}}/{{label}}.log
+    mkdir -p {{ output_dir }}
+    if [ -n "{{ collect_task_id }}" ]; then node --import tsx scripts/vrt-report-summary.ts --input {{ input_dir }} --label {{ label }} --collect-task-id {{ collect_task_id }} --json {{ output_dir }}/{{ label }}.json --markdown {{ output_dir }}/{{ label }}.md; else node --import tsx scripts/vrt-report-summary.ts --input {{ input_dir }} --label {{ label }} --json {{ output_dir }}/{{ label }}.json --markdown {{ output_dir }}/{{ label }}.md; fi | tee {{ output_dir }}/{{ label }}.log
 
 # Regenerate the local current paint VRT summary while ignoring stale WPT/url scratch reports
 paint-vrt-current-summary input_dir="output/playwright/vrt" output_prefix="output/playwright/vrt-current-summary":
-    node --import tsx scripts/vrt-report-summary.ts --input {{input_dir}} --label paint-vrt-current --include-task-id paint-vrt --include-task-id paint-vrt-font-fallback --include-task-id paint-vrt-gradients --include-task-id paint-vrt-svg-intrinsic --exclude-filter wikipedia --json {{output_prefix}}.json --markdown {{output_prefix}}.md
+    node --import tsx scripts/vrt-report-summary.ts --input {{ input_dir }} --label paint-vrt-current --include-task-id paint-vrt --include-task-id paint-vrt-font-fallback --include-task-id paint-vrt-gradients --include-task-id paint-vrt-svg-intrinsic --exclude-filter wikipedia --json {{ output_prefix }}.json --markdown {{ output_prefix }}.md
 
 # Check that the local current paint VRT summary is newer than all selected report.json files
 paint-vrt-current-summary-check input_dir="output/playwright/vrt" output_prefix="output/playwright/vrt-current-summary":
-    node --import tsx scripts/vrt-report-summary.ts --input {{input_dir}} --label paint-vrt-current --include-task-id paint-vrt --include-task-id paint-vrt-font-fallback --include-task-id paint-vrt-gradients --include-task-id paint-vrt-svg-intrinsic --exclude-filter wikipedia --json {{output_prefix}}.json --markdown {{output_prefix}}.md --check-fresh
+    node --import tsx scripts/vrt-report-summary.ts --input {{ input_dir }} --label paint-vrt-current --include-task-id paint-vrt --include-task-id paint-vrt-font-fallback --include-task-id paint-vrt-gradients --include-task-id paint-vrt-svg-intrinsic --exclude-filter wikipedia --json {{ output_prefix }}.json --markdown {{ output_prefix }}.md --check-fresh
 
 # Capture a live site into real-world/ (gitignored)
 capture-realworld *args:
-    pnpm capture:realworld -- {{args}}
+    pnpm capture:realworld -- {{ args }}
 
 # Run real-world paint benchmark against Chromium and Crater
 bench-realworld *args:
-    pnpm bench:realworld -- {{args}}
+    pnpm bench:realworld -- {{ args }}
 
 # Run all Playwright-based tests
 test-playwright-all: test-playwright test-playwright-adapter test-website
@@ -562,7 +562,7 @@ build-js-wasm:
 # Build WASM component
 build-wasm:
     moon -C wasm build --target wasm --release
-    wasm-tools component embed --world crater wasm/wit wasm/_build/wasm/release/build/gen/gen.wasm -o wasm/_build/crater-embedded.wasm
+    wasm-tools component embed --world crater wasm/wit wasm/_build/wasm/release/build/mizchi/crater-wasm/gen/gen.wasm -o wasm/_build/crater-embedded.wasm
     wasm-tools component new wasm/_build/crater-embedded.wasm -o wasm/_build/crater.wasm
 
 # Transpile WASM with jco

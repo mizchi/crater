@@ -216,7 +216,7 @@ pub fn deserialize_text_metrics_recording(
   let result : Array[RecordedMetric] = []
   let len = data.length()
   let mut i = 0
-  fn unit_at(idx : Int) -> Int {
+  fn unit_at(idx : Int32) -> Int32 {
     data[idx].to_int()
   }
   let nl = '\n'.to_int()
@@ -228,7 +228,7 @@ pub fn deserialize_text_metrics_recording(
     i = i + 1
   }
   i = i + 1 // skip the newline
-  fn read_until(stop : Int) -> String {
+  fn read_until(stop : Int32) -> String {
     let start = i
     while i < len && unit_at(i) != stop {
       i = i + 1
@@ -367,7 +367,7 @@ pub fn deserialize_image_intrinsic_recording(
   let result : Array[RecordedImage] = []
   let len = data.length()
   let mut i = 0
-  fn unit_at(idx : Int) -> Int {
+  fn unit_at(idx : Int32) -> Int32 {
     data[idx].to_int()
   }
   let nl = '\n'.to_int()
@@ -377,7 +377,7 @@ pub fn deserialize_image_intrinsic_recording(
     i = i + 1
   }
   i = i + 1
-  fn read_until(stop : Int) -> String {
+  fn read_until(stop : Int32) -> String {
     let start = i
     while i < len && unit_at(i) != stop {
       i = i + 1

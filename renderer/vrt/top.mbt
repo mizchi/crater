@@ -157,23 +157,44 @@ pub fn diff_rendered_paint_trees(
 }
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct CssMutation {
   selector : String
   property : String
   action : CssMutationAction
-} derive(Eq, Debug)
+}
 
 ///|
+pub extend CssMutation with Eq::{not_equal, equal}
+
+///|
+pub extend CssMutation with @debug.Debug::{to_repr}
+
+///|
+#derive(Eq, Debug)
 pub(all) enum CssMutationAction {
   Remove
   Override(String)
-} derive(Eq, Debug)
+}
 
 ///|
+pub extend CssMutationAction with Eq::{not_equal, equal}
+
+///|
+pub extend CssMutationAction with @debug.Debug::{to_repr}
+
+///|
+#derive(Eq, Debug)
 pub(all) struct RenderVariant {
   id : String
   mutations : Array[CssMutation]
-} derive(Eq, Debug)
+}
+
+///|
+pub extend RenderVariant with Eq::{not_equal, equal}
+
+///|
+pub extend RenderVariant with @debug.Debug::{to_repr}
 
 ///|
 pub(all) struct RenderVariantResult {
@@ -195,6 +216,9 @@ pub impl Show for CssMutation with fn output(self, logger) {
 }
 
 ///|
+pub extend CssMutation with Show::{to_string, output}
+
+///|
 pub impl Show for CssMutationAction with fn output(self, logger) {
   match self {
     Remove => logger.write_string("Remove")
@@ -209,6 +233,9 @@ pub impl Show for CssMutationAction with fn output(self, logger) {
 }
 
 ///|
+pub extend CssMutationAction with Show::{to_string, output}
+
+///|
 pub impl Show for RenderVariant with fn output(self, logger) {
   logger.write_string("{id: ")
   logger.write_string("\"")
@@ -220,6 +247,9 @@ pub impl Show for RenderVariant with fn output(self, logger) {
 }
 
 ///|
+pub extend RenderVariant with Show::{to_string, output}
+
+///|
 pub impl Show for RenderVariantResult with fn output(self, logger) {
   logger.write_string("{id: ")
   logger.write_string("\"")
@@ -227,6 +257,9 @@ pub impl Show for RenderVariantResult with fn output(self, logger) {
   logger.write_string("\"")
   logger.write_string(", paint_tree: \{self.paint_tree}}")
 }
+
+///|
+pub extend RenderVariantResult with Show::{to_string, output}
 
 ///|
 pub fn render_html_batch_variants(
@@ -531,19 +564,26 @@ pub fn RenderSession::branch_diff(
 /// pre-order (document-order) position in the layout tree — a stable key a JS
 /// DOM built in the same order can match. The crater layout tree already stores
 /// absolute viewport coordinates, so x/y are left/top directly.
+#derive(Eq, Debug)
 pub(all) struct LayoutBox {
   id : String
-  index : Int
+  index : Int32
   x : Double
   y : Double
   width : Double
   height : Double
-} derive(Eq, Debug)
+}
+
+///|
+pub extend LayoutBox with Eq::{not_equal, equal}
+
+///|
+pub extend LayoutBox with @debug.Debug::{to_repr}
 
 ///|
 fn collect_layout_boxes_into(
   layout : @layout_types.Layout,
-  next_index : Ref[Int],
+  next_index : Ref[Int32],
   out : Array[LayoutBox],
 ) -> Unit {
   let index = next_index.val
@@ -684,9 +724,10 @@ fn css_number(v : Double) -> String {
 /// style by index. Values are serialized as CSS strings (display `"flex"`, color
 /// `"rgb(255, 0, 0)"`, font-size `"20px"`). This is the node-tree analogue of
 /// `collect_layout_boxes`: the data layer a getComputedStyle bridge would inject.
+#derive(Eq, Debug)
 pub(all) struct ComputedStyleEntry {
   id : String
-  index : Int
+  index : Int32
   display : String
   position : String
   visibility : String
@@ -696,12 +737,18 @@ pub(all) struct ComputedStyleEntry {
   z_index : String
   color : String
   background_color : String
-} derive(Eq, Debug)
+}
+
+///|
+pub extend ComputedStyleEntry with Eq::{not_equal, equal}
+
+///|
+pub extend ComputedStyleEntry with @debug.Debug::{to_repr}
 
 ///|
 fn collect_computed_styles_into(
   node : @layout.Node,
-  next_index : Ref[Int],
+  next_index : Ref[Int32],
   out : Array[ComputedStyleEntry],
 ) -> Unit {
   let index = next_index.val

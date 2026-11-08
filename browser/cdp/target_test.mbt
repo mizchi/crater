@@ -5,7 +5,7 @@
 
 ///|
 test "Target.createBrowserContext creates new context" {
-  let target = TargetDomain::new()
+  let target = @cdp.TargetDomain::new()
   let result = target.create_browser_context()
   inspect(result is Ok(_), content="true")
   let context_id = result.unwrap()
@@ -17,7 +17,7 @@ test "Target.createBrowserContext creates new context" {
 
 ///|
 test "Target.getBrowserContexts returns all contexts" {
-  let target = TargetDomain::new()
+  let target = @cdp.TargetDomain::new()
   // Initially empty
   let contexts = target.get_browser_contexts()
   inspect(contexts.length(), content="0")
@@ -33,7 +33,7 @@ test "Target.getBrowserContexts returns all contexts" {
 
 ///|
 test "Target.disposeBrowserContext removes context" {
-  let target = TargetDomain::new()
+  let target = @cdp.TargetDomain::new()
   let result = target.create_browser_context()
   let context_id = result.unwrap()
   // Dispose
@@ -46,14 +46,14 @@ test "Target.disposeBrowserContext removes context" {
 
 ///|
 test "Target.disposeBrowserContext fails for unknown context" {
-  let target = TargetDomain::new()
+  let target = @cdp.TargetDomain::new()
   let result = target.dispose_browser_context("unknown-id")
   inspect(result is Err(_), content="true")
 }
 
 ///|
 test "Target.createTarget creates target in context" {
-  let target = TargetDomain::new()
+  let target = @cdp.TargetDomain::new()
   let result = target.create_target("about:blank", None)
   inspect(result is Ok(_), content="true")
   let target_id = result.unwrap()
@@ -62,7 +62,7 @@ test "Target.createTarget creates target in context" {
 
 ///|
 test "Target.createTarget with explicit context" {
-  let target = TargetDomain::new()
+  let target = @cdp.TargetDomain::new()
   // Create context first
   let ctx_result = target.create_browser_context()
   let context_id = ctx_result.unwrap()
@@ -73,14 +73,14 @@ test "Target.createTarget with explicit context" {
 
 ///|
 test "Target.createTarget fails for unknown context" {
-  let target = TargetDomain::new()
+  let target = @cdp.TargetDomain::new()
   let result = target.create_target("about:blank", Some("unknown-context"))
   inspect(result is Err(_), content="true")
 }
 
 ///|
 test "Target.createTarget fails if target already exists" {
-  let target = TargetDomain::new()
+  let target = @cdp.TargetDomain::new()
   // Create first target
   let _ = target.create_target("about:blank", None)
   // Try to create another in same context
@@ -91,7 +91,7 @@ test "Target.createTarget fails if target already exists" {
 
 ///|
 test "Target.closeTarget removes target" {
-  let target = TargetDomain::new()
+  let target = @cdp.TargetDomain::new()
   let create_result = target.create_target("about:blank", None)
   let target_id = create_result.unwrap()
   // Close
@@ -104,14 +104,14 @@ test "Target.closeTarget removes target" {
 
 ///|
 test "Target.closeTarget fails for unknown target" {
-  let target = TargetDomain::new()
+  let target = @cdp.TargetDomain::new()
   let result = target.close_target("unknown-target")
   inspect(result is Err(_), content="true")
 }
 
 ///|
 test "Target.attachToTarget returns session id" {
-  let target = TargetDomain::new()
+  let target = @cdp.TargetDomain::new()
   let create_result = target.create_target("about:blank", None)
   let target_id = create_result.unwrap()
   // Attach
@@ -123,7 +123,7 @@ test "Target.attachToTarget returns session id" {
 
 ///|
 test "Target.attachToTarget returns same session if already attached" {
-  let target = TargetDomain::new()
+  let target = @cdp.TargetDomain::new()
   let create_result = target.create_target("about:blank", None)
   let target_id = create_result.unwrap()
   // Attach twice
@@ -134,7 +134,7 @@ test "Target.attachToTarget returns same session if already attached" {
 
 ///|
 test "Target.detachFromTarget detaches session" {
-  let target = TargetDomain::new()
+  let target = @cdp.TargetDomain::new()
   let create_result = target.create_target("about:blank", None)
   let target_id = create_result.unwrap()
   let attach_result = target.attach_to_target(target_id)
@@ -149,7 +149,7 @@ test "Target.detachFromTarget detaches session" {
 
 ///|
 test "Target.getTargets returns all targets" {
-  let target = TargetDomain::new()
+  let target = @cdp.TargetDomain::new()
   // Initially empty
   let targets = target.get_targets()
   inspect(targets.length(), content="0")
@@ -161,7 +161,7 @@ test "Target.getTargets returns all targets" {
 
 ///|
 test "Target.getTargetInfo returns target info" {
-  let target = TargetDomain::new()
+  let target = @cdp.TargetDomain::new()
   let create_result = target.create_target("about:blank", None)
   let target_id = create_result.unwrap()
   // Get info
@@ -174,7 +174,7 @@ test "Target.getTargetInfo returns target info" {
 
 ///|
 test "Target.getTargetInfo returns browser info when no target specified" {
-  let target = TargetDomain::new()
+  let target = @cdp.TargetDomain::new()
   let info_result = target.get_target_info(None)
   inspect(info_result is Ok(_), content="true")
   let info = info_result.unwrap()
@@ -183,7 +183,7 @@ test "Target.getTargetInfo returns browser info when no target specified" {
 
 ///|
 test "Target.setAutoAttach enables auto-attach" {
-  let target = TargetDomain::new()
+  let target = @cdp.TargetDomain::new()
   inspect(target.is_auto_attach(), content="false")
   target.set_auto_attach(true, false)
   inspect(target.is_auto_attach(), content="true")
@@ -191,7 +191,7 @@ test "Target.setAutoAttach enables auto-attach" {
 
 ///|
 test "Target.createTarget with auto-attach creates session" {
-  let target = TargetDomain::new()
+  let target = @cdp.TargetDomain::new()
   target.set_auto_attach(true, false)
   // Create target - should auto-attach
   let _ = target.create_target("about:blank", None)

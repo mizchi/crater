@@ -2,7 +2,7 @@
 test "renderer facade renders paint tree json" {
   let html =
     #|<!DOCTYPE html><body><div style="width: 100px; height: 50px;">hello</div></body>
-  let json = render_html_to_paint_tree_json(
+  let json = @crater-renderer.render_html_to_paint_tree_json(
     html,
     @types.Size::new(320.0, 200.0),
   )
@@ -14,7 +14,7 @@ test "renderer facade renders batch variants" {
   let html =
     #|<html><body><div class="box" style="width: 100px; height: 50px; background: red;">hello</div></body></html>
   let viewport = @types.Size::new(800.0, 600.0)
-  let variants : Array[RenderVariant] = [
+  let variants : Array[@crater-renderer.RenderVariant] = [
     { id: "baseline", mutations: [], },
     {
       id: "wider",
@@ -22,12 +22,14 @@ test "renderer facade renders batch variants" {
         {
           selector: ".box",
           property: "width",
-          action: CssMutationAction::Override("200px"),
+          action: @crater-renderer.CssMutationAction::Override("200px"),
         },
       ],
     },
   ]
-  let results = render_html_batch_variants(html, viewport, variants)
+  let results = @crater-renderer.render_html_batch_variants(
+    html, viewport, variants,
+  )
   assert_eq(results.length(), 2)
   assert_eq(results[0].id, "baseline")
   assert_eq(results[1].id, "wider")
@@ -78,7 +80,7 @@ test "renderer facade propagates font weight and text decoration" {
     #|}
     #|</style>
     #|<p class="card">Hello paint</p>
-  let paint_tree = render_html_to_paint_tree(
+  let paint_tree = @crater-renderer.render_html_to_paint_tree(
     html,
     @types.Size::new(240.0, 120.0),
   )
@@ -100,7 +102,7 @@ test "renderer facade exposes text input value and placeholder to paint tree" {
     #|<!DOCTYPE html>
     #|<style>body { margin: 0; } input { font: 14px Arial; }</style>
     #|<input id="placeholder" type="email" placeholder="you@example.com">
-  let placeholder_tree = render_html_to_paint_tree(
+  let placeholder_tree = @crater-renderer.render_html_to_paint_tree(
     placeholder_html,
     @types.Size::new(320.0, 120.0),
   )
@@ -116,7 +118,7 @@ test "renderer facade exposes text input value and placeholder to paint tree" {
     #|<!DOCTYPE html>
     #|<style>body { margin: 0; } input { font: 14px Arial; }</style>
     #|<input id="value" type="text" value="Ada">
-  let value_tree = render_html_to_paint_tree(
+  let value_tree = @crater-renderer.render_html_to_paint_tree(
     value_html,
     @types.Size::new(320.0, 120.0),
   )
@@ -142,7 +144,7 @@ test "renderer facade reports layout and paint changes" {
     #|.card { padding: 0; background: #cccccc; }
     #|</style>
     #|<div class="card"><span>Callout</span></div>
-  let diff = diff_rendered_paint_trees(
+  let diff = @crater-renderer.diff_rendered_paint_trees(
     baseline,
     current,
     @types.Size::new(240.0, 120.0),
@@ -160,7 +162,7 @@ test "renderer facade preserves numeric font weight in paint contract" {
     #|.medium { font-weight: 500; }
     #|</style>
     #|<p class="medium">Medium label</p>
-  let paint_tree = render_html_to_paint_tree(
+  let paint_tree = @crater-renderer.render_html_to_paint_tree(
     html,
     @types.Size::new(240.0, 120.0),
   )
@@ -180,7 +182,7 @@ test "renderer facade preserves numeric font weight in paint contract" {
     #|<!DOCTYPE html>
     #|<style>body { margin: 0; }.label { font-weight: 500; }</style>
     #|<p class="label">Weighted label</p>
-  let diff = diff_rendered_paint_trees(
+  let diff = @crater-renderer.diff_rendered_paint_trees(
     baseline,
     current,
     @types.Size::new(240.0, 120.0),
@@ -194,7 +196,7 @@ test "renderer facade applies external css" {
   let html =
     #|<!DOCTYPE html>
     #|<p class="card">Hello external css</p>
-  let paint_tree = render_html_to_paint_tree_with_external_css(
+  let paint_tree = @crater-renderer.render_html_to_paint_tree_with_external_css(
     html,
     @types.Size::new(240.0, 120.0),
     [
@@ -220,7 +222,7 @@ test "renderer facade applies semantic inline defaults" {
     #|<div><a href="#">Link</a></div>
     #|<div><u>Underline</u></div>
     #|<div><s>Strike</s></div>
-  let paint_tree = render_html_to_paint_tree(
+  let paint_tree = @crater-renderer.render_html_to_paint_tree(
     html,
     @types.Size::new(320.0, 160.0),
   )
@@ -259,7 +261,7 @@ test "renderer facade preserves nested inline link paint color" {
     #|a:link { color: #000000; text-decoration: none; }
     #|</style>
     #|<span class="title"><span class="titleline"><a href="#">Black title</a><span> gray site</span></span></span>
-  let paint_tree = render_html_to_paint_tree(
+  let paint_tree = @crater-renderer.render_html_to_paint_tree(
     html,
     @types.Size::new(320.0, 80.0),
   )
@@ -298,7 +300,7 @@ test "renderer facade lets author styles override semantic defaults" {
     #|<div><a href="#" class="reset">LinkReset</a></div>
     #|<div><u class="reset">UnderlineReset</u></div>
     #|<div><s class="reset">StrikeReset</s></div>
-  let paint_tree = render_html_to_paint_tree(
+  let paint_tree = @crater-renderer.render_html_to_paint_tree(
     html,
     @types.Size::new(360.0, 160.0),
   )

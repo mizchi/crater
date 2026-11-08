@@ -10,27 +10,27 @@ import {
 }
 
 // Values
-pub fn print_layout(@crater-core.Layout, Int, Int) -> Unit
+pub fn print_layout(@crater-core.Layout, Int32, Int32) -> Unit
 
-pub fn render_layout(@crater-core.Layout, Int, Int) -> String
+pub fn render_layout(@crater-core.Layout, Int32, Int32) -> String
 
-pub fn render_layout_with_options(@crater-core.Layout, Int, Int, Bool) -> String
+pub fn render_layout_with_options(@crater-core.Layout, Int32, Int32, Bool) -> String
 
-pub fn render_paint_node_to_sixel(@model.PaintNode, Int, Int) -> String
+pub fn render_paint_node_to_sixel(@model.PaintNode, Int32, Int32) -> String
 
-pub fn render_paint_node_to_sixel_scrolled(@model.PaintNode, Int, Int, Int) -> String
+pub fn render_paint_node_to_sixel_scrolled(@model.PaintNode, Int32, Int32, Int32) -> String
 
-pub fn render_svg_node_to_sixel(@svg.SVGNode, Int, Int) -> String
+pub fn render_svg_node_to_sixel(@svg.SVGNode, Int32, Int32) -> String
 
-pub fn render_svg_path_to_sixel(String, @raster.Color?, @raster.Color?, Int, Int) -> String
+pub fn render_svg_path_to_sixel(String, @raster.Color?, @raster.Color?, Int32, Int32) -> String
 
-pub fn render_svg_to_sixel(@svg.Scene, Int, Int) -> String
+pub fn render_svg_to_sixel(@svg.Scene, Int32, Int32) -> String
 
 pub fn render_svg_to_sixel_with_camera(@svg.Scene, @svg.Camera) -> String
 
-pub fn render_with_styles(@node.Node, @crater-core.Layout, Int, Int) -> String
+pub fn render_with_styles(@node.Node, @crater-core.Layout, Int32, Int32) -> String
 
-pub fn render_with_styles_scrolled(@node.Node, @crater-core.Layout, Int, Int, Int) -> String
+pub fn render_with_styles_scrolled(@node.Node, @crater-core.Layout, Int32, Int32, Int32) -> String
 
 pub fn to_sixel(@raster.Framebuffer) -> String
 

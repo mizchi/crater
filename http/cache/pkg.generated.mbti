@@ -11,7 +11,7 @@ pub fn[CacheBackend : HttpCacheBackend] cached_fetch(url~ : String, options~ : @
 
 pub async fn[CacheBackend : HttpCacheBackend] cached_fetch_async(url~ : String, options~ : @crater-browser-http.FetchOptions, cache~ : CacheBackend, fetcher~ : async (String, @crater-browser-http.FetchOptions) -> @crater-browser-http.HttpResponse raise @crater-browser-http.HttpError) -> @crater-browser-http.HttpResponse raise @crater-browser-http.HttpError
 
-pub fn is_cacheable_status(Int) -> Bool
+pub fn is_cacheable_status(Int32) -> Bool
 
 pub fn is_fresh(CacheEntry, Double) -> Bool
 
@@ -22,36 +22,42 @@ pub fn parse_cache_control(String) -> CacheDirectives
 // Errors
 
 // Types and methods
+#derive(@debug.Debug)
 pub(all) struct CacheDirectives {
-  max_age : Int?
+  max_age : Int32?
   no_cache : Bool
   no_store : Bool
   must_revalidate : Bool
   public_ : Bool
   private_ : Bool
   immutable : Bool
-} derive(@debug.Debug)
+}
 pub fn CacheDirectives::default() -> Self
+pub fn CacheDirectives::output(Self, &Logger) -> Unit
+pub fn CacheDirectives::to_repr(Self) -> @debug.Repr
+pub fn CacheDirectives::to_string(Self) -> String
 pub impl Show for CacheDirectives
 
+#derive(@debug.Debug)
 pub(all) struct CacheEntry {
   url : String
-  status : Int
+  status : Int32
   headers : Map[String, String]
   body : String
   etag : String?
   last_modified : String?
   directives : CacheDirectives
   stored_at : Double
-} derive(@debug.Debug)
+}
+pub fn CacheEntry::to_repr(Self) -> @debug.Repr
 
 pub(all) struct MemoryCacheBackend {
   entries : Map[String, CacheEntry]
-  max_entries : Int
+  max_entries : Int32
 }
 pub fn MemoryCacheBackend::clear(Self) -> Unit
 pub fn MemoryCacheBackend::lookup(Self, String) -> CacheEntry?
-pub fn MemoryCacheBackend::new(max_entries? : Int) -> Self
+pub fn MemoryCacheBackend::new(max_entries? : Int32) -> Self
 pub fn MemoryCacheBackend::remove(Self, String) -> Unit
 pub fn MemoryCacheBackend::store(Self, CacheEntry) -> Unit
 pub impl HttpCacheBackend for MemoryCacheBackend

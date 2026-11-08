@@ -2,7 +2,7 @@
 
 ///|
 /// Create a new layout tree from HTML
-pub fn create_tree(html : String, width : UInt, height : UInt) -> UInt {
+pub fn create_tree(html : String, width : UInt32, height : UInt32) -> UInt32 {
   @crater.createTree(
     html,
     width.reinterpret_as_int(),
@@ -48,7 +48,7 @@ pub fn update_style(node_id : String, css : String) -> Bool {
 
 ///|
 /// Resize viewport
-pub fn resize_viewport(width : UInt, height : UInt) -> Unit {
+pub fn resize_viewport(width : UInt32, height : UInt32) -> Unit {
   @crater.resizeViewport(
     width.reinterpret_as_int(),
     height.reinterpret_as_int(),

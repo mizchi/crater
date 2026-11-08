@@ -44,12 +44,12 @@ priv struct HitTarget {
 
 ///|
 priv struct KittyPlacement {
-  image_id : Int
-  placement_id : Int
-  col : Int
-  row : Int
-  width : Int
-  height : Int
+  image_id : Int32
+  placement_id : Int32
+  col : Int32
+  row : Int32
+  width : Int32
+  height : Int32
 }
 
 ///|
@@ -82,9 +82,9 @@ struct Browser {
   /// Request sandbox policy
   mut request_sandbox : @http.RequestSandbox
   /// Viewport width in pixels
-  viewport_width : Int
+  viewport_width : Int32
   /// Viewport height in pixels
-  viewport_height : Int
+  viewport_height : Int32
   /// Current HTML content
   mut html_content : String
   /// Last raw HTML source before render-time normalization
@@ -116,11 +116,11 @@ struct Browser {
   /// Links found in current page
   mut links : Array[Link]
   /// Currently focused link index (legacy, kept for compatibility)
-  mut focused_link : Int
+  mut focused_link : Int32
   /// Scroll position (Y offset)
-  mut scroll_y : Int
+  mut scroll_y : Int32
   /// Content height (for scroll limit)
-  mut content_height : Int
+  mut content_height : Int32
   /// Link regions for click hit testing (updated on each render)
   mut link_regions : Array[@tui.LinkRegion]
   /// Paint-order hit regions for generic click hit testing
@@ -172,7 +172,7 @@ struct Browser {
   mut cascade_reuse_prior_styles : Map[String, @style.Style]
   mut cascade_reuse_prior_sigs : Map[String, String]
   mut cascade_reuse_prev_css_sig : String?
-  mut cascade_reuse_last_count : Int
+  mut cascade_reuse_last_count : Int32
   /// Previous TUI buffer for diff rendering
   mut prev_buffer : @tui.CharBuffer?
   /// Last render key (for diff invalidation)
@@ -201,9 +201,9 @@ struct Browser {
   /// Text-control selection anchor source id during pointer drag
   mut text_selection_anchor_source_id : String?
   /// Text-control selection anchor column during pointer drag
-  mut text_selection_anchor_col : Int
+  mut text_selection_anchor_col : Int32
   /// Text-control selection anchor row during pointer drag
-  mut text_selection_anchor_row : Int
+  mut text_selection_anchor_row : Int32
   /// Source currently in drag session
   mut dragging_source_id : String?
   /// Current drag-over target
@@ -213,13 +213,13 @@ struct Browser {
   /// No-color mode (disable ANSI color codes)
   mut no_color : Bool
   /// Terminal columns (for pixel-to-column scaling)
-  terminal_cols : Int
+  terminal_cols : Int32
   /// Image regions from last render (for kitty/sixel overlay)
   mut image_regions : Array[@tui.ImageRegion]
   /// Cached rendered image data (src URL -> kitty graphics commands)
   image_cache : @terminal_image_cache.ImageCache
   /// Uploaded kitty image ids that can be re-placed without re-sending payloads
-  kitty_uploaded_image_ids : Map[Int, Bool]
+  kitty_uploaded_image_ids : Map[Int32, Bool]
   /// Visible kitty placements from the previous text render
   mut kitty_visible_placements : Map[String, KittyPlacement]
   /// Per-session profile bundling user-agent override, cookie jar,
@@ -230,9 +230,9 @@ struct Browser {
 ///|
 /// Create a new browser instance
 pub fn Browser::new(
-  width : Int,
-  height : Int,
-  terminal_cols? : Int = 80,
+  width : Int32,
+  height : Int32,
+  terminal_cols~ : Int32 = 80,
 ) -> Browser {
   {
     current_url: "",

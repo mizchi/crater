@@ -2,6 +2,7 @@ import { readFileSync, existsSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { prepareReleaseWorkspace, verifyReleaseArchives } from './moon-release-workspace.mjs'
 
 export const INTERNAL_MODULES = new Set([
   'mizchi/crater-benchmarks',
@@ -461,12 +462,33 @@ export function runCli({
 
   if (action === 'list') return 0
 
-  return runCommands(commands, {
-    action,
-    cwd,
-    stdout,
-    stderr,
-  })
+  if (action === 'check') return runCommands(commands, { action, cwd, stdout, stderr })
+
+  const release = prepareReleaseWorkspace({ sourceRoot: cwd, modules: plan.orderedModules })
+  try {
+    const updateResult = spawnSync('moon', ['check', '--target', 'js'], {
+      cwd: release.workspaceRoot,
+      encoding: 'utf8',
+    })
+    writeProcessOutput(stdout, stderr, updateResult)
+    if (updateResult.status !== 0) return updateResult.status ?? 1
+    const stageCommands = entries => entries.map(entry => {
+      const args = ['-C', release.moduleRoots.get(entry.module.name), ...entry.args.slice(2),
+        '--target-dir', path.join(cwd, '_build/release')]
+      return { ...entry, args, command: ['moon', ...args].join(' ') }
+    })
+    const runOptions = { action, cwd: release.workspaceRoot, stdout, stderr }
+    const packageCommands = formatPackageCommands(plan.orderedModules, { frozen })
+    const packageStatus = runCommands(stageCommands(packageCommands), { ...runOptions, action: 'package' })
+    if (packageStatus !== 0) return packageStatus
+    verifyReleaseArchives({ modules: plan.orderedModules, moduleRoots: release.moduleRoots,
+      archiveDir: path.join(cwd, '_build/release/publish') })
+    stdout.log(`Verified ${plan.orderedModules.length} release archives`)
+    if (usePackageFallback) return 0
+    return runCommands(stageCommands(commands), runOptions)
+  } finally {
+    release.cleanup()
+  }
 }
 
 const isEntrypoint =

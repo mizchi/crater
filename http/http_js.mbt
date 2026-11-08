@@ -29,7 +29,7 @@ extern "js" fn js_fetch_internal(
   http_method : String,
   headers_json : String,
   body_json : String,
-  timeout_ms : Int,
+  timeout_ms : Int32,
 ) -> @js_async.Promise[String] =
   #| async (url, method, headersJson, bodyJson, timeoutMs) => {
   #|   const headers = JSON.parse(headersJson);
@@ -126,7 +126,7 @@ fn parse_headers_json(json_str : String) -> Map[String, String] {
 
 ///|
 /// Extract integer value from JSON by key
-fn extract_json_int(json : String, key : String) -> Int {
+fn extract_json_int(json : String, key : String) -> Int32 {
   let pattern = "\"" + key + "\":"
   match json.find(pattern) {
     Some(idx) => {
@@ -200,7 +200,7 @@ fn unescape_json_string(s : String) -> String {
 /// Fetch URL using JavaScript fetch() API
 pub async fn fetch(
   url : String,
-  options? : FetchOptions = FetchOptions::default(),
+  options~ : FetchOptions = FetchOptions::default(),
 ) -> HttpResponse raise HttpError {
   let prepared = prepare_fetch_options(url, options)
   let headers_json = headers_to_json(prepared.headers)

@@ -21,15 +21,15 @@ export function copyDist(cwd = process.cwd()) {
 
   fs.copyFileSync(
     resolveBuildArtifactPath(cwd, [
-      "_build/js/release/build/crater-js.js",
       "../_build/js/release/build/mizchi/crater-js/crater-js.js",
+      "_build/js/release/build/crater-js.js",
     ]),
     path.join(distDir, "crater.js"),
   )
   fs.copyFileSync(
     resolveBuildArtifactPath(cwd, [
-      "_build/wasm-gc/release/build/crater-js.wasm",
       "../_build/wasm-gc/release/build/mizchi/crater-js/crater-js.wasm",
+      "_build/wasm-gc/release/build/crater-js.wasm",
     ]),
     path.join(distDir, "crater.wasm"),
   )

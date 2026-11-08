@@ -6,7 +6,7 @@ fn BidiProtocol::locate_nodes_accessibility(
   role : String?,
   name : String?,
   start_node_shared_ids : Array[String],
-  max_node_count : Int,
+  max_node_count : Int32,
   serialization_options_json : String,
 ) -> Json {
   let role_literal = "\"" + escape_js_string(role.unwrap_or("")) + "\""

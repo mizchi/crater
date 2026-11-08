@@ -5,10 +5,10 @@
 /// Get content height with external CSS
 pub fn get_content_height_with_css(
   html : String,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
   external_css : Array[String],
-) -> Int {
+) -> Int32 {
   let ctx : RenderContext = {
     viewport_width: width.to_double(),
     viewport_height: height.to_double(),
@@ -21,7 +21,11 @@ pub fn get_content_height_with_css(
 
 ///|
 /// Get content height from HTML
-pub fn get_content_height(html : String, width : Int, height : Int) -> Int {
+pub fn get_content_height(
+  html : String,
+  width : Int32,
+  height : Int32,
+) -> Int32 {
   let ctx : RenderContext = {
     viewport_width: width.to_double(),
     viewport_height: height.to_double(),
@@ -52,10 +56,10 @@ fn calculate_content_extent(layout : @layout_types.Layout) -> Double {
 /// Get content height from a parsed Document with external CSS
 pub fn get_content_height_with_document(
   doc : @html.Document,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
   external_css : Array[String],
-) -> Int {
+) -> Int32 {
   let ctx : RenderContext = {
     viewport_width: width.to_double(),
     viewport_height: height.to_double(),

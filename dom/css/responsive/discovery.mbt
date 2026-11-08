@@ -2,30 +2,51 @@
 /// Responsive breakpoint discovery from inline stylesheets.
 
 ///|
+#derive(Eq, Debug)
 pub struct ResponsiveBreakpoint {
   axis : String
   op : String
-  value_px : Int
+  value_px : Int32
   raw : String
   normalized : String
   guards : Array[String]
-  rule_count : Int
-} derive(Eq, Debug)
+  rule_count : Int32
+}
 
 ///|
+pub extend ResponsiveBreakpoint with Eq::{not_equal, equal}
+
+///|
+pub extend ResponsiveBreakpoint with @debug.Debug::{to_repr}
+
+///|
+#derive(Eq, Debug)
 pub struct BreakpointDiscoveryDiagnostics {
-  stylesheet_count : Int
-  rule_count : Int
+  stylesheet_count : Int32
+  rule_count : Int32
   external_stylesheet_links : Array[String]
   ignored_queries : Array[String]
   unsupported_queries : Array[String]
-} derive(Eq, Debug)
+}
 
 ///|
+pub extend BreakpointDiscoveryDiagnostics with Eq::{not_equal, equal}
+
+///|
+pub extend BreakpointDiscoveryDiagnostics with @debug.Debug::{to_repr}
+
+///|
+#derive(Eq, Debug)
 pub struct BreakpointDiscoveryResult {
   breakpoints : Array[ResponsiveBreakpoint]
   diagnostics : BreakpointDiscoveryDiagnostics
-} derive(Eq, Debug)
+}
+
+///|
+pub extend BreakpointDiscoveryResult with Eq::{not_equal, equal}
+
+///|
+pub extend BreakpointDiscoveryResult with @debug.Debug::{to_repr}
 
 ///|
 pub impl Show for ResponsiveBreakpoint with fn output(self, logger) {
@@ -47,6 +68,9 @@ pub impl Show for ResponsiveBreakpoint with fn output(self, logger) {
 }
 
 ///|
+pub extend ResponsiveBreakpoint with Show::{to_string, output}
+
+///|
 pub impl Show for BreakpointDiscoveryDiagnostics with fn output(self, logger) {
   logger.write_string("{stylesheet_count: ")
   logger.write_string(self.stylesheet_count.to_string())
@@ -62,6 +86,9 @@ pub impl Show for BreakpointDiscoveryDiagnostics with fn output(self, logger) {
 }
 
 ///|
+pub extend BreakpointDiscoveryDiagnostics with Show::{to_string, output}
+
+///|
 pub impl Show for BreakpointDiscoveryResult with fn output(self, logger) {
   logger.write_string("{breakpoints: ")
   logger.write_object(Repr(self.breakpoints))
@@ -71,9 +98,12 @@ pub impl Show for BreakpointDiscoveryResult with fn output(self, logger) {
 }
 
 ///|
+pub extend BreakpointDiscoveryResult with Show::{to_string, output}
+
+///|
 priv struct BreakpointCandidate {
   op : String
-  value_px : Int
+  value_px : Int32
 }
 
 ///|
@@ -249,7 +279,7 @@ fn classify_feature(feature : @media.MediaFeature) -> FeatureClassification {
 }
 
 ///|
-fn media_value_to_px(value : @media.MediaValue) -> Int? {
+fn media_value_to_px(value : @media.MediaValue) -> Int32? {
   match value {
     @media.MediaValue::Dimension(number, unit) =>
       match unit.to_lower() {
@@ -287,7 +317,7 @@ fn breakpoint_key(
 fn compare_breakpoints(
   left : ResponsiveBreakpoint,
   right : ResponsiveBreakpoint,
-) -> Int {
+) -> Int32 {
   let value_compare = left.value_px.compare(right.value_px)
   if value_compare != 0 {
     return value_compare
@@ -300,7 +330,7 @@ fn compare_breakpoints(
 }
 
 ///|
-fn op_rank(op : String) -> Int {
+fn op_rank(op : String) -> Int32 {
   match op {
     "lt" => 0
     "le" => 1
@@ -370,7 +400,7 @@ fn describe_query(query : @media.MediaQuery) -> String {
 ///|
 fn describe_breakpoint(
   op : String,
-  value_px : Int,
+  value_px : Int32,
   guards : Array[String],
 ) -> String {
   let parts : Array[String] = [

@@ -135,6 +135,9 @@ pub impl Show for PaintProperties with fn output(self, logger) {
 }
 
 ///|
+pub extend PaintProperties with Show::{to_string, output}
+
+///|
 pub fn PaintProperties::clips_overflow(self : PaintProperties) -> Bool {
   match (self.overflow_x, self.overflow_y) {
     (@types.Visible, @types.Visible) => false
@@ -151,7 +154,7 @@ pub fn PaintProperties::should_render(self : PaintProperties) -> Bool {
 }
 
 ///|
-pub fn PaintProperties::z_index_value(self : PaintProperties) -> Int {
+pub fn PaintProperties::z_index_value(self : PaintProperties) -> Int32 {
   match self.z_index {
     @style.ZIndex::Auto => 0
     @style.ZIndex::Value(v) => v
@@ -177,7 +180,7 @@ pub(all) struct PaintNode {
   scroll_height : Double
   clip : @types.ClipRect
   paint : PaintProperties
-  stacking_order : Int
+  stacking_order : Int32
   text : String?
   src : String?
   visual_polygon : Array[(Double, Double)] // local points relative to node x/y; empty means rect
@@ -194,14 +197,14 @@ pub fn PaintNode::new(
   height : Double,
   paint : PaintProperties,
   children : Array[PaintNode],
-  text? : String? = None,
-  src? : String? = None,
-  overflow_x? : @types.Overflow = @types.Visible,
-  overflow_y? : @types.Overflow = @types.Visible,
-  scroll_width? : Double = 0.0,
-  scroll_height? : Double = 0.0,
-  clip? : @types.ClipRect = @types.ClipRect::Auto,
-  visual_polygon? : Array[(Double, Double)] = [],
+  text~ : String? = None,
+  src~ : String? = None,
+  overflow_x~ : @types.Overflow = @types.Visible,
+  overflow_y~ : @types.Overflow = @types.Visible,
+  scroll_width~ : Double = 0.0,
+  scroll_height~ : Double = 0.0,
+  clip~ : @types.ClipRect = @types.ClipRect::Auto,
+  visual_polygon~ : Array[(Double, Double)] = [],
 ) -> PaintNode {
   {
     id,
@@ -258,6 +261,9 @@ pub impl Show for PaintNode with fn output(self, logger) {
     logger.write_string(" [clips]")
   }
 }
+
+///|
+pub extend PaintNode with Show::{to_string, output}
 
 ///|
 pub fn PaintNode::clips_content(self : PaintNode) -> Bool {

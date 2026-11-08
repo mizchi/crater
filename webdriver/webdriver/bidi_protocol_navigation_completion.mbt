@@ -2,7 +2,7 @@
 /// Complete navigation state update and optionally defer success response by wait mode.
 fn BidiProtocol::complete_navigation_request_with_wait(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   url : String,
   wait_mode : String,
@@ -85,7 +85,7 @@ fn BidiProtocol::apply_navigation_commit_state_internal(
 /// Complete navigation update using an optional preallocated navigation id.
 fn BidiProtocol::complete_navigation_request_with_wait_and_navigation(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   url : String,
   wait_mode : String,
@@ -113,7 +113,7 @@ fn BidiProtocol::complete_navigation_request_with_wait_and_navigation(
 /// HTTP).
 fn BidiProtocol::complete_navigation_request_with_wait_deferred(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   url : String,
   wait_mode : String,
@@ -133,7 +133,7 @@ fn BidiProtocol::complete_navigation_request_with_wait_deferred(
 /// async path.
 fn BidiProtocol::complete_navigation_request_with_wait_after_deferred(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   url : String,
   navigation_id : String,
@@ -176,7 +176,7 @@ fn BidiProtocol::should_navigate_via_async_bridge(
 ///|
 fn BidiProtocol::build_navigation_completion(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   url : String,
   wait_mode : String,
@@ -190,7 +190,7 @@ fn BidiProtocol::build_navigation_completion(
 ///|
 fn BidiProtocol::build_navigation_completion_internal(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   url : String,
   wait_mode : String,
@@ -237,7 +237,7 @@ fn BidiProtocol::build_navigation_completion_internal(
 /// Complete same-document fragment navigation.
 fn BidiProtocol::complete_fragment_navigation_request(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   url : String,
 ) -> Unit {

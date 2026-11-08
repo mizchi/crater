@@ -1,7 +1,7 @@
 ///|
 fn BidiProtocol::build_synthetic_before_request_sent_event_json(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   input : @crater_network.SyntheticNetworkEventInput,
 ) -> Json? {
   let now = input_now_ms()
@@ -20,7 +20,7 @@ fn BidiProtocol::build_synthetic_before_request_sent_event_json(
 ///|
 fn BidiProtocol::build_synthetic_response_event_json(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   input : @crater_network.SyntheticNetworkEventInput,
   response_overrides : @crater_network.SyntheticNetworkResponseOverrides,
 ) -> Json? {
@@ -43,7 +43,7 @@ fn BidiProtocol::build_synthetic_response_event_json(
 ///|
 fn BidiProtocol::build_synthetic_fetch_error_event_json(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   input : @crater_network.SyntheticNetworkEventInput,
   error_text : String,
 ) -> Json? {
@@ -63,7 +63,7 @@ fn BidiProtocol::build_synthetic_fetch_error_event_json(
 ///|
 fn BidiProtocol::build_synthetic_network_request_payload_json(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   input : @crater_network.SyntheticNetworkEventInput,
   now : Double,
 ) -> Json? {
@@ -174,9 +174,9 @@ fn BidiProtocol::build_synthetic_network_response_payload_json(
 ///|
 fn BidiProtocol::synthetic_network_request_body_size(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   raw_value : Json?,
-) -> Int? {
+) -> Int32? {
   match
     @crater_network.synthetic_network_request_body_size(
       raw_value, "requestValue",

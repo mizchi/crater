@@ -30,6 +30,7 @@ pub fn rpc_success_string(RpcId, String) -> RpcResponse
 // Errors
 
 // Types and methods
+#derive(Eq, @debug.Debug)
 pub(all) enum RpcErrorCode {
   ParseError
   InvalidRequest
@@ -40,31 +41,50 @@ pub(all) enum RpcErrorCode {
   PageNotFound
   Timeout
   NavigationFailed
-} derive(Eq, @debug.Debug)
-pub fn RpcErrorCode::code(Self) -> Int
+}
+pub fn RpcErrorCode::code(Self) -> Int32
+pub fn RpcErrorCode::equal(Self, Self) -> Bool
+pub fn RpcErrorCode::not_equal(Self, Self) -> Bool
+pub fn RpcErrorCode::output(Self, &Logger) -> Unit
+pub fn RpcErrorCode::to_repr(Self) -> @debug.Repr
+pub fn RpcErrorCode::to_string(Self) -> String
 pub impl Show for RpcErrorCode
 
+#derive(Eq, @debug.Debug)
 pub(all) enum RpcId {
-  Num(Int)
+  Num(Int32)
   Str(String)
   Null
-} derive(Eq, @debug.Debug)
+}
+pub fn RpcId::equal(Self, Self) -> Bool
+pub fn RpcId::not_equal(Self, Self) -> Bool
+pub fn RpcId::output(Self, &Logger) -> Unit
 pub fn RpcId::to_json(Self) -> String
+pub fn RpcId::to_repr(Self) -> @debug.Repr
+pub fn RpcId::to_string(Self) -> String
 pub impl Show for RpcId
 
+#derive(@debug.Debug)
 pub(all) struct RpcRequest {
   jsonrpc : String
   id : RpcId
   method_name : String
   params : Map[String, String]
-} derive(@debug.Debug)
+}
+pub fn RpcRequest::output(Self, &Logger) -> Unit
+pub fn RpcRequest::to_repr(Self) -> @debug.Repr
+pub fn RpcRequest::to_string(Self) -> String
 pub impl Show for RpcRequest
 
+#derive(@debug.Debug)
 pub(all) enum RpcResponse {
   Success(id~ : RpcId, result~ : String)
-  Error(id~ : RpcId, code~ : Int, message~ : String, data~ : String?)
-} derive(@debug.Debug)
+  Error(id~ : RpcId, code~ : Int32, message~ : String, data~ : String?)
+}
+pub fn RpcResponse::output(Self, &Logger) -> Unit
 pub fn RpcResponse::to_json(Self) -> String
+pub fn RpcResponse::to_repr(Self) -> @debug.Repr
+pub fn RpcResponse::to_string(Self) -> String
 pub impl Show for RpcResponse
 
 // Type aliases

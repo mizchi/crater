@@ -1,11 +1,11 @@
 ///|
 pub(all) struct PaintCaptureTiming {
-  node_layout_ms : Int
-  paint_tree_ms : Int
-  raster_ms : Int
-  png_encode_ms : Int
-  rgba_encode_ms : Int
-  total_ms : Int
+  node_layout_ms : Int32
+  paint_tree_ms : Int32
+  raster_ms : Int32
+  png_encode_ms : Int32
+  rgba_encode_ms : Int32
+  total_ms : Int32
 }
 
 ///|
@@ -32,8 +32,8 @@ pub fn capture_visual_to_json(visual : @tui_paint_export.VisualStats) -> Json {
 
 ///|
 pub fn capture_paint_data_to_json(
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
   data : String,
   timing : PaintCaptureTiming,
   visual : @tui_paint_export.VisualStats,
@@ -49,8 +49,8 @@ pub fn capture_paint_data_to_json(
 
 ///|
 pub fn capture_paint_tree_to_json(
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
   paint_tree_json : String,
 ) -> Json {
   @protocol.make_object({

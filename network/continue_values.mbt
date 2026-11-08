@@ -56,7 +56,7 @@ pub fn synthetic_network_normalize_bytes_value(
 pub fn synthetic_network_request_body_size(
   raw_value : Json?,
   field_name : String,
-) -> Result[Int, String] {
+) -> Result[Int32, String] {
   match raw_value {
     None | Some(Null) => Ok(0)
     Some(Object(map)) => {

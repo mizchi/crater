@@ -75,7 +75,7 @@ pub fn InputDomain::dispatch_mouse_event(
   x : Double,
   y : Double,
   button : String,
-  click_count : Int,
+  click_count : Int32,
 ) -> Result[Unit, CdpError] {
   // Suppress unused warnings for now
   let _ = button

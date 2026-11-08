@@ -30,7 +30,7 @@ fn make_proto_with_session() -> BidiProtocol {
 /// Seed a storage cookie scoped to session-1.
 fn seed_storage_cookie(
   proto : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   cookie_json : String,
 ) -> Unit {
   let payload = "{\"id\":" +
@@ -46,7 +46,7 @@ fn seed_storage_cookie(
 /// Run a JS expression in the context of session-1 without awaiting promises.
 fn run_sync_in_context(
   proto : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   expr : String,
 ) -> Unit {
   let payload = "{\"id\":" +
@@ -63,7 +63,7 @@ fn run_sync_in_context(
 /// raw response JSON (so tests can match against the embedded value).
 fn read_global_string(
   proto : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   global_name : String,
 ) -> String {
   let expr = "(typeof globalThis." +
@@ -509,7 +509,7 @@ async test "reset_runtime_js_state lets next bootstrap rebind __rawFetch to the 
 /// Seed an Authorization header for the given origin scoped to session-1.
 fn seed_origin_authorization(
   proto : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   origin : String,
   header_value : String,
 ) -> Unit {

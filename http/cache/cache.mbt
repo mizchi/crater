@@ -1,14 +1,18 @@
 ///|
 /// Parsed Cache-Control header directives
+#derive(Debug)
 pub(all) struct CacheDirectives {
-  max_age : Int?
+  max_age : Int32?
   no_cache : Bool
   no_store : Bool
   must_revalidate : Bool
   public_ : Bool
   private_ : Bool
   immutable : Bool
-} derive(Debug)
+}
+
+///|
+pub extend CacheDirectives with @debug.Debug::{to_repr}
 
 ///|
 pub fn CacheDirectives::default() -> CacheDirectives {
@@ -43,9 +47,12 @@ pub impl Show for CacheDirectives with fn output(self, logger) {
 }
 
 ///|
+pub extend CacheDirectives with Show::{to_string, output}
+
+///|
 /// Parse a Cache-Control header value into CacheDirectives.
 pub fn parse_cache_control(header : String) -> CacheDirectives {
-  let mut max_age : Int? = None
+  let mut max_age : Int32? = None
   let mut no_cache = false
   let mut no_store = false
   let mut must_revalidate = false
@@ -85,7 +92,7 @@ pub fn parse_cache_control(header : String) -> CacheDirectives {
 
 ///|
 /// Parse an integer from a string, returning None on failure.
-fn parse_int_string(s : String) -> Int? {
+fn parse_int_string(s : String) -> Int32? {
   if s.length() == 0 {
     return None
   }
@@ -103,16 +110,20 @@ fn parse_int_string(s : String) -> Int? {
 
 ///|
 /// Cached HTTP response entry
+#derive(Debug)
 pub(all) struct CacheEntry {
   url : String
-  status : Int
+  status : Int32
   headers : Map[String, String]
   body : String
   etag : String?
   last_modified : String?
   directives : CacheDirectives
   stored_at : Double
-} derive(Debug)
+}
+
+///|
+pub extend CacheEntry with @debug.Debug::{to_repr}
 
 ///|
 /// Shared cache backend contract used by cached_fetch.
@@ -174,7 +185,7 @@ pub fn is_fresh(entry : CacheEntry, now : Double) -> Bool {
 ///|
 /// Check if an HTTP status code is cacheable.
 /// Only 200, 203, 204, 206, 300, 301, 308 are cacheable by default (RFC 9111 §4.2.2).
-pub fn is_cacheable_status(status : Int) -> Bool {
+pub fn is_cacheable_status(status : Int32) -> Bool {
   status == 200 ||
   status == 203 ||
   status == 204 ||

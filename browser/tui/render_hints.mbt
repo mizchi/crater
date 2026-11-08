@@ -7,13 +7,13 @@ pub(all) struct HintData {
   label : String // The hint label (e.g., "a", "b", "aa")
   href : String // Link URL
   text : String // Link text
-  col : Int // Screen column position
-  row : Int // Screen row position
+  col : Int32 // Screen column position
+  row : Int32 // Screen row position
 }
 
 ///|
 /// Calculate display width of a string (full-width chars count as 2).
-fn display_width(s : String) -> Int {
+fn display_width(s : String) -> Int32 {
   let mut width = 0
   for c in s {
     // Basic check: characters above U+2E80 are typically full-width.
@@ -33,7 +33,7 @@ fn display_width(s : String) -> Int {
 fn draw_hints(
   buf : CharBuffer,
   hints : Array[HintData],
-  viewport_height : Int,
+  viewport_height : Int32,
 ) -> Unit {
   let hint_style : TextStyle = {
     fg: @types.Color::rgb(0, 0, 0), // Black text
@@ -61,7 +61,7 @@ fn draw_hints(
 /// Draw status bar for hint mode with hint list.
 fn draw_hint_mode_status_bar(
   buf : CharBuffer,
-  y : Int,
+  y : Int32,
   hint_input : String,
   hints : Array[HintData],
 ) -> Unit {

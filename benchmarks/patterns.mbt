@@ -9,7 +9,7 @@
 
 ///|
 /// Simple flat list of divs
-pub fn simple_flat(n : Int) -> String {
+pub fn simple_flat(n : Int32) -> String {
   let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><body style=\"margin:0\">")
   for i = 0; i < n; i = i + 1 {
@@ -25,7 +25,7 @@ pub fn simple_flat(n : Int) -> String {
 
 ///|
 /// Nested divs (depth-first)
-pub fn nested_depth(depth : Int) -> String {
+pub fn nested_depth(depth : Int32) -> String {
   let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><body style=\"margin:0\">")
   for i = 0; i < depth; i = i + 1 {
@@ -45,7 +45,7 @@ pub fn nested_depth(depth : Int) -> String {
 
 ///|
 /// Flex row with N items
-pub fn flex_row(n : Int) -> String {
+pub fn flex_row(n : Int32) -> String {
   let buf = StringBuilder()
   buf.write_string(
     "<!DOCTYPE html><html><body style=\"margin:0\"><div style=\"display:flex;flex-direction:row\">",
@@ -63,7 +63,7 @@ pub fn flex_row(n : Int) -> String {
 
 ///|
 /// Flex column with N items
-pub fn flex_column(n : Int) -> String {
+pub fn flex_column(n : Int32) -> String {
   let buf = StringBuilder()
   buf.write_string(
     "<!DOCTYPE html><html><body style=\"margin:0\"><div style=\"display:flex;flex-direction:column\">",
@@ -81,7 +81,7 @@ pub fn flex_column(n : Int) -> String {
 
 ///|
 /// Flex wrap with many items
-pub fn flex_wrap(n : Int, item_width : Int) -> String {
+pub fn flex_wrap(n : Int32, item_width : Int32) -> String {
   let buf = StringBuilder()
   buf.write_string(
     "<!DOCTYPE html><html><body style=\"margin:0\"><div style=\"display:flex;flex-wrap:wrap\">",
@@ -101,10 +101,10 @@ pub fn flex_wrap(n : Int, item_width : Int) -> String {
 
 ///|
 /// Nested flex containers
-pub fn flex_nested(depth : Int, items_per_level : Int) -> String {
+pub fn flex_nested(depth : Int32, items_per_level : Int32) -> String {
   let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><body style=\"margin:0\">")
-  fn build(d : Int, is_row : Bool) -> Unit {
+  fn build(d : Int32, is_row : Bool) -> Unit {
     if d == 0 {
       buf.write_string(
         "<div style=\"width:30px;height:20px;background:#ddd\"></div>",
@@ -131,7 +131,7 @@ pub fn flex_nested(depth : Int, items_per_level : Int) -> String {
 
 ///|
 /// Simple grid with rows x cols
-pub fn grid_simple(rows : Int, cols : Int) -> String {
+pub fn grid_simple(rows : Int32, cols : Int32) -> String {
   let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><body style=\"margin:0\">")
   buf.write_string("<div style=\"display:grid;grid-template-columns:repeat(")
@@ -150,7 +150,7 @@ pub fn grid_simple(rows : Int, cols : Int) -> String {
 
 ///|
 /// Grid with explicit template rows and columns
-pub fn grid_explicit(rows : Int, cols : Int, cell_height : Int) -> String {
+pub fn grid_explicit(rows : Int32, cols : Int32, cell_height : Int32) -> String {
   let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><body style=\"margin:0\">")
   buf.write_string("<div style=\"display:grid;grid-template-columns:")
@@ -178,7 +178,7 @@ pub fn grid_explicit(rows : Int, cols : Int, cell_height : Int) -> String {
 
 ///|
 /// Card grid (e-commerce style)
-pub fn card_grid(num_cards : Int) -> String {
+pub fn card_grid(num_cards : Int32) -> String {
   let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><body style=\"margin:0\">")
   buf.write_string(
@@ -218,7 +218,7 @@ pub fn card_grid(num_cards : Int) -> String {
 
 ///|
 /// Dashboard layout with sidebar, header, and content
-pub fn dashboard(sidebar_items : Int, content_cards : Int) -> String {
+pub fn dashboard(sidebar_items : Int32, content_cards : Int32) -> String {
   let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><body style=\"margin:0\">")
   buf.write_string("<div style=\"display:flex;height:100vh\">")
@@ -300,7 +300,7 @@ pub fn dashboard(sidebar_items : Int, content_cards : Int) -> String {
 
 ///|
 /// Chat message list
-pub fn chat_messages(num_messages : Int) -> String {
+pub fn chat_messages(num_messages : Int32) -> String {
   let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><body style=\"margin:0\">")
   buf.write_string(
@@ -332,7 +332,7 @@ pub fn chat_messages(num_messages : Int) -> String {
 
 ///|
 /// Table with header and rows
-pub fn table_layout(rows : Int, cols : Int) -> String {
+pub fn table_layout(rows : Int32, cols : Int32) -> String {
   let buf = StringBuilder()
   buf.write_string(
     "<!DOCTYPE html><html><body style=\"margin:0;padding:16px\">",
@@ -377,9 +377,9 @@ pub fn table_layout(rows : Int, cols : Int) -> String {
 ///|
 /// Large web page with multiple sections (~5000 nodes)
 pub fn large_website(
-  sidebar_items : Int,
-  sections : Int,
-  cards_per_section : Int,
+  sidebar_items : Int32,
+  sections : Int32,
+  cards_per_section : Int32,
 ) -> String {
   let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><body style=\"margin:0\">")
@@ -469,7 +469,7 @@ pub fn large_website(
 
 ///|
 /// Scrollable content with many items (for scroll benchmarks)
-pub fn scrollable_list(num_items : Int, item_height : Int) -> String {
+pub fn scrollable_list(num_items : Int32, item_height : Int32) -> String {
   let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><body style=\"margin:0\">")
   buf.write_string("<div style=\"height:100vh;overflow-y:auto\">")
@@ -511,10 +511,10 @@ pub fn scrollable_list(num_items : Int, item_height : Int) -> String {
 
 ///|
 /// Deep nested structure (for parsing stress test)
-pub fn deep_nesting(depth : Int, width : Int) -> String {
+pub fn deep_nesting(depth : Int32, width : Int32) -> String {
   let buf = StringBuilder()
   buf.write_string("<!DOCTYPE html><html><body style=\"margin:0\">")
-  fn build(d : Int) -> Unit {
+  fn build(d : Int32) -> Unit {
     if d == 0 {
       for _w = 0; _w < width; _w = _w + 1 {
         buf.write_string("<span>leaf</span>")
@@ -533,7 +533,7 @@ pub fn deep_nesting(depth : Int, width : Int) -> String {
 
 ///|
 /// Form with many fields
-pub fn form_fields(num_fields : Int) -> String {
+pub fn form_fields(num_fields : Int32) -> String {
   let buf = StringBuilder()
   buf.write_string(
     "<!DOCTYPE html><html><body style=\"margin:0;padding:24px\">",

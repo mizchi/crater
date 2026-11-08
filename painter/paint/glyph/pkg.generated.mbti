@@ -8,7 +8,7 @@ import {
 }
 
 // Values
-pub fn cached_glyph_bitmap(GlyphProvider, Int, Double, Bool, String, Double, Double, subpixel_x? : Double, subpixel_y? : Double) -> GlyphBitmap
+pub fn cached_glyph_bitmap(GlyphProvider, Int32, Double, Bool, String, Double, Double, subpixel_x? : Double, subpixel_y? : Double) -> GlyphBitmap
 
 pub fn clear_glyph_caches() -> Unit
 
@@ -26,19 +26,19 @@ pub fn glyph_provider_from_font(@font.TTFont) -> GlyphProvider
 
 pub fn is_bold_font_weight(Double) -> Bool
 
-pub fn kern_from_provider(GlyphProvider, Int, Int, Double, Bool, String, Double) -> Double
+pub fn kern_from_provider(GlyphProvider, Int32, Int32, Double, Bool, String, Double) -> Double
 
-pub fn layout_glyph_bitmaps(GlyphProvider, Int, Int, String, Int, Double, Double, Bool, font_family? : String, letter_spacing? : Double, word_spacing? : Double, font_weight? : Double, expected_line_count? : Int) -> (Array[GlyphPlacement], Int)
+pub fn layout_glyph_bitmaps(GlyphProvider, Int32, Int32, String, Int32, Double, Double, Bool, font_family? : String, letter_spacing? : Double, word_spacing? : Double, font_weight? : Double, expected_line_count? : Int32) -> (Array[GlyphPlacement], Int32)
 
 pub fn measure_word_width(GlyphProvider, String, Double, Bool, font_family? : String, letter_spacing? : Double, word_spacing? : Double, font_weight? : Double) -> Double
 
-pub fn pre_rasterize_glyphs(Array[Double], font_family? : String) -> Int
+pub fn pre_rasterize_glyphs(Array[Double], font_family? : String) -> Int32
 
 pub fn rasterize_glyph_to_bitmap(Array[@svg.PathCommand], Double) -> GlyphBitmap
 
 pub fn resolve_effective_font_weight(Bool, Double) -> Double
 
-pub fn resolve_text_wrap_tolerance(Int, Double, line_height? : Double, text_length? : Int) -> Double
+pub fn resolve_text_wrap_tolerance(Int32, Double, line_height? : Double, text_length? : Int32) -> Double
 
 pub fn set_glyph_provider(GlyphProvider) -> Unit
 
@@ -48,14 +48,14 @@ pub fn split_text_into_words(String) -> Array[String]
 
 // Types and methods
 pub(all) struct GlyphBitmap {
-  width : Int
-  height : Int
+  width : Int32
+  height : Int32
   pixels : Array[Bool]
   advance : Double
-  offset_x : Int
-  offset_y : Int
-  coverage : Array[Int]
-  ss_factor : Int
+  offset_x : Int32
+  offset_y : Int32
+  coverage : Array[Int32]
+  ss_factor : Int32
 }
 
 pub(all) struct GlyphPlacement {
@@ -66,15 +66,15 @@ pub(all) struct GlyphPlacement {
 }
 
 pub(all) struct GlyphProvider {
-  get_glyph : (Int, Double, Bool) -> (Array[@svg.PathCommand], Double)
-  get_kern : (Int, Int, Double, Bool) -> Double
-  get_glyph_by_weight : ((Int, Double, Double) -> (Array[@svg.PathCommand], Double))?
-  get_kern_by_weight : ((Int, Int, Double, Double) -> Double)?
+  get_glyph : (Int32, Double, Bool) -> (Array[@svg.PathCommand], Double)
+  get_kern : (Int32, Int32, Double, Bool) -> Double
+  get_glyph_by_weight : ((Int32, Double, Double) -> (Array[@svg.PathCommand], Double))?
+  get_kern_by_weight : ((Int32, Int32, Double, Double) -> Double)?
   ascent_ratio : Double
-  get_glyph_for_family : ((Int, Double, Bool, String) -> (Array[@svg.PathCommand], Double)?)?
-  get_kern_for_family : ((Int, Int, Double, Bool, String) -> Double)?
-  get_glyph_for_family_by_weight : ((Int, Double, Double, String) -> (Array[@svg.PathCommand], Double)?)?
-  get_kern_for_family_by_weight : ((Int, Int, Double, Double, String) -> Double)?
+  get_glyph_for_family : ((Int32, Double, Bool, String) -> (Array[@svg.PathCommand], Double)?)?
+  get_kern_for_family : ((Int32, Int32, Double, Bool, String) -> Double)?
+  get_glyph_for_family_by_weight : ((Int32, Double, Double, String) -> (Array[@svg.PathCommand], Double)?)?
+  get_kern_for_family_by_weight : ((Int32, Int32, Double, Double, String) -> Double)?
   get_ascent_for_family : ((String) -> Double)?
 }
 

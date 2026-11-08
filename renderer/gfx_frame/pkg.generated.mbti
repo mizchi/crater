@@ -15,19 +15,19 @@ pub fn append_rect_outline(Array[@gfx.DrawTrianglesCommand], RenderFrame2D, Rect
 
 pub fn append_rounded_rect_fill(Array[@gfx.DrawTrianglesCommand], RenderFrame2D, RectFill2D, radius_tl~ : (Double, Double), radius_tr~ : (Double, Double), radius_br~ : (Double, Double), radius_bl~ : (Double, Double)) -> Unit
 
-pub fn color_to_uniform_dwords(@gfx.Color) -> Array[Int]
+pub fn color_to_uniform_dwords(@gfx.Color) -> Array[Int32]
 
-pub fn ndc_rect_fill_vertices(Double, Double, Double, Double, Double, Double) -> (Array[Double], Array[Int])
+pub fn ndc_rect_fill_vertices(Double, Double, Double, Double, Double, Double) -> (Array[Double], Array[Int32])
 
-pub fn ndc_rect_vertices(Double, Double, Double, Double, Double, Double, u0? : Double, v0? : Double, u1? : Double, v1? : Double) -> (Array[Double], Array[Int])
+pub fn ndc_rect_vertices(Double, Double, Double, Double, Double, Double, u0? : Double, v0? : Double, u1? : Double, v1? : Double) -> (Array[Double], Array[Int32])
 
-pub fn new_primitive_command(RenderFrame2D, Array[Double], Array[Int], @gfx.Color, src_image_ids? : Array[Int], extra_uniforms? : Array[Int]) -> @gfx.DrawTrianglesCommand
+pub fn new_primitive_command(RenderFrame2D, Array[Double], Array[Int32], @gfx.Color, src_image_ids? : Array[Int32], extra_uniforms? : Array[Int32]) -> @gfx.DrawTrianglesCommand
 
 pub fn pixel_to_ndc_vertices(Array[Double], Double, Double) -> Array[Double]
 
-pub fn quad_fill_indices() -> Array[Int]
+pub fn quad_fill_indices() -> Array[Int32]
 
-pub fn rect_outline_vertices(Double, Double, Double, Double, Double) -> (Array[Double], Array[Int])
+pub fn rect_outline_vertices(Double, Double, Double, Double, Double) -> (Array[Double], Array[Int32])
 
 pub fn to_gfx_color(@values.Color) -> @gfx.Color
 
@@ -56,20 +56,20 @@ pub fn RectOutline2D::new(x~ : Double, y~ : Double, w~ : Double, h~ : Double, li
 pub(all) struct RenderFrame2D {
   dst : @gfx.ImageHandle
   shader : @gfx.ShaderHandle
-  screen_w : Int
-  screen_h : Int
-  pipeline_id : Int
-  uniform_hash : Int
+  screen_w : Int32
+  screen_h : Int32
+  pipeline_id : Int32
+  uniform_hash : Int32
   blend : @gfx.BlendMode
-  clip_x : Int
-  clip_y : Int
-  clip_w : Int
-  clip_h : Int
+  clip_x : Int32
+  clip_y : Int32
+  clip_w : Int32
+  clip_h : Int32
   opacity : Double
 }
-pub fn RenderFrame2D::dst_region(Self, index_count? : Int) -> @gfx.DstRegion
-pub fn RenderFrame2D::new(dst~ : @gfx.ImageHandle, shader~ : @gfx.ShaderHandle, screen_w~ : Int, screen_h~ : Int, pipeline_id? : Int, uniform_hash? : Int, blend? : @gfx.BlendMode, clip_x? : Int, clip_y? : Int, clip_w? : Int, clip_h? : Int, opacity? : Double) -> Self
-pub fn RenderFrame2D::with_clip(Self, Int, Int, Int, Int) -> Self
+pub fn RenderFrame2D::dst_region(Self, index_count? : Int32) -> @gfx.DstRegion
+pub fn RenderFrame2D::new(dst~ : @gfx.ImageHandle, shader~ : @gfx.ShaderHandle, screen_w~ : Int32, screen_h~ : Int32, pipeline_id? : Int32, uniform_hash? : Int32, blend? : @gfx.BlendMode, clip_x? : Int32, clip_y? : Int32, clip_w? : Int32, clip_h? : Int32, opacity? : Double) -> Self
+pub fn RenderFrame2D::with_clip(Self, Int32, Int32, Int32, Int32) -> Self
 pub fn RenderFrame2D::with_opacity(Self, Double) -> Self
 
 // Type aliases

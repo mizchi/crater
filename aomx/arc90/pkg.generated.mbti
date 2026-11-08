@@ -27,7 +27,7 @@ pub(all) struct ContentBlock {
 pub fn ContentBlock::to_string(Self) -> String
 
 pub(all) struct ExtractConfig {
-  min_text_length : Int
+  min_text_length : Int32
   viewport_width : Double
   viewport_height : Double
   ad_sizes : Array[(Double, Double)]

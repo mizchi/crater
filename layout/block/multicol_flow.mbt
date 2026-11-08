@@ -72,7 +72,7 @@ fn resolve_multicol_track_geometry(
   style : @style.Style,
   content_width : Double,
   parent_width : Double,
-) -> (Int, Double, Double) {
+) -> (Int32, Double, Double) {
   let gap_basis = if content_width > 0.0 { content_width } else { parent_width }
   let resolved_gap = if style.column_gap_is_normal {
     style.font_size
@@ -135,19 +135,19 @@ fn estimate_multicol_column_height_limit(
   flow_children : Array[LayoutWithCollapse],
   flow_styles : Array[@style.Style],
   flow_nodes : Array[@node.Node],
-  column_count : Int,
+  column_count : Int32,
   column_fill : @style.ColumnFill,
 ) -> Double? {
   fn estimate_balanced_limit(
     flow_children : Array[LayoutWithCollapse],
     flow_styles : Array[@style.Style],
     flow_nodes : Array[@node.Node],
-    column_count : Int,
+    column_count : Int32,
   ) -> Double? {
     fn tighten_partition_limit(
       groups : Array[Double],
       limit : Double,
-      column_count : Int,
+      column_count : Int32,
     ) -> Double {
       let mut used = 1
       let mut current = 0.0
@@ -173,7 +173,7 @@ fn estimate_multicol_column_height_limit(
     }
     fn estimate_partition_limit(
       groups : Array[Double],
-      column_count : Int,
+      column_count : Int32,
     ) -> Double? {
       if groups.length() == 0 {
         return None
@@ -192,7 +192,7 @@ fn estimate_multicol_column_height_limit(
       fn can_partition(
         groups : Array[Double],
         limit : Double,
-        column_count : Int,
+        column_count : Int32,
       ) -> Bool {
         let mut used = 1
         let mut current = 0.0
@@ -231,7 +231,7 @@ fn estimate_multicol_column_height_limit(
     let mut single_fragmentable_child_height = 0.0
     let mut fragmentable_child_count = 0
     let mut all_display_contents = true
-    let mut single_fragmentable_child_index : Int? = None
+    let mut single_fragmentable_child_index : Int32? = None
     for i = 0
         i < flow_children.length() &&
        i < flow_styles.length() &&
@@ -420,7 +420,7 @@ fn is_inline_flow_participant(node : @node.Node, style : @style.Style) -> Bool {
 
 ///|
 fn estimate_multicol_inline_line_width(
-  start_index : Int,
+  start_index : Int32,
   flow_children : Array[LayoutWithCollapse],
   flow_styles : Array[@style.Style],
   flow_nodes : Array[@node.Node],
@@ -538,7 +538,7 @@ fn has_multicol_avoid_tie_between(
 
 ///|
 fn has_prior_multicol_column_content(
-  index : Int,
+  index : Int32,
   flow_styles : Array[@style.Style],
   flow_nodes : Array[@node.Node],
 ) -> Bool {
@@ -617,7 +617,7 @@ fn resolve_multicol_leading_keep_height(
 
 ///|
 fn resolve_multicol_following_reserved_height(
-  start_index : Int,
+  start_index : Int32,
   flow_children : Array[LayoutWithCollapse],
   flow_styles : Array[@style.Style],
   flow_nodes : Array[@node.Node],
@@ -665,7 +665,7 @@ fn resolve_multicol_following_reserved_height(
 
 ///|
 fn resolve_multicol_nested_following_reserved_height(
-  start_index : Int,
+  start_index : Int32,
   child_layouts : Array[@layout_types.Layout],
   source_children : Array[@node.Node],
 ) -> Double {
@@ -710,7 +710,7 @@ fn resolve_multicol_nested_following_reserved_height(
 
 ///|
 fn resolve_multicol_break_group_outer_height(
-  start_index : Int,
+  start_index : Int32,
   flow_children : Array[LayoutWithCollapse],
   flow_styles : Array[@style.Style],
   flow_nodes : Array[@node.Node],
@@ -1021,7 +1021,7 @@ fn normalize_display_contents_children_to_column_start(
   multicol_column_gap : Double,
 ) -> Array[@layout_types.Layout] {
   let column_step = multicol_column_width + multicol_column_gap
-  fn resolve_column_index(x : Double, column_step : Double) -> Int {
+  fn resolve_column_index(x : Double, column_step : Double) -> Int32 {
     if x <= 0.0 || column_step <= 0.0 {
       0
     } else {
@@ -1031,7 +1031,7 @@ fn normalize_display_contents_children_to_column_start(
   if children.length() == 0 || column_step <= 0.0 {
     return children
   }
-  let min_y_by_column : Map[Int, Double] = Map([])
+  let min_y_by_column : Map[Int32, Double] = Map([])
   for child in children {
     let column_index = resolve_column_index(child.x, column_step)
     if column_index <= 0 {
@@ -1066,7 +1066,7 @@ fn resolve_multicol_positioned_column_span_with_offset(
   children : Array[@layout_types.Layout],
   column_step : Double,
   offset_x : Double,
-) -> Int {
+) -> Int32 {
   if children.length() == 0 || column_step <= 0.0 {
     return 1
   }
@@ -1099,7 +1099,7 @@ fn resolve_multicol_positioned_column_span(
   children : Array[@layout_types.Layout],
   multicol_column_width : Double,
   multicol_column_gap : Double,
-) -> Int {
+) -> Int32 {
   resolve_multicol_positioned_column_span_with_offset(
     children,
     multicol_column_width + multicol_column_gap,
@@ -1293,7 +1293,7 @@ fn should_reflow_multicol_nested_children(
   child_layout : @layout_types.Layout,
   child_style : @style.Style,
   has_nested_forced_column_break : Bool,
-  fragmented_columns : Int,
+  fragmented_columns : Int32,
   multicol_nested_reflow_candidate : Bool,
   local_y : Double,
   following_reserved_height : Double,
@@ -1336,7 +1336,7 @@ fn should_reflow_multicol_nested_children(
 
 ///|
 fn process_multicol_flow_child(
-  i : Int,
+  i : Int32,
   current_pos : Double,
   prev_margin_end : Double,
   inline_run_active : Bool,
@@ -1349,14 +1349,14 @@ fn process_multicol_flow_child(
   flow_children : Array[LayoutWithCollapse],
   flow_styles : Array[@style.Style],
   flow_nodes : Array[@node.Node],
-  flow_indices : Array[Int],
-  multicol_column_count : Int,
+  flow_indices : Array[Int32],
+  multicol_column_count : Int32,
   multicol_column_width : Double,
   multicol_column_gap : Double,
   multicol_height_limit : Double?,
   multicol_fragment_contained : Bool,
   default_text_align : Bool,
-  layout_map : Map[Int, @layout_types.Layout],
+  layout_map : Map[Int32, @layout_types.Layout],
   flow_y_positions : Array[Double],
 ) -> (Double, Double, Bool, Double, Double, Double) {
   let mut current_pos = current_pos

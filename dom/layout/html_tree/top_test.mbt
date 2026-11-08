@@ -3,7 +3,7 @@ test "layout html tree builds layout tree from html document" {
   let html =
     #|<div id="root"><span id="child">hi</span></div>
   let doc = @html.parse_document(html)
-  let tree = layout_tree_from_html_document(doc, 320.0, 240.0)
+  let tree = @html_tree.layout_tree_from_html_document(doc, 320.0, 240.0)
   inspect(tree.root.children.length(), content="2")
   inspect(tree.find_node_by_id("span#child") is Some(_), content="true")
 }
@@ -13,7 +13,7 @@ test "layout html tree applies intrinsic img dimensions" {
   let html =
     #|<img id="hero" width="100" height="50" />
   let doc = @html.parse_document(html)
-  let tree = layout_tree_from_html_document(doc, 320.0, 240.0)
+  let tree = @html_tree.layout_tree_from_html_document(doc, 320.0, 240.0)
   let img = match tree.find_node_by_id("img#hero") {
     Some(node) => node
     None => @tree.LayoutNode::create()
@@ -27,7 +27,7 @@ test "layout html tree preserves tag based ids and inline styles" {
   let html =
     #|<div id="root" style="width: 120px; height: 40px;"></div>
   let doc = @html.parse_document(html)
-  let tree = layout_tree_from_html_document(doc, 320.0, 240.0)
+  let tree = @html_tree.layout_tree_from_html_document(doc, 320.0, 240.0)
   let root = match tree.find_node_by_id("div#root") {
     Some(node) => node
     None => @tree.LayoutNode::create()
@@ -63,7 +63,7 @@ test "layout html tree transfers canvas intrinsic ratio from percent height in f
   let html =
     #|<div id="target" style="display: inline-flex; height: 100px;"><div id="item"><canvas id="c" width="10" height="10" style="height: 100%;"></canvas></div></div>
   let doc = @html.parse_document(html)
-  let tree = layout_tree_from_html_document(doc, 800.0, 600.0)
+  let tree = @html_tree.layout_tree_from_html_document(doc, 800.0, 600.0)
   let layout = tree.compute_full()
   let target = match find_layout_by_id(layout, "div#target") {
     Some(node) => node

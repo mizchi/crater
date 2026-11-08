@@ -126,7 +126,7 @@ fn create_external_text_metrics_provider() -> @renderer.TextMetricsProvider {
         )
         match parse_csv_quad(payload) {
           Some((min_width, max_width, min_height, max_height)) =>
-            { min_width, max_width, min_height, max_height }
+            { min_width, max_width, min_height, max_height, }
           None => {
             let mut cols = 0
             for _ in text.iter() {

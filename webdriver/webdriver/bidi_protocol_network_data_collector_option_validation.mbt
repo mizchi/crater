@@ -2,7 +2,7 @@
 /// Validate the `dataTypes` option for network.addDataCollector.
 fn BidiProtocol::validate_network_data_collector_data_types(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   map : Map[String, Json],
 ) -> Json? {
   let raw_data_types = match
@@ -56,7 +56,7 @@ fn BidiProtocol::validate_network_data_collector_data_types(
 /// Validate the `maxEncodedDataSize` option for network.addDataCollector.
 fn BidiProtocol::validate_network_data_collector_max_encoded_data_size(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   map : Map[String, Json],
 ) -> Json? {
   let raw_max_encoded_data_size = match
@@ -100,7 +100,7 @@ fn BidiProtocol::validate_network_data_collector_max_encoded_data_size(
 /// Validate the `collectorType` option for network.addDataCollector.
 fn BidiProtocol::validate_network_data_collector_type(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   map : Map[String, Json],
 ) -> Json? {
   let collector_type = match

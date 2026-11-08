@@ -31,7 +31,7 @@ test "paint tree renders to pixels via the software backend" {
     ],
   )
   let driver = @gfx_software.SoftwareDriver::new(4, 4)
-  render_paint_tree(driver, root)
+  @gfx_bridge.render_paint_tree(driver, root)
   // background pixel (corner) stays white
   debug_inspect(driver.pixel_at(0, 0), content="(255, 255, 255, 255)")
   // the red box covers the inner 2x2 region

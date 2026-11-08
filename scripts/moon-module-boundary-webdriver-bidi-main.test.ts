@@ -20,7 +20,7 @@ describe("MoonBit webdriver/bidi_main boundary", () => {
     const moonPkg = read("webdriver/bidi_main/moon.pkg");
 
     // bidi_main's only crater-side dependency must be @webdriver.
-    expect(moonPkg).toContain('"mizchi/crater-webdriver-bidi/webdriver" @webdriver');
+    expect(moonPkg).toContain('"mizchi/crater-webdriver-bidi/webdriver"');
     for (const forbidden of [
       "mizchi/crater-webdriver-bidi/runtime",
       "mizchi/crater-webdriver-bidi/rendering",

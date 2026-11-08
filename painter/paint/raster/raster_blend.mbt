@@ -5,8 +5,8 @@
 fn blend_types_color_over_pixel(
   fb : Framebuffer,
   palette : DynamicPalette,
-  x : Int,
-  y : Int,
+  x : Int32,
+  y : Int32,
   color : @types.Color,
   opacity : Double,
 ) -> Unit {
@@ -31,10 +31,10 @@ fn blend_types_color_over_pixel(
 fn blend_raster_color_over_pixel(
   fb : Framebuffer,
   palette : DynamicPalette,
-  x : Int,
-  y : Int,
+  x : Int32,
+  y : Int32,
   color : Color,
-  alpha : Int,
+  alpha : Int32,
 ) -> Unit {
   let a = clamp_byte(alpha)
   if a <= 0 {
@@ -53,7 +53,7 @@ fn blend_raster_color_over_pixel(
 }
 
 ///|
-fn ensure_blend_cache_size(cache : Array[Int], idx : Int) -> Unit {
+fn ensure_blend_cache_size(cache : Array[Int32], idx : Int32) -> Unit {
   while idx >= cache.length() {
     cache.push(-1)
   }
@@ -63,10 +63,10 @@ fn ensure_blend_cache_size(cache : Array[Int], idx : Int) -> Unit {
 fn cached_blended_index(
   palette : DynamicPalette,
   color : Color,
-  alpha : Int,
-  dst_idx : Int,
-  cache : Array[Int],
-) -> Int {
+  alpha : Int32,
+  dst_idx : Int32,
+  cache : Array[Int32],
+) -> Int32 {
   if dst_idx < 0 {
     let dst = Color::white()
     let blended = color.blend(dst, alpha)
@@ -89,12 +89,12 @@ fn cached_blended_index(
 fn blend_span_with_raster_color(
   fb : Framebuffer,
   palette : DynamicPalette,
-  y : Int,
-  x1 : Int,
-  x2 : Int,
+  y : Int32,
+  x1 : Int32,
+  x2 : Int32,
   color : Color,
-  alpha : Int,
-  cache : Array[Int],
+  alpha : Int32,
+  cache : Array[Int32],
 ) -> Unit {
   let a = clamp_byte(alpha)
   if a <= 0 {
@@ -126,10 +126,10 @@ fn blend_span_with_raster_color(
 fn fill_rect_with_types_color(
   fb : Framebuffer,
   palette : DynamicPalette,
-  x : Int,
-  y : Int,
-  w : Int,
-  h : Int,
+  x : Int32,
+  y : Int32,
+  w : Int32,
+  h : Int32,
   color : @types.Color,
   opacity : Double,
 ) -> Unit {

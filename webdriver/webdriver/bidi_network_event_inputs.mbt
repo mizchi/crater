@@ -18,7 +18,7 @@ fn synthetic_network_load_event_json(
 ///|
 fn BidiProtocol::normalize_synthetic_network_event_input(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> @crater_network.SyntheticNetworkEventInput? {
   let map = match params {
@@ -166,7 +166,7 @@ fn BidiProtocol::normalize_synthetic_network_event_input(
 ///|
 fn BidiProtocol::synthetic_network_event_input_from_blocked_request(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   blocked_request_id : String,
   blocked_request : Map[String, Json],
 ) -> @crater_network.SyntheticNetworkEventInput? {
@@ -259,7 +259,7 @@ fn synthetic_network_blocked_response_headers(
 ///|
 fn synthetic_network_blocked_response_status(
   blocked_request : Map[String, Json],
-) -> Int {
+) -> Int32 {
   match
     get_map_field_with_alias(
       blocked_request, "responseStatus", "response_status",
@@ -276,7 +276,7 @@ fn synthetic_network_blocked_response_status(
 ///|
 fn synthetic_network_blocked_response_status_text(
   blocked_request : Map[String, Json],
-  status : Int,
+  status : Int32,
 ) -> String {
   match
     get_map_field_with_alias(

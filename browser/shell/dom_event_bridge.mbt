@@ -52,8 +52,8 @@ fn Browser::dispatch_activation_default_to_source_id(
 fn Browser::dispatch_click_to_source_id(
   self : Browser,
   source_id : String,
-  client_x? : Int = 0,
-  client_y? : Int = 0,
+  client_x~ : Int32 = 0,
+  client_y~ : Int32 = 0,
 ) -> ClickDispatchResult {
   let escaped = escape_js_string(source_id)
   let client_x_source = client_x.to_string()
@@ -81,8 +81,8 @@ fn Browser::dispatch_pointer_mouse_event_to_source_id(
   source_id : String,
   pointer_type : String,
   mouse_type : String,
-  client_x : Int,
-  client_y : Int,
+  client_x : Int32,
+  client_y : Int32,
 ) -> Bool {
   let escaped = escape_js_string(source_id)
   let source = "(function(){const target=document.getElementById('" +
@@ -105,8 +105,8 @@ fn Browser::dispatch_pointer_mouse_event_to_source_id(
 fn Browser::dispatch_click_only_to_source_id(
   self : Browser,
   source_id : String,
-  client_x : Int,
-  client_y : Int,
+  client_x : Int32,
+  client_y : Int32,
 ) -> ClickDispatchResult {
   let escaped = escape_js_string(source_id)
   let source = "(function(){const target=document.getElementById('" +
@@ -131,8 +131,8 @@ fn Browser::dispatch_hover_transition(
   self : Browser,
   previous_source_id : String?,
   next_source_id : String?,
-  client_x : Int,
-  client_y : Int,
+  client_x : Int32,
+  client_y : Int32,
 ) -> Bool {
   if !self.enable_js {
     return false

@@ -24,7 +24,7 @@ test "paint render bridge keeps from_node_and_layout" {
     children: [],
     text: None,
   }
-  let paint_node = from_node_and_layout(node, layout)
+  let paint_node = @render_bridge.from_node_and_layout(node, layout)
   inspect(paint_node.id, content="root")
   inspect(paint_node.width, content="100")
 }
@@ -90,7 +90,7 @@ test "paint render bridge keeps viewport culling" {
     text: None,
   }
 
-  let paint = from_node_and_layout_with_viewport(
+  let paint = @render_bridge.from_node_and_layout_with_viewport(
     root, root_layout, 0.0, 60.0, 0.0,
   )
   inspect(paint is Some(_), content="true")

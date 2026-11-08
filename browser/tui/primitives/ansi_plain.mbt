@@ -22,9 +22,9 @@ pub fn buffer_to_plain(buf : CharBuffer) -> String {
 ///|
 /// Link info for plain mode hyperlinks
 pub(all) struct PlainLink {
-  col : Int
-  row : Int
-  width : Int
+  col : Int32
+  row : Int32
+  width : Int32
   url : String
 }
 
@@ -80,8 +80,8 @@ pub fn buffer_to_plain_with_links(
   links : Array[PlainLink],
 ) -> String {
   // Build a map of link start positions for quick lookup
-  let link_starts : Map[Int, PlainLink] = Map([])
-  let link_ends : Map[Int, Bool] = Map([])
+  let link_starts : Map[Int32, PlainLink] = Map([])
+  let link_ends : Map[Int32, Bool] = Map([])
   for link in links {
     let start_key = link.row * buf.width + link.col
     link_starts.set(start_key, link)

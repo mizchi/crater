@@ -1,7 +1,7 @@
 ///|
 fn BidiProtocol::handle_browsing_context_navigate_with_state(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let ctx_id = match get_param_raw(params, "context") {
@@ -157,7 +157,7 @@ fn BidiProtocol::handle_browsing_context_navigate_with_state(
 ///|
 fn BidiProtocol::handle_browsing_context_finalize_reload(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map = match params {
@@ -217,7 +217,7 @@ fn BidiProtocol::handle_browsing_context_finalize_reload(
 ///|
 fn BidiProtocol::handle_browsing_context_reload_with_state(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let ctx_id = match get_param_raw(params, "context") {

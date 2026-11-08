@@ -61,7 +61,7 @@ test "classify_request: NoCors + custom header → Blocked" {
 /// All header names are written lowercased so the validator's lookup
 /// (which uses `get_header` semantics) finds them regardless of case.
 fn test_preflight_response(
-  status~ : Int,
+  status~ : Int32,
   aca_origin? : String,
   aca_methods? : String,
   aca_headers? : String,
@@ -227,7 +227,7 @@ test "PreflightCache::get_or_validate: cache hit within Max-Age (fetcher called 
     request_headers: ["content-type", "x-csrf"],
   }
   // Mutable counter via 1-element array (Ref not assumed available).
-  let calls : Array[Int] = [0]
+  let calls : Array[Int32] = [0]
   let fetcher = fn(_r : PreflightRequest) -> @http_impl.HttpResponse {
     calls[0] = calls[0] + 1
     test_preflight_response(
@@ -271,7 +271,7 @@ test "PreflightCache::get_or_validate: max_entries cap evicts oldest in FIFO ord
   // first one was evicted (must re-fetch on lookup) while the second
   // and third remain cached (no re-fetch).
   let cache = PreflightCache::new(max_entries=2)
-  let calls : Array[Int] = [0]
+  let calls : Array[Int32] = [0]
   let fetcher = fn(r : PreflightRequest) -> @http_impl.HttpResponse {
     calls[0] = calls[0] + 1
     test_preflight_response(
@@ -408,7 +408,7 @@ test "PreflightCache::get_or_validate: cache miss past Max-Age (fetcher called t
     http_method: "PUT",
     request_headers: ["x-token"],
   }
-  let calls : Array[Int] = [0]
+  let calls : Array[Int32] = [0]
   let fetcher = fn(_r : PreflightRequest) -> @http_impl.HttpResponse {
     calls[0] = calls[0] + 1
     test_preflight_response(

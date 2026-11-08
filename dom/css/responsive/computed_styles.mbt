@@ -3,29 +3,47 @@
 /// Compares normal vs forced-state styles for a target element.
 
 ///|
+#derive(Eq, Debug)
 pub struct StylePropertyDiff {
   property : String
   normal : String
   forced : String
-} derive(Eq, Debug)
+}
 
 ///|
+pub extend StylePropertyDiff with Eq::{not_equal, equal}
+
+///|
+pub extend StylePropertyDiff with @debug.Debug::{to_repr}
+
+///|
+#derive(Debug)
 pub struct ComputedStylesWithStateResult {
   normal : Map[String, String]
   forced : Map[String, String]
   diff : Array[StylePropertyDiff]
-} derive(Debug)
+}
 
 ///|
+pub extend ComputedStylesWithStateResult with @debug.Debug::{to_repr}
+
+///|
+#derive(Eq, Debug)
 pub struct CssRuleUsage {
   selector : String
   matched : Bool
-  elements : Int
+  elements : Int32
   overridden : Bool
   overridden_by : String?
   no_effect : Bool
   no_effect_reason : String?
-} derive(Eq, Debug)
+}
+
+///|
+pub extend CssRuleUsage with Eq::{not_equal, equal}
+
+///|
+pub extend CssRuleUsage with @debug.Debug::{to_repr}
 
 ///|
 let render_custom_states_attr_name = "data-crater-custom-states"
@@ -42,6 +60,9 @@ pub impl Show for StylePropertyDiff with fn output(self, logger) {
 }
 
 ///|
+pub extend StylePropertyDiff with Show::{to_string, output}
+
+///|
 pub impl Show for ComputedStylesWithStateResult with fn output(self, logger) {
   logger.write_string("{normal: ")
   logger.write_object(Repr(self.normal))
@@ -51,6 +72,9 @@ pub impl Show for ComputedStylesWithStateResult with fn output(self, logger) {
   logger.write_object(Repr(self.diff))
   logger.write_string("}")
 }
+
+///|
+pub extend ComputedStylesWithStateResult with Show::{to_string, output}
 
 ///|
 pub impl Show for CssRuleUsage with fn output(self, logger) {
@@ -76,6 +100,9 @@ pub impl Show for CssRuleUsage with fn output(self, logger) {
   }
   logger.write_string("}")
 }
+
+///|
+pub extend CssRuleUsage with Show::{to_string, output}
 
 ///|
 /// Discover computed style differences when forcing pseudo-class states
@@ -151,7 +178,7 @@ fn forced_state_target_lookup_selector_text(
 }
 
 ///|
-fn subject_selector_start(selector : String) -> Int {
+fn subject_selector_start(selector : String) -> Int32 {
   let mut start = 0
   let mut paren_depth = 0
   let mut bracket_depth = 0
@@ -224,9 +251,9 @@ fn strip_forced_state_pseudos_from_subject_text(
 ///|
 fn forced_pseudo_token_length_at(
   subject : String,
-  index : Int,
+  index : Int32,
   forced_states : @selector.ForcedPseudoStates,
-) -> Int? {
+) -> Int32? {
   if forced_states.focus_visible &&
     string_has_token_at(subject, index, ":focus-visible") {
     Some(":focus-visible".length())
@@ -246,7 +273,7 @@ fn forced_pseudo_token_length_at(
 }
 
 ///|
-fn string_has_token_at(s : String, index : Int, token : String) -> Bool {
+fn string_has_token_at(s : String, index : Int32, token : String) -> Bool {
   let end = index + token.length()
   if end > s.length() {
     return false
@@ -313,11 +340,11 @@ pub fn discover_css_rule_usage(html : String) -> Array[CssRuleUsage] {
   let doc = @html.parse_document(html)
   let stylesheets = parse_document_stylesheets(doc)
   let resolved_rules = build_resolved_rule_entries(stylesheets)
-  let matched_counts : Map[Int, Int] = Map([])
-  let winning_rules : Map[Int, Bool] = Map([])
-  let visual_effect_rules : Map[Int, Bool] = Map([])
-  let overridden_by : Map[Int, String] = Map([])
-  let no_effect_reason : Map[Int, String] = Map([])
+  let matched_counts : Map[Int32, Int32] = Map([])
+  let winning_rules : Map[Int32, Bool] = Map([])
+  let visual_effect_rules : Map[Int32, Bool] = Map([])
+  let overridden_by : Map[Int32, String] = Map([])
+  let no_effect_reason : Map[Int32, String] = Map([])
   let elements = collect_document_elements(doc)
   let media_env = Some(@media.MediaEnvironment::new(1280.0, 900.0))
   let resolved_value_cache : Map[String, String] = Map([])
@@ -447,7 +474,7 @@ fn collect_property_candidates_for_element(
   media_env : @media.MediaEnvironment?,
 ) -> PropertyCandidateCollection {
   let by_property : Map[String, Array[PropertyCandidate]] = Map([])
-  let matched_rule_indices : Array[Int] = []
+  let matched_rule_indices : Array[Int32] = []
   for i, rule in resolved_rules {
     if !resolved_rule_matches_element(rule, element, media_env) {
       continue
@@ -658,7 +685,7 @@ fn resolve_effective_value_for_element_property(
 fn compare_declaration_precedence(
   lhs : @cascade.Declaration,
   rhs : @cascade.Declaration,
-) -> Int {
+) -> Int32 {
   let lhs_rank = cascade_precedence_rank(lhs.origin, lhs.importance)
   let rhs_rank = cascade_precedence_rank(rhs.origin, rhs.importance)
   if lhs_rank != rhs_rank {
@@ -675,7 +702,7 @@ fn compare_declaration_precedence(
 fn cascade_precedence_rank(
   origin : @cascade.Origin,
   importance : @cascade.Importance,
-) -> Int {
+) -> Int32 {
   match (origin, importance) {
     (@cascade.Origin::UserAgent, @cascade.Importance::Normal) => 1
     (@cascade.Origin::User, @cascade.Importance::Normal) => 2
@@ -834,8 +861,8 @@ fn collect_document_elements(doc : @html.Document) -> Array[@selector.Element] {
 fn collect_document_elements_from_element(
   el : @html.Element,
   parent : @selector.Element?,
-  sibling_index : Int,
-  sibling_count : Int,
+  sibling_index : Int32,
+  sibling_count : Int32,
   results : Array[@selector.Element],
 ) -> Unit {
   let sel_element = {
@@ -1079,7 +1106,7 @@ priv struct ResolvedRuleEntry {
 
 ///|
 priv struct PropertyCandidate {
-  rule_index : Int?
+  rule_index : Int32?
   source_label : String
   declaration : @cascade.Declaration
 }
@@ -1087,7 +1114,7 @@ priv struct PropertyCandidate {
 ///|
 priv struct PropertyCandidateCollection {
   by_property : Map[String, Array[PropertyCandidate]]
-  matched_rule_indices : Array[Int]
+  matched_rule_indices : Array[Int32]
 }
 
 ///|
@@ -1134,8 +1161,8 @@ fn build_resolved_rule_entries(
 ///|
 fn build_resolved_rule_source_lookup(
   rules : Array[ResolvedRuleEntry],
-) -> Map[Int, String] {
-  let lookup : Map[Int, String] = Map([])
+) -> Map[Int32, String] {
+  let lookup : Map[Int32, String] = Map([])
   for rule in rules {
     for decl in rule.declarations {
       lookup[decl.source_order] = rule.selector_text
@@ -1171,7 +1198,7 @@ fn origins_are_equal(lhs : @cascade.Origin, rhs : @cascade.Origin) -> Bool {
 ///|
 fn declaration_source_label(
   declaration : @cascade.Declaration,
-  source_lookup : Map[Int, String],
+  source_lookup : Map[Int32, String],
 ) -> String? {
   if declaration_is_inline_source(declaration) {
     return Some("<inline style>")

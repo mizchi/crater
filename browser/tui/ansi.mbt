@@ -22,27 +22,27 @@ pub fn ansi_reverse() -> String {
 }
 
 ///|
-pub fn ansi_fg_256(color_idx : Int) -> String {
+pub fn ansi_fg_256(color_idx : Int32) -> String {
   @tui_primitives.ansi_fg_256(color_idx)
 }
 
 ///|
-pub fn ansi_bg_256(color_idx : Int) -> String {
+pub fn ansi_bg_256(color_idx : Int32) -> String {
   @tui_primitives.ansi_bg_256(color_idx)
 }
 
 ///|
-pub fn ansi_move_to(row : Int, col : Int) -> String {
+pub fn ansi_move_to(row : Int32, col : Int32) -> String {
   @tui_primitives.ansi_move_to(row, col)
 }
 
 ///|
-pub fn rgb_to_256(r : Int, g : Int, b : Int) -> Int {
+pub fn rgb_to_256(r : Int32, g : Int32, b : Int32) -> Int32 {
   @tui_primitives.rgb_to_256(r, g, b)
 }
 
 ///|
-pub fn color_to_256(color : @types.Color) -> Int {
+pub fn color_to_256(color : @types.Color) -> Int32 {
   @tui_primitives.color_to_256(color)
 }
 
@@ -57,7 +57,7 @@ pub fn ansi_bg_color(color : @types.Color) -> String {
 }
 
 ///|
-pub fn buffer_to_ansi(buf : CharBuffer, max_cols? : Int = 0) -> String {
+pub fn buffer_to_ansi(buf : CharBuffer, max_cols~ : Int32 = 0) -> String {
   @tui_primitives.buffer_to_ansi(buf, max_cols~)
 }
 
@@ -65,7 +65,7 @@ pub fn buffer_to_ansi(buf : CharBuffer, max_cols? : Int = 0) -> String {
 pub fn buffer_diff_to_ansi(
   current : CharBuffer,
   prev : CharBuffer,
-  max_cols? : Int = 0,
+  max_cols~ : Int32 = 0,
 ) -> String {
   @tui_primitives.buffer_diff_to_ansi(current, prev, max_cols~)
 }
@@ -75,7 +75,7 @@ pub fn buffer_diff_to_ansi_rects(
   current : CharBuffer,
   prev : CharBuffer,
   rects : Array[DirtyRect],
-  max_cols? : Int = 0,
+  max_cols~ : Int32 = 0,
 ) -> String {
   @tui_primitives.buffer_diff_to_ansi_rects(current, prev, rects, max_cols~)
 }

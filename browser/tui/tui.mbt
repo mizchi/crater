@@ -16,12 +16,12 @@ pub enum BrowserAction {
   Quit
   Back // Go back to previous page
   Forward // Go forward to next page
-  MouseClick(Int, Int) // Legacy synthesized click at (col, row)
-  MouseDown(Int, Int) // Mouse button press at (col, row)
-  MouseUp(Int, Int) // Mouse button release at (col, row)
-  MouseMove(Int, Int) // Mouse move at (col, row)
-  MouseScrollUp(Int, Int) // Mouse wheel scroll up at (col, row)
-  MouseScrollDown(Int, Int) // Mouse wheel scroll down at (col, row)
+  MouseClick(Int32, Int32) // Legacy synthesized click at (col, row)
+  MouseDown(Int32, Int32) // Mouse button press at (col, row)
+  MouseUp(Int32, Int32) // Mouse button release at (col, row)
+  MouseMove(Int32, Int32) // Mouse move at (col, row)
+  MouseScrollUp(Int32, Int32) // Mouse wheel scroll up at (col, row)
+  MouseScrollDown(Int32, Int32) // Mouse wheel scroll down at (col, row)
   EnterHintMode // Start hit-a-hint mode (triggered by 'f')
   HintChar(String) // Hint character input (a-z)
   ExitHintMode // Exit hint mode (Escape)

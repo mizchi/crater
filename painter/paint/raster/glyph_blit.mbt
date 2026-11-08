@@ -16,8 +16,8 @@ fn clamp_opacity(value : Double) -> Double {
 fn blend_color_over_pixel_alpha(
   fb : Framebuffer,
   palette : DynamicPalette,
-  px : Int,
-  py : Int,
+  px : Int32,
+  py : Int32,
   color : Color,
   alpha : Double,
 ) -> Unit {
@@ -39,7 +39,7 @@ fn blend_color_over_pixel_alpha(
 }
 
 ///|
-fn floor_to_int(value : Double) -> Int {
+fn floor_to_int(value : Double) -> Int32 {
   value.floor().to_int()
 }
 
@@ -51,7 +51,7 @@ fn blit_glyph_bitmap(
   draw_x : Double,
   draw_y : Double,
   color : Color,
-  color_idx : Int,
+  color_idx : Int32,
   opacity : Double,
   clip : ClipRect?,
 ) -> Unit {

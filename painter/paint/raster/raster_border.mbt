@@ -3,7 +3,7 @@
 
 ///|
 /// Resolve border-radius value: negative means percentage of reference dimension
-fn resolve_radius(val : Double, ref_dim : Int) -> Int {
+fn resolve_radius(val : Double, ref_dim : Int32) -> Int32 {
   if val < 0.0 {
     // Negative encodes percentage: -0.5 means 50%
     let frac = -val
@@ -21,10 +21,10 @@ fn same_types_color(a : @types.Color, b : @types.Color) -> Bool {
 ///|
 fn can_draw_uniform_rounded_border_ring(
   node : @paint_model.PaintNode,
-  bt : Int,
-  br : Int,
-  bb : Int,
-  bl : Int,
+  bt : Int32,
+  br : Int32,
+  bb : Int32,
+  bl : Int32,
   has_radius : Bool,
 ) -> Bool {
   let solid_background = match node.paint.background_image {
@@ -49,16 +49,16 @@ fn draw_uniform_rounded_border_ring_clipped(
   fb : Framebuffer,
   palette : DynamicPalette,
   node : @paint_model.PaintNode,
-  x : Int,
-  y : Int,
-  w : Int,
-  h : Int,
-  border_width : Int,
+  x : Int32,
+  y : Int32,
+  w : Int32,
+  h : Int32,
+  border_width : Int32,
   clip : ClipRect?,
-  tl_r : Int,
-  tr_r : Int,
-  br_r : Int,
-  bl_r : Int,
+  tl_r : Int32,
+  tr_r : Int32,
+  br_r : Int32,
+  bl_r : Int32,
 ) -> Unit {
   fill_rounded_rect_clipped(
     fb,

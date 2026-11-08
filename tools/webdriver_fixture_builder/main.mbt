@@ -192,12 +192,12 @@ fn build_html_data_url(html : String) -> String {
 
 ///|
 fn build_wpt_url(
-  path? : String = "",
-  protocol? : String = "http",
-  domain? : String = "",
-  subdomain? : String = "",
-  query? : String = "",
-  fragment? : String = "",
+  path~ : String = "",
+  protocol~ : String = "http",
+  domain~ : String = "",
+  subdomain~ : String = "",
+  query~ : String = "",
+  fragment~ : String = "",
 ) -> String {
   let resolved_protocol = if protocol == "https" { "https" } else { "http" }
   let base_host = if domain == "alt" { "alt.localhost" } else { "localhost" }
@@ -216,12 +216,12 @@ fn build_wpt_url(
 
 ///|
 fn build_inline_url(
-  content? : String = "",
-  content_type? : String = "text/html",
-  domain? : String = "",
-  protocol? : String = "http",
-  subdomain? : String = "",
-  pipe? : String? = None,
+  content~ : String = "",
+  content_type~ : String = "text/html",
+  domain~ : String = "",
+  protocol~ : String = "http",
+  subdomain~ : String = "",
+  pipe~ : String? = None,
 ) -> String {
   let fragments : Array[String] = []
   if domain != "" {
@@ -441,7 +441,7 @@ fn json_optional_string(map : Map[String, Json], key : String) -> String? {
 }
 
 ///|
-fn png_diff_result(total_pixels : Int, max_difference : Int) -> String {
+fn png_diff_result(total_pixels : Int32, max_difference : Int32) -> String {
   "{\"maxDifference\": " +
   max_difference.to_string() +
   ", \"totalPixels\": " +
@@ -477,12 +477,12 @@ fn build_iframe_markup(src : String) -> String {
 
 ///|
 fn build_iframe_markup_from_inline(
-  src? : String = "",
-  content_type? : String = "text/html",
-  domain? : String = "",
-  protocol? : String = "http",
-  subdomain? : String = "",
-  pipe? : String? = None,
+  src~ : String = "",
+  content_type~ : String = "text/html",
+  domain~ : String = "",
+  protocol~ : String = "http",
+  subdomain~ : String = "",
+  pipe~ : String? = None,
 ) -> String {
   build_iframe_markup(
     build_inline_url(
@@ -498,8 +498,8 @@ fn build_iframe_markup_from_inline(
 
 ///|
 fn build_actions_origin_page_url(
-  inner_style? : String = "",
-  outer_style? : String = "",
+  inner_style~ : String = "",
+  outer_style~ : String = "",
 ) -> String {
   let html = "\n          <meta name=\"viewport\" content=\"width=device-width,initial-scale=1,minimum-scale=1\">\n" +
     "          <div id=\"outer\" style=\"" +
@@ -644,12 +644,12 @@ fn build_server_config_json() -> String {
 
 ///|
 fn build_node_test_page_url(
-  as_frame? : Bool = false,
-  frame_doc? : String? = None,
-  shadow_doc? : String? = None,
-  nested_shadow_dom? : Bool = false,
-  shadow_root_mode? : String = "open",
-  protocol? : String? = None,
+  as_frame~ : Bool = false,
+  frame_doc~ : String? = None,
+  shadow_doc~ : String? = None,
+  nested_shadow_dom~ : Bool = false,
+  shadow_root_mode~ : String = "open",
+  protocol~ : String? = None,
 ) -> String {
   match protocol {
     Some("http") =>

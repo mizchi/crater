@@ -6,10 +6,10 @@ fn render_node_content(
   fb : Framebuffer,
   palette : DynamicPalette,
   node : @paint_model.PaintNode,
-  x : Int,
-  y : Int,
-  w : Int,
-  h : Int,
+  x : Int32,
+  y : Int32,
+  w : Int32,
+  h : Int32,
   clip : ClipRect?,
 ) -> Unit {
   let drew_replaced_image = if w > 0 && h > 0 {

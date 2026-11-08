@@ -116,7 +116,7 @@ pub fn headers_to_json(headers : Map[String, String]) -> String {
 }
 
 ///|
-pub fn is_cacheable_status(status : Int) -> Bool {
+pub fn is_cacheable_status(status : Int32) -> Bool {
   @cache.is_cacheable_status(status)
 }
 

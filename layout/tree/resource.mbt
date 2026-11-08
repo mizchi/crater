@@ -4,13 +4,26 @@
 
 ///|
 /// Opaque resource identifier for external reference
-pub(all) struct ResourceId(Int) derive(Eq, Hash, Debug)
+#derive(Eq, Hash, Debug)
+pub(all) struct ResourceId(Int32)
+
+///|
+pub extend ResourceId with Eq::{not_equal, equal}
+
+///|
+pub extend ResourceId with Hash::{hash, hash_combine}
+
+///|
+pub extend ResourceId with @debug.Debug::{to_repr}
 
 ///|
 pub impl Show for ResourceId with fn output(self, logger) {
   let ResourceId(id) = self
   logger.write_string("ResourceId(\{id})")
 }
+
+///|
+pub extend ResourceId with Show::{to_string, output}
 
 ///|
 /// State of an intrinsic resource
@@ -62,11 +75,11 @@ pub fn create_fixed_measure(
 /// Resource registry - tracks pending resources and their associated nodes
 pub struct ResourceRegistry {
   /// Counter for generating unique resource IDs
-  mut next_id : Int
+  mut next_id : Int32
   /// Map from resource ID to node UIDs
-  resource_nodes : Map[Int, Array[Int]]
+  resource_nodes : Map[Int32, Array[Int32]]
   /// Set of pending resource IDs
-  pending : @hashset.HashSet[Int]
+  pending : @hashset.HashSet[Int32]
 }
 
 ///|
@@ -89,7 +102,7 @@ pub fn ResourceRegistry::next_resource_id(
 pub fn ResourceRegistry::add_node(
   self : ResourceRegistry,
   rid : ResourceId,
-  node_uid : Int,
+  node_uid : Int32,
 ) -> Unit {
   let ResourceId(id) = rid
   match self.resource_nodes.get(id) {
@@ -133,7 +146,7 @@ pub fn ResourceRegistry::is_pending(
 pub fn ResourceRegistry::get_nodes(
   self : ResourceRegistry,
   rid : ResourceId,
-) -> Array[Int] {
+) -> Array[Int32] {
   let ResourceId(id) = rid
   match self.resource_nodes.get(id) {
     Some(nodes) => nodes

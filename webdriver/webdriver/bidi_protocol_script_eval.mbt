@@ -51,7 +51,7 @@ fn resolve_sync_await_call_expression(
 ///|
 fn BidiProtocol::try_send_sync_await_expression_fallback(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   realm_id : String,
   expression : String,
@@ -107,7 +107,7 @@ fn BidiProtocol::try_send_sync_await_expression_fallback(
 ///|
 fn BidiProtocol::try_send_sync_await_call_fallback(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   realm_id : String,
   function_declaration : String,

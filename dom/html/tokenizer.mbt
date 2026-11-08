@@ -19,8 +19,8 @@ pub(all) enum Token {
 /// Tokenizer state
 pub(all) struct Tokenizer {
   input : String
-  mut pos : Int
-  len : Int
+  mut pos : Int32
+  len : Int32
   // When set, tokenizer is in raw text mode and only emits text until
   // the matching end tag (e.g., "</style>") is found.
   mut raw_text_end_tag : String?
@@ -128,7 +128,7 @@ fn Tokenizer::peek_fast(self : Tokenizer) -> Char {
 }
 
 ///|
-fn Tokenizer::peek_at(self : Tokenizer, offset : Int) -> Char? {
+fn Tokenizer::peek_at(self : Tokenizer, offset : Int32) -> Char? {
   let idx = self.pos + offset
   if idx >= self.len || idx < 0 {
     None

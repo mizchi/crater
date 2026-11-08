@@ -54,7 +54,7 @@ test "discover_required_test_viewports from max-width" {
   let result = discover_required_test_viewports(html)
   assert_true(result.viewports.length() >= 1)
   // Should include 640 and 641
-  let widths : Array[Int] = []
+  let widths : Array[Int32] = []
   for v in result.viewports {
     widths.push(v.width)
   }
@@ -66,7 +66,7 @@ test "discover_required_test_viewports from max-width" {
 test "discover_required_test_viewports from min-width" {
   let html = "<style>@media (min-width: 768px) { .sidebar { display: block; } }</style>"
   let result = discover_required_test_viewports(html)
-  let widths : Array[Int] = []
+  let widths : Array[Int32] = []
   for v in result.viewports {
     widths.push(v.width)
   }

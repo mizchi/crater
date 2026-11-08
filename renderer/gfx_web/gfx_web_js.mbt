@@ -9,11 +9,11 @@
 /// WebGPU backend uses.
 
 ///|
-extern "js" fn js_web_init(width : Int, height : Int) -> Bool =
+extern "js" fn js_web_init(width : Int32, height : Int32) -> Bool =
   #|(w, h) => (globalThis.__craterGfxWeb ? globalThis.__craterGfxWeb.init(w, h) === true : false)
 
 ///|
-extern "js" fn js_web_begin(r : Int, g : Int, b : Int, a : Int) -> Unit =
+extern "js" fn js_web_begin(r : Int32, g : Int32, b : Int32, a : Int32) -> Unit =
   #|(r, g, b, a) => { if (globalThis.__craterGfxWeb) globalThis.__craterGfxWeb.begin([r, g, b, a]); }
 
 ///|
@@ -24,13 +24,13 @@ extern "js" fn js_web_end() -> Unit =
 #borrow(vertex_data, indices, uniforms)
 extern "js" fn js_web_draw(
   vertex_data : FixedArray[Double],
-  indices : FixedArray[Int],
-  uniforms : FixedArray[Int],
-  blend : Int,
-  rx : Int,
-  ry : Int,
-  rw : Int,
-  rh : Int,
+  indices : FixedArray[Int32],
+  uniforms : FixedArray[Int32],
+  blend : Int32,
+  rx : Int32,
+  ry : Int32,
+  rw : Int32,
+  rh : Int32,
 ) -> Unit =
   #|(vertexData, indices, uniforms, blend, rx, ry, rw, rh) => {
   #|  if (globalThis.__craterGfxWeb) {
@@ -39,11 +39,11 @@ extern "js" fn js_web_draw(
   #|}
 
 ///|
-extern "js" fn js_web_read_pixels() -> FixedArray[Int] =
+extern "js" fn js_web_read_pixels() -> FixedArray[Int32] =
   #|() => (globalThis.__craterGfxWeb ? globalThis.__craterGfxWeb.readPixels() : [])
 
 ///|
-fn channel_255(value : Double) -> Int {
+fn channel_255(value : Double) -> Int32 {
   let v = (value * 255.0).to_int()
   if v < 0 {
     0
@@ -101,6 +101,6 @@ pub fn install_js_web_backend() -> Unit {
 ///|
 /// Read back the JS runtime's framebuffer (row-major RGBA, four 0..255
 /// channels per pixel).
-pub fn web_backend_read_pixels() -> Array[Int] {
+pub fn web_backend_read_pixels() -> Array[Int32] {
   Array::from_fixed_array(js_web_read_pixels())
 }

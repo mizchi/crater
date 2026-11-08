@@ -31,19 +31,19 @@ pub(all) enum Node {
 
 ///|
 /// Maximum allowed input size (10 MB)
-let max_input_size : Int = 10 * 1024 * 1024
+let max_input_size : Int32 = 10 * 1024 * 1024
 
 ///|
 /// Maximum nesting depth for HTML elements
-let max_nesting_depth : Int = 512
+let max_nesting_depth : Int32 = 512
 
 ///|
 /// Parser state
 priv struct Parser {
   input : String
-  mut pos : Int
-  len : Int
-  mut depth : Int
+  mut pos : Int32
+  len : Int32
+  mut depth : Int32
 }
 
 ///|
@@ -163,7 +163,7 @@ fn Parser::peek(self : Parser) -> Char? {
 }
 
 ///|
-fn Parser::peek_at(self : Parser, offset : Int) -> Char? {
+fn Parser::peek_at(self : Parser, offset : Int32) -> Char? {
   let idx = self.pos + offset
   if idx >= self.len || idx < 0 {
     None
@@ -782,14 +782,14 @@ fn decode_entity(entity : String) -> String? {
 
 ///|
 /// Parse hex string to int
-fn parse_hex(s : String) -> Int? {
+fn parse_hex(s : String) -> Int32? {
   let chars = s.to_array()
   let mut result = 0
   for c in chars {
     let digit = match c {
-      '0'..='9' => c.to_int() - '0'.to_int()
-      'a'..='f' => c.to_int() - 'a'.to_int() + 10
-      'A'..='F' => c.to_int() - 'A'.to_int() + 10
+      '0'..<='9' => c.to_int() - '0'.to_int()
+      'a'..<='f' => c.to_int() - 'a'.to_int() + 10
+      'A'..<='F' => c.to_int() - 'A'.to_int() + 10
       _ => return None
     }
     result = result * 16 + digit
@@ -799,7 +799,7 @@ fn parse_hex(s : String) -> Int? {
 
 ///|
 /// Parse decimal string to int
-fn parse_decimal(s : String) -> Int? {
+fn parse_decimal(s : String) -> Int32? {
   let chars = s.to_array()
   if chars.length() == 0 {
     return None
@@ -807,7 +807,7 @@ fn parse_decimal(s : String) -> Int? {
   let mut result = 0
   for c in chars {
     match c {
-      '0'..='9' => result = result * 10 + (c.to_int() - '0'.to_int())
+      '0'..<='9' => result = result * 10 + (c.to_int() - '0'.to_int())
       _ => return None
     }
   }
@@ -992,7 +992,7 @@ fn extract_text_content(elem : Element) -> String {
 ///|
 /// Find substring position in string, starting from a given offset
 /// Returns -1 if not found
-fn find_substring(s : String, needle : String, from : Int) -> Int {
+fn find_substring(s : String, needle : String, from : Int32) -> Int32 {
   let slen = s.length()
   let nlen = needle.length()
   if nlen == 0 || from + nlen > slen {
@@ -1015,7 +1015,7 @@ fn find_substring(s : String, needle : String, from : Int) -> Int {
 
 ///|
 /// Find single character position in string
-fn find_char(s : String, c : Char, from : Int) -> Int {
+fn find_char(s : String, c : Char, from : Int32) -> Int32 {
   let slen = s.length()
   for i = from; i < slen; i = i + 1 {
     if s[i].to_int().unsafe_to_char() == c {
@@ -1123,7 +1123,7 @@ pub fn parse_fragment(html : String) -> Element {
 ///|
 /// Context for assigning synthetic IDs
 priv struct IdAssigner {
-  mut counter : Int
+  mut counter : Int32
 }
 
 ///|

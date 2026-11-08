@@ -11,6 +11,27 @@ function touch(filePath, content = "// test\n") {
   fs.writeFileSync(filePath, content)
 }
 
+test("copyDist uses the workspace build when stale module artifacts remain", (t) => {
+  const workspace = fs.mkdtempSync(path.join(os.tmpdir(), "crater-copy-dist-"))
+  t.after(() => fs.rmSync(workspace, { recursive: true, force: true }))
+  const moduleDir = path.join(workspace, "js")
+  for (const [target, filename, content] of [
+    ["js", "crater-js.js", "fresh-js"],
+    ["wasm-gc", "crater-js.wasm", "fresh-wasm"],
+  ]) {
+    touch(path.join(moduleDir, "_build", target, "release", "build", filename), "stale")
+    touch(path.join(workspace, "_build", target, "release", "build", "mizchi", "crater-js", filename), content)
+  }
+  for (const filename of ["index.js", "index.d.ts", "wasm.js", "wasm.d.ts", "gfx-web-runtime.mjs"]) {
+    touch(path.join(moduleDir, filename))
+  }
+
+  copyDist(moduleDir)
+
+  assert.equal(fs.readFileSync(path.join(moduleDir, "dist", "crater.js"), "utf8"), "fresh-js")
+  assert.equal(fs.readFileSync(path.join(moduleDir, "dist", "crater.wasm"), "utf8"), "fresh-wasm")
+})
+
 test("resolveBuildArtifactPath prefers local module build output", (t) => {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "crater-copy-dist-"))
   t.after(() => fs.rmSync(tempRoot, { recursive: true, force: true }))

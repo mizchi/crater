@@ -35,7 +35,7 @@ pub fn extract_emulation_fetch_url(expression : String) -> String? {
 }
 
 ///|
-pub fn emulation_timezone_offset_minutes(timezone : String) -> Int? {
+pub fn emulation_timezone_offset_minutes(timezone : String) -> Int32? {
   if timezone.length() != 6 {
     return None
   }

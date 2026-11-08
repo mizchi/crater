@@ -9,26 +9,51 @@
 
 ///|
 /// Node identifier - opaque handle to a DOM node
-pub struct NodeId(Int) derive(Eq, Hash, Debug)
+#derive(Eq, Hash, Debug)
+pub struct NodeId(Int32)
+
+///|
+pub extend NodeId with Eq::{not_equal, equal}
+
+///|
+pub extend NodeId with Hash::{hash, hash_combine}
+
+///|
+pub extend NodeId with @debug.Debug::{to_repr}
 
 ///|
 /// Rectangle with position and size
+#derive(Eq, Debug)
 pub struct Rect {
   x : Double
   y : Double
   width : Double
   height : Double
-} derive(Eq, Debug)
+}
+
+///|
+pub extend Rect with Eq::{not_equal, equal}
+
+///|
+pub extend Rect with @debug.Debug::{to_repr}
 
 ///|
 /// 2D Point
+#derive(Eq, Debug)
 pub struct Point {
   x : Double
   y : Double
-} derive(Eq, Debug)
+}
+
+///|
+pub extend Point with Eq::{not_equal, equal}
+
+///|
+pub extend Point with @debug.Debug::{to_repr}
 
 ///|
 /// Node type enumeration
+#derive(Eq, Debug)
 pub(all) enum NodeType {
   Document
   DocumentType
@@ -37,12 +62,18 @@ pub(all) enum NodeType {
   Comment
   DocumentFragment
   ShadowRoot
-} derive(Eq, Debug)
+}
+
+///|
+pub extend NodeType with Eq::{not_equal, equal}
+
+///|
+pub extend NodeType with @debug.Debug::{to_repr}
 
 ///|
 /// Convert DOM node type constant to NodeType
 /// See: https://developer.mozilla.org/en-US/docs/Web/API/Node/nodeType
-pub fn NodeType::from_dom_constant(value : Int) -> NodeType? {
+pub fn NodeType::from_dom_constant(value : Int32) -> NodeType? {
   match value {
     1 => Some(Element)
     3 => Some(Text)
@@ -56,25 +87,36 @@ pub fn NodeType::from_dom_constant(value : Int) -> NodeType? {
 
 ///|
 /// Basic node information
+#derive(Debug)
 pub struct NodeInfo {
   node_id : NodeId
   node_type : NodeType
   node_name : String
   node_value : String
-  child_count : Int
-} derive(Debug)
+  child_count : Int32
+}
 
 ///|
+pub extend NodeInfo with @debug.Debug::{to_repr}
+
+///|
+#derive(Eq, Debug)
 pub struct ShadowRootInit {
   mode : String
   delegates_focus : Bool
   slot_assignment : String
   clonable : Bool
   serializable : Bool
-} derive(Eq, Debug)
+}
 
 ///|
-pub fn ShadowRootInit::default(mode? : String = "open") -> ShadowRootInit {
+pub extend ShadowRootInit with Eq::{not_equal, equal}
+
+///|
+pub extend ShadowRootInit with @debug.Debug::{to_repr}
+
+///|
+pub fn ShadowRootInit::default(mode~ : String = "open") -> ShadowRootInit {
   {
     mode,
     delegates_focus: false,
@@ -87,23 +129,28 @@ pub fn ShadowRootInit::default(mode? : String = "open") -> ShadowRootInit {
 ///|
 pub fn ShadowRootInit::new(
   mode~ : String,
-  delegates_focus? : Bool = false,
-  slot_assignment? : String = "named",
-  clonable? : Bool = false,
-  serializable? : Bool = false,
+  delegates_focus~ : Bool = false,
+  slot_assignment~ : String = "named",
+  clonable~ : Bool = false,
+  serializable~ : Bool = false,
 ) -> ShadowRootInit {
   { mode, delegates_focus, slot_assignment, clonable, serializable, }
 }
 
 ///|
 /// Core error types
+#derive(Debug)
 pub enum CoreError {
   NodeNotFound(node_id~ : NodeId)
   InvalidOperation(message~ : String)
-} derive(Debug)
+}
+
+///|
+pub extend CoreError with @debug.Debug::{to_repr}
 
 ///|
 /// Scroll state for a scrollable element
+#derive(Eq, Debug)
 pub struct ScrollState {
   scroll_left : Double
   scroll_top : Double
@@ -111,7 +158,13 @@ pub struct ScrollState {
   scroll_height : Double
   client_width : Double
   client_height : Double
-} derive(Eq, Debug)
+}
+
+///|
+pub extend ScrollState with Eq::{not_equal, equal}
+
+///|
+pub extend ScrollState with @debug.Debug::{to_repr}
 
 ///|
 /// Create a new ScrollState
@@ -241,13 +294,13 @@ pub fn Rect::center(self : Rect) -> Point {
 
 ///|
 /// Create NodeId from Int
-pub fn NodeId::from_int(id : Int) -> NodeId {
+pub fn NodeId::from_int(id : Int32) -> NodeId {
   NodeId(id)
 }
 
 ///|
 /// Get Int value from NodeId
-pub fn NodeId::to_int(self : NodeId) -> Int {
+pub fn NodeId::to_int(self : NodeId) -> Int32 {
   self.0
 }
 
@@ -258,12 +311,19 @@ pub fn NodeId::to_int(self : NodeId) -> Int {
 ///|
 /// SVGRect - represents a rectangle in SVG coordinate space
 /// Used by getBBox(), getClientRect(), and other SVG methods
+#derive(Eq, Debug)
 pub struct SVGRect {
   x : Double
   y : Double
   width : Double
   height : Double
-} derive(Eq, Debug)
+}
+
+///|
+pub extend SVGRect with Eq::{not_equal, equal}
+
+///|
+pub extend SVGRect with @debug.Debug::{to_repr}
 
 ///|
 /// Create a new SVGRect
@@ -297,10 +357,17 @@ pub fn SVGRect::from_rect(rect : Rect) -> SVGRect {
 ///|
 /// SVGPoint - represents a point in SVG coordinate space
 /// Has matrixTransform method for coordinate transformations
+#derive(Eq, Debug)
 pub struct SVGPoint {
   x : Double
   y : Double
-} derive(Eq, Debug)
+}
+
+///|
+pub extend SVGPoint with Eq::{not_equal, equal}
+
+///|
+pub extend SVGPoint with @debug.Debug::{to_repr}
 
 ///|
 /// Create a new SVGPoint
@@ -330,6 +397,7 @@ pub fn SVGPoint::matrix_transform(
 /// Represents a 3x3 matrix: | a c e |
 ///                          | b d f |
 ///                          | 0 0 1 |
+#derive(Eq, Debug)
 pub struct SVGMatrix {
   a : Double // scale x
   b : Double // skew y
@@ -337,12 +405,21 @@ pub struct SVGMatrix {
   d : Double // scale y
   e : Double // translate x
   f : Double // translate y
-} derive(Eq, Debug)
+}
+
+///|
+pub extend SVGMatrix with Eq::{not_equal, equal}
+
+///|
+pub extend SVGMatrix with @debug.Debug::{to_repr}
 
 ///|
 pub impl Show for NodeId with fn output(self, logger) {
   logger.write_string("NodeId(\{self.0})")
 }
+
+///|
+pub extend NodeId with Show::{to_string, output}
 
 ///|
 pub impl Show for Rect with fn output(self, logger) {
@@ -352,9 +429,15 @@ pub impl Show for Rect with fn output(self, logger) {
 }
 
 ///|
+pub extend Rect with Show::{to_string, output}
+
+///|
 pub impl Show for Point with fn output(self, logger) {
   logger.write_string("{x: \{self.x}, y: \{self.y}}")
 }
+
+///|
+pub extend Point with Show::{to_string, output}
 
 ///|
 pub impl Show for NodeType with fn output(self, logger) {
@@ -369,6 +452,9 @@ pub impl Show for NodeType with fn output(self, logger) {
   }
   logger.write_string(name)
 }
+
+///|
+pub extend NodeType with Show::{to_string, output}
 
 ///|
 pub impl Show for NodeInfo with fn output(self, logger) {
@@ -387,6 +473,9 @@ pub impl Show for NodeInfo with fn output(self, logger) {
 }
 
 ///|
+pub extend NodeInfo with Show::{to_string, output}
+
+///|
 pub impl Show for CoreError with fn output(self, logger) {
   match self {
     NodeNotFound(node_id~) =>
@@ -402,6 +491,9 @@ pub impl Show for CoreError with fn output(self, logger) {
 }
 
 ///|
+pub extend CoreError with Show::{to_string, output}
+
+///|
 pub impl Show for ScrollState with fn output(self, logger) {
   logger.write_string("{scroll_left: \{self.scroll_left}, ")
   logger.write_string("scroll_top: \{self.scroll_top}, ")
@@ -412,6 +504,9 @@ pub impl Show for ScrollState with fn output(self, logger) {
 }
 
 ///|
+pub extend ScrollState with Show::{to_string, output}
+
+///|
 pub impl Show for SVGRect with fn output(self, logger) {
   logger.write_string(
     "{x: \{self.x}, y: \{self.y}, width: \{self.width}, height: \{self.height}}",
@@ -419,9 +514,15 @@ pub impl Show for SVGRect with fn output(self, logger) {
 }
 
 ///|
+pub extend SVGRect with Show::{to_string, output}
+
+///|
 pub impl Show for SVGPoint with fn output(self, logger) {
   logger.write_string("{x: \{self.x}, y: \{self.y}}")
 }
+
+///|
+pub extend SVGPoint with Show::{to_string, output}
 
 ///|
 pub impl Show for SVGMatrix with fn output(self, logger) {
@@ -430,6 +531,9 @@ pub impl Show for SVGMatrix with fn output(self, logger) {
   )
   logger.write_string("e: \{self.e}, f: \{self.f}}")
 }
+
+///|
+pub extend SVGMatrix with Show::{to_string, output}
 
 ///|
 /// Create an identity matrix

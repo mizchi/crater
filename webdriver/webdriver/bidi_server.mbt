@@ -7,7 +7,7 @@
 /// BiDi server configuration
 pub(all) struct BidiServerConfig {
   host : String
-  port : Int
+  port : Int32
   /// Optional auth token. If set, clients must connect to /session/<token>.
   /// If empty, authentication is disabled (legacy behavior).
   auth_token : String
@@ -66,7 +66,7 @@ pub struct BidiServer {
 ///|
 /// Create new BiDi server
 pub fn BidiServer::new(
-  config? : BidiServerConfig = BidiServerConfig::default(),
+  config~ : BidiServerConfig = BidiServerConfig::default(),
 ) -> BidiServer {
   { config, protocol: BidiProtocol::new(), server: None, }
 }
@@ -230,7 +230,7 @@ fn BidiServer::setup_websocket(self : BidiServer, socket : @core.Any) -> Unit {
 
 ///|
 /// Create HTTP response for non-WebSocket requests
-extern "js" fn create_response(body : String, status : Int) -> @core.Any =
+extern "js" fn create_response(body : String, status : Int32) -> @core.Any =
   #| (body, status) => new Response(body, { status, headers: { "Content-Type": "application/json" } })
 
 ///|

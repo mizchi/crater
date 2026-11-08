@@ -2,7 +2,7 @@
 /// Handle network.addIntercept
 fn BidiProtocol::handle_network_add_intercept(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let options = match
@@ -20,7 +20,7 @@ fn BidiProtocol::handle_network_add_intercept(
 ///|
 fn BidiProtocol::handle_network_add_intercept_id(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let options = match
@@ -50,7 +50,7 @@ fn BidiProtocol::add_network_intercept_options(
 /// Handle network.removeIntercept
 fn BidiProtocol::handle_network_remove_intercept(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map = match params {

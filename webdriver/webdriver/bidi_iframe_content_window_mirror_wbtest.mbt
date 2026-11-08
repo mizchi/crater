@@ -176,7 +176,11 @@ fn mirror_proto() -> BidiProtocol {
 }
 
 ///|
-fn mirror_eval(proto : BidiProtocol, request_id : Int, expr : String) -> String {
+fn mirror_eval(
+  proto : BidiProtocol,
+  request_id : Int32,
+  expr : String,
+) -> String {
   let payload = "{\"id\":" +
     request_id.to_string() +
     ",\"method\":\"script.evaluate\",\"params\":{\"expression\":" +

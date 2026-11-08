@@ -592,7 +592,7 @@ fn StreamingTreeBuilder::stb_handle_after_body(
 
 ///|
 /// Parse HTML document using streaming
-pub fn parse_document_streaming(html : String, chunk_size : Int) -> Document {
+pub fn parse_document_streaming(html : String, chunk_size : Int32) -> Document {
   let builder = StreamingTreeBuilder::new()
   let len = html.length()
   let mut offset = 0

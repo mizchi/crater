@@ -8,6 +8,7 @@
 
 ///|
 /// ARIA Role categories based on WAI-ARIA specification
+#derive(Eq, Debug)
 pub(all) enum Role {
   // Document structure roles
   Article
@@ -108,7 +109,13 @@ pub(all) enum Role {
   HtmlCanvas
   HtmlLabel
   HtmlSummary
-} derive(Eq, Debug)
+}
+
+///|
+pub extend Role with Eq::{not_equal, equal}
+
+///|
+pub extend Role with @debug.Debug::{to_repr}
 
 ///|
 pub fn Role::to_string(self : Role) -> String {
@@ -299,6 +306,9 @@ pub impl Show for Role with fn output(self, logger) {
 }
 
 ///|
+pub extend Role with Show::{output}
+
+///|
 pub fn Role::from_string(s : String) -> Role? {
   match s {
     "article" => Some(Article)
@@ -394,6 +404,7 @@ pub fn Role::from_string(s : String) -> Role? {
 
 ///|
 /// ARIA state values
+#derive(Eq, Debug)
 pub(all) enum State {
   // Boolean states
   Busy
@@ -409,7 +420,13 @@ pub(all) enum State {
   // Tristate
   CheckedMixed
   PressedMixed
-} derive(Eq, Debug)
+}
+
+///|
+pub extend State with Eq::{not_equal, equal}
+
+///|
+pub extend State with @debug.Debug::{to_repr}
 
 ///|
 pub fn State::to_string(self : State) -> String {
@@ -448,6 +465,9 @@ pub impl Show for State with fn output(self, logger) {
 // =============================================================================
 // Accessibility Node
 // =============================================================================
+
+///|
+pub extend State with Show::{output}
 
 ///|
 /// Bounding rectangle for spatial information
@@ -489,7 +509,7 @@ pub(all) struct AccessibilityNode {
   description : String?
 
   // Heading level (1-6, only for Heading role)
-  level : Int?
+  level : Int32?
 
   // Current states
   states : Array[State]
@@ -511,7 +531,7 @@ pub(all) struct AccessibilityNode {
   // Some(-1) = programmatically focusable but not via Tab
   // Some(0) = focusable in document order
   // Some(n) where n > 0 = focusable in priority order
-  tabindex : Int?
+  tabindex : Int32?
 
   // Reference to source element id (for debugging/tooling)
   source_id : String?
@@ -621,7 +641,7 @@ pub fn AccessibilityNode::with_bounds(
 ///|
 pub fn AccessibilityNode::with_level(
   self : AccessibilityNode,
-  level : Int,
+  level : Int32,
 ) -> AccessibilityNode {
   { ..self, level: Some(level), }
 }
@@ -657,7 +677,7 @@ pub fn AccessibilityNode::set_focusable(
 ///|
 pub fn AccessibilityNode::with_tabindex(
   self : AccessibilityNode,
-  tabindex : Int,
+  tabindex : Int32,
 ) -> AccessibilityNode {
   { ..self, tabindex: Some(tabindex), }
 }

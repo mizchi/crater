@@ -1,7 +1,7 @@
 ///|
 fn BidiProtocol::handle_browsing_context_prepare_navigate(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map = match params {
@@ -47,7 +47,7 @@ fn BidiProtocol::handle_browsing_context_prepare_navigate(
 ///|
 fn BidiProtocol::handle_browsing_context_finalize_navigate(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map = match params {
@@ -112,7 +112,7 @@ fn BidiProtocol::handle_browsing_context_finalize_navigate(
 ///|
 fn BidiProtocol::send_navigation_state_result(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   requested_url : String,
   result_url : String,
@@ -127,7 +127,7 @@ fn BidiProtocol::send_navigation_state_result(
 ///|
 fn BidiProtocol::send_navigation_url_result(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   requested_url : String,
   result_url : String,
@@ -147,7 +147,7 @@ fn BidiProtocol::send_navigation_url_result(
 ///|
 fn BidiProtocol::send_navigation_result_with_mode(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   requested_url : String,
   result_url : String,
@@ -184,7 +184,7 @@ fn BidiProtocol::send_navigation_result_with_mode(
 ///|
 fn BidiProtocol::complete_navigate_with_state(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   requested_url : String,
   resolved_url : String,

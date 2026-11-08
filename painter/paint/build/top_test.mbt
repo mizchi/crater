@@ -24,8 +24,8 @@ test "paint build wraps traversal and scroll APIs" {
     @model.PaintProperties::default(),
     [child],
   )
-  let items = collect_scrollable_elements(root)
-  let flattened = flatten_for_rendering(root)
+  let items = @build.collect_scrollable_elements(root)
+  let flattened = @build.flatten_for_rendering(root)
   inspect(items.length(), content="1")
   inspect(items[0].id, content="child")
   inspect(flattened.length(), content="2")

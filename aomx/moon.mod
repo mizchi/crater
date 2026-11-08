@@ -1,9 +1,9 @@
 name = "mizchi/crater-aomx"
 
-version = "0.19.0"
+version = "0.19.2"
 
 import {
-  "mizchi/crater-dom@0.19.0",
+  "mizchi/crater-dom@0.19.2",
 }
 
 readme = "README.md"

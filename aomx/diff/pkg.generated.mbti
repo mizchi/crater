@@ -37,9 +37,9 @@ pub fn DiffConfig::strict() -> Self
 
 pub(all) struct DiffResult {
   differences : Array[Difference]
-  added_count : Int
-  removed_count : Int
-  changed_count : Int
+  added_count : Int32
+  removed_count : Int32
+  changed_count : Int32
   similarity : Double
 }
 pub fn DiffResult::to_json(Self) -> String
@@ -50,7 +50,7 @@ pub(all) struct Difference {
   path : String
   element_id : String
   description : String
-  severity : Int
+  severity : Int32
 }
 pub fn Difference::to_string(Self) -> String
 

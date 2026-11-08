@@ -31,7 +31,7 @@ fn extract_tag_from_id(id : String) -> String {
   if id == "#text" {
     return "#text"
   }
-  let mut end_pos : Int? = None
+  let mut end_pos : Int32? = None
   for i, c in id {
     if c == '#' || c == '.' {
       end_pos = Some(i)
@@ -56,7 +56,7 @@ fn is_ignorable_whitespace_text_node(node : @layout.Node) -> Bool {
 }
 
 ///|
-fn generate_list_marker(parent_tag : String, child_index : Int) -> String? {
+fn generate_list_marker(parent_tag : String, child_index : Int32) -> String? {
   match parent_tag {
     "ul" => Some("\u{2022}")
     "ol" => Some((child_index + 1).to_string() + ".")

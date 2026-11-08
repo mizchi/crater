@@ -24,7 +24,7 @@ pub using @contract {
 /// Session manager
 pub(all) struct SessionManager {
   sessions : Map[String, SessionState]
-  mut next_id : Int
+  mut next_id : Int32
 }
 
 ///|
@@ -124,7 +124,7 @@ pub fn SessionManager::get_session(
 pub fn SessionManager::handle_request(
   self : SessionManager,
   request : WebDriverRequest,
-) -> (Int, WebDriverResponse) {
+) -> (Int32, WebDriverResponse) {
   match request.command {
     // Status endpoint (no session required)
     Status => (200, handle_status())

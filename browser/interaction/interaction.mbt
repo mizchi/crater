@@ -10,7 +10,7 @@ pub enum DispatchEffect {
 ///|
 pub struct PointerDispatchEvent {
   event_type : String
-  button : Int
+  button : Int32
 }
 
 ///|
@@ -23,7 +23,7 @@ pub enum HoverDispatchTarget {
 pub struct HoverDispatchEvent {
   event_type : String
   target : HoverDispatchTarget
-  button : Int
+  button : Int32
 }
 
 ///|
@@ -54,8 +54,8 @@ pub enum InteractionCommand {
   KeyDown(String)
   KeyUp(String)
   TextInput(String)
-  ScrollBy(Int)
-  PageScroll(Int)
+  ScrollBy(Int32)
+  PageScroll(Int32)
   FocusNext
   FocusPrev
   ActivateFocused
@@ -63,12 +63,12 @@ pub enum InteractionCommand {
   Refresh
   Back
   Forward
-  PointerClick(Int, Int)
-  PointerDown(Int, Int)
-  PointerUp(Int, Int)
-  PointerMove(Int, Int)
-  PointerButtonDown(Int, Int, Int)
-  PointerButtonUp(Int, Int, Int)
+  PointerClick(Int32, Int32)
+  PointerDown(Int32, Int32)
+  PointerUp(Int32, Int32)
+  PointerMove(Int32, Int32)
+  PointerButtonDown(Int32, Int32, Int32)
+  PointerButtonUp(Int32, Int32, Int32)
   EnterHintMode
   ExitHintMode
   HintChar(String)
@@ -98,22 +98,22 @@ pub fn key_up_command(key : String) -> InteractionCommand {
 }
 
 ///|
-pub fn pointer_move_command(col : Int, row : Int) -> InteractionCommand {
+pub fn pointer_move_command(col : Int32, row : Int32) -> InteractionCommand {
   PointerMove(col, row)
 }
 
 ///|
-pub fn pointer_down_command(col : Int, row : Int) -> InteractionCommand {
+pub fn pointer_down_command(col : Int32, row : Int32) -> InteractionCommand {
   PointerDown(col, row)
 }
 
 ///|
-pub fn pointer_up_command(col : Int, row : Int) -> InteractionCommand {
+pub fn pointer_up_command(col : Int32, row : Int32) -> InteractionCommand {
   PointerUp(col, row)
 }
 
 ///|
-pub fn pointer_click_command(col : Int, row : Int) -> InteractionCommand {
+pub fn pointer_click_command(col : Int32, row : Int32) -> InteractionCommand {
   PointerClick(col, row)
 }
 
@@ -132,7 +132,7 @@ pub fn pointer_move_event_sequence(
 ///|
 pub fn pointer_press_event_sequence(
   pointer_type : String,
-  button : Int,
+  button : Int32,
 ) -> Array[PointerDispatchEvent] {
   let events : Array[PointerDispatchEvent] = []
   if button == 0 && pointer_type != "mouse" {
@@ -147,7 +147,7 @@ pub fn pointer_press_event_sequence(
 ///|
 pub fn pointer_release_event_sequence(
   pointer_type : String,
-  button : Int,
+  button : Int32,
 ) -> Array[PointerDispatchEvent] {
   let events : Array[PointerDispatchEvent] = []
   events.push({ event_type: "pointerup", button, })
@@ -160,7 +160,7 @@ pub fn pointer_release_event_sequence(
 
 ///|
 pub fn pointer_post_release_mouse_event_sequence(
-  button : Int,
+  button : Int32,
   emit_contextmenu : Bool,
   emit_click : Bool,
   emit_double_click : Bool,
@@ -286,10 +286,10 @@ pub fn drag_move_target_plan(
 
 ///|
 pub fn drag_move_event_sequence(
-  emit_dragstart? : Bool = false,
-  emit_dragleave? : Bool = false,
-  emit_dragenter? : Bool = false,
-  emit_dragover? : Bool = false,
+  emit_dragstart~ : Bool = false,
+  emit_dragleave~ : Bool = false,
+  emit_dragenter~ : Bool = false,
+  emit_dragover~ : Bool = false,
 ) -> Array[DragDispatchEvent] {
   let events : Array[DragDispatchEvent] = []
   if emit_dragstart {
@@ -310,7 +310,7 @@ pub fn drag_move_event_sequence(
 
 ///|
 pub fn drag_release_event_sequence(
-  emit_drop? : Bool = false,
+  emit_drop~ : Bool = false,
 ) -> Array[DragDispatchEvent] {
   let events : Array[DragDispatchEvent] = []
   if emit_drop {
@@ -376,18 +376,18 @@ pub fn drag_dispatch_event_labels(
 
 ///|
 pub fn pointer_button_down_command(
-  col : Int,
-  row : Int,
-  button : Int,
+  col : Int32,
+  row : Int32,
+  button : Int32,
 ) -> InteractionCommand {
   PointerButtonDown(col, row, button)
 }
 
 ///|
 pub fn pointer_button_up_command(
-  col : Int,
-  row : Int,
-  button : Int,
+  col : Int32,
+  row : Int32,
+  button : Int32,
 ) -> InteractionCommand {
   PointerButtonUp(col, row, button)
 }

@@ -45,7 +45,7 @@ pub fn getNextCdpMessage() -> String {
 
 ///|
 /// Check if there are pending messages
-pub fn hasPendingCdpMessages() -> Int {
+pub fn hasPendingCdpMessages() -> Int32 {
   pending_messages.length()
 }
 
@@ -118,7 +118,7 @@ pub fn createNetworkRequest(
   resource_type : String,
   document_url : String,
   frame_id : String,
-) -> Int {
+) -> Int32 {
   let rt = match resource_type {
     "Document" => @scheduler.Document
     "Stylesheet" => @scheduler.Stylesheet
@@ -140,7 +140,7 @@ pub fn createNetworkRequestWithLoader(
   document_url : String,
   frame_id : String,
   loader_id : String,
-) -> Int {
+) -> Int32 {
   let rt = match resource_type {
     "Document" => @scheduler.Document
     "Stylesheet" => @scheduler.Stylesheet
@@ -159,9 +159,9 @@ pub fn createNetworkRequestWithLoader(
 ///|
 /// Notify that a response was received
 pub fn notifyResponseReceived(
-  request_id : Int,
+  request_id : Int32,
   url : String,
-  status : Int,
+  status : Int32,
   mime_type : String,
   headers_json : String,
 ) -> Unit {
@@ -173,9 +173,9 @@ pub fn notifyResponseReceived(
 ///|
 /// Notify that a response was received with explicit loader ID
 pub fn notifyResponseReceivedWithLoader(
-  request_id : Int,
+  request_id : Int32,
   url : String,
-  status : Int,
+  status : Int32,
   mime_type : String,
   headers_json : String,
   loader_id : String,
@@ -190,8 +190,8 @@ pub fn notifyResponseReceivedWithLoader(
 ///|
 /// Notify that loading finished
 pub fn notifyLoadingFinished(
-  request_id : Int,
-  encoded_data_length : Int,
+  request_id : Int32,
+  encoded_data_length : Int32,
 ) -> Unit {
   let req_id = @scheduler.RequestId(request_id)
   protocol.notify_loading_finished(req_id, encoded_data_length)
@@ -199,7 +199,7 @@ pub fn notifyLoadingFinished(
 
 ///|
 /// Notify that loading failed
-pub fn notifyLoadingFailed(request_id : Int, error : String) -> Unit {
+pub fn notifyLoadingFailed(request_id : Int32, error : String) -> Unit {
   let req_id = @scheduler.RequestId(request_id)
   protocol.notify_loading_failed(req_id, error)
 }

@@ -20,7 +20,7 @@ fn is_supported_preload_argument_type(type_name : String) -> Bool {
 /// Parse and validate script.addPreloadScript parameters.
 fn BidiProtocol::parse_add_preload_script_params(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> AddPreloadScriptParams? {
   let map = match params {

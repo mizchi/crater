@@ -1,6 +1,6 @@
 ///|
 /// Get character at index from string (returns '\0' if out of bounds)
-fn char_at(s : String, i : Int) -> Char {
+fn char_at(s : String, i : Int32) -> Char {
   if i < 0 || i >= s.length() {
     '\u0000'
   } else {

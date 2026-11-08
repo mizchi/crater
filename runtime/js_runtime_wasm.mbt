@@ -4,14 +4,14 @@
 ///|
 /// WASM stub runtime implementation
 priv struct WasmStubRuntime {
-  _unused : Int
+  _unused : Int32
 }
 
 ///|
 let wasm_stub_runtime : WasmStubRuntime = { _unused: 0, }
 
 ///|
-fn allocate_runtime_context_id() -> Int {
+fn allocate_runtime_context_id() -> Int32 {
   0
 }
 
@@ -29,7 +29,7 @@ impl JsRuntime for WasmStubRuntime with fn init(self : WasmStubRuntime) -> Unit 
 ///|
 impl JsRuntime for WasmStubRuntime with fn execute(
   self : WasmStubRuntime,
-  context_id : Int,
+  context_id : Int32,
   dom : @dom.DomTree,
   code : String,
   async_mode : AsyncExecutionMode,
@@ -49,7 +49,7 @@ extend WasmStubRuntime with JsRuntime::{init}
 ///|
 impl JsRuntime for WasmStubRuntime with fn tick(
   self : WasmStubRuntime,
-  context_id : Int,
+  context_id : Int32,
   dom : @dom.DomTree,
 ) -> JsResult raise JsError {
   let _ = self

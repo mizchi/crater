@@ -31,7 +31,7 @@ fn BidiProtocol::refresh_effective_screen_area_for_all_contexts(
 ///|
 fn BidiProtocol::resolve_emulation_set_screen_settings_override(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Bool? {
   let map = match params {

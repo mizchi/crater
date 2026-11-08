@@ -1,7 +1,7 @@
 ///|
 fn BidiProtocol::handle_network_set_cache_behavior(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map = match params {
@@ -84,7 +84,7 @@ fn BidiProtocol::handle_network_set_cache_behavior(
 ///|
 fn BidiProtocol::handle_network_resolve_synthetic_response_overrides(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map = match params {

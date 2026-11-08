@@ -2,7 +2,7 @@
 /// In-memory cache backend with LRU-style eviction by oldest stored_at.
 pub(all) struct MemoryCacheBackend {
   entries : Map[String, CacheEntry]
-  max_entries : Int
+  max_entries : Int32
 }
 
 ///|
@@ -52,7 +52,9 @@ pub impl HttpCacheBackend for MemoryCacheBackend with fn clear(
 }
 
 ///|
-pub fn MemoryCacheBackend::new(max_entries? : Int = 1000) -> MemoryCacheBackend {
+pub fn MemoryCacheBackend::new(
+  max_entries~ : Int32 = 1000,
+) -> MemoryCacheBackend {
   { entries: {}, max_entries, }
 }
 

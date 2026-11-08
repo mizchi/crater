@@ -2,7 +2,7 @@
 /// BiDi handler for browsingContext.getCssRuleViewportMap
 fn BidiProtocol::handle_get_css_rule_viewport_map(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match self.resolve_get_css_rule_viewport_map(request_id, params) {
@@ -14,7 +14,7 @@ fn BidiProtocol::handle_get_css_rule_viewport_map(
 ///|
 fn BidiProtocol::resolve_get_css_rule_viewport_map(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Json? {
   let params = match params {
@@ -40,9 +40,9 @@ fn BidiProtocol::resolve_get_css_rule_viewport_map(
       return None
     }
   }
-  let viewport_widths : Array[Int] = match params.get("viewportWidths") {
+  let viewport_widths : Array[Int32] = match params.get("viewportWidths") {
     Some(Array(items)) => {
-      let widths : Array[Int] = []
+      let widths : Array[Int32] = []
       for item in items {
         match item {
           Number(n, ..) => widths.push(n.to_int())
@@ -88,7 +88,7 @@ fn BidiProtocol::resolve_get_css_rule_viewport_map(
 /// BiDi handler for browsingContext.getCssRuleUsage
 fn BidiProtocol::handle_get_css_rule_usage(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match self.resolve_get_css_rule_usage(request_id, params) {
@@ -100,7 +100,7 @@ fn BidiProtocol::handle_get_css_rule_usage(
 ///|
 fn BidiProtocol::resolve_get_css_rule_usage(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Json? {
   let params = match params {
@@ -169,7 +169,7 @@ fn BidiProtocol::resolve_get_css_rule_usage(
 /// BiDi handler for browsingContext.getRequiredTestViewports
 fn BidiProtocol::handle_get_required_test_viewports(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match self.resolve_get_required_test_viewports(request_id, params) {
@@ -181,7 +181,7 @@ fn BidiProtocol::handle_get_required_test_viewports(
 ///|
 fn BidiProtocol::resolve_get_required_test_viewports(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Json? {
   let params = match params {
@@ -225,7 +225,7 @@ fn BidiProtocol::resolve_get_required_test_viewports(
 /// BiDi handler for browsingContext.batchRender
 fn BidiProtocol::handle_batch_render(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match self.resolve_batch_render(request_id, params) {
@@ -237,7 +237,7 @@ fn BidiProtocol::handle_batch_render(
 ///|
 fn BidiProtocol::resolve_batch_render(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Json? {
   let params = match params {
@@ -286,7 +286,7 @@ fn BidiProtocol::resolve_batch_render(
 /// BiDi handler for browsingContext.getComputedStylesWithState
 fn BidiProtocol::handle_get_computed_styles_with_state(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match self.resolve_get_computed_styles_with_state(request_id, params) {
@@ -298,7 +298,7 @@ fn BidiProtocol::handle_get_computed_styles_with_state(
 ///|
 fn BidiProtocol::resolve_get_computed_styles_with_state(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Json? {
   let params = match params {

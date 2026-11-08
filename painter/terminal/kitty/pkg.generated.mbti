@@ -9,35 +9,35 @@ import {
 }
 
 // Values
-pub fn encode_kitty_delete_placement(Int, Int) -> String
+pub fn encode_kitty_delete_placement(Int32, Int32) -> String
 
-pub fn encode_kitty_put_placement(Int, Int, Int, Int) -> String
+pub fn encode_kitty_put_placement(Int32, Int32, Int32, Int32) -> String
 
-pub fn encode_png_base64_to_kitty_image(String, Int, Int, image_id? : Int, placement_id? : Int) -> String
+pub fn encode_png_base64_to_kitty_image(String, Int32, Int32, image_id? : Int32, placement_id? : Int32) -> String
 
-pub fn encode_rgba_base64_to_kitty_image(String, Int, Int, Int, Int, image_id? : Int, placement_id? : Int) -> String
+pub fn encode_rgba_base64_to_kitty_image(String, Int32, Int32, Int32, Int32, image_id? : Int32, placement_id? : Int32) -> String
 
-pub fn render_paint_node_to_kitty(@model.PaintNode, Int, Int) -> String
+pub fn render_paint_node_to_kitty(@model.PaintNode, Int32, Int32) -> String
 
-pub fn render_paint_node_to_kitty_scrolled(@model.PaintNode, Int, Int, Int) -> String
+pub fn render_paint_node_to_kitty_scrolled(@model.PaintNode, Int32, Int32, Int32) -> String
 
-pub fn render_svg_node_to_kitty(@svg.SVGNode, Int, Int) -> String
+pub fn render_svg_node_to_kitty(@svg.SVGNode, Int32, Int32) -> String
 
-pub fn render_svg_text_to_kitty_cells(String, Int, Int, Int, Int, image_id? : Int, placement_id? : Int) -> String
+pub fn render_svg_text_to_kitty_cells(String, Int32, Int32, Int32, Int32, image_id? : Int32, placement_id? : Int32) -> String
 
-pub fn render_svg_to_kitty(@svg.Scene, Int, Int) -> String
+pub fn render_svg_to_kitty(@svg.Scene, Int32, Int32) -> String
 
 pub fn render_svg_to_kitty_with_camera(@svg.Scene, @svg.Camera) -> String
 
 pub fn to_kitty(@raster.Framebuffer, @raster.DynamicPalette) -> String
 
-pub fn to_kitty_with_cells(@raster.Framebuffer, @raster.DynamicPalette, Int, Int, image_id? : Int, placement_id? : Int) -> String
+pub fn to_kitty_with_cells(@raster.Framebuffer, @raster.DynamicPalette, Int32, Int32, image_id? : Int32, placement_id? : Int32) -> String
 
 pub async fn[T : @io.Writer] write_kitty(T, @raster.Framebuffer, @raster.DynamicPalette) -> Unit
 
-pub async fn[T : @io.Writer] write_paint_node_to_kitty_scrolled(T, @model.PaintNode, Int, Int, Int) -> Unit
+pub async fn[T : @io.Writer] write_paint_node_to_kitty_scrolled(T, @model.PaintNode, Int32, Int32, Int32) -> Unit
 
-pub async fn[T : @io.Writer] write_svg_to_kitty(T, @svg.Scene, Int, Int) -> Unit
+pub async fn[T : @io.Writer] write_svg_to_kitty(T, @svg.Scene, Int32, Int32) -> Unit
 
 // Errors
 

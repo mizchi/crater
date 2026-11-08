@@ -208,8 +208,8 @@ test "bench_apply_multiple_new_ctx" (b : @bench.T) {
 
 ///|
 fn create_cascade_declarations(
-  total : Int,
-  property_kinds : Int,
+  total : Int32,
+  property_kinds : Int32,
 ) -> Array[@css.Declaration] {
   let declarations : Array[@css.Declaration] = []
   for i = 0; i < total; i = i + 1 {

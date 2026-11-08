@@ -4,7 +4,7 @@
 
 ///|
 /// Render HTML to layout tree (text representation)
-pub fn renderHtml(html : String, width : Int, height : Int) -> String {
+pub fn renderHtml(html : String, width : Int32, height : Int32) -> String {
   let ctx : @renderer.RenderContext = {
     viewport_width: width.to_double(),
     viewport_height: height.to_double(),
@@ -21,7 +21,7 @@ pub fn renderHtml(html : String, width : Int, height : Int) -> String {
 fn format_layout(
   layout : @layout_types.Layout,
   buf : StringBuilder,
-  indent : Int,
+  indent : Int32,
 ) -> Unit {
   let mut i = 0
   while i < indent {
@@ -45,7 +45,7 @@ fn format_layout(
 
 ///|
 /// Render HTML to JSON layout tree
-pub fn renderHtmlToJson(html : String, width : Int, height : Int) -> String {
+pub fn renderHtmlToJson(html : String, width : Int32, height : Int32) -> String {
   let ctx : @renderer.RenderContext = {
     viewport_width: width.to_double(),
     viewport_height: height.to_double(),
@@ -60,8 +60,8 @@ pub fn renderHtmlToJson(html : String, width : Int, height : Int) -> String {
 /// Render HTML to paint node tree (JSON format with colors)
 pub fn renderHtmlToPaintTree(
   html : String,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
 ) -> String {
   let ctx : @renderer.RenderContext = {
     viewport_width: width.to_double(),
@@ -157,7 +157,11 @@ fn escape_json_string(s : String) -> String {
 
 ///|
 /// Render HTML to Sixel graphics string
-pub fn renderHtmlToSixel(html : String, width : Int, height : Int) -> String {
+pub fn renderHtmlToSixel(
+  html : String,
+  width : Int32,
+  height : Int32,
+) -> String {
   @renderer_terminal.render_to_sixel(html, width, height)
 }
 
@@ -165,8 +169,8 @@ pub fn renderHtmlToSixel(html : String, width : Int, height : Int) -> String {
 /// Render HTML to Sixel with actual CSS colors
 pub fn renderHtmlToSixelWithStyles(
   html : String,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
 ) -> String {
   @renderer_terminal.render_to_sixel_with_styles(html, width, height)
 }
@@ -186,7 +190,7 @@ let global_stats : Ref[@tree.CacheStats?] = { val: None, }
 ///|
 /// Create a new layout tree from HTML
 /// Returns tree ID (always 0 for now, single tree)
-pub fn createTree(html : String, width : Int, height : Int) -> Int {
+pub fn createTree(html : String, width : Int32, height : Int32) -> Int32 {
   let doc = @html.parse_document(html)
   let tree = @layout_html_tree.layout_tree_from_html_document(
     doc,
@@ -283,7 +287,7 @@ pub fn updateStyle(node_id : String, css : String) -> Bool {
 
 ///|
 /// Resize viewport
-pub fn resizeViewport(width : Int, height : Int) -> Unit {
+pub fn resizeViewport(width : Int32, height : Int32) -> Unit {
   match global_tree.val {
     Some(tree) => tree.resize_viewport(width.to_double(), height.to_double())
     None => ()
@@ -340,7 +344,7 @@ pub fn destroyTree() -> Unit {
 ///|
 /// Create a new node with optional ID
 /// Returns the node's UID
-pub fn createNode(id : String) -> Int {
+pub fn createNode(id : String) -> Int32 {
   let node = @tree.LayoutNode::create_with_id(id)
   node.uid
 }
@@ -364,7 +368,11 @@ pub fn addChild(parent_id : String, child_id : String) -> Bool {
 
 ///|
 /// Insert child at specific index
-pub fn insertChild(parent_id : String, child_id : String, index : Int) -> Bool {
+pub fn insertChild(
+  parent_id : String,
+  child_id : String,
+  index : Int32,
+) -> Bool {
   match global_tree.val {
     Some(tree) =>
       match (tree.find_node_by_id(parent_id), tree.find_node_by_id(child_id)) {
@@ -380,7 +388,7 @@ pub fn insertChild(parent_id : String, child_id : String, index : Int) -> Bool {
 
 ///|
 /// Remove child at index
-pub fn removeChild(parent_id : String, index : Int) -> Bool {
+pub fn removeChild(parent_id : String, index : Int32) -> Bool {
   match global_tree.val {
     Some(tree) =>
       match tree.find_node_by_id(parent_id) {
@@ -397,7 +405,7 @@ pub fn removeChild(parent_id : String, index : Int) -> Bool {
 
 ///|
 /// Get child count
-pub fn getChildCount(node_id : String) -> Int {
+pub fn getChildCount(node_id : String) -> Int32 {
   match global_tree.val {
     Some(tree) =>
       match tree.find_node_by_id(node_id) {
@@ -558,7 +566,7 @@ pub fn setFlexBasis(node_id : String, value : Double) -> Bool {
 
 ///|
 /// Set flex direction: 0=row, 1=row-reverse, 2=column, 3=column-reverse
-pub fn setFlexDirection(node_id : String, value : Int) -> Bool {
+pub fn setFlexDirection(node_id : String, value : Int32) -> Bool {
   match global_tree.val {
     Some(tree) =>
       match tree.find_node_by_id(node_id) {
@@ -581,7 +589,7 @@ pub fn setFlexDirection(node_id : String, value : Int) -> Bool {
 
 ///|
 /// Set flex wrap: 0=no-wrap, 1=wrap, 2=wrap-reverse
-pub fn setFlexWrap(node_id : String, value : Int) -> Bool {
+pub fn setFlexWrap(node_id : String, value : Int32) -> Bool {
   match global_tree.val {
     Some(tree) =>
       match tree.find_node_by_id(node_id) {
@@ -603,7 +611,7 @@ pub fn setFlexWrap(node_id : String, value : Int) -> Bool {
 
 ///|
 /// Set justify content: 0=start, 1=end, 2=center, 3=space-between, 4=space-around, 5=space-evenly
-pub fn setJustifyContent(node_id : String, value : Int) -> Bool {
+pub fn setJustifyContent(node_id : String, value : Int32) -> Bool {
   match global_tree.val {
     Some(tree) =>
       match tree.find_node_by_id(node_id) {
@@ -628,7 +636,7 @@ pub fn setJustifyContent(node_id : String, value : Int) -> Bool {
 
 ///|
 /// Set align items: 0=start, 1=end, 2=center, 3=stretch, 4=baseline
-pub fn setAlignItems(node_id : String, value : Int) -> Bool {
+pub fn setAlignItems(node_id : String, value : Int32) -> Bool {
   match global_tree.val {
     Some(tree) =>
       match tree.find_node_by_id(node_id) {
@@ -652,7 +660,7 @@ pub fn setAlignItems(node_id : String, value : Int) -> Bool {
 
 ///|
 /// Set display: 0=flex, 1=none, 2=block, 3=grid
-pub fn setDisplay(node_id : String, value : Int) -> Bool {
+pub fn setDisplay(node_id : String, value : Int32) -> Bool {
   match global_tree.val {
     Some(tree) =>
       match tree.find_node_by_id(node_id) {
@@ -857,7 +865,7 @@ fn accessibility_tree_to_json(tree : @aom.AccessibilityTree) -> String {
 fn write_accessibility_node(
   node : @aom.AccessibilityNode,
   buf : StringBuilder,
-  indent : Int,
+  indent : Int32,
 ) -> Unit {
   write_json_indent(buf, indent)
   buf.write_string("{\n")
@@ -965,7 +973,7 @@ fn write_accessibility_node(
 }
 
 ///|
-fn write_json_indent(buf : StringBuilder, level : Int) -> Unit {
+fn write_json_indent(buf : StringBuilder, level : Int32) -> Unit {
   for _ in 0..<level {
     buf.write_string("  ")
   }
@@ -980,7 +988,7 @@ fn write_json_indent(buf : StringBuilder, level : Int) -> Unit {
 pub(all) struct FlatLayoutNode {
   id : String
   parent_id : String // empty for root
-  index : Int // child index in parent
+  index : Int32 // child index in parent
   x : Double
   y : Double
   width : Double
@@ -1011,7 +1019,7 @@ pub fn flatten_layout(layout : @layout_types.Layout) -> FlatLayoutResult {
 fn flatten_layout_rec(
   layout : @layout_types.Layout,
   parent_id : String,
-  index : Int,
+  index : Int32,
   nodes : Array[FlatLayoutNode],
 ) -> Unit {
   // Calculate content box (after padding and border)
@@ -1067,8 +1075,8 @@ fn flatten_layout_rec(
 /// Compute layout from HTML (returns structured FlatLayoutResult)
 pub fn computeLayout(
   html : String,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
 ) -> FlatLayoutResult {
   let ctx : @renderer.RenderContext = {
     viewport_width: width.to_double(),
@@ -1082,7 +1090,11 @@ pub fn computeLayout(
 
 ///|
 /// Compute layout from HTML (returns JSON string)
-pub fn computeLayoutJson(html : String, width : Int, height : Int) -> String {
+pub fn computeLayoutJson(
+  html : String,
+  width : Int32,
+  height : Int32,
+) -> String {
   renderHtmlToJson(html, width, height)
 }
 
@@ -1166,8 +1178,8 @@ pub fn extractMainContent(html : String) -> String {
 /// Uses visual position and size information for scoring
 pub fn extractMainContentWithLayout(
   html : String,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
 ) -> String {
   let ctx : @renderer.RenderContext = {
     viewport_width: width.to_double(),
@@ -1289,7 +1301,7 @@ fn strip_html_to_text(html : String) -> String {
 }
 
 ///|
-fn find_next_gt(html : String, start : Int) -> Int {
+fn find_next_gt(html : String, start : Int32) -> Int32 {
   let len = html.length()
   for i in start..<len {
     if char_at(html, i) == '>' {
@@ -1350,11 +1362,11 @@ fn is_ascii_whitespace(c : Char) -> Bool {
   c == '\n' ||
   c == '\t' ||
   c == '\r' ||
-  c == Int::unsafe_to_char(12)
+  c == Int32::unsafe_to_char(12)
 }
 
 ///|
-fn char_at(text : String, index : Int) -> Char {
+fn char_at(text : String, index : Int32) -> Char {
   text[index].to_int().unsafe_to_char()
 }
 

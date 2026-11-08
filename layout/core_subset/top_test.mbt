@@ -17,7 +17,7 @@ fn make_flex_node() -> @layout.Node {
 
 ///|
 test "core subset package accepts tui-like flex tree" {
-  let issues = validate_core_subset(make_flex_node())
+  let issues = @core_subset.validate_core_subset(make_flex_node())
   assert_eq(issues.length(), 0)
 }
 
@@ -55,7 +55,7 @@ fn make_grid_node() -> @layout.Node {
 
 ///|
 test "core subset package accepts tui-like grid tree" {
-  let issues = validate_core_subset(make_grid_node())
+  let issues = @core_subset.validate_core_subset(make_grid_node())
   assert_eq(issues.length(), 0)
 }
 
@@ -64,7 +64,7 @@ test "core subset package rejects absolute positioning" {
   let style = @style.Style::default()
   style.position = @types.Absolute
   let node = @layout.Node::new("abs", style, [])
-  let issues = validate_core_subset(node)
+  let issues = @core_subset.validate_core_subset(node)
   assert_true(issues.length() > 0)
 }
 
@@ -75,7 +75,7 @@ test "core subset package rejects unsupported grid track sizing" {
   style.grid_template_columns = [@types.TrackSizingFunction::MinContent]
   style.grid_template_rows = [@types.TrackSizingFunction::Fr(1.0)]
   let node = @layout.Node::new("grid", style, [])
-  let issues = validate_core_subset(node)
+  let issues = @core_subset.validate_core_subset(node)
   assert_true(issues.length() > 0)
 }
 
@@ -84,7 +84,10 @@ test "core subset package rejects fixed positioning" {
   let style = @style.Style::default()
   style.position = @types.Fixed
   let node = @layout.Node::new("fixed", style, [])
-  let result = compute_core_layout(node, @types.Size::new(10.0, 10.0))
+  let result = @core_subset.compute_core_layout(
+    node,
+    @types.Size::new(10.0, 10.0),
+  )
   assert_true(result.layout is None)
   assert_true(result.issues.length() > 0)
 }

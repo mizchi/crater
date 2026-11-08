@@ -15,7 +15,7 @@ pub(all) struct SyntheticNetworkEventInput {
   request_cookies : Array[Json]
   request_cookies_override : Bool
   intercepts : Array[String]
-  redirect_count : Int
+  redirect_count : Int32
   navigation : String?
   destination : String
   initiator_type : String?
@@ -27,7 +27,7 @@ pub(all) struct SyntheticNetworkResponseOverrides {
   headers : Array[Json]
   mime_type : String
   protocol : String
-  status : Int
+  status : Int32
   status_text : String
   auth_challenges : Json?
 }

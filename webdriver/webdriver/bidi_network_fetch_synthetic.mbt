@@ -1,7 +1,7 @@
 ///|
 fn BidiProtocol::handle_network_perform_synthetic_fetch(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map = match params {
@@ -93,7 +93,7 @@ fn BidiProtocol::handle_network_perform_synthetic_fetch(
 ///|
 fn BidiProtocol::perform_synthetic_fetch_internal(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   context_id : String,
   url : String,
   http_method : String,

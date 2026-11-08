@@ -4,14 +4,14 @@
 ///|
 /// Cached rasterized glyph bitmap.
 pub(all) struct GlyphBitmap {
-  width : Int
-  height : Int
+  width : Int32
+  height : Int32
   pixels : Array[Bool] // true = has pixel (any coverage > 0)
   advance : Double
-  offset_x : Int // bounding box x offset from origin
-  offset_y : Int // bounding box y offset from origin
-  coverage : Array[Int] // 0..ss*ss coverage from supersampling (0=transparent, ss*ss=full)
-  ss_factor : Int // supersample factor (e.g. 4 means 4x4 grid, coverage 0..16)
+  offset_x : Int32 // bounding box x offset from origin
+  offset_y : Int32 // bounding box y offset from origin
+  coverage : Array[Int32] // 0..ss*ss coverage from supersampling (0=transparent, ss*ss=full)
+  ss_factor : Int32 // supersample factor (e.g. 4 means 4x4 grid, coverage 0..16)
 }
 
 ///|
@@ -51,11 +51,11 @@ fn scanline_intersections_even_odd(
 ///|
 fn rasterize_compound_path_even_odd_to_pixels(
   commands : Array[@svg.PathCommand],
-  offset_x : Int,
-  offset_y : Int,
-  ss : Int,
-  ss_width : Int,
-  ss_height : Int,
+  offset_x : Int32,
+  offset_y : Int32,
+  ss : Int32,
+  ss_width : Int32,
+  ss_height : Int32,
 ) -> Array[Bool] {
   let pixels = Array::make(ss_width * ss_height, false)
   let polylines = @svg.path_to_polylines(commands, 0.5)

@@ -11,7 +11,7 @@
 /// Render `v2` on a full-rebuild browser; render `v2` on a reuse browser that
 /// first rendered `v1` (populating the prior-style maps). Returns
 /// (incremental == full, reused-count-on-the-v2-render).
-fn cascade_reuse_equiv(v1 : String, v2 : String) -> (Bool, Int) {
+fn cascade_reuse_equiv(v1 : String, v2 : String) -> (Bool, Int32) {
   let full = Browser::new(400, 300)
   full.set_html_content(v2)
   full.parsed_doc = Some(@html.parse_document(v2))

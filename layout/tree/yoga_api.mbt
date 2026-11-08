@@ -630,13 +630,13 @@ pub fn LayoutNode::set_border(self : LayoutNode, value : Double) -> LayoutNode {
 
 ///|
 /// Get number of children
-pub fn LayoutNode::get_child_count(self : LayoutNode) -> Int {
+pub fn LayoutNode::get_child_count(self : LayoutNode) -> Int32 {
   self.children.length()
 }
 
 ///|
 /// Get child at index
-pub fn LayoutNode::get_child(self : LayoutNode, index : Int) -> LayoutNode? {
+pub fn LayoutNode::get_child(self : LayoutNode, index : Int32) -> LayoutNode? {
   if index >= 0 && index < self.children.length() {
     Some(self.children[index])
   } else {
@@ -649,7 +649,7 @@ pub fn LayoutNode::get_child(self : LayoutNode, index : Int) -> LayoutNode? {
 pub fn LayoutNode::insert_child(
   self : LayoutNode,
   child : LayoutNode,
-  index : Int,
+  index : Int32,
 ) -> LayoutNode {
   let idx = if index < 0 {
     0
@@ -678,7 +678,7 @@ pub fn LayoutNode::add_child(
 /// Remove child at index
 pub fn LayoutNode::remove_child_at(
   self : LayoutNode,
-  index : Int,
+  index : Int32,
 ) -> LayoutNode? {
   if index >= 0 && index < self.children.length() {
     let removed = self.children.remove(index)

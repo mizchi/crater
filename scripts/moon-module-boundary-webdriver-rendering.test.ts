@@ -29,7 +29,7 @@ describe("MoonBit WebDriver rendering boundaries", () => {
     expect(renderingPackage).not.toContain("mizchi/js");
     expect(renderingPackage).not.toContain("mizchi/webdriver");
     const webdriverPackage = read("webdriver/webdriver/moon.pkg");
-    expect(webdriverPackage).toContain('"mizchi/crater-webdriver-bidi/rendering" @rendering');
+    expect(webdriverPackage).toContain('"mizchi/crater-webdriver-bidi/rendering"');
     expect(fs.existsSync(path.join(REPO_ROOT, "webdriver/webdriver/bidi_rendering_validation.mbt"))).toBe(false);
     const printSource = read("webdriver/webdriver/bidi_protocol_browsing_context_print.mbt");
     expect(printSource).toContain("@rendering.normalize_print_options");

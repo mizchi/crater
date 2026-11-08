@@ -1,9 +1,9 @@
 ///|
-extern "js" fn js_utf8_byte_length(value : String) -> Int =
+extern "js" fn js_utf8_byte_length(value : String) -> Int32 =
   #| (value) => new TextEncoder().encode(String(value ?? "")).length
 
 ///|
-extern "js" fn js_base64_byte_length(value : String) -> Int =
+extern "js" fn js_base64_byte_length(value : String) -> Int32 =
   #| (value) => {
   #|   try {
   #|     return Uint8Array.from(atob(String(value ?? "")), (c) => c.charCodeAt(0)).length;
@@ -34,12 +34,12 @@ extern "js" fn js_synthetic_network_decode_base64(base64 : String) -> String =
   #| }
 
 ///|
-pub fn utf8_byte_length(value : String) -> Int {
+pub fn utf8_byte_length(value : String) -> Int32 {
   js_utf8_byte_length(value)
 }
 
 ///|
-pub fn base64_byte_length(value : String) -> Int {
+pub fn base64_byte_length(value : String) -> Int32 {
   js_base64_byte_length(value)
 }
 

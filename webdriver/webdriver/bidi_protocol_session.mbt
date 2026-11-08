@@ -1,7 +1,7 @@
 ///|
 fn BidiProtocol::handle_session_is_subscribed_for_context(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map = match params {
@@ -40,7 +40,7 @@ fn BidiProtocol::handle_session_is_subscribed_for_context(
 ///|
 fn BidiProtocol::handle_session_prepare_baseline_context_for_test(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match params {
@@ -110,7 +110,7 @@ fn BidiProtocol::recreate_default_context_with_id(
 ///|
 fn BidiProtocol::handle_session_get_baseline_context_info_for_test(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match params {
@@ -140,7 +140,7 @@ fn BidiProtocol::handle_session_get_baseline_context_info_for_test(
 ///|
 fn BidiProtocol::handle_session_get_baseline_context_info_value_for_test(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match params {

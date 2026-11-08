@@ -1,6 +1,6 @@
 ///|
 test "LCPCandidate: basic creation" {
-  let candidate = LCPCandidate::new(
+  let candidate = @crater-webvitals.LCPCandidate::new(
     "img1",
     Image(src="hero.png"),
     0.0,
@@ -14,7 +14,14 @@ test "LCPCandidate: basic creation" {
 
 ///|
 test "LCPCandidate: text block is immediately rendered" {
-  let text = LCPCandidate::new("heading", TextBlock, 0.0, 0.0, 500.0, 50.0)
+  let text = @crater-webvitals.LCPCandidate::new(
+      "heading",
+      TextBlock,
+      0.0,
+      0.0,
+      500.0,
+      50.0,
+    )
     .with_resource_loaded(true)
     .with_render_time(100.0)
   inspect(text.is_rendered(), content="true")
@@ -23,7 +30,7 @@ test "LCPCandidate: text block is immediately rendered" {
 
 ///|
 test "LCPCandidate: image requires resource load" {
-  let img = LCPCandidate::new(
+  let img = @crater-webvitals.LCPCandidate::new(
     "img1",
     Image(src="test.png"),
     0.0,
@@ -41,7 +48,7 @@ test "LCPCandidate: image requires resource load" {
 
 ///|
 test "LCPCandidate: LCP time for images is max of render and load time" {
-  let img = LCPCandidate::new(
+  let img = @crater-webvitals.LCPCandidate::new(
       "img1",
       Image(src="test.png"),
       0.0,
@@ -54,7 +61,7 @@ test "LCPCandidate: LCP time for images is max of render and load time" {
     .with_load_time(150.0)
   // LCP time is max(100, 150) = 150
   debug_inspect(img.get_lcp_time(), content="Some(150)")
-  let img2 = LCPCandidate::new(
+  let img2 = @crater-webvitals.LCPCandidate::new(
       "img2",
       Image(src="test2.png"),
       0.0,
@@ -71,16 +78,23 @@ test "LCPCandidate: LCP time for images is max of render and load time" {
 
 ///|
 test "LCPTracker: tracks largest rendered candidate" {
-  let tracker = LCPTracker::new(1920.0, 1080.0)
+  let tracker = @crater-webvitals.LCPTracker::new(1920.0, 1080.0)
 
   // Small text block
-  let small = LCPCandidate::new("small", TextBlock, 0.0, 0.0, 100.0, 20.0)
+  let small = @crater-webvitals.LCPCandidate::new(
+      "small",
+      TextBlock,
+      0.0,
+      0.0,
+      100.0,
+      20.0,
+    )
     .with_resource_loaded(true)
     .with_render_time(50.0)
   tracker.add_candidate(small)
 
   // Large image (not rendered yet)
-  let large_img = LCPCandidate::new(
+  let large_img = @crater-webvitals.LCPCandidate::new(
     "hero",
     Image(src="hero.png"),
     0.0,
@@ -109,10 +123,17 @@ test "LCPTracker: tracks largest rendered candidate" {
 
 ///|
 test "LCPTracker: viewport filtering" {
-  let tracker = LCPTracker::new(800.0, 600.0)
+  let tracker = @crater-webvitals.LCPTracker::new(800.0, 600.0)
 
   // Element completely outside viewport (below)
-  let outside = LCPCandidate::new("outside", TextBlock, 0.0, 700.0, 100.0, 50.0)
+  let outside = @crater-webvitals.LCPCandidate::new(
+      "outside",
+      TextBlock,
+      0.0,
+      700.0,
+      100.0,
+      50.0,
+    )
     .with_resource_loaded(true)
     .with_render_time(10.0)
   tracker.add_candidate(outside)
@@ -121,7 +142,14 @@ test "LCPTracker: viewport filtering" {
   inspect(tracker.get_lcp() is None, content="true")
 
   // Element partially in viewport
-  let partial = LCPCandidate::new("partial", TextBlock, 750.0, 0.0, 100.0, 50.0)
+  let partial = @crater-webvitals.LCPCandidate::new(
+      "partial",
+      TextBlock,
+      750.0,
+      0.0,
+      100.0,
+      50.0,
+    )
     .with_resource_loaded(true)
     .with_render_time(20.0)
   tracker.add_candidate(partial)
@@ -135,8 +163,15 @@ test "LCPTracker: viewport filtering" {
 
 ///|
 test "LCPTracker: finalization stops tracking" {
-  let tracker = LCPTracker::new(800.0, 600.0)
-  let text1 = LCPCandidate::new("text1", TextBlock, 0.0, 0.0, 200.0, 50.0)
+  let tracker = @crater-webvitals.LCPTracker::new(800.0, 600.0)
+  let text1 = @crater-webvitals.LCPCandidate::new(
+      "text1",
+      TextBlock,
+      0.0,
+      0.0,
+      200.0,
+      50.0,
+    )
     .with_resource_loaded(true)
     .with_render_time(10.0)
   tracker.add_candidate(text1)
@@ -146,7 +181,14 @@ test "LCPTracker: finalization stops tracking" {
   inspect(tracker.is_finalized(), content="true")
 
   // Try to add larger element after finalization
-  let larger = LCPCandidate::new("larger", TextBlock, 0.0, 100.0, 400.0, 100.0)
+  let larger = @crater-webvitals.LCPCandidate::new(
+      "larger",
+      TextBlock,
+      0.0,
+      100.0,
+      400.0,
+      100.0,
+    )
     .with_resource_loaded(true)
     .with_render_time(50.0)
   tracker.add_candidate(larger)
@@ -160,11 +202,11 @@ test "LCPTracker: finalization stops tracking" {
 
 ///|
 test "LCPTracker: LCP ready status" {
-  let tracker = LCPTracker::new(800.0, 600.0)
+  let tracker = @crater-webvitals.LCPTracker::new(800.0, 600.0)
   inspect(tracker.is_lcp_ready(), content="false")
 
   // Add unrendered image
-  let img = LCPCandidate::new(
+  let img = @crater-webvitals.LCPCandidate::new(
     "img",
     Image(src="test.png"),
     0.0,
@@ -184,16 +226,16 @@ test "LCPTracker: LCP ready status" {
 
 ///|
 test "ContentReadiness: interaction ready" {
-  let readiness = ContentReadiness::new()
+  let readiness = @crater-webvitals.ContentReadiness::new()
   inspect(readiness.is_interaction_ready(), content="false")
-  let ready = ContentReadiness::{
+  let ready = @crater-webvitals.ContentReadiness::{
     lcp_ready: true,
     lcp_time: Some(100.0),
     critical_resources_loaded: true,
     a11y_ready: true,
   }
   inspect(ready.is_interaction_ready(), content="true")
-  let partial = ContentReadiness::{
+  let partial = @crater-webvitals.ContentReadiness::{
     lcp_ready: true,
     lcp_time: Some(100.0),
     critical_resources_loaded: true,

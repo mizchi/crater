@@ -29,7 +29,7 @@ test "img_placeholder_rendering" {
   let paint_node = @tui_paint_plain.from_node_and_layout(node, layout)
 
   // Debug: print paint tree
-  fn print_paint_tree(p : @tui_paint_plain.PaintNode, depth : Int) -> Unit {
+  fn print_paint_tree(p : @tui_paint_plain.PaintNode, depth : Int32) -> Unit {
     let indent = String::make(depth * 2, ' ')
     println(
       indent +
@@ -91,7 +91,7 @@ test "img_placeholder_rendering" {
   // Render to buffer
   let width = 40 // characters
   let height = 20 // characters
-  let result = render_to_ansi(node, layout, width, height, 0)
+  let result = @tui.render_to_ansi(node, layout, width, height, 0)
   println("=== ANSI Output (first 500 chars) ===")
   let preview = if result.ansi.length() > 500 {
     result.ansi.unsafe_substring(start=0, end=500)
@@ -156,17 +156,17 @@ test "scroll_viewport_culling" {
   println("Content height (chars): " + content_height_chars.to_string())
 
   // Test rendering at scroll_y = 0
-  let result0 = render_to_ansi(node, layout, 40, char_height, 0)
+  let result0 = @tui.render_to_ansi(node, layout, 40, char_height, 0)
   println("Render at scroll=0: " + result0.ansi.length().to_string() + " chars")
 
   // Test rendering at scroll_y = 3 (48px scroll)
-  let result3 = render_to_ansi(node, layout, 40, char_height, 3)
+  let result3 = @tui.render_to_ansi(node, layout, 40, char_height, 3)
   println("Render at scroll=3: " + result3.ansi.length().to_string() + " chars")
 
   // Test rendering at max scroll
   let max_scroll_chars = content_height_chars - char_height
   println("Max scroll (chars): " + max_scroll_chars.to_string())
-  let result_max = render_to_ansi(
+  let result_max = @tui.render_to_ansi(
     node, layout, 40, char_height, max_scroll_chars,
   )
   println(
@@ -407,7 +407,7 @@ test "scroll_issue_tall_content" {
     if scroll_y > max_scroll_chars {
       continue
     }
-    let result = render_to_buffer_with_status(
+    let result = @tui.render_to_buffer_with_status(
       node, layout, char_width, char_height, scroll_y, "https://example.com", 0,
       0,
     )
@@ -464,7 +464,7 @@ test "text_render_uses_display_width" {
   let layout = @renderer.render(html, ctx)
 
   // Render to buffer - width should accommodate full "GitHub" text
-  let result = render_to_ansi(node, layout, 40, 10, 0)
+  let result = @tui.render_to_ansi(node, layout, 40, 10, 0)
 
   // The ANSI output should contain the full "GitHub" text (not truncated)
   // We check by verifying the output length is reasonable
@@ -497,7 +497,7 @@ test "pre_element_respects_newlines" {
   }
   let node = @renderer.render_to_node(html, ctx)
   let layout = @renderer.render(html, ctx)
-  let result = render_to_ansi(node, layout, 40, 10, 0)
+  let result = @tui.render_to_ansi(node, layout, 40, 10, 0)
 
   // The output should contain each line on separate rows
   // Check that "line1", "line2", "line3" are all present
@@ -510,8 +510,8 @@ test "pre_element_respects_newlines" {
 ///|
 /// Test that CharBuffer::write_text_pre handles newlines correctly
 test "write_text_pre_handles_newlines" {
-  let buffer = CharBuffer::new(20, 5)
-  let style : TextStyle = {
+  let buffer = @tui.CharBuffer::new(20, 5)
+  let style : @tui.TextStyle = {
     fg: @types.Color::black(),
     bg: @types.Color::white(),
     bold: false,
@@ -560,7 +560,7 @@ test "pre_code_structure_respects_newlines" {
   let layout = @renderer.render(html, ctx)
 
   // Render to buffer
-  let result = render_to_buffer(node, layout, 40, 10, 0)
+  let result = @tui.render_to_buffer(node, layout, 40, 10, 0)
 
   // Debug: print buffer content
   println("=== Buffer Content ===")
@@ -620,7 +620,7 @@ test "pre_code_with_span_lines_display_block" {
   let layout = @renderer.render(html, ctx)
 
   // Render to buffer
-  let result = render_to_buffer(node, layout, 40, 10, 0)
+  let result = @tui.render_to_buffer(node, layout, 40, 10, 0)
 
   // "result" and "time" should be on different rows
   let row0 = result.buffer.get_row_text(0)
@@ -665,7 +665,7 @@ test "shiki_style_code_block" {
   let layout = @renderer.render(html, ctx)
 
   // Render to buffer
-  let result = render_to_buffer(node, layout, 80, 10, 0)
+  let result = @tui.render_to_buffer(node, layout, 80, 10, 0)
 
   // Each line should be on a separate row
   let row0 = result.buffer.get_row_text(0)
@@ -746,7 +746,7 @@ test "tui_render_cjk_paragraph_wrap" {
   let layout = @renderer.render(html, ctx)
 
   // Render to TUI buffer (80 columns)
-  let result = render_to_buffer(node, layout, 80, 20, 0)
+  let result = @tui.render_to_buffer(node, layout, 80, 20, 0)
 
   // Check that text wraps correctly (multiple rows should have content)
   let row0 = result.buffer.get_row_text(0)
@@ -813,7 +813,7 @@ test "cjk_text_width_calculation" {
   // Calculate display width manually
   let mut width = 0
   for c in text {
-    width = width + char_display_width(c)
+    width = width + @tui.char_display_width(c)
   }
 
   // "2025/12/23" = 10 chars = 10 width
@@ -824,8 +824,8 @@ test "cjk_text_width_calculation" {
   inspect(width, content="16")
 
   // Test rendering in a buffer wide enough
-  let buffer = CharBuffer::new(30, 1)
-  let style : TextStyle = {
+  let buffer = @tui.CharBuffer::new(30, 1)
+  let style : @tui.TextStyle = {
     fg: @types.Color::black(),
     bg: @types.Color::white(),
     bold: false,
@@ -851,12 +851,12 @@ test "text_not_truncated_with_sufficient_width" {
   let text = "Moonbit moon cli の便利機能達 - 組み込み lint, bench, snapshot, coverage, doc"
   let mut width = 0
   for c in text {
-    width = width + char_display_width(c)
+    width = width + @tui.char_display_width(c)
   }
 
   // Create a buffer wide enough (100 columns)
-  let buffer = CharBuffer::new(100, 1)
-  let style : TextStyle = {
+  let buffer = @tui.CharBuffer::new(100, 1)
+  let style : @tui.TextStyle = {
     fg: @types.Color::black(),
     bg: @types.Color::white(),
     bold: false,

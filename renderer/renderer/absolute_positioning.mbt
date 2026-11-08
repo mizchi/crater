@@ -293,7 +293,7 @@ fn apply_zoom_and_scale(
       scaled_children.push(child_layout)
       continue
     }
-    let mut matched_index : Int? = None
+    let mut matched_index : Int32? = None
     let mut scan_index = child_node_cursor
     while scan_index < node.children.length() {
       let candidate = node.children[scan_index]

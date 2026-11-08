@@ -1,3 +1,7 @@
 members = [
   ".",
+  "../../core",
+  "../../dom",
+  "../../layout",
+  "../../runtime",
 ]

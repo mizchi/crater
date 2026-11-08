@@ -513,7 +513,7 @@ fn BidiProtocol::remember_focused_element_remote(
 ///|
 fn BidiProtocol::try_send_synthetic_scroll_call_fallback(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   realm_id : String,
   function_declaration : String,

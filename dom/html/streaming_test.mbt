@@ -3,7 +3,7 @@
 
 ///|
 /// Count elements in an element tree
-fn stb_count_elements(elem : @html.Element) -> Int {
+fn stb_count_elements(elem : @html.Element) -> Int32 {
   let mut count = 1
   for child in elem.children {
     match child {

@@ -1,8 +1,8 @@
 ///|
 fn Browser::get_link_source_id_at(
   self : Browser,
-  col : Int,
-  row : Int,
+  col : Int32,
+  row : Int32,
 ) -> String? {
   for i = self.link_regions.length() - 1; i >= 0; i = i - 1 {
     let region = self.link_regions[i]
@@ -36,8 +36,8 @@ fn Browser::is_clickable_source_id(self : Browser, source_id : String) -> Bool {
 ///|
 fn Browser::get_paint_source_id_at(
   self : Browser,
-  col : Int,
-  row : Int,
+  col : Int32,
+  row : Int32,
 ) -> String? {
   if self.hit_regions.is_empty() {
     return None
@@ -57,8 +57,8 @@ fn Browser::get_paint_source_id_at(
 ///|
 fn Browser::get_any_paint_source_id_at(
   self : Browser,
-  col : Int,
-  row : Int,
+  col : Int32,
+  row : Int32,
 ) -> String? {
   match @tui.find_hit_region_at(self.hit_regions, col, row) {
     Some(region) => Some(region.source_id)
@@ -111,8 +111,8 @@ fn find_smallest_a11y_hit_target(
 ///|
 fn Browser::get_a11y_source_id_at(
   self : Browser,
-  col : Int,
-  row : Int,
+  col : Int32,
+  row : Int32,
 ) -> String? {
   if row <= 0 {
     return None
@@ -133,7 +133,11 @@ fn Browser::get_a11y_source_id_at(
 }
 
 ///|
-fn Browser::get_source_id_at(self : Browser, col : Int, row : Int) -> String? {
+fn Browser::get_source_id_at(
+  self : Browser,
+  col : Int32,
+  row : Int32,
+) -> String? {
   match self.get_link_source_id_at(col, row) {
     Some(source_id) => Some(source_id)
     None =>
@@ -147,8 +151,8 @@ fn Browser::get_source_id_at(self : Browser, col : Int, row : Int) -> String? {
 ///|
 fn Browser::get_hover_source_id_at(
   self : Browser,
-  col : Int,
-  row : Int,
+  col : Int32,
+  row : Int32,
 ) -> String? {
   match self.get_link_source_id_at(col, row) {
     Some(source_id) => Some(source_id)
@@ -163,7 +167,11 @@ fn Browser::get_hover_source_id_at(
 ///|
 /// Find link URL at screen coordinates (for mouse click)
 /// Returns the resolved absolute URL if a link is found
-pub fn Browser::get_link_at(self : Browser, col : Int, row : Int) -> String? {
+pub fn Browser::get_link_at(
+  self : Browser,
+  col : Int32,
+  row : Int32,
+) -> String? {
   match self.get_link_source_id_at(col, row) {
     Some(source_id) =>
       match self.get_link_href_for_source_id(source_id) {

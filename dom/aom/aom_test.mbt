@@ -3,7 +3,7 @@
 test "basic role mapping - button" {
   let html = "<button>Click me</button>"
   let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
+  let tree = @aom.build_accessibility_tree_from_element(elem)
   inspect(tree.root.role, content="Button")
   debug_inspect(tree.root.name, content="Some(\"Click me\")")
   inspect(tree.root.focusable, content="true")
@@ -13,7 +13,7 @@ test "basic role mapping - button" {
 test "basic role mapping - link" {
   let html = "<a href=\"/home\">Home</a>"
   let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
+  let tree = @aom.build_accessibility_tree_from_element(elem)
   inspect(tree.root.role, content="Link")
   debug_inspect(tree.root.name, content="Some(\"Home\")")
 }
@@ -22,7 +22,7 @@ test "basic role mapping - link" {
 test "basic role mapping - heading" {
   let html = "<h1>Main Title</h1>"
   let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
+  let tree = @aom.build_accessibility_tree_from_element(elem)
   inspect(tree.root.role, content="Heading")
   debug_inspect(tree.root.level, content="Some(1)")
   debug_inspect(tree.root.name, content="Some(\"Main Title\")")
@@ -32,7 +32,7 @@ test "basic role mapping - heading" {
 test "role mapping - list" {
   let html = "<ul><li>Item 1</li><li>Item 2</li></ul>"
   let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
+  let tree = @aom.build_accessibility_tree_from_element(elem)
   inspect(tree.root.role, content="List")
   inspect(tree.root.children.length(), content="2")
   inspect(tree.root.children[0].role, content="ListItem")
@@ -42,7 +42,7 @@ test "role mapping - list" {
 test "aria-label takes precedence" {
   let html = "<button aria-label=\"Close dialog\">X</button>"
   let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
+  let tree = @aom.build_accessibility_tree_from_element(elem)
   debug_inspect(tree.root.name, content="Some(\"Close dialog\")")
 }
 
@@ -50,7 +50,7 @@ test "aria-label takes precedence" {
 test "input types" {
   let html = "<input type=\"checkbox\" />"
   let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
+  let tree = @aom.build_accessibility_tree_from_element(elem)
   inspect(tree.root.role, content="Checkbox")
 }
 
@@ -58,9 +58,9 @@ test "input types" {
 test "landmark - nav" {
   let html = "<nav><a href=\"/\">Home</a></nav>"
   let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
+  let tree = @aom.build_accessibility_tree_from_element(elem)
   inspect(tree.root.role, content="Navigation")
-  let landmarks = find_landmarks(tree)
+  let landmarks = @aom.find_landmarks(tree)
   inspect(landmarks.length(), content="1")
 }
 
@@ -68,7 +68,7 @@ test "landmark - nav" {
 test "states - disabled button" {
   let html = "<button disabled>Can't click</button>"
   let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
+  let tree = @aom.build_accessibility_tree_from_element(elem)
   inspect(tree.root.states.length(), content="1")
   inspect(tree.root.states[0], content="Disabled")
   inspect(tree.root.focusable, content="false")
@@ -78,8 +78,8 @@ test "states - disabled button" {
 test "find headings" {
   let html = "<div><h1>Title</h1><p>Content</p><h2>Subtitle</h2></div>"
   let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  let headings = find_headings(tree)
+  let tree = @aom.build_accessibility_tree_from_element(elem)
+  let headings = @aom.find_headings(tree)
   inspect(headings.length(), content="2")
   debug_inspect(headings[0].level, content="Some(1)")
   debug_inspect(headings[1].level, content="Some(2)")
@@ -95,8 +95,8 @@ test "find interactive elements" {
     #|  <p>Plain text</p>
     #|</div>
   let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  let interactive = find_interactive(tree)
+  let tree = @aom.build_accessibility_tree_from_element(elem)
+  let interactive = @aom.find_interactive(tree)
   inspect(interactive.length(), content="3")
 }
 
@@ -104,7 +104,7 @@ test "find interactive elements" {
 test "explicit role attribute" {
   let html = "<div role=\"button\">Custom Button</div>"
   let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
+  let tree = @aom.build_accessibility_tree_from_element(elem)
   inspect(tree.root.role, content="Button")
 }
 
@@ -112,7 +112,7 @@ test "explicit role attribute" {
 test "img with alt" {
   let html = "<img src=\"logo.png\" alt=\"Company Logo\" />"
   let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
+  let tree = @aom.build_accessibility_tree_from_element(elem)
   inspect(tree.root.role, content="Img")
   debug_inspect(tree.root.name, content="Some(\"Company Logo\")")
 }
@@ -123,7 +123,7 @@ test "img with empty alt is skipped (presentational)" {
   // The tree builder returns a Generic wrapper since the element is skipped
   let html = "<div><img src=\"decorative.png\" alt=\"\" /><span>Text</span></div>"
   let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
+  let tree = @aom.build_accessibility_tree_from_element(elem)
   // The img should be skipped, only span's text content should remain
   inspect(tree.root.children.length(), content="1")
 }
@@ -136,7 +136,7 @@ test "label[for] association" {
     #|  <input id="myinput" type="text" />
     #|</div>
   let doc = @html.parse_document(html)
-  let tree = build_accessibility_tree(doc)
+  let tree = @aom.build_accessibility_tree(doc)
   // Find the input element in the tree
   let inputs = tree.find_by_role(Textbox)
   inspect(inputs.length(), content="1")
@@ -155,7 +155,7 @@ test "label encapsulation - input wrapped in label" {
     #|  <label><input type="text" />textfield label</label>
     #|</div>
   let doc = @html.parse_document(html)
-  let tree = build_accessibility_tree(doc)
+  let tree = @aom.build_accessibility_tree(doc)
   let inputs = tree.find_by_role(Textbox)
   inspect(inputs.length(), content="1")
   debug_inspect(
@@ -173,7 +173,7 @@ test "label encapsulation - checkbox wrapped in label" {
     #|  <label><input type="checkbox" />checkbox label</label>
     #|</div>
   let doc = @html.parse_document(html)
-  let tree = build_accessibility_tree(doc)
+  let tree = @aom.build_accessibility_tree(doc)
   let checkboxes = tree.find_by_role(Checkbox)
   inspect(checkboxes.length(), content="1")
   debug_inspect(
@@ -192,7 +192,7 @@ test "aria-owns ignores targets under hidden ancestors" {
     #|  <div hidden><span id="new-window-warning"> (opens in a new window)</span></div>
     #|</div>
   let doc = @html.parse_document(html)
-  let tree = build_accessibility_tree(doc)
+  let tree = @aom.build_accessibility_tree(doc)
   let links = tree.find_by_role(Link)
   inspect(links.length(), content="1")
   debug_inspect(

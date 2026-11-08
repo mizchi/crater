@@ -8,8 +8,8 @@ struct Options {
   target_id : String?
   target_selector : String?
   artifact : @component_artifact.ArtifactMode
-  viewport_width : Int
-  viewport_height : Int
+  viewport_width : Int32
+  viewport_height : Int32
   show_help : Bool
   error : String?
 }
@@ -21,7 +21,7 @@ let default_viewport_width = 1280
 let default_viewport_height = 720
 
 ///|
-fn parse_int_simple(s : String) -> Int {
+fn parse_int_simple(s : String) -> Int32 {
   let mut result = 0
   if s.is_empty() {
     return 0

@@ -18,7 +18,7 @@ extern "js" fn js_env_string_or_default(
   #| }
 
 ///|
-extern "js" fn js_env_port_or_default(name : String, fallback : Int) -> Int =
+extern "js" fn js_env_port_or_default(name : String, fallback : Int32) -> Int32 =
   #| (name, fallback) => {
   #|   try {
   #|     const value = typeof Deno !== "undefined" ? Deno.env.get(name) : undefined;

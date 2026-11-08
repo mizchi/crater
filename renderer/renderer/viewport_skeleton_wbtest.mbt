@@ -1,4 +1,18 @@
 ///|
+test "viewport estimate excludes floats with the current CSS value type" {
+  let style = @style.Style::default()
+  style.display = @types.Block
+  for floated in [@types.CssFloat::Left, @types.CssFloat::Right] {
+    style.float = floated
+    assert_false(should_advance_viewport_estimate(style))
+  }
+  style.float = @types.CssFloat::None
+  assert_true(should_advance_viewport_estimate(style))
+  style.position = @types.Absolute
+  assert_false(should_advance_viewport_estimate(style))
+}
+
+///|
 test "viewport skeleton keeps explicit inline height and display none hints" {
   let style = @style.Style::default()
   let hinted = apply_skeleton_inline_style_hints(
@@ -33,7 +47,7 @@ test "viewport skeleton explicit size hints are limited to scroll containers" {
 }
 
 ///|
-fn count_nodes_with_id_prefix(node : @node.Node, prefix : String) -> Int {
+fn count_nodes_with_id_prefix(node : @node.Node, prefix : String) -> Int32 {
   let mut count = if node.id.has_prefix(prefix) { 1 } else { 0 }
   for child in node.children {
     count += count_nodes_with_id_prefix(child, prefix)
@@ -42,7 +56,7 @@ fn count_nodes_with_id_prefix(node : @node.Node, prefix : String) -> Int {
 }
 
 ///|
-fn many_image_document(count : Int) -> String {
+fn many_image_document(count : Int32) -> String {
   let buf = StringBuilder()
   buf.write_string("<!doctype html><html><body style='margin:0'>")
   for i in 0..<count {

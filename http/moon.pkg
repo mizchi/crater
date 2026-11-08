@@ -1,4 +1,8 @@
 import {
+  "moonbitlang/core/debug",
+}
+
+import {
   "moonbitlang/async/http" @async_http,
   "moonbitlang/async/js_async",
   "moonbitlang/async/io" @async_io,

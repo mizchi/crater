@@ -41,7 +41,7 @@ test "tui viewport paint keeps viewport conversion" {
     children: [child_layout],
     text: None,
   }
-  let paint_node = from_node_and_layout_with_viewport(
+  let paint_node = @viewport.from_node_and_layout_with_viewport(
     root, root_layout, 0.0, 60.0, 0.0,
   )
   inspect(paint_node is Some(_), content="true")

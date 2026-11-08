@@ -3,7 +3,7 @@
 
 ///|
 test "snapshot: simple button" {
-  let node = AccessibilityNode::new("btn-1", Button).with_name("Click me")
+  let node = @aom.AccessibilityNode::new("btn-1", Button).with_name("Click me")
   let snapshot = node.to_aria_snapshot()
   inspect(
     snapshot,
@@ -16,7 +16,7 @@ test "snapshot: simple button" {
 
 ///|
 test "snapshot: heading with level" {
-  let node = AccessibilityNode::new("h1", Heading)
+  let node = @aom.AccessibilityNode::new("h1", Heading)
     .with_name("Title")
     .with_level(1)
   let snapshot = node.to_aria_snapshot()
@@ -31,7 +31,7 @@ test "snapshot: heading with level" {
 
 ///|
 test "snapshot: checkbox checked" {
-  let node = AccessibilityNode::new("cb-1", Checkbox)
+  let node = @aom.AccessibilityNode::new("cb-1", Checkbox)
     .with_name("Accept terms")
     .add_state(Checked)
   let snapshot = node.to_aria_snapshot()
@@ -46,9 +46,9 @@ test "snapshot: checkbox checked" {
 
 ///|
 test "snapshot: nested list" {
-  let item1 = AccessibilityNode::new("li-1", ListItem).with_name("Item 1")
-  let item2 = AccessibilityNode::new("li-2", ListItem).with_name("Item 2")
-  let list = AccessibilityNode::new("list-1", List)
+  let item1 = @aom.AccessibilityNode::new("li-1", ListItem).with_name("Item 1")
+  let item2 = @aom.AccessibilityNode::new("li-2", ListItem).with_name("Item 2")
+  let list = @aom.AccessibilityNode::new("list-1", List)
     .with_name("Features")
     .add_child(item1)
     .add_child(item2)
@@ -66,9 +66,9 @@ test "snapshot: nested list" {
 
 ///|
 test "snapshot: navigation with links" {
-  let link1 = AccessibilityNode::new("link-1", Link).with_name("Home")
-  let link2 = AccessibilityNode::new("link-2", Link).with_name("About")
-  let nav = AccessibilityNode::new("nav-1", Navigation)
+  let link1 = @aom.AccessibilityNode::new("link-1", Link).with_name("Home")
+  let link2 = @aom.AccessibilityNode::new("link-2", Link).with_name("About")
+  let nav = @aom.AccessibilityNode::new("nav-1", Navigation)
     .with_name("Main")
     .add_child(link1)
     .add_child(link2)
@@ -86,7 +86,7 @@ test "snapshot: navigation with links" {
 
 ///|
 test "snapshot: disabled button" {
-  let node = AccessibilityNode::new("btn-2", Button)
+  let node = @aom.AccessibilityNode::new("btn-2", Button)
     .with_name("Submit")
     .add_state(Disabled)
   let snapshot = node.to_aria_snapshot()
@@ -102,7 +102,9 @@ test "snapshot: disabled button" {
 ///|
 test "snapshot: tree from html" {
   let html = "<button>Click me</button>"
-  let tree = build_accessibility_tree_from_element(@html.parse(html).unwrap())
+  let tree = @aom.build_accessibility_tree_from_element(
+    @html.parse(html).unwrap(),
+  )
   let snapshot = tree.to_aria_snapshot()
   inspect(
     snapshot,
@@ -121,7 +123,7 @@ test "snapshot: complex page structure" {
     #|  <a href="/about">About</a>
     #|</nav>
   let doc = @html.parse_document(html)
-  let tree = build_accessibility_tree(doc)
+  let tree = @aom.build_accessibility_tree(doc)
   // Just verify it doesn't crash and produces output
   let snapshot = tree.to_aria_snapshot()
   inspect(snapshot.length() > 0, content="true")
@@ -133,7 +135,7 @@ test "snapshot: complex page structure" {
 
 ///|
 test "json: simple button" {
-  let node = AccessibilityNode::new("btn-1", Button).with_name("Click me")
+  let node = @aom.AccessibilityNode::new("btn-1", Button).with_name("Click me")
   let json = node.to_aria_json()
   inspect(
     json,
@@ -148,7 +150,7 @@ test "json: simple button" {
 
 ///|
 test "json: heading with level" {
-  let node = AccessibilityNode::new("h1", Heading)
+  let node = @aom.AccessibilityNode::new("h1", Heading)
     .with_name("Title")
     .with_level(1)
   let json = node.to_aria_json()
@@ -166,7 +168,7 @@ test "json: heading with level" {
 
 ///|
 test "json: checkbox checked" {
-  let node = AccessibilityNode::new("cb-1", Checkbox)
+  let node = @aom.AccessibilityNode::new("cb-1", Checkbox)
     .with_name("Accept")
     .add_state(Checked)
   let json = node.to_aria_json()
@@ -184,9 +186,9 @@ test "json: checkbox checked" {
 
 ///|
 test "json: nested list" {
-  let item1 = AccessibilityNode::new("li-1", ListItem).with_name("Item 1")
-  let item2 = AccessibilityNode::new("li-2", ListItem).with_name("Item 2")
-  let list = AccessibilityNode::new("list-1", List)
+  let item1 = @aom.AccessibilityNode::new("li-1", ListItem).with_name("Item 1")
+  let item2 = @aom.AccessibilityNode::new("li-2", ListItem).with_name("Item 2")
+  let list = @aom.AccessibilityNode::new("list-1", List)
     .with_name("Features")
     .add_child(item1)
     .add_child(item2)

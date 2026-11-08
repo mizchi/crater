@@ -8,7 +8,7 @@ pub(all) struct SyntheticNetworkCookie {
   http_only : Bool
   secure : Bool
   same_site : String
-  expiry : Int?
+  expiry : Int32?
 }
 
 ///|
@@ -18,7 +18,7 @@ pub(all) struct SyntheticNetworkSetCookieOverrideEntry {
 }
 
 ///|
-extern "js" fn js_parse_cookie_expiry_seconds(value : String) -> Int =
+extern "js" fn js_parse_cookie_expiry_seconds(value : String) -> Int32 =
   #| (value) => {
   #|   const text = String(value ?? "").trim();
   #|   if (text.length === 0) return -1;
@@ -32,7 +32,7 @@ extern "js" fn js_parse_cookie_expiry_seconds(value : String) -> Int =
 pub fn synthetic_network_extract_set_cookie_entries(
   headers : Array[Json],
   base_url : String,
-  now_seconds : Int,
+  now_seconds : Int32,
 ) -> Array[SyntheticNetworkCookie] {
   let cookies : Array[SyntheticNetworkCookie] = []
   for header in headers {
@@ -77,7 +77,7 @@ pub fn synthetic_network_extract_set_cookie_entries(
 pub fn synthetic_network_parse_set_cookie_header_value(
   header_value : String,
   base_url : String,
-  now_seconds : Int,
+  now_seconds : Int32,
 ) -> SyntheticNetworkCookie? {
   synthetic_network_parse_cookie_text(
     header_value, base_url, "/", "none", now_seconds, true,
@@ -89,7 +89,7 @@ pub fn synthetic_network_parse_document_cookie_assignment(
   cookie_assignment : String,
   base_url : String,
   default_path : String,
-  now_seconds : Int,
+  now_seconds : Int32,
 ) -> SyntheticNetworkCookie? {
   synthetic_network_parse_cookie_text(
     cookie_assignment, base_url, default_path, "default", now_seconds, false,
@@ -160,7 +160,7 @@ pub fn synthetic_network_normalize_set_cookie_override_entry(
   name : String,
   value_text : String,
   base_url : String,
-  now_seconds : Int,
+  now_seconds : Int32,
 ) -> Result[SyntheticNetworkSetCookieOverrideEntry, String] {
   if !synthetic_network_is_valid_header_name_token(name) {
     return Err("cookie name is invalid")
@@ -171,7 +171,7 @@ pub fn synthetic_network_normalize_set_cookie_override_entry(
   let mut http_only = false
   let mut secure = false
   let mut same_site = "none"
-  let mut expiry : Int? = None
+  let mut expiry : Int32? = None
   let header_entry : Map[String, Json] = Map([])
   header_entry["name"] = Json::string(name)
   header_entry["value"] = Json::string(value_text)
@@ -404,7 +404,7 @@ fn synthetic_network_parse_cookie_text(
   base_url : String,
   default_path : String,
   default_same_site : String,
-  now_seconds : Int,
+  now_seconds : Int32,
   require_valid_name : Bool,
 ) -> SyntheticNetworkCookie? {
   let attributes : Array[String] = []
@@ -439,7 +439,7 @@ fn synthetic_network_parse_cookie_text(
       let mut http_only = false
       let mut secure = false
       let mut same_site = default_same_site
-      let mut expiry : Int? = None
+      let mut expiry : Int32? = None
 
       for raw_attr in attributes {
         let attr = raw_attr.trim().to_owned()
@@ -478,7 +478,7 @@ fn synthetic_network_parse_cookie_text(
             same_site = lowered
           }
         } else if attr_name == "max-age" {
-          let parsed_max_age : Int? = Some(@string.parse_int(attr_value)) catch {
+          let parsed_max_age : Int32? = Some(@string.parse_int(attr_value)) catch {
             _ => None
           }
           match parsed_max_age {
@@ -514,12 +514,12 @@ fn synthetic_network_parse_cookie_text(
 }
 
 ///|
-fn network_slice(value : String, start : Int, end : Int) -> String {
+fn network_slice(value : String, start : Int32, end : Int32) -> String {
   value.unsafe_substring(start~, end~)
 }
 
 ///|
-fn network_slice_from(value : String, start : Int) -> String {
+fn network_slice_from(value : String, start : Int32) -> String {
   if start > value.length() {
     ""
   } else {
@@ -532,7 +532,7 @@ fn synthetic_network_json_as_safe_int(
   value : Json,
   min : Double,
   max : Double,
-) -> Int? {
+) -> Int32? {
   match value {
     Number(n, ..) =>
       if n == n.to_int64().to_double() && n >= min && n <= max {

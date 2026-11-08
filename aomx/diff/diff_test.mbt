@@ -13,7 +13,7 @@ test "no_difference" {
   let root = { ..root, children: [button], visible: true, }
   let tree1 = @aom.AccessibilityTree::new(root)
   let tree2 = @aom.AccessibilityTree::new(root)
-  let result = diff_trees(tree1, tree2, DiffConfig::default())
+  let result = @diff.diff_trees(tree1, tree2, @diff.DiffConfig::default())
   inspect(result.differences.length(), content="0")
   inspect(result.similarity, content="1")
 }
@@ -44,7 +44,7 @@ test "element_added" {
   let root2 = { ..root2, children: [button1, button2], visible: true, }
   let tree1 = @aom.AccessibilityTree::new(root1)
   let tree2 = @aom.AccessibilityTree::new(root2)
-  let result = diff_trees(tree1, tree2, DiffConfig::default())
+  let result = @diff.diff_trees(tree1, tree2, @diff.DiffConfig::default())
   inspect(result.added_count, content="1")
 }
 
@@ -74,7 +74,7 @@ test "element_moved" {
   let root2 = { ..root2, children: [button_after], visible: true, }
   let tree1 = @aom.AccessibilityTree::new(root1)
   let tree2 = @aom.AccessibilityTree::new(root2)
-  let result = diff_trees(tree1, tree2, DiffConfig::default())
+  let result = @diff.diff_trees(tree1, tree2, @diff.DiffConfig::default())
   inspect(result.changed_count, content="1")
 
   // Should detect as "Moved"
@@ -115,7 +115,7 @@ test "element_resized" {
   let root2 = { ..root2, children: [button_after], visible: true, }
   let tree1 = @aom.AccessibilityTree::new(root1)
   let tree2 = @aom.AccessibilityTree::new(root2)
-  let result = diff_trees(tree1, tree2, DiffConfig::default())
+  let result = @diff.diff_trees(tree1, tree2, @diff.DiffConfig::default())
 
   // Should detect resize
   let resized_diff = result.differences
@@ -137,7 +137,7 @@ test "json_output" {
   let root2 = { ..root2, visible: true, }
   let tree1 = @aom.AccessibilityTree::new(root1)
   let tree2 = @aom.AccessibilityTree::new(root2)
-  let result = diff_trees(tree1, tree2, DiffConfig::default())
+  let result = @diff.diff_trees(tree1, tree2, @diff.DiffConfig::default())
   let json = result.to_json()
   assert_true(json.contains("\"similarity\""))
   assert_true(json.contains("\"differences\""))
@@ -149,5 +149,5 @@ test "trees_equal_helper" {
   let root = { ..root, visible: true, }
   let tree1 = @aom.AccessibilityTree::new(root)
   let tree2 = @aom.AccessibilityTree::new(root)
-  inspect(trees_equal(tree1, tree2), content="true")
+  inspect(@diff.trees_equal(tree1, tree2), content="true")
 }

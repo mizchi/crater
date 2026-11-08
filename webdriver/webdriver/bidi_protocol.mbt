@@ -39,28 +39,28 @@ priv struct BidiProtocol {
   mut outbox : Array[BidiOutMessage]
   mut default_context_id : String?
   mut active_context_id : String?
-  mut next_navigation_id : Int
-  mut next_realm_id : Int
-  mut next_preload_script_id : Int
+  mut next_navigation_id : Int32
+  mut next_realm_id : Int32
+  mut next_preload_script_id : Int32
   subscription_state : BidiSubscriptionState
   user_contexts : Map[String, Bool]
   user_context_prompt_behavior : Map[String, Json] // user context -> unhandledPromptBehavior object
   mut global_download_behavior : Json?
   user_context_download_behavior : Map[String, Json] // user context -> downloadBehavior object
   installed_web_extensions : Map[String, String] // extension id -> source kind
-  mut next_web_extension_id : Int
+  mut next_web_extension_id : Int32
   permission_state_by_scope : Map[String, String] // "<name>|<userContext>|<origin>|<embeddedOrigin>" -> state
   emulation_state : BidiEmulationState
   geolocation_watch_channel_by_scope : Map[String, String] // "<context>|<watchId>" -> script.message channel
   geolocation_watch_realm_by_scope : Map[String, String] // "<context>|<watchId>" -> originating realm
   geolocation_watch_notify_success_by_scope : Map[String, Bool] // "<context>|<watchId>" -> emit coords updates
   geolocation_watch_notify_error_by_scope : Map[String, Bool] // "<context>|<watchId>" -> emit error updates
-  mut next_geolocation_watch_id : Int
+  mut next_geolocation_watch_id : Int32
   bluetooth_adapter_state_by_context : Map[String, String] // context -> absent|powered-off|powered-on
   bluetooth_simulation_disabled_by_context : Map[String, Bool] // context -> simulation disabled
   bluetooth_preconnected_devices_by_context : Map[String, Array[Json]] // context -> synthetic device descriptors
   bluetooth_granted_devices_by_context : Map[String, Array[Json]] // context -> granted synthetic device descriptors
-  bluetooth_pending_prompt_request : Map[String, Int] // context -> deferred requestDevice request id
+  bluetooth_pending_prompt_request : Map[String, Int32] // context -> deferred requestDevice request id
   bluetooth_pending_prompt_realm : Map[String, String] // context -> deferred requestDevice realm id
   bluetooth_pending_prompt_unwrap_result : Map[String, Bool] // context -> deferred requestDevice unwrap mode
   bluetooth_pending_prompt_id : Map[String, String] // context -> active bluetooth prompt id
@@ -70,19 +70,19 @@ priv struct BidiProtocol {
   bluetooth_services_by_scope : Map[String, Array[String]] // "<context>|<address>" -> primary service uuids
   bluetooth_characteristics_by_scope : Map[String, Json] // "<context>|<address>|<service>|<characteristic>" -> properties object
   bluetooth_descriptors_by_scope : Map[String, Bool] // "<context>|<address>|<service>|<characteristic>|<descriptor>" -> descriptor exists
-  bluetooth_pending_gatt_request : Map[String, Int] // context -> deferred gatt.connect request id
+  bluetooth_pending_gatt_request : Map[String, Int32] // context -> deferred gatt.connect request id
   bluetooth_pending_gatt_realm : Map[String, String] // context -> deferred gatt.connect realm id
   bluetooth_pending_gatt_unwrap_result : Map[String, Bool] // context -> deferred gatt.connect unwrap mode
   bluetooth_pending_gatt_address : Map[String, String] // context -> deferred gatt.connect device address
   bluetooth_pending_gatt_response_kind : Map[String, String] // context -> deferred response mode
-  bluetooth_pending_characteristic_request : Map[String, Int] // context -> deferred characteristic request id
+  bluetooth_pending_characteristic_request : Map[String, Int32] // context -> deferred characteristic request id
   bluetooth_pending_characteristic_realm : Map[String, String] // context -> deferred characteristic realm id
   bluetooth_pending_characteristic_unwrap_result : Map[String, Bool] // context -> deferred characteristic unwrap mode
   bluetooth_pending_characteristic_address : Map[String, String] // context -> deferred characteristic device address
   bluetooth_pending_characteristic_service_uuid : Map[String, String] // context -> deferred characteristic service uuid
   bluetooth_pending_characteristic_uuid : Map[String, String] // context -> deferred characteristic uuid
   bluetooth_pending_characteristic_type : Map[String, String] // context -> deferred characteristic response type
-  bluetooth_pending_descriptor_request : Map[String, Int] // context -> deferred descriptor request id
+  bluetooth_pending_descriptor_request : Map[String, Int32] // context -> deferred descriptor request id
   bluetooth_pending_descriptor_realm : Map[String, String] // context -> deferred descriptor realm id
   bluetooth_pending_descriptor_unwrap_result : Map[String, Bool] // context -> deferred descriptor unwrap mode
   bluetooth_pending_descriptor_address : Map[String, String] // context -> deferred descriptor device address
@@ -90,27 +90,27 @@ priv struct BidiProtocol {
   bluetooth_pending_descriptor_characteristic_uuid : Map[String, String] // context -> deferred descriptor characteristic uuid
   bluetooth_pending_descriptor_uuid : Map[String, String] // context -> deferred descriptor uuid
   bluetooth_pending_descriptor_type : Map[String, String] // context -> deferred descriptor response type
-  mut next_bluetooth_prompt_id : Int
-  user_context_viewport_width : Map[String, Int] // user context -> default viewport width override
-  user_context_viewport_height : Map[String, Int] // user context -> default viewport height override
+  mut next_bluetooth_prompt_id : Int32
+  user_context_viewport_width : Map[String, Int32] // user context -> default viewport width override
+  user_context_viewport_height : Map[String, Int32] // user context -> default viewport height override
   user_context_device_pixel_ratio : Map[String, Double] // user context -> default devicePixelRatio override
   context_user_context : Map[String, String]
   context_has_beforeunload : Map[String, Bool]
   context_blocks_cross_origin_iframe_navigation : Map[String, Bool] // context -> active CSP/COEP frame policy
   pending_prompt_type : Map[String, String] // context -> prompt type
-  pending_close_request : Map[String, Int] // context -> browsingContext.close request id
+  pending_close_request : Map[String, Int32] // context -> browsingContext.close request id
   pending_close_wait_for_destroyed : Map[String, Bool] // context -> closeWithState wait flag
   pending_close_response_mode : Map[String, String] // context -> close response kind
-  pending_prompt_request : Map[String, Int] // context -> deferred script.evaluate request id
+  pending_prompt_request : Map[String, Int32] // context -> deferred script.evaluate request id
   pending_prompt_realm : Map[String, String] // context -> deferred script.evaluate realm id
   pending_prompt_unwrap_result : Map[String, Bool] // context -> deferred script.evaluate unwrap mode
-  pending_beforeunload_request : Map[String, Int] // context -> deferred navigate request id
+  pending_beforeunload_request : Map[String, Int32] // context -> deferred navigate request id
   pending_beforeunload_url : Map[String, String] // context -> deferred navigate destination
   pending_beforeunload_requested_url : Map[String, String] // context -> deferred original requested URL
   pending_beforeunload_wait : Map[String, String] // context -> deferred navigate wait mode
   pending_beforeunload_navigation : Map[String, String] // context -> deferred navigation id
   pending_beforeunload_finalize_mode : Map[String, String] // context -> deferred internal navigate/reload mode
-  pending_navigation_request : Map[String, Int] // context -> deferred navigate/reload request id
+  pending_navigation_request : Map[String, Int32] // context -> deferred navigate/reload request id
   pending_navigation_response_mode : Map[String, String] // context -> deferred navigation response kind
   in_flight_navigation_url : Map[String, String] // context -> interruptible navigation URL
   in_flight_navigation_id : Map[String, String] // context -> interruptible navigation id
@@ -131,13 +131,13 @@ priv struct BidiProtocol {
   context_children : Map[String, Array[String]]
   context_had_synthetic_child : Map[String, Bool] // top-level context -> has synthetic child helper
   context_client_window : Map[String, String]
-  context_viewport_width : Map[String, Int] // context -> viewport width override
-  context_viewport_height : Map[String, Int] // context -> viewport height override
+  context_viewport_width : Map[String, Int32] // context -> viewport width override
+  context_viewport_height : Map[String, Int32] // context -> viewport height override
   context_device_pixel_ratio : Map[String, Double] // context -> devicePixelRatio override
   input_pressed_keys : Map[String, Array[String]] // context -> pressed key stack
   input_pointer_x : Map[String, Double] // context -> current pointer x
   input_pointer_y : Map[String, Double] // context -> current pointer y
-  input_pointer_buttons : Map[String, Int] // context -> mouse buttons bitfield
+  input_pointer_buttons : Map[String, Int32] // context -> mouse buttons bitfield
   input_pointer_type : Map[String, String] // context -> last pointer type
   input_pointer_target_shared : Map[String, String] // context -> last element-origin sharedId
   input_pointer_down_x : Map[String, Double] // context -> primary pointerDown x
@@ -160,7 +160,7 @@ priv struct BidiProtocol {
   speculation_prefetch_target_by_context : Map[String, String] // context -> last synthetic prefetch target
   network_state : @crater_network.BidiNetworkState
   mut socket : @core.Any? // WebSocket for async responses
-  mut socket_epoch : Int // Monotonic epoch for active WebSocket
+  mut socket_epoch : Int32 // Monotonic epoch for active WebSocket
   use_quickjs : Bool // Use QuickJS sandboxed runtime for script execution
   mut dom_initialized : Bool // Deno-side mock DOM initialized
   mut preload_scripts : Array[PreloadScriptEntry]
@@ -333,7 +333,7 @@ fn BidiProtocol::new() -> BidiProtocol {
 
 ///|
 /// Set WebSocket for async responses and return epoch token.
-fn BidiProtocol::set_socket(self : BidiProtocol, socket : @core.Any) -> Int {
+fn BidiProtocol::set_socket(self : BidiProtocol, socket : @core.Any) -> Int32 {
   self.socket_epoch += 1
   self.socket = Some(socket)
   self.socket_epoch
@@ -349,7 +349,7 @@ fn BidiProtocol::clear_socket(self : BidiProtocol) -> Unit {
 /// Check whether a captured WebSocket epoch is still active.
 fn BidiProtocol::is_current_socket_epoch(
   self : BidiProtocol,
-  epoch : Int,
+  epoch : Int32,
 ) -> Bool {
   self.socket_epoch == epoch
 }
@@ -1101,7 +1101,7 @@ fn BidiProtocol::reset_session_runtime_state(self : BidiProtocol) -> Unit {
 ///|
 fn BidiProtocol::handle_network_prepare_context_for_test(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map = match params {
@@ -1185,7 +1185,7 @@ fn BidiProtocol::handle_network_prepare_context_for_test(
 
 ///|
 /// Left-pad a string with '0' up to min_length.
-fn left_pad_with_zero(value : String, min_length : Int) -> String {
+fn left_pad_with_zero(value : String, min_length : Int32) -> String {
   let mut result = value
   while result.length() < min_length {
     result = "0" + result
@@ -1267,7 +1267,7 @@ fn array_filter_by_module(
 /// state synchronized with BiDi events.
 fn BidiProtocol::try_handle_window_open(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   opener_ctx_id : String,
   opener_realm_id : String,
   expression : String,
@@ -1373,7 +1373,7 @@ fn BidiProtocol::try_handle_window_open(
 /// Handle synthetic iframe creation expressions used by preload execution-order tests.
 fn BidiProtocol::try_handle_synthetic_iframe_creation(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   parent_ctx_id : String,
   realm_id : String,
   expression : String,

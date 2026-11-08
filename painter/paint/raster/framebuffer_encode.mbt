@@ -4,10 +4,10 @@
 ///|
 #cfg(target="js")
 extern "js" fn framebuffer_to_rgba_base64_js(
-  pixels : FixedArray[Int],
-  palette_r : FixedArray[Int],
-  palette_g : FixedArray[Int],
-  palette_b : FixedArray[Int],
+  pixels : FixedArray[Int32],
+  palette_r : FixedArray[Int32],
+  palette_g : FixedArray[Int32],
+  palette_b : FixedArray[Int32],
 ) -> String =
   #|(pixels, pr, pg, pb) => {
   #|  const n = pixels.length;
@@ -44,10 +44,10 @@ extern "js" fn framebuffer_to_rgba_base64_js(
 ///|
 #cfg(not(target="js"))
 fn framebuffer_to_rgba_base64_js(
-  pixels : FixedArray[Int],
-  palette_r : FixedArray[Int],
-  palette_g : FixedArray[Int],
-  palette_b : FixedArray[Int],
+  pixels : FixedArray[Int32],
+  palette_r : FixedArray[Int32],
+  palette_g : FixedArray[Int32],
+  palette_b : FixedArray[Int32],
 ) -> String {
   // Fuse the RGBA expansion into the base64 loop instead of materializing an
   // ~n*4-int RGBA buffer first: that intermediate was pure memory-bandwidth
@@ -85,7 +85,7 @@ fn framebuffer_to_rgba_base64_js(
   // here; encode the remainder on its own (it carries the base64 padding).
   let rem = n - full * 3
   if rem > 0 {
-    let tail : Array[Int] = []
+    let tail : Array[Int32] = []
     for k = full * 3; k < n; k = k + 1 {
       let p = pixels[k]
       tail.push(palette_r[p])
@@ -103,9 +103,9 @@ pub fn framebuffer_to_rgba_base64(
   fb : Framebuffer,
   palette : DynamicPalette,
 ) -> String {
-  let palette_r : Array[Int] = []
-  let palette_g : Array[Int] = []
-  let palette_b : Array[Int] = []
+  let palette_r : Array[Int32] = []
+  let palette_g : Array[Int32] = []
+  let palette_b : Array[Int32] = []
   for color in palette.colors {
     palette_r.push(color.r)
     palette_g.push(color.g)

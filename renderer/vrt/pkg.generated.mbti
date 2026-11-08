@@ -48,9 +48,10 @@ pub fn render_prepared_vrt_page_to_paint_tree_json(PreparedVrtPage) -> String
 // Errors
 
 // Types and methods
+#derive(Eq, @debug.Debug)
 pub(all) struct ComputedStyleEntry {
   id : String
-  index : Int
+  index : Int32
   display : String
   position : String
   visibility : String
@@ -60,30 +61,49 @@ pub(all) struct ComputedStyleEntry {
   z_index : String
   color : String
   background_color : String
-} derive(Eq, @debug.Debug)
+}
+pub fn ComputedStyleEntry::equal(Self, Self) -> Bool
+pub fn ComputedStyleEntry::not_equal(Self, Self) -> Bool
+pub fn ComputedStyleEntry::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct CssMutation {
   selector : String
   property : String
   action : CssMutationAction
-} derive(Eq, @debug.Debug)
+}
+pub fn CssMutation::equal(Self, Self) -> Bool
 pub fn CssMutation::is_paint_only(Self) -> Bool
+pub fn CssMutation::not_equal(Self, Self) -> Bool
+pub fn CssMutation::output(Self, &Logger) -> Unit
+pub fn CssMutation::to_repr(Self) -> @debug.Repr
+pub fn CssMutation::to_string(Self) -> String
 pub impl Show for CssMutation
 
+#derive(Eq, @debug.Debug)
 pub(all) enum CssMutationAction {
   Remove
   Override(String)
-} derive(Eq, @debug.Debug)
+}
+pub fn CssMutationAction::equal(Self, Self) -> Bool
+pub fn CssMutationAction::not_equal(Self, Self) -> Bool
+pub fn CssMutationAction::output(Self, &Logger) -> Unit
+pub fn CssMutationAction::to_repr(Self) -> @debug.Repr
+pub fn CssMutationAction::to_string(Self) -> String
 pub impl Show for CssMutationAction
 
+#derive(Eq, @debug.Debug)
 pub(all) struct LayoutBox {
   id : String
-  index : Int
+  index : Int32
   x : Double
   y : Double
   width : Double
   height : Double
-} derive(Eq, @debug.Debug)
+}
+pub fn LayoutBox::equal(Self, Self) -> Bool
+pub fn LayoutBox::not_equal(Self, Self) -> Bool
+pub fn LayoutBox::to_repr(Self) -> @debug.Repr
 
 pub(all) struct PreparedVrtPage {
   doc : @html.Document
@@ -117,16 +137,24 @@ pub fn RenderSession::open_with_recording(String, @values.Size[Double], Array[St
 pub fn RenderSession::recorded_images(Self) -> Array[@renderer.RecordedImage]
 pub fn RenderSession::recorded_measurements(Self) -> Array[@renderer.RecordedMetric]
 
+#derive(Eq, @debug.Debug)
 pub(all) struct RenderVariant {
   id : String
   mutations : Array[CssMutation]
-} derive(Eq, @debug.Debug)
+}
+pub fn RenderVariant::equal(Self, Self) -> Bool
+pub fn RenderVariant::not_equal(Self, Self) -> Bool
+pub fn RenderVariant::output(Self, &Logger) -> Unit
+pub fn RenderVariant::to_repr(Self) -> @debug.Repr
+pub fn RenderVariant::to_string(Self) -> String
 pub impl Show for RenderVariant
 
 pub(all) struct RenderVariantResult {
   id : String
   paint_tree : @model.PaintNode
 }
+pub fn RenderVariantResult::output(Self, &Logger) -> Unit
+pub fn RenderVariantResult::to_string(Self) -> String
 pub impl Show for RenderVariantResult
 
 // Type aliases

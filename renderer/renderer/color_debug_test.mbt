@@ -8,15 +8,15 @@ test "banner_color_computation" {
   let css =
     #|._banner_nxrmc_1 { background: #38235c; color: #fff; }
     #|.content { color: #333; }
-  let ctx : RenderContext = {
+  let ctx : @renderer.RenderContext = {
     viewport_width: 375.0,
     viewport_height: 450.0,
     root_font_size: 16.0,
     color_scheme: @css.ColorScheme::Light,
   }
-  let node = render_to_node_with_external_css(html, ctx, [css])
+  let node = @renderer.render_to_node_with_external_css(html, ctx, [css])
   // Print computed styles for debugging
-  fn show_style(n : @node.Node, depth : Int) -> Unit {
+  fn show_style(n : @node.Node, depth : Int32) -> Unit {
     let _ = String::make(depth * 2, ' ')
     for child in n.children {
       show_style(child, depth + 1)
@@ -40,15 +40,15 @@ test "code_token_color" {
     #|:root { --color-code-tag: #ff696d; }
     #|.token.tag, .token.attr-name { color: var(--color-code-tag); }
     #|.highlight { background: #1e1e1e; color: #d4d4d4; }
-  let ctx : RenderContext = {
+  let ctx : @renderer.RenderContext = {
     viewport_width: 375.0,
     viewport_height: 450.0,
     root_font_size: 16.0,
     color_scheme: @css.ColorScheme::Light,
   }
-  let node = render_to_node_with_external_css(html, ctx, [css])
+  let node = @renderer.render_to_node_with_external_css(html, ctx, [css])
   // Print all nodes with their styles
-  fn show_all(n : @node.Node, depth : Int) -> Unit {
+  fn show_all(n : @node.Node, depth : Int32) -> Unit {
     let _ = String::make(depth * 2, ' ')
     for child in n.children {
       show_all(child, depth + 1)
@@ -71,14 +71,14 @@ test "css_variable_in_background" {
     #|:root { --code-color: #ff696d; }
     #|.page { background: transparent; }
     #|.token { color: var(--code-color); }
-  let ctx : RenderContext = {
+  let ctx : @renderer.RenderContext = {
     viewport_width: 375.0,
     viewport_height: 450.0,
     root_font_size: 16.0,
     color_scheme: @css.ColorScheme::Light,
   }
-  let node = render_to_node_with_external_css(html, ctx, [css])
-  fn show_all(n : @node.Node, depth : Int) -> Unit {
+  let node = @renderer.render_to_node_with_external_css(html, ctx, [css])
+  fn show_all(n : @node.Node, depth : Int32) -> Unit {
     let _ = String::make(depth * 2, ' ')
     for child in n.children {
       show_all(child, depth + 1)
@@ -102,14 +102,14 @@ test "nested_background_inheritance" {
   let css =
     #|.colored-bg { background-color: #ff696d; color: #ffffff; }
     #|p { margin: 16px 0; }
-  let ctx : RenderContext = {
+  let ctx : @renderer.RenderContext = {
     viewport_width: 375.0,
     viewport_height: 450.0,
     root_font_size: 16.0,
     color_scheme: @css.ColorScheme::Light,
   }
-  let node = render_to_node_with_external_css(html, ctx, [css])
-  fn show_all(n : @node.Node, depth : Int) -> Unit {
+  let node = @renderer.render_to_node_with_external_css(html, ctx, [css])
+  fn show_all(n : @node.Node, depth : Int32) -> Unit {
     let _ = String::make(depth * 2, ' ')
     for child in n.children {
       show_all(child, depth + 1)

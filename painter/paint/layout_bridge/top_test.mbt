@@ -22,7 +22,7 @@ test "paint layout bridge keeps from_layout compatibility" {
     children: [],
     text: None,
   }
-  let paint_node = from_layout(layout)
+  let paint_node = @layout_bridge.from_layout(layout)
   inspect(paint_node.id, content="root")
   inspect(paint_node.width, content="100")
 }
@@ -53,7 +53,7 @@ test "paint layout bridge keeps from_node_and_layout compatibility" {
     children: [],
     text: None,
   }
-  let paint_node = from_node_and_layout(node, layout)
+  let paint_node = @layout_bridge.from_node_and_layout(node, layout)
   inspect(paint_node.id, content="root")
   inspect(paint_node.width, content="100")
 }

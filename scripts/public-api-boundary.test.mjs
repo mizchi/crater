@@ -33,6 +33,7 @@ test("published docs point to the external mizchi/css module, not the retired cr
 test("local tasks and CI do not use deprecated Moon manifest selectors", () => {
   const files = [
     "package.json",
+    "browser/tests/crater-cli.test.mjs",
     "justfile",
     "scripts/moon-publish-workspace.mjs",
     "scripts/vrt-bench.ts",

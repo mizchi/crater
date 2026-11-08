@@ -20,7 +20,7 @@ pub fn build_render_root_node(@html.Document, RenderContext, PreparedRenderDocum
 
 pub fn cascade_reuse_begin(Map[String, @style.Style], Map[String, String], uses_sibling? : Bool, uses_child_structure? : Bool) -> Unit
 
-pub fn cascade_reuse_end() -> (Map[String, @style.Style], Map[String, String], Int)
+pub fn cascade_reuse_end() -> (Map[String, @style.Style], Map[String, String], Int32)
 
 pub fn clear_builtin_text_advance_ratio_override_for_test() -> Unit
 
@@ -32,15 +32,15 @@ pub fn clear_text_metrics_provider() -> Unit
 
 pub fn clear_text_metrics_record_replay() -> Unit
 
-pub fn compute_composed_shadow_styles(@dom.DomTree, RenderContext) -> Map[Int, @style.Style]
+pub fn compute_composed_shadow_styles(@dom.DomTree, RenderContext) -> Map[Int32, @style.Style]
 
 pub fn compute_layout_from_render_root(@node.Node, PreparedRenderDocument, RenderContext) -> @crater-core.Layout
 
 pub fn compute_shadow_element_style(@dom.DomTree, @dom.NodeId, Array[@cascade.CSSRule], @dom.NodeId, RenderContext, @style.Style?) -> @style.Style
 
-pub fn compute_shadow_tree_styles(@dom.DomTree, @dom.NodeId, RenderContext, @style.Style?) -> Map[Int, @style.Style]
+pub fn compute_shadow_tree_styles(@dom.DomTree, @dom.NodeId, RenderContext, @style.Style?) -> Map[Int32, @style.Style]
 
-pub fn compute_slotted_styles(@dom.DomTree, @dom.NodeId, RenderContext, @style.Style?) -> Map[Int, @style.Style]
+pub fn compute_slotted_styles(@dom.DomTree, @dom.NodeId, RenderContext, @style.Style?) -> Map[Int32, @style.Style]
 
 pub let crater_dom_id_attr : String
 
@@ -56,11 +56,11 @@ pub fn deserialize_text_metrics_recording(String) -> Array[RecordedMetric]
 
 pub fn element_to_node(@html.Element, @style.Style?) -> @node.Node
 
-pub fn get_content_height(String, Int, Int) -> Int
+pub fn get_content_height(String, Int32, Int32) -> Int32
 
-pub fn get_content_height_with_css(String, Int, Int, Array[String]) -> Int
+pub fn get_content_height_with_css(String, Int32, Int32, Array[String]) -> Int32
 
-pub fn get_content_height_with_document(@html.Document, Int, Int, Array[String]) -> Int
+pub fn get_content_height_with_document(@html.Document, Int32, Int32, Array[String]) -> Int32
 
 pub fn get_force_monospace_metrics() -> Bool
 
@@ -88,9 +88,9 @@ pub fn prepare_render_document(@html.Document, RenderContext, Array[String]) -> 
 
 pub fn prepare_render_document_with_prepared_external_css(@html.Document, RenderContext, PreparedExternalCss) -> PreparedRenderDocument
 
-pub fn print_layout_tree(@crater-core.Layout, Int) -> Unit
+pub fn print_layout_tree(@crater-core.Layout, Int32) -> Unit
 
-pub fn print_layout_tree_with_options(@crater-core.Layout, Int, Bool) -> Unit
+pub fn print_layout_tree_with_options(@crater-core.Layout, Int32, Bool) -> Unit
 
 pub fn render(String, RenderContext) -> @crater-core.Layout
 
@@ -153,7 +153,7 @@ pub struct PreparedExternalCss {
   after_rules : Array[PseudoRule]
   before_index : PseudoRuleIndex
   after_index : PseudoRuleIndex
-  total_rules : Int
+  total_rules : Int32
 }
 
 pub struct PreparedRenderDocument {
@@ -179,10 +179,10 @@ pub struct PseudoRule {
 
 pub struct PseudoRuleIndex {
   rules : Array[PseudoRule]
-  by_id : Map[String, Array[Int]]
-  by_class : Map[String, Array[Int]]
-  by_tag : Map[String, Array[Int]]
-  universal : Array[Int]
+  by_id : Map[String, Array[Int32]]
+  by_class : Map[String, Array[Int32]]
+  by_tag : Map[String, Array[Int32]]
+  universal : Array[Int32]
 }
 
 pub(all) struct RecordedImage {

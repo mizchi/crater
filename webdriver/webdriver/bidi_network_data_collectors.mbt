@@ -1,7 +1,7 @@
 ///|
 fn BidiProtocol::handle_network_remember_collected_data(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map = match params {
@@ -65,7 +65,7 @@ fn BidiProtocol::handle_network_remember_collected_data(
 ///|
 fn BidiProtocol::handle_network_get_data(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map = match params {
@@ -215,7 +215,7 @@ fn BidiProtocol::handle_network_get_data(
 ///|
 fn BidiProtocol::handle_network_disown_data(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map = match params {

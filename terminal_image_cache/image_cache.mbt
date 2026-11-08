@@ -1,24 +1,24 @@
 ///|
-let default_image_cache_max_bytes : Int = 8 * 1024 * 1024
+let default_image_cache_max_bytes : Int32 = 8 * 1024 * 1024
 
 ///|
 pub struct ImageCache {
   data : Map[String, String]
   order : Array[String]
-  mut total_bytes : Int
-  mut max_bytes : Int
+  mut total_bytes : Int32
+  mut max_bytes : Int32
 }
 
 ///|
 pub fn ImageCache::new(
-  max_bytes? : Int = default_image_cache_max_bytes,
+  max_bytes~ : Int32 = default_image_cache_max_bytes,
 ) -> ImageCache {
   { data: {}, order: [], total_bytes: 0, max_bytes: max_bytes.max(0), }
 }
 
 ///|
 fn remove_order_key(order : Array[String], src : String) -> Unit {
-  let mut found_idx : Int? = None
+  let mut found_idx : Int32? = None
   for i, key in order {
     if key == src {
       found_idx = Some(i)
@@ -48,7 +48,7 @@ fn ImageCache::evict_if_needed(self : ImageCache) -> Unit {
 }
 
 ///|
-pub fn ImageCache::set_max_bytes(self : ImageCache, max_bytes : Int) -> Unit {
+pub fn ImageCache::set_max_bytes(self : ImageCache, max_bytes : Int32) -> Unit {
   self.max_bytes = max_bytes.max(0)
   self.evict_if_needed()
 }
@@ -86,11 +86,11 @@ pub fn ImageCache::is_empty(self : ImageCache) -> Bool {
 }
 
 ///|
-pub fn ImageCache::total_bytes(self : ImageCache) -> Int {
+pub fn ImageCache::total_bytes(self : ImageCache) -> Int32 {
   self.total_bytes
 }
 
 ///|
-pub fn ImageCache::max_bytes(self : ImageCache) -> Int {
+pub fn ImageCache::max_bytes(self : ImageCache) -> Int32 {
   self.max_bytes
 }

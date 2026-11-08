@@ -54,8 +54,8 @@ pub fn compute_shadow_tree_styles(
   host : @dom.NodeId,
   ctx : RenderContext,
   host_parent_style : @style.Style?,
-) -> Map[Int, @style.Style] {
-  let styles : Map[Int, @style.Style] = Map([])
+) -> Map[Int32, @style.Style] {
+  let styles : Map[Int32, @style.Style] = Map([])
   let shadow_root = match tree.get_shadow_root(host) {
     Ok(Some(root)) => root
     _ => return styles
@@ -79,7 +79,7 @@ fn style_shadow_subtree(
   parent_node : @dom.NodeId,
   parent_style : @style.Style,
   ctx : RenderContext,
-  styles : Map[Int, @style.Style],
+  styles : Map[Int32, @style.Style],
 ) -> Unit {
   let children = match tree.get_children(parent_node) {
     Ok(children) => children
@@ -124,8 +124,8 @@ pub fn compute_slotted_styles(
   host : @dom.NodeId,
   ctx : RenderContext,
   host_style : @style.Style?,
-) -> Map[Int, @style.Style] {
-  let styles : Map[Int, @style.Style] = Map([])
+) -> Map[Int32, @style.Style] {
+  let styles : Map[Int32, @style.Style] = Map([])
   let shadow_root = match tree.get_shadow_root(host) {
     Ok(Some(root)) => root
     _ => return styles

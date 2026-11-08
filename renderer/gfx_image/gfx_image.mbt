@@ -28,7 +28,7 @@ pub fn ImageQuad2D::new(
   w~ : Double,
   h~ : Double,
   image~ : @gfx.ImageHandle,
-  tint? : @gfx.Color = @gfx.new_color(1.0, 1.0, 1.0, 1.0),
+  tint~ : @gfx.Color = @gfx.new_color(1.0, 1.0, 1.0, 1.0),
 ) -> ImageQuad2D {
   { x, y, w, h, image, tint, }
 }
@@ -68,7 +68,7 @@ pub fn image_quad_command(
   w : Double,
   h : Double,
   image : @gfx.ImageHandle,
-  tint? : @gfx.Color = @gfx.new_color(1.0, 1.0, 1.0, 1.0),
+  tint~ : @gfx.Color = @gfx.new_color(1.0, 1.0, 1.0, 1.0),
 ) -> @gfx.DrawTrianglesCommand {
   let (vertices, indices) = @gfx_frame.ndc_rect_vertices(
     x,

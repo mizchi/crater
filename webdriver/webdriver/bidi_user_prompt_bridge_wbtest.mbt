@@ -14,7 +14,7 @@
 /// draining the success response from the outbox.
 fn subscribe_event(
   proto : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   event_name : String,
   ctx_id : String,
 ) -> Unit {
@@ -71,7 +71,7 @@ fn collect_events(proto : BidiProtocol, ev : String) -> Array[String] {
 /// evaluate emitted (e.g. userPromptOpened from the in-realm bridge).
 fn run_sync_in_context_keep(
   proto : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   expr : String,
 ) -> Unit {
   let payload = "{\"id\":" +

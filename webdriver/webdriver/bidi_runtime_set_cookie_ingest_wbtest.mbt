@@ -47,7 +47,7 @@ fn make_proto_with_session_for_ingest() -> BidiProtocol {
 /// `captureInboundSetCookies` helper produces on a real response.
 fn push_pending_ingest(
   proto : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   url : String,
   set_cookie_headers : Array[String],
 ) -> Unit {
@@ -75,7 +75,7 @@ fn push_pending_ingest(
 
 ///|
 /// Issue storage.getCookies for session-1 and return the response JSON.
-fn get_cookies_json(proto : BidiProtocol, request_id : Int) -> String {
+fn get_cookies_json(proto : BidiProtocol, request_id : Int32) -> String {
   let payload = "{\"id\":" +
     request_id.to_string() +
     ",\"method\":\"storage.getCookies\",\"params\":{\"partition\":{\"type\":\"context\",\"context\":\"session-1\"}}}"
@@ -92,7 +92,7 @@ fn get_cookies_json(proto : BidiProtocol, request_id : Int) -> String {
 /// `apply_effective_viewport_to_runtime_context` codepath. That codepath
 /// drains the pending cookie buffer through
 /// `flush_pending_cookie_ingest`.
-fn trigger_flush(proto : BidiProtocol, request_id : Int) -> Unit {
+fn trigger_flush(proto : BidiProtocol, request_id : Int32) -> Unit {
   let payload = "{\"id\":" +
     request_id.to_string() +
     ",\"method\":\"script.evaluate\",\"params\":{\"expression\":\"0\",\"target\":{\"context\":\"session-1\"},\"awaitPromise\":false}}"

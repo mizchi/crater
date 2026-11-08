@@ -1,3 +1,11 @@
 members = [
   ".",
+  "../aomx",
+  "../core",
+  "../dom",
+  "../js",
+  "../layout",
+  "../painter",
+  "../renderer",
+  "../terminal_protocol",
 ]

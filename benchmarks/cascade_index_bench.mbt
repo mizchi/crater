@@ -4,7 +4,7 @@
 // Compare indexed vs non-indexed selector matching
 
 ///|
-fn create_test_stylesheet(num_rules : Int) -> @css.Stylesheet {
+fn create_test_stylesheet(num_rules : Int32) -> @css.Stylesheet {
   let stylesheet = @css.Stylesheet::new(@css.Origin::Author)
   // Create various selector patterns using helper functions
   for i = 0; i < num_rules; i = i + 1 {

@@ -4,12 +4,12 @@ pub using @paint_export {type PaintNode, type Framebuffer, type DynamicPalette}
 ///|
 #borrow(pixels)
 extern "js" fn framebuffer_to_png_base64_js(
-  width : Int,
-  height : Int,
-  pixels : FixedArray[Int],
-  palette_r : FixedArray[Int],
-  palette_g : FixedArray[Int],
-  palette_b : FixedArray[Int],
+  width : Int32,
+  height : Int32,
+  pixels : FixedArray[Int32],
+  palette_r : FixedArray[Int32],
+  palette_g : FixedArray[Int32],
+  palette_b : FixedArray[Int32],
 ) -> String =
   #|(width, height, pixels, pr, pg, pb) => {
   #|  const zlib = typeof require === "function" ? require("node:zlib") : null;
@@ -147,9 +147,9 @@ pub fn framebuffer_to_png_base64(
   fb : Framebuffer,
   palette : DynamicPalette,
 ) -> String {
-  let palette_r : Array[Int] = []
-  let palette_g : Array[Int] = []
-  let palette_b : Array[Int] = []
+  let palette_r : Array[Int32] = []
+  let palette_g : Array[Int32] = []
+  let palette_b : Array[Int32] = []
   for color in palette.colors {
     palette_r.push(color.r)
     palette_g.push(color.g)
@@ -168,8 +168,8 @@ pub fn framebuffer_to_png_base64(
 ///|
 pub fn raster_to_png_base64(
   paint_node : PaintNode,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
 ) -> String {
   let (fb, palette) = @paint_export.raster_to_framebuffer(
     paint_node, width, height,

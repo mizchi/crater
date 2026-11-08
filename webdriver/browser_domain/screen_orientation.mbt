@@ -27,7 +27,7 @@ pub fn is_valid_screen_orientation_type(value : String) -> Bool {
 pub fn compute_screen_orientation_angle(
   orientation_type : String,
   natural : String,
-) -> Int {
+) -> Int32 {
   match (natural, orientation_type) {
     ("portrait", "portrait-primary") => 0
     ("portrait", "landscape-primary") => 90

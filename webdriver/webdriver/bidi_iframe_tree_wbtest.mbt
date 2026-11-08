@@ -41,7 +41,7 @@ fn iframe_proto() -> BidiProtocol {
 /// Issue `createSyntheticChildContext` and return the response JSON.
 fn create_iframe_child(
   proto : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   parent_ctx_id : String,
   url : String,
 ) -> String {

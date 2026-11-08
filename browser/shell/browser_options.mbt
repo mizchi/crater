@@ -17,7 +17,7 @@ pub fn Browser::set_enable_cookies(self : Browser, enable : Bool) -> Unit {
 ///|
 pub fn Browser::set_image_cache_max_bytes(
   self : Browser,
-  max_bytes : Int,
+  max_bytes : Int32,
 ) -> Unit {
   self.image_cache.set_max_bytes(max_bytes)
 }
@@ -52,19 +52,19 @@ pub fn Browser::get_last_navigation_url(self : Browser) -> String? {
 
 ///|
 /// Get viewport height in pixels
-pub fn Browser::get_viewport_height(self : Browser) -> Int {
+pub fn Browser::get_viewport_height(self : Browser) -> Int32 {
   self.viewport_height
 }
 
 ///|
 /// Get number of extracted links
-pub fn Browser::get_link_count(self : Browser) -> Int {
+pub fn Browser::get_link_count(self : Browser) -> Int32 {
   self.links.length()
 }
 
 ///|
 /// Get currently focused link index
-pub fn Browser::get_focused_link_index(self : Browser) -> Int {
+pub fn Browser::get_focused_link_index(self : Browser) -> Int32 {
   self.focused_link
 }
 

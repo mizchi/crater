@@ -35,7 +35,7 @@ fn serialize_node_recursive(
   dom : @dom.DomTree,
   node_id : @dom.NodeId,
   buf : StringBuilder,
-  depth : Int,
+  depth : Int32,
 ) -> Unit {
   guard depth < 100 else { return } // Prevent infinite recursion
   let info = dom.get_node_info(node_id)

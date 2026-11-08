@@ -21,7 +21,7 @@ pub fn exit_alt_screen() -> String {
 
 ///|
 /// Move cursor to position (ANSI escape)
-pub fn move_cursor(row : Int, col : Int) -> String {
+pub fn move_cursor(row : Int32, col : Int32) -> String {
   "\u001b[" + row.to_string() + ";" + col.to_string() + "H"
 }
 
@@ -41,8 +41,8 @@ pub fn show_cursor() -> String {
 /// Status bar format
 pub fn format_status_bar(
   url : String,
-  link_count : Int,
-  focused : Int,
+  link_count : Int32,
+  focused : Int32,
 ) -> String {
   let buf = StringBuilder()
   buf.write_string("\u001b[7m") // Reverse video

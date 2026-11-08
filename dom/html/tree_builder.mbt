@@ -241,7 +241,7 @@ fn TreeBuilder::insert_characters(self : TreeBuilder, s : String) -> Unit {
 /// Flush pending text buffer to current element
 fn TreeBuilder::flush_pending_text(
   self : TreeBuilder,
-  next_tag? : String? = None,
+  next_tag~ : String? = None,
 ) -> Unit {
   if self.pending_text.is_empty() {
     return

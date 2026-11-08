@@ -23,8 +23,10 @@ pub fn AuthState::default() -> Self
 pub fn AuthState::header_for_origin(Self, String) -> String?
 pub fn AuthState::list_credential_origins(Self) -> Array[String]
 pub fn AuthState::list_origins(Self) -> Array[String]
+pub fn AuthState::output(Self, &Logger) -> Unit
 pub fn AuthState::set_origin_credentials(Self, String, String, String) -> Unit
 pub fn AuthState::set_origin_header(Self, String, String) -> Unit
+pub fn AuthState::to_string(Self) -> String
 pub impl Show for AuthState
 
 pub struct OriginCredentials {

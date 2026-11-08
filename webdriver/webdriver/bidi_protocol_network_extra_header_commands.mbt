@@ -2,7 +2,7 @@
 /// Handle network.setExtraHeaders
 fn BidiProtocol::handle_network_set_extra_headers(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match self.validate_network_set_extra_headers_params(request_id, params) {

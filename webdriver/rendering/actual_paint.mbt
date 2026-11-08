@@ -48,9 +48,9 @@ pub fn actual_paint_layout_content_bottom(
 pub fn actual_paint_document_dimensions_from_node_and_layout(
   node : @node.Node,
   layout : @layout_types.Layout,
-  viewport_width : Int,
-  viewport_height : Int,
-) -> (Int, Int) {
+  viewport_width : Int32,
+  viewport_height : Int32,
+) -> (Int32, Int32) {
   let width = actual_paint_node_layout_content_right(node, layout)
     .ceil()
     .to_int()
@@ -199,8 +199,8 @@ fn parse_glyph_outline_command_json(item : Json) -> @svg.PathCommand? {
 ///|
 fn parse_outline_xy(
   parts : Array[Json],
-  x_index : Int,
-  y_index : Int,
+  x_index : Int32,
+  y_index : Int32,
 ) -> (Double, Double)? {
   if parts.length() <= x_index || parts.length() <= y_index {
     return None
@@ -291,7 +291,7 @@ fn actual_paint_node_subtree_has_fixed_positioned(node : @node.Node) -> Bool {
 ///|
 fn actual_paint_node_layout_child(
   node : @node.Node,
-  index : Int,
+  index : Int32,
 ) -> @node.Node? {
   if index < node.children.length() {
     Some(node.children[index])

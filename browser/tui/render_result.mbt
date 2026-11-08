@@ -12,10 +12,10 @@ pub(all) struct RenderResult {
 ///|
 /// Region where an image should be rendered via graphics protocol.
 pub(all) struct ImageRegion {
-  col : Int // Start column in character grid
-  row : Int // Start row in character grid
-  width : Int // Width in characters
-  height : Int // Height in characters
+  col : Int32 // Start column in character grid
+  row : Int32 // Start row in character grid
+  width : Int32 // Width in characters
+  height : Int32 // Height in characters
   pixel_width : Double // Original pixel width
   pixel_height : Double // Original pixel height
   src : String // Image source URL

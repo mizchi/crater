@@ -16,7 +16,7 @@ fn BidiProtocol::handle_print(
 ///|
 fn BidiProtocol::handle_print_data(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match self.resolve_print_data(request_id, params) {
@@ -28,7 +28,7 @@ fn BidiProtocol::handle_print_data(
 ///|
 fn BidiProtocol::resolve_print_data(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> String? {
   let params = match params {

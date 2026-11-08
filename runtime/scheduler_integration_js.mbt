@@ -26,7 +26,7 @@ pub fn execute_script_task(
 pub fn process_script_tasks(
   scheduler : @scheduler.Scheduler,
   dom : @dom.DomTree,
-) -> Int {
+) -> Int32 {
   let mut processed = 0
   let ready_tasks = scheduler.poll_ready()
   for task in ready_tasks {

@@ -11,21 +11,21 @@ pub fn clear_image_provider() -> Unit
 
 pub fn create_svg_demo_scene() -> @svg.Scene
 
-pub let font_height : Int
+pub let font_height : Int32
 
-pub let font_width : Int
+pub let font_width : Int32
 
 pub fn framebuffer_to_rgba_base64(Framebuffer, DynamicPalette) -> String
 
-pub fn get_char_bitmap(Char) -> Array[Int]?
+pub fn get_char_bitmap(Char) -> Array[Int32]?
 
-pub fn get_depth_color(Int) -> Color
+pub fn get_depth_color(Int32) -> Color
 
 pub fn is_font_supported(Char) -> Bool
 
 pub fn render_paint_node_to_framebuffer(@model.PaintNode, Framebuffer, DynamicPalette) -> Unit
 
-pub fn render_paint_node_to_framebuffer_scrolled(@model.PaintNode, Framebuffer, DynamicPalette, Int) -> Unit
+pub fn render_paint_node_to_framebuffer_scrolled(@model.PaintNode, Framebuffer, DynamicPalette, Int32) -> Unit
 
 pub fn render_svg_scene(@svg.Scene, Framebuffer, DynamicPalette) -> Unit
 
@@ -37,19 +37,19 @@ pub fn set_image_provider(ImageProvider) -> Unit
 
 // Types and methods
 pub(all) struct ClipRect {
-  x : Int
-  y : Int
-  w : Int
-  h : Int
+  x : Int32
+  y : Int32
+  w : Int32
+  h : Int32
 }
 
 pub(all) struct Color {
-  r : Int
-  g : Int
-  b : Int
+  r : Int32
+  g : Int32
+  b : Int32
 }
 pub fn Color::black() -> Self
-pub fn Color::blend(Self, Self, Int) -> Self
+pub fn Color::blend(Self, Self, Int32) -> Self
 pub fn Color::blue() -> Self
 pub fn Color::gray() -> Self
 pub fn Color::green() -> Self
@@ -60,32 +60,32 @@ pub fn Color::yellow() -> Self
 
 pub struct DynamicPalette {
   colors : Array[Color]
-  color_map : Map[Int, Int]
+  color_map : Map[Int32, Int32]
 }
 pub fn DynamicPalette::new() -> Self
 
 pub struct Framebuffer {
-  width : Int
-  height : Int
-  pixels : Array[Int]
+  width : Int32
+  height : Int32
+  pixels : Array[Int32]
 }
-pub fn Framebuffer::crop(Self, Int, Int, Int, Int) -> Self
-pub fn Framebuffer::draw_char(Self, Int, Int, Char, Int, Int) -> Int
-pub fn Framebuffer::draw_text(Self, Int, Int, String, Int, Int, Int) -> Int
-pub fn Framebuffer::fill_rect(Self, Int, Int, Int, Int, Int) -> Unit
-pub fn Framebuffer::fill_rect_hatched(Self, Int, Int, Int, Int, Int, Int, Int) -> Unit
-pub fn Framebuffer::get_pixel(Self, Int, Int) -> Int
-pub fn Framebuffer::new(Int, Int) -> Self
-pub fn Framebuffer::stroke_rect(Self, Int, Int, Int, Int, Int) -> Unit
+pub fn Framebuffer::crop(Self, Int32, Int32, Int32, Int32) -> Self
+pub fn Framebuffer::draw_char(Self, Int32, Int32, Char, Int32, Int32) -> Int32
+pub fn Framebuffer::draw_text(Self, Int32, Int32, String, Int32, Int32, Int32) -> Int32
+pub fn Framebuffer::fill_rect(Self, Int32, Int32, Int32, Int32, Int32) -> Unit
+pub fn Framebuffer::fill_rect_hatched(Self, Int32, Int32, Int32, Int32, Int32, Int32, Int32) -> Unit
+pub fn Framebuffer::get_pixel(Self, Int32, Int32) -> Int32
+pub fn Framebuffer::new(Int32, Int32) -> Self
+pub fn Framebuffer::stroke_rect(Self, Int32, Int32, Int32, Int32, Int32) -> Unit
 
 pub(all) struct ImageProvider {
   resolve : (String) -> ResolvedImage?
 }
 
 pub(all) struct RasterImage {
-  width : Int
-  height : Int
-  rgba : Array[Int]
+  width : Int32
+  height : Int32
+  rgba : Array[Int32]
 }
 
 pub(all) enum ResolvedImage {

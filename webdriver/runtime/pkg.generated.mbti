@@ -28,7 +28,7 @@ pub fn quickjs_eval_module(String) -> @js_core.Any
 
 pub fn quickjs_eval_sync(String) -> String
 
-pub fn quickjs_eval_ws(@js_core.Any, Int, String, String) -> Unit
+pub fn quickjs_eval_ws(@js_core.Any, Int32, String, String) -> Unit
 
 pub fn quickjs_fetch(String) -> @js_core.Any
 

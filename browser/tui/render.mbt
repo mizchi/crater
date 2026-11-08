@@ -10,9 +10,9 @@ fn render_paint_node(
   parent_x : Double,
   parent_y : Double,
   inside_link : Bool,
-  current_link_source_id? : String? = None,
-  inside_pre? : Bool = false,
-  clip_rect? : (Double, Double, Double, Double)? = None,
+  current_link_source_id~ : String? = None,
+  inside_pre~ : Bool = false,
+  clip_rect~ : (Double, Double, Double, Double)? = None,
 ) -> Unit {
   // Skip invisible nodes
   if !node.paint.should_render() {

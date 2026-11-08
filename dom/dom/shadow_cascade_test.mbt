@@ -13,7 +13,7 @@ fn cascaded(values : @cascade.CascadedValues, property : String) -> String {
 /// matched against shadow-tree content via matches_shadow_scoped and cascaded
 /// through @css.cascade_declarations.
 test "shadow_cascaded_values applies :host and inner rules" {
-  let tree = DomTree::new()
+  let tree = @dom.DomTree::new()
   let doc = tree.get_document()
   let host = tree.create_element("div")
   let _ = tree.set_attribute(host, "class", "theme")
@@ -45,7 +45,7 @@ test "shadow_cascaded_values applies :host and inner rules" {
 
 ///|
 test "shadow_cascaded_values gates :host() on the host and skips bad selectors" {
-  let tree = DomTree::new()
+  let tree = @dom.DomTree::new()
   let doc = tree.get_document()
   let host = tree.create_element("div")
   let _ = tree.append_child(doc, host)
@@ -70,7 +70,7 @@ test "shadow_cascaded_values gates :host() on the host and skips bad selectors" 
 
 ///|
 test "shadow_cascaded_values resolves ::slotted against assigned light nodes" {
-  let tree = DomTree::new()
+  let tree = @dom.DomTree::new()
   let doc = tree.get_document()
   let host = tree.create_element("div")
   let _ = tree.append_child(doc, host)
@@ -98,7 +98,7 @@ test "shadow_cascaded_values resolves ::slotted against assigned light nodes" {
 
 ///|
 test "shadow_cascaded_values resolves specificity and source order" {
-  let tree = DomTree::new()
+  let tree = @dom.DomTree::new()
   let doc = tree.get_document()
   let host = tree.create_element("div")
   let _ = tree.append_child(doc, host)

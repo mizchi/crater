@@ -15,7 +15,7 @@ fn BidiProtocol::resolve_effective_geolocation_override(
 fn BidiProtocol::resolve_effective_geolocation_error_code(
   self : BidiProtocol,
   ctx_id : String,
-) -> Int? {
+) -> Int32? {
   if self.resolve_permission_state_for_context("geolocation", ctx_id) !=
     "granted" {
     return Some(1)
@@ -115,7 +115,7 @@ fn BidiProtocol::register_geolocation_watch(
   channel : String,
   notify_success : Bool,
   notify_error : Bool,
-) -> Int {
+) -> Int32 {
   let watch_id = self.next_geolocation_watch_id
   self.next_geolocation_watch_id = self.next_geolocation_watch_id + 1
   let scope_key = @browser_domain.geolocation_watch_scope_key(ctx_id, watch_id)
@@ -131,7 +131,7 @@ fn BidiProtocol::register_geolocation_watch(
 fn BidiProtocol::clear_geolocation_watch(
   self : BidiProtocol,
   ctx_id : String,
-  watch_id : Int,
+  watch_id : Int32,
 ) -> Unit {
   let scope_key = @browser_domain.geolocation_watch_scope_key(ctx_id, watch_id)
   self.geolocation_watch_channel_by_scope.remove(scope_key)
@@ -143,7 +143,7 @@ fn BidiProtocol::clear_geolocation_watch(
 ///|
 fn BidiProtocol::parse_geolocation_coordinates_param(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   raw_value : Json,
 ) -> (Bool, Json?) {
   match raw_value {
@@ -315,7 +315,7 @@ fn BidiProtocol::parse_geolocation_coordinates_param(
 ///|
 fn BidiProtocol::parse_geolocation_error_param(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   raw_value : Json,
 ) -> (Bool, String?) {
   match raw_value {
@@ -349,7 +349,7 @@ fn BidiProtocol::parse_geolocation_error_param(
 ///|
 fn BidiProtocol::resolve_emulation_set_geolocation_override(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Bool? {
   let map = match params {
@@ -550,7 +550,7 @@ fn BidiProtocol::resolve_emulation_set_geolocation_override(
 ///|
 fn BidiProtocol::try_handle_synthetic_geolocation_call(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   realm_id : String,
   function_declaration : String,

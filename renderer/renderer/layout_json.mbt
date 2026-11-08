@@ -50,7 +50,7 @@ pub fn layout_to_json(layout : @layout_types.Layout) -> String {
 }
 
 ///|
-fn estimate_layout_json_size(layout : @layout_types.Layout) -> Int {
+fn estimate_layout_json_size(layout : @layout_types.Layout) -> Int32 {
   let mut estimated = 120 + layout.id.length() * 2
   for child in layout.children {
     estimated = estimated + estimate_layout_json_size(child) + 2

@@ -3,7 +3,7 @@
 /// :host-context() / ::slotted(), plus combinators that cross the shadow-root
 /// boundary to the host.
 test "matches_shadow_scoped resolves :host and descendants" {
-  let tree = DomTree::new()
+  let tree = @dom.DomTree::new()
   let doc = tree.get_document()
   let html = tree.create_element("html")
   let body = tree.create_element("body")
@@ -19,7 +19,7 @@ test "matches_shadow_scoped resolves :host and descendants" {
   let _ = tree.set_attribute(inner, "class", "inside")
   let _ = tree.append_child(shadow, inner)
 
-  fn m(node : NodeId, selector : String) -> String {
+  fn m(node : @dom.NodeId, selector : String) -> String {
     match tree.matches_shadow_scoped(node, selector, host) {
       Ok(result) => result.to_string()
       Err(_) => "err"
@@ -56,7 +56,7 @@ test "matches_shadow_scoped resolves :host and descendants" {
 
 ///|
 test "matches_shadow_scoped resolves ::slotted" {
-  let tree = DomTree::new()
+  let tree = @dom.DomTree::new()
   let doc = tree.get_document()
   let host = tree.create_element("div")
   let _ = tree.append_child(doc, host)
@@ -71,7 +71,7 @@ test "matches_shadow_scoped resolves ::slotted" {
   let other = tree.create_element("section")
   let _ = tree.append_child(host, other)
 
-  fn m(node : NodeId, selector : String) -> String {
+  fn m(node : @dom.NodeId, selector : String) -> String {
     match tree.matches_shadow_scoped(node, selector, host) {
       Ok(result) => result.to_string()
       Err(_) => "err"

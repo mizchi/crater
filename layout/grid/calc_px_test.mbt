@@ -22,7 +22,7 @@ test "grid_min_width_calc_includes_px" {
   let root = @node.Node::new("root", root_style, [
     @node.Node::leaf("cell", default_style),
   ])
-  let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
+  let layout = @grid.compute_grid_layout(root, 800.0, 600.0, default_dispatch())
   inspect(layout.width, content="500")
 }
 
@@ -44,7 +44,7 @@ test "grid_max_width_calc_includes_px" {
   let root = @node.Node::new("root", root_style, [
     @node.Node::leaf("cell", default_style),
   ])
-  let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
+  let layout = @grid.compute_grid_layout(root, 800.0, 600.0, default_dispatch())
   inspect(layout.width, content="230")
 }
 
@@ -66,7 +66,7 @@ test "grid_max_width_does_not_shrink_fixed_track" {
   let root = @node.Node::new("root", root_style, [
     @node.Node::leaf("cell", default_style),
   ])
-  let layout = compute_grid_layout(root, 800.0, 600.0, default_dispatch())
+  let layout = @grid.compute_grid_layout(root, 800.0, 600.0, default_dispatch())
   // Container clamped to max-width: 25% * 800 + 30 = 230.
   inspect(layout.width, content="230")
   // Item keeps the fixed 700px track and overflows (not shrunk to 230).
@@ -106,7 +106,12 @@ test "grid named-line placement" {
     height: @types.Length(20.0),
   })
   let root = @node.Node::new("root", root_style, [side])
-  let layout = compute_grid_layout(root, 1000.0, 600.0, default_dispatch())
+  let layout = @grid.compute_grid_layout(
+    root,
+    1000.0,
+    600.0,
+    default_dispatch(),
+  )
   // The named item lands in the 240px sidebar column at x=0.
   inspect(layout.children[0].width, content="240")
   inspect(layout.children[0].x, content="0")
@@ -144,7 +149,12 @@ test "grid repeat() internal line names place by NamedLine" {
     height: @types.Length(20.0),
   })
   let root = @node.Node::new("root", root_style, [item])
-  let layout = compute_grid_layout(root, 1000.0, 600.0, default_dispatch())
+  let layout = @grid.compute_grid_layout(
+    root,
+    1000.0,
+    600.0,
+    default_dispatch(),
+  )
   inspect(layout.children[0].x, content="100")
   inspect(layout.children[0].width, content="100")
 }
@@ -180,7 +190,12 @@ test "grid named line after repeat stays aligned" {
     height: @types.Length(20.0),
   })
   let root = @node.Node::new("root", root_style, [item])
-  let layout = compute_grid_layout(root, 1000.0, 600.0, default_dispatch())
+  let layout = @grid.compute_grid_layout(
+    root,
+    1000.0,
+    600.0,
+    default_dispatch(),
+  )
   inspect(layout.children[0].x, content="200")
   inspect(layout.children[0].width, content="200")
 }
@@ -221,7 +236,12 @@ test "grid-area name falls back to named-line placement" {
     height: @types.Length(20.0),
   })
   let root = @node.Node::new("root", root_style, [side, content])
-  let layout = compute_grid_layout(root, 1000.0, 600.0, default_dispatch())
+  let layout = @grid.compute_grid_layout(
+    root,
+    1000.0,
+    600.0,
+    default_dispatch(),
+  )
   // side -> sidebar column (x=0, w=240); content -> content column (x=240, w=760)
   inspect(layout.children[0].x, content="0")
   inspect(layout.children[0].width, content="240")
@@ -268,7 +288,7 @@ test "grid display:contents wrapper keeps following sibling" {
   )
   let c = @node.Node::leaf("c", col(3))
   let root = @node.Node::new("root", root_style, [wrap, c])
-  let layout = compute_grid_layout(root, 600.0, 600.0, default_dispatch())
+  let layout = @grid.compute_grid_layout(root, 600.0, 600.0, default_dispatch())
   // wrap (contents) reconstructed with a,b inside; c is a direct child.
   let wrap_layout = layout.children[0]
   inspect(wrap_layout.children[0].x, content="0") // a -> col1
@@ -313,7 +333,7 @@ test "grid span N name resolves to the Nth named line" {
     height: @types.Length(20.0),
   })
   let root = @node.Node::new("root", root_style, [item])
-  let layout = compute_grid_layout(root, 500.0, 600.0, default_dispatch())
+  let layout = @grid.compute_grid_layout(root, 500.0, 600.0, default_dispatch())
   inspect(layout.children[0].x, content="0")
   inspect(layout.children[0].width, content="400")
 }

@@ -3,10 +3,10 @@
 
 ///|
 pub(all) struct HitRegion {
-  col : Int
-  row : Int
-  width : Int
-  height : Int
+  col : Int32
+  row : Int32
+  width : Int32
+  height : Int32
   pixel_x : Double
   pixel_y : Double
   pixel_width : Double
@@ -19,19 +19,26 @@ pub(all) struct HitRegion {
   radius_top_right : Double
   radius_bottom_right : Double
   radius_bottom_left : Double
-  scroll_y : Int
+  scroll_y : Int32
   visual_shape : HitClipShape
   clip_shape : HitClipShape
   source_id : String
 }
 
 ///|
+#derive(Debug, Eq)
 pub(all) enum HitClipShape {
   Rect
   Circle(Double, Double, Double) // center-x, center-y, radius
   Ellipse(Double, Double, Double, Double) // center-x, center-y, radius-x, radius-y
   Polygon(Array[(Double, Double)])
-} derive(Debug, Eq)
+}
+
+///|
+pub extend HitClipShape with @debug.Debug::{to_repr}
+
+///|
+pub extend HitClipShape with Eq::{not_equal, equal}
 
 ///|
 fn collect_hit_region(
@@ -105,8 +112,8 @@ fn collect_hit_region(
 ///|
 pub fn find_hit_region_at(
   regions : Array[HitRegion],
-  col : Int,
-  row : Int,
+  col : Int32,
+  row : Int32,
 ) -> HitRegion? {
   if regions.is_empty() {
     return None

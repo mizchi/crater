@@ -76,7 +76,7 @@ fn assert_formatting_reparented_across_paragraph(
 }
 
 ///|
-fn count_direct_element_children(elem : @html.Element, tag : String) -> Int {
+fn count_direct_element_children(elem : @html.Element, tag : String) -> Int32 {
   let mut count = 0
   for child in elem.children {
     match child {

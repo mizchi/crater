@@ -13,34 +13,50 @@ pub using @contract {type ApiError, type ApiMethod}
 
 ///|
 /// JSON-RPC request
+#derive(Debug)
 pub(all) struct RpcRequest {
   jsonrpc : String // Should be "2.0"
   id : RpcId
   method_name : String
   params : Map[String, String] // Simplified: all params as strings
-} derive(Debug)
+}
+
+///|
+pub extend RpcRequest with @debug.Debug::{to_repr}
 
 ///|
 /// JSON-RPC request ID (can be string or number)
+#derive(Debug, Eq)
 pub(all) enum RpcId {
-  Num(Int)
+  Num(Int32)
   Str(String)
   Null
-} derive(Debug, Eq)
+}
+
+///|
+pub extend RpcId with @debug.Debug::{to_repr}
+
+///|
+pub extend RpcId with Eq::{not_equal, equal}
 
 ///|
 /// JSON-RPC response
+#derive(Debug)
 pub(all) enum RpcResponse {
   Success(id~ : RpcId, result~ : String) // result is JSON string
-  Error(id~ : RpcId, code~ : Int, message~ : String, data~ : String?)
-} derive(Debug)
+  Error(id~ : RpcId, code~ : Int32, message~ : String, data~ : String?)
+}
 
 // =============================================================================
 // JSON-RPC Error Codes
 // =============================================================================
 
 ///|
+pub extend RpcResponse with @debug.Debug::{to_repr}
+
+///|
 /// Standard JSON-RPC error codes
+#derive(Debug, Eq)
 pub(all) enum RpcErrorCode {
   ParseError // -32700
   InvalidRequest // -32600
@@ -52,7 +68,13 @@ pub(all) enum RpcErrorCode {
   PageNotFound // -32001
   Timeout // -32002
   NavigationFailed // -32003
-} derive(Debug, Eq)
+}
+
+///|
+pub extend RpcErrorCode with @debug.Debug::{to_repr}
+
+///|
+pub extend RpcErrorCode with Eq::{not_equal, equal}
 
 ///|
 pub impl Show for RpcRequest with fn output(self, logger) {
@@ -66,6 +88,9 @@ pub impl Show for RpcRequest with fn output(self, logger) {
   logger.write_object(Repr(self.params))
   logger.write_string("}")
 }
+
+///|
+pub extend RpcRequest with Show::{to_string, output}
 
 ///|
 pub impl Show for RpcId with fn output(self, logger) {
@@ -83,6 +108,9 @@ pub impl Show for RpcId with fn output(self, logger) {
     Null => logger.write_string("Null")
   }
 }
+
+///|
+pub extend RpcId with Show::{to_string, output}
 
 ///|
 pub impl Show for RpcResponse with fn output(self, logger) {
@@ -109,6 +137,9 @@ pub impl Show for RpcResponse with fn output(self, logger) {
 }
 
 ///|
+pub extend RpcResponse with Show::{to_string, output}
+
+///|
 pub impl Show for RpcErrorCode with fn output(self, logger) {
   match self {
     ParseError => logger.write_string("ParseError")
@@ -124,8 +155,11 @@ pub impl Show for RpcErrorCode with fn output(self, logger) {
 }
 
 ///|
+pub extend RpcErrorCode with Show::{to_string, output}
+
+///|
 /// Get numeric error code
-pub fn RpcErrorCode::code(self : RpcErrorCode) -> Int {
+pub fn RpcErrorCode::code(self : RpcErrorCode) -> Int32 {
   match self {
     ParseError => -32700
     InvalidRequest => -32600
@@ -352,7 +386,7 @@ pub fn parse_json_object(json : String) -> Map[String, String] {
 
 ///|
 /// Get substring
-fn substring(s : String, start : Int, end : Int) -> String {
+fn substring(s : String, start : Int32, end : Int32) -> String {
   let buf = StringBuilder()
   let mut i = 0
   for c in s.iter() {

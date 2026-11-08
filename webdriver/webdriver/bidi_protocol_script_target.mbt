@@ -3,7 +3,7 @@
 /// Returns Some(()) if error was sent, None if valid
 fn BidiProtocol::validate_script_target(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit? {
   match get_param_raw(params, "target") {

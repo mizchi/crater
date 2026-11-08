@@ -12,9 +12,9 @@ pub struct TargetDomain {
   /// Active browser context ID
   mut active_context_id : String?
   /// ID generators
-  mut next_context_id : Int
-  mut next_target_id : Int
-  mut next_session_id : Int
+  mut next_context_id : Int32
+  mut next_target_id : Int32
+  mut next_session_id : Int32
   /// Auto-attach setting
   mut auto_attach : Bool
   /// Discover targets setting
@@ -37,6 +37,7 @@ pub fn TargetDomain::new() -> TargetDomain {
 
 ///|
 /// Target info structure (for CDP responses)
+#derive(Debug)
 pub struct TargetInfo {
   target_id : String
   target_type : String // "page", "browser", etc.
@@ -44,11 +45,14 @@ pub struct TargetInfo {
   url : String
   attached : Bool
   browser_context_id : String?
-} derive(Debug)
+}
 
 // =============================================================================
 // Browser Context Management
 // =============================================================================
+
+///|
+pub extend TargetInfo with @debug.Debug::{to_repr}
 
 ///|
 /// Target.createBrowserContext

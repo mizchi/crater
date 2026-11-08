@@ -2,7 +2,7 @@
 /// Maximum length in bytes for a stored Authorization header value.
 /// Real-world JWTs are typically under 4 KB; 8 KB leaves headroom
 /// without making it cheap to wedge unbounded state.
-const AUTH_HEADER_VALUE_LIMIT : Int = 8192
+const AUTH_HEADER_VALUE_LIMIT : Int32 = 8192
 
 ///|
 /// Normalize an origin per the spec: only http/https, no path/query/
@@ -71,7 +71,7 @@ fn validate_header_value(value : String) -> Result[Unit, String] {
 fn BidiProtocol::resolve_authorization_context(
   self : BidiProtocol,
   map : Map[String, Json],
-  request_id : Int,
+  request_id : Int32,
 ) -> String? {
   match map.get("context") {
     Some(String(ctx)) =>
@@ -105,7 +105,7 @@ fn BidiProtocol::resolve_authorization_context(
 /// the per-session profile under a normalized origin key.
 fn BidiProtocol::handle_crater_set_origin_authorization(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map = match params {
@@ -166,7 +166,7 @@ fn BidiProtocol::handle_crater_set_origin_authorization(
 /// for the normalized origin from the per-session profile.
 fn BidiProtocol::handle_crater_clear_origin_authorization(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map = match params {
@@ -211,7 +211,7 @@ fn BidiProtocol::handle_crater_clear_origin_authorization(
 /// registered origins without exposing any header values.
 fn BidiProtocol::handle_crater_list_origin_authorizations(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map : Map[String, Json] = match params {

@@ -4,7 +4,7 @@ package "mizchi/crater-wasm/gen/interface/mizchi/crater/accessibility"
 // Values
 pub fn extract_main_content(String) -> String
 
-pub fn extract_main_content_with_layout(String, Int, Int) -> String
+pub fn extract_main_content_with_layout(String, Int32, Int32) -> String
 
 pub fn get_accessibility_tree(String) -> String
 

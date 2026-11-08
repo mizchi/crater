@@ -22,7 +22,7 @@
 pub fn LayoutTree::reconcile_from(
   prev : LayoutTree,
   new_root : @node.Node,
-  dirty_uids : Array[Int],
+  dirty_uids : Array[Int32],
   viewport_width : Double,
   viewport_height : Double,
 ) -> LayoutTree {
@@ -31,7 +31,7 @@ pub fn LayoutTree::reconcile_from(
   // (same uid) migrate the cached geometry and clear the dirty flag so they can
   // be served from cache; record nodes whose child set changed (a structural
   // mutation). New nodes (no match) stay dirty and recompute.
-  let structural : Array[Int] = []
+  let structural : Array[Int32] = []
   next.node_map.each(fn(uid, node) {
     match prev.node_map.get(uid) {
       Some(old) => {
@@ -71,16 +71,16 @@ pub fn LayoutTree::reconcile_from(
 /// equal a full recompute while still reusing everything *before* the change.
 pub fn LayoutTree::flow_dirty_uids(
   self : LayoutTree,
-  seed : Array[Int],
-) -> Array[Int] {
-  let result : Map[Int, Bool] = Map([])
+  seed : Array[Int32],
+) -> Array[Int32] {
+  let result : Map[Int32, Bool] = Map([])
   for uid in seed {
     result[uid] = true
   }
   for uid in seed {
     self.collect_following_siblings(uid, result)
   }
-  let out : Array[Int] = []
+  let out : Array[Int32] = []
   result.each(fn(uid, _present) { out.push(uid) })
   out
 }
@@ -90,8 +90,8 @@ pub fn LayoutTree::flow_dirty_uids(
 /// parent's level (the parent's following siblings shift too).
 fn LayoutTree::collect_following_siblings(
   self : LayoutTree,
-  cur : Int,
-  result : Map[Int, Bool],
+  cur : Int32,
+  result : Map[Int32, Bool],
 ) -> Unit {
   match self.get_parent(cur) {
     None => ()
@@ -111,7 +111,7 @@ fn LayoutTree::collect_following_siblings(
 }
 
 ///|
-fn add_subtree_uids(node : LayoutNode, result : Map[Int, Bool]) -> Unit {
+fn add_subtree_uids(node : LayoutNode, result : Map[Int32, Bool]) -> Unit {
   result[node.uid] = true
   for child in node.children {
     add_subtree_uids(child, result)

@@ -1,7 +1,7 @@
 ///|
 fn BidiProtocol::resolve_existing_user_prompt(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   prompt_ctx_id : String,
   accepted : Bool,
   user_text : String?,
@@ -114,7 +114,7 @@ fn BidiProtocol::resolve_existing_user_prompt(
 fn BidiProtocol::resume_beforeunload_navigation_after_prompt(
   self : BidiProtocol,
   prompt_ctx_id : String,
-  nav_request_id : Int,
+  nav_request_id : Int32,
   nav_url : String,
   pending_beforeunload_requested_url : String?,
   pending_beforeunload_wait : String,

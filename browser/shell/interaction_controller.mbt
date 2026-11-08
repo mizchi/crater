@@ -1,10 +1,10 @@
 ///|
-fn cell_to_client_x(col : Int) -> Int {
+fn cell_to_client_x(col : Int32) -> Int32 {
   col * 8 + 4
 }
 
 ///|
-fn cell_to_client_y(row : Int) -> Int {
+fn cell_to_client_y(row : Int32) -> Int32 {
   let viewport_row = if row > 0 { row } else { 0 }
   viewport_row * 16 + 8
 }
@@ -13,7 +13,7 @@ fn cell_to_client_y(row : Int) -> Int {
 fn Browser::get_client_coords_for_source_id(
   self : Browser,
   source_id : String,
-) -> (Int, Int)? {
+) -> (Int32, Int32)? {
   if self.hit_regions.is_empty() {
     return None
   }
@@ -132,7 +132,7 @@ pub async fn Browser::activate_focused_link(
 }
 
 ///|
-pub fn Browser::hover_at(self : Browser, col : Int, row : Int) -> Bool {
+pub fn Browser::hover_at(self : Browser, col : Int32, row : Int32) -> Bool {
   let next_source_id = self.get_hover_source_id_at(col, row)
   let changed = self.dispatch_hover_transition(
     self.hovered_source_id,
@@ -145,7 +145,11 @@ pub fn Browser::hover_at(self : Browser, col : Int, row : Int) -> Bool {
 }
 
 ///|
-pub fn Browser::pointer_down_at(self : Browser, col : Int, row : Int) -> Bool {
+pub fn Browser::pointer_down_at(
+  self : Browser,
+  col : Int32,
+  row : Int32,
+) -> Bool {
   let source_id = self.get_hover_source_id_at(col, row)
   self.hovered_source_id = source_id
   self.dragging_source_id = None
@@ -179,7 +183,11 @@ pub fn Browser::pointer_down_at(self : Browser, col : Int, row : Int) -> Bool {
 }
 
 ///|
-pub fn Browser::pointer_move_at(self : Browser, col : Int, row : Int) -> Bool {
+pub fn Browser::pointer_move_at(
+  self : Browser,
+  col : Int32,
+  row : Int32,
+) -> Bool {
   let client_x = cell_to_client_x(col)
   let client_y = cell_to_client_y(row)
   let mut changed = self.hover_at(col, row)
@@ -298,8 +306,8 @@ pub fn Browser::pointer_move_at(self : Browser, col : Int, row : Int) -> Bool {
 ///|
 pub async fn Browser::pointer_up_at(
   self : Browser,
-  col : Int,
-  row : Int,
+  col : Int32,
+  row : Int32,
 ) -> Bool raise @http.HttpError {
   let client_x = cell_to_client_x(col)
   let client_y = cell_to_client_y(row)
@@ -396,8 +404,8 @@ pub async fn Browser::pointer_up_at(
 ///|
 pub async fn Browser::activate_at(
   self : Browser,
-  col : Int,
-  row : Int,
+  col : Int32,
+  row : Int32,
 ) -> Bool raise @http.HttpError {
   let source_id = self.get_source_id_at(col, row)
   let href = match self.get_link_at(col, row) {
@@ -463,8 +471,8 @@ pub async fn Browser::activate_at(
 ///|
 pub async fn Browser::activate_link_at(
   self : Browser,
-  col : Int,
-  row : Int,
+  col : Int32,
+  row : Int32,
 ) -> Bool raise @http.HttpError {
   self.activate_at(col, row)
 }

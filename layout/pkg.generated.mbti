@@ -10,7 +10,7 @@ import {
 }
 
 // Values
-pub fn clear_intrinsic_cache_for_node(Int) -> Unit
+pub fn clear_intrinsic_cache_for_node(Int32) -> Unit
 
 pub fn compute_block_layout(@node.Node, @crater-core.LayoutContext) -> @crater-core.Layout
 

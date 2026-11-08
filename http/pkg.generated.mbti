@@ -24,20 +24,26 @@ pub(all) suberror HttpError {
   CorsBlocked(String)
   PreflightFailed(String)
 }
+pub fn HttpError::output(Self, &Logger) -> Unit
+pub fn HttpError::to_string(Self) -> String
 pub impl Show for HttpError
 
 // Types and methods
+#derive(Eq, @debug.Debug)
 pub(all) enum CredentialsMode {
   Omit
   SameOrigin
   Include
-} derive(Eq, @debug.Debug)
+}
+pub fn CredentialsMode::equal(Self, Self) -> Bool
+pub fn CredentialsMode::not_equal(Self, Self) -> Bool
+pub fn CredentialsMode::to_repr(Self) -> @debug.Repr
 
 pub(all) struct FetchOptions {
   http_method : String
   headers : Map[String, String]
   body : String
-  timeout_ms : Int
+  timeout_ms : Int32
   mode : RequestMode
   credentials : CredentialsMode
   origin : String
@@ -46,23 +52,29 @@ pub(all) struct FetchOptions {
 pub fn FetchOptions::default() -> Self
 
 pub(all) struct HttpResponse {
-  status : Int
+  status : Int32
   headers : Map[String, String]
   body : String
 }
 
+#derive(Eq, @debug.Debug)
 pub(all) enum RequestMode {
   Navigate
   SameOrigin
   NoCors
   Cors
-} derive(Eq, @debug.Debug)
+}
+pub fn RequestMode::equal(Self, Self) -> Bool
+pub fn RequestMode::not_equal(Self, Self) -> Bool
+pub fn RequestMode::to_repr(Self) -> @debug.Repr
 
+#derive(@debug.Debug)
 pub(all) enum RequestSandbox {
   Open
   SameOrigin
   Allowlist(Array[String])
-} derive(@debug.Debug)
+}
+pub fn RequestSandbox::to_repr(Self) -> @debug.Repr
 
 // Type aliases
 

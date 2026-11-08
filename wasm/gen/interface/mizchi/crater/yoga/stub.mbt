@@ -2,7 +2,7 @@
 
 ///|
 /// Create a new node
-pub fn create_node(id : String) -> UInt {
+pub fn create_node(id : String) -> UInt32 {
   @crater.createNode(id).reinterpret_as_uint()
 }
 
@@ -17,20 +17,20 @@ pub fn add_child(parent_id : String, child_id : String) -> Bool {
 pub fn insert_child(
   parent_id : String,
   child_id : String,
-  index : UInt,
+  index : UInt32,
 ) -> Bool {
   @crater.insertChild(parent_id, child_id, index.reinterpret_as_int())
 }
 
 ///|
 /// Remove child at index
-pub fn remove_child(parent_id : String, index : UInt) -> Bool {
+pub fn remove_child(parent_id : String, index : UInt32) -> Bool {
   @crater.removeChild(parent_id, index.reinterpret_as_int())
 }
 
 ///|
 /// Get child count
-pub fn get_child_count(node_id : String) -> UInt {
+pub fn get_child_count(node_id : String) -> UInt32 {
   @crater.getChildCount(node_id).reinterpret_as_uint()
 }
 

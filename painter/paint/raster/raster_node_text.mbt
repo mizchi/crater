@@ -6,10 +6,10 @@ fn render_node_text_content(
   fb : Framebuffer,
   palette : DynamicPalette,
   node : @paint_model.PaintNode,
-  x : Int,
-  y : Int,
-  w : Int,
-  h : Int,
+  x : Int32,
+  y : Int32,
+  w : Int32,
+  h : Int32,
   clip : ClipRect?,
 ) -> Unit {
   match node.text {
@@ -76,9 +76,9 @@ fn render_node_text_decorations(
   fb : Framebuffer,
   palette : DynamicPalette,
   node : @paint_model.PaintNode,
-  x : Int,
-  y : Int,
-  w : Int,
+  x : Int32,
+  y : Int32,
+  w : Int32,
   clip : ClipRect?,
 ) -> Unit {
   match node.text {

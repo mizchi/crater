@@ -4,7 +4,7 @@
 ///|
 test "JsContext::new creates context with DOM" {
   let dom = @dom.DomTree::new()
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   // Verify we can get DOM back
   let _ = ctx.get_dom()
 }
@@ -12,7 +12,7 @@ test "JsContext::new creates context with DOM" {
 ///|
 test "JsContext logs management" {
   let dom = @dom.DomTree::new()
-  let ctx = JsContext::new(dom)
+  let ctx = @js.JsContext::new(dom)
   inspect(ctx.get_logs().length(), content="0")
   ctx.clear_logs()
   inspect(ctx.get_logs().length(), content="0")
@@ -21,7 +21,7 @@ test "JsContext logs management" {
 ///|
 /// Mock runtime for trait abstraction tests
 priv struct MockRuntime {
-  init_calls : Ref[Int]
+  init_calls : Ref[Int32]
 }
 
 ///|
@@ -32,34 +32,34 @@ impl JsRuntime for MockRuntime with fn init(self : MockRuntime) -> Unit {
 ///|
 impl JsRuntime for MockRuntime with fn execute(
   self : MockRuntime,
-  context_id : Int,
+  context_id : Int32,
   dom : @dom.DomTree,
   code : String,
-  async_mode : AsyncExecutionMode,
-) -> JsResult raise JsError {
+  async_mode : @js.AsyncExecutionMode,
+) -> @js.JsResult raise @js.JsError {
   let _ = self
   let _ = context_id
   let _ = dom
   let _ = async_mode
-  JsResult::new("mock:" + code, ["mock-log"], true)
+  @js.JsResult::new("mock:" + code, ["mock-log"], true)
 }
 
 ///|
 impl JsRuntime for MockRuntime with fn tick(
   self : MockRuntime,
-  context_id : Int,
+  context_id : Int32,
   dom : @dom.DomTree,
-) -> JsResult raise JsError {
+) -> @js.JsResult raise @js.JsError {
   let _ = self
   let _ = context_id
   let _ = dom
-  JsResult::new("false", ["mock-tick"], true)
+  @js.JsResult::new("false", ["mock-tick"], true)
 }
 
 ///|
 /// Mock runtime that returns failure result
 priv struct FailRuntime {
-  init_calls : Ref[Int]
+  init_calls : Ref[Int32]
 }
 
 ///|
@@ -70,29 +70,29 @@ impl JsRuntime for FailRuntime with fn init(self : FailRuntime) -> Unit {
 ///|
 impl JsRuntime for FailRuntime with fn execute(
   self : FailRuntime,
-  context_id : Int,
+  context_id : Int32,
   dom : @dom.DomTree,
   code : String,
-  async_mode : AsyncExecutionMode,
-) -> JsResult raise JsError {
+  async_mode : @js.AsyncExecutionMode,
+) -> @js.JsResult raise @js.JsError {
   let _ = self
   let _ = context_id
   let _ = dom
   let _ = code
   let _ = async_mode
-  JsResult::new("boom", ["before-fail"], false)
+  @js.JsResult::new("boom", ["before-fail"], false)
 }
 
 ///|
 impl JsRuntime for FailRuntime with fn tick(
   self : FailRuntime,
-  context_id : Int,
+  context_id : Int32,
   dom : @dom.DomTree,
-) -> JsResult raise JsError {
+) -> @js.JsResult raise @js.JsError {
   let _ = self
   let _ = context_id
   let _ = dom
-  JsResult::new("boom", ["tick-fail"], false)
+  @js.JsResult::new("boom", ["tick-fail"], false)
 }
 
 ///|
@@ -100,7 +100,7 @@ test "JsContext::new_with_runtime uses runtime trait for execution" {
   let dom = @dom.DomTree::new()
   let init_calls = Ref(0)
   let runtime : MockRuntime = { init_calls, }
-  let ctx = JsContext::new_with_runtime(dom, runtime as &JsRuntime)
+  let ctx = @js.JsContext::new_with_runtime(dom, runtime as &JsRuntime)
   let result = ctx.execute("1 + 2")
   inspect(result.success, content="true")
   inspect(result.value, content="mock:1 + 2")
@@ -114,7 +114,7 @@ test "JsContext::execute raises ExecutionError when runtime returns failure" {
   let dom = @dom.DomTree::new()
   let init_calls = Ref(0)
   let runtime : FailRuntime = { init_calls, }
-  let ctx = JsContext::new_with_runtime(dom, runtime as &JsRuntime)
+  let ctx = @js.JsContext::new_with_runtime(dom, runtime as &JsRuntime)
   let err_text = try {
     let _ = ctx.execute("throw new Error('x')")
     ""
@@ -132,7 +132,7 @@ test "JsContext::execute calls runtime.init on each execution" {
   let dom = @dom.DomTree::new()
   let init_calls = Ref(0)
   let runtime : MockRuntime = { init_calls, }
-  let ctx = JsContext::new_with_runtime(dom, runtime as &JsRuntime)
+  let ctx = @js.JsContext::new_with_runtime(dom, runtime as &JsRuntime)
   let _ = ctx.execute("first")
   let _ = ctx.execute("second")
   inspect(ctx.get_logs().length(), content="2")
@@ -142,6 +142,6 @@ test "JsContext::execute calls runtime.init on each execution" {
 ///|
 test "JsContext::new_deferred configures deferred async mode" {
   let dom = @dom.DomTree::new()
-  let ctx = JsContext::new_deferred(dom)
+  let ctx = @js.JsContext::new_deferred(dom)
   let _ = ctx.get_dom()
 }

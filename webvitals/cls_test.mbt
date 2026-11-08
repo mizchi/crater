@@ -8,7 +8,7 @@ test "CLS: element shift calculation" {
   let before = @types.BoundingRect::new(0.0, 0.0, 800.0, 300.0)
   // After: element moved down by 25% (150px)
   let after = @types.BoundingRect::new(0.0, 150.0, 800.0, 300.0)
-  let shift = compute_element_shift(before, after, viewport)
+  let shift = @crater-webvitals.compute_element_shift(before, after, viewport)
 
   // Impact fraction: union covers 75% of viewport (0 to 450 = 450/600 height)
   // Union: x=0, y=0, width=800, height=450
@@ -28,7 +28,7 @@ test "CLS: element shift calculation" {
 test "CLS: no movement = zero score" {
   let viewport = @types.Size::new(1920.0, 1080.0)
   let rect = @types.BoundingRect::new(100.0, 100.0, 200.0, 150.0)
-  let shift = compute_element_shift(rect, rect, viewport)
+  let shift = @crater-webvitals.compute_element_shift(rect, rect, viewport)
   inspect(shift.distance_fraction, content="0")
   inspect(shift.score, content="0")
 }
@@ -44,7 +44,7 @@ test "CLS: total score for multiple elements" {
     @types.BoundingRect::new(0.0, 100.0, 500.0, 200.0), // moved down 100px
     @types.BoundingRect::new(0.0, 300.0, 500.0, 200.0), // moved down 100px
   ]
-  let total = compute_total(before, after, viewport)
+  let total = @crater-webvitals.compute_total(before, after, viewport)
   // Both elements shifted, total should be sum of individual scores
   inspect(total > 0.0, content="true")
 }

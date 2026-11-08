@@ -320,8 +320,8 @@ pub fn synthetic_network_query_values(
 pub fn synthetic_network_int_query_param(
   url : String,
   key : String,
-  default_value : Int,
-) -> Int {
+  default_value : Int32,
+) -> Int32 {
   match synthetic_network_first_query_value(url, key) {
     Some(value) =>
       match parse_decimal_string(value) {
@@ -422,7 +422,7 @@ pub fn synthetic_network_infer_mime_type(url : String, path : String) -> String 
 }
 
 ///|
-pub fn synthetic_network_status_text_for_code(status : Int) -> String {
+pub fn synthetic_network_status_text_for_code(status : Int32) -> String {
   match status {
     101 => "Switching Protocols"
     200 => "OK"
@@ -567,7 +567,7 @@ fn synthetic_network_default_response_overrides() -> SyntheticNetworkResponseOve
 }
 
 ///|
-fn has_valid_http_host(url : String, scheme_len : Int) -> Bool {
+fn has_valid_http_host(url : String, scheme_len : Int32) -> Bool {
   if url.length() <= scheme_len {
     return false
   }

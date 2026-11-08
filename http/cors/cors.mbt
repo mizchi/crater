@@ -33,6 +33,9 @@ pub impl Show for CorsDecision with fn output(self, logger) {
 }
 
 ///|
+pub extend CorsDecision with Show::{to_string, output}
+
+///|
 /// Descriptor for the OPTIONS preflight that classify_request demands
 /// when the actual request is not a simple CORS request.
 ///
@@ -61,6 +64,9 @@ pub impl Show for PreflightRequest with fn output(self, logger) {
 }
 
 ///|
+pub extend PreflightRequest with Show::{to_string, output}
+
+///|
 /// Cached result of a successful preflight. `expires_at_seconds` is a
 /// monotonic clock value (Unix seconds as Double for sub-second
 /// granularity); when the cache asks "is this entry still valid?" it
@@ -86,7 +92,7 @@ pub(all) struct PreflightEntry {
 pub struct PreflightCache {
   entries : Map[String, PreflightEntry]
   insertion_order : Array[String]
-  max_entries : Int
+  max_entries : Int32
 }
 
 ///|
@@ -94,7 +100,7 @@ pub struct PreflightCache {
 /// (default 512). The cap is a self-DoS bound: same justification as
 /// MemoryCacheBackend's max_entries=1000. Hitting the cap evicts the
 /// oldest entry in FIFO insertion order.
-pub fn PreflightCache::new(max_entries? : Int = 512) -> PreflightCache {
+pub fn PreflightCache::new(max_entries~ : Int32 = 512) -> PreflightCache {
   PreflightCache::{ entries: {}, insertion_order: [], max_entries, }
 }
 

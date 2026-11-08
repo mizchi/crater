@@ -11,7 +11,7 @@
 /// painting nothing.
 
 ///|
-fn clamp_byte(v : Int) -> Int {
+fn clamp_byte(v : Int32) -> Int32 {
   if v < 0 {
     0
   } else if v > 255 {

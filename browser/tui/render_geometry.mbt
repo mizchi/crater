@@ -10,13 +10,13 @@ let font_height : Double = 16.0
 
 ///|
 /// Convert pixel X to character column (truncates for position).
-pub fn px_to_col(px : Double) -> Int {
+pub fn px_to_col(px : Double) -> Int32 {
   (px / font_width).to_int()
 }
 
 ///|
 /// Convert pixel width to character width (rounds up to ensure content fits).
-fn px_to_col_width(px : Double) -> Int {
+fn px_to_col_width(px : Double) -> Int32 {
   let result = px / font_width
   let int_part = result.to_int()
   if result > int_part.to_double() {
@@ -28,7 +28,7 @@ fn px_to_col_width(px : Double) -> Int {
 
 ///|
 /// Convert pixel Y to character row.
-pub fn px_to_row(px : Double) -> Int {
+pub fn px_to_row(px : Double) -> Int32 {
   (px / font_height).to_int()
 }
 
@@ -39,13 +39,13 @@ pub fn px_to_row(px : Double) -> Int {
 /// use a slightly smaller line height. Snapping pre/code text positions to the
 /// nearest row preserves adjacent CSS line boxes instead of letting them
 /// overwrite the same terminal row.
-fn px_to_text_row(px : Double) -> Int {
+fn px_to_text_row(px : Double) -> Int32 {
   ((px + font_height / 2.0) / font_height).to_int()
 }
 
 ///|
 /// Convert pixel height to character height (rounds up).
-fn px_to_row_height(px : Double) -> Int {
+fn px_to_row_height(px : Double) -> Int32 {
   let result = px / font_height
   let int_part = result.to_int()
   if result > int_part.to_double() {
@@ -77,10 +77,10 @@ fn min_double(a : Double, b : Double) -> Double {
 /// Convert dirty rects in pixel coordinates to character grid rectangles.
 pub fn dirty_rects_to_cells(
   rects : Array[@types.BoundingRect],
-  scroll_y_px : Int,
-  viewport_cols : Int,
-  viewport_rows : Int,
-  row_offset : Int,
+  scroll_y_px : Int32,
+  viewport_cols : Int32,
+  viewport_rows : Int32,
+  row_offset : Int32,
 ) -> Array[DirtyRect] {
   let result : Array[DirtyRect] = []
   let view_left = 0.0

@@ -157,7 +157,7 @@ fn BidiProtocol::is_iframe_navigation_blocked(
 
 ///|
 /// Ensure HTTP(S) URL host starts with a valid character.
-fn has_valid_http_host(url : String, scheme_len : Int) -> Bool {
+fn has_valid_http_host(url : String, scheme_len : Int32) -> Bool {
   if url.length() <= scheme_len {
     return false
   }

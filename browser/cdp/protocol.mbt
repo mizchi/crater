@@ -7,7 +7,7 @@
 ///|
 /// CDP Request message
 pub struct CdpRequest {
-  id : Int?
+  id : Int32?
   request_method : String
   params : Json?
   session_id : String?
@@ -16,7 +16,7 @@ pub struct CdpRequest {
 ///|
 /// CDP Response message
 pub struct CdpResponse {
-  id : Int?
+  id : Int32?
   result : Json?
   error : CdpResponseError?
   session_id : String?
@@ -25,14 +25,14 @@ pub struct CdpResponse {
 ///|
 /// CDP Response error
 pub struct CdpResponseError {
-  code : Int
+  code : Int32
   message : String
 }
 
 ///|
 /// Create new CDP response
 pub fn CdpResponse::new(
-  id : Int?,
+  id : Int32?,
   result : Json?,
   error : CdpResponseError?,
   session_id : String?,
@@ -1190,7 +1190,7 @@ fn CdpProtocol::dispatch_log(
 ///|
 fn CdpProtocol::send_result(
   self : CdpProtocol,
-  id : Int?,
+  id : Int32?,
   session_id : String?,
   result : Json?,
 ) -> Unit {
@@ -1200,9 +1200,9 @@ fn CdpProtocol::send_result(
 ///|
 fn CdpProtocol::send_error(
   self : CdpProtocol,
-  id : Int?,
+  id : Int32?,
   session_id : String?,
-  code : Int,
+  code : Int32,
   message : String,
 ) -> Unit {
   self.outbox.push(
@@ -1238,7 +1238,7 @@ fn split_method(input : String) -> (String, String)? {
 }
 
 ///|
-fn substring_arr(chars : Array[Char], start : Int, end : Int) -> String {
+fn substring_arr(chars : Array[Char], start : Int32, end : Int32) -> String {
   let buf = StringBuilder()
   for i = start; i < end; i = i + 1 {
     buf.write_char(chars[i])
@@ -1263,7 +1263,7 @@ fn get_string_field(json : Json, key : String) -> String? {
 }
 
 ///|
-fn get_int_field(json : Json, key : String) -> Int? {
+fn get_int_field(json : Json, key : String) -> Int32? {
   match get_field(json, key) {
     Some(Number(n, ..)) => Some(n.to_int())
     _ => None
@@ -1279,7 +1279,7 @@ fn get_param_string(params : Json?, key : String) -> String? {
 }
 
 ///|
-fn get_param_int(params : Json?, key : String) -> Int? {
+fn get_param_int(params : Json?, key : String) -> Int32? {
   match params {
     Some(p) => get_int_field(p, key)
     None => None
@@ -1472,7 +1472,7 @@ pub fn CdpProtocol::notify_response_received(
   self : CdpProtocol,
   request_id : @scheduler.RequestId,
   url : String,
-  status : Int,
+  status : Int32,
   mime_type : String,
   headers : Map[String, String],
 ) -> Unit {
@@ -1488,7 +1488,7 @@ pub fn CdpProtocol::notify_response_received_with_loader(
   self : CdpProtocol,
   request_id : @scheduler.RequestId,
   url : String,
-  status : Int,
+  status : Int32,
   mime_type : String,
   headers : Map[String, String],
   loader_id : String,
@@ -1505,7 +1505,7 @@ pub fn CdpProtocol::notify_response_received_with_loader(
 pub fn CdpProtocol::notify_loading_finished(
   self : CdpProtocol,
   request_id : @scheduler.RequestId,
-  encoded_data_length : Int,
+  encoded_data_length : Int32,
 ) -> Unit {
   self.network.finish_loading(request_id, encoded_data_length)
 }
@@ -1611,7 +1611,7 @@ fn response_received_to_json(res : @scheduler.NetworkResponse) -> Json {
 ///|
 fn loading_finished_to_json(
   request_id : @scheduler.RequestId,
-  encoded_data_length : Int,
+  encoded_data_length : Int32,
 ) -> Json {
   let @scheduler.RequestId(id) = request_id
   make_object({

@@ -4,10 +4,10 @@
 
 ///|
 /// Global counter for generating unique layout node IDs
-let layout_node_uid_counter : Ref[Int] = { val: 0, }
+let layout_node_uid_counter : Ref[Int32] = { val: 0, }
 
 ///|
-fn next_layout_uid() -> Int {
+fn next_layout_uid() -> Int32 {
   let uid = layout_node_uid_counter.val
   layout_node_uid_counter.val = uid + 1
   uid
@@ -15,11 +15,15 @@ fn next_layout_uid() -> Int {
 
 ///|
 /// Constraint key for cache lookup
+#derive(Eq)
 pub struct ConstraintKey {
   available_width : Double
   available_height : Double? // None means unconstrained
   sizing_mode : @layout_types.SizingMode
-} derive(Eq)
+}
+
+///|
+pub extend ConstraintKey with Eq::{not_equal, equal}
 
 ///|
 pub fn ConstraintKey::new(
@@ -56,7 +60,7 @@ pub struct LayoutCache {
 /// Mutable layout node with dirty tracking
 pub struct LayoutNode {
   id : String
-  uid : Int
+  uid : Int32
   style : @style.Style
   children : Array[LayoutNode]
   mut measure : @layout_types.MeasureFunc?
@@ -77,7 +81,7 @@ pub struct LayoutNode {
   // Intrinsic state for replaceable elements (images, etc.)
   mut intrinsic_state : IntrinsicState?
   // Callback for propagating dirty to parent chain (set by LayoutTree)
-  mut on_dirty : ((Int) -> Unit)?
+  mut on_dirty : ((Int32) -> Unit)?
 }
 
 ///|

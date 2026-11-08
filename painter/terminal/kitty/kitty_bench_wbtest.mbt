@@ -1,7 +1,7 @@
 ///|
 fn make_blank_kitty_fixture(
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
 ) -> (@raster.Framebuffer, @raster.DynamicPalette) {
   let fb = @raster.Framebuffer::new(width, height)
   let palette = @raster.DynamicPalette::new()

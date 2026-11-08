@@ -5,9 +5,9 @@
 fn draw_text_decoration_line(
   fb : Framebuffer,
   palette : DynamicPalette,
-  x : Int,
-  y : Int,
-  w : Int,
+  x : Int32,
+  y : Int32,
+  w : Int32,
   color : @types.Color,
   opacity : Double,
   clip : ClipRect?,
@@ -25,11 +25,11 @@ fn draw_text_decoration_line(
 ///|
 fn resolve_text_render_box(
   node : @paint_model.PaintNode,
-  x : Int,
-  y : Int,
-  w : Int,
-  h : Int,
-) -> (Int, Int, Int) {
+  x : Int32,
+  y : Int32,
+  w : Int32,
+  h : Int32,
+) -> (Int32, Int32, Int32) {
   if node.tag == "input" {
     let inset = @cmp.maximum(2, (node.paint.font_size * 0.75).round().to_int())
     let vertical_offset = @cmp.maximum(
@@ -44,12 +44,12 @@ fn resolve_text_render_box(
 
 ///|
 fn resolve_glyph_text_wrap_width(
-  w : Int,
-  h : Int,
+  w : Int32,
+  h : Int32,
   font_size : Double,
   line_height : Double,
   text : String,
-) -> Int {
+) -> Int32 {
   let single_line_height = if line_height > 0.0 {
     line_height
   } else {
@@ -73,10 +73,10 @@ fn resolve_glyph_text_wrap_width(
 
 ///|
 fn resolve_glyph_text_expected_line_count(
-  h : Int,
+  h : Int32,
   font_size : Double,
   line_height : Double,
-) -> Int {
+) -> Int32 {
   let single_line_height = if line_height > 0.0 {
     line_height
   } else {

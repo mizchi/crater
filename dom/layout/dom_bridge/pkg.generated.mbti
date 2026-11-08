@@ -15,8 +15,8 @@ import {
 pub struct Document {
   dom : @dom.DomTree
   layout : @tree.LayoutTree
-  dom_to_layout : Map[Int, Int]
-  layout_to_dom : Map[Int, Int]
+  dom_to_layout : Map[Int32, Int32]
+  layout_to_dom : Map[Int32, Int32]
   mut needs_layout : Bool
 }
 pub fn Document::append_child(Self, @dom.NodeId, @dom.NodeId) -> Result[Unit, @dom.CoreError]
@@ -29,7 +29,7 @@ pub fn Document::get_dom(Self) -> @dom.DomTree
 pub fn Document::get_layout(Self) -> @tree.LayoutTree
 pub fn Document::needs_layout(Self) -> Bool
 pub fn Document::new(Double, Double) -> Self
-pub fn Document::process_mutations(Self) -> Int
+pub fn Document::process_mutations(Self) -> Int32
 pub fn Document::query_selector(Self, String) -> Result[@dom.NodeId?, @dom.CoreError]
 pub fn Document::resize_viewport(Self, Double, Double) -> Unit
 pub fn Document::set_attribute(Self, @dom.NodeId, String, String) -> Result[Unit, @dom.CoreError]

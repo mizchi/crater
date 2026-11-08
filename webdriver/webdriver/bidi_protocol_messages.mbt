@@ -1,7 +1,7 @@
 ///|
 /// BiDi request message
 priv struct BidiRequest {
-  id : Int
+  id : Int32
   method_name : String
   params : Json?
 }
@@ -9,7 +9,7 @@ priv struct BidiRequest {
 ///|
 /// BiDi response message
 priv struct BidiResponse {
-  id : Int
+  id : Int32
   result : Json?
   error : BidiError?
 }
@@ -77,7 +77,7 @@ fn BidiOutMessage::to_json(self : BidiOutMessage) -> String {
 /// Send success response
 fn BidiProtocol::send_success(
   self : BidiProtocol,
-  id : Int,
+  id : Int32,
   result : Json?,
 ) -> Unit {
   let resp : BidiResponse = { id, result, error: None, }
@@ -94,7 +94,7 @@ fn BidiProtocol::send_raw(self : BidiProtocol, json : String) -> Unit {
 /// Send error response
 fn BidiProtocol::send_error(
   self : BidiProtocol,
-  id : Int,
+  id : Int32,
   code : String,
   message : String,
 ) -> Unit {

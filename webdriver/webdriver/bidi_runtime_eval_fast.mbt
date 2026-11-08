@@ -1,7 +1,7 @@
 ///|
 /// FFI: Evaluate expression and return a fully serialized BiDi response (fast path)
 extern "js" fn js_evaluate_expression_fast(
-  id : Int,
+  id : Int32,
   expression : String,
   user_activation : Bool,
   realm_id : String,

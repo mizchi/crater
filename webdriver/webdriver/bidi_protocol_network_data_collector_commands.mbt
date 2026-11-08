@@ -2,7 +2,7 @@
 /// Handle network.addDataCollector
 fn BidiProtocol::handle_network_add_data_collector(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let options = match
@@ -20,7 +20,7 @@ fn BidiProtocol::handle_network_add_data_collector(
 ///|
 fn BidiProtocol::handle_network_add_data_collector_id(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let options = match
@@ -50,7 +50,7 @@ fn BidiProtocol::add_network_data_collector_options(
 /// Handle network.removeDataCollector
 fn BidiProtocol::handle_network_remove_data_collector(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map = match params {

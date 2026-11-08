@@ -13,11 +13,21 @@ A headless browser environment for [MoonBit](https://www.moonbitlang.com/), driv
 
 ## Quick start
 
+Use MoonBit **0.10.20** (stable toolchain dated 2026-11-05), Node.js 24+
+and pnpm. The workspace uses `mizchi/css@0.8.0` and `mizchi/image@0.5.0`.
+
 ```bash
+moon upgrade
+moon update
 pnpm install
 pnpm exec playwright install chromium  # only needed for VRT reference captures
 pkf run prepare
 ```
+
+Run MoonBit checks from the repository root with `just check` and
+`just test-js`. The Native, Wasm and conformance workspaces also resolve the
+local Crater modules, so they exercise the same source and dependency versions.
+`just wasm` builds and tests the component through Node/JCO.
 
 Run a Playwright test against Crater (Crater starts on demand via the project's `playwright.config.ts` webServer):
 

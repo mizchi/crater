@@ -17,14 +17,14 @@ fn clone_node_with_children(
 }
 
 ///|
-fn find_first_summary_path_in_node(node : @node.Node) -> Array[Int]? {
+fn find_first_summary_path_in_node(node : @node.Node) -> Array[Int32]? {
   if node_id_is_tag(node.id, "summary") {
     return Some([])
   }
   for i = 0; i < node.children.length(); i = i + 1 {
     match find_first_summary_path_in_node(node.children[i]) {
       Some(path) => {
-        let prefixed : Array[Int] = [i]
+        let prefixed : Array[Int32] = [i]
         for segment in path {
           prefixed.push(segment)
         }
@@ -39,7 +39,7 @@ fn find_first_summary_path_in_node(node : @node.Node) -> Array[Int]? {
 ///|
 fn find_first_summary_path_in_children(
   children : Array[@node.Node],
-) -> (Int, Array[Int])? {
+) -> (Int32, Array[Int32])? {
   for i = 0; i < children.length(); i = i + 1 {
     match find_first_summary_path_in_node(children[i]) {
       Some(path) => return Some((i, path))
@@ -52,7 +52,7 @@ fn find_first_summary_path_in_children(
 ///|
 fn prune_node_to_summary_path(
   node : @node.Node,
-  path : Array[Int],
+  path : Array[Int32],
 ) -> @node.Node {
   if path.length() == 0 {
     return node
@@ -61,7 +61,7 @@ fn prune_node_to_summary_path(
   if next_index < 0 || next_index >= node.children.length() {
     return node
   }
-  let remaining : Array[Int] = []
+  let remaining : Array[Int32] = []
   for i = 1; i < path.length(); i = i + 1 {
     remaining.push(path[i])
   }

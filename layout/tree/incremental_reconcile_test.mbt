@@ -52,7 +52,7 @@ test "reconcile_from: incremental equals full recompute, unshifted node is a cac
     @node.Node::with_uid("a", 1, recon_box_style(100.0, 40.0), []),
     @node.Node::with_uid("b", 2, recon_box_style(80.0, 40.0), []),
   ])
-  let tree1 = LayoutTree::from_node(row1, 400.0, 200.0)
+  let tree1 = @tree.LayoutTree::from_node(row1, 400.0, 200.0)
   let _ = tree1.compute_incremental() // populate caches
   // v2: widen the LAST item #b to 200. #a precedes #b so its absolute position
   // is unchanged — its cached geometry stays valid. (Changing #a instead would
@@ -62,15 +62,15 @@ test "reconcile_from: incremental equals full recompute, unshifted node is a cac
     @node.Node::with_uid("a", 1, recon_box_style(100.0, 40.0), []),
     @node.Node::with_uid("b", 2, recon_box_style(200.0, 40.0), []),
   ])
-  let tree2 = LayoutTree::reconcile_from(tree1, row2, [2], 400.0, 200.0)
-  let stats = CacheStats::new()
+  let tree2 = @tree.LayoutTree::reconcile_from(tree1, row2, [2], 400.0, 200.0)
+  let stats = @tree.CacheStats::new()
   let incr = tree2.compute_with_stats(stats)
   // Independent full recompute of the mutated tree.
   let row2b = @node.Node::with_uid("row", 0, recon_flex_row(), [
     @node.Node::with_uid("a", 1, recon_box_style(100.0, 40.0), []),
     @node.Node::with_uid("b", 2, recon_box_style(200.0, 40.0), []),
   ])
-  let full2 = LayoutTree::from_node(row2b, 400.0, 200.0).compute_incremental()
+  let full2 = @tree.LayoutTree::from_node(row2b, 400.0, 200.0).compute_incremental()
   // Correctness: a reconciled relayout equals a full from-scratch recompute.
   let _ = stats
   inspect(recon_sig(incr) == recon_sig(full2), content="true")
@@ -85,12 +85,12 @@ test "reconcile_from: an unchanged re-render reuses the cache (no recompute)" {
       @node.Node::with_uid("b", 2, recon_box_style(80.0, 40.0), []),
     ])
   }
-  let tree1 = LayoutTree::from_node(make(), 400.0, 200.0)
+  let tree1 = @tree.LayoutTree::from_node(make(), 400.0, 200.0)
   let base = tree1.compute_incremental()
   // Re-render with an identical tree and nothing dirty: every node's cache is
   // migrated and the root is served straight from cache.
-  let tree2 = LayoutTree::reconcile_from(tree1, make(), [], 400.0, 200.0)
-  let stats = CacheStats::new()
+  let tree2 = @tree.LayoutTree::reconcile_from(tree1, make(), [], 400.0, 200.0)
+  let stats = @tree.CacheStats::new()
   let again = tree2.compute_with_stats(stats)
   inspect(recon_sig(again) == recon_sig(base), content="true")
   inspect(stats.cache_hits > 0, content="true")
@@ -116,7 +116,7 @@ test "flow_dirty_uids: resizing a box dirties it + following siblings, reuses ea
       @node.Node::with_uid("c", 3, recon_block(100.0, 40.0), []),
     ])
   }
-  let tree1 = LayoutTree::from_node(mk(40.0), 200.0, 300.0)
+  let tree1 = @tree.LayoutTree::from_node(mk(40.0), 200.0, 300.0)
   let _ = tree1.compute_incremental()
   // Resize the MIDDLE box #b; #a precedes it (stable), #c follows it (shifts).
   let seed = [2]
@@ -124,9 +124,15 @@ test "flow_dirty_uids: resizing a box dirties it + following siblings, reuses ea
   // #b and #c are dirty; #a is not.
   inspect(dirty.contains(2) && dirty.contains(3), content="true")
   inspect(dirty.contains(1), content="false")
-  let tree2 = LayoutTree::reconcile_from(tree1, mk(80.0), dirty, 200.0, 300.0)
+  let tree2 = @tree.LayoutTree::reconcile_from(
+    tree1,
+    mk(80.0),
+    dirty,
+    200.0,
+    300.0,
+  )
   let incr = tree2.compute_incremental()
-  let full = LayoutTree::from_node(mk(80.0), 200.0, 300.0).compute_incremental()
+  let full = @tree.LayoutTree::from_node(mk(80.0), 200.0, 300.0).compute_incremental()
   // The flow-aware dirty set yields a layout identical to a full recompute.
   inspect(recon_sig(incr) == recon_sig(full), content="true")
 }
@@ -137,19 +143,19 @@ test "reconcile_from: an appended child is detected structurally and recomputed"
   let row1 = @node.Node::with_uid("row", 0, recon_flex_row(), [
     @node.Node::with_uid("a", 1, recon_box_style(100.0, 40.0), []),
   ])
-  let tree1 = LayoutTree::from_node(row1, 400.0, 200.0)
+  let tree1 = @tree.LayoutTree::from_node(row1, 400.0, 200.0)
   let _ = tree1.compute_incremental()
   // Append #b (new uid 2): row's child set changed -> row dirtied automatically.
   let row2 = @node.Node::with_uid("row", 0, recon_flex_row(), [
     @node.Node::with_uid("a", 1, recon_box_style(100.0, 40.0), []),
     @node.Node::with_uid("b", 2, recon_box_style(80.0, 40.0), []),
   ])
-  let tree2 = LayoutTree::reconcile_from(tree1, row2, [], 400.0, 200.0)
+  let tree2 = @tree.LayoutTree::reconcile_from(tree1, row2, [], 400.0, 200.0)
   let incr = tree2.compute_incremental()
   let row2b = @node.Node::with_uid("row", 0, recon_flex_row(), [
     @node.Node::with_uid("a", 1, recon_box_style(100.0, 40.0), []),
     @node.Node::with_uid("b", 2, recon_box_style(80.0, 40.0), []),
   ])
-  let full2 = LayoutTree::from_node(row2b, 400.0, 200.0).compute_incremental()
+  let full2 = @tree.LayoutTree::from_node(row2b, 400.0, 200.0).compute_incremental()
   inspect(recon_sig(incr) == recon_sig(full2), content="true")
 }

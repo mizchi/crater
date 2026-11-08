@@ -13,12 +13,19 @@
 /// Types of elements that can be LCP candidates
 /// Per spec: <img>, <image> inside <svg>, <video> poster,
 /// element with background-image, text block elements
+#derive(Eq, Debug)
 pub(all) enum LCPElementType {
   Image(src~ : String)
   BackgroundImage(url~ : String)
   Video(poster~ : String?)
   TextBlock
-} derive(Eq, Debug)
+}
+
+///|
+pub extend LCPElementType with Eq::{not_equal, equal}
+
+///|
+pub extend LCPElementType with @debug.Debug::{to_repr}
 
 ///|
 pub impl Show for LCPElementType with fn output(self, logger) {
@@ -37,6 +44,9 @@ pub impl Show for LCPElementType with fn output(self, logger) {
 // =============================================================================
 // LCP Candidate
 // =============================================================================
+
+///|
+pub extend LCPElementType with Show::{to_string, output}
 
 ///|
 /// A candidate element for Largest Contentful Paint

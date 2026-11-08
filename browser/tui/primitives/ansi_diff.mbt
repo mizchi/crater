@@ -4,10 +4,10 @@
 ///|
 /// Dirty rectangle for partial diff updates
 pub(all) struct DirtyRect {
-  col : Int
-  row : Int
-  width : Int
-  height : Int
+  col : Int32
+  row : Int32
+  width : Int32
+  height : Int32
 }
 
 ///|
@@ -31,7 +31,7 @@ fn dirty_rects_to_plan_rects(
 pub fn buffer_diff_to_ansi(
   current : CharBuffer,
   prev : CharBuffer,
-  max_cols? : Int = 0,
+  max_cols~ : Int32 = 0,
 ) -> String {
   let sb = StringBuilder()
   let mut last_row = -1
@@ -74,7 +74,7 @@ pub fn buffer_diff_to_ansi_rects(
   current : CharBuffer,
   prev : CharBuffer,
   rects : Array[DirtyRect],
-  max_cols? : Int = 0,
+  max_cols~ : Int32 = 0,
 ) -> String {
   if rects.length() == 0 {
     return ""

@@ -11,9 +11,9 @@ pub fn framebuffer_to_rgba_base64(@raster.Framebuffer, @raster.DynamicPalette) -
 
 pub fn framebuffer_visual_stats(@raster.Framebuffer, @raster.DynamicPalette) -> VisualStats
 
-pub fn raster_to_framebuffer(@model.PaintNode, Int, Int) -> (@raster.Framebuffer, @raster.DynamicPalette)
+pub fn raster_to_framebuffer(@model.PaintNode, Int32, Int32) -> (@raster.Framebuffer, @raster.DynamicPalette)
 
-pub fn raster_to_rgba_base64(@model.PaintNode, Int, Int) -> String
+pub fn raster_to_rgba_base64(@model.PaintNode, Int32, Int32) -> String
 
 pub fn to_json_string(@model.PaintNode) -> String
 
@@ -21,9 +21,9 @@ pub fn to_json_string(@model.PaintNode) -> String
 
 // Types and methods
 pub(all) struct VisualStats {
-  pixel_count : Int
-  non_white_pixels : Int
-  distinct_colors : Int
+  pixel_count : Int32
+  non_white_pixels : Int32
+  distinct_colors : Int32
   is_blank : Bool
 }
 

@@ -54,7 +54,7 @@ priv struct CascadeReuseCtx {
   // only / of-type selector, each element's signature includes a summary of its
   // direct children (see `cascade_reuse_sig`).
   uses_child_structure : Bool
-  mut reused : Int
+  mut reused : Int32
 }
 
 ///|
@@ -69,8 +69,8 @@ let cascade_reuse_ctx : Ref[CascadeReuseCtx?] = { val: None, }
 pub fn cascade_reuse_begin(
   prior_styles : Map[String, @style.Style],
   prior_sigs : Map[String, String],
-  uses_sibling? : Bool = false,
-  uses_child_structure? : Bool = false,
+  uses_sibling~ : Bool = false,
+  uses_child_structure~ : Bool = false,
 ) -> Unit {
   cascade_reuse_ctx.val = Some({
     prior_styles,
@@ -92,7 +92,7 @@ pub fn cascade_reuse_begin(
 pub fn cascade_reuse_end() -> (
   Map[String, @style.Style],
   Map[String, String],
-  Int,
+  Int32,
 ) {
   match cascade_reuse_ctx.val {
     Some(ctx) => {

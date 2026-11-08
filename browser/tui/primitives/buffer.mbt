@@ -5,14 +5,14 @@
 ///|
 /// Character-based framebuffer
 pub struct CharBuffer {
-  width : Int // Width in character columns
-  height : Int // Height in character rows
+  width : Int32 // Width in character columns
+  height : Int32 // Height in character rows
   cells : Array[CharCell]
 }
 
 ///|
 /// Create a new buffer filled with default cells
-pub fn CharBuffer::new(width : Int, height : Int) -> CharBuffer {
+pub fn CharBuffer::new(width : Int32, height : Int32) -> CharBuffer {
   let size = width * height
   let cells : Array[CharCell] = Array::make(size, CharCell::default())
   { width, height, cells, }
@@ -20,7 +20,11 @@ pub fn CharBuffer::new(width : Int, height : Int) -> CharBuffer {
 
 ///|
 /// Get cell at position (bounds checked)
-pub fn CharBuffer::get_cell(self : CharBuffer, x : Int, y : Int) -> CharCell {
+pub fn CharBuffer::get_cell(
+  self : CharBuffer,
+  x : Int32,
+  y : Int32,
+) -> CharCell {
   if x >= 0 && x < self.width && y >= 0 && y < self.height {
     self.cells[y * self.width + x]
   } else {
@@ -32,8 +36,8 @@ pub fn CharBuffer::get_cell(self : CharBuffer, x : Int, y : Int) -> CharCell {
 /// Set cell at position (bounds checked)
 pub fn CharBuffer::set_cell(
   self : CharBuffer,
-  x : Int,
-  y : Int,
+  x : Int32,
+  y : Int32,
   cell : CharCell,
 ) -> Unit {
   if x >= 0 && x < self.width && y >= 0 && y < self.height {
@@ -45,10 +49,10 @@ pub fn CharBuffer::set_cell(
 /// Fill a rectangle with a cell
 pub fn CharBuffer::fill_rect(
   self : CharBuffer,
-  x : Int,
-  y : Int,
-  w : Int,
-  h : Int,
+  x : Int32,
+  y : Int32,
+  w : Int32,
+  h : Int32,
   cell : CharCell,
 ) -> Unit {
   match @tui_buffer.clip_rect(self.width, self.height, x, y, w, h) {
@@ -66,10 +70,10 @@ pub fn CharBuffer::fill_rect(
 /// Fill a rectangle with just a background color (preserves char and fg)
 pub fn CharBuffer::fill_bg(
   self : CharBuffer,
-  x : Int,
-  y : Int,
-  w : Int,
-  h : Int,
+  x : Int32,
+  y : Int32,
+  w : Int32,
+  h : Int32,
   bg : @types.Color,
 ) -> Unit {
   match @tui_buffer.clip_rect(self.width, self.height, x, y, w, h) {
@@ -86,7 +90,7 @@ pub fn CharBuffer::fill_bg(
 
 ///|
 /// Get text content of a row (for testing)
-pub fn CharBuffer::get_row_text(self : CharBuffer, row : Int) -> String {
+pub fn CharBuffer::get_row_text(self : CharBuffer, row : Int32) -> String {
   if row < 0 || row >= self.height {
     return ""
   }

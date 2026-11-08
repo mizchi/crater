@@ -1,15 +1,17 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { parseModuleManifest } from "./moon-publish-workspace.mjs";
 import { REPO_ROOT } from "./moon-module-boundary-helpers";
 
 describe("crater-core module boundary", () => {
   it("has no in-repo deps (it is the bottom of the dependency graph)", () => {
-    const modJson = JSON.parse(
-      fs.readFileSync(path.join(REPO_ROOT, "core/moon.mod.json"), "utf8"),
+    const manifest = parseModuleManifest(
+      fs.readFileSync(path.join(REPO_ROOT, "core/moon.mod"), "utf8"),
+      { json: false },
     );
-    expect(modJson.name).toBe("mizchi/crater-core");
-    const inRepoDeps = Object.keys(modJson.deps ?? {}).filter((d) =>
+    expect(manifest.name).toBe("mizchi/crater-core");
+    const inRepoDeps = manifest.depNames.filter((d) =>
       d.startsWith("mizchi/crater"),
     );
     expect(inRepoDeps).toEqual([]);

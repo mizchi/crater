@@ -11,14 +11,22 @@ import {
 
 // Types and methods
 pub struct SoftwareDriver {
-  mut width : Int
-  mut height : Int
-  mut pixels : Array[Int]
-  mut next_id : Int
+  mut width : Int32
+  mut height : Int32
+  mut pixels : Array[Int32]
+  mut next_id : Int32
   mut initialized : Bool
 }
-pub fn SoftwareDriver::new(Int, Int) -> Self
-pub fn SoftwareDriver::pixel_at(Self, Int, Int) -> (Int, Int, Int, Int)
+pub fn SoftwareDriver::begin(Self, @gfx.RenderPassDesc) -> Unit raise
+pub fn SoftwareDriver::draw_triangles(Self, @gfx.DrawTrianglesCommand) -> Unit raise
+pub fn SoftwareDriver::end(Self, Bool) -> Unit raise
+pub fn SoftwareDriver::initialize(Self) -> Unit raise
+pub fn SoftwareDriver::new(Int32, Int32) -> Self
+pub fn SoftwareDriver::new_image(Self, Int32, Int32) -> @gfx.ImageHandle raise
+pub fn SoftwareDriver::new_shader(Self, String) -> @gfx.ShaderHandle raise
+pub fn SoftwareDriver::pixel_at(Self, Int32, Int32) -> (Int32, Int32, Int32, Int32)
+pub fn SoftwareDriver::read_pixels(Self, Int32, Int32, Int32, Int32) -> Array[Int32]? raise
+pub fn SoftwareDriver::resize(Self, Int32, Int32) -> Unit raise
 pub impl @gfx.GraphicsDriver for SoftwareDriver
 
 // Type aliases

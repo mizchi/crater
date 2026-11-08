@@ -28,7 +28,7 @@ extern "js" fn js_enable_raw_mode() =
 
 ///|
 /// Get terminal columns from process.stdout
-extern "js" fn js_get_terminal_columns() -> Int =
+extern "js" fn js_get_terminal_columns() -> Int32 =
   #| () => {
   #|   if (typeof process === 'undefined') return 80;
   #|   if (process.stdout.columns) return process.stdout.columns;
@@ -47,7 +47,7 @@ extern "js" fn js_get_terminal_columns() -> Int =
 
 ///|
 /// Get terminal rows from process.stdout
-extern "js" fn js_get_terminal_rows() -> Int =
+extern "js" fn js_get_terminal_rows() -> Int32 =
   #| () => {
   #|   if (typeof process === 'undefined') return 24;
   #|   if (process.stdout.rows) return process.stdout.rows;
@@ -85,6 +85,6 @@ pub fn enable_raw_mode() -> Unit {
 ///|
 /// Get terminal size in characters (columns, rows)
 /// Returns (80, 24) as default if size cannot be determined
-pub fn get_terminal_size() -> (Int, Int) {
+pub fn get_terminal_size() -> (Int32, Int32) {
   (js_get_terminal_columns(), js_get_terminal_rows())
 }

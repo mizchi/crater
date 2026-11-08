@@ -13,50 +13,64 @@ import {
 
 // Types and methods
 pub(all) struct ComputeInput {
-  node_uid : Int
+  node_uid : Int32
   available_width : Double
   available_height : Double?
   sizing_mode : @crater-core.SizingMode
 }
 
+#derive(@debug.Debug)
 pub(all) struct ComputeOutput {
-  node_uid : Int
+  node_uid : Int32
   width : Double
   height : Double
-} derive(@debug.Debug)
+}
+pub fn ComputeOutput::output(Self, &Logger) -> Unit
+pub fn ComputeOutput::to_repr(Self) -> @debug.Repr
+pub fn ComputeOutput::to_string(Self) -> String
 pub impl Show for ComputeOutput
 
+#derive(@debug.Debug)
 pub(all) struct Dependency {
-  node_uid : Int
+  node_uid : Int32
   kind : DependencyKind
-} derive(@debug.Debug)
+}
+pub fn Dependency::output(Self, &Logger) -> Unit
+pub fn Dependency::to_repr(Self) -> @debug.Repr
+pub fn Dependency::to_string(Self) -> String
 pub impl Show for Dependency
 
+#derive(Eq, @debug.Debug)
 pub(all) enum DependencyKind {
   ParentWidth
   ParentHeight
-  ChildIntrinsicMain(Int)
-  ChildIntrinsicCross(Int)
-  SiblingSize(Int)
+  ChildIntrinsicMain(Int32)
+  ChildIntrinsicCross(Int32)
+  SiblingSize(Int32)
   OwnStyle
-} derive(Eq, @debug.Debug)
+}
+pub fn DependencyKind::equal(Self, Self) -> Bool
+pub fn DependencyKind::not_equal(Self, Self) -> Bool
+pub fn DependencyKind::output(Self, &Logger) -> Unit
+pub fn DependencyKind::to_repr(Self) -> @debug.Repr
+pub fn DependencyKind::to_string(Self) -> String
 pub impl Show for DependencyKind
 
 pub struct LayoutTracer {
-  traces : Map[Int, NodeTrace]
+  traces : Map[Int32, NodeTrace]
   enabled : Bool
 }
-pub fn LayoutTracer::add_dependency(Self, Int, DependencyKind) -> Unit
-pub fn LayoutTracer::begin_compute(Self, Int, @crater-core.LayoutContext) -> Unit
+pub fn LayoutTracer::add_dependency(Self, Int32, DependencyKind) -> Unit
+pub fn LayoutTracer::begin_compute(Self, Int32, @crater-core.LayoutContext) -> Unit
 pub fn LayoutTracer::clear(Self) -> Unit
 pub fn LayoutTracer::collect_from_tree(Self, @node.Node, @crater-core.Layout, @crater-core.LayoutContext) -> Unit
 pub fn LayoutTracer::disabled() -> Self
-pub fn LayoutTracer::end_compute(Self, Int, Double, Double) -> Unit
-pub fn LayoutTracer::get_trace(Self, Int) -> NodeTrace?
-pub fn LayoutTracer::get_traced_nodes(Self) -> Array[Int]
-pub fn LayoutTracer::get_traces(Self) -> Map[Int, NodeTrace]
+pub fn LayoutTracer::end_compute(Self, Int32, Double, Double) -> Unit
+pub fn LayoutTracer::get_trace(Self, Int32) -> NodeTrace?
+pub fn LayoutTracer::get_traced_nodes(Self) -> Array[Int32]
+pub fn LayoutTracer::get_traces(Self) -> Map[Int32, NodeTrace]
 pub fn LayoutTracer::is_enabled(Self) -> Bool
-pub fn LayoutTracer::needs_recompute(Self, Int, @crater-core.LayoutContext) -> Bool
+pub fn LayoutTracer::needs_recompute(Self, Int32, @crater-core.LayoutContext) -> Bool
 pub fn LayoutTracer::new(Bool) -> Self
 
 pub(all) struct NodeTrace {

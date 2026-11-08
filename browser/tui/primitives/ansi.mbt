@@ -28,25 +28,25 @@ pub fn ansi_reverse() -> String {
 
 ///|
 /// Set foreground color using 256-color palette
-pub fn ansi_fg_256(color_idx : Int) -> String {
+pub fn ansi_fg_256(color_idx : Int32) -> String {
   @tui_ansi.ansi_fg_256(color_idx)
 }
 
 ///|
 /// Set background color using 256-color palette
-pub fn ansi_bg_256(color_idx : Int) -> String {
+pub fn ansi_bg_256(color_idx : Int32) -> String {
   @tui_ansi.ansi_bg_256(color_idx)
 }
 
 ///|
 /// Move cursor to position (1-indexed, row/col)
-pub fn ansi_move_to(row : Int, col : Int) -> String {
+pub fn ansi_move_to(row : Int32, col : Int32) -> String {
   @tui_ansi.ansi_move_to(row - 1, col - 1)
 }
 
 ///|
 /// Convert CharBuffer to ANSI-encoded string
-pub fn buffer_to_ansi(buf : CharBuffer, max_cols? : Int = 0) -> String {
+pub fn buffer_to_ansi(buf : CharBuffer, max_cols~ : Int32 = 0) -> String {
   let sb = StringBuilder()
   let style_state = AnsiStyleState::new()
   let mut current_row = -1

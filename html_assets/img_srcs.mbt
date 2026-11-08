@@ -1,5 +1,5 @@
 ///|
-fn make_substr(chars : Array[Char], start : Int, end : Int) -> String {
+fn make_substr(chars : Array[Char], start : Int32, end : Int32) -> String {
   let buf = StringBuilder()
   for i = start; i < end && i < chars.length(); i = i + 1 {
     buf.write_char(chars[i])
@@ -13,7 +13,7 @@ fn ascii_eq_ignore_case(lhs : Char, rhs : Char) -> Bool {
 }
 
 ///|
-fn is_img_tag_start(chars : Array[Char], i : Int) -> Bool {
+fn is_img_tag_start(chars : Array[Char], i : Int32) -> Bool {
   if i + 4 >= chars.length() {
     return false
   }
@@ -34,7 +34,7 @@ fn is_html_attr_name_char(c : Char) -> Bool {
 }
 
 ///|
-fn is_src_attr_name(chars : Array[Char], start : Int, end : Int) -> Bool {
+fn is_src_attr_name(chars : Array[Char], start : Int32, end : Int32) -> Bool {
   end - start == 3 &&
   ascii_eq_ignore_case(chars[start], 's') &&
   ascii_eq_ignore_case(chars[start + 1], 'r') &&
@@ -42,7 +42,7 @@ fn is_src_attr_name(chars : Array[Char], start : Int, end : Int) -> Bool {
 }
 
 ///|
-fn read_html_attr_value(chars : Array[Char], start : Int) -> (String, Int)? {
+fn read_html_attr_value(chars : Array[Char], start : Int32) -> (String, Int32)? {
   if start >= chars.length() {
     return None
   }

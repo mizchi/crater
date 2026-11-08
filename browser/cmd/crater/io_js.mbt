@@ -30,7 +30,7 @@ extern "js" fn js_write_stderr(s : String) -> Unit =
   #| }
 
 ///|
-extern "js" fn js_exit(code : Int) -> Unit =
+extern "js" fn js_exit(code : Int32) -> Unit =
   #| (code) => {
   #|   if (typeof process === "undefined") return;
   #|   process.exit(Number(code));
@@ -75,6 +75,6 @@ fn eprintln(s : String) -> Unit {
 }
 
 ///|
-fn exit_with_code(code : Int) -> Unit {
+fn exit_with_code(code : Int32) -> Unit {
   js_exit(code)
 }

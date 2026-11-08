@@ -1,7 +1,7 @@
 ///|
 fn BidiProtocol::handle_script_remember_synthetic_location_href(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map = match params {
@@ -36,7 +36,7 @@ fn BidiProtocol::handle_script_remember_synthetic_location_href(
 ///|
 fn BidiProtocol::handle_script_clear_synthetic_location_href(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map = match params {

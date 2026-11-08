@@ -21,7 +21,7 @@ pub fn read_key() -> String {
 }
 
 ///|
-pub fn read_key_with_timeout(timeout_ms : Int) -> String {
+pub fn read_key_with_timeout(timeout_ms : Int32) -> String {
   if !is_tty() {
     if timeout_ms >= 0 {
       tui_sleep_ms(timeout_ms)
@@ -73,7 +73,7 @@ pub async fn wait_for_enter() -> Unit {
 }
 
 ///|
-fn read_continuation_byte() -> Int {
+fn read_continuation_byte() -> Int32 {
   let b = tui_read_byte()
   if b >= 0 {
     return b

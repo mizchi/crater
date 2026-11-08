@@ -3,8 +3,8 @@
 
 ///|
 priv struct AnsiStyleState {
-  mut fg : Int
-  mut bg : Int
+  mut fg : Int32
+  mut bg : Int32
   mut bold : Bool
   mut underline : Bool
 }

@@ -6,14 +6,14 @@
 
 ///|
 priv struct NativeStubRuntime {
-  _unused : Int
+  _unused : Int32
 }
 
 ///|
 let native_stub_runtime : NativeStubRuntime = { _unused: 0, }
 
 ///|
-fn allocate_runtime_context_id() -> Int {
+fn allocate_runtime_context_id() -> Int32 {
   0
 }
 
@@ -30,7 +30,7 @@ impl JsRuntime for NativeStubRuntime with fn init(self : NativeStubRuntime) -> U
 ///|
 impl JsRuntime for NativeStubRuntime with fn execute(
   self : NativeStubRuntime,
-  context_id : Int,
+  context_id : Int32,
   dom : @dom.DomTree,
   code : String,
   async_mode : AsyncExecutionMode,
@@ -42,7 +42,7 @@ impl JsRuntime for NativeStubRuntime with fn execute(
 ///|
 impl JsRuntime for NativeStubRuntime with fn tick(
   self : NativeStubRuntime,
-  context_id : Int,
+  context_id : Int32,
   dom : @dom.DomTree,
 ) -> JsResult raise JsError {
   let _ = (self, context_id, dom)

@@ -4,7 +4,7 @@
 /// subtree is projected into selector elements and tested against the parsed
 /// selector list.
 test "query_selector_all matches compound selectors" {
-  let tree = DomTree::new()
+  let tree = @dom.DomTree::new()
   let doc = tree.get_document()
   let root = tree.create_element("div")
   let _ = tree.append_child(doc, root)
@@ -83,7 +83,7 @@ test "query_selector_all matches compound selectors" {
 
 ///|
 test "query_selector returns first match in document order" {
-  let tree = DomTree::new()
+  let tree = @dom.DomTree::new()
   let doc = tree.get_document()
   let root = tree.create_element("ul")
   let _ = tree.append_child(doc, root)
@@ -115,7 +115,7 @@ test "query_selector returns first match in document order" {
 /// must be invalidated when attributes change, so repeated queries reflect
 /// mutations rather than returning stale matches.
 test "query_selector projection cache invalidates on attribute change" {
-  let tree = DomTree::new()
+  let tree = @dom.DomTree::new()
   let doc = tree.get_document()
   let el = tree.create_element("div")
   let _ = tree.set_attribute(el, "class", "foo")

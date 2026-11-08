@@ -25,7 +25,7 @@ extern "js" fn quickjs_init() -> Bool =
 /// Uses QuickJS if initialized, otherwise falls back to Node.js vm
 /// Returns JSON: { success, value, logs, domOps, error? }
 extern "js" fn quickjs_execute_with_mock_dom(
-  context_id : Int,
+  context_id : Int32,
   init_code : String,
   code : String,
   flush_async : Bool,
@@ -10092,7 +10092,7 @@ extern "js" fn quickjs_execute_with_mock_dom(
   #| }
 
 ///|
-extern "js" fn quickjs_tick_with_mock_dom(context_id : Int) -> String =
+extern "js" fn quickjs_tick_with_mock_dom(context_id : Int32) -> String =
   #| (contextId) => {
   #|   const persistentContexts = globalThis.__craterPersistentJsContexts || (globalThis.__craterPersistentJsContexts = new Map());
   #|   const entry = persistentContexts.get(contextId);

@@ -12,7 +12,7 @@ priv struct BidiSubscriptionState {
   subscription_events : Map[String, Array[String]] // subscription id -> events
   subscription_contexts : Map[String, Array[String]] // subscription id -> contexts
   subscription_user_contexts : Map[String, Array[String]] // subscription id -> user contexts
-  mut next_subscription_id : Int
+  mut next_subscription_id : Int32
   pending_log_entries : Map[String, Array[Json]] // context -> buffered log.entryAdded params
 }
 

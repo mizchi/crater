@@ -6,9 +6,9 @@
 pub struct LayoutTree {
   root : LayoutNode
   // Map from node uid to parent uid (root has no entry)
-  parent_map : Map[Int, Int]
+  parent_map : Map[Int32, Int32]
   // Map from uid to node for fast lookup
-  node_map : Map[Int, LayoutNode]
+  node_map : Map[Int32, LayoutNode]
   // Viewport size
   mut viewport_width : Double
   mut viewport_height : Double
@@ -20,9 +20,9 @@ pub struct LayoutTree {
 /// Build parent and node maps recursively (without setting callbacks)
 fn build_maps_internal(
   node : LayoutNode,
-  parent_uid : Int?,
-  parent_map : Map[Int, Int],
-  node_map : Map[Int, LayoutNode],
+  parent_uid : Int32?,
+  parent_map : Map[Int32, Int32],
+  node_map : Map[Int32, LayoutNode],
 ) -> Unit {
   node_map[node.uid] = node
   match parent_uid {
@@ -40,8 +40,8 @@ pub fn LayoutTree::new(
   viewport_width : Double,
   viewport_height : Double,
 ) -> LayoutTree {
-  let parent_map : Map[Int, Int] = Map([])
-  let node_map : Map[Int, LayoutNode] = Map([])
+  let parent_map : Map[Int32, Int32] = Map([])
+  let node_map : Map[Int32, LayoutNode] = Map([])
   build_maps_internal(root, None, parent_map, node_map)
   let tree : LayoutTree = {
     root,
@@ -77,7 +77,7 @@ pub fn LayoutTree::from_node(
 
 ///|
 /// Find a node by uid
-pub fn LayoutTree::find_node(self : LayoutTree, uid : Int) -> LayoutNode? {
+pub fn LayoutTree::find_node(self : LayoutTree, uid : Int32) -> LayoutNode? {
   self.node_map.get(uid)
 }
 
@@ -124,7 +124,7 @@ pub fn LayoutTree::get_resources(self : LayoutTree) -> ResourceRegistry {
 
 ///|
 /// Get parent of a node
-pub fn LayoutTree::get_parent(self : LayoutTree, uid : Int) -> LayoutNode? {
+pub fn LayoutTree::get_parent(self : LayoutTree, uid : Int32) -> LayoutNode? {
   match self.parent_map.get(uid) {
     Some(parent_uid) => self.node_map.get(parent_uid)
     None => None
@@ -137,7 +137,7 @@ pub fn LayoutTree::get_parent(self : LayoutTree, uid : Int) -> LayoutNode? {
 /// changes don't affect ancestors
 fn LayoutTree::propagate_children_dirty(
   self : LayoutTree,
-  from_uid : Int,
+  from_uid : Int32,
 ) -> Unit {
   let mut current_uid = from_uid
   let mut done = false
@@ -168,7 +168,7 @@ fn LayoutTree::propagate_children_dirty(
 
 ///|
 /// Mark a node as dirty and propagate to ancestors
-pub fn LayoutTree::mark_node_dirty(self : LayoutTree, uid : Int) -> Unit {
+pub fn LayoutTree::mark_node_dirty(self : LayoutTree, uid : Int32) -> Unit {
   match self.node_map.get(uid) {
     Some(node) => {
       node.mark_dirty()
@@ -283,9 +283,9 @@ pub fn LayoutTree::compute_incremental(
 /// Returns a ResourceId that can be used to resolve the size later
 pub fn LayoutTree::register_resource(
   self : LayoutTree,
-  node_uid : Int,
-  placeholder_width? : Double = 300.0,
-  placeholder_height? : Double = 150.0,
+  node_uid : Int32,
+  placeholder_width~ : Double = 300.0,
+  placeholder_height~ : Double = 150.0,
 ) -> ResourceId {
   let rid = self.resources.next_resource_id()
   self.resources.add_node(rid, node_uid)
@@ -313,9 +313,9 @@ pub fn LayoutTree::register_resource(
 pub fn LayoutTree::attach_resource(
   self : LayoutTree,
   rid : ResourceId,
-  node_uid : Int,
-  placeholder_width? : Double = 300.0,
-  placeholder_height? : Double = 150.0,
+  node_uid : Int32,
+  placeholder_width~ : Double = 300.0,
+  placeholder_height~ : Double = 150.0,
 ) -> Unit {
   self.resources.add_node(rid, node_uid)
 
@@ -437,7 +437,7 @@ pub fn LayoutTree::register_pending_images(
 /// Returns a map from src to ResourceId
 pub fn LayoutTree::register_pending_images_with_src(
   self : LayoutTree,
-  uid_to_src : Map[Int, String],
+  uid_to_src : Map[Int32, String],
 ) -> Map[String, ResourceId] {
   let src_to_rid : Map[String, ResourceId] = Map([])
   self.node_map.each(fn(uid, node) {

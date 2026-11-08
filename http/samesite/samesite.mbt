@@ -2,10 +2,14 @@
 /// Whether a request origin and a cookie domain live on the same site
 /// (same registrable domain, a.k.a. eTLD+1). Used to decide SameSite
 /// cookie attach.
+#derive(Eq)
 pub(all) enum SiteContext {
   SameSite
   CrossSite
-} derive(Eq)
+}
+
+///|
+pub extend SiteContext with Eq::{not_equal, equal}
 
 ///|
 pub impl Show for SiteContext with fn output(self, logger) {
@@ -14,6 +18,9 @@ pub impl Show for SiteContext with fn output(self, logger) {
     CrossSite => logger.write_string("CrossSite")
   }
 }
+
+///|
+pub extend SiteContext with Show::{to_string, output}
 
 ///|
 /// eTLD+1 extractor backed by the curated Public Suffix List in

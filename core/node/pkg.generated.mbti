@@ -16,11 +16,11 @@ pub fn get_layout_dispatcher() -> LayoutDispatchFunc?
 
 pub fn node_incremental_active() -> Bool
 
-pub fn node_is_clean(Int) -> Bool
+pub fn node_is_clean(Int32) -> Bool
 
 pub fn set_layout_dispatcher(LayoutDispatchFunc) -> Unit
 
-pub fn set_node_clean_predicate((Int) -> Bool) -> Unit
+pub fn set_node_clean_predicate((Int32) -> Bool) -> Unit
 
 pub fn stabilize_uids(Node, UidRegistry) -> Unit
 
@@ -35,24 +35,24 @@ pub(all) struct LayoutDispatchFunc((Node, @crater-core.LayoutContext) -> @crater
 
 pub struct Node {
   id : String
-  mut uid : Int
+  mut uid : Int32
   style : @style.Style
   children : Array[Node]
   measure : @crater-core.MeasureFunc?
   text : String?
   src : String?
-  mut dom_id : Int?
+  mut dom_id : Int32?
   mut resolved_rects_memo : ResolvedRects?
 }
 pub fn Node::leaf(String, @style.Style) -> Self
 pub fn Node::new(String, @style.Style, Array[Self]) -> Self
 pub fn Node::resolved_rects(Self, Double) -> ResolvedRects
-pub fn Node::set_dom_id(Self, Int?) -> Unit
-pub fn Node::set_uid(Self, Int) -> Unit
+pub fn Node::set_dom_id(Self, Int32?) -> Unit
+pub fn Node::set_uid(Self, Int32) -> Unit
 pub fn Node::text(String, @style.Style, @crater-core.MeasureFunc, String) -> Self
 pub fn Node::with_measure(String, @style.Style, @crater-core.MeasureFunc, text? : String, src? : String?) -> Self
-pub fn Node::with_uid(String, Int, @style.Style, Array[Self]) -> Self
-pub fn Node::with_uid_and_measure(String, Int, @style.Style, Array[Self], @crater-core.MeasureFunc?, String?, src? : String?) -> Self
+pub fn Node::with_uid(String, Int32, @style.Style, Array[Self]) -> Self
+pub fn Node::with_uid_and_measure(String, Int32, @style.Style, Array[Self], @crater-core.MeasureFunc?, String?, src? : String?) -> Self
 
 pub(all) struct ResolvedRects {
   padding : @values.Rect[Double]
@@ -61,9 +61,9 @@ pub(all) struct ResolvedRects {
 }
 
 pub struct UidRegistry {
-  dom_to_uid : Map[Int, Int]
-  anon_to_uid : Map[String, Int]
-  mut next : Int
+  dom_to_uid : Map[Int32, Int32]
+  anon_to_uid : Map[String, Int32]
+  mut next : Int32
 }
 pub fn UidRegistry::new() -> Self
 

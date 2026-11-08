@@ -12,7 +12,7 @@
 /// Manages CDP sessions for WebDriver
 pub struct CdpSessionManager {
   sessions : Map[String, @cdp.CdpSession]
-  mut next_id : Int
+  mut next_id : Int32
 }
 
 ///|
@@ -104,7 +104,7 @@ pub fn handle_find_element(
   session : @cdp.CdpSession,
   strategy : String,
   value : String,
-) -> Result[Int, CdpHandlerError] {
+) -> Result[Int32, CdpHandlerError] {
   // Convert WebDriver locator strategy to CSS selector
   let selector : String = match strategy {
     "css selector" => value
@@ -138,7 +138,7 @@ pub fn handle_find_elements(
   session : @cdp.CdpSession,
   strategy : String,
   value : String,
-) -> Result[Array[Int], CdpHandlerError] {
+) -> Result[Array[Int32], CdpHandlerError] {
   let selector : String = match strategy {
     "css selector" => value
     "id" => "#" + value
@@ -152,7 +152,7 @@ pub fn handle_find_elements(
     Ok(node_ids) =>
       if strategy == "link text" || strategy == "partial link text" {
         // Filter by text content
-        let matched : Array[Int] = []
+        let matched : Array[Int32] = []
         for node_id in node_ids {
           match verify_link_text(session, node_id, strategy, value) {
             Some(id) => matched.push(id)
@@ -171,10 +171,10 @@ pub fn handle_find_elements(
 /// Verify link text matches
 fn verify_link_text(
   session : @cdp.CdpSession,
-  node_id : Int,
+  node_id : Int32,
   strategy : String,
   expected : String,
-) -> Int? {
+) -> Int32? {
   let node = @dom.NodeId::from_int(node_id)
   match session.get_tree().get_text_content(node) {
     Ok(text) => {
@@ -199,7 +199,7 @@ fn verify_link_text(
 /// Handle element click via CDP
 pub fn handle_element_click(
   session : @cdp.CdpSession,
-  element_id : Int,
+  element_id : Int32,
 ) -> Result[Unit, CdpHandlerError] {
   match session.click_element(element_id) {
     Ok(_) => Ok(())
@@ -211,7 +211,7 @@ pub fn handle_element_click(
 /// Handle getElementText via CDP
 pub fn handle_get_element_text(
   session : @cdp.CdpSession,
-  element_id : Int,
+  element_id : Int32,
 ) -> Result[String, CdpHandlerError] {
   let node = @dom.NodeId::from_int(element_id)
   match session.get_tree().get_text_content(node) {
@@ -224,7 +224,7 @@ pub fn handle_get_element_text(
 /// Handle getElementAttribute via CDP
 pub fn handle_get_element_attribute(
   session : @cdp.CdpSession,
-  element_id : Int,
+  element_id : Int32,
   name : String,
 ) -> Result[String?, CdpHandlerError] {
   let node = @dom.NodeId::from_int(element_id)
@@ -238,7 +238,7 @@ pub fn handle_get_element_attribute(
 /// Handle getElementTagName via CDP
 pub fn handle_get_element_tag_name(
   session : @cdp.CdpSession,
-  element_id : Int,
+  element_id : Int32,
 ) -> Result[String, CdpHandlerError] {
   let node = @dom.NodeId::from_int(element_id)
   match session.get_tree().get_tag_name(node) {
@@ -277,12 +277,16 @@ pub fn handle_get_title(session : @cdp.CdpSession) -> String {
 
 ///|
 /// CDP Handler errors
+#derive(Debug)
 pub enum CdpHandlerError {
   NoSuchElement(selector~ : String)
   InvalidSelector(selector~ : String)
   NavigationFailed(url~ : String, reason~ : String)
   InternalCdpError(message~ : String)
-} derive(Debug)
+}
+
+///|
+pub extend CdpHandlerError with @debug.Debug::{to_repr}
 
 ///|
 pub impl Show for CdpHandlerError with fn output(self, logger) {
@@ -311,6 +315,9 @@ pub impl Show for CdpHandlerError with fn output(self, logger) {
     }
   }
 }
+
+///|
+pub extend CdpHandlerError with Show::{to_string, output}
 
 ///|
 /// Convert CdpHandlerError to W3C error format

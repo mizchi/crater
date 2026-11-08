@@ -14,4 +14,5 @@ import {
 
 import {
   "mizchi/css/style",
+  "mizchi/image",
 } for "test"

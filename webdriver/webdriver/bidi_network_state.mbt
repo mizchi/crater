@@ -1,7 +1,7 @@
 ///|
 fn BidiProtocol::handle_network_allocate_request_id(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   _params : Json?,
 ) -> Unit {
   self.send_success(

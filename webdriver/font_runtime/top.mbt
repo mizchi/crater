@@ -4,12 +4,12 @@ pub fn loadFont(data : Bytes) -> String {
 }
 
 ///|
-pub fn glyphToSvgPath(codepoint : Int, font_size : Double) -> String {
+pub fn glyphToSvgPath(codepoint : Int32, font_size : Double) -> String {
   @font_js.glyphToSvgPath(codepoint, font_size)
 }
 
 ///|
-pub fn glyphAdvance(codepoint : Int, font_size : Double) -> Double {
+pub fn glyphAdvance(codepoint : Int32, font_size : Double) -> Double {
   @font_js.glyphAdvance(codepoint, font_size)
 }
 
@@ -19,12 +19,12 @@ pub fn getFontInfo() -> String {
 }
 
 ///|
-pub fn fontName(name_id : Int) -> String {
+pub fn fontName(name_id : Int32) -> String {
   @font_js.fontName(name_id)
 }
 
 ///|
-pub fn kernAdvance(cp1 : Int, cp2 : Int, font_size : Double) -> Double {
+pub fn kernAdvance(cp1 : Int32, cp2 : Int32, font_size : Double) -> Double {
   @font_js.kernAdvance(cp1, cp2, font_size)
 }
 
@@ -39,7 +39,7 @@ pub fn measureText(text : String, font_size : Double) -> Double {
 }
 
 ///|
-pub fn fontWeightClass() -> Int {
+pub fn fontWeightClass() -> Int32 {
   @font_js.fontWeightClass()
 }
 

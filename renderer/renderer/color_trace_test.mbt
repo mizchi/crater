@@ -22,25 +22,29 @@ test "trace_dark_mode_css_variables" {
     #|p { color: var(--text-color); }
 
   // Light mode
-  let light_ctx : RenderContext = {
+  let light_ctx : @renderer.RenderContext = {
     viewport_width: 375.0,
     viewport_height: 450.0,
     root_font_size: 16.0,
     color_scheme: @css.ColorScheme::Light,
   }
-  let light_node = render_to_node_with_external_css(html, light_ctx, [css])
+  let light_node = @renderer.render_to_node_with_external_css(html, light_ctx, [
+    css,
+  ])
   // Light mode: text should be dark (#333333), background should be white (#ffffff)
   assert_eq(light_node.style.color.to_hex(), "#333333")
   assert_eq(light_node.style.background_color.to_hex(), "#ffffff")
 
   // Dark mode
-  let dark_ctx : RenderContext = {
+  let dark_ctx : @renderer.RenderContext = {
     viewport_width: 375.0,
     viewport_height: 450.0,
     root_font_size: 16.0,
     color_scheme: @css.ColorScheme::Dark,
   }
-  let dark_node = render_to_node_with_external_css(html, dark_ctx, [css])
+  let dark_node = @renderer.render_to_node_with_external_css(html, dark_ctx, [
+    css,
+  ])
   // Dark mode: text should be light (#eeeeee), background should be dark (#1a1a1a)
   assert_eq(dark_node.style.color.to_hex(), "#eeeeee")
   assert_eq(dark_node.style.background_color.to_hex(), "#1a1a1a")
@@ -76,14 +80,14 @@ test "trace_preact_css" {
     #|._banner_nxrmc_1 a { color: #fff; }
     #|._page_sqynl_1 { background: var(--color-page-bg); }
     #|.token.tag { color: var(--color-code-tag); }
-  let ctx : RenderContext = {
+  let ctx : @renderer.RenderContext = {
     viewport_width: 375.0,
     viewport_height: 450.0,
     root_font_size: 16.0,
     color_scheme: @css.ColorScheme::Light,
   }
-  let node = render_to_node_with_external_css(html, ctx, [css])
-  fn show_all(n : @node.Node, depth : Int) -> Unit {
+  let node = @renderer.render_to_node_with_external_css(html, ctx, [css])
+  fn show_all(n : @node.Node, depth : Int32) -> Unit {
     let _ = String::make(depth * 2, ' ')
     let bg = n.style.background_color
     // Only show non-transparent backgrounds
@@ -122,14 +126,14 @@ test "trace_error_color_check" {
     #|.error-section { background: var(--color-error-bg); }
     #|.error-heading { color: var(--color-error-heading); }
     #|.error-text { color: var(--color-text); }
-  let ctx : RenderContext = {
+  let ctx : @renderer.RenderContext = {
     viewport_width: 375.0,
     viewport_height: 450.0,
     root_font_size: 16.0,
     color_scheme: @css.ColorScheme::Light,
   }
-  let node = render_to_node_with_external_css(html, ctx, [css])
-  fn show_all(n : @node.Node, depth : Int) -> Unit {
+  let node = @renderer.render_to_node_with_external_css(html, ctx, [css])
+  fn show_all(n : @node.Node, depth : Int32) -> Unit {
     let _ = String::make(depth * 2, ' ')
     let bg = n.style.background_color
     let _ = n.style.color
@@ -171,14 +175,14 @@ test "trace_loading_bar_pseudo_element" {
     #|  background: #f2777a;
     #|  transform: translate(-100%);
     #|}
-  let ctx : RenderContext = {
+  let ctx : @renderer.RenderContext = {
     viewport_width: 640.0,
     viewport_height: 800.0,
     root_font_size: 16.0,
     color_scheme: @css.ColorScheme::Light,
   }
-  let node = render_to_node_with_external_css(html, ctx, [css])
-  fn show_all(n : @node.Node, depth : Int) -> Unit {
+  let node = @renderer.render_to_node_with_external_css(html, ctx, [css])
+  fn show_all(n : @node.Node, depth : Int32) -> Unit {
     let _ = String::make(depth * 2, ' ')
     let bg = n.style.background_color
     // Check for any red/pink colors
@@ -223,14 +227,14 @@ test "trace_gradient_fallback" {
     #|._stripes_1267f_37 { background: repeating-linear-gradient(135deg, transparent, transparent 8px, rgba(255,255,255,0.1) 8px, rgba(255,255,255,0.1) 16px); }
     #|.highlight-container { background: var(--color-code-block-bg); }
     #|pre.highlight { background: var(--color-code-block-bg); color: #d4d4d4; }
-  let ctx : RenderContext = {
+  let ctx : @renderer.RenderContext = {
     viewport_width: 640.0,
     viewport_height: 800.0,
     root_font_size: 16.0,
     color_scheme: @css.ColorScheme::Light,
   }
-  let node = render_to_node_with_external_css(html, ctx, [css])
-  fn show_all(n : @node.Node, depth : Int) -> Unit {
+  let node = @renderer.render_to_node_with_external_css(html, ctx, [css])
+  fn show_all(n : @node.Node, depth : Int32) -> Unit {
     let _ = String::make(depth * 2, ' ')
     let bg = n.style.background_color
     // Gradients should fall back to transparent (a=0), not black

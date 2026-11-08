@@ -11,7 +11,7 @@ pub struct V8JsRuntime {
   mut dom_synced : Bool
   mut runtime : @v8.Runtime?
   mock_dom_source : String?
-  id_map : Map[Int, @dom.NodeId]
+  id_map : Map[Int32, @dom.NodeId]
 }
 
 ///|
@@ -715,7 +715,7 @@ fn V8JsRuntime::init_plain_runtime(self : V8JsRuntime) -> Unit {
 ///|
 impl @js.JsRuntime for V8JsRuntime with fn execute(
   self : V8JsRuntime,
-  _context_id : Int,
+  _context_id : Int32,
   dom : @dom.DomTree,
   code : String,
   async_mode : @js.AsyncExecutionMode,
@@ -811,7 +811,7 @@ impl @js.JsRuntime for V8JsRuntime with fn execute(
 ///|
 impl @js.JsRuntime for V8JsRuntime with fn tick(
   self : V8JsRuntime,
-  _context_id : Int,
+  _context_id : Int32,
   dom : @dom.DomTree,
 ) -> @js.JsResult raise @js.JsError {
   match self.runtime {
@@ -845,7 +845,10 @@ impl @js.JsRuntime for V8JsRuntime with fn tick(
 /// Populate id_map with identity mappings for all existing DomTree nodes.
 /// The mock DOM's `create_dom_init_code` sets `_mockId = domtree_id` for
 /// serialized elements, so existing nodes have mock_id == domtree_id.
-fn populate_id_map(dom : @dom.DomTree, id_map : Map[Int, @dom.NodeId]) -> Unit {
+fn populate_id_map(
+  dom : @dom.DomTree,
+  id_map : Map[Int32, @dom.NodeId],
+) -> Unit {
   // Clear previous mappings
   id_map.clear()
   // Traverse all existing nodes by walking the tree from document root
@@ -856,7 +859,7 @@ fn populate_id_map(dom : @dom.DomTree, id_map : Map[Int, @dom.NodeId]) -> Unit {
 fn populate_id_map_recursive(
   dom : @dom.DomTree,
   node_id : @dom.NodeId,
-  id_map : Map[Int, @dom.NodeId],
+  id_map : Map[Int32, @dom.NodeId],
 ) -> Unit {
   let id_int = node_id.to_int()
   id_map[id_int] = node_id
@@ -876,10 +879,10 @@ fn populate_id_map_recursive(
 ///|
 priv struct DomOp {
   op : String
-  id : Int
-  parent_id : Int
-  child_id : Int
-  ref_id : Int
+  id : Int32
+  parent_id : Int32
+  child_id : Int32
+  ref_id : Int32
   tag_name : String
   text : String
   name : String
@@ -961,7 +964,7 @@ fn parse_single_dom_op(json : String) -> DomOp {
 }
 
 ///|
-fn parse_json_int(json : String, field : String) -> Int {
+fn parse_json_int(json : String, field : String) -> Int32 {
   let pattern = "\"" + field + "\":"
   match json.find(pattern) {
     Some(start) => {
@@ -1027,7 +1030,7 @@ fn parse_custom_states_value(value : String) -> Array[String] {
 fn apply_dom_ops(
   dom : @dom.DomTree,
   ops : Array[DomOp],
-  id_map : Map[Int, @dom.NodeId],
+  id_map : Map[Int32, @dom.NodeId],
 ) -> Unit {
   ensure_mock_document_shell(dom, id_map)
   for op in ops {
@@ -1141,7 +1144,7 @@ fn apply_dom_ops(
 ///|
 fn ensure_mock_document_shell(
   dom : @dom.DomTree,
-  id_map : Map[Int, @dom.NodeId],
+  id_map : Map[Int32, @dom.NodeId],
 ) -> Unit {
   let doc = dom.get_document()
   if !id_map.contains(1) {

@@ -107,7 +107,7 @@ pub fn CdpSession::set_title(self : CdpSession, title : String) -> Unit {
 pub fn CdpSession::query_selector(
   self : CdpSession,
   selector : String,
-) -> Result[Int?, CdpError] {
+) -> Result[Int32?, CdpError] {
   let doc = self.tree.get_document()
   self.dom.query_selector(doc.to_int(), selector)
 }
@@ -117,7 +117,7 @@ pub fn CdpSession::query_selector(
 pub fn CdpSession::query_selector_all(
   self : CdpSession,
   selector : String,
-) -> Result[Array[Int], CdpError] {
+) -> Result[Array[Int32], CdpError] {
   let doc = self.tree.get_document()
   self.dom.query_selector_all(doc.to_int(), selector)
 }
@@ -126,7 +126,7 @@ pub fn CdpSession::query_selector_all(
 /// Click element by node ID
 pub fn CdpSession::click_element(
   self : CdpSession,
-  node_id : Int,
+  node_id : Int32,
 ) -> Result[Unit, CdpError] {
   // Get element's box model
   match self.dom.get_box_model(node_id) {
@@ -294,7 +294,7 @@ fn parse_html_into(
 }
 
 ///|
-fn make_substring(chars : Array[Char], start : Int, end : Int) -> String {
+fn make_substring(chars : Array[Char], start : Int32, end : Int32) -> String {
   let buf = StringBuilder()
   for i = start; i < end; i = i + 1 {
     buf.write_char(chars[i])
@@ -306,7 +306,7 @@ fn make_substring(chars : Array[Char], start : Int, end : Int) -> String {
 /// Focus element
 pub fn CdpSession::focus_element(
   self : CdpSession,
-  node_id : Int,
+  node_id : Int32,
 ) -> Result[Unit, CdpError] {
   let node = @dom.NodeId::from_int(node_id)
   // Verify node exists

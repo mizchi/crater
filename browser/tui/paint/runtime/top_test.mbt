@@ -59,7 +59,9 @@ test "tui runtime paint prepares sorted viewport paint" {
     text: None,
   }
 
-  let prepared = prepare_viewport_paint(root, root_layout, 0.0, 60.0, 0.0)
+  let prepared = @runtime.prepare_viewport_paint(
+    root, root_layout, 0.0, 60.0, 0.0,
+  )
   inspect(prepared is Some(_), content="true")
   match prepared {
     Some(p) => {

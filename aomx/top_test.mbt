@@ -21,11 +21,11 @@ test "aomx facade extracts content and computes grounding" {
     ),
   )
 
-  let config = { ..ExtractConfig::default(), min_text_length: 1, }
-  let extraction = extract_content(tree, config)
-  let grounded = find_best(
+  let config = { ..@crater-aomx.ExtractConfig::default(), min_text_length: 1, }
+  let extraction = @crater-aomx.extract_content(tree, config)
+  let grounded = @crater-aomx.find_best(
     grounded_tree,
-    SpatialQuery::InRegion(SpatialRegion::Center),
+    @crater-aomx.SpatialQuery::InRegion(@crater-aomx.SpatialRegion::Center),
     { width: 1280.0, height: 720.0, },
   )
 
@@ -46,8 +46,12 @@ test "aomx facade diffs accessibility trees" {
     ),
   )
 
-  let diff = diff_trees(before, after, DiffConfig::default())
+  let diff = @crater-aomx.diff_trees(
+    before,
+    after,
+    @crater-aomx.DiffConfig::default(),
+  )
 
   inspect(diff.changed_count > 0, content="true")
-  inspect(trees_equal(before, after), content="false")
+  inspect(@crater-aomx.trees_equal(before, after), content="false")
 }

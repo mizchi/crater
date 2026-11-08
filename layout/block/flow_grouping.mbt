@@ -4,9 +4,9 @@
 /// contiguous inline children are grouped together for IFC processing
 priv enum FlowChildGroup {
   /// Contiguous inline elements (processed through IFC as anonymous block)
-  InlineGroup(nodes~ : Array[@node.Node], indices~ : Array[Int])
+  InlineGroup(nodes~ : Array[@node.Node], indices~ : Array[Int32])
   /// Single block-level element
-  BlockChild(node~ : @node.Node, index~ : Int)
+  BlockChild(node~ : @node.Node, index~ : Int32)
 }
 
 ///|
@@ -131,11 +131,11 @@ fn should_establish_ifc_with_contents(children : Array[@node.Node]) -> Bool {
 /// Contiguous inline elements are grouped into InlineGroup entries
 fn group_flow_children_for_anonymous_blocks(
   flow_nodes : Array[@node.Node],
-  flow_indices : Array[Int],
+  flow_indices : Array[Int32],
 ) -> Array[FlowChildGroup] {
   let groups : Array[FlowChildGroup] = []
   let mut current_inline_nodes : Array[@node.Node] = []
-  let mut current_inline_indices : Array[Int] = []
+  let mut current_inline_indices : Array[Int32] = []
   for i = 0; i < flow_nodes.length(); i = i + 1 {
     let node = flow_nodes[i]
     let index = flow_indices[i]
@@ -187,14 +187,14 @@ fn compute_mixed_content_layout(
   border : @types.Rect[Double],
   ctx : @layout_types.LayoutContext,
   warnings : Array[@layout_types.LayoutWarning],
-  layout_map : Map[Int, @layout_types.Layout],
+  layout_map : Map[Int32, @layout_types.Layout],
   dispatch : @node.DispatchFn,
-  writing_mode? : @style.WritingMode = @style.WritingMode::HorizontalTb,
-  direction? : @style.Direction = @style.Direction::Ltr,
-  text_align? : @style.TextAlign = @style.TextAlign::Start,
-  white_space? : @style.WhiteSpace = @style.WhiteSpace::Normal,
-  justify_items? : @types.Alignment = @types.Stretch,
-  allow_mixed_auto_shrink? : Bool = true,
+  writing_mode~ : @style.WritingMode = @style.WritingMode::HorizontalTb,
+  direction~ : @style.Direction = @style.Direction::Ltr,
+  text_align~ : @style.TextAlign = @style.TextAlign::Start,
+  white_space~ : @style.WhiteSpace = @style.WhiteSpace::Normal,
+  justify_items~ : @types.Alignment = @types.Stretch,
+  allow_mixed_auto_shrink~ : Bool = true,
 ) -> MixedContentResult {
   // In vertical writing-mode, blocks flow horizontally instead of vertically
   let is_vertical = writing_mode.is_vertical()

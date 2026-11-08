@@ -17,9 +17,13 @@ pub fn compute_layout(@node.Node, Double, Double) -> @crater-core.Layout
 // Errors
 
 // Types and methods
-type BaselineInfo derive(@debug.Debug)
+#derive(@debug.Debug)
+type BaselineInfo
+pub fn BaselineInfo::to_repr(Self) -> @debug.Repr
 
-type GridAreaBounds derive(@debug.Debug)
+#derive(@debug.Debug)
+type GridAreaBounds
+pub fn GridAreaBounds::to_repr(Self) -> @debug.Repr
 
 // Type aliases
 

@@ -1,6 +1,6 @@
 ///|
 test "CharBuffer::new creates buffer of correct size" {
-  let buf = CharBuffer::new(80, 24)
+  let buf = @tui.CharBuffer::new(80, 24)
   inspect(buf.width, content="80")
   inspect(buf.height, content="24")
   inspect(buf.cells.length(), content="1920")
@@ -8,8 +8,8 @@ test "CharBuffer::new creates buffer of correct size" {
 
 ///|
 test "CharBuffer::set_cell and get_cell" {
-  let buf = CharBuffer::new(10, 5)
-  let cell : CharCell = {
+  let buf = @tui.CharBuffer::new(10, 5)
+  let cell : @tui.CharCell = {
     char: 'X',
     fg: @types.Color::rgb(255, 0, 0),
     bg: @types.Color::transparent(),
@@ -25,8 +25,8 @@ test "CharBuffer::set_cell and get_cell" {
 
 ///|
 test "CharBuffer::set_cell bounds check" {
-  let buf = CharBuffer::new(10, 5)
-  let cell = CharCell::from_char('X')
+  let buf = @tui.CharBuffer::new(10, 5)
+  let cell = @tui.CharCell::from_char('X')
   // These should not crash - they're silently ignored
   buf.set_cell(-1, 0, cell)
   buf.set_cell(0, -1, cell)
@@ -39,8 +39,8 @@ test "CharBuffer::set_cell bounds check" {
 
 ///|
 test "CharBuffer::fill_rect" {
-  let buf = CharBuffer::new(10, 5)
-  let cell : CharCell = {
+  let buf = @tui.CharBuffer::new(10, 5)
+  let cell : @tui.CharCell = {
     char: '#',
     fg: @types.Color::white(),
     bg: @types.Color::rgb(0, 0, 255),
@@ -61,8 +61,8 @@ test "CharBuffer::fill_rect" {
 
 ///|
 test "CharBuffer::write_text simple" {
-  let buf = CharBuffer::new(20, 5)
-  let style = TextStyle::default()
+  let buf = @tui.CharBuffer::new(20, 5)
+  let style = @tui.TextStyle::default()
   let written = buf.write_text(0, 0, "Hello", style, 20)
   inspect(written, content="5")
   inspect(buf.get_cell(0, 0).char, content="H")
@@ -73,8 +73,8 @@ test "CharBuffer::write_text simple" {
 
 ///|
 test "CharBuffer::write_text respects max_width" {
-  let buf = CharBuffer::new(20, 5)
-  let style = TextStyle::default()
+  let buf = @tui.CharBuffer::new(20, 5)
+  let style = @tui.TextStyle::default()
   let written = buf.write_text(0, 0, "Hello World", style, 5)
   inspect(written, content="5")
   inspect(buf.get_cell(4, 0).char, content="o")
@@ -83,23 +83,23 @@ test "CharBuffer::write_text respects max_width" {
 
 ///|
 test "char_display_width for ASCII" {
-  inspect(char_display_width('A'), content="1")
-  inspect(char_display_width('z'), content="1")
-  inspect(char_display_width(' '), content="1")
+  inspect(@tui.char_display_width('A'), content="1")
+  inspect(@tui.char_display_width('z'), content="1")
+  inspect(@tui.char_display_width(' '), content="1")
 }
 
 ///|
 test "char_display_width for CJK" {
-  inspect(char_display_width('日'), content="2")
-  inspect(char_display_width('本'), content="2")
-  inspect(char_display_width('あ'), content="2")
-  inspect(char_display_width('ア'), content="2")
+  inspect(@tui.char_display_width('日'), content="2")
+  inspect(@tui.char_display_width('本'), content="2")
+  inspect(@tui.char_display_width('あ'), content="2")
+  inspect(@tui.char_display_width('ア'), content="2")
 }
 
 ///|
 test "CharBuffer::write_text with CJK" {
-  let buf = CharBuffer::new(20, 5)
-  let style = TextStyle::default()
+  let buf = @tui.CharBuffer::new(20, 5)
+  let style = @tui.TextStyle::default()
   let written = buf.write_text(0, 0, "日本", style, 20)
   // 日=2, 本=2 → 4 columns
   inspect(written, content="4")
@@ -111,7 +111,7 @@ test "CharBuffer::write_text with CJK" {
 
 ///|
 test "CharCell::default" {
-  let cell = CharCell::default()
+  let cell = @tui.CharCell::default()
   inspect(cell.char, content=" ")
   inspect(cell.bold, content="false")
   inspect(cell.underline, content="false")
@@ -119,23 +119,23 @@ test "CharCell::default" {
 
 ///|
 test "TextStyle::default" {
-  let style = TextStyle::default()
+  let style = @tui.TextStyle::default()
   inspect(style.bold, content="false")
   inspect(style.underline, content="false")
 }
 
 ///|
 test "buffer_to_plain with underline" {
-  let buf = CharBuffer::new(10, 1)
+  let buf = @tui.CharBuffer::new(10, 1)
   // Write underlined text
-  let style : TextStyle = {
+  let style : @tui.TextStyle = {
     fg: @types.Color::white(),
     bg: @types.Color::transparent(),
     bold: false,
     underline: true,
   }
   let _ = buf.write_text(2, 0, "Link", style, 10)
-  let output = buffer_to_plain(buf)
+  let output = @tui.buffer_to_plain(buf)
   // Should contain underline escape sequence
   inspect(output.contains("\u001b[4m"), content="true")
   inspect(output.contains("Link"), content="true")
@@ -143,19 +143,19 @@ test "buffer_to_plain with underline" {
 
 ///|
 test "buffer_to_plain_with_links generates OSC 8" {
-  let buf = CharBuffer::new(20, 1)
+  let buf = @tui.CharBuffer::new(20, 1)
   // Write underlined text
-  let style : TextStyle = {
+  let style : @tui.TextStyle = {
     fg: @types.Color::white(),
     bg: @types.Color::transparent(),
     bold: false,
     underline: true,
   }
   let _ = buf.write_text(2, 0, "Click", style, 20)
-  let links : Array[PlainLink] = [
+  let links : Array[@tui.PlainLink] = [
     { col: 2, row: 0, width: 5, url: "https://example.com", },
   ]
-  let output = buffer_to_plain_with_links(buf, links)
+  let output = @tui.buffer_to_plain_with_links(buf, links)
   // Debug: print escape sequences in hex for verification
   println("Output length: " + output.length().to_string())
   println("Contains OSC start: " + output.contains("\u001b]8;;").to_string())
@@ -186,8 +186,8 @@ test "buffer_to_plain_with_links generates OSC 8" {
 ///|
 test "OSC 8 escape sequence format" {
   // Verify the escape sequence format is correct
-  let start = ansi_hyperlink_start("https://test.com")
-  let end = ansi_hyperlink_end()
+  let start = @tui.ansi_hyperlink_start("https://test.com")
+  let end = @tui.ansi_hyperlink_end()
   // Build byte string for debugging
   let start_bytes = StringBuilder()
   for c in start {

@@ -1,0 +1,55 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-terminal-protocol/internal/ansi"
+
+// Values
+pub fn ansi_bg_256(Int32) -> String
+
+pub fn ansi_bg_reset() -> String
+
+pub fn ansi_bold() -> String
+
+pub fn ansi_clear_line() -> String
+
+pub fn ansi_clear_screen() -> String
+
+pub fn ansi_dim() -> String
+
+pub fn ansi_enter_alt_screen() -> String
+
+pub fn ansi_fg_256(Int32) -> String
+
+pub fn ansi_full_reset() -> String
+
+pub fn ansi_hide_cursor() -> String
+
+pub fn ansi_leave_alt_screen() -> String
+
+pub fn ansi_move_to(Int32, Int32) -> String
+
+pub fn ansi_reset() -> String
+
+pub fn ansi_reset_attrs() -> String
+
+pub fn ansi_reverse() -> String
+
+pub fn ansi_show_cursor() -> String
+
+pub fn ansi_underline() -> String
+
+pub fn disable_mouse() -> String
+
+pub fn disable_mouse_all() -> String
+
+pub fn enable_mouse() -> String
+
+pub fn enable_mouse_all() -> String
+
+pub fn rgb_to_256(Int32, Int32, Int32) -> Int32
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

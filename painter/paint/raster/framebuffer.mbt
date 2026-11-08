@@ -1,15 +1,15 @@
 ///|
 /// Simple framebuffer for rendering
 pub struct Framebuffer {
-  width : Int
-  height : Int
-  pixels : Array[Int] // Color index per pixel (0 = transparent)
+  width : Int32
+  height : Int32
+  pixels : Array[Int32] // Color index per pixel (0 = transparent)
 }
 
 ///|
-pub fn Framebuffer::new(width : Int, height : Int) -> Framebuffer {
+pub fn Framebuffer::new(width : Int32, height : Int32) -> Framebuffer {
   let size = width * height
-  let pixels : Array[Int] = Array::make(size, 0)
+  let pixels : Array[Int32] = Array::make(size, 0)
   { width, height, pixels, }
 }
 
@@ -20,10 +20,10 @@ pub fn Framebuffer::new(width : Int, height : Int) -> Framebuffer {
 /// Used by selector-scoped rendering to return just one element's pixels.
 pub fn Framebuffer::crop(
   self : Framebuffer,
-  x : Int,
-  y : Int,
-  width : Int,
-  height : Int,
+  x : Int32,
+  y : Int32,
+  width : Int32,
+  height : Int32,
 ) -> Framebuffer {
   let x0 = clamp_index(x, self.width)
   let y0 = clamp_index(y, self.height)
@@ -34,7 +34,7 @@ pub fn Framebuffer::crop(
   if cw == 0 || ch == 0 {
     return { width: cw, height: ch, pixels: [], }
   }
-  let pixels : Array[Int] = Array::make(cw * ch, 0)
+  let pixels : Array[Int32] = Array::make(cw * ch, 0)
   for row = 0; row < ch; row = row + 1 {
     let src_row = (y0 + row) * self.width + x0
     let dst_row = row * cw
@@ -46,7 +46,7 @@ pub fn Framebuffer::crop(
 }
 
 ///|
-fn clamp_index(value : Int, max : Int) -> Int {
+fn clamp_index(value : Int32, max : Int32) -> Int32 {
   if value < 0 {
     0
   } else if value > max {
@@ -59,9 +59,9 @@ fn clamp_index(value : Int, max : Int) -> Int {
 ///|
 fn Framebuffer::set_pixel(
   self : Framebuffer,
-  x : Int,
-  y : Int,
-  color : Int,
+  x : Int32,
+  y : Int32,
+  color : Int32,
 ) -> Unit {
   if x >= 0 && x < self.width && y >= 0 && y < self.height {
     self.pixels[y * self.width + x] = color
@@ -71,10 +71,10 @@ fn Framebuffer::set_pixel(
 ///|
 fn Framebuffer::fill_span(
   self : Framebuffer,
-  y : Int,
-  x1 : Int,
-  x2 : Int,
-  color : Int,
+  y : Int32,
+  x1 : Int32,
+  x2 : Int32,
+  color : Int32,
 ) -> Unit {
   if y < 0 || y >= self.height {
     return
@@ -91,7 +91,11 @@ fn Framebuffer::fill_span(
 }
 
 ///|
-pub fn Framebuffer::get_pixel(self : Framebuffer, x : Int, y : Int) -> Int {
+pub fn Framebuffer::get_pixel(
+  self : Framebuffer,
+  x : Int32,
+  y : Int32,
+) -> Int32 {
   if x >= 0 && x < self.width && y >= 0 && y < self.height {
     self.pixels[y * self.width + x]
   } else {
@@ -103,11 +107,11 @@ pub fn Framebuffer::get_pixel(self : Framebuffer, x : Int, y : Int) -> Int {
 /// Draw a filled rectangle
 pub fn Framebuffer::fill_rect(
   self : Framebuffer,
-  x : Int,
-  y : Int,
-  w : Int,
-  h : Int,
-  color : Int,
+  x : Int32,
+  y : Int32,
+  w : Int32,
+  h : Int32,
+  color : Int32,
 ) -> Unit {
   if w <= 0 || h <= 0 {
     return
@@ -131,11 +135,11 @@ pub fn Framebuffer::fill_rect(
 /// Draw a rectangle outline
 pub fn Framebuffer::stroke_rect(
   self : Framebuffer,
-  x : Int,
-  y : Int,
-  w : Int,
-  h : Int,
-  color : Int,
+  x : Int32,
+  y : Int32,
+  w : Int32,
+  h : Int32,
+  color : Int32,
 ) -> Unit {
   // Top and bottom edges
   for px = x; px < x + w; px = px + 1 {
@@ -154,13 +158,13 @@ pub fn Framebuffer::stroke_rect(
 /// spacing: pixels between diagonal lines (e.g., 4)
 pub fn Framebuffer::fill_rect_hatched(
   self : Framebuffer,
-  x : Int,
-  y : Int,
-  w : Int,
-  h : Int,
-  bg_color : Int,
-  line_color : Int,
-  spacing : Int,
+  x : Int32,
+  y : Int32,
+  w : Int32,
+  h : Int32,
+  bg_color : Int32,
+  line_color : Int32,
+  spacing : Int32,
 ) -> Unit {
   for py = y; py < y + h; py = py + 1 {
     for px = x; px < x + w; px = px + 1 {

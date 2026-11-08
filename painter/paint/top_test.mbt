@@ -1,9 +1,9 @@
 ///|
 test "paint package diff_trees reports paint property changes" {
-  let before_paint = PaintProperties::default()
-  let after_paint = { ..PaintProperties::default(), opacity: 0.5, }
+  let before_paint = @paint.PaintProperties::default()
+  let after_paint = { ..@paint.PaintProperties::default(), opacity: 0.5, }
 
-  let before = PaintNode::new(
+  let before = @paint.PaintNode::new(
     "root",
     "div",
     0.0,
@@ -13,7 +13,7 @@ test "paint package diff_trees reports paint property changes" {
     before_paint,
     [],
   )
-  let after = PaintNode::new(
+  let after = @paint.PaintNode::new(
     "root",
     "div",
     0.0,
@@ -24,21 +24,21 @@ test "paint package diff_trees reports paint property changes" {
     [],
   )
 
-  let diff = diff_trees(before, after)
+  let diff = @paint.diff_trees(before, after)
   inspect(diff.changes.length(), content="1")
   inspect(diff.changes[0].property, content="opacity")
 }
 
 ///|
 test "paint package serializes paint nodes to json" {
-  let node = PaintNode::new(
+  let node = @paint.PaintNode::new(
     "root",
     "div",
     0.0,
     0.0,
     120.0,
     50.0,
-    PaintProperties::default(),
+    @paint.PaintProperties::default(),
     [],
     text=Some("hello"),
   )

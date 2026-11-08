@@ -24,7 +24,7 @@ pub fn DomDomain::new(tree : @dom.DomTree) -> DomDomain {
 /// DOM.getDocument - Returns the root DOM node
 pub fn DomDomain::get_document(
   self : DomDomain,
-  depth : Int?, // Optional depth to include
+  depth : Int32?, // Optional depth to include
 ) -> Result[CdpNode, CdpError] {
   let root = self.tree.get_document()
   let max_depth = depth.unwrap_or(1)
@@ -35,8 +35,8 @@ pub fn DomDomain::get_document(
 /// DOM.requestChildNodes - Requests child nodes for the given node
 pub fn DomDomain::request_child_nodes(
   self : DomDomain,
-  node_id : Int,
-  depth : Int?,
+  node_id : Int32,
+  depth : Int32?,
 ) -> Result[Array[CdpNode], CdpError] {
   let max_depth = depth.unwrap_or(1)
   let node = @dom.NodeId::from_int(node_id)
@@ -63,9 +63,9 @@ pub fn DomDomain::request_child_nodes(
 /// DOM.querySelector - Executes querySelector on a given node
 pub fn DomDomain::query_selector(
   self : DomDomain,
-  node_id : Int,
+  node_id : Int32,
   selector : String,
-) -> Result[Int?, CdpError] {
+) -> Result[Int32?, CdpError] {
   let node = @dom.NodeId::from_int(node_id)
   match self.tree.query_selector(node, selector) {
     Ok(result) =>
@@ -81,9 +81,9 @@ pub fn DomDomain::query_selector(
 /// DOM.querySelectorAll - Executes querySelectorAll on a given node
 pub fn DomDomain::query_selector_all(
   self : DomDomain,
-  node_id : Int,
+  node_id : Int32,
   selector : String,
-) -> Result[Array[Int], CdpError] {
+) -> Result[Array[Int32], CdpError] {
   let node = @dom.NodeId::from_int(node_id)
   match self.tree.query_selector_all(node, selector) {
     Ok(results) => Ok(results.map(fn(n) { n.to_int() }))
@@ -99,7 +99,7 @@ pub fn DomDomain::query_selector_all(
 /// DOM.getAttributes - Returns attributes for the given node
 pub fn DomDomain::get_attributes(
   self : DomDomain,
-  node_id : Int,
+  node_id : Int32,
 ) -> Result[Array[String], CdpError] {
   let node = @dom.NodeId::from_int(node_id)
   match self.tree.get_attributes(node) {
@@ -120,7 +120,7 @@ pub fn DomDomain::get_attributes(
 /// DOM.setAttributeValue - Sets attribute value
 pub fn DomDomain::set_attribute_value(
   self : DomDomain,
-  node_id : Int,
+  node_id : Int32,
   name : String,
   value : String,
 ) -> Result[Unit, CdpError] {
@@ -135,7 +135,7 @@ pub fn DomDomain::set_attribute_value(
 /// DOM.removeAttribute - Removes attribute
 pub fn DomDomain::remove_attribute(
   self : DomDomain,
-  node_id : Int,
+  node_id : Int32,
   name : String,
 ) -> Result[Unit, CdpError] {
   let node = @dom.NodeId::from_int(node_id)
@@ -153,7 +153,7 @@ pub fn DomDomain::remove_attribute(
 /// DOM.getOuterHTML - Returns node's outer HTML
 pub fn DomDomain::get_outer_html(
   self : DomDomain,
-  node_id : Int,
+  node_id : Int32,
 ) -> Result[String, CdpError] {
   let node = @dom.NodeId::from_int(node_id)
   match self.tree.get_node_info(node) {
@@ -176,7 +176,7 @@ pub fn DomDomain::get_outer_html(
 /// DOM.setNodeValue - Sets node value (for text nodes)
 pub fn DomDomain::set_node_value(
   self : DomDomain,
-  node_id : Int,
+  node_id : Int32,
   value : String,
 ) -> Result[Unit, CdpError] {
   let node = @dom.NodeId::from_int(node_id)
@@ -190,7 +190,7 @@ pub fn DomDomain::set_node_value(
 /// DOM.removeNode - Removes node from the tree
 pub fn DomDomain::remove_node(
   self : DomDomain,
-  node_id : Int,
+  node_id : Int32,
 ) -> Result[Unit, CdpError] {
   let node = @dom.NodeId::from_int(node_id)
   match self.tree.get_parent(node) {
@@ -213,7 +213,7 @@ pub fn DomDomain::remove_node(
 /// DOM.getBoxModel - Returns box model for the given node
 pub fn DomDomain::get_box_model(
   self : DomDomain,
-  node_id : Int,
+  node_id : Int32,
 ) -> Result[CdpBoxModel, CdpError] {
   let node = @dom.NodeId::from_int(node_id)
   match self.tree.get_cached_rect(node) {
@@ -260,8 +260,8 @@ pub fn DomDomain::get_box_model(
 fn DomDomain::node_to_cdp(
   self : DomDomain,
   node : @dom.NodeId,
-  current_depth : Int,
-  max_depth : Int,
+  current_depth : Int32,
+  max_depth : Int32,
 ) -> Result[CdpNode, CdpError] {
   match self.tree.get_node_info(node) {
     Ok(info) => {

@@ -8,7 +8,7 @@ import {
 }
 
 // Values
-pub fn clear_intrinsic_cache_for_node(Int) -> Unit
+pub fn clear_intrinsic_cache_for_node(Int32) -> Unit
 
 pub fn clear_intrinsic_cache_for_subtree(@node.Node) -> Unit
 

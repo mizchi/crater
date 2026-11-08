@@ -46,12 +46,18 @@ pub fn LCPCandidate::with_load_time(Self, Double) -> Self
 pub fn LCPCandidate::with_render_time(Self, Double) -> Self
 pub fn LCPCandidate::with_resource_loaded(Self, Bool) -> Self
 
+#derive(Eq, @debug.Debug)
 pub(all) enum LCPElementType {
   Image(src~ : String)
   BackgroundImage(url~ : String)
   Video(poster~ : String?)
   TextBlock
-} derive(Eq, @debug.Debug)
+}
+pub fn LCPElementType::equal(Self, Self) -> Bool
+pub fn LCPElementType::not_equal(Self, Self) -> Bool
+pub fn LCPElementType::output(Self, &Logger) -> Unit
+pub fn LCPElementType::to_repr(Self) -> @debug.Repr
+pub fn LCPElementType::to_string(Self) -> String
 pub impl Show for LCPElementType
 
 pub struct LCPTracker {
@@ -76,6 +82,8 @@ pub(all) struct LayoutShift {
   distance_fraction : Double
   score : Double
 }
+pub fn LayoutShift::output(Self, &Logger) -> Unit
+pub fn LayoutShift::to_string(Self) -> String
 pub impl Show for LayoutShift
 
 // Type aliases

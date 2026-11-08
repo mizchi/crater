@@ -73,7 +73,7 @@ pub fn build_geolocation_coordinates_remote_value(coordinates : Json) -> Json {
 }
 
 ///|
-pub fn build_geolocation_error_remote_value(code : Int) -> Json {
+pub fn build_geolocation_error_remote_value(code : Int32) -> Json {
   @protocol.make_object({
     "type": Json::string("object"),
     "value": Json::array([
@@ -89,7 +89,7 @@ pub fn build_geolocation_error_remote_value(code : Int) -> Json {
 }
 
 ///|
-pub fn geolocation_watch_scope_key(ctx_id : String, watch_id : Int) -> String {
+pub fn geolocation_watch_scope_key(ctx_id : String, watch_id : Int32) -> String {
   ctx_id + "|" + watch_id.to_string()
 }
 

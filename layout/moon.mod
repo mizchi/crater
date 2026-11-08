@@ -1,12 +1,12 @@
 name = "mizchi/crater-layout"
 
-version = "0.19.1"
+version = "0.19.2"
 
 description = "Layout kernel for crater CSS layout engine"
 
 import {
-  "mizchi/css@0.7.4",
-  "mizchi/crater-core@0.19.0",
+  "mizchi/css@0.8.0",
+  "mizchi/crater-core@0.19.2",
   "mizchi/layout@0.2.1",
 }
 

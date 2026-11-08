@@ -70,7 +70,7 @@ fn build_vrt_paint_tree(
 
 ///|
 fn vrt_component_fixture(
-  padding_px : Int,
+  padding_px : Int32,
   bg : String,
   accent : String,
 ) -> String {

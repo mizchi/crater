@@ -1,7 +1,7 @@
 ///|
 fn BidiProtocol::handle_network_remember_blocked_request(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map = match params {
@@ -39,7 +39,7 @@ fn BidiProtocol::handle_network_remember_blocked_request(
 ///|
 fn BidiProtocol::handle_network_get_blocked_request(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let blocked_request_id = match
@@ -61,7 +61,7 @@ fn BidiProtocol::handle_network_get_blocked_request(
 ///|
 fn BidiProtocol::handle_network_get_blocked_request_phase_value(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match
@@ -74,7 +74,7 @@ fn BidiProtocol::handle_network_get_blocked_request_phase_value(
 ///|
 fn BidiProtocol::handle_network_get_blocked_request_navigation_value(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match
@@ -87,7 +87,7 @@ fn BidiProtocol::handle_network_get_blocked_request_navigation_value(
 ///|
 fn BidiProtocol::resolve_network_blocked_request_field(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
   field_name : String,
 ) -> Json? {
@@ -110,7 +110,7 @@ fn BidiProtocol::resolve_network_blocked_request_field(
 ///|
 fn BidiProtocol::handle_network_forget_blocked_request(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let blocked_request_id = match
@@ -125,7 +125,7 @@ fn BidiProtocol::handle_network_forget_blocked_request(
 ///|
 fn BidiProtocol::handle_network_has_blocked_navigation_request(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map = match params {

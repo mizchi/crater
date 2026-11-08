@@ -1,16 +1,9 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, test } from "vitest";
+import { extractWorkflowJob, extractWorkflowStep } from "./ci-workflow-test-helpers";
 
 function readRepoFile(relativePath: string): string {
   return readFileSync(new URL(`../${relativePath}`, import.meta.url), "utf8");
-}
-
-function extractWorkflowJob(workflow: string, jobName: string): string {
-  const start = workflow.indexOf(`  ${jobName}:\n`);
-  expect(start).toBeGreaterThanOrEqual(0);
-  const rest = workflow.slice(start + 1);
-  const nextJob = rest.search(/\n  [a-zA-Z0-9_-]+:\n/);
-  return nextJob === -1 ? rest : rest.slice(0, nextJob);
 }
 
 describe("CI VRT parallelization", () => {
@@ -37,10 +30,13 @@ describe("CI VRT parallelization", () => {
     expect(paintVrtJob.indexOf("Restore Playwright Chromium browser cache")).toBeLessThan(
       paintVrtJob.indexOf("Install Playwright browsers for VRT"),
     );
-    expect(paintVrtJob).toContain("if: steps.paint_vrt_playwright_cache.outputs.cache-hit != 'true'");
+    const paintVrtInstall = extractWorkflowStep(paintVrtJob, "Install Playwright browsers for VRT");
+    expect(paintVrtInstall).toContain("if: steps.paint_vrt_chromium_present.outputs.present != 'true'");
     expect(workflow).toContain("Restore WPT VRT reference fixtures");
     expect(workflow).toContain("path: .cache/wpt-vrt-reference");
-    expect(workflow).toContain("if: steps.wpt_vrt_playwright_cache.outputs.cache-hit != 'true'");
+    const wptVrtJob = extractWorkflowJob(workflow, "playwright-wpt-vrt");
+    const wptVrtInstall = extractWorkflowStep(wptVrtJob, "Install Playwright browsers for VRT");
+    expect(wptVrtInstall).toContain("if: steps.wpt_vrt_chromium_present.outputs.present != 'true'");
     expect(workflow).toContain("paint-vrt-summary:");
     expect(workflow).toContain("pattern: paint-vrt-artifacts-*");
   });

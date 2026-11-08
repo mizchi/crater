@@ -3,7 +3,7 @@
 /// Returns None when an error response has already been sent.
 fn BidiProtocol::validate_network_add_intercept_params(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Map[String, Json]? {
   let map = match params {

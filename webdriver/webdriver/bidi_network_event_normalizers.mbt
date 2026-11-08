@@ -1,7 +1,7 @@
 ///|
 fn BidiProtocol::normalize_synthetic_network_cookie_entries(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   raw_cookies : Json?,
 ) -> @crater_network.SyntheticNetworkCookieOverride? {
   match
@@ -19,7 +19,7 @@ fn BidiProtocol::normalize_synthetic_network_cookie_entries(
 ///|
 fn BidiProtocol::normalize_synthetic_network_continue_url(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   raw_url : Json,
 ) -> String? {
   match @crater_network.synthetic_network_normalize_continue_url(raw_url) {
@@ -34,7 +34,7 @@ fn BidiProtocol::normalize_synthetic_network_continue_url(
 ///|
 fn BidiProtocol::normalize_synthetic_network_string_list(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   raw_list : Json?,
   field_name : String,
 ) -> Array[String]? {
@@ -53,7 +53,7 @@ fn BidiProtocol::normalize_synthetic_network_string_list(
 ///|
 fn BidiProtocol::normalize_synthetic_network_response_overrides(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   raw_overrides : Json?,
 ) -> @crater_network.SyntheticNetworkResponseOverrides? {
   match

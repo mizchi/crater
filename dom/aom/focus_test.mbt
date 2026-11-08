@@ -10,8 +10,8 @@ test "focus: basic tab order with buttons" {
     #|  <button id="btn3">Third</button>
     #|</div>
   let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  let order = get_tab_order_ids(tree)
+  let tree = @aom.build_accessibility_tree_from_element(elem)
+  let order = @aom.get_tab_order_ids(tree)
   inspect(order.length(), content="3")
 
   // Should be in document order (all have implicit tabindex=0)
@@ -29,8 +29,8 @@ test "focus: tabindex positive values come first" {
     #|  <button id="btn3" tabindex="1">Third</button>
     #|</div>
   let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  let order = get_tab_order_ids(tree)
+  let tree = @aom.build_accessibility_tree_from_element(elem)
+  let order = @aom.get_tab_order_ids(tree)
   inspect(order.length(), content="3")
 
   // tabindex=1 first, then tabindex=2, then implicit 0
@@ -48,8 +48,8 @@ test "focus: tabindex negative values excluded" {
     #|  <button id="btn3">Third</button>
     #|</div>
   let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  let order = get_tab_order_ids(tree)
+  let tree = @aom.build_accessibility_tree_from_element(elem)
+  let order = @aom.get_tab_order_ids(tree)
   // btn2 should be excluded from tab order
   inspect(order.length(), content="2")
   inspect(order[0], content="btn1")
@@ -66,8 +66,8 @@ test "focus: mixed focusable elements" {
     #|  <select id="select1"><option>Option</option></select>
     #|</div>
   let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  let order = get_tab_order_ids(tree)
+  let tree = @aom.build_accessibility_tree_from_element(elem)
+  let order = @aom.get_tab_order_ids(tree)
   inspect(order.length(), content="4")
 
   // All should be in document order
@@ -86,8 +86,8 @@ test "focus: FocusManager focus_next cycles through elements" {
     #|  <button id="btn3">Third</button>
     #|</div>
   let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  let manager = FocusManager::new(tree)
+  let tree = @aom.build_accessibility_tree_from_element(elem)
+  let manager = @aom.FocusManager::new(tree)
 
   // Initially no focus
   inspect(manager.has_focus(), content="false")
@@ -120,8 +120,8 @@ test "focus: FocusManager focus_prev cycles backwards" {
     #|  <button id="btn3">Third</button>
     #|</div>
   let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  let manager = FocusManager::new(tree)
+  let tree = @aom.build_accessibility_tree_from_element(elem)
+  let manager = @aom.FocusManager::new(tree)
 
   // Start from the end
   let _ = manager.focus_last()
@@ -149,8 +149,8 @@ test "focus: FocusManager focus_by_id" {
     #|  <button id="btn3">Third</button>
     #|</div>
   let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  let manager = FocusManager::new(tree)
+  let tree = @aom.build_accessibility_tree_from_element(elem)
+  let manager = @aom.FocusManager::new(tree)
 
   // Focus btn2 directly
   let result = manager.focus_by_id("btn2")
@@ -171,8 +171,8 @@ test "focus: FocusManager blur clears focus" {
     #|  <button id="btn1">First</button>
     #|</div>
   let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  let manager = FocusManager::new(tree)
+  let tree = @aom.build_accessibility_tree_from_element(elem)
+  let manager = @aom.FocusManager::new(tree)
   let _ = manager.focus_first()
   inspect(manager.has_focus(), content="true")
   manager.blur()
@@ -189,8 +189,8 @@ test "focus: disabled elements not focusable" {
     #|  <button id="btn3">Third</button>
     #|</div>
   let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  let order = get_tab_order_ids(tree)
+  let tree = @aom.build_accessibility_tree_from_element(elem)
+  let order = @aom.get_tab_order_ids(tree)
   inspect(order.length(), content="2")
   inspect(order[0], content="btn1")
   inspect(order[1], content="btn3")
@@ -205,8 +205,8 @@ test "focus: input type hidden not focusable" {
     #|  <button id="btn">Button</button>
     #|</div>
   let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  let order = get_tab_order_ids(tree)
+  let tree = @aom.build_accessibility_tree_from_element(elem)
+  let order = @aom.get_tab_order_ids(tree)
   inspect(order.length(), content="2")
   inspect(order[0], content="visible")
   inspect(order[1], content="btn")
@@ -221,8 +221,8 @@ test "focus: anchor without href not focusable" {
     #|  <button id="btn">Button</button>
     #|</div>
   let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  let order = get_tab_order_ids(tree)
+  let tree = @aom.build_accessibility_tree_from_element(elem)
+  let order = @aom.get_tab_order_ids(tree)
   inspect(order.length(), content="2")
   inspect(order[0], content="link1")
   inspect(order[1], content="btn")
@@ -237,8 +237,8 @@ test "focus: tabindex=0 makes non-focusable element focusable" {
     #|  <button id="btn2">Second</button>
     #|</div>
   let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  let order = get_tab_order_ids(tree)
+  let tree = @aom.build_accessibility_tree_from_element(elem)
+  let order = @aom.get_tab_order_ids(tree)
   inspect(order.length(), content="3")
   inspect(order[0], content="btn1")
   inspect(order[1], content="div1")
@@ -257,8 +257,8 @@ test "focus: complex tabindex ordering" {
     #|  <button id="btn6" tabindex="-1">Not tabbable</button>
     #|</div>
   let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  let order = get_tab_order_ids(tree)
+  let tree = @aom.build_accessibility_tree_from_element(elem)
+  let order = @aom.get_tab_order_ids(tree)
 
   // Order should be:
   // 1. tabindex=1 elements in document order: btn3, btn5
@@ -280,8 +280,8 @@ test "focus: empty tree has no focusable elements" {
     #|  <p>No focusable elements here</p>
     #|</div>
   let elem = @html.parse(html).unwrap()
-  let tree = build_accessibility_tree_from_element(elem)
-  let manager = FocusManager::new(tree)
+  let tree = @aom.build_accessibility_tree_from_element(elem)
+  let manager = @aom.FocusManager::new(tree)
   inspect(manager.focusable_count(), content="0")
   inspect(manager.focus_next() is None, content="true")
   inspect(manager.focus_prev() is None, content="true")

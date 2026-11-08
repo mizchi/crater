@@ -1,12 +1,12 @@
 ///|
 pub(all) struct RgbaCacheEntry {
-  width : Int
-  height : Int
+  width : Int32
+  height : Int32
   rgba_base64 : String
 }
 
 ///|
-fn make_substr(chars : Array[Char], start : Int, end : Int) -> String {
+fn make_substr(chars : Array[Char], start : Int32, end : Int32) -> String {
   let buf = StringBuilder()
   for i = start; i < end && i < chars.length(); i = i + 1 {
     buf.write_char(chars[i])
@@ -24,12 +24,14 @@ pub fn RgbaCacheEntry::encode(self : RgbaCacheEntry) -> String {
 }
 
 ///|
-pub fn RgbaCacheEntry::decode_rgba_bytes(self : RgbaCacheEntry) -> Array[Int]? {
+pub fn RgbaCacheEntry::decode_rgba_bytes(
+  self : RgbaCacheEntry,
+) -> Array[Int32]? {
   decode_base64_bytes(self.rgba_base64)
 }
 
 ///|
-fn decode_base64_char(c : Char) -> Int? {
+fn decode_base64_char(c : Char) -> Int32? {
   let cp = c.to_int()
   if cp >= 'A'.to_int() && cp <= 'Z'.to_int() {
     Some(cp - 'A'.to_int())
@@ -47,9 +49,9 @@ fn decode_base64_char(c : Char) -> Int? {
 }
 
 ///|
-fn decode_base64_bytes(encoded : String) -> Array[Int]? {
-  let bytes : Array[Int] = []
-  let quartet : Array[Int] = []
+fn decode_base64_bytes(encoded : String) -> Array[Int32]? {
+  let bytes : Array[Int32] = []
+  let quartet : Array[Int32] = []
   for c in encoded {
     if c.is_ascii_whitespace() {
       continue
@@ -107,7 +109,7 @@ pub fn TerminalImageCacheEntry::encode(
 }
 
 ///|
-fn parse_int_ascii(s : String) -> Int {
+fn parse_int_ascii(s : String) -> Int32 {
   let mut result = 0
   for c in s {
     if c >= '0' && c <= '9' {
@@ -396,7 +398,7 @@ pub fn prepare_raster_image_for_kitty_cache(b64_data : String) -> String {
 }
 
 ///|
-fn hex_digit_to_int(c : Char) -> Int? {
+fn hex_digit_to_int(c : Char) -> Int32? {
   if c >= '0' && c <= '9' {
     Some(c.to_int() - '0'.to_int())
   } else if c >= 'a' && c <= 'f' {
@@ -434,7 +436,7 @@ fn percent_decode_data_url_payload(payload : String) -> String {
 }
 
 ///|
-fn data_url_payload_end(chars : Array[Char], start : Int) -> Int {
+fn data_url_payload_end(chars : Array[Char], start : Int32) -> Int32 {
   let mut end = chars.length()
   for i = start; i < chars.length(); i = i + 1 {
     if chars[i] == '?' || chars[i] == '#' {

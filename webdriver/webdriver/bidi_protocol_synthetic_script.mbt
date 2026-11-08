@@ -9,7 +9,7 @@ fn BidiProtocol::has_any_input_synthetic_events(self : BidiProtocol) -> Bool {
 ///|
 fn BidiProtocol::try_handle_synthetic_all_events_eval(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   realm_id : String,
   expression : String,
@@ -105,7 +105,7 @@ fn maybe_normalize_all_events_remote_value(
 ///|
 fn BidiProtocol::try_handle_synthetic_register_service_worker_eval(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   realm_id : String,
   expression : String,
 ) -> Bool {
@@ -170,7 +170,7 @@ fn BidiProtocol::emit_speculation_prefetch_status_updated(
 ///|
 fn BidiProtocol::try_handle_synthetic_speculation_eval(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   realm_id : String,
   expression : String,
@@ -353,7 +353,7 @@ fn BidiProtocol::maybe_adjust_document_dimensions_eval_result(
 ///|
 fn BidiProtocol::evaluate_handled_script_expression(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   realm_id : String,
   expression : String,
@@ -409,7 +409,7 @@ fn BidiProtocol::apply_pending_prompt_result_var(
 /// Handle synthetic user prompts used in current webdriver WPT cluster.
 fn BidiProtocol::try_handle_synthetic_user_prompt(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   realm_id : String,
   expression : String,
@@ -451,7 +451,7 @@ fn BidiProtocol::try_handle_synthetic_user_prompt(
 /// Handle iframe removal scripts used by context_destroyed WPTs.
 fn BidiProtocol::try_handle_synthetic_iframe_remove(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   realm_id : String,
   expression : String,
@@ -473,7 +473,7 @@ fn BidiProtocol::try_handle_synthetic_iframe_remove(
 /// Handle document.open/write/close evaluate snippets used by WPTs.
 fn BidiProtocol::try_handle_synthetic_document_write_eval(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   realm_id : String,
   expression : String,
@@ -510,7 +510,7 @@ fn get_serialized_string_argument(value : Json) -> String? {
 /// Handle localStorage get/set in script.callFunction with context isolation.
 fn BidiProtocol::try_handle_synthetic_local_storage_call(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   realm_id : String,
   function_declaration : String,
@@ -581,7 +581,7 @@ fn BidiProtocol::try_handle_synthetic_local_storage_call(
 /// Handle document.open flow used by history_updated WPT.
 fn BidiProtocol::try_handle_synthetic_history_document_open_call(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   realm_id : String,
   function_declaration : String,
@@ -634,7 +634,7 @@ fn BidiProtocol::try_handle_synthetic_history_document_open_call(
 /// Handle document.visibilityState / document.hasFocus() queries for activate tests.
 fn BidiProtocol::try_handle_synthetic_document_status_call(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   realm_id : String,
   function_declaration : String,

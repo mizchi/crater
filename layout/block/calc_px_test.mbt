@@ -28,7 +28,7 @@ fn block_child_size(
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   (layout.children[0].width, layout.children[0].height)
 }
 

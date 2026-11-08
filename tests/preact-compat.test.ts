@@ -6,6 +6,8 @@
  */
 
 import { test, expect } from "@playwright/test";
+import { createServer } from "node:http";
+import { once } from "node:events";
 import WebSocket from "ws";
 import { resolveBidiUrl } from "../scripts/bidi-url.ts";
 
@@ -1035,30 +1037,48 @@ test.describe("Preact Compatibility Tests", () => {
     expect(pText).toBe("Content");
   });
 
-  test("__loadPage fetches and parses remote page", async () => {
-    const evalResp = await client.send("script.evaluate", {
-      expression: `
-        __loadPage('https://example.com').then(result => {
-          const title = document.querySelector('title');
-          const h1 = document.querySelector('h1');
-          return {
-            url: result.url,
-            status: result.status,
-            title: title ? title.textContent : null,
-            h1: h1 ? h1.textContent : null
-          };
-        });
-      `,
-      target: { context: contextId },
-      awaitPromise: true,
+  test("__loadPage fetches and parses an HTTP page", async () => {
+    const server = createServer((_req, res) => {
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      res.end("<!doctype html><html><head><title>Fixture Page</title></head><body><h1>Fetched Page</h1></body></html>");
     });
+    server.listen(0, "127.0.0.1");
+    await once(server, "listening");
+    const address = server.address();
+    if (!address || typeof address === "string") {
+      throw new Error("failed to start HTTP fixture server");
+    }
+    const url = `http://127.0.0.1:${address.port}/page`;
+    try {
+      const evalResp = await client.send("script.evaluate", {
+        expression: `
+          __loadPage(${JSON.stringify(url)}).then(result => {
+            const title = document.querySelector('title');
+            const h1 = document.querySelector('h1');
+            return {
+              url: result.url,
+              status: result.status,
+              title: title ? title.textContent : null,
+              h1: h1 ? h1.textContent : null
+            };
+          });
+        `,
+        target: { context: contextId },
+        awaitPromise: true,
+      });
 
-    expect(evalResp.type).toBe("success");
-    const result = evalResp.result as { result: { type: string; value: Array<[string, unknown]> } };
-    const obj = Object.fromEntries(result.result.value.map(([k, v]: [string, { value: unknown }]) => [k, v.value]));
-    expect(obj.url).toBe("https://example.com");
-    expect(obj.status).toBe(200);
-    expect(obj.h1).toContain("Example Domain");
+      expect(evalResp.type).toBe("success");
+      const result = evalResp.result as { result: { type: string; value: Array<[string, unknown]> } };
+      const obj = Object.fromEntries(result.result.value.map(([k, v]: [string, { value: unknown }]) => [k, v.value]));
+      expect(obj.url).toBe(url);
+      expect(obj.status).toBe(200);
+      expect(obj.title).toBe("Fixture Page");
+      expect(obj.h1).toBe("Fetched Page");
+    } finally {
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => error ? reject(error) : resolve());
+      });
+    }
   });
 
   // ES Modules support tests

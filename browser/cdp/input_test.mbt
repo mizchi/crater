@@ -1,6 +1,6 @@
 ///|
 test "Input.dispatchMouseEvent focuses deepest hit element" {
-  let ctx = TestContext::with_html(
+  let ctx = @cdp.TestContext::with_html(
     "<div id=\"outer\"><input id=\"field\" type=\"text\"></input></div>",
   )
   let dom = ctx.dom()
@@ -33,7 +33,9 @@ test "Input.dispatchMouseEvent focuses deepest hit element" {
 
 ///|
 test "Input.insertText uses focus from mouse hit testing" {
-  let ctx = TestContext::with_html("<input id=\"field\" type=\"text\"></input>")
+  let ctx = @cdp.TestContext::with_html(
+    "<input id=\"field\" type=\"text\"></input>",
+  )
   let dom = ctx.dom()
   let tree = ctx.tree()
   let input = ctx.input()

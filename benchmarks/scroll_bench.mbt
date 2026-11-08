@@ -382,16 +382,16 @@ test "bench_incremental_layout_full" (b : @bench.T) {
 // =============================================================================
 
 ///|
-fn create_benchmark_tree(depth : Int, branching : Int) -> @tree.LayoutNode {
+fn create_benchmark_tree(depth : Int32, branching : Int32) -> @tree.LayoutNode {
   create_benchmark_subtree("root", depth, branching, 0)
 }
 
 ///|
 fn create_benchmark_subtree(
   prefix : String,
-  depth : Int,
-  branching : Int,
-  level : Int,
+  depth : Int32,
+  branching : Int32,
+  level : Int32,
 ) -> @tree.LayoutNode {
   if depth == 0 {
     // Leaf node

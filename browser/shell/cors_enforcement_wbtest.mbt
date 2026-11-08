@@ -17,9 +17,9 @@
 /// Header names are written lowercased so the gate's lookup (which
 /// uses `get_header` semantics) matches regardless of case.
 fn cors_test_response(
-  status~ : Int,
+  status~ : Int32,
   aca_origin? : String,
-  body? : String = "/*js*/",
+  body~ : String = "/*js*/",
 ) -> @http.HttpResponse {
   let h : Map[String, String] = Map([])
   if aca_origin is Some(v) {
@@ -33,11 +33,11 @@ fn cors_test_response(
 /// the initiating page; the target URL goes to a different origin so
 /// classify_request takes the cross-origin branch.
 fn cors_test_options(
-  http_method? : String = "GET",
+  http_method~ : String = "GET",
   origin~ : String,
-  mode? : @http.RequestMode = Cors,
-  credentials? : @http.CredentialsMode = Omit,
-  headers? : Map[String, String] = {},
+  mode~ : @http.RequestMode = Cors,
+  credentials~ : @http.CredentialsMode = Omit,
+  headers~ : Map[String, String] = {},
 ) -> @http.FetchOptions {
   {
     ..@http.FetchOptions::default(),
@@ -56,7 +56,7 @@ fn cors_test_options(
 async fn cors_test_fetch_response(
   _u : String,
   _o : @http.FetchOptions,
-  calls : Array[Int],
+  calls : Array[Int32],
   response : @http.HttpResponse,
 ) -> @http.HttpResponse raise @http.HttpError {
   @async.sleep(0)
@@ -73,8 +73,8 @@ async fn cors_test_fetch_response(
 ///|
 async test "script_fetch_with_cors: cross-origin GET Allow + ACA-Origin echo → Ok" {
   let preflight_cache = @http_cors.PreflightCache::new()
-  let preflight_calls : Array[Int] = [0]
-  let fetcher_calls : Array[Int] = [0]
+  let preflight_calls : Array[Int32] = [0]
+  let fetcher_calls : Array[Int32] = [0]
   let preflight_fetcher = fn(
     _req : @http_cors.PreflightRequest,
   ) -> @http.HttpResponse {
@@ -121,7 +121,7 @@ async test "script_fetch_with_cors: cross-origin GET Allow but missing ACA-Origi
     // No ACA-Origin header → validate_actual_response should refuse.
     cors_test_fetch_response(u, o, [], cors_test_response(status=200))
   }
-  let outcome : Result[Int, String] = try {
+  let outcome : Result[Int32, String] = try {
     let r = script_fetch_with_cors(
       url="https://api.other.com/x.js",
       options=cors_test_options(origin="https://example.com"),
@@ -145,8 +145,8 @@ async test "script_fetch_with_cors: cross-origin GET Allow but missing ACA-Origi
 ///|
 async test "script_fetch_with_cors: PreflightRequired path invokes preflight fetcher once on first call" {
   let preflight_cache = @http_cors.PreflightCache::new()
-  let preflight_calls : Array[Int] = [0]
-  let fetcher_calls : Array[Int] = [0]
+  let preflight_calls : Array[Int32] = [0]
+  let fetcher_calls : Array[Int32] = [0]
   let preflight_fetcher = fn(
     _req : @http_cors.PreflightRequest,
   ) -> @http.HttpResponse {
@@ -194,8 +194,8 @@ async test "script_fetch_with_cors: PreflightRequired path invokes preflight fet
 ///|
 async test "script_fetch_with_cors: cached preflight skips preflight fetcher on second request" {
   let preflight_cache = @http_cors.PreflightCache::new()
-  let preflight_calls : Array[Int] = [0]
-  let fetcher_calls : Array[Int] = [0]
+  let preflight_calls : Array[Int32] = [0]
+  let fetcher_calls : Array[Int32] = [0]
   let preflight_fetcher = fn(
     _req : @http_cors.PreflightRequest,
   ) -> @http.HttpResponse {
@@ -295,7 +295,7 @@ async test "script_fetch_with_cors: NoCors + non-simple method → Blocked class
       cors_test_response(status=200, aca_origin="https://example.com"),
     )
   }
-  let outcome : Result[Int, String] = try {
+  let outcome : Result[Int32, String] = try {
     let r = script_fetch_with_cors(
       url="https://api.other.com/x.js",
       options=cors_test_options(

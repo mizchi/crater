@@ -1,0 +1,19 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-terminal-protocol/internal/sixel"
+
+// Values
+pub fn encode_indexed_pixels_to_sixel(Int32, Int32, Array[Int32], Array[Color], include_all_colors? : Bool, compress? : Bool) -> String
+
+// Errors
+
+// Types and methods
+pub(all) struct Color {
+  r : Int32
+  g : Int32
+  b : Int32
+}
+pub fn Color::rgb(Int32, Int32, Int32) -> Self
+
+// Type aliases
+
+// Traits

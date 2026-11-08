@@ -9,7 +9,7 @@
 pub fn compute_justify(
   justify : @types.Alignment,
   free_space : Double,
-  item_count : Int,
+  item_count : Int32,
 ) -> (Double, Double) {
   @core.compute_justify(justify, free_space, item_count)
 }

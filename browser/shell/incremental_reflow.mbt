@@ -24,7 +24,7 @@ pub fn Browser::set_cascade_reuse(self : Browser, enabled : Bool) -> Unit {
 /// The number of elements that reused a prior computed style on the last render
 /// (0 when reuse was off, the stylesheet was not reuse-safe, or the CSS changed).
 /// Lets a test assert the fast path actually engaged.
-pub fn Browser::cascade_reuse_last_count(self : Browser) -> Int {
+pub fn Browser::cascade_reuse_last_count(self : Browser) -> Int32 {
   self.cascade_reuse_last_count
 }
 
@@ -93,9 +93,9 @@ fn Browser::build_dynamic_layout_tree(
   @node.stabilize_uids(node, self.uid_registry)
   let tree = match (self.incremental_prev_tree, self.incremental_prev_node) {
     (Some(prev), Some(prev_node)) => {
-      let prev_by_uid : Map[Int, @node.Node] = Map([])
+      let prev_by_uid : Map[Int32, @node.Node] = Map([])
       index_nodes_by_uid(prev_node, prev_by_uid)
-      let seeds : Array[Int] = []
+      let seeds : Array[Int32] = []
       collect_changed_seed_uids(node, prev_by_uid, seeds)
       prev.reconcile_from(node, prev.flow_dirty_uids(seeds), vw, vh)
     }
@@ -109,7 +109,7 @@ fn Browser::build_dynamic_layout_tree(
 
 ///|
 /// Index a render-node tree by uid (document order).
-fn index_nodes_by_uid(node : @node.Node, out : Map[Int, @node.Node]) -> Unit {
+fn index_nodes_by_uid(node : @node.Node, out : Map[Int32, @node.Node]) -> Unit {
   out[node.uid] = node
   for child in node.children {
     index_nodes_by_uid(child, out)
@@ -135,8 +135,8 @@ fn node_layout_inputs_equal(a : @node.Node, b : @node.Node) -> Bool {
 /// uids likewise dirty their parent structurally.
 fn collect_changed_seed_uids(
   node : @node.Node,
-  prev_by_uid : Map[Int, @node.Node],
-  seeds : Array[Int],
+  prev_by_uid : Map[Int32, @node.Node],
+  seeds : Array[Int32],
 ) -> Unit {
   match prev_by_uid.get(node.uid) {
     Some(prev) =>

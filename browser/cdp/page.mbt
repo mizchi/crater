@@ -15,11 +15,11 @@ pub struct PageDomain {
   /// Frame ID
   frame_id : String
   /// Loader ID (changes on each navigation)
-  mut loader_id : Int
+  mut loader_id : Int32
   /// Navigation history
   history : Array[CdpNavigationEntry]
   /// Current history index
-  mut history_index : Int
+  mut history_index : Int32
 }
 
 ///|
@@ -204,22 +204,30 @@ pub fn PageDomain::get_title(self : PageDomain) -> String {
 
 ///|
 /// Navigate result
+#derive(Debug)
 pub struct CdpNavigateResult {
   frame_id : String
   loader_id : String
   error_text : String?
-} derive(Debug)
+}
+
+///|
+pub extend CdpNavigateResult with @debug.Debug::{to_repr}
 
 ///|
 /// Navigation history
+#derive(Debug)
 pub struct CdpNavigationHistory {
-  current_index : Int
+  current_index : Int32
   entries : Array[CdpNavigationEntry]
-} derive(Debug)
+}
 
 // =============================================================================
 // Helpers
 // =============================================================================
+
+///|
+pub extend CdpNavigationHistory with @debug.Debug::{to_repr}
 
 ///|
 /// Extract origin from URL

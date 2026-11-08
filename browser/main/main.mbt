@@ -2,13 +2,13 @@
 /// TUI Browser - Main entry point
 
 ///|
-let char_width : Int = 8 // Width of one character in pixels
+let char_width : Int32 = 8 // Width of one character in pixels
 
 ///|
-let char_height : Int = 16 // Height of one character in pixels
+let char_height : Int32 = 16 // Height of one character in pixels
 
 ///|
-let default_viewport_height : Int = 384 // 24 rows * 16px
+let default_viewport_height : Int32 = 384 // 24 rows * 16px
 
 ///|
 priv struct GraphicsSupport {
@@ -55,11 +55,11 @@ extern "js" fn js_get_env(name : String) -> String =
 
 ///|
 #cfg(target="native")
-extern "C" fn tui_supports_kitty_graphics() -> Int = "tui_supports_kitty_graphics"
+extern "C" fn tui_supports_kitty_graphics() -> Int32 = "tui_supports_kitty_graphics"
 
 ///|
 #cfg(target="native")
-extern "C" fn tui_supports_sixel_graphics() -> Int = "tui_supports_sixel_graphics"
+extern "C" fn tui_supports_sixel_graphics() -> Int32 = "tui_supports_sixel_graphics"
 
 ///|
 #cfg(target="js")
@@ -150,7 +150,7 @@ fn fallback_output_notice(
 
 ///|
 /// Parse a simple integer from string (returns 0 on failure)
-fn parse_int_simple(s : String) -> Int {
+fn parse_int_simple(s : String) -> Int32 {
   let mut result = 0
   for i = 0; i < s.length(); i = i + 1 {
     let c = s[i]
@@ -166,7 +166,10 @@ fn parse_int_simple(s : String) -> Int {
 ///|
 /// Calculate viewport size and terminal columns from terminal dimensions
 /// Returns (viewport_width_px, viewport_height_px, terminal_cols)
-fn calculate_viewport(text_mode : Bool, override_cols : Int) -> (Int, Int, Int) {
+fn calculate_viewport(
+  text_mode : Bool,
+  override_cols : Int32,
+) -> (Int32, Int32, Int32) {
   let (detected_cols, rows) = @tui.get_terminal_size()
   let cols = if override_cols > 0 { override_cols } else { detected_cols }
   let height = if text_mode {
@@ -204,7 +207,7 @@ struct Options {
   extract_main : Bool // Extract main content text only
   headless : HeadlessMode // Headless rendering mode
   show_help : Bool // Show help message
-  width : Int // Override viewport width in columns (0 = auto-detect)
+  width : Int32 // Override viewport width in columns (0 = auto-detect)
   incremental_reflow : Bool // Reconcile layout across re-renders (default off)
 }
 

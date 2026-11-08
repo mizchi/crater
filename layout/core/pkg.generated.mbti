@@ -38,7 +38,7 @@ pub fn compute_grid_self_alignment_offset(@values.Alignment, Double, Double, Boo
 
 pub fn compute_inset_axis_position_with_auto_margin(Double?, Double?, Double, Double, Bool, Bool, Double, Double, Double, Double) -> Double
 
-pub fn compute_justify(@values.Alignment, Double, Int) -> (Double, Double)
+pub fn compute_justify(@values.Alignment, Double, Int32) -> (Double, Double)
 
 pub fn resolve_align_self(@values.AlignSelf, @values.Alignment) -> @values.Alignment
 

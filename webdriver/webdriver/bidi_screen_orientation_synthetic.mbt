@@ -64,7 +64,7 @@ fn BidiProtocol::emit_screen_orientation_messages_for_contexts(
 ///|
 fn BidiProtocol::resolve_emulation_set_screen_orientation_override(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Bool? {
   let map = match params {

@@ -10,7 +10,7 @@ fn BidiProtocol::close_wait_for_destroyed(
 ///|
 fn BidiProtocol::handle_browsing_context_get_close_metadata(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map = match params {
@@ -53,7 +53,7 @@ fn BidiProtocol::handle_browsing_context_get_close_metadata(
 ///|
 fn BidiProtocol::handle_browsing_context_close_with_state(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   self.handle_browsing_context_close_mode(request_id, params, true)
@@ -62,7 +62,7 @@ fn BidiProtocol::handle_browsing_context_close_with_state(
 ///|
 fn BidiProtocol::handle_browsing_context_close_result(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   self.handle_browsing_context_close_mode(request_id, params, false)
@@ -71,7 +71,7 @@ fn BidiProtocol::handle_browsing_context_close_result(
 ///|
 fn BidiProtocol::handle_browsing_context_close_mode(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
   include_wait_for_destroyed : Bool,
 ) -> Unit {

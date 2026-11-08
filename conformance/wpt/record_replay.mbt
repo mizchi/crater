@@ -1,5 +1,5 @@
 ///|
-fn wpt_render_context(width : Int, height : Int) -> @renderer.RenderContext {
+fn wpt_render_context(width : Int32, height : Int32) -> @renderer.RenderContext {
   {
     viewport_width: width.to_double(),
     viewport_height: height.to_double(),
@@ -16,8 +16,8 @@ fn wpt_render_context(width : Int, height : Int) -> @renderer.RenderContext {
 /// needed. Pair with renderHtmlToJsonForWpt to also capture the layout.
 pub fn recordRenderSideEffectsForWpt(
   html : String,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
 ) -> String {
   install_wpt_external_measurement_providers()
   let ctx = wpt_render_context(width, height)
@@ -39,8 +39,8 @@ pub fn recordRenderSideEffectsForWpt(
 /// inputs; misses fall back to the live provider). Returns the layout JSON.
 pub fn renderHtmlWithReplayForWpt(
   html : String,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
   recording : String,
 ) -> String {
   install_wpt_external_measurement_providers()

@@ -6,9 +6,9 @@ fn BidiProtocol::locate_nodes_inner_text(
   text_value : String,
   ignore_case : Bool,
   match_type : String,
-  max_depth : Int,
+  max_depth : Int32,
   start_node_shared_ids : Array[String],
-  max_node_count : Int,
+  max_node_count : Int32,
   serialization_options_json : String,
 ) -> Json {
   let value_literal = "\"" + escape_js_string(text_value) + "\""

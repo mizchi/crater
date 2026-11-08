@@ -101,13 +101,13 @@ fn BidiProtocol::apply_navigation_provide_response_body_override(
 ///|
 fn BidiProtocol::send_continue_blocked_response_result(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   response_started_event : Json?,
   response_completed_event : Json?,
   auth_required_event : Json?,
   load_event : Json?,
   consumed : Bool,
-  status_code : Int?,
+  status_code : Int32?,
   reason_phrase : String?,
   body_text : String?,
 ) -> Unit {
@@ -311,7 +311,7 @@ fn BidiProtocol::maybe_emit_followup_preflight_blocked_request(
 ///|
 fn BidiProtocol::build_synthetic_auth_required_event_json(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   input : @crater_network.SyntheticNetworkEventInput,
   blocked_request : Map[String, Json],
 ) -> Json? {
@@ -357,7 +357,7 @@ fn BidiProtocol::build_synthetic_auth_required_event_json(
 ///|
 fn BidiProtocol::synthetic_network_request_lookup_id(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> String? {
   let _ = self

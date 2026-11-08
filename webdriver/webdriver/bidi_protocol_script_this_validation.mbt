@@ -2,7 +2,7 @@
 /// Validate this parameter for callFunction (must be a serialized value object)
 fn BidiProtocol::validate_this_param(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit? {
   match get_param_raw(params, "this") {

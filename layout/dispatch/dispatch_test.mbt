@@ -4,7 +4,7 @@
 ///|
 test "dispatch_ifc_horizontal_layout" {
   // Set up the layout dispatcher
-  setup()
+  @dispatch.setup()
 
   // Test that inline-block children in a block container are laid out horizontally using IFC
   let default_style = @style.Style::default()
@@ -27,7 +27,7 @@ test "dispatch_ifc_horizontal_layout" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute_layout(root, ctx)
+  let layout = @dispatch.compute_layout(root, ctx)
   // Two inline-block children should be laid out horizontally
   inspect(layout.children.length(), content="2")
   // First child at x=0
@@ -44,7 +44,7 @@ test "dispatch_ifc_horizontal_layout" {
 ///|
 test "dispatch_ifc_line_wrap" {
   // Set up the layout dispatcher
-  setup()
+  @dispatch.setup()
 
   // Test that inline-block children wrap when they exceed available width
   let default_style = @style.Style::default()
@@ -70,7 +70,7 @@ test "dispatch_ifc_line_wrap" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute_layout(root, ctx)
+  let layout = @dispatch.compute_layout(root, ctx)
   // First child at (0, 0)
   inspect(layout.children[0].x, content="0")
   inspect(layout.children[0].y, content="0")
@@ -87,7 +87,7 @@ test "dispatch_ifc_line_wrap" {
 ///|
 test "dispatch_ifc_with_padding" {
   // Set up the layout dispatcher
-  setup()
+  @dispatch.setup()
 
   // Test IFC with container padding
   let default_style = @style.Style::default()
@@ -118,7 +118,7 @@ test "dispatch_ifc_with_padding" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute_layout(root, ctx)
+  let layout = @dispatch.compute_layout(root, ctx)
   // Child should be offset by padding
   inspect(layout.children[0].x, content="10")
   inspect(layout.children[0].y, content="20")
@@ -129,7 +129,7 @@ test "dispatch_ifc_with_padding" {
 ///|
 test "dispatch_inline_block_shrink_to_fit" {
   // Set up the layout dispatcher
-  setup()
+  @dispatch.setup()
 
   // Test that inline-block elements shrink-to-fit their content
   let default_style = @style.Style::default()
@@ -161,7 +161,7 @@ test "dispatch_inline_block_shrink_to_fit" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute_layout(root, ctx)
+  let layout = @dispatch.compute_layout(root, ctx)
 
   // The inline-block should shrink to fit its content
   // Width should be: child width (50) + padding (10+10) = 70

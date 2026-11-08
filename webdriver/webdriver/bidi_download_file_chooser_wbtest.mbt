@@ -44,7 +44,7 @@ fn dl_proto() -> BidiProtocol {
 ///|
 fn dl_subscribe(
   proto : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   event_name : String,
 ) -> Unit {
   let payload = "{\"id\":" +
@@ -59,7 +59,7 @@ fn dl_subscribe(
 ///|
 fn dl_eval(
   proto : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   expr : String,
 ) -> Array[String] {
   let payload = "{\"id\":" +

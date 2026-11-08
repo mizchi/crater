@@ -17,10 +17,10 @@ test "compute_shadow_element_style applies :host and inner rules to Style" {
   let _ = tree.set_attribute(inner, "class", "inner")
   let _ = tree.append_child(shadow, inner)
   let rules = tree.shadow_stylesheet_rules(shadow)
-  let ctx = RenderContext::default()
+  let ctx = @renderer.RenderContext::default()
 
   // :host { display: flex } reaches the host's computed Style.
-  let host_style = compute_shadow_element_style(
+  let host_style = @renderer.compute_shadow_element_style(
     tree,
     host,
     rules,
@@ -31,7 +31,7 @@ test "compute_shadow_element_style applies :host and inner rules to Style" {
   inspect(host_style.display, content="Flex")
 
   // .inner { width: 50px } reaches the inner node; :host does not.
-  let inner_style = compute_shadow_element_style(
+  let inner_style = @renderer.compute_shadow_element_style(
     tree,
     host,
     rules,
@@ -72,10 +72,10 @@ test "compute_shadow_tree_styles threads inheritance across the boundary" {
   let _ = tree.append_child(shadow, wrap)
   let leaf = tree.create_element("span")
   let _ = tree.append_child(wrap, leaf)
-  let styles = compute_shadow_tree_styles(
+  let styles = @renderer.compute_shadow_tree_styles(
     tree,
     host,
-    RenderContext::default(),
+    @renderer.RenderContext::default(),
     None,
   )
 
@@ -113,10 +113,10 @@ test "compute_slotted_styles applies ::slotted rules to assigned light nodes" {
   let _ = tree.append_child(host, tagged)
   let plain = tree.create_element("span")
   let _ = tree.append_child(host, plain)
-  let styles = compute_slotted_styles(
+  let styles = @renderer.compute_slotted_styles(
     tree,
     host,
-    RenderContext::default(),
+    @renderer.RenderContext::default(),
     None,
   )
 

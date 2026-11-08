@@ -3,7 +3,11 @@
 
 ///|
 /// Find substring position in a string from a start offset.
-pub fn find_substring(haystack : String, needle : String, start : Int) -> Int? {
+pub fn find_substring(
+  haystack : String,
+  needle : String,
+  start : Int32,
+) -> Int32? {
   let h = haystack.to_array()
   let n = needle.to_array()
   if n.length() == 0 {

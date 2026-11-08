@@ -2,129 +2,129 @@
 package "mizchi/crater-wasm/gen"
 
 // Values
-pub fn cabi_realloc(Int, Int, Int, Int) -> Int
+pub fn cabi_realloc(Int32, Int32, Int32, Int32) -> Int32
 
-pub fn wasmExportAddChild(Int, Int, Int, Int) -> Int
+pub fn wasmExportAddChild(Int32, Int32, Int32, Int32) -> Int32
 
-pub fn wasmExportCalculateLayout(Double, Double) -> Int
+pub fn wasmExportCalculateLayout(Double, Double) -> Int32
 
-pub fn wasmExportCalculateLayoutPostReturn(Int) -> Unit
+pub fn wasmExportCalculateLayoutPostReturn(Int32) -> Unit
 
-pub fn wasmExportComputeFull() -> Int
+pub fn wasmExportComputeFull() -> Int32
 
-pub fn wasmExportComputeFullPostReturn(Int) -> Unit
+pub fn wasmExportComputeFullPostReturn(Int32) -> Unit
 
-pub fn wasmExportComputeIncremental() -> Int
+pub fn wasmExportComputeIncremental() -> Int32
 
-pub fn wasmExportComputeIncrementalPostReturn(Int) -> Unit
+pub fn wasmExportComputeIncrementalPostReturn(Int32) -> Unit
 
-pub fn wasmExportComputeLayout(Int, Int, Int, Int) -> Int
+pub fn wasmExportComputeLayout(Int32, Int32, Int32, Int32) -> Int32
 
-pub fn wasmExportComputeLayoutPostReturn(Int) -> Unit
+pub fn wasmExportComputeLayoutPostReturn(Int32) -> Unit
 
-pub fn wasmExportCreateNode(Int, Int) -> Int
+pub fn wasmExportCreateNode(Int32, Int32) -> Int32
 
-pub fn wasmExportCreateTree(Int, Int, Int, Int) -> Int
+pub fn wasmExportCreateTree(Int32, Int32, Int32, Int32) -> Int32
 
 pub fn wasmExportDestroyTree() -> Unit
 
-pub fn wasmExportExtractMainContent(Int, Int) -> Int
+pub fn wasmExportExtractMainContent(Int32, Int32) -> Int32
 
-pub fn wasmExportExtractMainContentPostReturn(Int) -> Unit
+pub fn wasmExportExtractMainContentPostReturn(Int32) -> Unit
 
-pub fn wasmExportExtractMainContentWithLayout(Int, Int, Int, Int) -> Int
+pub fn wasmExportExtractMainContentWithLayout(Int32, Int32, Int32, Int32) -> Int32
 
-pub fn wasmExportExtractMainContentWithLayoutPostReturn(Int) -> Unit
+pub fn wasmExportExtractMainContentWithLayoutPostReturn(Int32) -> Unit
 
-pub fn wasmExportGetAccessibilityTree(Int, Int) -> Int
+pub fn wasmExportGetAccessibilityTree(Int32, Int32) -> Int32
 
-pub fn wasmExportGetAccessibilityTreePostReturn(Int) -> Unit
+pub fn wasmExportGetAccessibilityTreePostReturn(Int32) -> Unit
 
-pub fn wasmExportGetAriaSnapshot(Int, Int) -> Int
+pub fn wasmExportGetAriaSnapshot(Int32, Int32) -> Int32
 
-pub fn wasmExportGetAriaSnapshotJson(Int, Int) -> Int
+pub fn wasmExportGetAriaSnapshotJson(Int32, Int32) -> Int32
 
-pub fn wasmExportGetAriaSnapshotJsonPostReturn(Int) -> Unit
+pub fn wasmExportGetAriaSnapshotJsonPostReturn(Int32) -> Unit
 
-pub fn wasmExportGetAriaSnapshotPostReturn(Int) -> Unit
+pub fn wasmExportGetAriaSnapshotPostReturn(Int32) -> Unit
 
-pub fn wasmExportGetCacheStats() -> Int
+pub fn wasmExportGetCacheStats() -> Int32
 
-pub fn wasmExportGetCacheStatsPostReturn(Int) -> Unit
+pub fn wasmExportGetCacheStatsPostReturn(Int32) -> Unit
 
-pub fn wasmExportGetChildCount(Int, Int) -> Int
+pub fn wasmExportGetChildCount(Int32, Int32) -> Int32
 
-pub fn wasmExportGetComputedHeight(Int, Int) -> Double
+pub fn wasmExportGetComputedHeight(Int32, Int32) -> Double
 
-pub fn wasmExportGetComputedLeft(Int, Int) -> Double
+pub fn wasmExportGetComputedLeft(Int32, Int32) -> Double
 
-pub fn wasmExportGetComputedTop(Int, Int) -> Double
+pub fn wasmExportGetComputedTop(Int32, Int32) -> Double
 
-pub fn wasmExportGetComputedWidth(Int, Int) -> Double
+pub fn wasmExportGetComputedWidth(Int32, Int32) -> Double
 
-pub fn wasmExportHasNewLayout(Int, Int) -> Int
+pub fn wasmExportHasNewLayout(Int32, Int32) -> Int32
 
-pub fn wasmExportInsertChild(Int, Int, Int, Int, Int) -> Int
+pub fn wasmExportInsertChild(Int32, Int32, Int32, Int32, Int32) -> Int32
 
-pub fn wasmExportMarkDirty(Int, Int) -> Int
+pub fn wasmExportMarkDirty(Int32, Int32) -> Int32
 
-pub fn wasmExportMarkLayoutSeen(Int, Int) -> Int
+pub fn wasmExportMarkLayoutSeen(Int32, Int32) -> Int32
 
-pub fn wasmExportNeedsLayout() -> Int
+pub fn wasmExportNeedsLayout() -> Int32
 
-pub fn wasmExportRemoveChild(Int, Int, Int) -> Int
+pub fn wasmExportRemoveChild(Int32, Int32, Int32) -> Int32
 
-pub fn wasmExportRenderHtml(Int, Int, Int, Int) -> Int
+pub fn wasmExportRenderHtml(Int32, Int32, Int32, Int32) -> Int32
 
-pub fn wasmExportRenderHtmlPostReturn(Int) -> Unit
+pub fn wasmExportRenderHtmlPostReturn(Int32) -> Unit
 
-pub fn wasmExportRenderHtmlToJson(Int, Int, Int, Int) -> Int
+pub fn wasmExportRenderHtmlToJson(Int32, Int32, Int32, Int32) -> Int32
 
-pub fn wasmExportRenderHtmlToJsonPostReturn(Int) -> Unit
+pub fn wasmExportRenderHtmlToJsonPostReturn(Int32) -> Unit
 
-pub fn wasmExportRenderHtmlToPaintTree(Int, Int, Int, Int) -> Int
+pub fn wasmExportRenderHtmlToPaintTree(Int32, Int32, Int32, Int32) -> Int32
 
-pub fn wasmExportRenderHtmlToPaintTreePostReturn(Int) -> Unit
+pub fn wasmExportRenderHtmlToPaintTreePostReturn(Int32) -> Unit
 
 pub fn wasmExportResetCacheStats() -> Unit
 
-pub fn wasmExportResizeViewport(Int, Int) -> Unit
+pub fn wasmExportResizeViewport(Int32, Int32) -> Unit
 
-pub fn wasmExportSetAlignItems(Int, Int, Int) -> Int
+pub fn wasmExportSetAlignItems(Int32, Int32, Int32) -> Int32
 
-pub fn wasmExportSetDisplay(Int, Int, Int) -> Int
+pub fn wasmExportSetDisplay(Int32, Int32, Int32) -> Int32
 
-pub fn wasmExportSetFlexBasis(Int, Int, Double) -> Int
+pub fn wasmExportSetFlexBasis(Int32, Int32, Double) -> Int32
 
-pub fn wasmExportSetFlexDirection(Int, Int, Int) -> Int
+pub fn wasmExportSetFlexDirection(Int32, Int32, Int32) -> Int32
 
-pub fn wasmExportSetFlexGrow(Int, Int, Double) -> Int
+pub fn wasmExportSetFlexGrow(Int32, Int32, Double) -> Int32
 
-pub fn wasmExportSetFlexShrink(Int, Int, Double) -> Int
+pub fn wasmExportSetFlexShrink(Int32, Int32, Double) -> Int32
 
-pub fn wasmExportSetFlexWrap(Int, Int, Int) -> Int
+pub fn wasmExportSetFlexWrap(Int32, Int32, Int32) -> Int32
 
-pub fn wasmExportSetGap(Int, Int, Double) -> Int
+pub fn wasmExportSetGap(Int32, Int32, Double) -> Int32
 
-pub fn wasmExportSetHeight(Int, Int, Double) -> Int
+pub fn wasmExportSetHeight(Int32, Int32, Double) -> Int32
 
-pub fn wasmExportSetHeightAuto(Int, Int) -> Int
+pub fn wasmExportSetHeightAuto(Int32, Int32) -> Int32
 
-pub fn wasmExportSetHeightPercent(Int, Int, Double) -> Int
+pub fn wasmExportSetHeightPercent(Int32, Int32, Double) -> Int32
 
-pub fn wasmExportSetJustifyContent(Int, Int, Int) -> Int
+pub fn wasmExportSetJustifyContent(Int32, Int32, Int32) -> Int32
 
-pub fn wasmExportSetMargin(Int, Int, Double) -> Int
+pub fn wasmExportSetMargin(Int32, Int32, Double) -> Int32
 
-pub fn wasmExportSetPadding(Int, Int, Double) -> Int
+pub fn wasmExportSetPadding(Int32, Int32, Double) -> Int32
 
-pub fn wasmExportSetWidth(Int, Int, Double) -> Int
+pub fn wasmExportSetWidth(Int32, Int32, Double) -> Int32
 
-pub fn wasmExportSetWidthAuto(Int, Int) -> Int
+pub fn wasmExportSetWidthAuto(Int32, Int32) -> Int32
 
-pub fn wasmExportSetWidthPercent(Int, Int, Double) -> Int
+pub fn wasmExportSetWidthPercent(Int32, Int32, Double) -> Int32
 
-pub fn wasmExportUpdateStyle(Int, Int, Int, Int) -> Int
+pub fn wasmExportUpdateStyle(Int32, Int32, Int32, Int32) -> Int32
 
 // Errors
 

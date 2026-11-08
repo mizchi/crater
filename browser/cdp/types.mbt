@@ -6,33 +6,42 @@
 
 ///|
 /// CDP Node - representation of a DOM node in CDP
+#derive(Debug)
 pub struct CdpNode {
-  node_id : Int
-  backend_node_id : Int
-  node_type : Int // 1=Element, 3=Text, 9=Document, etc.
+  node_id : Int32
+  backend_node_id : Int32
+  node_type : Int32 // 1=Element, 3=Text, 9=Document, etc.
   node_name : String
   local_name : String
   node_value : String
-  child_node_count : Int?
+  child_node_count : Int32?
   children : Array[CdpNode]?
   attributes : Array[String]? // [name, value, name, value, ...]
   shadow_roots : Array[CdpNode]?
   shadow_root_type : String?
-} derive(Debug)
+}
+
+///|
+pub extend CdpNode with @debug.Debug::{to_repr}
 
 ///|
 /// CDP Box Model
+#derive(Debug)
 pub struct CdpBoxModel {
   content : Array[Double] // [x1,y1, x2,y2, x3,y3, x4,y4]
   padding : Array[Double]
   border : Array[Double]
   margin : Array[Double]
-  width : Int
-  height : Int
-} derive(Debug)
+  width : Int32
+  height : Int32
+}
+
+///|
+pub extend CdpBoxModel with @debug.Debug::{to_repr}
 
 ///|
 /// CDP Frame Info
+#derive(Debug)
 pub struct CdpFrameInfo {
   id : String
   parent_id : String?
@@ -41,32 +50,47 @@ pub struct CdpFrameInfo {
   url : String
   security_origin : String
   mime_type : String
-} derive(Debug)
+}
+
+///|
+pub extend CdpFrameInfo with @debug.Debug::{to_repr}
 
 ///|
 /// CDP Navigation Entry
+#derive(Debug)
 pub struct CdpNavigationEntry {
-  id : Int
+  id : Int32
   url : String
   title : String
   transition_type : String
-} derive(Debug)
+}
+
+///|
+pub extend CdpNavigationEntry with @debug.Debug::{to_repr}
 
 ///|
 /// CDP Error codes (subset)
+#derive(Debug)
 pub enum CdpErrorCode {
   InvalidParams // -32602
   InternalError // -32603
   NodeNotFound // -32000
   NoSuchElement // -32000
-} derive(Debug)
+}
+
+///|
+pub extend CdpErrorCode with @debug.Debug::{to_repr}
 
 ///|
 /// CDP Error
+#derive(Debug)
 pub struct CdpError {
-  code : Int
+  code : Int32
   message : String
-} derive(Debug)
+}
+
+///|
+pub extend CdpError with @debug.Debug::{to_repr}
 
 ///|
 /// Create CDP error from code

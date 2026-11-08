@@ -6,13 +6,13 @@
 /// Shows focused link URL when a link is focused, otherwise shows current page URL.
 pub fn draw_status_bar(
   buf : CharBuffer,
-  y : Int,
+  y : Int32,
   url : String,
-  link_count : Int,
-  focused_link : Int,
-  focused_link_url? : String? = None,
-  selection_mode? : Bool = false,
-  dark_mode? : Bool = false,
+  link_count : Int32,
+  focused_link : Int32,
+  focused_link_url~ : String? = None,
+  selection_mode~ : Bool = false,
+  dark_mode~ : Bool = false,
 ) -> Unit {
   // Status bar colors - slightly different for dark mode
   let (bg, fg) = if dark_mode {

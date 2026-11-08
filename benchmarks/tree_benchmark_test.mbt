@@ -21,7 +21,7 @@ fn layouts_equal(a : @layout_types.Layout, b : @layout_types.Layout) -> Bool {
 
 ///|
 /// Create a large tree with specified depth and branching factor
-fn create_large_tree(depth : Int, branching : Int) -> @tree.LayoutNode {
+fn create_large_tree(depth : Int32, branching : Int32) -> @tree.LayoutNode {
   create_subtree("root", depth, branching, 0)
 }
 
@@ -29,9 +29,9 @@ fn create_large_tree(depth : Int, branching : Int) -> @tree.LayoutNode {
 /// Recursively create a subtree
 fn create_subtree(
   prefix : String,
-  depth : Int,
-  branching : Int,
-  level : Int,
+  depth : Int32,
+  branching : Int32,
+  level : Int32,
 ) -> @tree.LayoutNode {
   if depth == 0 {
     // Leaf node
@@ -75,7 +75,7 @@ fn create_subtree(
 
 ///|
 /// Count total nodes in a tree
-fn count_nodes(node : @tree.LayoutNode) -> Int {
+fn count_nodes(node : @tree.LayoutNode) -> Int32 {
   let mut count = 1
   for child in node.children {
     count = count + count_nodes(child)
@@ -85,7 +85,7 @@ fn count_nodes(node : @tree.LayoutNode) -> Int {
 
 ///|
 /// Find a leaf node at a specific path
-fn find_leaf(node : @tree.LayoutNode, path : Array[Int]) -> @tree.LayoutNode? {
+fn find_leaf(node : @tree.LayoutNode, path : Array[Int32]) -> @tree.LayoutNode? {
   if path.length() == 0 {
     return Some(node)
   }
@@ -1490,9 +1490,9 @@ test "optimization: size-match not used when child is dirty" {
 /// Create a realistic large-scale web page layout (~5000 nodes)
 /// Structure: Header + Sidebar + Main content with many cards/lists
 fn create_large_website(
-  num_sidebar_items : Int,
-  num_content_sections : Int,
-  items_per_section : Int,
+  num_sidebar_items : Int32,
+  num_content_sections : Int32,
+  items_per_section : Int32,
 ) -> (@tree.LayoutNode, Array[@tree.LayoutNode]) {
   // Track all leaf containers for dirty marking
   let all_items : Array[@tree.LayoutNode] = []
@@ -1947,16 +1947,16 @@ test "perf: incremental vs full recompute comparison" {
 
 ///|
 /// Create a deeply nested Auto-sized tree for intrinsic size testing
-fn create_deep_auto_tree(depth : Int, branching : Int) -> @tree.LayoutNode {
+fn create_deep_auto_tree(depth : Int32, branching : Int32) -> @tree.LayoutNode {
   create_deep_auto_subtree("root", depth, branching, 0)
 }
 
 ///|
 fn create_deep_auto_subtree(
   prefix : String,
-  depth : Int,
-  branching : Int,
-  level : Int,
+  depth : Int32,
+  branching : Int32,
+  level : Int32,
 ) -> @tree.LayoutNode {
   if depth == 0 {
     // Leaf node with fixed size

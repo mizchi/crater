@@ -20,9 +20,9 @@ fn Browser::dispatch_drag_event_status_to_source_id(
   self : Browser,
   source_id : String,
   event_type : String,
-  client_x : Int,
-  client_y : Int,
-  related_source_id? : String? = None,
+  client_x : Int32,
+  client_y : Int32,
+  related_source_id~ : String? = None,
 ) -> (Bool, Bool) {
   let escaped = escape_js_string(source_id)
   let related_js = match related_source_id {
@@ -58,9 +58,9 @@ fn Browser::dispatch_drag_event_to_source_id(
   self : Browser,
   source_id : String,
   event_type : String,
-  client_x : Int,
-  client_y : Int,
-  related_source_id? : String? = None,
+  client_x : Int32,
+  client_y : Int32,
+  related_source_id~ : String? = None,
 ) -> Bool {
   let (handled, _) = self.dispatch_drag_event_status_to_source_id(
     source_id,

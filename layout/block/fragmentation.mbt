@@ -155,7 +155,7 @@ fn reflow_fragmented_children_with_offset(
   normalize_to_row_start : Bool,
   prefer_next_column_for_block_children : Bool,
   multicol_fragment_contained : Bool,
-  multicol_column_count : Int,
+  multicol_column_count : Int32,
   multicol_column_width : Double,
   multicol_column_gap : Double,
 ) -> Array[@layout_types.Layout] {

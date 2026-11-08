@@ -215,7 +215,7 @@ fn dispatch_method(
 
 ///|
 /// Parse element ID string to node ID
-fn parse_element_id(element_id : String) -> Int? {
+fn parse_element_id(element_id : String) -> Int32? {
   // Format: "element-123" or just "123"
   let id_str = if element_id.has_prefix("element-") {
     element_id.unsafe_substring(start=8, end=element_id.length())
@@ -232,7 +232,7 @@ fn parse_element_id(element_id : String) -> Int? {
 fn get_session_for_element(
   manager : CdpSessionManager,
   element_id : String,
-) -> (@cdp.CdpSession, Int)? {
+) -> (@cdp.CdpSession, Int32)? {
   // Try to find session containing this element
   // For now, search all sessions
   let node_id = match parse_element_id(element_id) {
@@ -254,7 +254,7 @@ fn handle_element_op(
   manager : CdpSessionManager,
   id : RpcId,
   element_id : String,
-  op : (@cdp.CdpSession, Int) -> Result[String, CdpHandlerError],
+  op : (@cdp.CdpSession, Int32) -> Result[String, CdpHandlerError],
 ) -> RpcResponse {
   match get_session_for_element(manager, element_id) {
     None => api_error_to_rpc(id, ElementNotFound(selector=element_id))

@@ -10,13 +10,13 @@ test "inline_block_wide_viewport_layout" {
     #|</body></html>
   let css =
     #|.authors { display: inline-block; }
-  let ctx : RenderContext = {
+  let ctx : @renderer.RenderContext = {
     viewport_width: 640.0,
     viewport_height: 400.0,
     root_font_size: 16.0,
     color_scheme: @css.ColorScheme::Light,
   }
-  let layout = render_with_external_css(html, ctx, [css])
+  let layout = @renderer.render_with_external_css(html, ctx, [css])
   let container = layout.children[0]
   guard container.children.length() == 3 else { fail("Expected 3 children") }
   let text_layout = container.children[0]
@@ -44,13 +44,13 @@ test "inline_block_narrow_viewport_wraps" {
     #|</body></html>
   let css =
     #|.authors { display: inline-block; }
-  let ctx : RenderContext = {
+  let ctx : @renderer.RenderContext = {
     viewport_width: 200.0,
     viewport_height: 400.0,
     root_font_size: 16.0,
     color_scheme: @css.ColorScheme::Light,
   }
-  let layout = render_with_external_css(html, ctx, [css])
+  let layout = @renderer.render_with_external_css(html, ctx, [css])
   let container = layout.children[0]
   let text_layout = container.children[0]
   let address_layout = container.children[2]
@@ -86,13 +86,13 @@ test "inline_block_very_narrow_text_wraps" {
     #|</body></html>
   let css =
     #|.authors { display: inline-block; }
-  let ctx : RenderContext = {
+  let ctx : @renderer.RenderContext = {
     viewport_width: 120.0, // 15 columns
     viewport_height: 400.0,
     root_font_size: 16.0,
     color_scheme: @css.ColorScheme::Light,
   }
-  let layout = render_with_external_css(html, ctx, [css])
+  let layout = @renderer.render_with_external_css(html, ctx, [css])
   let container = layout.children[0]
   let text_layout = container.children[0]
   let address_layout = container.children[2]
@@ -120,15 +120,15 @@ test "preactjs_actual_css_both_inline_block" {
   let css =
     #|.time { font-size: 1rem; display: inline-block; }
     #|.authors { display: inline-block; }
-  let ctx : RenderContext = {
+  let ctx : @renderer.RenderContext = {
     viewport_width: 640.0,
     viewport_height: 400.0,
     root_font_size: 16.0,
     color_scheme: @css.ColorScheme::Light,
   }
-  let node = render_to_node_with_external_css(html, ctx, [css])
-  let layout = render_with_external_css(html, ctx, [css])
-  fn show_layout(l : @layout_types.Layout, depth : Int) -> Unit {
+  let node = @renderer.render_to_node_with_external_css(html, ctx, [css])
+  let layout = @renderer.render_with_external_css(html, ctx, [css])
+  fn show_layout(l : @layout_types.Layout, depth : Int32) -> Unit {
     let _ = String::make(depth * 2, ' ')
     let _ = match l.text {
       Some(t) => " \"" + t + "\""
@@ -142,7 +142,7 @@ test "preactjs_actual_css_both_inline_block" {
   }
 
   show_layout(layout, 0)
-  fn show_node(n : @node.Node, depth : Int) -> Unit {
+  fn show_node(n : @node.Node, depth : Int32) -> Unit {
     let _ = String::make(depth * 2, ' ')
     for child in n.children {
       show_node(child, depth + 1)

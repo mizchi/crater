@@ -143,7 +143,7 @@ through `src/` compatibility wrappers.
 The workspace now follows a lockstep MoonBit versioning policy.
 
 - repo-managed Moon modules in this repository share the same release line
-- the current workspace-split line is `0.18.x`
+- the current workspace-split line is `0.19.x`
 - path dependencies inside the workspace are kept on the same version so
   publish metadata matches the repo release
 - npm package versions remain independent and may move on a different cadence
@@ -162,7 +162,7 @@ dependencies.
 ### Publish Order
 
 MoonBit release order is derived from `moon.work` and the workspace-local
-`moon.mod.json` dependency graph.
+`moon.mod` dependency graph.
 
 - `just release-moon-list`: print the public publish order
 - `just release-moon-check`: run target-aware `moon check` in publish order
@@ -171,6 +171,14 @@ MoonBit release order is derived from `moon.work` and the workspace-local
 - `just release-moon`: run the real `moon publish` sequence
 - `.github/workflows/release-moon.yml`: manual Linux release workflow for
   `check` / `dry-run` / `publish`
+
+Packaging and publishing stage Git-tracked and unignored new files into a
+flat temporary workspace. This prevents the root meta-package's `.moonignore`
+from excluding nested public modules. Each module keeps its own ignore rules;
+nested modules and local `moon.work` files are excluded from its copy. Archives
+are written to `_build/release/publish/` for inspection before publication.
+The release commands require Git and `unzip`; before upload they verify that
+each archive includes its manifest, MoonBit packages and any prebuild script.
 
 The default release set includes public workspace modules in dependency order.
 Internal modules such as `mizchi/crater-benchmarks` and

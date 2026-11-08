@@ -7,13 +7,13 @@ import {
 }
 
 // Values
-pub fn create_render_context(Int, Int, Bool) -> @renderer.RenderContext
+pub fn create_render_context(Int32, Int32, Bool) -> @renderer.RenderContext
 
-pub fn extract_main_text(@aom.AccessibilityTree, Int, Int) -> String
+pub fn extract_main_text(@aom.AccessibilityTree, Int32, Int32) -> String
 
-pub fn render_arc90_summary(@aom.AccessibilityTree, Int, Int) -> String
+pub fn render_arc90_summary(@aom.AccessibilityTree, Int32, Int32) -> String
 
-pub fn render_grounding_demo(@aom.AccessibilityTree, Int, Int) -> String
+pub fn render_grounding_demo(@aom.AccessibilityTree, Int32, Int32) -> String
 
 pub fn report_css_support(Array[String]) -> Unit
 

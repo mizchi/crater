@@ -5,7 +5,7 @@
 test "enqueue_script creates ExecuteScript task" {
   @scheduler.reset_task_id_counter()
   let scheduler = @scheduler.Scheduler::new()
-  let task_id = enqueue_script(scheduler, "console.log('hello')", false)
+  let task_id = @js.enqueue_script(scheduler, "console.log('hello')", false)
 
   // Verify task was created
   match scheduler.find_task(task_id) {
@@ -23,7 +23,7 @@ test "enqueue_script creates ExecuteScript task" {
 test "enqueue_script with blocking creates blocking task" {
   @scheduler.reset_task_id_counter()
   let scheduler = @scheduler.Scheduler::new()
-  let task_id = enqueue_script(scheduler, "alert('blocking')", true)
+  let task_id = @js.enqueue_script(scheduler, "alert('blocking')", true)
   match scheduler.find_task(task_id) {
     Some(task) =>
       match task.constraint {
@@ -46,7 +46,7 @@ test "ScriptExecutor executes script" {
   let doc = dom.get_document()
   let _ = dom.append_child(doc, html)
   let _ = dom.append_child(html, body)
-  let executor = ScriptExecutor::new(dom)
+  let executor = @js.ScriptExecutor::new(dom)
 
   // Create a script task manually
   @scheduler.reset_task_id_counter()
@@ -89,12 +89,12 @@ test "process_script_tasks executes ready scripts" {
   let scheduler = @scheduler.Scheduler::new()
 
   // Enqueue a script
-  let _ = enqueue_script(
+  let _ = @js.enqueue_script(
     scheduler, "document.body.setAttribute('data-test', 'processed')", false,
   )
 
   // Process script tasks
-  let processed = process_script_tasks(scheduler, dom)
+  let processed = @js.process_script_tasks(scheduler, dom)
   inspect(processed, content="1")
 
   // Verify the script was executed (attribute was set)

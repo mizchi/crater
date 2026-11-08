@@ -2,7 +2,7 @@
 /// Validate browser.createUserContext parameters.
 fn BidiProtocol::validate_browser_create_user_context(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit? {
   match params {

@@ -128,7 +128,7 @@ fn BidiProtocol::register_in_flight_navigation(
   ctx_id : String,
   url : String,
   navigation_id : String,
-  request_id : Int?,
+  request_id : Int32?,
 ) -> Unit {
   self.in_flight_navigation_url[ctx_id] = url
   self.in_flight_navigation_id[ctx_id] = navigation_id

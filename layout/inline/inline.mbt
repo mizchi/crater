@@ -14,7 +14,7 @@ priv struct LineBox {
 ///|
 /// An item positioned within a line box
 priv struct LineItem {
-  index : Int // Original child index
+  index : Int32 // Original child index
   layout : @layout_types.Layout // Computed layout
   baseline : Double // Distance from top of item to its baseline
 }
@@ -53,7 +53,7 @@ fn inline_establishes_abs_containing_block(style : @style.Style) -> Bool {
 
 ///|
 priv struct WrappedTextMetrics {
-  line_count : Int
+  line_count : Int32
   last_line_width : Double
   max_line_width : Double
 }
@@ -105,7 +105,7 @@ fn is_wide_char(c : Char) -> Bool {
 }
 
 ///|
-fn char_display_width(c : Char) -> Int {
+fn char_display_width(c : Char) -> Int32 {
   if is_wide_char(c) {
     2
   } else {
@@ -193,17 +193,17 @@ fn has_inline_break_opportunity_between(
 /// `moon-pprof` put `place_word_with_wrap` at 5,280 allocations of 13 bytes for
 /// a single 161-box render; one cursor per text node replaces all of them.
 priv struct WrapCursor {
-  mut lines : Int
-  mut line_width : Int
+  mut lines : Int32
+  mut line_width : Int32
 }
 
 ///|
 fn place_word_with_wrap(
   out : WrapCursor,
-  lines : Int,
-  line_width : Int,
-  word_width : Int,
-  cols_available : Int,
+  lines : Int32,
+  line_width : Int32,
+  word_width : Int32,
+  cols_available : Int32,
   needs_space : Bool,
 ) -> Unit {
   if cols_available <= 0 {
@@ -300,7 +300,7 @@ fn estimate_wrapped_text_metrics(
       let mut last_line_cols = 0
       let mut max_line_cols = 0
       // One scratch cursor for the whole scan; see `WrapCursor`.
-      let wrap_out = WrapCursor::{ lines: 0, line_width: 0 }
+      let wrap_out = WrapCursor::{ lines: 0, line_width: 0, }
       if use_word_wrap && !no_wrap {
         let mut current_line_width = 0
         let mut current_word_width = 0
@@ -513,7 +513,7 @@ fn estimate_inline_wrap_carry_width(
 /// Add an item to the line box
 fn LineBox::add_item(
   self : LineBox,
-  index : Int,
+  index : Int32,
   layout : @layout_types.Layout,
   baseline : Double,
   line_height : Double,
@@ -578,7 +578,7 @@ fn id_matches_tag(node_id : String, tag : String) -> Bool {
 /// Whether `c` is a code unit `String::trim` strips. The set matches its
 /// default exactly -- tab, line feed, carriage return and space -- and
 /// deliberately not vertical tab or form feed.
-fn is_trimmable_code_unit(c : Int) -> Bool {
+fn is_trimmable_code_unit(c : Int32) -> Bool {
   c == 0x20 || c == 0x09 || c == 0x0A || c == 0x0D
 }
 
@@ -1265,10 +1265,10 @@ pub fn compute_ifc(
   content_offset_x : Double, // Padding + border left
   content_offset_y : Double, // Padding + border top
   dispatch : @node.DispatchFn,
-  container_writing_mode? : @style.WritingMode = @style.WritingMode::HorizontalTb,
-  container_direction? : @style.Direction = @style.Direction::Ltr,
-  container_text_align? : @style.TextAlign = @style.TextAlign::Start,
-  container_white_space? : @style.WhiteSpace = @style.WhiteSpace::Normal,
+  container_writing_mode~ : @style.WritingMode = @style.WritingMode::HorizontalTb,
+  container_direction~ : @style.Direction = @style.Direction::Ltr,
+  container_text_align~ : @style.TextAlign = @style.TextAlign::Start,
+  container_white_space~ : @style.WhiteSpace = @style.WhiteSpace::Normal,
 ) -> InlineLayoutResult {
   if children.length() == 0 {
     return { layouts: [], total_height: 0.0, }
@@ -1282,14 +1282,14 @@ pub fn compute_ifc(
     _ => true
   }
   if writing_mode.is_vertical() {
-    let columns : Array[Array[Int]] = []
+    let columns : Array[Array[Int32]] = []
     let column_widths : Array[Double] = []
     let column_heights : Array[Double] = []
-    let layout_map : Map[Int, @layout_types.Layout] = Map([])
-    let child_layout_cache : Map[Int, @layout_types.Layout] = Map([])
-    let child_margin_cache : Map[Int, @types.Rect[Double]] = Map([])
+    let layout_map : Map[Int32, @layout_types.Layout] = Map([])
+    let child_layout_cache : Map[Int32, @layout_types.Layout] = Map([])
+    let child_margin_cache : Map[Int32, @types.Rect[Double]] = Map([])
 
-    let mut current_column : Array[Int] = []
+    let mut current_column : Array[Int32] = []
     let mut current_width = 0.0
     let mut current_height = 0.0
     let max_inline_extent : Double? = match available_height {
@@ -1448,8 +1448,8 @@ pub fn compute_ifc(
   // Collect inline-level children and compute their layouts
   let line_boxes : Array[LineBox] = []
   let mut current_line = LineBox::new()
-  let layout_map : Map[Int, @layout_types.Layout] = Map([])
-  let child_has_abs_desc_cache : Map[Int, Bool] = Map([])
+  let layout_map : Map[Int32, @layout_types.Layout] = Map([])
+  let child_has_abs_desc_cache : Map[Int32, Bool] = Map([])
   let child_has_inflow_block_desc_flag : Array[Bool] = []
   for child in children {
     if child.style.display == @types.Display::None {
@@ -1974,7 +1974,7 @@ fn compute_inline_child(
   available_width : Double,
   available_height : Double?,
   dispatch : @node.DispatchFn,
-  inline_carry_offset? : Double = 0.0,
+  inline_carry_offset~ : Double = 0.0,
 ) -> @layout_types.Layout {
   let style = node.style
   let is_contents_display = style.display == @types.Contents
@@ -2371,7 +2371,7 @@ fn compute_inline_child(
   let mut max_line_width = 0.0
 
   // Process children - handle absolute positioned elements
-  let absolute_entries : Array[(Int, @node.Node, Double, Double)] = []
+  let absolute_entries : Array[(Int32, @node.Node, Double, Double)] = []
   let mut saw_out_of_flow_child = false
   for child in node.children {
     if child.style.display == @types.Display::None {

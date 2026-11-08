@@ -23,15 +23,15 @@
 pub(all) struct RenderFrame2D {
   dst : @gfx.ImageHandle
   shader : @gfx.ShaderHandle
-  screen_w : Int
-  screen_h : Int
-  pipeline_id : Int
-  uniform_hash : Int
+  screen_w : Int32
+  screen_h : Int32
+  pipeline_id : Int32
+  uniform_hash : Int32
   blend : @gfx.BlendMode
-  clip_x : Int
-  clip_y : Int
-  clip_w : Int
-  clip_h : Int
+  clip_x : Int32
+  clip_y : Int32
+  clip_w : Int32
+  clip_h : Int32
   opacity : Double
 }
 
@@ -39,16 +39,16 @@ pub(all) struct RenderFrame2D {
 pub fn RenderFrame2D::new(
   dst~ : @gfx.ImageHandle,
   shader~ : @gfx.ShaderHandle,
-  screen_w~ : Int,
-  screen_h~ : Int,
-  pipeline_id? : Int = 0,
-  uniform_hash? : Int = 0,
-  blend? : @gfx.BlendMode = @gfx.BlendMode::Alpha,
-  clip_x? : Int = 0,
-  clip_y? : Int = 0,
-  clip_w? : Int = -1,
-  clip_h? : Int = -1,
-  opacity? : Double = 1.0,
+  screen_w~ : Int32,
+  screen_h~ : Int32,
+  pipeline_id~ : Int32 = 0,
+  uniform_hash~ : Int32 = 0,
+  blend~ : @gfx.BlendMode = @gfx.BlendMode::Alpha,
+  clip_x~ : Int32 = 0,
+  clip_y~ : Int32 = 0,
+  clip_w~ : Int32 = -1,
+  clip_h~ : Int32 = -1,
+  opacity~ : Double = 1.0,
 ) -> RenderFrame2D {
   // A negative clip extent means "no clip": default to the full frame.
   let cw = if clip_w < 0 { screen_w } else { clip_w }
@@ -86,10 +86,10 @@ pub fn RenderFrame2D::with_opacity(
 /// (pixel space). Used to push an overflow/clip boundary onto descendants.
 pub fn RenderFrame2D::with_clip(
   self : RenderFrame2D,
-  x : Int,
-  y : Int,
-  w : Int,
-  h : Int,
+  x : Int32,
+  y : Int32,
+  w : Int32,
+  h : Int32,
 ) -> RenderFrame2D {
   let x0 = if x > self.clip_x { x } else { self.clip_x }
   let y0 = if y > self.clip_y { y } else { self.clip_y }
@@ -109,7 +109,7 @@ pub fn RenderFrame2D::with_clip(
 /// indices). Defaults to the full frame.
 pub fn RenderFrame2D::dst_region(
   self : RenderFrame2D,
-  index_count? : Int = 6,
+  index_count~ : Int32 = 6,
 ) -> @gfx.DstRegion {
   @gfx.new_dst_region(
     self.clip_x,
@@ -139,7 +139,7 @@ pub fn to_gfx_color(c : @types.Color) -> @gfx.Color {
 ///|
 /// Pack a `@gfx.Color` into the uniform dword stream as four 0..255
 /// channels (r, g, b, a), matching the renderer2d convention.
-pub fn color_to_uniform_dwords(color : @gfx.Color) -> Array[Int] {
+pub fn color_to_uniform_dwords(color : @gfx.Color) -> Array[Int32] {
   [
     (color.r * 255.0).to_int(),
     (color.g * 255.0).to_int(),
@@ -154,7 +154,7 @@ pub fn color_to_uniform_dwords(color : @gfx.Color) -> Array[Int] {
 
 ///|
 /// Triangle indices for a single quad (two triangles).
-pub fn quad_fill_indices() -> Array[Int] {
+pub fn quad_fill_indices() -> Array[Int32] {
   [0, 1, 2, 2, 3, 0]
 }
 
@@ -193,11 +193,11 @@ pub fn ndc_rect_vertices(
   ph : Double,
   screen_w : Double,
   screen_h : Double,
-  u0? : Double = 0.0,
-  v0? : Double = 0.0,
-  u1? : Double = 1.0,
-  v1? : Double = 1.0,
-) -> (Array[Double], Array[Int]) {
+  u0~ : Double = 0.0,
+  v0~ : Double = 0.0,
+  u1~ : Double = 1.0,
+  v1~ : Double = 1.0,
+) -> (Array[Double], Array[Int32]) {
   let x0 = px / screen_w * 2.0 - 1.0
   let y0 = 1.0 - py / screen_h * 2.0
   let x1 = (px + pw) / screen_w * 2.0 - 1.0
@@ -218,7 +218,7 @@ pub fn ndc_rect_fill_vertices(
   ph : Double,
   screen_w : Double,
   screen_h : Double,
-) -> (Array[Double], Array[Int]) {
+) -> (Array[Double], Array[Int32]) {
   ndc_rect_vertices(px, py, pw, ph, screen_w, screen_h)
 }
 
@@ -233,9 +233,9 @@ pub fn rect_outline_vertices(
   w : Double,
   h : Double,
   line_width : Double,
-) -> (Array[Double], Array[Int]) {
+) -> (Array[Double], Array[Int32]) {
   let all_vertices : Array[Double] = []
-  let all_indices : Array[Int] = []
+  let all_indices : Array[Int32] = []
   let edges = [
     (x, y, w, line_width), // top
     (x, y + h - line_width, w, line_width), // bottom
@@ -285,10 +285,10 @@ pub fn rect_outline_vertices(
 pub fn new_primitive_command(
   frame : RenderFrame2D,
   vertex_data : Array[Double],
-  indices : Array[Int],
+  indices : Array[Int32],
   color : @gfx.Color,
-  src_image_ids? : Array[Int] = [],
-  extra_uniforms? : Array[Int] = [],
+  src_image_ids~ : Array[Int32] = [],
+  extra_uniforms~ : Array[Int32] = [],
 ) -> @gfx.DrawTrianglesCommand {
   // Modulate the color's alpha by the frame opacity (CSS group opacity).
   let effective = if frame.opacity >= 1.0 {
@@ -436,7 +436,7 @@ pub fn append_polygon_fill(
     frame.screen_h.to_double(),
   )
   // Triangle fan: (0, i, i+1) for i in 1..n-1.
-  let indices : Array[Int] = []
+  let indices : Array[Int32] = []
   for i = 1; i < points.length() - 1; i = i + 1 {
     indices.push(0)
     indices.push(i)
@@ -462,7 +462,7 @@ pub fn RectOutline2D::new(
   y~ : Double,
   w~ : Double,
   h~ : Double,
-  line_width? : Double = 1.0,
+  line_width~ : Double = 1.0,
   color~ : @gfx.Color,
 ) -> RectOutline2D {
   { x, y, w, h, line_width, color, }

@@ -3,7 +3,7 @@
 /// Returns Some(()) when an error response was already sent.
 fn BidiProtocol::validate_session_subscribe_params(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit? {
   let map = match params {

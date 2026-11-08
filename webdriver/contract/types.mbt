@@ -8,6 +8,7 @@
 
 ///|
 /// WebDriver error codes as defined in W3C spec
+#derive(Debug, Eq)
 pub(all) enum ErrorCode {
   ElementClickIntercepted
   ElementNotInteractable
@@ -35,7 +36,13 @@ pub(all) enum ErrorCode {
   UnknownError
   UnknownMethod
   UnsupportedOperation
-} derive(Debug, Eq)
+}
+
+///|
+pub extend ErrorCode with @debug.Debug::{to_repr}
+
+///|
+pub extend ErrorCode with Eq::{not_equal, equal}
 
 ///|
 /// Convert error code to string
@@ -72,7 +79,7 @@ pub fn ErrorCode::to_string(self : ErrorCode) -> String {
 
 ///|
 /// HTTP status code for error
-pub fn ErrorCode::http_status(self : ErrorCode) -> Int {
+pub fn ErrorCode::http_status(self : ErrorCode) -> Int32 {
   match self {
     InvalidArgument
     | InvalidCookieDomain
@@ -107,22 +114,34 @@ pub fn ErrorCode::http_status(self : ErrorCode) -> Int {
 
 ///|
 /// HTTP method
+#derive(Debug, Eq)
 pub(all) enum HttpMethod {
   Get
   Post
   Delete
-} derive(Debug, Eq)
+}
+
+///|
+pub extend HttpMethod with @debug.Debug::{to_repr}
+
+///|
+pub extend HttpMethod with Eq::{not_equal, equal}
 
 ///|
 /// Parsed WebDriver command from HTTP request
+#derive(Debug)
 pub(all) struct WebDriverRequest {
   http_method : HttpMethod
   command : WebDriverCommand
   body : String // JSON body
-} derive(Debug)
+}
+
+///|
+pub extend WebDriverRequest with @debug.Debug::{to_repr}
 
 ///|
 /// WebDriver commands (endpoints)
+#derive(Debug)
 pub(all) enum WebDriverCommand {
   // Server status
   Status
@@ -199,7 +218,10 @@ pub(all) enum WebDriverCommand {
   PrintPage(session_id~ : String)
   // Unknown
   Unknown(path~ : String)
-} derive(Debug)
+}
+
+///|
+pub extend WebDriverCommand with @debug.Debug::{to_repr}
 
 ///|
 pub impl Show for WebDriverCommand with fn output(self, logger) {
@@ -271,14 +293,22 @@ pub impl Show for WebDriverCommand with fn output(self, logger) {
 // =============================================================================
 
 ///|
+pub extend WebDriverCommand with Show::{to_string, output}
+
+///|
 /// WebDriver response (success or error)
+#derive(Debug)
 pub(all) enum WebDriverResponse {
   Success(WebDriverValue)
   Error(WebDriverError)
-} derive(Debug)
+}
+
+///|
+pub extend WebDriverResponse with @debug.Debug::{to_repr}
 
 ///|
 /// WebDriver success value
+#derive(Debug)
 pub(all) enum WebDriverValue {
   Null
   Bool(Bool)
@@ -287,22 +317,30 @@ pub(all) enum WebDriverValue {
   Array(Array[WebDriverValue])
   Object(Map[String, WebDriverValue])
   Element(element_id~ : String)
-} derive(Debug)
+}
+
+///|
+pub extend WebDriverValue with @debug.Debug::{to_repr}
 
 ///|
 /// WebDriver error response
+#derive(Debug)
 pub(all) struct WebDriverError {
   error : ErrorCode
   message : String
   stacktrace : String
-} derive(Debug)
+}
 
 // =============================================================================
 // Session Types
 // =============================================================================
 
 ///|
+pub extend WebDriverError with @debug.Debug::{to_repr}
+
+///|
 /// Browser capabilities
+#derive(Debug)
 pub(all) struct Capabilities {
   browser_name : String
   browser_version : String
@@ -311,18 +349,29 @@ pub(all) struct Capabilities {
   page_load_strategy : PageLoadStrategy
   proxy : ProxyConfig?
   timeouts : Timeouts
-} derive(Debug)
+}
+
+///|
+pub extend Capabilities with @debug.Debug::{to_repr}
 
 ///|
 /// Page load strategy
+#derive(Debug, Eq)
 pub(all) enum PageLoadStrategy {
   None
   Eager
   Normal
-} derive(Debug, Eq)
+}
+
+///|
+pub extend PageLoadStrategy with @debug.Debug::{to_repr}
+
+///|
+pub extend PageLoadStrategy with Eq::{not_equal, equal}
 
 ///|
 /// Proxy configuration
+#derive(Debug)
 pub(all) struct ProxyConfig {
   proxy_type : String
   proxy_autoconfig_url : String?
@@ -331,16 +380,23 @@ pub(all) struct ProxyConfig {
   no_proxy : Array[String]
   ssl_proxy : String?
   socks_proxy : String?
-  socks_version : Int?
-} derive(Debug)
+  socks_version : Int32?
+}
+
+///|
+pub extend ProxyConfig with @debug.Debug::{to_repr}
 
 ///|
 /// Timeout settings
+#derive(Debug)
 pub(all) struct Timeouts {
-  script : Int // milliseconds, default 30000
-  page_load : Int // milliseconds, default 300000
-  implicit : Int // milliseconds, default 0
-} derive(Debug)
+  script : Int32 // milliseconds, default 30000
+  page_load : Int32 // milliseconds, default 300000
+  implicit : Int32 // milliseconds, default 0
+}
+
+///|
+pub extend Timeouts with @debug.Debug::{to_repr}
 
 ///|
 /// Default timeouts
@@ -350,24 +406,35 @@ pub fn Timeouts::default() -> Timeouts {
 
 ///|
 /// Session information
+#derive(Debug)
 pub(all) struct Session {
   id : String
   capabilities : Capabilities
-} derive(Debug)
+}
 
 // =============================================================================
 // Element Locator
 // =============================================================================
 
 ///|
+pub extend Session with @debug.Debug::{to_repr}
+
+///|
 /// Element location strategy
+#derive(Debug, Eq)
 pub(all) enum LocatorStrategy {
   CssSelector
   LinkText
   PartialLinkText
   TagName
   XPath
-} derive(Debug, Eq)
+}
+
+///|
+pub extend LocatorStrategy with @debug.Debug::{to_repr}
+
+///|
+pub extend LocatorStrategy with Eq::{not_equal, equal}
 
 ///|
 /// Convert strategy to string
@@ -400,18 +467,26 @@ pub fn LocatorStrategy::from_string(s : String) -> LocatorStrategy? {
 
 ///|
 /// Window rectangle
+#derive(Debug)
 pub(all) struct WindowRect {
-  x : Int
-  y : Int
-  width : Int
-  height : Int
-} derive(Debug)
+  x : Int32
+  y : Int32
+  width : Int32
+  height : Int32
+}
+
+///|
+pub extend WindowRect with @debug.Debug::{to_repr}
 
 ///|
 /// Element rectangle (with floating point)
+#derive(Debug)
 pub(all) struct ElementRect {
   x : Double
   y : Double
   width : Double
   height : Double
-} derive(Debug)
+}
+
+///|
+pub extend ElementRect with @debug.Debug::{to_repr}

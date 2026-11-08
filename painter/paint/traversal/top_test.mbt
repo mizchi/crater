@@ -21,7 +21,7 @@ test "paint traversal owns stacking order normalization" {
     { ..paint, z_index: @style.ZIndex::Value(10), },
     [],
   )
-  let sorted = sort_by_stacking_order([front, back])
+  let sorted = @traversal.sort_by_stacking_order([front, back])
   inspect(sorted[0].id, content="back")
   inspect(sorted[1].id, content="front")
 }
@@ -61,7 +61,7 @@ test "paint traversal skips hidden nodes when flattening" {
     @model.PaintProperties::default(),
     [hidden, visible],
   )
-  let flattened = flatten_for_rendering(root)
+  let flattened = @traversal.flatten_for_rendering(root)
   inspect(flattened.length(), content="2")
   inspect(flattened[0].id, content="root")
   inspect(flattened[1].id, content="visible")

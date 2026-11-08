@@ -337,8 +337,8 @@ fn DomTree::prev_element_sibling(self : DomTree, id : NodeId) -> NodeId? {
 /// sibling count, defaulting to `(1, 1)` for a root / parentless node.
 fn DomTree::element_sibling_position(
   self : DomTree,
-  node_id : Int,
-) -> (Int, Int) {
+  node_id : Int32,
+) -> (Int32, Int32) {
   guard self.nodes.get(node_id) is Some(node) else { return (1, 1) }
   guard node.parent_id is Some(pid) else { return (1, 1) }
   guard self.nodes.get(pid) is Some(parent) else { return (1, 1) }

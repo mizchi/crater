@@ -26,10 +26,10 @@ fn box_chars(style : BoxStyle) -> @tui_buffer.BoxChars {
 /// Draw a box outline
 pub fn draw_box(
   buf : CharBuffer,
-  x : Int,
-  y : Int,
-  w : Int,
-  h : Int,
+  x : Int32,
+  y : Int32,
+  w : Int32,
+  h : Int32,
   style : BoxStyle,
   fg : @types.Color,
   bg : @types.Color,
@@ -51,10 +51,10 @@ pub fn draw_box(
 /// Draw a filled box (box outline with filled interior)
 pub fn draw_filled_box(
   buf : CharBuffer,
-  x : Int,
-  y : Int,
-  w : Int,
-  h : Int,
+  x : Int32,
+  y : Int32,
+  w : Int32,
+  h : Int32,
   style : BoxStyle,
   fg : @types.Color,
   bg : @types.Color,
@@ -77,9 +77,9 @@ pub fn draw_filled_box(
 /// Draw a horizontal line
 pub fn draw_hline(
   buf : CharBuffer,
-  x : Int,
-  y : Int,
-  w : Int,
+  x : Int32,
+  y : Int32,
+  w : Int32,
   style : BoxStyle,
   fg : @types.Color,
 ) -> Unit {
@@ -101,9 +101,9 @@ pub fn draw_hline(
 /// Draw a vertical line
 pub fn draw_vline(
   buf : CharBuffer,
-  x : Int,
-  y : Int,
-  h : Int,
+  x : Int32,
+  y : Int32,
+  h : Int32,
   style : BoxStyle,
   fg : @types.Color,
 ) -> Unit {

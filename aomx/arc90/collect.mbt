@@ -157,7 +157,7 @@ fn navigation_hint_patterns() -> FixedArray[String] {
 }
 
 ///|
-fn count_links_and_nodes(node : @aom.AccessibilityNode) -> (Int, Int) {
+fn count_links_and_nodes(node : @aom.AccessibilityNode) -> (Int32, Int32) {
   let mut link_count = 0
   let mut total_count = 1
   match node.role {

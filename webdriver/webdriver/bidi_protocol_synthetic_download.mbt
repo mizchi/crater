@@ -2,7 +2,7 @@
 /// Handle synthetic download click used in browser.setDownloadBehavior WPTs.
 fn BidiProtocol::try_handle_synthetic_download(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   realm_id : String,
   expression : String,

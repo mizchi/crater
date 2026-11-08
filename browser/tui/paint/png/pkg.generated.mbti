@@ -9,7 +9,7 @@ import {
 // Values
 pub fn framebuffer_to_png_base64(@raster.Framebuffer, @raster.DynamicPalette) -> String
 
-pub fn raster_to_png_base64(@model.PaintNode, Int, Int) -> String
+pub fn raster_to_png_base64(@model.PaintNode, Int32, Int32) -> String
 
 // Errors
 

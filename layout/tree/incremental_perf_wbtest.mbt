@@ -52,8 +52,8 @@ fn perf_block(w : Double, h : Double) -> @style.Style {
 /// uid i+1; child `changed_idx` gets height `tweak`.
 fn perf_stack(
   display : @types.Display,
-  n : Int,
-  changed_idx : Int,
+  n : Int32,
+  changed_idx : Int32,
   tweak : Double,
 ) -> @node.Node {
   let children : Array[@node.Node] = []
@@ -108,10 +108,10 @@ test "perf(block): changing the LAST block reuses every preceding block via bloc
 /// gets height `tweak`. uids are assigned from `base` (container = base, items
 /// base+1..). Used as a reusable subtree under a parent root.
 fn perf_flex_group(
-  base : Int,
+  base : Int32,
   tag : String,
-  n : Int,
-  changed_idx : Int,
+  n : Int32,
+  changed_idx : Int32,
   tweak : Double,
 ) -> @node.Node {
   let items : Array[@node.Node] = []

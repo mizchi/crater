@@ -13,13 +13,13 @@ pub(all) enum AlignItems {
   STRETCH
   BASELINE
 }
-pub fn AlignItems::from(Int) -> Self
-pub fn AlignItems::ordinal(Self) -> Int
+pub fn AlignItems::from(Int32) -> Self
+pub fn AlignItems::ordinal(Self) -> Int32
 
 pub(all) struct CacheStats {
-  hits : UInt
-  misses : UInt
-  nodes_computed : UInt
+  hits : UInt32
+  misses : UInt32
+  nodes_computed : UInt32
   hit_rate : Double
 }
 
@@ -29,8 +29,8 @@ pub(all) enum Display {
   BLOCK
   GRID
 }
-pub fn Display::from(Int) -> Self
-pub fn Display::ordinal(Self) -> Int
+pub fn Display::from(Int32) -> Self
+pub fn Display::ordinal(Self) -> Int32
 
 pub(all) enum FlexDirection {
   ROW
@@ -38,16 +38,16 @@ pub(all) enum FlexDirection {
   COLUMN
   COLUMN_REVERSE
 }
-pub fn FlexDirection::from(Int) -> Self
-pub fn FlexDirection::ordinal(Self) -> Int
+pub fn FlexDirection::from(Int32) -> Self
+pub fn FlexDirection::ordinal(Self) -> Int32
 
 pub(all) enum FlexWrap {
   NO_WRAP
   WRAP
   WRAP_REVERSE
 }
-pub fn FlexWrap::from(Int) -> Self
-pub fn FlexWrap::ordinal(Self) -> Int
+pub fn FlexWrap::from(Int32) -> Self
+pub fn FlexWrap::ordinal(Self) -> Int32
 
 pub(all) enum JustifyContent {
   FLEX_START
@@ -57,8 +57,8 @@ pub(all) enum JustifyContent {
   SPACE_AROUND
   SPACE_EVENLY
 }
-pub fn JustifyContent::from(Int) -> Self
-pub fn JustifyContent::ordinal(Self) -> Int
+pub fn JustifyContent::from(Int32) -> Self
+pub fn JustifyContent::ordinal(Self) -> Int32
 
 // Type aliases
 

@@ -6,7 +6,7 @@
 
 ///|
 test "DOM.getDocument returns root node" {
-  let ctx = TestContext::new()
+  let ctx = @cdp.TestContext::new()
   let dom = ctx.dom()
   let result = dom.get_document(Some(1))
   inspect(result is Ok(_), content="true")
@@ -17,7 +17,7 @@ test "DOM.getDocument returns root node" {
 
 ///|
 test "DOM.getDocument with depth" {
-  let ctx = TestContext::with_html("<p>hello</p>")
+  let ctx = @cdp.TestContext::with_html("<p>hello</p>")
   let dom = ctx.dom()
   // Depth 0 - just root
   let result0 = dom.get_document(Some(0))
@@ -31,7 +31,7 @@ test "DOM.getDocument with depth" {
 
 ///|
 test "DOM.querySelector finds element by tag" {
-  let ctx = TestContext::with_html("<p>1</p><p>2</p>")
+  let ctx = @cdp.TestContext::with_html("<p>1</p><p>2</p>")
   let dom = ctx.dom()
   let doc_id = ctx.doc_id()
   let result = dom.query_selector(doc_id, "p")
@@ -41,7 +41,7 @@ test "DOM.querySelector finds element by tag" {
 
 ///|
 test "DOM.querySelector finds element by id" {
-  let ctx = TestContext::with_html("<div id=\"foo\">content</div>")
+  let ctx = @cdp.TestContext::with_html("<div id=\"foo\">content</div>")
   let dom = ctx.dom()
   let doc_id = ctx.doc_id()
   let result = dom.query_selector(doc_id, "#foo")
@@ -51,7 +51,7 @@ test "DOM.querySelector finds element by id" {
 
 ///|
 test "DOM.querySelector finds element by class" {
-  let ctx = TestContext::with_html("<div class=\"bar\">content</div>")
+  let ctx = @cdp.TestContext::with_html("<div class=\"bar\">content</div>")
   let dom = ctx.dom()
   let doc_id = ctx.doc_id()
   let result = dom.query_selector(doc_id, ".bar")
@@ -61,7 +61,7 @@ test "DOM.querySelector finds element by class" {
 
 ///|
 test "DOM.querySelector returns None for no match" {
-  let ctx = TestContext::with_html("<p>text</p>")
+  let ctx = @cdp.TestContext::with_html("<p>text</p>")
   let dom = ctx.dom()
   let doc_id = ctx.doc_id()
   let result = dom.query_selector(doc_id, "#nonexistent")
@@ -71,7 +71,7 @@ test "DOM.querySelector returns None for no match" {
 
 ///|
 test "DOM.querySelectorAll finds all elements" {
-  let ctx = TestContext::with_html("<p>1</p><p>2</p><p>3</p>")
+  let ctx = @cdp.TestContext::with_html("<p>1</p><p>2</p><p>3</p>")
   let dom = ctx.dom()
   let doc_id = ctx.doc_id()
   let result = dom.query_selector_all(doc_id, "p")
@@ -81,7 +81,7 @@ test "DOM.querySelectorAll finds all elements" {
 
 ///|
 test "DOM.querySelectorAll returns empty for no match" {
-  let ctx = TestContext::with_html("<p>text</p>")
+  let ctx = @cdp.TestContext::with_html("<p>text</p>")
   let dom = ctx.dom()
   let doc_id = ctx.doc_id()
   let result = dom.query_selector_all(doc_id, "div")
@@ -91,7 +91,7 @@ test "DOM.querySelectorAll returns empty for no match" {
 
 ///|
 test "DOM.getAttributes returns element attributes" {
-  let ctx = TestContext::with_html(
+  let ctx = @cdp.TestContext::with_html(
     "<div id=\"test\" class=\"foo bar\">content</div>",
   )
   let dom = ctx.dom()
@@ -109,7 +109,7 @@ test "DOM.getAttributes returns element attributes" {
 
 ///|
 test "DOM.setAttributeValue sets attribute" {
-  let ctx = TestContext::with_html("<div id=\"test\">content</div>")
+  let ctx = @cdp.TestContext::with_html("<div id=\"test\">content</div>")
   let dom = ctx.dom()
   let doc_id = ctx.doc_id()
   let div_result = dom.query_selector(doc_id, "#test")
@@ -125,7 +125,7 @@ test "DOM.setAttributeValue sets attribute" {
 
 ///|
 test "DOM.removeAttribute removes attribute" {
-  let ctx = TestContext::with_html(
+  let ctx = @cdp.TestContext::with_html(
     "<div id=\"test\" data-remove=\"yes\">content</div>",
   )
   let dom = ctx.dom()
@@ -143,7 +143,7 @@ test "DOM.removeAttribute removes attribute" {
 
 ///|
 test "DOM.getBoxModel returns box model" {
-  let ctx = TestContext::with_html("<div id=\"box\">content</div>")
+  let ctx = @cdp.TestContext::with_html("<div id=\"box\">content</div>")
   let dom = ctx.dom()
   let doc_id = ctx.doc_id()
   let div_result = dom.query_selector(doc_id, "#box")
@@ -158,7 +158,7 @@ test "DOM.getBoxModel returns box model" {
 
 ///|
 test "DOM.getBoxModel with cached rect" {
-  let ctx = TestContext::with_html("<div id=\"box\">content</div>")
+  let ctx = @cdp.TestContext::with_html("<div id=\"box\">content</div>")
   let dom = ctx.dom()
   let tree = ctx.tree()
   let doc_id = ctx.doc_id()
@@ -179,7 +179,7 @@ test "DOM.getBoxModel with cached rect" {
 
 ///|
 test "DOM.getOuterHTML returns HTML string" {
-  let ctx = TestContext::with_html("<div id=\"test\">hello</div>")
+  let ctx = @cdp.TestContext::with_html("<div id=\"test\">hello</div>")
   let dom = ctx.dom()
   let doc_id = ctx.doc_id()
   let div_result = dom.query_selector(doc_id, "#test")
@@ -193,7 +193,7 @@ test "DOM.getOuterHTML returns HTML string" {
 
 ///|
 test "DOM.setNodeValue sets text content" {
-  let ctx = TestContext::with_html("<p id=\"text\">old</p>")
+  let ctx = @cdp.TestContext::with_html("<p id=\"text\">old</p>")
   let dom = ctx.dom()
   let doc_id = ctx.doc_id()
   let p_result = dom.query_selector(doc_id, "#text")
@@ -209,7 +209,9 @@ test "DOM.setNodeValue sets text content" {
 
 ///|
 test "DOM.removeNode removes element from tree" {
-  let ctx = TestContext::with_html("<div><p id=\"remove\">delete me</p></div>")
+  let ctx = @cdp.TestContext::with_html(
+    "<div><p id=\"remove\">delete me</p></div>",
+  )
   let dom = ctx.dom()
   let doc_id = ctx.doc_id()
   let p_result = dom.query_selector(doc_id, "#remove")
@@ -224,7 +226,7 @@ test "DOM.removeNode removes element from tree" {
 
 ///|
 test "DOM.requestChildNodes returns children" {
-  let ctx = TestContext::with_html("<div><p>1</p><p>2</p></div>")
+  let ctx = @cdp.TestContext::with_html("<div><p>1</p><p>2</p></div>")
   let dom = ctx.dom()
   let doc_id = ctx.doc_id()
   let div_result = dom.query_selector(doc_id, "div")
@@ -238,7 +240,9 @@ test "DOM.requestChildNodes returns children" {
 
 ///|
 test "DOM.getDocument exposes shadow root metadata on host node" {
-  let ctx = TestContext::with_html("<div id=\"host\"><span>light</span></div>")
+  let ctx = @cdp.TestContext::with_html(
+    "<div id=\"host\"><span>light</span></div>",
+  )
   let dom = ctx.dom()
   let tree = ctx.tree()
   let doc_id = ctx.doc_id()
@@ -267,7 +271,7 @@ test "DOM.getDocument exposes shadow root metadata on host node" {
 
 ///|
 test "DOM.requestChildNodes includes shadow root nodes for host" {
-  let ctx = TestContext::with_html(
+  let ctx = @cdp.TestContext::with_html(
     "<div id=\"host\"><span id=\"light\">light</span></div>",
   )
   let dom = ctx.dom()
@@ -293,7 +297,7 @@ test "DOM.requestChildNodes includes shadow root nodes for host" {
 
 ///|
 test "DOM.getOuterHTML returns serialized shadow root contents" {
-  let ctx = TestContext::with_html("<div id=\"host\"></div>")
+  let ctx = @cdp.TestContext::with_html("<div id=\"host\"></div>")
   let dom = ctx.dom()
   let tree = ctx.tree()
   let doc_id = ctx.doc_id()
@@ -313,7 +317,7 @@ test "DOM.getOuterHTML returns serialized shadow root contents" {
 
 ///|
 test "DOM.querySelector finds descendants from shadow root node" {
-  let ctx = TestContext::with_html("<div id=\"host\"></div>")
+  let ctx = @cdp.TestContext::with_html("<div id=\"host\"></div>")
   let dom = ctx.dom()
   let tree = ctx.tree()
   let doc_id = ctx.doc_id()
@@ -334,7 +338,7 @@ test "DOM.querySelector finds descendants from shadow root node" {
 
 ///|
 test "DOM.querySelectorAll finds all descendants from shadow root node" {
-  let ctx = TestContext::with_html("<div id=\"host\"></div>")
+  let ctx = @cdp.TestContext::with_html("<div id=\"host\"></div>")
   let dom = ctx.dom()
   let tree = ctx.tree()
   let doc_id = ctx.doc_id()
@@ -361,7 +365,7 @@ test "DOM.querySelectorAll finds all descendants from shadow root node" {
 
 ///|
 test "DOM.querySelector on host node does not pierce shadow root" {
-  let ctx = TestContext::with_html("<div id=\"host\"></div>")
+  let ctx = @cdp.TestContext::with_html("<div id=\"host\"></div>")
   let dom = ctx.dom()
   let tree = ctx.tree()
   let doc_id = ctx.doc_id()
@@ -380,7 +384,7 @@ test "DOM.querySelector on host node does not pierce shadow root" {
 
 ///|
 test "DOM operations on invalid node return error" {
-  let ctx = TestContext::new()
+  let ctx = @cdp.TestContext::new()
   let dom = ctx.dom()
   // Try to get attributes of non-existent node
   let result = dom.get_attributes(99999)

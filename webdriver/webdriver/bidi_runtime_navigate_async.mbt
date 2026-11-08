@@ -11,7 +11,7 @@
 /// across the FFI boundary.
 extern "js" fn js_navigate_and_send_async(
   socket : @core.Any,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   url : String,
   navigation_id : String,
@@ -114,7 +114,7 @@ extern "js" fn js_navigate_and_send_async(
 /// load and emits the BiDi response via socket once the load resolves.
 pub fn navigate_and_send_async(
   socket : @core.Any,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   url : String,
   navigation_id : String,

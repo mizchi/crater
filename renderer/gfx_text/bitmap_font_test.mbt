@@ -3,11 +3,11 @@
 // the glyph shapes are actually legible in the test.
 fn render_text_ascii(
   text : String,
-  width : Int,
-  height : Int,
-  x : Int,
-  y : Int,
-  scale : Int,
+  width : Int32,
+  height : Int32,
+  x : Int32,
+  y : Int32,
+  scale : Int32,
 ) -> String raise {
   let driver = @gfx_software.SoftwareDriver::new(width, height)
   @gfx.GraphicsDriver::initialize(driver)
@@ -23,7 +23,7 @@ fn render_text_ascii(
     screen_w=width,
     screen_h=height,
   )
-  let commands = bitmap_text_commands(
+  let commands = @gfx_text.bitmap_text_commands(
     frame,
     text,
     x,

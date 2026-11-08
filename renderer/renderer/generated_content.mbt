@@ -3,7 +3,7 @@
 
 ///|
 priv struct CounterEntry {
-  value : Int
+  value : Int32
   owner : String
   owner_is_style_scope : Bool
 }
@@ -11,7 +11,7 @@ priv struct CounterEntry {
 ///|
 priv struct CounterDirective {
   name : String
-  amount : Int
+  amount : Int32
 }
 
 ///|
@@ -51,7 +51,7 @@ fn is_ascii_hex_digit(c : Char) -> Bool {
 }
 
 ///|
-fn ascii_hex_digit_to_int(c : Char) -> Int {
+fn ascii_hex_digit_to_int(c : Char) -> Int32 {
   let cp = c.to_int()
   if cp >= '0'.to_int() && cp <= '9'.to_int() {
     cp - '0'.to_int()
@@ -92,7 +92,7 @@ fn first_token_or_empty(tokens : Array[String]) -> String {
 }
 
 ///|
-fn find_char_index(value : String, target : Char) -> Int? {
+fn find_char_index(value : String, target : Char) -> Int32? {
   let mut i = 0
   while i < value.length() {
     if value[i].to_int().unsafe_to_char() == target {
@@ -106,7 +106,7 @@ fn find_char_index(value : String, target : Char) -> Int? {
 ///|
 fn parse_counter_directives(
   value : String,
-  default_amount : Int,
+  default_amount : Int32,
 ) -> Array[CounterDirective] {
   let lowered = value.trim().to_lower().to_owned()
   if lowered.is_empty() || lowered == "none" {
@@ -209,7 +209,7 @@ fn apply_counter_increment_directives(
 }
 
 ///|
-fn counter_value(state : Map[String, CounterEntry], name : String) -> Int {
+fn counter_value(state : Map[String, CounterEntry], name : String) -> Int32 {
   match state.get(name) {
     Some(entry) => entry.value
     None => 0
@@ -217,7 +217,7 @@ fn counter_value(state : Map[String, CounterEntry], name : String) -> Int {
 }
 
 ///|
-fn parse_css_quoted_string(value : String, start : Int) -> (String, Int)? {
+fn parse_css_quoted_string(value : String, start : Int32) -> (String, Int32)? {
   if start >= value.length() {
     return None
   }
@@ -343,7 +343,7 @@ fn resolve_pseudo_attr_functions(
 }
 
 ///|
-fn find_top_level_comma(value : String) -> Int? {
+fn find_top_level_comma(value : String) -> Int32? {
   let mut depth = 0
   let mut i = 0
   while i < value.length() {

@@ -1,9 +1,13 @@
 ///|
+#derive(Debug)
 pub(all) enum ArtifactMode {
   Layout
   Image
   Landmarks
-} derive(Debug)
+}
+
+///|
+pub extend ArtifactMode with @debug.Debug::{to_repr}
 
 ///|
 pub impl Show for ArtifactMode with fn output(self, logger) {
@@ -15,13 +19,16 @@ pub impl Show for ArtifactMode with fn output(self, logger) {
 }
 
 ///|
+pub extend ArtifactMode with Show::{to_string, output}
+
+///|
 pub(all) struct RenderRequest {
   html : String
   css : Array[String]
   target_id : String?
   target_selector : String?
-  viewport_width : Int
-  viewport_height : Int
+  viewport_width : Int32
+  viewport_height : Int32
 }
 
 ///|
@@ -72,8 +79,8 @@ fn child_html_elements(children : Array[@html.Node]) -> Array[@html.Element] {
 fn html_to_selector_element(
   element : @html.Element,
   parent : @css.Element?,
-  sibling_index : Int,
-  sibling_count : Int,
+  sibling_index : Int32,
+  sibling_count : Int32,
   prev_sibling : @css.Element?,
 ) -> @css.Element {
   let mut selector_element = @css.Element::new(element.tag)
@@ -313,8 +320,8 @@ fn render_landmark_forest_json(forest : Array[LandmarkTree]) -> String {
 fn write_artifact_metadata_prefix(
   buf : StringBuilder,
   target_id : String,
-  viewport_width : Int,
-  viewport_height : Int,
+  viewport_width : Int32,
+  viewport_height : Int32,
   artifact : String,
 ) -> Unit {
   buf.write_string("{\"schemaVersion\":")
@@ -368,7 +375,7 @@ fn normalize_component_layout(
 }
 
 ///|
-fn pixel_span(value : Double) -> Int {
+fn pixel_span(value : Double) -> Int32 {
   let rounded = value.ceil().to_int()
   if rounded > 0 {
     rounded
@@ -435,7 +442,7 @@ fn render_layout_artifact(request : RenderRequest) -> Result[String, String] {
 ///|
 fn render_component_paint_node(
   request : RenderRequest,
-) -> Result[(@tui_paint_plain.PaintNode, Int, Int, String), String] {
+) -> Result[(@tui_paint_plain.PaintNode, Int32, Int32, String), String] {
   match render_component_subtree(request) {
     Ok((node, layout, target_id)) => {
       let normalized = normalize_component_layout(layout)
@@ -453,11 +460,11 @@ fn render_component_paint_node(
 ///|
 fn build_image_artifact_json(
   target_id : String,
-  viewport_width : Int,
-  viewport_height : Int,
+  viewport_width : Int32,
+  viewport_height : Int32,
   data : String,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
 ) -> String {
   let buf = StringBuilder()
   write_artifact_metadata_prefix(

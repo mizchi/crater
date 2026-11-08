@@ -6,7 +6,7 @@
 
 ///|
 fn render_ascii(html : String, w : Double, h : Double) -> String {
-  render_html_to_image(html, @types.Size::new(w, h)).to_ascii()
+  @gfx_vrt.render_html_to_image(html, @types.Size::new(w, h)).to_ascii()
 }
 
 ///|

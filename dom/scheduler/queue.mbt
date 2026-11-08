@@ -26,7 +26,7 @@ pub fn TaskQueue::push(self : TaskQueue, task : Task) -> Unit {
 
 ///|
 /// Get the number of tasks in the queue
-pub fn TaskQueue::length(self : TaskQueue) -> Int {
+pub fn TaskQueue::length(self : TaskQueue) -> Int32 {
   self.tasks.length()
 }
 
@@ -57,7 +57,7 @@ pub fn TaskQueue::get_main_thread_ready(self : TaskQueue) -> Array[Task] {
 ///|
 /// Remove a task by ID
 pub fn TaskQueue::remove(self : TaskQueue, task_id : TaskId) -> Task? {
-  let mut found_idx : Int? = None
+  let mut found_idx : Int32? = None
   for i, task in self.tasks {
     if task.id == task_id {
       found_idx = Some(i)
@@ -89,7 +89,7 @@ pub fn TaskQueue::iter(self : TaskQueue) -> Iter[Task] {
 
 ///|
 /// Remove all completed/cancelled/failed tasks
-pub fn TaskQueue::cleanup(self : TaskQueue) -> Int {
+pub fn TaskQueue::cleanup(self : TaskQueue) -> Int32 {
   let initial_len = self.tasks.length()
   let remaining : Array[Task] = self.tasks.filter(fn(t) { !t.is_terminal() })
   // Swap contents
@@ -154,7 +154,7 @@ pub fn SourceQueueManager::push(self : SourceQueueManager, task : Task) -> Unit 
 
 ///|
 /// Get total task count across all queues
-pub fn SourceQueueManager::total_count(self : SourceQueueManager) -> Int {
+pub fn SourceQueueManager::total_count(self : SourceQueueManager) -> Int32 {
   let mut count = 0
   self.queues.each(fn(_source, queue) { count += queue.length() })
   count
@@ -217,7 +217,7 @@ pub fn SourceQueueManager::remove(
 
 ///|
 /// Cleanup all queues
-pub fn SourceQueueManager::cleanup(self : SourceQueueManager) -> Int {
+pub fn SourceQueueManager::cleanup(self : SourceQueueManager) -> Int32 {
   let mut total = 0
   self.queues.each(fn(_source, queue) { total += queue.cleanup() })
   total

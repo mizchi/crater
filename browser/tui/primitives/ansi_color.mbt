@@ -3,13 +3,13 @@
 
 ///|
 /// Convert RGB color to 256-color palette index.
-pub fn rgb_to_256(r : Int, g : Int, b : Int) -> Int {
+pub fn rgb_to_256(r : Int32, g : Int32, b : Int32) -> Int32 {
   @tui_ansi.rgb_to_256(r, g, b)
 }
 
 ///|
 /// Convert Color to 256-color palette index.
-pub fn color_to_256(color : @types.Color) -> Int {
+pub fn color_to_256(color : @types.Color) -> Int32 {
   rgb_to_256(color.r, color.g, color.b)
 }
 

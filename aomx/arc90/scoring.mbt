@@ -242,7 +242,7 @@ fn contains_any(s : String, patterns : FixedArray[String]) -> Bool {
 }
 
 ///|
-fn count_any_occurrences(s : String, patterns : FixedArray[String]) -> Int {
+fn count_any_occurrences(s : String, patterns : FixedArray[String]) -> Int32 {
   let mut total = 0
   for pattern in patterns {
     total = total + count_occurrences(s, pattern)
@@ -251,7 +251,7 @@ fn count_any_occurrences(s : String, patterns : FixedArray[String]) -> Int {
 }
 
 ///|
-fn count_occurrences(haystack : String, needle : String) -> Int {
+fn count_occurrences(haystack : String, needle : String) -> Int32 {
   if needle.length() == 0 || haystack.length() < needle.length() {
     return 0
   }
@@ -318,7 +318,7 @@ fn calculate_paragraph_bonus(node : @aom.AccessibilityNode) -> Double {
 
 ///|
 /// Count paragraph elements (p, pre, blockquote)
-fn count_paragraph_elements(node : @aom.AccessibilityNode) -> Int {
+fn count_paragraph_elements(node : @aom.AccessibilityNode) -> Int32 {
   let mut count = 0
 
   // Check if this is a paragraph-like element
@@ -398,7 +398,7 @@ fn calculate_numeric_penalty(text_content : String) -> Double {
 fn count_tag_occurrences(
   node : @aom.AccessibilityNode,
   tags : FixedArray[String],
-) -> Int {
+) -> Int32 {
   let mut count = 0
   match node.tag_name {
     Some(tag) => {

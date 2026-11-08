@@ -1,7 +1,9 @@
 ///|
 /// Default dispatch for tests
 fn default_dispatch() -> @node.DispatchFn {
-  @node.DispatchFn(fn(node, ctx, dispatch) { compute(node, ctx, dispatch) })
+  @node.DispatchFn(fn(node, ctx, dispatch) {
+    @flex.compute(node, ctx, dispatch)
+  })
 }
 
 ///|
@@ -59,7 +61,7 @@ test "flex_item_height_recalculated_on_shrink" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   // Inspect actual values for debugging
   inspect(layout.width, content="200")
   inspect(layout.children.length(), content="2")
@@ -102,7 +104,7 @@ test "flex_row_basic" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   inspect(layout.width, content="200")
   inspect(layout.height, content="100")
   // Children should be side by side
@@ -143,7 +145,7 @@ test "flex_column_basic" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   inspect(layout.width, content="200")
   // Children should be stacked vertically
   inspect(layout.children[0].x, content="0")
@@ -184,7 +186,7 @@ test "flex_grow" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Child1 gets 1/3 of space, child2 gets 2/3
   inspect(layout.children[0].width, content="100")
@@ -218,7 +220,7 @@ test "flex_justify_center" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Child should be centered: (300 - 100) / 2 = 100
   inspect(layout.children[0].x, content="100")
@@ -260,7 +262,7 @@ test "flex_justify_space_between" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Free space = 300 - 150 = 150, gap = 150 / 2 = 75
   inspect(layout.children[0].x, content="0")
@@ -298,7 +300,7 @@ test "flex_row_space_between_fixed_leaf_children_fast_path_shape" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   inspect(layout.width, content="216")
   inspect(layout.height, content="14")
   inspect(layout.children[0].x, content="0")
@@ -334,7 +336,7 @@ test "flex_align_center" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Child should be vertically centered: (100 - 30) / 2 = 35
   inspect(layout.children[0].y, content="35")
@@ -366,7 +368,7 @@ test "flex_align_stretch" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Child should stretch to full height
   inspect(layout.children[0].height, content="100")
@@ -402,7 +404,7 @@ test "flex_row_reverse" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Default justify-content is logical `start`.
   // In row-reverse with logical start, items are packed toward physical left.
@@ -439,7 +441,7 @@ test "flex_row_reverse_start_is_logical_not_flex_relative" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   inspect(layout.children[0].x, content="0")
 }
 
@@ -469,7 +471,7 @@ test "flex_row_reverse_flex_start_is_flex_relative" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   inspect(layout.children[0].x, content="150")
 }
 
@@ -505,7 +507,7 @@ test "justify_content_stretch_falls_back_to_flex_start_in_rtl_overflow" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   inspect(layout.children[0].x, content="-48")
 }
 
@@ -541,7 +543,7 @@ test "justify_content_left_is_physical_in_rtl_row_overflow" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   inspect(layout.children[0].x, content="0")
 }
 
@@ -577,7 +579,7 @@ test "justify_content_space_around_overflow_uses_logical_start" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   inspect(layout.children[0].x, content="-48")
 }
 
@@ -615,7 +617,7 @@ test "row_wrap_start_respects_vertical_rl_block_start" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   inspect(layout.children[0].x, content="-48")
   inspect(layout.children[0].y, content="0")
 }
@@ -654,7 +656,7 @@ test "row_wrap_end_respects_vertical_rl_block_end" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   inspect(layout.children[0].x, content="0")
   inspect(layout.children[0].y, content="-48")
 }
@@ -732,7 +734,7 @@ test "flex_item_block_child_negative_margin_keeps_offsets_in_vertical_rl" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   let child = layout.children[0].children[0]
   inspect(child.x, content="-24")
   inspect(child.y, content="-24")
@@ -811,7 +813,7 @@ test "flex_item_block_child_negative_margin_keeps_offsets_in_vertical_lr" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   let child = layout.children[0].children[0]
   inspect(child.x, content="-24")
   inspect(child.y, content="-24")
@@ -851,7 +853,7 @@ test "column_wrap_start_respects_vertical_rl_block_start" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   inspect(layout.children[0].x, content="-48")
   inspect(layout.children[0].y, content="0")
 }
@@ -890,7 +892,7 @@ test "column_wrap_start_respects_rtl_inline_start" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   inspect(layout.children[0].x, content="-48")
   inspect(layout.children[0].y, content="0")
 }
@@ -929,7 +931,7 @@ test "column_wrap_right_falls_back_to_start_on_vertical_block_axis" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   inspect(layout.children[0].x, content="0")
   inspect(layout.children[0].y, content="0")
 }
@@ -965,7 +967,7 @@ test "flex_with_padding" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Child should be offset by padding
   inspect(layout.children[0].x, content="10")
@@ -1013,7 +1015,7 @@ test "flex_shrink_to_zero" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // child1 and child3 don't shrink (50px each)
   // child2 shrinks from 50px to 0px (75 - 50 - 50 = -25, but min is 0)
@@ -1059,7 +1061,7 @@ test "flex_justify_space_around" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Free space = 100 - 30 = 70
   // gap = 70 / 3 ≈ 23.33
@@ -1116,7 +1118,7 @@ test "flex_justify_space_evenly" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Free space = 100 - 30 = 70
   // gap = 70 / 4 = 17.5 (4 gaps for 3 items in space-evenly)
@@ -1153,7 +1155,7 @@ test "flex_align_items_center" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Child should be vertically centered: (100 - 10) / 2 = 45
   inspect(layout.children[0].y, content="45")
@@ -1186,7 +1188,7 @@ test "flex_align_items_end" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Child should be at bottom: 100 - 10 = 90
   inspect(layout.children[0].y, content="90")
@@ -1223,7 +1225,7 @@ test "flex_justify_end" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Children should be at end: free space = 60
   inspect(layout.children[0].x, content="60")
@@ -1260,7 +1262,7 @@ test "flex_column_reverse" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Default justify-content is logical `start`.
   // In column-reverse with logical start, items are packed toward physical top.
@@ -1318,7 +1320,7 @@ test "flex_nested" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Root should be column layout
   inspect(layout.children[0].y, content="0")
@@ -1362,7 +1364,7 @@ test "flex_with_margin" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Child should be positioned after its left margin
   inspect(layout.children[0].x, content="10")
@@ -1401,7 +1403,7 @@ test "flex_stretch_respects_explicit_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Child should NOT stretch because it has explicit height
   inspect(layout.children[0].height, content="40")
@@ -1433,7 +1435,7 @@ test "flex_min_width_constraint" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Child should be at least min_width
   inspect(layout.children[0].width, content="100")
@@ -1465,7 +1467,7 @@ test "flex_max_width_constraint" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Child should be capped at max_width
   inspect(layout.children[0].width, content="50")
@@ -1498,7 +1500,7 @@ test "flex_display_none" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Child1 should expand to fill all space since child2 is display:none
   // Note: display:none children are still included in layout with zero size
@@ -1536,7 +1538,7 @@ test "flex_grow_within_constrained_min_column" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Container should be at least 100px (min-height)
   inspect(layout.height, content="100")
@@ -1584,7 +1586,7 @@ test "flex_percentage_max_width_with_grow" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // taffy expected: child1 gets 120 (max), child2 gets 40 (max)
   // Excess from child2 (160-40=120) redistributed to child1
@@ -1626,7 +1628,7 @@ test "flex_grow_child_distribution" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // child1 has fixed width 50, child2 should grow to fill remaining 50
   inspect(layout.children[0].width, content="50")
@@ -1668,7 +1670,7 @@ test "flex_shrink_child_distribution" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Total base = 160, available = 100, overflow = 60
   // child1 doesn't shrink (flex-shrink: 0), child2 shrinks by 60
@@ -1703,7 +1705,7 @@ test "flex_align_items_start" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Child should be at top (y = 0)
   inspect(layout.children[0].y, content="0")
@@ -1748,7 +1750,7 @@ test "flex_container_with_border_and_padding" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Content width = 100 - 10 - 10 - 5 - 5 = 70
   inspect(layout.children[0].width, content="70")
@@ -1790,7 +1792,7 @@ test "flex_grow_within_max_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Container should be capped at 100 (max-width)
   inspect(layout.width, content="0")
@@ -1832,7 +1834,7 @@ test "flex_shrink_with_margin" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Child base = 100 + 20 margin = 120, available = 80
   // Overflow = 40, shrink only the width (not margin)
@@ -1882,7 +1884,7 @@ test "flex_grow_less_than_factor_one" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // taffy expected: distribute only 80% of remaining space (460 * 0.8 = 368)
   // child1: 40 + 460 * 0.2 = 40 + 92 = 132
@@ -1930,7 +1932,7 @@ test "flex_basis_behavior" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // child1: 50 base + 100 grow (200 - 100 = 100 remaining, all goes to child1)
   inspect(layout.children[0].width, content="150")
@@ -1964,7 +1966,7 @@ test "flex_column_align_stretch" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Child should stretch to full width in column layout
   inspect(layout.children[0].width, content="200")
@@ -1998,7 +2000,7 @@ test "flex_row_stretch_uses_constrained_min_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   inspect(layout.height, content="200")
   inspect(layout.children[0].height, content="200")
 }
@@ -2030,7 +2032,7 @@ test "flex_single_item_center" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Single child centered: (200 - 50) / 2 = 75
   inspect(layout.children[0].x, content="75")
@@ -2075,7 +2077,7 @@ test "flex_shrink_all_equally" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Total base = 300, available = 150, shrink = 150
   // Each shrinks by 50 equally
@@ -2136,7 +2138,7 @@ test "flex_nested_mixed_directions" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Inner flex children should each get 50px height
   inspect(layout.children[0].children[0].height, content="50")
@@ -2172,7 +2174,7 @@ test "align_items_center" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   inspect(layout.width, content="100")
   inspect(layout.height, content="100")
   inspect(layout.children[0].width, content="10")
@@ -2210,7 +2212,7 @@ test "align_items_flex_end" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   inspect(layout.children[0].width, content="10")
   inspect(layout.children[0].height, content="10")
   inspect(layout.children[0].x, content="0")
@@ -2253,7 +2255,7 @@ test "justify_content_space_between" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // space-between: first at start, last at end, middle centered
   // Remaining: 100 - 30 = 70, 2 gaps = 35 each
@@ -2297,7 +2299,7 @@ test "justify_content_space_around" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // space-around: each item has equal margin on both sides
   // Total: 100, content: 30, remaining: 70
@@ -2345,7 +2347,7 @@ test "justify_content_center" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // center: children grouped in center
   // Total content: 30, start offset: (100-30)/2 = 35
@@ -2397,7 +2399,7 @@ test "flex_shrink_middle_to_zero" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Total: 150, container: 75, overflow: 75
   // Only child1 shrinks, so it goes to 50 - 75 = max(0, -25) = 0
@@ -2440,7 +2442,7 @@ test "align_self_center" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   inspect(layout.children[0].width, content="10")
   inspect(layout.children[0].height, content="10")
   inspect(layout.children[0].x, content="0")
@@ -2479,7 +2481,7 @@ test "flex_basis_flex_grow_column" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // child1 base: 50, child2 base: 0
   // Remaining: 100 - 50 = 50, split equally
@@ -2524,7 +2526,7 @@ test "flex_wrap_fits_one_row" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Both children fit on one row
   inspect(layout.width, content="150")
@@ -2575,7 +2577,7 @@ test "nested_overflowing_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Parent constrains width but not height
   inspect(layout.width, content="100")
@@ -2626,7 +2628,7 @@ test "gap_column_gap_flexible" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // 80px total, 2 gaps of 10px = 20px, remaining 60px / 3 = 20px each
   inspect(layout.width, content="80")
@@ -2674,7 +2676,7 @@ test "gap_column_gap_inflexible" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // 3 children of 20px each + 2 gaps of 10px = 80px total
   inspect(layout.children[0].width, content="20")
@@ -2720,7 +2722,7 @@ test "gap_row_gap_column" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // 10 + 20 + 30 = 60px content + 2 gaps of 10px = 80px total height
   inspect(layout.width, content="100")
@@ -2779,7 +2781,7 @@ test "wrap_row" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Row 1: child1 (31) + child2 (32) + child3 (33) = 96px (fits in 100px)
   // Row 2: child4 (34) wraps to second line
@@ -2845,7 +2847,7 @@ test "wrap_column" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Column 1: child1 (31) + child2 (32) + child3 (33) = 96px (fits in 100px)
   // Column 2: child4 (34) wraps to second column
@@ -2910,7 +2912,7 @@ test "margin_auto_left_and_right" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   inspect(layout.width, content="200")
   inspect(layout.height, content="200")
   // Child 0: x = 50 (auto left margin absorbs half of free space)
@@ -2966,7 +2968,7 @@ test "margin_auto_left" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   inspect(layout.width, content="200")
   inspect(layout.height, content="200")
   // Child 0: x = 100 (auto left margin absorbs all free space)
@@ -3022,7 +3024,7 @@ test "margin_auto_top" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   inspect(layout.width, content="200")
   inspect(layout.height, content="200")
   // Child 0: pushed to bottom by auto margin-top
@@ -3069,7 +3071,7 @@ test "aspect_ratio_flex_row_fill_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   inspect(layout.width, content="100")
   inspect(layout.height, content="100")
   inspect(layout.children[0].width, content="80")
@@ -3108,7 +3110,7 @@ test "aspect_ratio_flex_row_fill_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   inspect(layout.width, content="100")
   inspect(layout.height, content="100")
   inspect(layout.children[0].width, content="40")
@@ -3150,7 +3152,7 @@ test "aspect_ratio_flex_row_stretch_fill_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   inspect(layout.width, content="100")
   inspect(layout.height, content="100")
   inspect(layout.children[0].width, content="40")
@@ -3187,7 +3189,7 @@ test "aspect_ratio_transferred_max_height_from_flex_grow_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   inspect(layout.width, content="100")
   inspect(layout.height, content="100")
   inspect(layout.children[0].width, content="100")
@@ -3230,7 +3232,7 @@ test "min_content_block_width_uses_stretched_aspect_ratio_flex_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   inspect(layout.width, content="50")
   inspect(layout.height, content="50")
   inspect(layout.children[0].width, content="50")
@@ -3266,7 +3268,7 @@ test "column_percent_height_with_indefinite_parent_uses_content_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   inspect(layout.height, content="1200")
   inspect(layout.children[0].height, content="1200")
 }
@@ -3305,7 +3307,7 @@ test "column_percent_height_with_indefinite_parent_and_clip_includes_content" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   inspect(layout.height, content="6623")
   inspect(layout.children[0].y, content="1")
   inspect(layout.children[0].height, content="6622")
@@ -3357,7 +3359,7 @@ test "row_flex_min_height_parent_percent_cross_child_uses_content_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(canvas, ctx, default_dispatch())
+  let layout = @flex.compute(canvas, ctx, default_dispatch())
   let root_layout = layout.children[0]
   inspect(layout.height, content="6623")
   inspect(root_layout.height, content="6623")
@@ -3406,7 +3408,7 @@ test "inline_flex_intrinsic_width_uses_stretched_canvas_percent_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   inspect(layout.width, content="100")
   inspect(layout.height, content="100")
   inspect(layout.children[0].width, content="100")
@@ -3458,7 +3460,7 @@ test "inline_flex_min_content_includes_child_border_box" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   inspect(layout.width, content="45")
   inspect(layout.height, content="45")
   inspect(layout.children[0].width, content="35")
@@ -3514,7 +3516,7 @@ test "wrap_reverse_row" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   inspect(layout.width, content="100")
   inspect(layout.height, content="60") // 2 lines of 30px each
   // Line 1 (items 0,1,2): 31+32+33=96 fits in 100, at y=30 (wrap-reverse puts first line at end)
@@ -3575,7 +3577,7 @@ test "wrap_reverse_column" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   inspect(layout.width, content="100")
   inspect(layout.height, content="100")
   // Column 1 (items 0,1,2): 31+32+33=96 fits in 100, at x=70 (stretch gives 50px per column, item at end: 100-30=70)
@@ -3631,7 +3633,7 @@ test "absolute_layout_width_height_start_top" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   inspect(layout.width, content="100")
   inspect(layout.height, content="100")
   inspect(layout.children[0].width, content="10")
@@ -3675,7 +3677,7 @@ test "absolute_layout_start_top_end_bottom" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   inspect(layout.width, content="100")
   inspect(layout.height, content="100")
   inspect(layout.children[0].width, content="80")
@@ -3724,7 +3726,7 @@ test "absolute_does_not_affect_flex_layout" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Flex child should be at (0, 0) as if abs child doesn't exist
   // Note: children array order may vary - abs children are added after flex children
@@ -3791,7 +3793,7 @@ test "nested_flex_explicit_sizes" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(outer, ctx, default_dispatch())
+  let layout = @flex.compute(outer, ctx, default_dispatch())
 
   // Outer: 100x100
   inspect(layout.width, content="100")
@@ -3860,7 +3862,7 @@ test "nested_flex_with_padding_margin" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Root: 100x100
   inspect(layout.width, content="100")
@@ -3926,7 +3928,7 @@ test "nested_row_in_column" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Root: 100x100
   inspect(layout.width, content="100")
@@ -3983,7 +3985,7 @@ test "nested_overflowing_child_unconstrained" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Root stays 100x100
   inspect(layout.width, content="100")
@@ -4056,7 +4058,7 @@ test "min_height_with_nested_fixed_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Root: 320 wide, height = 8 + 40 + 9 = 57 (margin + child height)
   inspect(layout.width, content="320")
@@ -4127,7 +4129,7 @@ test "align_baseline_nested_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Root: 100x100
   inspect(layout.width, content="100")
@@ -4182,7 +4184,7 @@ test "align_baseline" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   inspect(layout.width, content="100")
   inspect(layout.height, content="100")
   // Child 0: 50x50 at (0, 0)
@@ -4239,7 +4241,7 @@ test "debug_intrinsic_cross_sizing" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Root should have height 40 (from parent's intrinsic height, no margin)
   inspect(layout.height, content="40")
@@ -4308,7 +4310,7 @@ test "flex_text_wrapping_in_fixed_width_container" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
 
   // Container should be 100px wide
   inspect(layout.width, content="100")
@@ -4370,7 +4372,7 @@ test "row_flex_direct_text_leaf_keeps_single_line_cross_size_at_intrinsic_width"
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   inspect(layout.height, content="19.2")
   if layout.children.length() > 0 {
     let text = layout.children[0]
@@ -4383,7 +4385,7 @@ test "row_flex_direct_text_leaf_keeps_single_line_cross_size_at_intrinsic_width"
 
 ///|
 test "row_column_div_with_cache_reset" {
-  reset_intrinsic_cache() // Clear any stale cache
+  @flex.reset_intrinsic_cache() // Clear any stale cache
   let default_style = @style.Style::default()
   let text_measure : @layout_types.MeasureFunc = {
     func: fn(
@@ -4418,7 +4420,7 @@ test "row_column_div_with_cache_reset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(row, ctx, default_dispatch())
+  let layout = @flex.compute(row, ctx, default_dispatch())
   inspect(layout.height, content="16")
 }
 
@@ -4454,7 +4456,7 @@ test "column_div_nested" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(column, ctx, default_dispatch())
+  let layout = @flex.compute(column, ctx, default_dispatch())
   inspect(layout.height, content="16")
   inspect(layout.children[0].height, content="16")
 }
@@ -4502,7 +4504,7 @@ test "row_column_nested_flex_with_text" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(row, ctx, default_dispatch())
+  let layout = @flex.compute(row, ctx, default_dispatch())
   // Row should have auto height based on content
   inspect(layout.height, content="16")
   // Column should have same height as content
@@ -4548,7 +4550,7 @@ test "flex_column_single_margin" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(container, ctx, default_dispatch())
+  let layout = @flex.compute(container, ctx, default_dispatch())
   // Check margin-top is applied
   inspect(layout.children[0].margin.top, content="50")
   inspect(layout.children[0].y, content="50") // Should be 50, not 0
@@ -4595,7 +4597,7 @@ test "flex_column_two_items_second_margin" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(container, ctx, default_dispatch())
+  let layout = @flex.compute(container, ctx, default_dispatch())
   // box1: no margin, y=0, height=100
   inspect(layout.children[0].y, content="0")
   // box2: margin-top=50, so y should be 100 (box1.height) + 50 = 150
@@ -4651,7 +4653,7 @@ test "flex_margin_no_collapse_no_shrink" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(container, ctx, default_dispatch())
+  let layout = @flex.compute(container, ctx, default_dispatch())
   // box1: margin-top=50, y=50
   inspect(layout.children[0].y, content="50")
   // box2: y should be 50 + 100 + 50 + 50 = 250
@@ -4712,7 +4714,7 @@ test "flex_margin_no_collapse_absolute_container" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(container, ctx, default_dispatch())
+  let layout = @flex.compute(container, ctx, default_dispatch())
   // box1: margin-top=50, y should be 50
   inspect(layout.children[0].y, content="50")
   // box2: y should be 50 + 100 + 50 + 50 = 250
@@ -4765,7 +4767,7 @@ test "flex_column_first_all_margins" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(container, ctx, default_dispatch())
+  let layout = @flex.compute(container, ctx, default_dispatch())
   // box1: margin-top=50, y=50, height=100, margin-bottom=50
   inspect(layout.children[0].y, content="50")
   // box2: y should be 50 + 100 + 50 + 50 = 250
@@ -4818,7 +4820,7 @@ test "flex_column_adjacent_margins" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(container, ctx, default_dispatch())
+  let layout = @flex.compute(container, ctx, default_dispatch())
   // box1: y=0, height=100, margin-bottom=50
   inspect(layout.children[0].y, content="0")
   // box2: y should be box1.height + box1.margin-bottom + box2.margin-top = 100 + 50 + 50 = 200
@@ -4872,7 +4874,7 @@ test "flex_column_two_items_both_margin_top" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(container, ctx, default_dispatch())
+  let layout = @flex.compute(container, ctx, default_dispatch())
   // box1: margin-top=50, y=50
   inspect(layout.children[0].y, content="50")
   // box2: y should be box1.y + box1.height + box2.margin-top = 50 + 100 + 50 = 200
@@ -4920,7 +4922,7 @@ test "flex_column_two_items_first_margin_bottom" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(container, ctx, default_dispatch())
+  let layout = @flex.compute(container, ctx, default_dispatch())
   // box1: y=0, height=100, margin-bottom=50
   inspect(layout.children[0].y, content="0")
   // box2: y should be box1.height + box1.margin-bottom = 100 + 50 = 150
@@ -4981,7 +4983,7 @@ test "flex_margin_no_collapse" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(container, ctx, default_dispatch())
+  let layout = @flex.compute(container, ctx, default_dispatch())
   // Debug: check margin values in output
   inspect(layout.children[0].margin.top, content="50")
   inspect(layout.children[0].margin.bottom, content="50")
@@ -5025,7 +5027,7 @@ test "min_width_with_justify_content_center" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   // Container width should be min_width (100px)
   inspect(layout.width, content="100")
   // Child should be centered: x = (100 - 20) / 2 = 40
@@ -5063,7 +5065,7 @@ test "min_height_with_align_content_center_column" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   // Container height should be min_height (100px)
   inspect(layout.height, content="100")
   // Child should be centered: y = (100 - 20) / 2 = 40
@@ -5104,7 +5106,7 @@ test "flex_contain_size_auto_height_ignores_child_content" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(container, ctx, default_dispatch())
+  let layout = @flex.compute(container, ctx, default_dispatch())
   inspect(layout.height, content="4")
 }
 
@@ -5150,7 +5152,7 @@ test "inline_flex_contain_size_uses_definite_zero_main_size_for_shrink" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(container, ctx, default_dispatch())
+  let layout = @flex.compute(container, ctx, default_dispatch())
   inspect(layout.width, content="4")
   inspect(layout.height, content="4")
   inspect(layout.children[0].width, content="40")
@@ -5243,7 +5245,7 @@ test "row_flex_scroll_list_item_keeps_expected_track_sizes" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   inspect(layout.width, content="400")
   inspect(layout.height, content="64")
   inspect(layout.children[0].x, content="16")
@@ -5297,7 +5299,11 @@ test "flex_align_items_center_differs_from_default_stretch" {
       Some(a) => { ..base, align_items: a, }
       None => base
     }
-    compute(@node.Node::new("root", style, [c1, c2]), ctx, default_dispatch())
+    @flex.compute(
+      @node.Node::new("root", style, [c1, c2]),
+      ctx,
+      default_dispatch(),
+    )
   }
   // align-items: center -> the shorter item keeps its content height and is
   // centered within the 40px line (y = (40-20)/2 = 10).
@@ -5343,7 +5349,7 @@ test "flexbox_min_width_justify_and_padding" {
     },
     [c1],
   )
-  let l1 = compute(r1, ctx, default_dispatch())
+  let l1 = @flex.compute(r1, ctx, default_dispatch())
   inspect(l1.width, content="200")
   inspect(l1.children[0].x, content="90")
   // Issue 2: symmetric horizontal padding stays symmetric on the layout.
@@ -5359,7 +5365,7 @@ test "flexbox_min_width_justify_and_padding" {
     { ..ds, display: @types.Flex, flex_direction: @types.Row, padding: pad2, },
     [c2],
   )
-  let l2 = compute(r2, ctx, default_dispatch())
+  let l2 = @flex.compute(r2, ctx, default_dispatch())
   inspect(l2.padding.left, content="2")
   inspect(l2.padding.right, content="2")
   // Issue 3: horizontal padding does not inflate height.
@@ -5369,7 +5375,7 @@ test "flexbox_min_width_justify_and_padding" {
     { ..ds, display: @types.Flex, flex_direction: @types.Row, },
     [c3],
   )
-  let l3 = compute(r3, ctx, default_dispatch())
+  let l3 = @flex.compute(r3, ctx, default_dispatch())
   inspect(l2.height, content="10")
   inspect(l3.height, content="10")
 }
@@ -5418,7 +5424,7 @@ test "flex column item with flex-grow child is not inflated to width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @flex.compute(root, ctx, default_dispatch())
   // Card height is the content sum (20 + 0 + 20), not inflated to width (200).
   inspect(layout.children[0].height, content="40")
 }

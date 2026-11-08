@@ -81,10 +81,10 @@ describe("MoonBit WebDriver protocol core boundaries", () => {
   it("keeps WebDriver BiDi wire envelopes in standalone mizchi/webdriver", () => {
     expect(fs.existsSync(path.join(REPO_ROOT, "webdriver/bidi_wire/moon.pkg"))).toBe(false);
 
-    const moduleJson = JSON.parse(
-      fs.readFileSync(path.join(REPO_ROOT, "webdriver/moon.mod.json"), "utf8"),
+    const moduleSource = fs.readFileSync(
+      path.join(REPO_ROOT, "webdriver/moon.mod"), "utf8",
     );
-    expect(moduleJson.deps["mizchi/webdriver"]).toBe("0.2.6");
+    expect(moduleSource).toContain('"mizchi/webdriver@0.2.7"');
 
     const protocolWirePackage = fs.readFileSync(
       path.join(REPO_ROOT, "webdriver/protocol/wire/moon.pkg"),

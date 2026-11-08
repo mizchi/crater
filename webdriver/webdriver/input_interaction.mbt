@@ -15,7 +15,7 @@ fn bidi_pointer_interaction_command(
   action_type : String,
   x : Double,
   y : Double,
-  button : Int,
+  button : Int32,
 ) -> @interaction.InteractionCommand {
   let col = x.to_int()
   let row = y.to_int()
@@ -51,7 +51,7 @@ fn dispatch_interaction_pointer_command(
   target_shared : String,
   x : Double,
   y : Double,
-  buttons : Int,
+  buttons : Int32,
   pointer_type : String,
   ctrl : Bool,
   alt : Bool,
@@ -91,7 +91,7 @@ fn dispatch_interaction_pointer_sequence(
   target_shared : String,
   x : Double,
   y : Double,
-  buttons : Int,
+  buttons : Int32,
   pointer_type : String,
   ctrl : Bool,
   alt : Bool,
@@ -122,7 +122,7 @@ fn dispatch_interaction_hover_sequence(
   current_target_shared : String,
   x : Double,
   y : Double,
-  buttons : Int,
+  buttons : Int32,
   pointer_type : String,
   ctrl : Bool,
   alt : Bool,

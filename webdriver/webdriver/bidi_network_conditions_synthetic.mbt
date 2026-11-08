@@ -185,7 +185,7 @@ fn BidiProtocol::navigation_blocked_by_network_conditions(
 ///|
 fn BidiProtocol::try_handle_synthetic_network_conditions_fetch_call(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   realm_id : String,
   function_declaration : String,
@@ -223,7 +223,7 @@ fn BidiProtocol::try_handle_synthetic_network_conditions_fetch_call(
 ///|
 fn BidiProtocol::resolve_emulation_set_network_conditions(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Bool? {
   let map = match params {

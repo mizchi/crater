@@ -56,7 +56,7 @@ fn resolve_url(base_url : String, href : String) -> String {
 }
 
 ///|
-fn make_substr(chars : Array[Char], start : Int, end : Int) -> String {
+fn make_substr(chars : Array[Char], start : Int32, end : Int32) -> String {
   let buf = StringBuilder()
   for i = start; i < end; i = i + 1 {
     buf.write_char(chars[i])
@@ -65,7 +65,7 @@ fn make_substr(chars : Array[Char], start : Int, end : Int) -> String {
 }
 
 ///|
-fn hex_digit_to_int(c : Char) -> Int? {
+fn hex_digit_to_int(c : Char) -> Int32? {
   if c >= '0' && c <= '9' {
     Some(c.to_int() - '0'.to_int())
   } else if c >= 'a' && c <= 'f' {

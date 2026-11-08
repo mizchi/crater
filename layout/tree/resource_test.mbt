@@ -11,12 +11,12 @@ test "register pending resource and resolve later" {
   @dispatch.setup()
 
   // Create a simple tree with an "image" node
-  let img = LayoutNode::leaf(
+  let img = @tree.LayoutNode::leaf(
     "img",
     @style.Style::{ ..@style.Style::default(), },
     // No explicit width/height - will be determined by intrinsic size
   )
-  let root = LayoutNode::new(
+  let root = @tree.LayoutNode::new(
     "root",
     @style.Style::{
       ..@style.Style::default(),
@@ -26,7 +26,7 @@ test "register pending resource and resolve later" {
     },
     [img],
   )
-  let tree = LayoutTree::new(root, 800.0, 600.0)
+  let tree = @tree.LayoutTree::new(root, 800.0, 600.0)
 
   // Register a pending resource (image size unknown)
   let rid = tree.register_resource(img.uid)
@@ -67,8 +67,8 @@ test "register pending resource and resolve later" {
 ///|
 test "register resource with custom placeholder size" {
   @dispatch.setup()
-  let img = LayoutNode::leaf("img", @style.Style::default())
-  let root = LayoutNode::new(
+  let img = @tree.LayoutNode::leaf("img", @style.Style::default())
+  let root = @tree.LayoutNode::new(
     "root",
     @style.Style::{
       ..@style.Style::default(),
@@ -78,7 +78,7 @@ test "register resource with custom placeholder size" {
     },
     [img],
   )
-  let tree = LayoutTree::new(root, 800.0, 600.0)
+  let tree = @tree.LayoutTree::new(root, 800.0, 600.0)
 
   // Register with custom placeholder (e.g., 100x100 thumbnail size)
   let rid = tree.register_resource(
@@ -111,9 +111,9 @@ test "attach multiple nodes to same resource" {
   @dispatch.setup()
 
   // Two images with the same src
-  let img1 = LayoutNode::leaf("img1", @style.Style::default())
-  let img2 = LayoutNode::leaf("img2", @style.Style::default())
-  let root = LayoutNode::new(
+  let img1 = @tree.LayoutNode::leaf("img1", @style.Style::default())
+  let img2 = @tree.LayoutNode::leaf("img2", @style.Style::default())
+  let root = @tree.LayoutNode::new(
     "root",
     @style.Style::{
       ..@style.Style::default(),
@@ -123,7 +123,7 @@ test "attach multiple nodes to same resource" {
     },
     [img1, img2],
   )
-  let tree = LayoutTree::new(root, 800.0, 600.0)
+  let tree = @tree.LayoutTree::new(root, 800.0, 600.0)
 
   // Register first image
   let rid = tree.register_resource(img1.uid)
@@ -154,8 +154,8 @@ test "attach multiple nodes to same resource" {
 ///|
 test "fail resource shows error placeholder" {
   @dispatch.setup()
-  let img = LayoutNode::leaf("img", @style.Style::default())
-  let root = LayoutNode::new(
+  let img = @tree.LayoutNode::leaf("img", @style.Style::default())
+  let root = @tree.LayoutNode::new(
     "root",
     @style.Style::{
       ..@style.Style::default(),
@@ -165,7 +165,7 @@ test "fail resource shows error placeholder" {
     },
     [img],
   )
-  let tree = LayoutTree::new(root, 800.0, 600.0)
+  let tree = @tree.LayoutTree::new(root, 800.0, 600.0)
   let rid = tree.register_resource(img.uid)
 
   // Image load fails
@@ -190,12 +190,12 @@ test "resolved resource sets aspect-ratio" {
   @dispatch.setup()
 
   // Image with only width specified
-  let img = LayoutNode::leaf("img", @style.Style::{
+  let img = @tree.LayoutNode::leaf("img", @style.Style::{
     ..@style.Style::default(),
     width: @types.Length(200.0), // Fixed width
     // height: Auto - should be calculated from aspect-ratio
   })
-  let root = LayoutNode::new(
+  let root = @tree.LayoutNode::new(
     "root",
     @style.Style::{
       ..@style.Style::default(),
@@ -205,7 +205,7 @@ test "resolved resource sets aspect-ratio" {
     },
     [img],
   )
-  let tree = LayoutTree::new(root, 800.0, 600.0)
+  let tree = @tree.LayoutTree::new(root, 800.0, 600.0)
   let rid = tree.register_resource(img.uid)
 
   // Resolve with 4:3 aspect ratio (800x600)
@@ -228,12 +228,12 @@ test "css aspect-ratio not overwritten by resource" {
   @dispatch.setup()
 
   // Image with CSS aspect-ratio specified
-  let img = LayoutNode::leaf("img", @style.Style::{
+  let img = @tree.LayoutNode::leaf("img", @style.Style::{
     ..@style.Style::default(),
     width: @types.Length(200.0),
     aspect_ratio: Some(16.0 / 9.0), // CSS specifies 16:9
   })
-  let root = LayoutNode::new(
+  let root = @tree.LayoutNode::new(
     "root",
     @style.Style::{
       ..@style.Style::default(),
@@ -243,7 +243,7 @@ test "css aspect-ratio not overwritten by resource" {
     },
     [img],
   )
-  let tree = LayoutTree::new(root, 800.0, 600.0)
+  let tree = @tree.LayoutTree::new(root, 800.0, 600.0)
   let rid = tree.register_resource(img.uid)
 
   // Resolve with 4:3 image (different from CSS 16:9)
@@ -266,12 +266,12 @@ test "explicit dimensions do not require resource registration" {
   @dispatch.setup()
 
   // Image with both width and height specified (like <img width="300" height="200">)
-  let img = LayoutNode::leaf("img", @style.Style::{
+  let img = @tree.LayoutNode::leaf("img", @style.Style::{
     ..@style.Style::default(),
     width: @types.Length(300.0),
     height: @types.Length(200.0),
   })
-  let root = LayoutNode::new(
+  let root = @tree.LayoutNode::new(
     "root",
     @style.Style::{
       ..@style.Style::default(),
@@ -281,7 +281,7 @@ test "explicit dimensions do not require resource registration" {
     },
     [img],
   )
-  let tree = LayoutTree::new(root, 800.0, 600.0)
+  let tree = @tree.LayoutTree::new(root, 800.0, 600.0)
 
   // No resource registration needed - dimensions are already known
   // No pending resources
@@ -301,8 +301,8 @@ test "explicit dimensions do not require resource registration" {
 ///|
 test "resolve resource before first compute" {
   @dispatch.setup()
-  let img = LayoutNode::leaf("img", @style.Style::default())
-  let root = LayoutNode::new(
+  let img = @tree.LayoutNode::leaf("img", @style.Style::default())
+  let root = @tree.LayoutNode::new(
     "root",
     @style.Style::{
       ..@style.Style::default(),
@@ -312,7 +312,7 @@ test "resolve resource before first compute" {
     },
     [img],
   )
-  let tree = LayoutTree::new(root, 800.0, 600.0)
+  let tree = @tree.LayoutTree::new(root, 800.0, 600.0)
 
   // Register and immediately resolve (fast load case)
   let rid = tree.register_resource(img.uid)
@@ -332,12 +332,12 @@ test "resolve resource before first compute" {
 ///|
 test "register resource with invalid uid is handled gracefully" {
   @dispatch.setup()
-  let root = LayoutNode::leaf("root", @style.Style::{
+  let root = @tree.LayoutNode::leaf("root", @style.Style::{
     ..@style.Style::default(),
     width: @types.Length(400.0),
     height: @types.Length(300.0),
   })
-  let tree = LayoutTree::new(root, 800.0, 600.0)
+  let tree = @tree.LayoutTree::new(root, 800.0, 600.0)
 
   // Register with non-existent uid
   let rid = tree.register_resource(-9999)
@@ -358,8 +358,8 @@ test "register resource with invalid uid is handled gracefully" {
 ///|
 test "resolve triggers dirty propagation" {
   @dispatch.setup()
-  let img = LayoutNode::leaf("img", @style.Style::default())
-  let container = LayoutNode::new(
+  let img = @tree.LayoutNode::leaf("img", @style.Style::default())
+  let container = @tree.LayoutNode::new(
     "container",
     @style.Style::{
       ..@style.Style::default(),
@@ -369,7 +369,7 @@ test "resolve triggers dirty propagation" {
     }, // Size depends on children
     [img],
   )
-  let root = LayoutNode::new(
+  let root = @tree.LayoutNode::new(
     "root",
     @style.Style::{
       ..@style.Style::default(),
@@ -379,7 +379,7 @@ test "resolve triggers dirty propagation" {
     },
     [container],
   )
-  let tree = LayoutTree::new(root, 800.0, 600.0)
+  let tree = @tree.LayoutTree::new(root, 800.0, 600.0)
   let rid = tree.register_resource(img.uid)
   let _ = tree.compute_incremental()
 

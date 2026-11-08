@@ -5,12 +5,12 @@
 /// Draw a link with optional focus highlight.
 pub fn draw_link(
   buf : CharBuffer,
-  x : Int,
-  y : Int,
+  x : Int32,
+  y : Int32,
   text : String,
-  max_width : Int,
+  max_width : Int32,
   focused : Bool,
-) -> Int {
+) -> Int32 {
   let style : TextStyle = if focused {
     {
       fg: @types.Color::black(),
@@ -33,12 +33,12 @@ pub fn draw_link(
 /// Draw a heading with level-based emphasis.
 pub fn draw_heading(
   buf : CharBuffer,
-  x : Int,
-  y : Int,
+  x : Int32,
+  y : Int32,
   text : String,
-  max_width : Int,
-  level : Int,
-) -> Int {
+  max_width : Int32,
+  level : Int32,
+) -> Int32 {
   let fg = match level {
     1 => @types.Color::rgb(255, 255, 255) // White for h1
     2 => @types.Color::rgb(200, 200, 200) // Light gray for h2

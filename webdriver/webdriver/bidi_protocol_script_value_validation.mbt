@@ -10,7 +10,7 @@ fn is_valid_serialized_value_map(value_map : Map[String, Json]) -> Bool {
 /// Validate optional handle/sharedId references in a serialized value.
 fn BidiProtocol::validate_serialized_reference_fields(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   value_map : Map[String, Json],
 ) -> Unit? {
   match value_map.get("handle") {

@@ -390,7 +390,7 @@ test "taffy/blockflex_overflow_hidden" {
   }
   let root_child0_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 40.0, max_width: 60.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 40.0, max_width: 60.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let root_child0 = @node.Node::with_measure(
@@ -406,7 +406,7 @@ test "taffy/blockflex_overflow_hidden" {
   }
   let root_child1_measure = @layout_types.MeasureFunc::{
     func: fn(_w : Double, _h : Double) -> @layout_types.IntrinsicSize {
-      { min_width: 40.0, max_width: 60.0, min_height: 10.0, max_height: 10.0 }
+      { min_width: 40.0, max_width: 60.0, min_height: 10.0, max_height: 10.0, }
     },
   }
   let root_child1 = @node.Node::with_measure(

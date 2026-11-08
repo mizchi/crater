@@ -66,8 +66,8 @@ fn html_to_selector_element_minimal(
 fn html_to_selector_element_with_parent(
   elem : @html.Element,
   parent : @css.Element,
-  sibling_index : Int,
-  sibling_count : Int,
+  sibling_index : Int32,
+  sibling_count : Int32,
   prev_sibling : @css.Element?,
 ) -> @css.Element {
   let mut sel_elem = @css.Element::new(elem.tag)

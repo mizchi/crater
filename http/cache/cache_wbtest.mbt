@@ -3,8 +3,8 @@
 
 ///|
 fn make_entry(
-  directives? : CacheDirectives = CacheDirectives::default(),
-  stored_at? : Double = 0.0,
+  directives~ : CacheDirectives = CacheDirectives::default(),
+  stored_at~ : Double = 0.0,
   last_modified? : String,
 ) -> CacheEntry {
   {

@@ -1,7 +1,7 @@
 ///|
 fn BidiProtocol::handle_input_record_synthetic_events(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map = match params {
@@ -54,7 +54,7 @@ fn BidiProtocol::handle_input_record_synthetic_events(
 ///|
 fn BidiProtocol::handle_input_set_files(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map = match params {
@@ -177,7 +177,7 @@ fn BidiProtocol::append_input_synthetic_events(
 ///|
 fn BidiProtocol::handle_input_is_file_dialog_canceled_for_test(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let ctx_id = match self.validate_input_context(request_id, params) {
@@ -191,7 +191,7 @@ fn BidiProtocol::handle_input_is_file_dialog_canceled_for_test(
 ///|
 fn BidiProtocol::resolve_input_set_files_locator(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   element : Map[String, Json],
 ) -> (String, Bool)? {
   match element.get("type") {
@@ -296,7 +296,7 @@ fn BidiProtocol::apply_input_set_files_summary(
 ///|
 fn BidiProtocol::input_set_files_string_array(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   raw_value : Json?,
   field_name : String,
 ) -> Array[String]? {
@@ -331,7 +331,7 @@ fn BidiProtocol::input_set_files_string_array(
 ///|
 fn BidiProtocol::input_set_files_source_paths(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   map : Map[String, Json],
 ) -> Array[String]? {
   match map.get("files") {
@@ -349,7 +349,7 @@ fn BidiProtocol::input_set_files_source_paths(
 ///|
 fn BidiProtocol::input_set_files_display_names(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   map : Map[String, Json],
   source_paths : Array[String],
 ) -> Array[String]? {
@@ -683,7 +683,7 @@ fn BidiProtocol::maybe_emit_file_dialog_opened_for_input(
 ///|
 fn BidiProtocol::try_handle_synthetic_file_dialog_eval(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   realm_id : String,
   expression : String,

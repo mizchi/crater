@@ -38,7 +38,7 @@ pub fn Browser::enter_hint_mode(self : Browser) -> Unit {
 
 ///|
 /// Generate a single hint label for index
-fn generate_single_label(idx : Int) -> String {
+fn generate_single_label(idx : Int32) -> String {
   if idx < 26 {
     // a-z
     (97 + idx).unsafe_to_char().to_string()

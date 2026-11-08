@@ -5,10 +5,10 @@
 fn render_element_scrollbar(
   ctx : TuiContext,
   node : @tui_paint_runtime.PaintNode,
-  col : Int,
-  row : Int,
-  w : Int,
-  h : Int,
+  col : Int32,
+  row : Int32,
+  w : Int32,
+  h : Int32,
 ) -> Unit {
   if !(node.is_scrollable() && h >= 3) {
     return

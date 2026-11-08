@@ -2,7 +2,7 @@
 /// 8x16 VGA font data for ASCII 32-126
 /// Each character is represented as 16 integers (one per row)
 /// Each integer's bits represent pixels (bit 7 = leftmost, bit 0 = rightmost)
-let bitmap_font_data : Array[Array[Int]] = [
+let bitmap_font_data : Array[Array[Int32]] = [
   // 32: Space
   [
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,

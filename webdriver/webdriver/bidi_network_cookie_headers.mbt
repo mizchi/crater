@@ -1,7 +1,7 @@
 ///|
 fn BidiProtocol::normalize_synthetic_network_set_cookie_entries(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   raw_cookies : Json?,
   base_url : String,
 ) -> SyntheticNetworkSetCookieEntries? {

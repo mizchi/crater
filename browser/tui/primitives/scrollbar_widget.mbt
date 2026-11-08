@@ -5,12 +5,12 @@
 /// Draw a scrollbar
 pub fn draw_scrollbar(
   buf : CharBuffer,
-  x : Int,
-  y : Int,
-  height : Int,
-  scroll_pos : Int,
-  content_height : Int,
-  visible_height : Int,
+  x : Int32,
+  y : Int32,
+  height : Int32,
+  scroll_pos : Int32,
+  content_height : Int32,
+  visible_height : Int32,
 ) -> Unit {
   for
     cell in @tui_buffer.plan_scrollbar(

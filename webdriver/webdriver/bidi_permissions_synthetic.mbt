@@ -29,7 +29,7 @@ fn BidiProtocol::dispatch_permissions(
 ///|
 fn BidiProtocol::resolve_permissions_set_permission(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Bool? {
   let map = match params {
@@ -160,7 +160,7 @@ fn BidiProtocol::remove_permission_state_for_user_context(
 ///|
 fn BidiProtocol::try_handle_synthetic_permissions_query_call(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   realm_id : String,
   function_declaration : String,
@@ -198,7 +198,7 @@ fn BidiProtocol::try_handle_synthetic_permissions_query_call(
 ///|
 fn BidiProtocol::try_handle_synthetic_window_location_origin_call(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   realm_id : String,
   function_declaration : String,

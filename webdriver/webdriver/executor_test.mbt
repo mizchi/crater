@@ -2,20 +2,20 @@
 /// Tests for Protocol-First Executor
 /// Note: Async methods cannot be tested directly in synchronous tests
 test "executor new" {
-  let executor = Executor::new()
+  let executor = @webdriver.Executor::new()
   assert_false(executor.logging_enabled)
   inspect(executor.operation_log.length(), content="0")
 }
 
 ///|
 test "executor with viewport" {
-  let executor = Executor::new_with_viewport(1024, 768)
+  let executor = @webdriver.Executor::new_with_viewport(1024, 768)
   assert_false(executor.logging_enabled)
 }
 
 ///|
 test "executor enable logging" {
-  let executor = Executor::new()
+  let executor = @webdriver.Executor::new()
   executor.enable_logging()
   assert_true(executor.logging_enabled)
   executor.disable_logging()
@@ -24,7 +24,7 @@ test "executor enable logging" {
 
 ///|
 test "executor clear log" {
-  let executor = Executor::new()
+  let executor = @webdriver.Executor::new()
   executor.enable_logging()
   // Simulate some log entries
   executor.operation_log.push("test entry 1")
@@ -36,7 +36,7 @@ test "executor clear log" {
 
 ///|
 test "executor get log returns reference" {
-  let executor = Executor::new()
+  let executor = @webdriver.Executor::new()
   executor.operation_log.push("entry")
   let log = executor.get_log()
   inspect(log.length(), content="1")
@@ -45,7 +45,7 @@ test "executor get log returns reference" {
 
 ///|
 test "executor manager is accessible" {
-  let executor = Executor::new()
+  let executor = @webdriver.Executor::new()
   // Can access manager to verify it's properly initialized
   let ctx = executor.manager.create_session()
   assert_true(ctx.has_prefix("session-"))

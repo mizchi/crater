@@ -12,12 +12,19 @@
 ///|
 /// Options for getBBox() method
 /// Corresponds to SVGBoundingBoxOptions in the spec
+#derive(Eq, Debug)
 pub struct GetBBoxOptions {
   fill : Bool // Include fill geometry (default true)
   stroke : Bool // Include stroke geometry (default false)
   markers : Bool // Include markers (default false)
   clipped : Bool // Apply clipping (default false)
-} derive(Eq, Debug)
+}
+
+///|
+pub extend GetBBoxOptions with Eq::{not_equal, equal}
+
+///|
+pub extend GetBBoxOptions with @debug.Debug::{to_repr}
 
 ///|
 /// Default getBBox options (fill only)
@@ -133,9 +140,16 @@ pub fn create_svg_matrix_with(
 
 ///|
 /// SVGNumber - represents an animated number value
+#derive(Eq, Debug)
 pub struct SVGNumber {
   value : Double
-} derive(Eq, Debug)
+}
+
+///|
+pub extend SVGNumber with Eq::{not_equal, equal}
+
+///|
+pub extend SVGNumber with @debug.Debug::{to_repr}
 
 ///|
 /// Create a new SVGNumber
@@ -155,6 +169,7 @@ pub fn create_svg_number() -> SVGNumber {
 
 ///|
 /// SVG Length unit types
+#derive(Eq, Debug)
 pub enum SVGLengthType {
   Unknown
   Number // Unitless number
@@ -167,15 +182,28 @@ pub enum SVGLengthType {
   In
   Pt
   Pc
-} derive(Eq, Debug)
+}
+
+///|
+pub extend SVGLengthType with Eq::{not_equal, equal}
+
+///|
+pub extend SVGLengthType with @debug.Debug::{to_repr}
 
 ///|
 /// SVGLength - represents a length value with unit
+#derive(Eq, Debug)
 pub struct SVGLength {
   unit_type : SVGLengthType
   value : Double // Value in user units
   value_in_specified_units : Double // Value in specified units
-} derive(Eq, Debug)
+}
+
+///|
+pub extend SVGLength with Eq::{not_equal, equal}
+
+///|
+pub extend SVGLength with @debug.Debug::{to_repr}
 
 ///|
 /// Create a new SVGLength (unitless)
@@ -217,6 +245,7 @@ pub fn SVGLength::to_user_units(
 
 ///|
 /// SVG Angle unit types
+#derive(Eq, Debug)
 pub enum SVGAngleType {
   Unknown
   Unspecified // Unitless (degrees)
@@ -224,15 +253,28 @@ pub enum SVGAngleType {
   Rad
   Grad
   Turn
-} derive(Eq, Debug)
+}
+
+///|
+pub extend SVGAngleType with Eq::{not_equal, equal}
+
+///|
+pub extend SVGAngleType with @debug.Debug::{to_repr}
 
 ///|
 /// SVGAngle - represents an angle value with unit
+#derive(Eq, Debug)
 pub struct SVGAngle {
   unit_type : SVGAngleType
   value : Double // Value in degrees
   value_in_specified_units : Double // Value in specified units
-} derive(Eq, Debug)
+}
+
+///|
+pub extend SVGAngle with Eq::{not_equal, equal}
+
+///|
+pub extend SVGAngle with @debug.Debug::{to_repr}
 
 ///|
 /// Create a new SVGAngle (degrees)
@@ -276,6 +318,7 @@ pub fn SVGAngle::to_degrees(self : SVGAngle) -> Double {
 
 ///|
 /// SVG Transform types
+#derive(Eq, Debug)
 pub enum SVGTransformType {
   Unknown
   Matrix
@@ -284,15 +327,28 @@ pub enum SVGTransformType {
   Rotate
   SkewX
   SkewY
-} derive(Eq, Debug)
+}
+
+///|
+pub extend SVGTransformType with Eq::{not_equal, equal}
+
+///|
+pub extend SVGTransformType with @debug.Debug::{to_repr}
 
 ///|
 /// SVGTransform - represents a single transformation
+#derive(Eq, Debug)
 pub struct SVGTransform {
   transform_type : SVGTransformType
   matrix : SVGMatrix
   angle : Double // For rotate, skewX, skewY
-} derive(Eq, Debug)
+}
+
+///|
+pub extend SVGTransform with Eq::{not_equal, equal}
+
+///|
+pub extend SVGTransform with @debug.Debug::{to_repr}
 
 ///|
 pub impl Show for GetBBoxOptions with fn output(self, logger) {
@@ -301,9 +357,15 @@ pub impl Show for GetBBoxOptions with fn output(self, logger) {
 }
 
 ///|
+pub extend GetBBoxOptions with Show::{to_string, output}
+
+///|
 pub impl Show for SVGNumber with fn output(self, logger) {
   logger.write_string("{value: \{self.value}}")
 }
+
+///|
+pub extend SVGNumber with Show::{to_string, output}
 
 ///|
 pub impl Show for SVGLengthType with fn output(self, logger) {
@@ -324,12 +386,18 @@ pub impl Show for SVGLengthType with fn output(self, logger) {
 }
 
 ///|
+pub extend SVGLengthType with Show::{to_string, output}
+
+///|
 pub impl Show for SVGLength with fn output(self, logger) {
   logger.write_string("{unit_type: \{self.unit_type}, value: \{self.value}, ")
   logger.write_string(
     "value_in_specified_units: \{self.value_in_specified_units}}",
   )
 }
+
+///|
+pub extend SVGLength with Show::{to_string, output}
 
 ///|
 pub impl Show for SVGAngleType with fn output(self, logger) {
@@ -345,12 +413,18 @@ pub impl Show for SVGAngleType with fn output(self, logger) {
 }
 
 ///|
+pub extend SVGAngleType with Show::{to_string, output}
+
+///|
 pub impl Show for SVGAngle with fn output(self, logger) {
   logger.write_string("{unit_type: \{self.unit_type}, value: \{self.value}, ")
   logger.write_string(
     "value_in_specified_units: \{self.value_in_specified_units}}",
   )
 }
+
+///|
+pub extend SVGAngle with Show::{to_string, output}
 
 ///|
 pub impl Show for SVGTransformType with fn output(self, logger) {
@@ -367,11 +441,17 @@ pub impl Show for SVGTransformType with fn output(self, logger) {
 }
 
 ///|
+pub extend SVGTransformType with Show::{to_string, output}
+
+///|
 pub impl Show for SVGTransform with fn output(self, logger) {
   logger.write_string(
     "{transform_type: \{self.transform_type}, matrix: \{self.matrix}, angle: \{self.angle}}",
   )
 }
+
+///|
+pub extend SVGTransform with Show::{to_string, output}
 
 ///|
 /// Create an SVGTransform from a matrix

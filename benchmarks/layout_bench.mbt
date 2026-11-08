@@ -22,7 +22,7 @@ fn compute_layout(
 
 ///|
 /// Create a simple flat block layout with N children
-fn create_flat_block(n : Int) -> @tree.Node {
+fn create_flat_block(n : Int32) -> @tree.Node {
   let default_style = @style.Style::default()
   let children : Array[@tree.Node] = []
   for i = 0; i < n; i = i + 1 {
@@ -35,9 +35,9 @@ fn create_flat_block(n : Int) -> @tree.Node {
 
 ///|
 /// Create a nested block layout with depth D and children per level
-fn create_nested_block(depth : Int, children_per_level : Int) -> @tree.Node {
+fn create_nested_block(depth : Int32, children_per_level : Int32) -> @tree.Node {
   let default_style = @style.Style::default()
-  fn build(d : Int) -> @tree.Node {
+  fn build(d : Int32) -> @tree.Node {
     if d == 0 {
       let leaf_style = { ..default_style, height: @types.Length(10.0), }
       return @tree.Node::leaf("leaf", leaf_style)
@@ -64,7 +64,7 @@ fn create_nested_block(depth : Int, children_per_level : Int) -> @tree.Node {
 
 ///|
 /// Create a flex row layout with N children
-fn create_flex_row(n : Int) -> @tree.Node {
+fn create_flex_row(n : Int32) -> @tree.Node {
   let default_style = @style.Style::default()
   let children : Array[@tree.Node] = []
   for i = 0; i < n; i = i + 1 {
@@ -169,9 +169,9 @@ fn create_complex_layout() -> @tree.Node {
 
 ///|
 /// Create a deeply nested flex layout
-fn create_nested_flex(depth : Int) -> @tree.Node {
+fn create_nested_flex(depth : Int32) -> @tree.Node {
   let default_style = @style.Style::default()
-  fn build(d : Int, is_row : Bool) -> @tree.Node {
+  fn build(d : Int32, is_row : Bool) -> @tree.Node {
     if d == 0 {
       let leaf_style = {
         ..default_style,
@@ -307,9 +307,9 @@ fn create_intrinsic_sizing_test() -> @tree.Node {
 
 ///|
 /// Create deeply nested layout (stress test for recursive intrinsic sizing)
-fn create_deep_nested_intrinsic(depth : Int) -> @tree.Node {
+fn create_deep_nested_intrinsic(depth : Int32) -> @tree.Node {
   let default_style = @style.Style::default()
-  fn build(d : Int) -> @tree.Node {
+  fn build(d : Int32) -> @tree.Node {
     if d == 0 {
       // Leaf with explicit size
       return @tree.Node::leaf("leaf", {
@@ -1036,9 +1036,9 @@ test "bench_form_layout" (b : @bench.T) {
 
 ///|
 /// Deep nesting with mixed display types
-fn create_deep_mixed_nesting(depth : Int) -> @tree.Node {
+fn create_deep_mixed_nesting(depth : Int32) -> @tree.Node {
   let default_style = @style.Style::default()
-  fn build(d : Int) -> @tree.Node {
+  fn build(d : Int32) -> @tree.Node {
     if d == 0 {
       return @tree.Node::leaf("leaf", {
         ..default_style,
@@ -1115,9 +1115,9 @@ test "bench_deep_mixed_d6" (b : @bench.T) {
 
 ///|
 /// Deep nesting with Flex only (for comparison)
-fn create_deep_flex_nesting(depth : Int) -> @tree.Node {
+fn create_deep_flex_nesting(depth : Int32) -> @tree.Node {
   let default_style = @style.Style::default()
-  fn build(d : Int) -> @tree.Node {
+  fn build(d : Int32) -> @tree.Node {
     if d == 0 {
       return @tree.Node::leaf("leaf", {
         ..default_style,
@@ -1172,9 +1172,9 @@ test "bench_deep_flex_d6" (b : @bench.T) {
 
 ///|
 /// Deep nesting with fixed-size intermediate nodes (baseline for optimization)
-fn create_deep_flex_fixed(depth : Int) -> @tree.Node {
+fn create_deep_flex_fixed(depth : Int32) -> @tree.Node {
   let default_style = @style.Style::default()
-  fn build(d : Int) -> @tree.Node {
+  fn build(d : Int32) -> @tree.Node {
     if d == 0 {
       return @tree.Node::leaf("leaf", {
         ..default_style,
@@ -1233,9 +1233,9 @@ test "bench_deep_flex_fixed_d6" (b : @bench.T) {
 
 ///|
 /// Grid with auto-sized columns containing nested flex containers
-fn create_grid_auto_nested_flex(depth : Int) -> @tree.Node {
+fn create_grid_auto_nested_flex(depth : Int32) -> @tree.Node {
   let default_style = @style.Style::default()
-  fn create_flex_tree(d : Int) -> @tree.Node {
+  fn create_flex_tree(d : Int32) -> @tree.Node {
     if d == 0 {
       return @tree.Node::leaf("leaf", {
         ..default_style,
@@ -1313,9 +1313,9 @@ test "bench_grid_auto_nested_d4" (b : @bench.T) {
 ///|
 /// Create a realistic large-scale web page layout (~5000 nodes)
 fn create_large_website_node(
-  num_sidebar_items : Int,
-  num_content_sections : Int,
-  items_per_section : Int,
+  num_sidebar_items : Int32,
+  num_content_sections : Int32,
+  items_per_section : Int32,
 ) -> @tree.Node {
   let default_style = @style.Style::default()
 
@@ -1617,9 +1617,9 @@ test "bench_large_website_10000" (b : @bench.T) {
 ///|
 /// Create LayoutNode tree for incremental benchmarks
 fn create_large_layout_tree(
-  num_sidebar : Int,
-  num_sections : Int,
-  cards_per_section : Int,
+  num_sidebar : Int32,
+  num_sections : Int32,
+  cards_per_section : Int32,
 ) -> (@tree.LayoutTree, Array[@tree.LayoutNode]) {
   let all_cards : Array[@tree.LayoutNode] = []
 
@@ -1812,8 +1812,8 @@ test "bench_incremental_10000_cached" (b : @bench.T) {
 /// Create a layout with many "cards" that could benefit from contain: size
 /// Each card has a fixed size and contains complex nested content
 fn create_contained_cards(
-  num_cards : Int,
-  items_per_card : Int,
+  num_cards : Int32,
+  items_per_card : Int32,
   use_containment : Bool,
 ) -> @tree.Node {
   let default_style = @style.Style::default()
@@ -1854,13 +1854,13 @@ fn create_contained_cards(
 ///|
 /// Create deeply nested layout with containment at certain levels
 fn create_nested_with_containment(
-  depth : Int,
-  children_per_level : Int,
-  containment_at_depth : Int,
+  depth : Int32,
+  children_per_level : Int32,
+  containment_at_depth : Int32,
   use_containment : Bool,
 ) -> @tree.Node {
   let default_style = @style.Style::default()
-  fn build(d : Int) -> @tree.Node {
+  fn build(d : Int32) -> @tree.Node {
     if d == 0 {
       let leaf_style = { ..default_style, height: @types.Length(10.0), }
       return @tree.Node::leaf("leaf", leaf_style)
@@ -1949,8 +1949,8 @@ test "bench_contain_nested_with_contain" (b : @bench.T) {
 /// Cards have width: auto, so intrinsic calculation traverses deeply
 /// When contain: size + explicit size, we skip deep traversal
 fn create_intrinsic_dependent_layout(
-  num_cards : Int,
-  items_per_card : Int,
+  num_cards : Int32,
+  items_per_card : Int32,
   use_containment : Bool,
 ) -> @tree.Node {
   let default_style = @style.Style::default()
@@ -2028,12 +2028,12 @@ test "bench_intrinsic_with_contain" (b : @bench.T) {
 ///|
 /// Create simple deep tree to measure pure intrinsic calculation
 fn create_pure_intrinsic_tree(
-  depth : Int,
-  width : Int,
+  depth : Int32,
+  width : Int32,
   use_contain : Bool,
 ) -> @tree.Node {
   let default_style = @style.Style::default()
-  fn build(d : Int) -> @tree.Node {
+  fn build(d : Int32) -> @tree.Node {
     if d == 0 {
       return @tree.Node::leaf("leaf", {
         ..default_style,
@@ -2100,9 +2100,9 @@ test "bench_pure_intrinsic_with_contain" (b : @bench.T) {
 /// Create a deep tree for incremental layout testing with containment
 /// Structure: root -> sections (with/without containment) -> cards -> items
 fn create_incremental_containment_tree(
-  num_sections : Int,
-  cards_per_section : Int,
-  items_per_card : Int,
+  num_sections : Int32,
+  cards_per_section : Int32,
+  items_per_card : Int32,
   use_containment : Bool,
 ) -> (@tree.LayoutTree, Array[@tree.LayoutNode]) {
   let deep_items : Array[@tree.LayoutNode] = []

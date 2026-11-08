@@ -8,7 +8,7 @@ priv struct StoredCookie {
   http_only : Bool
   secure : Bool
   same_site : String
-  expiry : Int?
+  expiry : Int32?
   context_id : String?
   user_context : String?
   source_origin : String?
@@ -21,8 +21,8 @@ priv struct StorageCookieFilter {
   path : String?
   http_only : Bool?
   secure : Bool?
-  expiry : Int?
-  size : Int?
+  expiry : Int32?
+  size : Int32?
   same_site : String?
   value_text : String?
 }
@@ -37,12 +37,12 @@ priv struct StoragePartitionInfo {
 }
 
 ///|
-fn storage_now_seconds() -> Int {
+fn storage_now_seconds() -> Int32 {
   (input_now_ms() / 1000.0).to_int()
 }
 
 ///|
-fn storage_slice_from(value : String, start : Int) -> String {
+fn storage_slice_from(value : String, start : Int32) -> String {
   if start > value.length() {
     ""
   } else {
@@ -60,7 +60,7 @@ fn storage_strip_leading_dot(value : String) -> String {
 }
 
 ///|
-fn storage_cookie_size(cookie : StoredCookie) -> Int {
+fn storage_cookie_size(cookie : StoredCookie) -> Int32 {
   cookie.name.length() + cookie.value_text.length()
 }
 
@@ -347,7 +347,7 @@ fn BidiProtocol::dispatch_storage(
 ///|
 fn BidiProtocol::normalize_storage_cookie_filter(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   raw_filter : Json?,
 ) -> StorageCookieFilter? {
   match raw_filter {
@@ -369,8 +369,8 @@ fn BidiProtocol::normalize_storage_cookie_filter(
       let mut path : String? = None
       let mut http_only : Bool? = None
       let mut secure : Bool? = None
-      let mut expiry : Int? = None
-      let mut size : Int? = None
+      let mut expiry : Int32? = None
+      let mut size : Int32? = None
       let mut same_site : String? = None
       let mut value_text : String? = None
 
@@ -507,7 +507,7 @@ fn BidiProtocol::normalize_storage_cookie_filter(
 ///|
 fn BidiProtocol::normalize_storage_cookie_input(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   raw_cookie : Json,
 ) -> StoredCookie? {
   let map = match raw_cookie {
@@ -653,7 +653,7 @@ fn BidiProtocol::normalize_storage_cookie_input(
 ///|
 fn BidiProtocol::storage_value_text_from_json(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   raw_value : Json,
   field_name : String,
 ) -> String? {
@@ -723,7 +723,7 @@ fn BidiProtocol::storage_value_text_from_json(
 ///|
 fn BidiProtocol::normalize_storage_partition(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   raw_partition : Json?,
 ) -> StoragePartitionInfo? {
   match raw_partition {
@@ -965,7 +965,7 @@ fn BidiProtocol::get_context_cookie_base_url(
 }
 
 ///|
-fn storage_json_non_negative_int(value : Json) -> Int? {
+fn storage_json_non_negative_int(value : Json) -> Int32? {
   match value {
     Number(n, ..) =>
       if n < 0.0 || n != n.to_int64().to_double() {
@@ -1038,7 +1038,7 @@ fn storage_inline_cookie_host(url : String) -> String {
 }
 
 ///|
-fn storage_http_host(url : String, scheme_len : Int) -> String? {
+fn storage_http_host(url : String, scheme_len : Int32) -> String? {
   let chars = url.to_array()
   let mut end = chars.length()
   for i = scheme_len; i < chars.length(); i = i + 1 {
@@ -1067,7 +1067,7 @@ fn storage_strip_port(host : String) -> String {
 }
 
 ///|
-fn storage_http_path(url : String, scheme_len : Int) -> String {
+fn storage_http_path(url : String, scheme_len : Int32) -> String {
   let chars = url.to_array()
   let mut start = chars.length()
   for i = scheme_len; i < chars.length(); i = i + 1 {
@@ -1184,7 +1184,7 @@ fn storage_request_path(request_url : String) -> String {
 }
 
 ///|
-fn find_last_slash(value : String) -> Int? {
+fn find_last_slash(value : String) -> Int32? {
   let chars = value.to_array()
   let mut idx = chars.length()
   while idx > 0 {
@@ -1766,7 +1766,7 @@ fn extract_document_cookie_assignment(expression : String) -> String? {
 ///|
 fn BidiProtocol::try_handle_synthetic_window_location_href_eval(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   realm_id : String,
   expression : String,
@@ -1798,7 +1798,7 @@ fn BidiProtocol::try_handle_synthetic_window_location_href_eval(
 ///|
 fn BidiProtocol::try_handle_synthetic_document_cookie_eval(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   realm_id : String,
   expression : String,

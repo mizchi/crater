@@ -55,7 +55,7 @@ test "ifc_horizontal_layout" {
   }
   let child1 = @node.Node::leaf("child1", inline_style)
   let child2 = @node.Node::leaf("child2", inline_style)
-  let result = compute_ifc(
+  let result = @inline.compute_ifc(
     [child1, child2],
     400.0,
     Some(600.0),
@@ -92,7 +92,7 @@ test "ifc_negative_top_margin_atomic_inline_keeps_line_box_band" {
     },
   }
   let child = @node.Node::leaf("child", inline_style)
-  let result = compute_ifc(
+  let result = @inline.compute_ifc(
     [child],
     400.0,
     Some(600.0),
@@ -131,7 +131,7 @@ test "ifc_atomic_inline_flex_with_block_descendants_stays_on_same_line" {
   let child1 = @node.Node::new("iflex1", inline_flex_style, [block_child])
   let child2 = @node.Node::new("iflex2", inline_flex_style, [block_child])
   let child3 = @node.Node::new("iflex3", inline_flex_style, [block_child])
-  let result = compute_ifc(
+  let result = @inline.compute_ifc(
     [child1, child2, child3],
     200.0,
     Some(600.0),
@@ -163,7 +163,7 @@ test "ifc_line_wrapping" {
   let child2 = @node.Node::leaf("child2", inline_style)
   let child3 = @node.Node::leaf("child3", inline_style)
   // Available width is 100, so only 2 children fit per line
-  let result = compute_ifc(
+  let result = @inline.compute_ifc(
     [child1, child2, child3],
     100.0,
     Some(600.0),
@@ -220,7 +220,7 @@ test "ifc_zero_advance_items_stay_on_oversized_line" {
   let first = @node.Node::leaf("first", first_style)
   let gap = @node.Node::text("#text", gap_style, gap_measure, " ")
   let second = @node.Node::leaf("second", second_style)
-  let result = compute_ifc(
+  let result = @inline.compute_ifc(
     [first, gap, second],
     50.0,
     Some(600.0),
@@ -249,7 +249,7 @@ test "ifc_nowrap_keeps_inline_blocks_on_same_line" {
   }
   let child1 = @node.Node::leaf("child1", inline_style)
   let child2 = @node.Node::leaf("child2", inline_style)
-  let result = compute_ifc(
+  let result = @inline.compute_ifc(
     [child1, child2],
     100.0,
     Some(600.0),
@@ -277,7 +277,7 @@ test "ifc_rtl_nowrap_places_overflow_items_to_inline_start_side" {
   }
   let child1 = @node.Node::leaf("child1", inline_style)
   let child2 = @node.Node::leaf("child2", inline_style)
-  let result = compute_ifc(
+  let result = @inline.compute_ifc(
     [child1, child2],
     100.0,
     Some(600.0),
@@ -306,7 +306,7 @@ test "ifc_vertical_writing_wraps_by_available_height" {
   }
   let child1 = @node.Node::leaf("child1", inline_style)
   let child2 = @node.Node::leaf("child2", inline_style)
-  let result = compute_ifc(
+  let result = @inline.compute_ifc(
     [child1, child2],
     100.0,
     Some(100.0),
@@ -334,7 +334,7 @@ test "ifc_vertical_nowrap_keeps_items_in_single_column" {
   }
   let child1 = @node.Node::leaf("child1", inline_style)
   let child2 = @node.Node::leaf("child2", inline_style)
-  let result = compute_ifc(
+  let result = @inline.compute_ifc(
     [child1, child2],
     100.0,
     Some(100.0),
@@ -370,7 +370,7 @@ test "ifc_with_margins" {
   }
   let child1 = @node.Node::leaf("child1", inline_style)
   let child2 = @node.Node::leaf("child2", inline_style)
-  let result = compute_ifc(
+  let result = @inline.compute_ifc(
     [child1, child2],
     400.0,
     Some(600.0),
@@ -401,7 +401,7 @@ test "ifc_line_height_with_vertical_margins" {
   }
   let child1 = @node.Node::leaf("child1", inline_style)
   let child2 = @node.Node::leaf("child2", inline_style)
-  let result = compute_ifc(
+  let result = @inline.compute_ifc(
     [child1, child2],
     0.0,
     Some(600.0),
@@ -438,7 +438,7 @@ test "ifc_replaced_only_line_includes_strut_descent" {
   let child2 = @node.Node::with_measure(
     "video", replaced_style, replaced_measure,
   )
-  let result = compute_ifc(
+  let result = @inline.compute_ifc(
     [child1, child2],
     800.0,
     Some(600.0),
@@ -474,7 +474,7 @@ test "ifc_contain_size_replaced_auto_size_uses_border_box_only" {
     },
   }
   let child = @node.Node::with_measure("img", replaced_style, replaced_measure)
-  let result = compute_ifc(
+  let result = @inline.compute_ifc(
     [child],
     800.0,
     Some(600.0),
@@ -503,7 +503,7 @@ test "ifc_contain_size_replaced_uses_explicit_aspect_ratio_for_auto_height" {
     },
   }
   let child = @node.Node::with_measure("img", replaced_style, replaced_measure)
-  let result = compute_ifc(
+  let result = @inline.compute_ifc(
     [child],
     800.0,
     Some(600.0),
@@ -562,7 +562,7 @@ test "ifc_contain_size_img_with_alt_keeps_taller_mixed_inline_line" {
     image_measure,
     text="Image download support must be enabled",
   )
-  let result = compute_ifc(
+  let result = @inline.compute_ifc(
     [blue, space, orange],
     800.0,
     Some(600.0),
@@ -594,7 +594,7 @@ test "ifc_content_offset" {
     height: @types.Length(30.0),
   }
   let child = @node.Node::leaf("child", inline_style)
-  let result = compute_ifc(
+  let result = @inline.compute_ifc(
     [child],
     400.0,
     Some(600.0),
@@ -625,7 +625,7 @@ test "ifc_mixed_heights" {
   }
   let tall = @node.Node::leaf("tall", tall_style)
   let short = @node.Node::leaf("short", short_style)
-  let result = compute_ifc(
+  let result = @inline.compute_ifc(
     [tall, short],
     400.0,
     Some(600.0),
@@ -644,14 +644,14 @@ test "ifc_mixed_heights" {
 ///|
 test "is_inline_level" {
   // Test inline-level detection
-  inspect(is_inline_level(@types.Inline), content="true")
-  inspect(is_inline_level(@types.InlineBlock), content="true")
-  inspect(is_inline_level(@types.InlineFlex), content="true")
-  inspect(is_inline_level(@types.InlineGrid), content="true")
-  inspect(is_inline_level(@types.Block), content="false")
-  inspect(is_inline_level(@types.Flex), content="false")
-  inspect(is_inline_level(@types.Grid), content="false")
-  inspect(is_inline_level(@types.Display::None), content="false")
+  inspect(@inline.is_inline_level(@types.Inline), content="true")
+  inspect(@inline.is_inline_level(@types.InlineBlock), content="true")
+  inspect(@inline.is_inline_level(@types.InlineFlex), content="true")
+  inspect(@inline.is_inline_level(@types.InlineGrid), content="true")
+  inspect(@inline.is_inline_level(@types.Block), content="false")
+  inspect(@inline.is_inline_level(@types.Flex), content="false")
+  inspect(@inline.is_inline_level(@types.Grid), content="false")
+  inspect(@inline.is_inline_level(@types.Display::None), content="false")
 }
 
 ///|
@@ -661,7 +661,7 @@ test "should_establish_ifc_all_inline" {
   let child1 = @node.Node::leaf("c1", inline_style)
   let child2 = @node.Node::leaf("c2", inline_style)
   // All inline-level children should establish IFC
-  inspect(should_establish_ifc([child1, child2]), content="true")
+  inspect(@inline.should_establish_ifc([child1, child2]), content="true")
 }
 
 ///|
@@ -672,14 +672,17 @@ test "should_establish_ifc_mixed" {
   let inline_child = @node.Node::leaf("inline", inline_style)
   let block_child = @node.Node::leaf("block", block_style)
   // Mixed inline and block should NOT establish IFC
-  inspect(should_establish_ifc([inline_child, block_child]), content="false")
+  inspect(
+    @inline.should_establish_ifc([inline_child, block_child]),
+    content="false",
+  )
 }
 
 ///|
 test "should_establish_ifc_empty" {
   // Empty children should not establish IFC
   let children : Array[@node.Node] = []
-  inspect(should_establish_ifc(children), content="false")
+  inspect(@inline.should_establish_ifc(children), content="false")
 }
 
 ///|
@@ -713,7 +716,7 @@ test "text_width_constrained_by_available_width" {
     },
   }
   let text_node = @node.Node::with_measure("text", inline_style, measure)
-  let result = compute_ifc(
+  let result = @inline.compute_ifc(
     [text_node],
     100.0,
     Some(600.0),
@@ -744,7 +747,7 @@ test "text_width_unconstrained_when_smaller" {
     }, // Single line
   }
   let text_node = @node.Node::with_measure("text", inline_style, measure)
-  let result = compute_ifc(
+  let result = @inline.compute_ifc(
     [text_node],
     400.0,
     Some(600.0),
@@ -792,7 +795,7 @@ test "text_min_content_width" {
     },
   }
   let text_node = @node.Node::with_measure("text", inline_style, measure)
-  let result = compute_ifc(
+  let result = @inline.compute_ifc(
     [text_node],
     400.0,
     Some(600.0),
@@ -824,7 +827,7 @@ test "inline_element_with_child_has_size" {
 
   // Create inline parent (like <a>) containing the text
   let link = @node.Node::new("a", inline_style, [text_child])
-  let result = compute_ifc(
+  let result = @inline.compute_ifc(
     [link],
     400.0,
     Some(600.0),
@@ -868,7 +871,7 @@ test "inline_element_with_padding_and_child" {
 
   // Create inline parent with padding
   let link = @node.Node::new("a", inline_with_padding, [text_child])
-  let result = compute_ifc(
+  let result = @inline.compute_ifc(
     [link],
     400.0,
     Some(600.0),
@@ -933,7 +936,7 @@ test "br_after_wrapped_text_uses_last_visual_line_position" {
   }
   let br_node = @node.Node::with_measure("br", br_style, br_measure)
 
-  let result = compute_ifc(
+  let result = @inline.compute_ifc(
     [text_node, br_node],
     600.0,
     Some(600.0),
@@ -976,7 +979,7 @@ test "br_after_vertical_align_top_tall_inline_block_stays_near_line_top" {
   }
   let br_node = @node.Node::with_measure("br", br_style, br_measure)
 
-  let result = compute_ifc(
+  let result = @inline.compute_ifc(
     [button_node, br_node],
     600.0,
     Some(600.0),

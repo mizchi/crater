@@ -47,7 +47,7 @@ fn apply_navigation_wait_delay(wait_mode : String, url : String) -> Unit {
 
 ///|
 /// Busy-wait helper used to emulate blocking waits in the mock protocol.
-fn busy_wait_ms(delay_ms : Int) -> Unit {
+fn busy_wait_ms(delay_ms : Int32) -> Unit {
   let start = input_now_ms()
   while input_now_ms() - start < delay_ms.to_double() {
 

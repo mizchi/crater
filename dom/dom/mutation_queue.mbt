@@ -12,7 +12,7 @@ pub struct MutationQueue {
   /// Pending mutation records
   mut records : Array[MutationRecord]
   /// Set of dirty node IDs (for dedup checking)
-  dirty_nodes : Map[Int, Bool]
+  dirty_nodes : Map[Int32, Bool]
   /// Whether we're currently flushing (to handle re-entrant mutations)
   mut is_flushing : Bool
   /// Records that arrived during flush (processed in next batch)
@@ -25,14 +25,18 @@ pub struct MutationQueue {
 
 ///|
 /// Result of flushing the mutation queue
+#derive(Debug)
 pub struct FlushResult {
   /// Number of mutation records processed
-  processed : Int
+  processed : Int32
   /// Number of unique nodes affected
-  nodes_affected : Int
+  nodes_affected : Int32
   /// Whether any mutation affects layout (vs paint-only)
   needs_layout : Bool
-} derive(Debug)
+}
+
+///|
+pub extend FlushResult with @debug.Debug::{to_repr}
 
 ///|
 pub impl Show for FlushResult with fn output(self, logger) {
@@ -40,6 +44,9 @@ pub impl Show for FlushResult with fn output(self, logger) {
   logger.write_string("nodes_affected: \{self.nodes_affected}, ")
   logger.write_string("needs_layout: \{self.needs_layout}}")
 }
+
+///|
+pub extend FlushResult with Show::{to_string, output}
 
 ///|
 /// Create a new empty mutation queue
@@ -109,8 +116,8 @@ pub fn MutationQueue::record_attribute(
   self : MutationQueue,
   target : NodeId,
   name : String,
-  old_value? : String? = None,
-  new_value? : String? = None,
+  old_value~ : String? = None,
+  new_value~ : String? = None,
 ) -> Unit {
   if self.recording {
     self.push(MutationRecord::attribute(target, name, old_value~, new_value~))
@@ -122,8 +129,8 @@ pub fn MutationQueue::record_attribute(
 pub fn MutationQueue::record_character_data(
   self : MutationQueue,
   target : NodeId,
-  old_value? : String? = None,
-  new_value? : String? = None,
+  old_value~ : String? = None,
+  new_value~ : String? = None,
 ) -> Unit {
   if self.recording {
     self.push(MutationRecord::character_data(target, old_value~, new_value~))
@@ -138,7 +145,7 @@ pub fn MutationQueue::is_empty(self : MutationQueue) -> Bool {
 
 ///|
 /// Get number of pending mutations
-pub fn MutationQueue::length(self : MutationQueue) -> Int {
+pub fn MutationQueue::length(self : MutationQueue) -> Int32 {
   self.records.length()
 }
 
@@ -163,7 +170,7 @@ pub fn MutationQueue::optimize(self : MutationQueue) -> Array[MutationRecord] {
   }
 
   // Group records by target node
-  let by_node : Map[Int, Array[MutationRecord]] = Map([])
+  let by_node : Map[Int32, Array[MutationRecord]] = Map([])
   for record in self.records {
     let key = record.target.to_int()
     match by_node.get(key) {

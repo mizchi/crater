@@ -19,13 +19,13 @@ pub fn success_string(String) -> @contract.WebDriverResponse
 // Types and methods
 pub(all) struct SessionManager {
   sessions : Map[String, SessionState]
-  mut next_id : Int
+  mut next_id : Int32
 }
 pub fn SessionManager::create_session(Self, String) -> @contract.WebDriverResponse
 pub fn SessionManager::delete_session(Self, String) -> @contract.WebDriverResponse
 pub fn SessionManager::generate_id(Self) -> String
 pub fn SessionManager::get_session(Self, String) -> SessionState?
-pub fn SessionManager::handle_request(Self, @contract.WebDriverRequest) -> (Int, @contract.WebDriverResponse)
+pub fn SessionManager::handle_request(Self, @contract.WebDriverRequest) -> (Int32, @contract.WebDriverResponse)
 pub fn SessionManager::new() -> Self
 
 pub(all) struct SessionState {

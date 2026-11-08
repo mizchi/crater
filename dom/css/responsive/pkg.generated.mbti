@@ -17,7 +17,7 @@ pub fn discover_css_effective_property_sources(String) -> Map[String, Map[String
 
 pub fn discover_css_rule_usage(String) -> Array[CssRuleUsage]
 
-pub fn discover_css_rule_viewport_map(String, Array[Int]) -> CssRuleViewportMap
+pub fn discover_css_rule_viewport_map(String, Array[Int32]) -> CssRuleViewportMap
 
 pub fn discover_required_test_viewports(String) -> RequiredTestViewportsResult
 
@@ -26,80 +26,138 @@ pub fn discover_responsive_breakpoints(String) -> BreakpointDiscoveryResult
 // Errors
 
 // Types and methods
+#derive(Eq, @debug.Debug)
 pub struct BreakpointDiscoveryDiagnostics {
-  stylesheet_count : Int
-  rule_count : Int
+  stylesheet_count : Int32
+  rule_count : Int32
   external_stylesheet_links : Array[String]
   ignored_queries : Array[String]
   unsupported_queries : Array[String]
-} derive(Eq, @debug.Debug)
+}
+pub fn BreakpointDiscoveryDiagnostics::equal(Self, Self) -> Bool
+pub fn BreakpointDiscoveryDiagnostics::not_equal(Self, Self) -> Bool
+pub fn BreakpointDiscoveryDiagnostics::output(Self, &Logger) -> Unit
+pub fn BreakpointDiscoveryDiagnostics::to_repr(Self) -> @debug.Repr
+pub fn BreakpointDiscoveryDiagnostics::to_string(Self) -> String
 pub impl Show for BreakpointDiscoveryDiagnostics
 
+#derive(Eq, @debug.Debug)
 pub struct BreakpointDiscoveryResult {
   breakpoints : Array[ResponsiveBreakpoint]
   diagnostics : BreakpointDiscoveryDiagnostics
-} derive(Eq, @debug.Debug)
+}
+pub fn BreakpointDiscoveryResult::equal(Self, Self) -> Bool
+pub fn BreakpointDiscoveryResult::not_equal(Self, Self) -> Bool
+pub fn BreakpointDiscoveryResult::output(Self, &Logger) -> Unit
+pub fn BreakpointDiscoveryResult::to_repr(Self) -> @debug.Repr
+pub fn BreakpointDiscoveryResult::to_string(Self) -> String
 pub impl Show for BreakpointDiscoveryResult
 
+#derive(@debug.Debug)
 pub struct ComputedStylesWithStateResult {
   normal : Map[String, String]
   forced : Map[String, String]
   diff : Array[StylePropertyDiff]
-} derive(@debug.Debug)
+}
+pub fn ComputedStylesWithStateResult::output(Self, &Logger) -> Unit
+pub fn ComputedStylesWithStateResult::to_repr(Self) -> @debug.Repr
+pub fn ComputedStylesWithStateResult::to_string(Self) -> String
 pub impl Show for ComputedStylesWithStateResult
 
+#derive(Eq, @debug.Debug)
 pub struct CssRuleUsage {
   selector : String
   matched : Bool
-  elements : Int
+  elements : Int32
   overridden : Bool
   overridden_by : String?
   no_effect : Bool
   no_effect_reason : String?
-} derive(Eq, @debug.Debug)
+}
+pub fn CssRuleUsage::equal(Self, Self) -> Bool
+pub fn CssRuleUsage::not_equal(Self, Self) -> Bool
+pub fn CssRuleUsage::output(Self, &Logger) -> Unit
+pub fn CssRuleUsage::to_repr(Self) -> @debug.Repr
+pub fn CssRuleUsage::to_string(Self) -> String
 pub impl Show for CssRuleUsage
 
+#derive(Eq, @debug.Debug)
 pub struct CssRuleViewportEntry {
   selector : String
   properties : Array[String]
   media_condition : String
-  active_at_widths : Array[Int]
-  inactive_at_widths : Array[Int]
-} derive(Eq, @debug.Debug)
+  active_at_widths : Array[Int32]
+  inactive_at_widths : Array[Int32]
+}
+pub fn CssRuleViewportEntry::equal(Self, Self) -> Bool
+pub fn CssRuleViewportEntry::not_equal(Self, Self) -> Bool
+pub fn CssRuleViewportEntry::output(Self, &Logger) -> Unit
+pub fn CssRuleViewportEntry::to_repr(Self) -> @debug.Repr
+pub fn CssRuleViewportEntry::to_string(Self) -> String
 pub impl Show for CssRuleViewportEntry
 
+#derive(Eq, @debug.Debug)
 pub struct CssRuleViewportMap {
   rules : Array[CssRuleViewportEntry]
-} derive(Eq, @debug.Debug)
+}
+pub fn CssRuleViewportMap::equal(Self, Self) -> Bool
+pub fn CssRuleViewportMap::not_equal(Self, Self) -> Bool
+pub fn CssRuleViewportMap::output(Self, &Logger) -> Unit
+pub fn CssRuleViewportMap::to_repr(Self) -> @debug.Repr
+pub fn CssRuleViewportMap::to_string(Self) -> String
 pub impl Show for CssRuleViewportMap
 
+#derive(Eq, @debug.Debug)
 pub struct RequiredTestViewport {
-  width : Int
+  width : Int32
   reason : String
-} derive(Eq, @debug.Debug)
+}
+pub fn RequiredTestViewport::equal(Self, Self) -> Bool
+pub fn RequiredTestViewport::not_equal(Self, Self) -> Bool
+pub fn RequiredTestViewport::output(Self, &Logger) -> Unit
+pub fn RequiredTestViewport::to_repr(Self) -> @debug.Repr
+pub fn RequiredTestViewport::to_string(Self) -> String
 pub impl Show for RequiredTestViewport
 
+#derive(Eq, @debug.Debug)
 pub struct RequiredTestViewportsResult {
   viewports : Array[RequiredTestViewport]
-} derive(Eq, @debug.Debug)
+}
+pub fn RequiredTestViewportsResult::equal(Self, Self) -> Bool
+pub fn RequiredTestViewportsResult::not_equal(Self, Self) -> Bool
+pub fn RequiredTestViewportsResult::output(Self, &Logger) -> Unit
+pub fn RequiredTestViewportsResult::to_repr(Self) -> @debug.Repr
+pub fn RequiredTestViewportsResult::to_string(Self) -> String
 pub impl Show for RequiredTestViewportsResult
 
+#derive(Eq, @debug.Debug)
 pub struct ResponsiveBreakpoint {
   axis : String
   op : String
-  value_px : Int
+  value_px : Int32
   raw : String
   normalized : String
   guards : Array[String]
-  rule_count : Int
-} derive(Eq, @debug.Debug)
+  rule_count : Int32
+}
+pub fn ResponsiveBreakpoint::equal(Self, Self) -> Bool
+pub fn ResponsiveBreakpoint::not_equal(Self, Self) -> Bool
+pub fn ResponsiveBreakpoint::output(Self, &Logger) -> Unit
+pub fn ResponsiveBreakpoint::to_repr(Self) -> @debug.Repr
+pub fn ResponsiveBreakpoint::to_string(Self) -> String
 pub impl Show for ResponsiveBreakpoint
 
+#derive(Eq, @debug.Debug)
 pub struct StylePropertyDiff {
   property : String
   normal : String
   forced : String
-} derive(Eq, @debug.Debug)
+}
+pub fn StylePropertyDiff::equal(Self, Self) -> Bool
+pub fn StylePropertyDiff::not_equal(Self, Self) -> Bool
+pub fn StylePropertyDiff::output(Self, &Logger) -> Unit
+pub fn StylePropertyDiff::to_repr(Self) -> @debug.Repr
+pub fn StylePropertyDiff::to_string(Self) -> String
 pub impl Show for StylePropertyDiff
 
 // Type aliases

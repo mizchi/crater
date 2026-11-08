@@ -134,7 +134,7 @@ pub(all) struct ContentTrack {
 pub fn compute_justify(
   justify : @types.Alignment,
   free_space : Double,
-  item_count : Int,
+  item_count : Int32,
 ) -> (Double, Double) {
   @layout_kernel.compute_justify(
     to_layout_alignment(justify),

@@ -89,7 +89,7 @@ extern "js" fn has_outline_commands() -> Bool =
 ///|
 /// Get glyph outline commands as JSON string: [[type, ...args], ...]
 extern "js" fn js_glyph_outline_commands(
-  codepoint : Int,
+  codepoint : Int32,
   font_size : Double,
   is_bold : Bool,
 ) -> String =
@@ -102,7 +102,7 @@ extern "js" fn js_glyph_outline_commands(
 ///|
 /// Get glyph outline commands for a specific font family as JSON string
 extern "js" fn js_outline_commands_for_family(
-  codepoint : Int,
+  codepoint : Int32,
   font_size : Double,
   is_bold : Bool,
   font_family : String,
@@ -121,7 +121,7 @@ extern "js" fn has_glyph_functions() -> Bool =
 ///|
 /// Get SVG path string for a glyph
 extern "js" fn js_glyph_to_svg_path(
-  codepoint : Int,
+  codepoint : Int32,
   font_size : Double,
   is_bold : Bool,
 ) -> String =
@@ -134,7 +134,7 @@ extern "js" fn js_glyph_to_svg_path(
 ///|
 /// Get advance width for a glyph
 extern "js" fn js_glyph_advance(
-  codepoint : Int,
+  codepoint : Int32,
   font_size : Double,
   is_bold : Bool,
 ) -> Double =
@@ -147,8 +147,8 @@ extern "js" fn js_glyph_advance(
 ///|
 /// Get kerning between two codepoints
 extern "js" fn js_kern_advance(
-  cp1 : Int,
-  cp2 : Int,
+  cp1 : Int32,
+  cp2 : Int32,
   font_size : Double,
   is_bold : Bool,
 ) -> Double =
@@ -170,7 +170,7 @@ extern "js" fn js_font_ascent_ratio() -> Double =
 ///|
 /// Multi-font glyph: get SVG path for a codepoint using font_family
 extern "js" fn js_glyph_for_family(
-  codepoint : Int,
+  codepoint : Int32,
   font_size : Double,
   is_bold : Bool,
   font_family : String,
@@ -183,7 +183,7 @@ extern "js" fn js_glyph_for_family(
 
 ///|
 extern "js" fn js_advance_for_family(
-  codepoint : Int,
+  codepoint : Int32,
   font_size : Double,
   is_bold : Bool,
   font_family : String,
@@ -196,8 +196,8 @@ extern "js" fn js_advance_for_family(
 
 ///|
 extern "js" fn js_kern_for_family(
-  cp1 : Int,
-  cp2 : Int,
+  cp1 : Int32,
+  cp2 : Int32,
   font_size : Double,
   is_bold : Bool,
   font_family : String,
@@ -221,7 +221,7 @@ extern "js" fn js_ascent_for_family(font_family : String) -> Double =
 /// dispatch when no by-weight hook is installed, so legacy JS providers keep
 /// working.
 extern "js" fn js_glyph_outline_commands_by_weight(
-  codepoint : Int,
+  codepoint : Int32,
   font_size : Double,
   font_weight : Double,
 ) -> String =
@@ -238,7 +238,7 @@ extern "js" fn js_glyph_outline_commands_by_weight(
 
 ///|
 extern "js" fn js_glyph_to_svg_path_by_weight(
-  codepoint : Int,
+  codepoint : Int32,
   font_size : Double,
   font_weight : Double,
 ) -> String =
@@ -255,7 +255,7 @@ extern "js" fn js_glyph_to_svg_path_by_weight(
 
 ///|
 extern "js" fn js_glyph_advance_by_weight(
-  codepoint : Int,
+  codepoint : Int32,
   font_size : Double,
   font_weight : Double,
 ) -> Double =
@@ -272,8 +272,8 @@ extern "js" fn js_glyph_advance_by_weight(
 
 ///|
 extern "js" fn js_kern_advance_by_weight(
-  cp1 : Int,
-  cp2 : Int,
+  cp1 : Int32,
+  cp2 : Int32,
   font_size : Double,
   font_weight : Double,
 ) -> Double =
@@ -290,7 +290,7 @@ extern "js" fn js_kern_advance_by_weight(
 
 ///|
 extern "js" fn js_outline_commands_for_family_by_weight(
-  codepoint : Int,
+  codepoint : Int32,
   font_size : Double,
   font_weight : Double,
   font_family : String,
@@ -307,7 +307,7 @@ extern "js" fn js_outline_commands_for_family_by_weight(
 
 ///|
 extern "js" fn js_glyph_for_family_by_weight(
-  codepoint : Int,
+  codepoint : Int32,
   font_size : Double,
   font_weight : Double,
   font_family : String,
@@ -324,7 +324,7 @@ extern "js" fn js_glyph_for_family_by_weight(
 
 ///|
 extern "js" fn js_advance_for_family_by_weight(
-  codepoint : Int,
+  codepoint : Int32,
   font_size : Double,
   font_weight : Double,
   font_family : String,
@@ -341,8 +341,8 @@ extern "js" fn js_advance_for_family_by_weight(
 
 ///|
 extern "js" fn js_kern_for_family_by_weight(
-  cp1 : Int,
-  cp2 : Int,
+  cp1 : Int32,
+  cp2 : Int32,
   font_size : Double,
   font_weight : Double,
   font_family : String,
@@ -455,7 +455,7 @@ pub fn reset_paint_provider() -> Unit {
 }
 
 ///|
-extern "js" fn js_now_ms() -> Int =
+extern "js" fn js_now_ms() -> Int32 =
   #|() => Date.now()
 
 ///|
@@ -464,8 +464,8 @@ extern "js" fn js_log_stderr(msg : String) -> Unit =
 
 ///|
 priv struct PaintCaptureFrame {
-  width : Int
-  height : Int
+  width : Int32
+  height : Int32
   framebuffer : @tui_paint_export.Framebuffer
   palette : @tui_paint_export.DynamicPalette
   timing : @rendering.PaintCaptureTiming
@@ -560,7 +560,7 @@ fn ensure_paint_provider_initialized() -> Unit {
 ///|
 fn resolve_js_glyph_commands(
   use_outline_commands : Bool,
-  codepoint : Int,
+  codepoint : Int32,
   font_size : Double,
   is_bold : Bool,
 ) -> (Array[@svg.PathCommand], Double) {
@@ -585,7 +585,7 @@ fn resolve_js_glyph_commands(
 ///|
 fn resolve_js_glyph_commands_by_weight(
   use_outline_commands : Bool,
-  codepoint : Int,
+  codepoint : Int32,
   font_size : Double,
   font_weight : Double,
 ) -> (Array[@svg.PathCommand], Double) {
@@ -614,7 +614,7 @@ fn resolve_js_glyph_commands_by_weight(
 ///|
 fn resolve_js_family_glyph_commands_by_weight(
   use_outline_commands : Bool,
-  codepoint : Int,
+  codepoint : Int32,
   font_size : Double,
   font_weight : Double,
   font_family : String,
@@ -646,7 +646,7 @@ fn resolve_js_family_glyph_commands_by_weight(
 ///|
 fn resolve_js_family_glyph_commands(
   use_outline_commands : Bool,
-  codepoint : Int,
+  codepoint : Int32,
   font_size : Double,
   is_bold : Bool,
   font_family : String,
@@ -685,7 +685,7 @@ fn capture_current_paint_html() -> String {
 fn BidiProtocol::resolve_actual_paint_viewport_dimensions(
   self : BidiProtocol,
   ctx_id : String,
-) -> (Int, Int) {
+) -> (Int32, Int32) {
   let viewport_width = self.resolve_effective_viewport_width(ctx_id)
   let viewport_height = self.resolve_effective_viewport_height(ctx_id)
   (viewport_width, viewport_height)
@@ -694,12 +694,12 @@ fn BidiProtocol::resolve_actual_paint_viewport_dimensions(
 ///|
 fn BidiProtocol::build_actual_paint_frame(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   html : String,
-  origin? : String = "viewport",
-  send_errors? : Bool = true,
-  measure_visual? : Bool = false,
+  origin~ : String = "viewport",
+  send_errors~ : Bool = true,
+  measure_visual~ : Bool = false,
 ) -> PaintCaptureFrame? {
   ensure_paint_provider_initialized()
   let (viewport_width, viewport_height) = self.resolve_actual_paint_viewport_dimensions(
@@ -795,7 +795,7 @@ pub fn warmup_glyph_cache() -> Unit {
 /// Test-only actual paint capture for VRT.
 fn BidiProtocol::handle_capture_paint_data(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match self.resolve_capture_paint_data(request_id, params) {
@@ -807,7 +807,7 @@ fn BidiProtocol::handle_capture_paint_data(
 ///|
 fn BidiProtocol::resolve_capture_paint_data(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Json? {
   let params = match params {
@@ -955,7 +955,7 @@ fn paint_node_find_rect(
 /// component-level VRT without cropping a full-page screenshot client-side.
 fn BidiProtocol::handle_render_selector(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match self.resolve_render_selector(request_id, params) {
@@ -967,7 +967,7 @@ fn BidiProtocol::handle_render_selector(
 ///|
 fn BidiProtocol::resolve_render_selector(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Json? {
   let params = match params {
@@ -1071,7 +1071,7 @@ fn BidiProtocol::resolve_render_selector(
 ///|
 fn BidiProtocol::try_resolve_actual_capture_screenshot_data(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   params : Map[String, Json],
 ) -> String? {
@@ -1144,7 +1144,7 @@ fn capture_paint_source_html_expr() -> String {
 /// Return PaintNode tree as JSON for native paint rendering.
 fn BidiProtocol::handle_capture_paint_tree(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match self.resolve_capture_paint_tree(request_id, params) {
@@ -1156,7 +1156,7 @@ fn BidiProtocol::handle_capture_paint_tree(
 ///|
 fn BidiProtocol::resolve_capture_paint_tree(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Json? {
   let params = match params {

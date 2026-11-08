@@ -14,10 +14,10 @@ pub(all) struct GlyphPlacement {
 
 ///|
 pub fn resolve_text_wrap_tolerance(
-  max_width : Int,
+  max_width : Int32,
   font_size : Double,
-  line_height? : Double = 0.0,
-  text_length? : Int = 0,
+  line_height~ : Double = 0.0,
+  text_length~ : Int32 = 0,
 ) -> Double {
   if max_width <= 0 {
     return text_wrap_tolerance
@@ -49,10 +49,10 @@ pub fn measure_word_width(
   word : String,
   font_size : Double,
   is_bold : Bool,
-  font_family? : String = "",
-  letter_spacing? : Double = 0.0,
-  word_spacing? : Double = 0.0,
-  font_weight? : Double = 400.0,
+  font_family~ : String = "",
+  letter_spacing~ : Double = 0.0,
+  word_spacing~ : Double = 0.0,
+  font_weight~ : Double = 400.0,
 ) -> Double {
   let effective_font_weight = resolve_effective_font_weight(
     is_bold, font_weight,
@@ -138,19 +138,19 @@ pub fn split_text_into_words(text : String) -> Array[String] {
 ///|
 pub fn layout_glyph_bitmaps(
   provider : GlyphProvider,
-  x : Int,
-  y : Int,
+  x : Int32,
+  y : Int32,
   text : String,
-  max_width : Int,
+  max_width : Int32,
   font_size : Double,
   line_height : Double,
   is_bold : Bool,
-  font_family? : String = "",
-  letter_spacing? : Double = 0.0,
-  word_spacing? : Double = 0.0,
-  font_weight? : Double = 400.0,
-  expected_line_count? : Int = 0,
-) -> (Array[GlyphPlacement], Int) {
+  font_family~ : String = "",
+  letter_spacing~ : Double = 0.0,
+  word_spacing~ : Double = 0.0,
+  font_weight~ : Double = 400.0,
+  expected_line_count~ : Int32 = 0,
+) -> (Array[GlyphPlacement], Int32) {
   let effective_font_weight = resolve_effective_font_weight(
     is_bold, font_weight,
   )

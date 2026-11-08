@@ -9,10 +9,10 @@ test "dom facade parses html and builds accessibility tree" {
     #|    </main>
     #|  </body>
     #|</html>
-  let document = parse_document(html)
+  let document = @crater-dom.parse_document(html)
 
-  let tree = build_accessibility_tree(document)
-  let buttons = tree.find_by_role(Role::Button)
+  let tree = @crater-dom.build_accessibility_tree(document)
+  let buttons = tree.find_by_role(@crater-dom.Role::Button)
 
   inspect(document.root.tag, content="html")
   inspect(buttons.length(), content="1")
@@ -21,15 +21,15 @@ test "dom facade parses html and builds accessibility tree" {
 
 ///|
 test "dom facade exposes dom tree and scheduler entry points" {
-  let scheduler = Scheduler::new()
+  let scheduler = @crater-dom.Scheduler::new()
   let html =
     #|<html>
     #|  <head><style>body { margin: 0; }</style></head>
     #|  <body><img src="/hero.png" /></body>
     #|</html>
-  let parse_result = parse_and_schedule(scheduler, html)
+  let parse_result = @crater-dom.parse_and_schedule(scheduler, html)
 
-  let tree = DomTree::new()
+  let tree = @crater-dom.DomTree::new()
   let document = tree.get_document()
   let button = tree.create_element("button")
   tree.append_child(document, button).unwrap()

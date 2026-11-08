@@ -13,13 +13,13 @@ let viewport_estimated_y : Ref[Double] = { val: 0.0, }
 let viewport_cutoff : Ref[Double] = { val: 1.0e10, }
 
 ///|
-let viewport_skeleton_count : Ref[Int] = { val: 0, }
+let viewport_skeleton_count : Ref[Int32] = { val: 0, }
 
 ///|
-let viewport_full_node_count : Ref[Int] = { val: 0, }
+let viewport_full_node_count : Ref[Int32] = { val: 0, }
 
 ///|
-let viewport_full_node_cutoff : Ref[Int] = { val: 2000, }
+let viewport_full_node_cutoff : Ref[Int32] = { val: 2000, }
 
 ///|
 let viewport_skeleton_enabled : Ref[Bool] = { val: true, }
@@ -141,8 +141,8 @@ fn should_advance_viewport_estimate(style : @style.Style) -> Bool {
     @types.Absolute | @types.Fixed => false
     _ =>
       match style.float {
-        @types.Float::Left | @types.Float::Right => false
-        @types.Float::None => true
+        @types.CssFloat::Left | @types.CssFloat::Right => false
+        @types.CssFloat::None => true
       }
   }
   if !is_in_flow {

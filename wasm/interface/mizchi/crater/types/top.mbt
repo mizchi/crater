@@ -3,9 +3,9 @@
 ///|
 /// Cache statistics
 pub(all) struct CacheStats {
-  hits : UInt
-  misses : UInt
-  nodes_computed : UInt
+  hits : UInt32
+  misses : UInt32
+  nodes_computed : UInt32
   hit_rate : Double
 }
 
@@ -19,7 +19,7 @@ pub(all) enum FlexDirection {
 }
 
 ///|
-pub fn FlexDirection::ordinal(self : FlexDirection) -> Int {
+pub fn FlexDirection::ordinal(self : FlexDirection) -> Int32 {
   match self {
     ROW => 0
     ROW_REVERSE => 1
@@ -29,7 +29,7 @@ pub fn FlexDirection::ordinal(self : FlexDirection) -> Int {
 }
 
 ///|
-pub fn FlexDirection::from(self : Int) -> FlexDirection {
+pub fn FlexDirection::from(self : Int32) -> FlexDirection {
   match self {
     0 => ROW
     1 => ROW_REVERSE
@@ -48,7 +48,7 @@ pub(all) enum FlexWrap {
 }
 
 ///|
-pub fn FlexWrap::ordinal(self : FlexWrap) -> Int {
+pub fn FlexWrap::ordinal(self : FlexWrap) -> Int32 {
   match self {
     NO_WRAP => 0
     WRAP => 1
@@ -57,7 +57,7 @@ pub fn FlexWrap::ordinal(self : FlexWrap) -> Int {
 }
 
 ///|
-pub fn FlexWrap::from(self : Int) -> FlexWrap {
+pub fn FlexWrap::from(self : Int32) -> FlexWrap {
   match self {
     0 => NO_WRAP
     1 => WRAP
@@ -78,7 +78,7 @@ pub(all) enum JustifyContent {
 }
 
 ///|
-pub fn JustifyContent::ordinal(self : JustifyContent) -> Int {
+pub fn JustifyContent::ordinal(self : JustifyContent) -> Int32 {
   match self {
     FLEX_START => 0
     FLEX_END => 1
@@ -90,7 +90,7 @@ pub fn JustifyContent::ordinal(self : JustifyContent) -> Int {
 }
 
 ///|
-pub fn JustifyContent::from(self : Int) -> JustifyContent {
+pub fn JustifyContent::from(self : Int32) -> JustifyContent {
   match self {
     0 => FLEX_START
     1 => FLEX_END
@@ -113,7 +113,7 @@ pub(all) enum AlignItems {
 }
 
 ///|
-pub fn AlignItems::ordinal(self : AlignItems) -> Int {
+pub fn AlignItems::ordinal(self : AlignItems) -> Int32 {
   match self {
     FLEX_START => 0
     FLEX_END => 1
@@ -124,7 +124,7 @@ pub fn AlignItems::ordinal(self : AlignItems) -> Int {
 }
 
 ///|
-pub fn AlignItems::from(self : Int) -> AlignItems {
+pub fn AlignItems::from(self : Int32) -> AlignItems {
   match self {
     0 => FLEX_START
     1 => FLEX_END
@@ -145,7 +145,7 @@ pub(all) enum Display {
 }
 
 ///|
-pub fn Display::ordinal(self : Display) -> Int {
+pub fn Display::ordinal(self : Display) -> Int32 {
   match self {
     FLEX => 0
     NONE => 1
@@ -155,7 +155,7 @@ pub fn Display::ordinal(self : Display) -> Int {
 }
 
 ///|
-pub fn Display::from(self : Int) -> Display {
+pub fn Display::from(self : Int32) -> Display {
   match self {
     0 => FLEX
     1 => NONE

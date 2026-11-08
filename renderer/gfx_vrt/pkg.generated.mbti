@@ -9,19 +9,19 @@ import {
 // Values
 pub fn render_html_to_image(String, @values.Size[Double]) -> RenderedImage
 
-pub fn render_paint_tree_to_image(@model.PaintNode, Int, Int) -> RenderedImage
+pub fn render_paint_tree_to_image(@model.PaintNode, Int32, Int32) -> RenderedImage
 
-pub fn render_text_to_image(String, Int, Int, x? : Int, y? : Int, scale? : Int) -> RenderedImage
+pub fn render_text_to_image(String, Int32, Int32, x? : Int32, y? : Int32, scale? : Int32) -> RenderedImage
 
 // Errors
 
 // Types and methods
 pub(all) struct RenderedImage {
-  width : Int
-  height : Int
-  pixels : Array[Int]
+  width : Int32
+  height : Int32
+  pixels : Array[Int32]
 }
-pub fn RenderedImage::pixel_at(Self, Int, Int) -> (Int, Int, Int, Int)
+pub fn RenderedImage::pixel_at(Self, Int32, Int32) -> (Int32, Int32, Int32, Int32)
 pub fn RenderedImage::to_ascii(Self) -> String
 
 // Type aliases

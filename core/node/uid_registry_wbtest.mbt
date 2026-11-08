@@ -3,7 +3,7 @@
 /// each node's uid stable across re-renders so the layout cache matches.
 
 ///|
-fn tagged_node(id : String, dom_id : Int, children : Array[Node]) -> Node {
+fn tagged_node(id : String, dom_id : Int32, children : Array[Node]) -> Node {
   let n = Node::new(id, @style.Style::default(), children)
   n.set_dom_id(Some(dom_id))
   n

@@ -13,9 +13,9 @@ pub fn calculate_layout(Double, Double) -> String
 
 pub fn calculate_layout_structured(Double, Double) -> @crater-js.FlatLayoutResult
 
-pub fn create_node(String) -> UInt
+pub fn create_node(String) -> UInt32
 
-pub fn get_child_count(String) -> UInt
+pub fn get_child_count(String) -> UInt32
 
 pub fn get_computed_height(String) -> Double
 
@@ -27,11 +27,11 @@ pub fn get_computed_width(String) -> Double
 
 pub fn has_new_layout(String) -> Bool
 
-pub fn insert_child(String, String, UInt) -> Bool
+pub fn insert_child(String, String, UInt32) -> Bool
 
 pub fn mark_layout_seen(String) -> Bool
 
-pub fn remove_child(String, UInt) -> Bool
+pub fn remove_child(String, UInt32) -> Bool
 
 pub fn set_align_items(String, @types.AlignItems) -> Bool
 

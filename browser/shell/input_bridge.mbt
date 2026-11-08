@@ -2,10 +2,10 @@
 fn Browser::set_text_control_selection_from_cells(
   self : Browser,
   source_id : String,
-  anchor_col : Int,
-  anchor_row : Int,
-  focus_col : Int,
-  focus_row : Int,
+  anchor_col : Int32,
+  anchor_row : Int32,
+  focus_col : Int32,
+  focus_row : Int32,
 ) -> Bool {
   if !self.enable_js {
     return false
@@ -66,8 +66,8 @@ fn Browser::set_text_control_selection_from_cells(
 fn Browser::set_text_control_caret_from_cell(
   self : Browser,
   source_id : String,
-  col : Int,
-  row : Int,
+  col : Int32,
+  row : Int32,
 ) -> Bool {
   self.set_text_control_selection_from_cells(source_id, col, row, col, row)
 }

@@ -1,7 +1,7 @@
 ///|
 fn BidiProtocol::perform_synthetic_fetch_step(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   context_id : String,
   request_step : @crater_network.SyntheticFetchPlanEntry,
   raw_request_headers : Array[Json],

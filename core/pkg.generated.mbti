@@ -52,21 +52,28 @@ pub(all) struct LayoutResult {
   warnings : Array[LayoutWarning]
 }
 
+#derive(@debug.Debug)
 pub(all) enum LayoutWarning {
   UnsupportedFloat(String)
   UnsupportedPosition(String)
   UnsupportedDisplay(String)
-} derive(@debug.Debug)
+}
+pub fn LayoutWarning::output(Self, &Logger) -> Unit
+pub fn LayoutWarning::to_repr(Self) -> @debug.Repr
+pub fn LayoutWarning::to_string(Self) -> String
 pub impl Show for LayoutWarning
 
 pub(all) struct MeasureFunc {
   func : (Double, Double) -> IntrinsicSize
 }
 
+#derive(Eq)
 pub(all) enum SizingMode {
   Definite
   MaxContent
-} derive(Eq)
+}
+pub fn SizingMode::equal(Self, Self) -> Bool
+pub fn SizingMode::not_equal(Self, Self) -> Bool
 
 // Type aliases
 

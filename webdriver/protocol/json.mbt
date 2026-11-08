@@ -38,7 +38,7 @@ pub fn extract_string_value_from_evaluate_result(json_text : String) -> String {
 }
 
 ///|
-pub fn get_int_field(json : Json, key : String) -> Int? {
+pub fn get_int_field(json : Json, key : String) -> Int32? {
   match get_field(json, key) {
     Some(Number(n, ..)) => Some(n.to_int())
     _ => None

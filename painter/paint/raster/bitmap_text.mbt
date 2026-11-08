@@ -23,12 +23,12 @@ fn is_wide_char(c : Char) -> Bool {
 /// Returns the width of the character drawn (in pixels)
 pub fn Framebuffer::draw_char(
   self : Framebuffer,
-  x : Int,
-  y : Int,
+  x : Int32,
+  y : Int32,
   c : Char,
-  color : Int,
-  scale : Int,
-) -> Int {
+  color : Int32,
+  scale : Int32,
+) -> Int32 {
   // Handle CJK: draw outlined rectangle for 2-column width (placeholder)
   if is_wide_char(c) {
     let char_w = font_width * 2 * scale
@@ -77,13 +77,13 @@ pub fn Framebuffer::draw_char(
 /// Returns the height of the text drawn (in pixels)
 pub fn Framebuffer::draw_text(
   self : Framebuffer,
-  x : Int,
-  y : Int,
+  x : Int32,
+  y : Int32,
   text : String,
-  max_width : Int,
-  color : Int,
-  scale : Int,
-) -> Int {
+  max_width : Int32,
+  color : Int32,
+  scale : Int32,
+) -> Int32 {
   let char_h = font_height * scale
   let mut cur_x = x
   let mut cur_y = y
@@ -123,14 +123,14 @@ pub fn Framebuffer::draw_text(
 /// Draw text with clipping support (bitmap font fallback)
 fn draw_text_clipped(
   fb : Framebuffer,
-  x : Int,
-  y : Int,
+  x : Int32,
+  y : Int32,
   text : String,
-  max_width : Int,
-  color : Int,
-  scale : Int,
+  max_width : Int32,
+  color : Int32,
+  scale : Int32,
   clip : ClipRect?,
-) -> Int {
+) -> Int32 {
   match clip {
     None => fb.draw_text(x, y, text, max_width, color, scale)
     Some(_) => {

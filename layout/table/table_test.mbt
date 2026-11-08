@@ -361,7 +361,7 @@ test "table intrinsic width includes anonymous flow child" {
   }
   let child = @node.Node::new("child", child_style, [])
   let table = @node.Node::new("table", table_style, [child])
-  inspect(compute_intrinsic_size(table, true), content="100")
+  inspect(@table.compute_intrinsic_size(table, true), content="100")
 }
 
 ///|

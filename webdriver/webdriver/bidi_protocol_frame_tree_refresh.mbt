@@ -97,7 +97,7 @@ fn BidiProtocol::register_child_contexts_for_iframe_sources(
 fn BidiProtocol::refresh_child_contexts_from_iframes_with_depth(
   self : BidiProtocol,
   parent_ctx_id : String,
-  depth : Int,
+  depth : Int32,
 ) -> Unit {
   if depth >= 8 {
     return
@@ -113,7 +113,7 @@ fn BidiProtocol::refresh_child_contexts_from_iframe_sources_with_depth(
   self : BidiProtocol,
   parent_ctx_id : String,
   frame_sources : Array[String],
-  depth : Int,
+  depth : Int32,
 ) -> Unit {
   let existing_children = self.context_children.get(parent_ctx_id).unwrap_or([])
   let user_ctx = self.context_user_context

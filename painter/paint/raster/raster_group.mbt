@@ -2,7 +2,7 @@
 /// Offscreen group opacity compositing helpers.
 
 ///|
-fn make_transparent_framebuffer(width : Int, height : Int) -> Framebuffer {
+fn make_transparent_framebuffer(width : Int32, height : Int32) -> Framebuffer {
   { width, height, pixels: Array::make(width * height, -1), }
 }
 

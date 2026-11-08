@@ -27,7 +27,7 @@
 ///|
 fn eval_in_session(
   proto : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   expr : String,
 ) -> Unit {
   let payload = "{\"id\":" +

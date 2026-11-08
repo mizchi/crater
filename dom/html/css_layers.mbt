@@ -1,6 +1,6 @@
 ///|
 /// Whether `css[i..]` begins with the at-rule `@layer` followed by a boundary.
-fn at_layer_keyword_at(css : String, i : Int) -> Bool {
+fn at_layer_keyword_at(css : String, i : Int32) -> Bool {
   let kw = "@layer"
   if i + kw.length() > css.length() {
     return false
@@ -42,7 +42,7 @@ pub fn flatten_css_cascade_layers(css : String) -> String {
   let len = css.length()
   let mut i = 0
   let mut depth = 0
-  let layer_depths : Array[Int] = []
+  let layer_depths : Array[Int32] = []
   while i < len {
     let c = css[i].to_int().unsafe_to_char()
     // Pass comments and strings through untouched so braces / "@layer" inside

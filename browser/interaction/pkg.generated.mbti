@@ -43,29 +43,29 @@ pub fn none_effect() -> DispatchEffect
 
 pub fn normalized_drop_effect(String, String) -> String
 
-pub fn pointer_button_down_command(Int, Int, Int) -> InteractionCommand
+pub fn pointer_button_down_command(Int32, Int32, Int32) -> InteractionCommand
 
-pub fn pointer_button_up_command(Int, Int, Int) -> InteractionCommand
+pub fn pointer_button_up_command(Int32, Int32, Int32) -> InteractionCommand
 
-pub fn pointer_click_command(Int, Int) -> InteractionCommand
+pub fn pointer_click_command(Int32, Int32) -> InteractionCommand
 
 pub fn pointer_dispatch_event_names(Array[PointerDispatchEvent]) -> Array[String]
 
-pub fn pointer_down_command(Int, Int) -> InteractionCommand
+pub fn pointer_down_command(Int32, Int32) -> InteractionCommand
 
 pub fn pointer_hover_event_sequence(String, Bool, Bool, Bool) -> Array[HoverDispatchEvent]
 
-pub fn pointer_move_command(Int, Int) -> InteractionCommand
+pub fn pointer_move_command(Int32, Int32) -> InteractionCommand
 
 pub fn pointer_move_event_sequence(String) -> Array[PointerDispatchEvent]
 
-pub fn pointer_post_release_mouse_event_sequence(Int, Bool, Bool, Bool) -> Array[PointerDispatchEvent]
+pub fn pointer_post_release_mouse_event_sequence(Int32, Bool, Bool, Bool) -> Array[PointerDispatchEvent]
 
-pub fn pointer_press_event_sequence(String, Int) -> Array[PointerDispatchEvent]
+pub fn pointer_press_event_sequence(String, Int32) -> Array[PointerDispatchEvent]
 
-pub fn pointer_release_event_sequence(String, Int) -> Array[PointerDispatchEvent]
+pub fn pointer_release_event_sequence(String, Int32) -> Array[PointerDispatchEvent]
 
-pub fn pointer_up_command(Int, Int) -> InteractionCommand
+pub fn pointer_up_command(Int32, Int32) -> InteractionCommand
 
 pub fn text_input_command(String) -> InteractionCommand
 
@@ -101,7 +101,7 @@ pub struct DragMoveTargetPlan {
 pub struct HoverDispatchEvent {
   event_type : String
   target : HoverDispatchTarget
-  button : Int
+  button : Int32
 }
 
 pub enum HoverDispatchTarget {
@@ -115,8 +115,8 @@ pub enum InteractionCommand {
   KeyDown(String)
   KeyUp(String)
   TextInput(String)
-  ScrollBy(Int)
-  PageScroll(Int)
+  ScrollBy(Int32)
+  PageScroll(Int32)
   FocusNext
   FocusPrev
   ActivateFocused
@@ -124,12 +124,12 @@ pub enum InteractionCommand {
   Refresh
   Back
   Forward
-  PointerClick(Int, Int)
-  PointerDown(Int, Int)
-  PointerUp(Int, Int)
-  PointerMove(Int, Int)
-  PointerButtonDown(Int, Int, Int)
-  PointerButtonUp(Int, Int, Int)
+  PointerClick(Int32, Int32)
+  PointerDown(Int32, Int32)
+  PointerUp(Int32, Int32)
+  PointerMove(Int32, Int32)
+  PointerButtonDown(Int32, Int32, Int32)
+  PointerButtonUp(Int32, Int32, Int32)
   EnterHintMode
   ExitHintMode
   HintChar(String)
@@ -140,7 +140,7 @@ pub enum InteractionCommand {
 
 pub struct PointerDispatchEvent {
   event_type : String
-  button : Int
+  button : Int32
 }
 
 // Type aliases

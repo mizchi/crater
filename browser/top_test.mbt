@@ -1,6 +1,6 @@
 ///|
 test "browser facade renders text output" {
-  let browser = Browser::new(640, 480)
+  let browser = @crater-browser.Browser::new(640, 480)
   let html =
     #|<html>
     #|  <body>

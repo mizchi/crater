@@ -11,7 +11,7 @@ pub async fn read_key() -> String {
 ///|
 /// Read a key with timeout - not supported in WASM
 #warnings("-unused_async")
-pub async fn read_key_with_timeout(_timeout_ms : Int) -> String {
+pub async fn read_key_with_timeout(_timeout_ms : Int32) -> String {
   panic()
 }
 
@@ -42,7 +42,7 @@ pub fn cleanup_stdin() -> Unit {
 
 ///|
 /// Get terminal size - not supported in WASM
-pub fn get_terminal_size() -> (Int, Int) {
+pub fn get_terminal_size() -> (Int32, Int32) {
   (80, 24)
 }
 

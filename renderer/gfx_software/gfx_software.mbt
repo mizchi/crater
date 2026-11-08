@@ -16,15 +16,15 @@
 
 ///|
 pub struct SoftwareDriver {
-  mut width : Int
-  mut height : Int
-  mut pixels : Array[Int]
-  mut next_id : Int
+  mut width : Int32
+  mut height : Int32
+  mut pixels : Array[Int32]
+  mut next_id : Int32
   mut initialized : Bool
 }
 
 ///|
-pub fn SoftwareDriver::new(width : Int, height : Int) -> SoftwareDriver {
+pub fn SoftwareDriver::new(width : Int32, height : Int32) -> SoftwareDriver {
   let w = if width <= 0 { 1 } else { width }
   let h = if height <= 0 { 1 } else { height }
   {
@@ -41,9 +41,9 @@ pub fn SoftwareDriver::new(width : Int, height : Int) -> SoftwareDriver {
 /// transparent black. Intended for tests / debugging.
 pub fn SoftwareDriver::pixel_at(
   self : SoftwareDriver,
-  x : Int,
-  y : Int,
-) -> (Int, Int, Int, Int) {
+  x : Int32,
+  y : Int32,
+) -> (Int32, Int32, Int32, Int32) {
   if x < 0 || y < 0 || x >= self.width || y >= self.height {
     return (0, 0, 0, 0)
   }
@@ -57,7 +57,7 @@ pub fn SoftwareDriver::pixel_at(
 }
 
 ///|
-fn channel_u8(value : Double) -> Int {
+fn channel_u8(value : Double) -> Int32 {
   let v = (value * 255.0).to_int()
   if v < 0 {
     0
@@ -95,12 +95,12 @@ fn SoftwareDriver::clear(self : SoftwareDriver, color : @gfx.Color) -> Unit {
 /// Blend a source rgba (0..255) over the destination pixel at (x, y).
 fn SoftwareDriver::blend_pixel(
   self : SoftwareDriver,
-  x : Int,
-  y : Int,
-  sr : Int,
-  sg : Int,
-  sb : Int,
-  sa : Int,
+  x : Int32,
+  y : Int32,
+  sr : Int32,
+  sg : Int32,
+  sb : Int32,
+  sa : Int32,
   blend : @gfx.BlendMode,
 ) -> Unit {
   if x < 0 || y < 0 || x >= self.width || y >= self.height {
@@ -132,12 +132,12 @@ fn SoftwareDriver::blend_pixel(
 }
 
 ///|
-fn ndc_x_to_pixel(ndc_x : Double, width : Int) -> Double {
+fn ndc_x_to_pixel(ndc_x : Double, width : Int32) -> Double {
   (ndc_x + 1.0) * 0.5 * width.to_double()
 }
 
 ///|
-fn ndc_y_to_pixel(ndc_y : Double, height : Int) -> Double {
+fn ndc_y_to_pixel(ndc_y : Double, height : Int32) -> Double {
   (1.0 - ndc_y) * 0.5 * height.to_double()
 }
 
@@ -181,7 +181,7 @@ fn edge_ok(w : Double, top_left : Bool) -> Bool {
 fn rounded_corner_coverage(
   pcx : Double,
   pcy : Double,
-  u : Array[Int],
+  u : Array[Int32],
 ) -> Double {
   let rx_tl = u[4].to_double()
   let ry_tl = u[5].to_double()
@@ -263,7 +263,7 @@ fn fmax3(a : Double, b : Double, c : Double) -> Double {
 }
 
 ///|
-fn clamp_int(value : Int, lo : Int, hi : Int) -> Int {
+fn clamp_int(value : Int32, lo : Int32, hi : Int32) -> Int32 {
   if value < lo {
     lo
   } else if value > hi {
@@ -275,7 +275,7 @@ fn clamp_int(value : Int, lo : Int, hi : Int) -> Int {
 
 ///|
 /// Smallest integer >= v (for v >= 0, the pixel-space domain here).
-fn ceil_to_int(v : Double) -> Int {
+fn ceil_to_int(v : Double) -> Int32 {
   let truncated = v.to_int()
   if truncated.to_double() < v {
     truncated + 1
@@ -382,7 +382,7 @@ fn SoftwareDriver::rasterize(
       let fy0 = clamp_int(ceil_to_int(rminy - 0.5), lo_y, hi_y)
       let fy1 = clamp_int(ceil_to_int(rmaxy - 0.5), lo_y, hi_y)
       // Full-coverage row span (no corner cuts it): direct write / blend.
-      fn fill_row(py : Int) -> Unit {
+      fn fill_row(py : Int32) -> Unit {
         if sa >= 255 {
           // Opaque: the result is the source colour for every blend mode.
           let row = py * self.width
@@ -401,7 +401,7 @@ fn SoftwareDriver::rasterize(
       }
 
       // Corner-band row: per-pixel rounded coverage across the span.
-      fn coverage_row(py : Int) -> Unit {
+      fn coverage_row(py : Int32) -> Unit {
         let pcy = py.to_double() + 0.5
         for px in fx0..<fx1 {
           let pcx = px.to_double() + 0.5
@@ -520,6 +520,18 @@ fn SoftwareDriver::rasterize(
 ///|
 pub impl @gfx.GraphicsDriver for SoftwareDriver with fn initialize(self) {
   self.initialized = true
+}
+
+///|
+pub extend SoftwareDriver with @mizchi/gfx.GraphicsDriver::{
+  begin,
+  draw_triangles,
+  new_shader,
+  new_image,
+  initialize,
+  end,
+  read_pixels,
+  resize,
 }
 
 ///|

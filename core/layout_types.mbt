@@ -25,10 +25,14 @@ pub(all) struct MeasureFunc {
 /// Sizing mode for layout computation
 /// Definite: Use available space (normal flow)
 /// MaxContent: Use intrinsic max-content (shrink-to-fit)
+#derive(Eq)
 pub(all) enum SizingMode {
   Definite
   MaxContent
-} derive(Eq)
+}
+
+///|
+pub extend SizingMode with Eq::{not_equal, equal}
 
 ///|
 /// Context for layout computation
@@ -44,11 +48,15 @@ pub(all) struct LayoutContext {
 
 ///|
 /// Warnings emitted during layout computation
+#derive(Debug)
 pub(all) enum LayoutWarning {
   UnsupportedFloat(String)
   UnsupportedPosition(String)
   UnsupportedDisplay(String)
-} derive(Debug)
+}
+
+///|
+pub extend LayoutWarning with @debug.Debug::{to_repr}
 
 ///|
 /// Complete layout result for a node
@@ -90,3 +98,6 @@ pub impl Show for LayoutWarning with fn output(self, logger) {
   }
   logger.write_string(text)
 }
+
+///|
+pub extend LayoutWarning with Show::{to_string, output}

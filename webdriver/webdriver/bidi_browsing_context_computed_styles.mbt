@@ -2,7 +2,7 @@
 /// BiDi handler for browsingContext.getComputedStyles
 fn BidiProtocol::handle_get_computed_styles(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match self.resolve_get_computed_styles(request_id, params) {
@@ -14,7 +14,7 @@ fn BidiProtocol::handle_get_computed_styles(
 ///|
 fn BidiProtocol::handle_get_all_computed_styles(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match self.resolve_get_all_computed_styles(request_id, params) {
@@ -26,7 +26,7 @@ fn BidiProtocol::handle_get_all_computed_styles(
 ///|
 fn BidiProtocol::resolve_get_computed_styles(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Json? {
   let params = match params {
@@ -120,7 +120,7 @@ fn BidiProtocol::resolve_get_computed_styles(
 ///|
 fn BidiProtocol::resolve_get_all_computed_styles(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Json? {
   let params = match params {
@@ -209,7 +209,7 @@ fn BidiProtocol::resolve_get_all_computed_styles(
 ///|
 fn BidiProtocol::resolve_get_computed_styles_target(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Map[String, Json],
   mode : String,
 ) -> (String, String)? {
@@ -335,7 +335,7 @@ fn BidiProtocol::resolve_get_computed_styles_target(
 ///|
 fn BidiProtocol::resolve_get_computed_styles_element_shared_id(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   element : Map[String, Json],
 ) -> String? {
   let value_map = match element.get("value") {
@@ -384,7 +384,7 @@ fn BidiProtocol::resolve_get_computed_styles_element_shared_id(
 ///|
 fn BidiProtocol::validate_get_computed_styles_shared_id(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   shared_id : String,
 ) -> Unit? {
   if !has_runtime_shared_node(shared_id) {

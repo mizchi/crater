@@ -15,13 +15,13 @@
 /// This is the single source of truth for all DOM operations
 pub struct DomTree {
   /// Next available node ID
-  mut next_id : Int
+  mut next_id : Int32
   /// All nodes indexed by ID
-  nodes : Map[Int, DomNode]
+  nodes : Map[Int32, DomNode]
   /// Root document node ID
-  mut root_id : Int
+  mut root_id : Int32
   /// Currently focused node (for input)
-  mut focused_node : Int?
+  mut focused_node : Int32?
   /// Mutation queue for batching changes
   mutations : MutationQueue
 }
@@ -36,10 +36,10 @@ struct DomNode {
   mut custom_states : Array[String]
   mut form_value : String?
   mut form_state_value : String?
-  mut parent_id : Int?
-  children : Array[Int]
-  mut shadow_root_id : Int?
-  mut host_id : Int?
+  mut parent_id : Int32?
+  children : Array[Int32]
+  mut shadow_root_id : Int32?
+  mut host_id : Int32?
   mut shadow_mode : String?
   mut shadow_delegates_focus : Bool
   mut shadow_slot_assignment : String
@@ -58,7 +58,7 @@ struct DomNode {
 fn DomNode::new(
   node_type : NodeType,
   tag_name : String,
-  text_content? : String = "",
+  text_content~ : String = "",
 ) -> DomNode {
   {
     node_type,
@@ -128,10 +128,10 @@ pub fn DomTree::create_comment(self : DomTree, content : String) -> NodeId {
 ///|
 pub fn DomTree::create_runtime_node(
   self : DomTree,
-  id : Int,
+  id : Int32,
   node_type : NodeType,
-  tag_name? : String = "",
-  text_content? : String = "",
+  tag_name~ : String = "",
+  text_content~ : String = "",
 ) -> Result[NodeId, CoreError] {
   let node = match node_type {
     Element => DomNode::new(Element, tag_name)
@@ -154,7 +154,7 @@ fn DomTree::allocate_node(self : DomTree, node : DomNode) -> NodeId {
 ///|
 fn DomTree::allocate_node_with_id(
   self : DomTree,
-  id : Int,
+  id : Int32,
   node : DomNode,
 ) -> Result[NodeId, CoreError] {
   if id <= 0 {
@@ -588,7 +588,7 @@ pub fn DomTree::set_text_content(
 /// Collect text content recursively
 fn DomTree::collect_text_content(
   self : DomTree,
-  node_id : Int,
+  node_id : Int32,
   buf : StringBuilder,
 ) -> Unit {
   match self.nodes.get(node_id) {
@@ -687,7 +687,7 @@ pub fn DomTree::get_next_sibling(
 
 ///|
 /// Invalidate layout cache for node and ancestors
-fn DomTree::invalidate_layout(self : DomTree, node_id : Int) -> Unit {
+fn DomTree::invalidate_layout(self : DomTree, node_id : Int32) -> Unit {
   match self.nodes.get(node_id) {
     Some(n) => {
       n.cached_rect = None
@@ -760,7 +760,7 @@ pub fn DomTree::has_pending_mutations(self : DomTree) -> Bool {
 
 ///|
 /// Get number of pending mutations
-pub fn DomTree::pending_mutation_count(self : DomTree) -> Int {
+pub fn DomTree::pending_mutation_count(self : DomTree) -> Int32 {
   self.mutations.length()
 }
 

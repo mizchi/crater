@@ -6,10 +6,10 @@ fn render_svg_into_region(
   fb : Framebuffer,
   palette : DynamicPalette,
   svg_text : String,
-  x : Int,
-  y : Int,
-  w : Int,
-  h : Int,
+  x : Int32,
+  y : Int32,
+  w : Int32,
+  h : Int32,
   clip : ClipRect?,
 ) -> Unit {
   let svg_node = match @svg.parse_svg(svg_text) {

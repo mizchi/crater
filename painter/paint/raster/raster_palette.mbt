@@ -2,7 +2,7 @@
 /// Dynamic color palette that builds from PaintNode colors
 pub struct DynamicPalette {
   colors : Array[Color]
-  color_map : Map[Int, Int] // color hash -> palette index
+  color_map : Map[Int32, Int32] // color hash -> palette index
 }
 
 ///|
@@ -11,7 +11,7 @@ pub fn DynamicPalette::new() -> DynamicPalette {
   // Reserve index 0 for transparent/white background
   let white = Color::white()
   colors.push(white)
-  let color_map : Map[Int, Int] = Map([])
+  let color_map : Map[Int32, Int32] = Map([])
   color_map.set(color_hash(white), 0)
   { colors, color_map, }
 }
@@ -23,7 +23,7 @@ fn types_color_to_image(c : @types.Color) -> Color {
 }
 
 ///|
-fn clamp_byte(v : Int) -> Int {
+fn clamp_byte(v : Int32) -> Int32 {
   if v < 0 {
     0
   } else if v > 255 {
@@ -34,12 +34,12 @@ fn clamp_byte(v : Int) -> Int {
 }
 
 ///|
-fn effective_alpha_byte(color : @types.Color, opacity : Double) -> Int {
+fn effective_alpha_byte(color : @types.Color, opacity : Double) -> Int32 {
   clamp_byte((color.a * opacity * 255.0).to_int())
 }
 
 ///|
-fn palette_color_at(palette : DynamicPalette, idx : Int) -> Color {
+fn palette_color_at(palette : DynamicPalette, idx : Int32) -> Color {
   if idx >= 0 && idx < palette.colors.length() {
     palette.colors[idx]
   } else {
@@ -49,14 +49,14 @@ fn palette_color_at(palette : DynamicPalette, idx : Int) -> Color {
 
 ///|
 /// Hash a color for map lookup
-fn color_hash(c : Color) -> Int {
+fn color_hash(c : Color) -> Int32 {
   c.r * 65536 + c.g * 256 + c.b
 }
 
 ///|
 /// Quantize a color channel to reduce palette entries
 /// Rounds to nearest multiple of step (e.g., step=4 gives 64 levels per channel)
-fn quantize_channel(v : Int, step : Int) -> Int {
+fn quantize_channel(v : Int32, step : Int32) -> Int32 {
   let q = (v + step / 2) / step * step
   if q > 255 {
     255
@@ -67,7 +67,7 @@ fn quantize_channel(v : Int, step : Int) -> Int {
 
 ///|
 /// Get or add a color to the palette, returns palette index
-fn DynamicPalette::get_or_add(self : DynamicPalette, c : Color) -> Int {
+fn DynamicPalette::get_or_add(self : DynamicPalette, c : Color) -> Int32 {
   let hash = color_hash(c)
   match self.color_map.get(hash) {
     Some(idx) => idx

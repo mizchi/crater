@@ -149,7 +149,7 @@ fn parse_html_content(
 
 ///|
 /// Extract substring from char array
-fn substring(chars : Array[Char], start : Int, end : Int) -> String {
+fn substring(chars : Array[Char], start : Int32, end : Int32) -> String {
   let buf = StringBuilder()
   for i = start; i < end; i = i + 1 {
     buf.write_char(chars[i])
@@ -183,6 +183,6 @@ pub fn TestContext::tree(self : TestContext) -> @dom.DomTree {
 
 ///|
 /// Get document root node ID
-pub fn TestContext::doc_id(self : TestContext) -> Int {
+pub fn TestContext::doc_id(self : TestContext) -> Int32 {
   self.session.get_tree().get_document().to_int()
 }

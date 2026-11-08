@@ -2,9 +2,9 @@
 package "mizchi/crater-browser/cdp_js"
 
 // Values
-pub fn createNetworkRequest(String, String, String, String) -> Int
+pub fn createNetworkRequest(String, String, String, String) -> Int32
 
-pub fn createNetworkRequestWithLoader(String, String, String, String, String) -> Int
+pub fn createNetworkRequestWithLoader(String, String, String, String, String) -> Int32
 
 pub fn flushNetworkEvents(String) -> Unit
 
@@ -12,19 +12,19 @@ pub fn getCdpProtocolInfo() -> String
 
 pub fn getNextCdpMessage() -> String
 
-pub fn hasPendingCdpMessages() -> Int
+pub fn hasPendingCdpMessages() -> Int32
 
 pub fn isNetworkEnabled() -> Bool
 
 pub fn loadHtmlContent(String) -> String
 
-pub fn notifyLoadingFailed(Int, String) -> Unit
+pub fn notifyLoadingFailed(Int32, String) -> Unit
 
-pub fn notifyLoadingFinished(Int, Int) -> Unit
+pub fn notifyLoadingFinished(Int32, Int32) -> Unit
 
-pub fn notifyResponseReceived(Int, String, Int, String, String) -> Unit
+pub fn notifyResponseReceived(Int32, String, Int32, String, String) -> Unit
 
-pub fn notifyResponseReceivedWithLoader(Int, String, Int, String, String, String) -> Unit
+pub fn notifyResponseReceivedWithLoader(Int32, String, Int32, String, String, String) -> Unit
 
 pub fn processCdpMessage(String) -> String
 

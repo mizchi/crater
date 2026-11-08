@@ -29,7 +29,11 @@ pub using @js {
 }
 
 ///|
-pub fn browser(width : Int, height : Int, terminal_cols? : Int) -> Browser {
+pub fn browser(
+  width : Int32,
+  height : Int32,
+  terminal_cols? : Int32,
+) -> Browser {
   @shell.Browser::new(width, height, terminal_cols?)
 }
 

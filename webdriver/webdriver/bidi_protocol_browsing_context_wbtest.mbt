@@ -23,8 +23,8 @@ extern "js" fn js_test_png_dimensions(encoded : String) -> String =
 ///|
 extern "js" fn js_test_png_pixel_meta(
   encoded : String,
-  x : Int,
-  y : Int,
+  x : Int32,
+  y : Int32,
 ) -> String =
   #| (encoded, x, y) => {
   #|   try {
@@ -128,9 +128,9 @@ extern "js" fn js_test_build_html_data_url(html : String) -> String =
 ///|
 extern "js" fn js_test_rgba_meta(
   encoded : String,
-  width : Int,
-  x : Int,
-  y : Int,
+  width : Int32,
+  x : Int32,
+  y : Int32,
 ) -> String =
   #| (encoded, width, x, y) => {
   #|   try {
@@ -163,7 +163,7 @@ fn extract_success_result(msgs : Array[BidiOutMessage]) -> Map[String, Json] {
 }
 
 ///|
-fn png_dimensions_from_base64(encoded : String) -> (Int, Int) {
+fn png_dimensions_from_base64(encoded : String) -> (Int32, Int32) {
   let parsed = @json.parse(js_test_png_dimensions(encoded)) catch {
     _ => make_object({})
   }
@@ -186,8 +186,8 @@ fn png_dimensions_from_base64(encoded : String) -> (Int, Int) {
 ///|
 fn png_pixel_meta_from_base64(
   encoded : String,
-  x : Int,
-  y : Int,
+  x : Int32,
+  y : Int32,
 ) -> Map[String, Json] {
   let parsed = @json.parse(js_test_png_pixel_meta(encoded, x, y)) catch {
     _ => make_object({})
@@ -212,9 +212,9 @@ fn pdf_meta_from_base64(encoded : String) -> Map[String, Json] {
 ///|
 fn rgba_meta_from_base64(
   encoded : String,
-  width : Int,
-  x : Int,
-  y : Int,
+  width : Int32,
+  x : Int32,
+  y : Int32,
 ) -> Map[String, Json] {
   let parsed = @json.parse(js_test_rgba_meta(encoded, width, x, y)) catch {
     _ => make_object({})

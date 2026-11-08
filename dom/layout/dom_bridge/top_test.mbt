@@ -1,6 +1,6 @@
 ///|
 test "Document::new creates empty document with viewport" {
-  let doc = Document::new(800.0, 600.0)
+  let doc = @dom_bridge.Document::new(800.0, 600.0)
   inspect(doc.layout.viewport_width, content="800")
   inspect(doc.layout.viewport_height, content="600")
   inspect(doc.needs_layout(), content="true") // Initially needs layout
@@ -8,7 +8,7 @@ test "Document::new creates empty document with viewport" {
 
 ///|
 test "Document processes append_child mutation" {
-  let doc = Document::new(800.0, 600.0)
+  let doc = @dom_bridge.Document::new(800.0, 600.0)
   let root = doc.get_document_root()
 
   // Create and append a div
@@ -28,7 +28,7 @@ test "Document processes append_child mutation" {
 
 ///|
 test "Document processes multiple children" {
-  let doc = Document::new(800.0, 600.0)
+  let doc = @dom_bridge.Document::new(800.0, 600.0)
   let root = doc.get_document_root()
 
   // Create and append multiple divs
@@ -55,7 +55,7 @@ test "Document processes multiple children" {
 
 ///|
 test "Document processes nested structure" {
-  let doc = Document::new(800.0, 600.0)
+  let doc = @dom_bridge.Document::new(800.0, 600.0)
   let root = doc.get_document_root()
 
   // Create nested structure: root > parent > child
@@ -83,7 +83,7 @@ test "Document processes nested structure" {
 
 ///|
 test "Document processes remove_child mutation" {
-  let doc = Document::new(800.0, 600.0)
+  let doc = @dom_bridge.Document::new(800.0, 600.0)
   let root = doc.get_document_root()
 
   // Create and append a div
@@ -106,7 +106,7 @@ test "Document processes remove_child mutation" {
 
 ///|
 test "Document update combines mutation processing and layout" {
-  let doc = Document::new(400.0, 300.0)
+  let doc = @dom_bridge.Document::new(400.0, 300.0)
   let root = doc.get_document_root()
 
   // Create a div with style
@@ -123,7 +123,7 @@ test "Document update combines mutation processing and layout" {
 
 ///|
 test "Document resize_viewport triggers layout" {
-  let doc = Document::new(800.0, 600.0)
+  let doc = @dom_bridge.Document::new(800.0, 600.0)
 
   // Initial state
   inspect(doc.layout.viewport_width, content="800")
@@ -137,7 +137,7 @@ test "Document resize_viewport triggers layout" {
 
 ///|
 test "Document set_attribute records mutation" {
-  let doc = Document::new(800.0, 600.0)
+  let doc = @dom_bridge.Document::new(800.0, 600.0)
   let root = doc.get_document_root()
   let div = doc.create_element("div")
   let _ = doc.append_child(root, div)
@@ -156,7 +156,7 @@ test "Document set_attribute records mutation" {
 
 ///|
 test "Document rebuilds layout from shadow root composed children" {
-  let doc = Document::new(800.0, 600.0)
+  let doc = @dom_bridge.Document::new(800.0, 600.0)
   let root = doc.get_document_root()
   let host = doc.create_element("div")
   let light = doc.create_element("span")
@@ -181,7 +181,7 @@ test "Document rebuilds layout from shadow root composed children" {
 
 ///|
 test "Document rebuilds layout when slot reassignment changes composed child" {
-  let doc = Document::new(800.0, 600.0)
+  let doc = @dom_bridge.Document::new(800.0, 600.0)
   let root = doc.get_document_root()
   let host = doc.create_element("div")
   let light = doc.create_element("span")

@@ -43,7 +43,7 @@ fn BlockedSources::is_blocked(
 /// スケジューラ本体
 pub struct Scheduler {
   /// 全タスクのマップ（高速検索用）
-  tasks : Map[Int, Task]
+  tasks : Map[Int32, Task]
   /// 実行可能なタスクキュー
   ready_queue : TaskQueue
   /// ソース別キュー管理
@@ -51,7 +51,7 @@ pub struct Scheduler {
   /// ブロック中のソース
   blocked : BlockedSources
   /// 完了したタスクのID（依存解決用）
-  completed_ids : @hashset.HashSet[Int]
+  completed_ids : @hashset.HashSet[Int32]
 }
 
 ///|
@@ -98,7 +98,7 @@ pub fn Scheduler::enqueue_with_priority(
   self : Scheduler,
   action : TaskAction,
   constraint : TaskConstraint,
-  priority : Int,
+  priority : Int32,
 ) -> TaskId {
   let task = Task::new(action, constraint, priority~)
   self.add_task(task)
@@ -128,7 +128,7 @@ fn Scheduler::add_task(self : Scheduler, task : Task) -> TaskId {
 
 ///|
 /// 依存関係を解決して Ready 状態に昇格
-pub fn Scheduler::resolve_dependencies(self : Scheduler) -> Int {
+pub fn Scheduler::resolve_dependencies(self : Scheduler) -> Int32 {
   let mut promoted = 0
 
   // 全タスクをチェック
@@ -324,19 +324,19 @@ pub fn Scheduler::is_source_blocked(
 
 ///|
 /// 全タスク数を取得
-pub fn Scheduler::task_count(self : Scheduler) -> Int {
+pub fn Scheduler::task_count(self : Scheduler) -> Int32 {
   self.tasks.length()
 }
 
 ///|
 /// Ready 状態のタスク数を取得
-pub fn Scheduler::ready_count(self : Scheduler) -> Int {
+pub fn Scheduler::ready_count(self : Scheduler) -> Int32 {
   self.ready_queue.get_ready().length()
 }
 
 ///|
 /// Pending 状態のタスク数を取得
-pub fn Scheduler::pending_count(self : Scheduler) -> Int {
+pub fn Scheduler::pending_count(self : Scheduler) -> Int32 {
   let mut count = 0
   self.tasks.each(fn(_id, task) {
     match task.state {
@@ -349,7 +349,7 @@ pub fn Scheduler::pending_count(self : Scheduler) -> Int {
 
 ///|
 /// Running 状態のタスク数を取得
-pub fn Scheduler::running_count(self : Scheduler) -> Int {
+pub fn Scheduler::running_count(self : Scheduler) -> Int32 {
   let mut count = 0
   self.tasks.each(fn(_id, task) {
     match task.state {
@@ -377,11 +377,11 @@ pub fn Scheduler::is_idle(self : Scheduler) -> Bool {
 
 ///|
 /// 完了したタスクをクリーンアップ
-pub fn Scheduler::cleanup(self : Scheduler) -> Int {
+pub fn Scheduler::cleanup(self : Scheduler) -> Int32 {
   let mut removed = 0
 
   // 終了状態のタスクを削除
-  let to_remove : Array[Int] = []
+  let to_remove : Array[Int32] = []
   self.tasks.each(fn(id, task) { if task.is_terminal() { to_remove.push(id) } })
   for id in to_remove {
     self.tasks.remove(id)

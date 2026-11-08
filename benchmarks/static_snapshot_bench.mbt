@@ -66,7 +66,7 @@ fn static_snapshot_topbar(buf : StringBuilder) -> Unit {
 }
 
 ///|
-fn static_snapshot_sidebar(buf : StringBuilder, count : Int) -> Unit {
+fn static_snapshot_sidebar(buf : StringBuilder, count : Int32) -> Unit {
   buf.write_string(
     "<nav class=\"sidebar\" aria-label=\"Reference navigation\">",
   )
@@ -81,7 +81,7 @@ fn static_snapshot_sidebar(buf : StringBuilder, count : Int) -> Unit {
 }
 
 ///|
-fn static_snapshot_article(buf : StringBuilder, sections : Int) -> Unit {
+fn static_snapshot_article(buf : StringBuilder, sections : Int32) -> Unit {
   buf.write_string("<main>")
   buf.write_string(
     "<div class=\"crumbs\">Docs / Web platform / Static snapshot</div>",
@@ -129,7 +129,7 @@ fn static_snapshot_article(buf : StringBuilder, sections : Int) -> Unit {
 }
 
 ///|
-fn static_snapshot_related(buf : StringBuilder, count : Int) -> Unit {
+fn static_snapshot_related(buf : StringBuilder, count : Int32) -> Unit {
   buf.write_string("<aside class=\"related\" aria-label=\"Related pages\">")
   for i = 0; i < count; i = i + 1 {
     buf.write_string("<section class=\"card\"><strong>Related ")
@@ -143,9 +143,9 @@ fn static_snapshot_related(buf : StringBuilder, count : Int) -> Unit {
 
 ///|
 fn static_snapshot_html(
-  nav_items : Int,
-  sections : Int,
-  related_items : Int,
+  nav_items : Int32,
+  sections : Int32,
+  related_items : Int32,
 ) -> String {
   let buf = StringBuilder()
   static_snapshot_head(buf)
@@ -188,8 +188,8 @@ extern "js" fn js_load_real_world_snapshot_html(name : String) -> String =
 ///|
 extern "js" fn js_trim_static_html_for_viewport(
   html : String,
-  body_budget : Int,
-  main_budget : Int,
+  body_budget : Int32,
+  main_budget : Int32,
 ) -> String =
   #| (html, bodyBudget, mainBudget) => {
   #|   const bodyMatch = /<body\b[^>]*>/i.exec(html);
@@ -220,7 +220,7 @@ fn static_snapshot_mdn_trimmed_html() -> String {
 }
 
 ///|
-fn static_snapshot_mdn_trimmed_with_main_budget(main_budget : Int) -> String {
+fn static_snapshot_mdn_trimmed_with_main_budget(main_budget : Int32) -> String {
   js_trim_static_html_for_viewport(
     static_snapshot_mdn_full_html(),
     1000,
@@ -229,7 +229,7 @@ fn static_snapshot_mdn_trimmed_with_main_budget(main_budget : Int) -> String {
 }
 
 ///|
-fn static_snapshot_mdn_node_for_main_budget(main_budget : Int) -> @tree.Node {
+fn static_snapshot_mdn_node_for_main_budget(main_budget : Int32) -> @tree.Node {
   let doc = @html.parse_document(
     static_snapshot_mdn_trimmed_with_main_budget(main_budget),
   )
@@ -250,7 +250,7 @@ fn static_snapshot_scale_shell(inner : String) -> String {
 }
 
 ///|
-fn static_snapshot_long_paragraph_html(words : Int) -> String {
+fn static_snapshot_long_paragraph_html(words : Int32) -> String {
   let buf = StringBuilder()
   buf.write_string("<p>")
   for i = 0; i < words; i = i + 1 {
@@ -263,7 +263,7 @@ fn static_snapshot_long_paragraph_html(words : Int) -> String {
 }
 
 ///|
-fn static_snapshot_inline_links_html(count : Int) -> String {
+fn static_snapshot_inline_links_html(count : Int32) -> String {
   let buf = StringBuilder()
   buf.write_string("<p class=\"links\">")
   for i = 0; i < count; i = i + 1 {
@@ -278,7 +278,7 @@ fn static_snapshot_inline_links_html(count : Int) -> String {
 }
 
 ///|
-fn static_snapshot_block_paragraphs_html(count : Int) -> String {
+fn static_snapshot_block_paragraphs_html(count : Int32) -> String {
   let buf = StringBuilder()
   for i = 0; i < count; i = i + 1 {
     buf.write_string("<p>Paragraph ")
@@ -316,7 +316,7 @@ fn static_snapshot_inline_measure(
 }
 
 ///|
-fn static_snapshot_pathological_whitespace_nodes(count : Int) -> @tree.Node {
+fn static_snapshot_pathological_whitespace_nodes(count : Int32) -> @tree.Node {
   let default_style = @style.Style::default()
   let inline_style = { ..default_style, display: @types.Inline, }
   let space_measure = static_snapshot_inline_measure(0.0, 20.0)
@@ -337,7 +337,7 @@ fn static_snapshot_pathological_whitespace_nodes(count : Int) -> @tree.Node {
 fn bench_static_snapshot_node_build_mdn_main(
   b : @bench.T,
   name : String,
-  main_budget : Int,
+  main_budget : Int32,
 ) -> Unit {
   let doc = @html.parse_document(
     static_snapshot_mdn_trimmed_with_main_budget(main_budget),
@@ -375,7 +375,7 @@ fn bench_static_snapshot_layout_html(
 fn bench_static_snapshot_layout_mdn_main(
   b : @bench.T,
   name : String,
-  main_budget : Int,
+  main_budget : Int32,
 ) -> Unit {
   bench_static_snapshot_layout_node(
     b,

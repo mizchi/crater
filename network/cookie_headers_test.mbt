@@ -1,6 +1,6 @@
 ///|
 test "network formats Set-Cookie header attributes" {
-  let header = synthetic_network_format_set_cookie_header({
+  let header = @crater-network.synthetic_network_format_set_cookie_header({
     "name": Json::string("sid"),
     "value": Json::string("abc"),
     "path": Json::string("/app"),
@@ -20,7 +20,7 @@ test "network formats Set-Cookie header attributes" {
 ///|
 test "network formats unknown SameSite casing without changing input" {
   inspect(
-    synthetic_network_format_set_cookie_header({
+    @crater-network.synthetic_network_format_set_cookie_header({
       "name": Json::string("sid"),
       "value": Json::string("abc"),
       "sameSite": Json::string("Custom"),
@@ -32,7 +32,7 @@ test "network formats unknown SameSite casing without changing input" {
 ///|
 test "network parses Set-Cookie header value" {
   let cookie = match
-    synthetic_network_parse_set_cookie_header_value(
+    @crater-network.synthetic_network_parse_set_cookie_header_value(
       "sid=abc; Domain=.Example.test; Path=/app; SameSite=Lax; Max-Age=60; HttpOnly; Secure",
       "https://origin.test/page", 1000,
     ) {
@@ -56,12 +56,14 @@ test "network parses Set-Cookie header value" {
 ///|
 test "network extracts Set-Cookie entries from header array" {
   let headers = [
-    synthetic_network_header_string_entry("Content-Type", "text/plain"),
-    synthetic_network_header_string_entry(
+    @crater-network.synthetic_network_header_string_entry(
+      "Content-Type", "text/plain",
+    ),
+    @crater-network.synthetic_network_header_string_entry(
       "Set-Cookie", "token=one; Path=/; SameSite=None",
     ),
   ]
-  let cookies = synthetic_network_extract_set_cookie_entries(
+  let cookies = @crater-network.synthetic_network_extract_set_cookie_entries(
     headers, "data:text/html,#domain=alt&subdomain=app", 2000,
   )
   inspect(cookies.length(), content="1")
@@ -73,7 +75,7 @@ test "network extracts Set-Cookie entries from header array" {
 ///|
 test "network parses document cookie assignment with webdriver defaults" {
   let cookie = match
-    synthetic_network_parse_document_cookie_assignment(
+    @crater-network.synthetic_network_parse_document_cookie_assignment(
       "token=xyz; Domain=.Example.test; Path=/app; SameSite=None; Max-Age=60; HttpOnly; Secure",
       "https://origin.test/page", "/default", 1000,
     ) {
@@ -97,7 +99,7 @@ test "network parses document cookie assignment with webdriver defaults" {
 ///|
 test "network parses document cookie assignment default domain path and samesite" {
   let cookie = match
-    synthetic_network_parse_document_cookie_assignment(
+    @crater-network.synthetic_network_parse_document_cookie_assignment(
       "token=xyz", "data:text/html,#domain=alt&subdomain=app", "/webdriver/tests/support",
       2000,
     ) {
@@ -117,7 +119,7 @@ test "network parses document cookie assignment default domain path and samesite
 ///|
 test "network rejects document cookie assignment without name separator" {
   match
-    synthetic_network_parse_document_cookie_assignment(
+    @crater-network.synthetic_network_parse_document_cookie_assignment(
       "token", "https://origin.test/page", "/", 0,
     ) {
     Some(_) => fail("expected invalid document cookie assignment")
@@ -128,7 +130,7 @@ test "network rejects document cookie assignment without name separator" {
 ///|
 test "network normalizes set cookie override entry" {
   let normalized = match
-    synthetic_network_normalize_set_cookie_override_entry(
+    @crater-network.synthetic_network_normalize_set_cookie_override_entry(
       {
         "domain": Json::string(".Example.test"),
         "path": Json::string("/app"),
@@ -162,7 +164,7 @@ test "network normalizes set cookie override entry" {
 ///|
 test "network rejects invalid set cookie override sameSite" {
   match
-    synthetic_network_normalize_set_cookie_override_entry(
+    @crater-network.synthetic_network_normalize_set_cookie_override_entry(
       { "sameSite": Json::string("wide") },
       "token",
       "xyz",
@@ -177,7 +179,7 @@ test "network rejects invalid set cookie override sameSite" {
 ///|
 test "network rejects unsafe set cookie override maxAge" {
   match
-    synthetic_network_normalize_set_cookie_override_entry(
+    @crater-network.synthetic_network_normalize_set_cookie_override_entry(
       { "maxAge": Json::number(1.5) },
       "token",
       "xyz",
@@ -192,7 +194,7 @@ test "network rejects unsafe set cookie override maxAge" {
 ///|
 test "network normalizes request cookie entries" {
   let normalized = match
-    synthetic_network_normalize_request_cookie_entries(
+    @crater-network.synthetic_network_normalize_request_cookie_entries(
       Some(
         Json::array([
           Json::object({
@@ -219,7 +221,7 @@ test "network normalizes request cookie entries" {
 ///|
 test "network treats missing request cookie entries as disabled" {
   let normalized = match
-    synthetic_network_normalize_request_cookie_entries(None) {
+    @crater-network.synthetic_network_normalize_request_cookie_entries(None) {
     Ok(normalized) => normalized
     Err(message) => fail("unexpected request cookie error: " + message)
   }
@@ -230,7 +232,7 @@ test "network treats missing request cookie entries as disabled" {
 ///|
 test "network rejects invalid request cookie value type" {
   match
-    synthetic_network_normalize_request_cookie_entries(
+    @crater-network.synthetic_network_normalize_request_cookie_entries(
       Some(
         Json::array([
           Json::object({

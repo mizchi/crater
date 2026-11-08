@@ -1,13 +1,13 @@
 ///|
 test "paint model re-exports paint node types" {
-  let node = PaintNode::new(
+  let node = @model.PaintNode::new(
     "root",
     "div",
     0.0,
     0.0,
     120.0,
     50.0,
-    PaintProperties::default(),
+    @model.PaintProperties::default(),
     [],
     text=Some("hello"),
   )
@@ -24,7 +24,7 @@ test "paint properties carry text layout spacing" {
   style.line_height = 18.0
   style.letter_spacing = 1.5
   style.word_spacing = 3.0
-  let paint = PaintProperties::from_style(style)
+  let paint = @model.PaintProperties::from_style(style)
   inspect(paint.font_size, content="12")
   inspect(paint.line_height, content="18")
   inspect(paint.letter_spacing, content="1.5")

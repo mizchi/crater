@@ -422,7 +422,7 @@ extern "js" fn quickjs_fetch_and_load(url : String) -> @core.Any =
 /// FFI: Evaluate expression and send result via WebSocket
 extern "js" fn quickjs_eval_and_send_ws(
   socket : @core.Any,
-  request_id : Int,
+  request_id : Int32,
   expression : String,
   ctx_id : String,
 ) -> Unit =
@@ -617,7 +617,7 @@ pub fn quickjs_eval_async(
 /// Evaluate expression and send result via WebSocket
 pub fn quickjs_eval_ws(
   socket : @core.Any,
-  request_id : Int,
+  request_id : Int32,
   expression : String,
   ctx_id : String,
 ) -> Unit {

@@ -33,7 +33,7 @@ pub fn Executor::new() -> Executor {
 
 ///|
 /// Create executor with custom viewport (viewport info stored but not used in pure protocol mode)
-pub fn Executor::new_with_viewport(_width : Int, _height : Int) -> Executor {
+pub fn Executor::new_with_viewport(_width : Int32, _height : Int32) -> Executor {
   {
     manager: CdpSessionManager::new(),
     logging_enabled: false,

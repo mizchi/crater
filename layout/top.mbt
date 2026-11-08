@@ -98,7 +98,7 @@ pub fn reset_intrinsic_cache() -> Unit {
 
 ///|
 /// Clear intrinsic cache for a specific node uid.
-pub fn clear_intrinsic_cache_for_node(uid : Int) -> Unit {
+pub fn clear_intrinsic_cache_for_node(uid : Int32) -> Unit {
   @dispatch.clear_intrinsic_cache_for_node(uid)
 }
 

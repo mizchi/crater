@@ -1,7 +1,7 @@
 ///|
 fn BidiProtocol::handle_script_get_element_for_test(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match self.resolve_script_get_element_for_test(request_id, params) {
@@ -13,7 +13,7 @@ fn BidiProtocol::handle_script_get_element_for_test(
 ///|
 fn BidiProtocol::handle_script_prepare_loaded_static_test_page(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match
@@ -47,7 +47,7 @@ fn BidiProtocol::handle_script_prepare_loaded_static_test_page(
 ///|
 fn BidiProtocol::handle_script_load_static_test_page_for_test(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match self.resolve_script_load_static_test_page_for_test(request_id, params) {
@@ -105,7 +105,7 @@ fn BidiProtocol::handle_script_load_static_test_page_for_test(
 ///|
 fn BidiProtocol::resolve_script_get_element_for_test(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Json? {
   let map = match params {
@@ -160,7 +160,7 @@ fn BidiProtocol::resolve_script_get_element_for_test(
 ///|
 fn BidiProtocol::resolve_script_prepare_loaded_static_test_page(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> (String, String, String, Array[String])? {
   let map = match params {
@@ -258,7 +258,7 @@ fn BidiProtocol::resolve_script_prepare_loaded_static_test_page(
 ///|
 fn BidiProtocol::resolve_script_load_static_test_page_for_test(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> (String, String, String)? {
   let map = match params {
@@ -309,7 +309,7 @@ fn BidiProtocol::resolve_script_load_static_test_page_for_test(
 ///|
 fn BidiProtocol::resolve_test_script_context_runtime(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> (String, String, String)? {
   let map = match params {
@@ -364,7 +364,7 @@ fn BidiProtocol::resolve_test_script_context_runtime(
 ///|
 fn BidiProtocol::handle_script_create_iframe_context_for_test(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match self.resolve_script_create_iframe_context_result(request_id, params) {
@@ -376,7 +376,7 @@ fn BidiProtocol::handle_script_create_iframe_context_for_test(
 ///|
 fn BidiProtocol::handle_script_create_iframe_context_id_for_test(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match self.resolve_script_create_iframe_context_result(request_id, params) {
@@ -396,7 +396,7 @@ fn BidiProtocol::handle_script_create_iframe_context_id_for_test(
 ///|
 fn BidiProtocol::resolve_script_create_iframe_context_result(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Json? {
   match self.resolve_script_create_iframe_context_for_test(request_id, params) {
@@ -438,7 +438,7 @@ fn BidiProtocol::resolve_script_create_iframe_context_result(
 ///|
 fn BidiProtocol::resolve_script_create_iframe_context_for_test(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> (String, String)? {
   let map = match params {
@@ -610,7 +610,7 @@ fn BidiProtocol::run_page_specific_test_setup(
 ///|
 fn BidiProtocol::handle_script_setup_beforeunload_page_for_test(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match self.resolve_test_script_context_runtime(request_id, params) {
@@ -625,7 +625,7 @@ fn BidiProtocol::handle_script_setup_beforeunload_page_for_test(
 ///|
 fn BidiProtocol::handle_script_prepare_beforeunload_page_for_test(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   self.handle_script_prepare_beforeunload_page_for_test_internal(
@@ -636,7 +636,7 @@ fn BidiProtocol::handle_script_prepare_beforeunload_page_for_test(
 ///|
 fn BidiProtocol::handle_script_prepare_beforeunload_page_url_for_test(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   self.handle_script_prepare_beforeunload_page_for_test_internal(
@@ -647,7 +647,7 @@ fn BidiProtocol::handle_script_prepare_beforeunload_page_url_for_test(
 ///|
 fn BidiProtocol::handle_script_prepare_beforeunload_page_for_test_internal(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
   return_url_only : Bool,
 ) -> Unit {
@@ -792,7 +792,7 @@ fn BidiProtocol::handle_script_prepare_beforeunload_page_for_test_internal(
 ///|
 fn BidiProtocol::resolve_script_prepare_beforeunload_page_for_test(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> (String, String)? {
   let map = match params {
@@ -837,7 +837,7 @@ fn BidiProtocol::resolve_script_prepare_beforeunload_page_for_test(
 ///|
 fn BidiProtocol::handle_script_sync_document_cookies_for_test(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   match self.resolve_test_script_context_runtime(request_id, params) {
@@ -864,7 +864,7 @@ fn BidiProtocol::sync_document_cookies_for_test_context(
   self : BidiProtocol,
   ctx_id : String,
   runtime_ctx_id : String,
-) -> (String, Int) {
+) -> (String, Int32) {
   set_runtime_context(runtime_ctx_id)
   set_runtime_context_frames(
     runtime_ctx_id,
@@ -906,7 +906,7 @@ fn BidiProtocol::sync_document_cookies_for_test_context(
 ///|
 fn BidiProtocol::handle_script_fetch_for_test(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map = match params {
@@ -1346,7 +1346,7 @@ fn synthetic_fetch_json_text_value(raw_value : Json) -> String {
 ///|
 fn BidiProtocol::handle_script_fetch_from_context_for_test(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit {
   let map = match params {
@@ -1442,7 +1442,7 @@ fn BidiProtocol::handle_script_fetch_from_context_for_test(
 ///|
 fn BidiProtocol::send_script_fetch_from_context_for_test(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   ctx_id : String,
   realm_id : String,
   runtime_ctx_id : String,
@@ -1451,7 +1451,7 @@ fn BidiProtocol::send_script_fetch_from_context_for_test(
   headers_json : String,
   post_data_json : String,
   post_data_mode : String,
-  timeout_ms : Int,
+  timeout_ms : Int32,
 ) -> Unit {
   set_runtime_context(runtime_ctx_id)
   set_runtime_context_frames(
@@ -1935,7 +1935,7 @@ extern "js" fn js_fetch_from_context_for_test_expression(
   headers_json : String,
   post_data_json : String,
   post_data_mode : String,
-  timeout_ms : Int,
+  timeout_ms : Int32,
 ) -> String =
   #| (url, requestMethod, headersJson, postDataJson, postDataMode, timeoutMs) => {
   #|   const quoted = JSON.stringify;

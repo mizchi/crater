@@ -47,7 +47,7 @@ fn BidiProtocol::dispatch_web_extension(
 ///|
 fn BidiProtocol::resolve_web_extension_install(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> String? {
   let map = match params {
@@ -201,7 +201,7 @@ fn BidiProtocol::resolve_web_extension_install(
 ///|
 fn BidiProtocol::validate_web_extension_path_value(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   data_type : String,
   extension_path : String,
 ) -> String? {
@@ -273,7 +273,7 @@ fn BidiProtocol::install_web_extension_entry(
 ///|
 fn BidiProtocol::resolve_web_extension_uninstall(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   params : Json?,
 ) -> Unit? {
   let map = match params {

@@ -7,8 +7,8 @@
 ///|
 /// Global state for context management
 priv struct RuntimeState {
-  mut counter : Int
-  contexts : Map[Int, @dom.DomTree]
+  mut counter : Int32
+  contexts : Map[Int32, @dom.DomTree]
   mut initialized : Bool
 }
 
@@ -22,7 +22,7 @@ let runtime_state : RuntimeState = {
 
 ///|
 /// Allocate a stable runtime context id
-fn allocate_runtime_context_id() -> Int {
+fn allocate_runtime_context_id() -> Int32 {
   let id = runtime_state.counter
   runtime_state.counter = runtime_state.counter + 1
   id
@@ -30,14 +30,14 @@ fn allocate_runtime_context_id() -> Int {
 
 ///|
 /// Update DomTree mapping for an existing context id
-fn update_context(id : Int, dom : @dom.DomTree) -> Unit {
+fn update_context(id : Int32, dom : @dom.DomTree) -> Unit {
   runtime_state.contexts.set(id, dom)
 }
 
 ///|
 /// QuickJS runtime implementation
 priv struct QuickJsRuntime {
-  _unused : Int
+  _unused : Int32
 }
 
 ///|
@@ -62,7 +62,7 @@ impl JsRuntime for QuickJsRuntime with fn init(self : QuickJsRuntime) -> Unit {
 ///|
 impl JsRuntime for QuickJsRuntime with fn execute(
   self : QuickJsRuntime,
-  context_id : Int,
+  context_id : Int32,
   dom : @dom.DomTree,
   code : String,
   async_mode : AsyncExecutionMode,
@@ -95,7 +95,7 @@ impl JsRuntime for QuickJsRuntime with fn execute(
 ///|
 impl JsRuntime for QuickJsRuntime with fn tick(
   self : QuickJsRuntime,
-  context_id : Int,
+  context_id : Int32,
   dom : @dom.DomTree,
 ) -> JsResult raise JsError {
   let _ = self

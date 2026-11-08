@@ -22,7 +22,7 @@ test "block_basic" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.width, content="50")
   inspect(layout.height, content="20")
   inspect(layout.children[0].x, content="0")
@@ -63,7 +63,7 @@ test "block_border_fixed_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.width, content="50")
   inspect(layout.height, content="50")
   inspect(layout.children[0].x, content="8")
@@ -103,7 +103,7 @@ test "block_margin_x_fixed_size_positive" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.width, content="50")
   inspect(layout.height, content="20")
   inspect(layout.children[0].x, content="10")
@@ -144,7 +144,7 @@ test "block_padding_fixed_size" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.width, content="50")
   inspect(layout.height, content="50")
   inspect(layout.children[0].x, content="8")
@@ -192,7 +192,7 @@ test "block_nested" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.width, content="100")
   inspect(layout.height, content="50")
   inspect(layout.children[0].x, content="10")
@@ -243,7 +243,7 @@ test "block_card_like_nested_body_stacks_simple_block_children" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(card, ctx, default_dispatch())
+  let layout = @block.compute(card, ctx, default_dispatch())
   inspect(layout.width, content="240")
   inspect(layout.height, content="80")
   inspect(layout.children[0].x, content="0")
@@ -300,7 +300,7 @@ test "block_leaf_fixed_height_percent_width_keeps_box_model" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.children[0].x, content="4")
   inspect(layout.children[0].y, content="0")
   inspect(layout.children[0].width, content="71")
@@ -333,7 +333,7 @@ test "block_percentage_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.children[0].width, content="50")
   inspect(layout.children[0].height, content="20")
 }
@@ -362,7 +362,7 @@ test "block_percentage_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.children[0].width, content="20")
   inspect(layout.children[0].height, content="50")
 }
@@ -397,7 +397,7 @@ test "block_max_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.children[0].width, content="100")
   inspect(layout.children[1].width, content="200")
 }
@@ -427,7 +427,7 @@ test "block_min_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.children[0].width, content="100")
 }
 
@@ -456,7 +456,7 @@ test "block_max_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.children[0].height, content="80")
 }
 
@@ -485,7 +485,7 @@ test "block_min_height" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.children[0].height, content="60")
 }
 
@@ -525,7 +525,7 @@ test "block_margin_collapse_siblings" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.height, content="70")
   inspect(layout.children[0].y, content="0")
   inspect(layout.children[0].height, content="20")
@@ -559,7 +559,7 @@ test "block_percentage_padding" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.children[0].padding.left, content="20")
   inspect(layout.children[0].padding.right, content="20")
   inspect(layout.children[0].padding.top, content="20")
@@ -594,7 +594,7 @@ test "block_percentage_margin_vertical" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.children[0].margin.top, content="20")
   inspect(layout.children[0].margin.bottom, content="10")
   inspect(layout.children[0].y, content="20")
@@ -629,7 +629,7 @@ test "block_bfc_with_single_collapse_through_child_counts_collapsed_margin_once"
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.height, content="30")
 }
 
@@ -655,7 +655,7 @@ test "block_float_supported" {
     stretch_width: false,
     stretch_height: false,
   }
-  let result = compute_with_warnings(root, ctx, default_dispatch())
+  let result = @block.compute_with_warnings(root, ctx, default_dispatch())
 
   // CssFloat is laid out correctly
   inspect(result.layout.children[0].width, content="50")
@@ -709,7 +709,7 @@ test "block_flow_root_is_pushed_below_float_stack_when_tall" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   let flow_root_layout = layout.children[3]
   inspect(flow_root_layout.y, content="200")
   inspect(layout.height, content="370")
@@ -759,7 +759,7 @@ test "block_flow_root_stays_at_top_when_short_enough_between_floats" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   let flow_root_layout = layout.children[3]
   inspect(flow_root_layout.y, content="0")
   inspect(layout.height, content="24")
@@ -809,7 +809,7 @@ test "block_align_content_start_establishes_bfc_against_outer_floats" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   let aligned_layout = layout.children[3]
   inspect(aligned_layout.y, content="200")
   inspect(layout.height, content="370")
@@ -842,7 +842,7 @@ test "block_align_content_center_offsets_single_child_in_content_box" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.children[0].y, content="14.4")
 }
 
@@ -877,7 +877,7 @@ test "block_non_bfc_wrapper_propagates_float_intrusion_to_nested_float_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   let container_layout = layout.children[1]
   let wrapper_layout = container_layout.children[0]
   let inner_float_layout = wrapper_layout.children[0]
@@ -911,7 +911,7 @@ test "block_auto_height_ignores_explicit_zero_height_overflow_wrapper_descendant
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.height, content="0")
   inspect(layout.children[0].height, content="0")
 }
@@ -953,7 +953,7 @@ test "block_flow_root_zero_width_avoids_float_overlap_with_inline_offset" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   let flow_root_layout = layout.children[2]
   inspect(flow_root_layout.x, content="250")
   inspect(flow_root_layout.y, content="100")
@@ -997,7 +997,7 @@ test "block_first_inflow_child_clear_left_starts_below_left_float" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   let cleared_layout = layout.children[2]
   inspect(cleared_layout.y, content="80")
 }
@@ -1053,7 +1053,7 @@ test "block_float_after_inline_run_flushes_previous_line_progress" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.children[1].y, content="30")
   inspect(layout.children[3].y, content="70")
   inspect(layout.height, content="120")
@@ -1090,7 +1090,7 @@ test "block_absolute_positioning_works" {
     stretch_width: false,
     stretch_height: false,
   }
-  let result = compute_with_warnings(root, ctx, default_dispatch())
+  let result = @block.compute_with_warnings(root, ctx, default_dispatch())
 
   // No warnings for absolute positioning now
   inspect(result.warnings.length(), content="0")
@@ -1129,7 +1129,7 @@ test "block_display_none" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
 
   // Root height should be 20px (10 + 10), not 30px
   // display:none child should not contribute to layout
@@ -1171,7 +1171,7 @@ test "block_auto_width_fills_parent" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
 
   // Child with auto width should fill parent width
   inspect(layout.children[0].width, content="200")
@@ -1196,7 +1196,7 @@ test "block_multiple_children_stacking" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
 
   // Total height should be 100px (5 * 20)
   inspect(layout.height, content="100")
@@ -1233,7 +1233,7 @@ test "block_percentage_nested" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
 
   // Child = 200 * 0.5 = 100
   inspect(layout.children[0].width, content="100")
@@ -1272,7 +1272,7 @@ test "block_border_and_padding_combined" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
 
   // Child x = border.left + padding.left = 2 + 5 = 7
   // Child y = border.top + padding.top = 3 + 10 = 13
@@ -1343,7 +1343,7 @@ test "block_margin_collapse_blocked_by_padding" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
 
   // child1: y=0, height=10
   // margin collapse: max(10, 10) = 10
@@ -1383,7 +1383,7 @@ test "block_min_width_percentage" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
 
   // Child min-width = 200 * 0.6 = 120 > 50
   inspect(layout.children[0].width, content="120")
@@ -1416,7 +1416,7 @@ test "block_max_width_percentage" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
 
   // Child max-width = 200 * 0.3 = 60
   // width: auto would be 200, but capped at 60
@@ -1451,7 +1451,7 @@ test "block_percentage_height_nested" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
 
   // Child height = 200 * 0.5 = 100
   inspect(layout.children[0].height, content="100")
@@ -1492,7 +1492,7 @@ test "block_multiple_display_none" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
 
   // Only visible children contribute to height: 20 + 30 = 50
   inspect(layout.height, content="50")
@@ -1565,7 +1565,7 @@ test "block_deeply_nested" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
 
   // Total height = 10 + (10 + (5 + (3 + (2 + 10 + 2) + 3) + 5) + 10)
   // = 10 + 10 + 5 + 3 + 2 + 10 + 2 + 3 + 5 + 10 + 10 = 50
@@ -1623,7 +1623,7 @@ test "inline_block_shrink_to_fit" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
 
   // The inline-block should shrink to fit its content
   // Width should be: child width (50) + padding (10+10) = 70
@@ -1667,7 +1667,7 @@ test "inline_block_shrink_to_fit_percent_max_width_min_content" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   let inline_block_layout = layout.children[0]
   let canvas_layout = inline_block_layout.children[0]
   inspect(inline_block_layout.width, content="0")
@@ -1706,7 +1706,7 @@ test "min_content_vertical_child_percent_max_block_size_not_zero" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   let canvas_layout = layout.children[0]
   inspect(layout.width, content="200")
   inspect(canvas_layout.width, content="100")
@@ -1742,7 +1742,7 @@ test "min_content_vertical_auto_child_percent_max_block_size_keeps_ratio" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   let canvas_layout = layout.children[0]
   inspect(layout.width, content="200")
   inspect(layout.height, content="100")
@@ -1774,7 +1774,7 @@ test "vertical_auto_block_uses_block_extent_for_width_and_cross_extent_for_heigh
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.width, content="200")
   inspect(layout.height, content="40")
 }
@@ -1824,7 +1824,7 @@ test "vertical_auto_block_with_table_children_uses_block_extent" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.width, content="432")
   inspect(layout.height, content="66")
 }
@@ -1883,7 +1883,7 @@ test "vertical_auto_block_with_percent_replaced_descendant_fills_available_heigh
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.height, content="600")
   inspect(layout.children[0].height, content="600")
 }
@@ -1930,7 +1930,7 @@ test "anonymous_block_basic" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   // Check root dimensions
   inspect(layout.width, content="200")
   // Children should be stacked vertically:
@@ -1999,7 +1999,7 @@ test "anonymous_block_multiple_inline_in_group" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   // All three inline elements should be on the same line (y=0)
   // They fit within 200px: 30 + 40 + 20 = 90
   inspect(layout.children[0].y, content="0")
@@ -2040,7 +2040,7 @@ test "anonymous_block_respects_justify_items_end_alignment" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.children[0].x, content="100")
   inspect(layout.children[1].x, content="200")
   inspect(layout.children[1].width, content="0")
@@ -2089,7 +2089,7 @@ test "anonymous_block_mixed_does_not_stretch_auto_height_flex" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
 
   // Inline group should remain 16px, flex container should honor min-height:100
   // instead of stretching to available_height.
@@ -2144,7 +2144,7 @@ test "float_flex_wrap_reverse_align_start" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
 
   // Get flex container layout
   let flex_layout = layout.children[0]
@@ -2213,7 +2213,7 @@ test "nonfloat_flex_wrap_reverse_align_start" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
 
   // Get flex container layout
   let flex_layout = layout.children[0]
@@ -2380,7 +2380,7 @@ test "percent_height_with_indefinite_parent_and_max_height_clamps" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.height, content="100")
   inspect(layout.children[0].height, content="100")
   inspect(layout.children[0].children[0].height, content="100")
@@ -2394,7 +2394,7 @@ test "percent_height_with_indefinite_parent_and_max_height_clamps" {
     stretch_width: false,
     stretch_height: false,
   }
-  let min_layout = compute(root, min_ctx, default_dispatch())
+  let min_layout = @block.compute(root, min_ctx, default_dispatch())
   inspect(min_layout.height, content="100")
 
   let max_ctx : @layout_types.LayoutContext = {
@@ -2406,7 +2406,7 @@ test "percent_height_with_indefinite_parent_and_max_height_clamps" {
     stretch_width: false,
     stretch_height: false,
   }
-  let max_layout = compute(root, max_ctx, default_dispatch())
+  let max_layout = @block.compute(root, max_ctx, default_dispatch())
   inspect(max_layout.height, content="100")
 }
 
@@ -2441,7 +2441,7 @@ test "block_contain_size_auto_height_ignores_child_content" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   // Child layout is still produced, but auto height is sized as if empty.
   inspect(layout.height, content="4")
 }
@@ -2485,7 +2485,7 @@ test "inline_block_contain_size_ifc_auto_height_ignores_child_content" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.height, content="4")
 }
 
@@ -2526,7 +2526,7 @@ test "block_ifc_contain_size_with_aspect_ratio_uses_width" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.height, content="100")
 }
 
@@ -2569,7 +2569,7 @@ test "block_leaf_measure_contain_size_min_content_uses_border_box_only" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(node, ctx, default_dispatch())
+  let layout = @block.compute(node, ctx, default_dispatch())
   inspect(layout.width, content="6")
   inspect(layout.height, content="6")
 }
@@ -2613,7 +2613,7 @@ test "block_leaf_measure_contain_size_auto_uses_border_box_only" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(node, ctx, default_dispatch())
+  let layout = @block.compute(node, ctx, default_dispatch())
   inspect(layout.width, content="6")
   inspect(layout.height, content="6")
 }
@@ -2649,7 +2649,7 @@ test "block_overflow_alignment_start_in_rtl_shifts_inline_to_right_edge" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.children[0].x, content="-48")
   inspect(layout.children[0].y, content="0")
 }
@@ -2686,7 +2686,7 @@ test "block_overflow_alignment_start_in_vertical_rl_rtl_shifts_both_axes" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.children[0].x, content="-48")
   inspect(layout.children[0].y, content="-48")
 }
@@ -2720,7 +2720,7 @@ test "auto_height_parent_ignores_clipped_descendant_overflow" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.height, content="100")
   inspect(layout.children[0].height, content="100")
 }
@@ -2757,7 +2757,7 @@ test "block_overflow_alignment_center_defaults_to_safe_start_when_overflowing" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.children[0].x, content="0")
   inspect(layout.children[0].y, content="0")
 }
@@ -2794,7 +2794,7 @@ test "block_overflow_alignment_unsafe_center_keeps_center_when_overflowing" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.children[0].x, content="0")
   inspect(layout.children[0].y, content="-24")
 }
@@ -2834,7 +2834,7 @@ test "multicol_with_column_count_one_flows_additional_columns_horizontally" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.children[0].x, content="0")
   inspect(layout.children[0].y, content="0")
   inspect(layout.children[1].x, content="100")
@@ -2914,7 +2914,7 @@ test "multicol_inline_br_keeps_inline_advance_and_flows_next_column" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.children[1].x, content="96")
   inspect(layout.children[1].y, content="0")
   inspect(layout.children[6].x, content="140")
@@ -2964,7 +2964,7 @@ test "fieldset_multicol_fragments_non_legend_child" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.children[1].width, content="116.66666666666666")
   inspect(layout.children[1].height, content="50")
 }
@@ -3016,7 +3016,7 @@ test "multicol_fragmented_block_reflows_nested_children_across_columns" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.children[0].children[0].x, content="0")
   inspect(layout.children[0].children[0].y, content="0")
   inspect(layout.children[0].children[1].x, content="0")
@@ -3072,7 +3072,7 @@ test "multicol_display_contents_uses_descendant_height_for_column_flow" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.children[1].y, content="48")
   inspect(layout.children[2].x, content="100")
   inspect(layout.children[2].y, content="4")
@@ -3140,7 +3140,7 @@ test "multicol_balance_moves_third_display_contents_item_to_next_column" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.children[0].x, content="0")
   inspect(layout.children[1].x, content="0")
   inspect(layout.children[2].x, content="408")
@@ -3197,7 +3197,7 @@ test "multicol_single_display_contents_child_uses_descendant_flow_items" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   inspect(layout.children.length(), content="1")
   inspect(layout.children[0].width, content="0")
   inspect(layout.children[0].height, content="0")
@@ -3239,7 +3239,7 @@ test "empty_inline_with_border_gets_line_height_strut" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   let span = layout.children[0]
   // line-height (19.2) + 1px border top + 1px border bottom; previously 2.0
   inspect(span.height, content="21.2")
@@ -3276,7 +3276,7 @@ test "empty_inline_with_margin_gets_line_height_strut" {
     stretch_width: false,
     stretch_height: false,
   }
-  let layout = compute(root, ctx, default_dispatch())
+  let layout = @block.compute(root, ctx, default_dispatch())
   // No border/padding, so the border-box height is exactly the line-height.
   inspect(layout.children[0].height, content="19.2")
 }

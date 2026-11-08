@@ -8,11 +8,11 @@ import {
 }
 
 // Values
-pub fn add_node(@tree.LayoutTree, String, Int, @tree.LayoutNode) -> Bool
+pub fn add_node(@tree.LayoutTree, String, Int32, @tree.LayoutNode) -> Bool
 
 pub fn apply_css_values(@tree.LayoutNode, @cascade.CascadedValues) -> Bool
 
-pub fn batch_update_styles(@tree.LayoutTree, Array[(String, @cascade.CascadedValues)]) -> Int
+pub fn batch_update_styles(@tree.LayoutTree, Array[(String, @cascade.CascadedValues)]) -> Int32
 
 pub fn layout_node_from_html_element(@html.Element, @cascade.CascadedValues) -> @tree.LayoutNode
 
@@ -26,9 +26,9 @@ pub fn update_node_style(@tree.LayoutTree, String, @cascade.CascadedValues) -> B
 
 // Types and methods
 pub(all) enum TreeChange {
-  AddNode(String, Int, @tree.LayoutNode)
+  AddNode(String, Int32, @tree.LayoutNode)
   RemoveNode(String)
-  MoveNode(String, String, Int)
+  MoveNode(String, String, Int32)
   UpdateStyle(String)
   ReplaceChildren(String, Array[@tree.LayoutNode])
 }

@@ -2,37 +2,37 @@
 package "mizchi/crater-benchmarks"
 
 // Values
-pub fn card_grid(Int) -> String
+pub fn card_grid(Int32) -> String
 
-pub fn chat_messages(Int) -> String
+pub fn chat_messages(Int32) -> String
 
-pub fn dashboard(Int, Int) -> String
+pub fn dashboard(Int32, Int32) -> String
 
-pub fn deep_nesting(Int, Int) -> String
+pub fn deep_nesting(Int32, Int32) -> String
 
-pub fn flex_column(Int) -> String
+pub fn flex_column(Int32) -> String
 
-pub fn flex_nested(Int, Int) -> String
+pub fn flex_nested(Int32, Int32) -> String
 
-pub fn flex_row(Int) -> String
+pub fn flex_row(Int32) -> String
 
-pub fn flex_wrap(Int, Int) -> String
+pub fn flex_wrap(Int32, Int32) -> String
 
-pub fn form_fields(Int) -> String
+pub fn form_fields(Int32) -> String
 
-pub fn grid_explicit(Int, Int, Int) -> String
+pub fn grid_explicit(Int32, Int32, Int32) -> String
 
-pub fn grid_simple(Int, Int) -> String
+pub fn grid_simple(Int32, Int32) -> String
 
-pub fn large_website(Int, Int, Int) -> String
+pub fn large_website(Int32, Int32, Int32) -> String
 
-pub fn nested_depth(Int) -> String
+pub fn nested_depth(Int32) -> String
 
-pub fn scrollable_list(Int, Int) -> String
+pub fn scrollable_list(Int32, Int32) -> String
 
-pub fn simple_flat(Int) -> String
+pub fn simple_flat(Int32) -> String
 
-pub fn table_layout(Int, Int) -> String
+pub fn table_layout(Int32, Int32) -> String
 
 // Errors
 

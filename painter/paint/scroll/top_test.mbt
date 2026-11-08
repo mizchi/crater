@@ -24,7 +24,7 @@ test "paint scroll owns scrollable traversal" {
     @model.PaintProperties::default(),
     [child],
   )
-  let items = collect_scrollable_elements(root)
+  let items = @scroll.collect_scrollable_elements(root)
   inspect(items.length(), content="1")
   inspect(items[0].id, content="child")
 }
@@ -59,7 +59,7 @@ test "paint scroll hit test returns deepest scrollable node" {
     scroll_width=100.0,
     scroll_height=80.0,
   )
-  let hit = find_scrollable_at(root, 20.0, 20.0, 0.0, 0.0)
+  let hit = @scroll.find_scrollable_at(root, 20.0, 20.0, 0.0, 0.0)
   inspect(hit is Some(_), content="true")
   match hit {
     Some(result) => inspect(result.id, content="child")

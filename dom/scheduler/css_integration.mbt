@@ -17,7 +17,7 @@ pub struct StyleManager {
   /// 計算済みスタイル (element id -> cascaded values)
   computed_styles : Map[String, @css.CascadedValues]
   /// スタイルシートのソース順序カウンタ
-  mut source_order : Int
+  mut source_order : Int32
 }
 
 ///|
@@ -137,7 +137,7 @@ fn split_by_semicolon(s : String) -> Array[String] {
 }
 
 ///|
-fn find_colon(s : String) -> Int {
+fn find_colon(s : String) -> Int32 {
   let mut i = 0
   for c in s {
     if c == ':' {
@@ -243,7 +243,7 @@ pub fn StyleManager::on_css_parsed(
 pub(all) struct CSSParseResult {
   stylesheet : @css.Stylesheet
   recompute_task : TaskId?
-  rule_count : Int
+  rule_count : Int32
 }
 
 // =============================================================================
@@ -256,9 +256,9 @@ pub struct DocumentStyleCoordinator {
   scheduler : Scheduler
   style_manager : StyleManager
   /// パース完了したスタイルシートの数
-  mut parsed_stylesheets : Int
+  mut parsed_stylesheets : Int32
   /// 期待されるスタイルシート数
-  mut expected_stylesheets : Int
+  mut expected_stylesheets : Int32
   /// スタイル計算の準備ができているか
   mut ready_for_style : Bool
 }

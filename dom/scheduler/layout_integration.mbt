@@ -15,10 +15,10 @@ pub struct LayoutManager {
   /// 最後のレイアウト結果
   mut last_layout : @layout_types.Layout?
   /// レイアウトパス統計
-  mut full_layout_count : Int
-  mut incremental_layout_count : Int
+  mut full_layout_count : Int32
+  mut incremental_layout_count : Int32
   /// 画像リソースID -> スケジューラタスクID のマッピング
-  image_tasks : Map[Int, TaskId]
+  image_tasks : Map[Int32, TaskId]
 }
 
 ///|
@@ -114,7 +114,7 @@ pub fn LayoutManager::schedule_layout_urgent(self : LayoutManager) -> TaskId {
 /// レイアウト計算を実行 (タスク完了時に呼ばれる)
 pub fn LayoutManager::execute_layout(
   self : LayoutManager,
-  incremental? : Bool = true,
+  incremental~ : Bool = true,
 ) -> LayoutComputeResult {
   match self.layout_tree {
     Some(tree) => {
@@ -160,7 +160,7 @@ pub fn LayoutManager::execute_layout(
 pub(all) struct LayoutComputeResult {
   layout : @layout_types.Layout
   was_incremental : Bool
-  pending_images : Int
+  pending_images : Int32
 }
 
 // =============================================================================
@@ -201,7 +201,7 @@ pub(all) struct ResizeResult {
 /// ノードを dirty としてマーク
 pub fn LayoutManager::mark_node_dirty(
   self : LayoutManager,
-  node_uid : Int,
+  node_uid : Int32,
 ) -> Unit {
   match self.layout_tree {
     Some(tree) => tree.mark_node_dirty(node_uid)
@@ -227,7 +227,7 @@ pub fn LayoutManager::update_node_style(
 pub fn LayoutManager::batch_update_styles(
   self : LayoutManager,
   updates : Array[(String, @css.CascadedValues)],
-) -> Int {
+) -> Int32 {
   match self.layout_tree {
     Some(tree) => @layout_style.batch_update_styles(tree, updates)
     None => 0
@@ -254,9 +254,9 @@ pub fn LayoutManager::schedule_image_decode(
 /// 画像リソースを登録してデコードタスクをスケジュール
 pub fn LayoutManager::register_and_decode_image(
   self : LayoutManager,
-  node_uid : Int,
-  placeholder_width? : Double = 300.0,
-  placeholder_height? : Double = 150.0,
+  node_uid : Int32,
+  placeholder_width~ : Double = 300.0,
+  placeholder_height~ : Double = 150.0,
 ) -> ImageRegistration {
   match self.layout_tree {
     Some(tree) => {
@@ -349,9 +349,9 @@ pub fn LayoutManager::get_stats(self : LayoutManager) -> LayoutStats {
 ///|
 /// レイアウト統計
 pub(all) struct LayoutStats {
-  full_layout_count : Int
-  incremental_layout_count : Int
-  pending_images : Int
+  full_layout_count : Int32
+  incremental_layout_count : Int32
+  pending_images : Int32
 }
 
 // =============================================================================

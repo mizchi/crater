@@ -1,7 +1,7 @@
 ///|
 fn BidiProtocol::normalize_synthetic_network_continue_credentials(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   raw_credentials : Json,
 ) -> @crater_network.SyntheticNetworkContinueCredentials? {
   match
@@ -19,7 +19,7 @@ fn BidiProtocol::normalize_synthetic_network_continue_credentials(
 ///|
 fn BidiProtocol::normalize_synthetic_network_bytes_value(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   raw_value : Json,
   field_name : String,
 ) -> Json? {
@@ -38,7 +38,7 @@ fn BidiProtocol::normalize_synthetic_network_bytes_value(
 ///|
 fn BidiProtocol::synthetic_network_text_from_bytes_value(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   raw_value : Json,
   field_name : String,
 ) -> String? {
@@ -57,7 +57,7 @@ fn BidiProtocol::synthetic_network_text_from_bytes_value(
 ///|
 fn BidiProtocol::synthetic_network_string_from_bytes_value(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   raw_value : Json,
   field_name : String,
 ) -> String? {

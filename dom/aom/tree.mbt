@@ -20,11 +20,11 @@ priv struct TreeBuilderContext {
   // Encapsulating label element (for label wrapping input)
   encapsulating_label : @html.Element?
   // UID counter for generating unique ids
-  mut uid_counter : Int
+  mut uid_counter : Int32
   // Parsed stylesheets for pseudo-element content
   stylesheets : Array[@css.Stylesheet]
   // Ref counter for sequential element refs (ref_1, ref_2, ...)
-  mut ref_counter : Int
+  mut ref_counter : Int32
 }
 
 ///|
@@ -1022,7 +1022,7 @@ fn is_focusable(element : @html.Element, role : Role) -> Bool {
 ///|
 /// Get tabindex value from element
 /// Returns None if no tabindex attribute, Some(n) otherwise
-fn get_tabindex(element : @html.Element) -> Int? {
+fn get_tabindex(element : @html.Element) -> Int32? {
   match element.attributes.get("tabindex") {
     Some(tabindex_str) => {
       let idx = @string.parse_int(tabindex_str) catch { _ => return None }
@@ -1254,7 +1254,7 @@ priv struct LightweightContext {
   element_map : Map[String, @html.Element]
   label_map : Map[String, @html.Element]
   encapsulating_label : @html.Element?
-  mut ref_counter : Int
+  mut ref_counter : Int32
 }
 
 ///|

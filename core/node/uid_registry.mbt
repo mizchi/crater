@@ -18,9 +18,9 @@
 /// unique within the registry (and therefore within any one `LayoutTree` built
 /// from a stabilized tree).
 pub struct UidRegistry {
-  dom_to_uid : Map[Int, Int]
-  anon_to_uid : Map[String, Int]
-  mut next : Int
+  dom_to_uid : Map[Int32, Int32]
+  anon_to_uid : Map[String, Int32]
+  mut next : Int32
 }
 
 ///|
@@ -29,7 +29,7 @@ pub fn UidRegistry::new() -> UidRegistry {
 }
 
 ///|
-fn UidRegistry::alloc(self : UidRegistry) -> Int {
+fn UidRegistry::alloc(self : UidRegistry) -> Int32 {
   let uid = self.next
   self.next = uid + 1
   uid
@@ -37,7 +37,7 @@ fn UidRegistry::alloc(self : UidRegistry) -> Int {
 
 ///|
 /// The stable uid for an element with DomTree node id `dom_id`.
-fn UidRegistry::for_dom(self : UidRegistry, dom_id : Int) -> Int {
+fn UidRegistry::for_dom(self : UidRegistry, dom_id : Int32) -> Int32 {
   match self.dom_to_uid.get(dom_id) {
     Some(uid) => uid
     None => {
@@ -53,9 +53,9 @@ fn UidRegistry::for_dom(self : UidRegistry, dom_id : Int) -> Int {
 /// and its position among siblings.
 fn UidRegistry::for_anon(
   self : UidRegistry,
-  parent_uid : Int,
-  index : Int,
-) -> Int {
+  parent_uid : Int32,
+  index : Int32,
+) -> Int32 {
   let key = parent_uid.to_string() + ":" + index.to_string()
   match self.anon_to_uid.get(key) {
     Some(uid) => uid
@@ -71,8 +71,8 @@ fn UidRegistry::for_anon(
 fn stabilize_walk(
   node : Node,
   registry : UidRegistry,
-  parent_uid : Int,
-  index : Int,
+  parent_uid : Int32,
+  index : Int32,
 ) -> Unit {
   let uid = match node.dom_id {
     Some(dom_id) => registry.for_dom(dom_id)

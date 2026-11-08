@@ -8,7 +8,7 @@ fn max(a : Double, b : Double) -> Double {
 }
 
 ///|
-fn min_int(a : Int, b : Int) -> Int {
+fn min_int(a : Int32, b : Int32) -> Int32 {
   if a < b {
     a
   } else {
@@ -34,6 +34,9 @@ pub impl Show for LayoutShift with fn output(self, logger) {
   Show::output(self.score, logger)
   logger.write_string(" }")
 }
+
+///|
+pub extend LayoutShift with Show::{to_string, output}
 
 ///|
 /// Calculate layout shift between two bounding rects

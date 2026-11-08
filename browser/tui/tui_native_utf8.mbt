@@ -2,7 +2,7 @@
 /// UTF-8 codec helpers for the native TUI adapter.
 
 ///|
-fn bytes_to_string(buf : FixedArray[Byte], len : Int) -> String {
+fn bytes_to_string(buf : FixedArray[Byte], len : Int32) -> String {
   let chars : Array[Char] = []
   let mut i = 0
   while i < len {
@@ -43,7 +43,7 @@ fn bytes_to_string(buf : FixedArray[Byte], len : Int) -> String {
 }
 
 ///|
-fn encode_utf8(code : Int, buf : FixedArray[Byte], pos : Int) -> Int {
+fn encode_utf8(code : Int32, buf : FixedArray[Byte], pos : Int32) -> Int32 {
   if code < 0x80 {
     buf[pos] = code.to_byte()
     1

@@ -21,17 +21,17 @@ pub fn compute_incremental() -> String
 
 pub fn compute_incremental_structured() -> @crater-js.FlatLayoutResult
 
-pub fn compute_layout(String, UInt, UInt) -> String
+pub fn compute_layout(String, UInt32, UInt32) -> String
 
-pub fn create_node(String) -> UInt
+pub fn create_node(String) -> UInt32
 
-pub fn create_tree(String, UInt, UInt) -> UInt
+pub fn create_tree(String, UInt32, UInt32) -> UInt32
 
 pub fn destroy_tree() -> Unit
 
 pub fn extract_main_content(String) -> String
 
-pub fn extract_main_content_with_layout(String, Int, Int) -> String
+pub fn extract_main_content_with_layout(String, Int32, Int32) -> String
 
 pub fn get_accessibility_tree(String) -> String
 
@@ -41,7 +41,7 @@ pub fn get_aria_snapshot_json(String) -> String
 
 pub fn get_cache_stats() -> String
 
-pub fn get_child_count(String) -> UInt
+pub fn get_child_count(String) -> UInt32
 
 pub fn get_computed_height(String) -> Double
 
@@ -53,7 +53,7 @@ pub fn get_computed_width(String) -> Double
 
 pub fn has_new_layout(String) -> Bool
 
-pub fn insert_child(String, String, UInt) -> Bool
+pub fn insert_child(String, String, UInt32) -> Bool
 
 pub fn mark_dirty(String) -> Bool
 
@@ -61,17 +61,17 @@ pub fn mark_layout_seen(String) -> Bool
 
 pub fn needs_layout() -> Bool
 
-pub fn remove_child(String, UInt) -> Bool
+pub fn remove_child(String, UInt32) -> Bool
 
-pub fn render_html(String, UInt, UInt) -> String
+pub fn render_html(String, UInt32, UInt32) -> String
 
-pub fn render_html_to_json(String, UInt, UInt) -> String
+pub fn render_html_to_json(String, UInt32, UInt32) -> String
 
-pub fn render_html_to_paint_tree(String, UInt, UInt) -> String
+pub fn render_html_to_paint_tree(String, UInt32, UInt32) -> String
 
 pub fn reset_cache_stats() -> Unit
 
-pub fn resize_viewport(UInt, UInt) -> Unit
+pub fn resize_viewport(UInt32, UInt32) -> Unit
 
 pub fn set_align_items(String, @types.AlignItems) -> Bool
 

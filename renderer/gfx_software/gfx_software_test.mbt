@@ -1,7 +1,7 @@
 ///|
 // Draw a full-frame quad in NDC and read back the resulting pixels.
 test "software driver clears then rasterizes a full-frame quad" {
-  let driver = SoftwareDriver::new(4, 4)
+  let driver = @gfx_software.SoftwareDriver::new(4, 4)
   driver.initialize()
   let dst = @gfx.GraphicsDriver::new_image(driver, 4, 4)
   let shader = @gfx.GraphicsDriver::new_shader(driver, "s")
@@ -36,7 +36,7 @@ test "software driver clears then rasterizes a full-frame quad" {
 
 ///|
 test "software driver fills only the covered sub-rectangle" {
-  let driver = SoftwareDriver::new(4, 4)
+  let driver = @gfx_software.SoftwareDriver::new(4, 4)
   driver.initialize()
   let dst = @gfx.GraphicsDriver::new_image(driver, 4, 4)
   let shader = @gfx.GraphicsDriver::new_shader(driver, "s")
@@ -74,7 +74,7 @@ test "software driver fills only the covered sub-rectangle" {
 
 ///|
 test "read_pixels returns the requested RGBA region" {
-  let driver = SoftwareDriver::new(2, 2)
+  let driver = @gfx_software.SoftwareDriver::new(2, 2)
   driver.initialize()
   @gfx.GraphicsDriver::begin(
     driver,
@@ -90,7 +90,7 @@ test "read_pixels returns the requested RGBA region" {
 
 ///|
 test "draw is scissored to the command's destination region" {
-  let driver = SoftwareDriver::new(4, 4)
+  let driver = @gfx_software.SoftwareDriver::new(4, 4)
   driver.initialize()
   let dst = @gfx.GraphicsDriver::new_image(driver, 4, 4)
   let shader = @gfx.GraphicsDriver::new_shader(driver, "s")
@@ -127,7 +127,7 @@ test "draw is scissored to the command's destination region" {
 
 ///|
 test "rounded-rect uniforms carve the corners" {
-  let driver = SoftwareDriver::new(8, 8)
+  let driver = @gfx_software.SoftwareDriver::new(8, 8)
   driver.initialize()
   let dst = @gfx.GraphicsDriver::new_image(driver, 8, 8)
   let shader = @gfx.GraphicsDriver::new_shader(driver, "s")

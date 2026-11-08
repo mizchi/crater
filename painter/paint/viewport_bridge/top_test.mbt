@@ -59,7 +59,7 @@ test "paint viewport bridge owns viewport culling" {
     text: None,
   }
 
-  let paint = from_node_and_layout_with_viewport(
+  let paint = @viewport_bridge.from_node_and_layout_with_viewport(
     root, root_layout, 0.0, 60.0, 0.0,
   )
   inspect(paint is Some(_), content="true")
@@ -112,7 +112,7 @@ test "paint viewport bridge prunes horizontally outside viewport rect" {
     children: [visible_layout, offscreen_layout],
   }
   match
-    from_node_and_layout_with_viewport_rect(
+    @viewport_bridge.from_node_and_layout_with_viewport_rect(
       root, root_layout, 0.0, 0.0, 100.0, 100.0, 0.0, 0.0,
     ) {
     Some(paint) => {
@@ -174,7 +174,7 @@ test "paint viewport bridge prunes children outside overflow clip" {
     children: [clipper_layout],
   }
   match
-    from_node_and_layout_with_viewport_rect(
+    @viewport_bridge.from_node_and_layout_with_viewport_rect(
       root, root_layout, 0.0, 0.0, 200.0, 220.0, 0.0, 0.0,
     ) {
     Some(paint) => {
@@ -223,7 +223,7 @@ test "paint viewport bridge prunes fully covered earlier opaque siblings" {
     children: [red_layout, green_layout],
   }
   match
-    from_node_and_layout_with_viewport_rect(
+    @viewport_bridge.from_node_and_layout_with_viewport_rect(
       root, root_layout, 0.0, 0.0, 100.0, 100.0, 0.0, 0.0,
     ) {
     Some(paint) => {

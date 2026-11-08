@@ -13,8 +13,8 @@ test "find_in_region_top_right" {
   let root = @aom.AccessibilityNode::new("root", @aom.Document)
   let root = { ..root, children: [button], visible: true, }
   let tree = @aom.AccessibilityTree::new(root)
-  let viewport = Viewport::default()
-  let results = find_by_spatial(tree, InRegion(TopRight), viewport)
+  let viewport = @grounding.Viewport::default()
+  let results = @grounding.find_by_spatial(tree, InRegion(TopRight), viewport)
   inspect(results.length(), content="1")
   debug_inspect(results[0].node.name, content="Some(\"Login\")")
 }
@@ -43,10 +43,10 @@ test "find_by_role_in_region" {
   let root = @aom.AccessibilityNode::new("root", @aom.Document)
   let root = { ..root, children: [link1, link2], visible: true, }
   let tree = @aom.AccessibilityTree::new(root)
-  let viewport = Viewport::default()
+  let viewport = @grounding.Viewport::default()
 
   // Find links in top-right
-  let results = find_by_spatial(
+  let results = @grounding.find_by_spatial(
     tree,
     RoleInRegion(@aom.Link, TopRight),
     viewport,
@@ -79,8 +79,12 @@ test "find_relative_below" {
   let root = @aom.AccessibilityNode::new("root", @aom.Document)
   let root = { ..root, children: [form, submit], visible: true, }
   let tree = @aom.AccessibilityTree::new(root)
-  let viewport = Viewport::default()
-  let results = find_by_spatial(tree, RelativeTo(Below, "ref_1"), viewport)
+  let viewport = @grounding.Viewport::default()
+  let results = @grounding.find_by_spatial(
+    tree,
+    RelativeTo(Below, "ref_1"),
+    viewport,
+  )
   inspect(results.length(), content="1")
   debug_inspect(results[0].node.name, content="Some(\"Submit\")")
 }
@@ -99,15 +103,18 @@ test "get_click_coords" {
   let root = @aom.AccessibilityNode::new("root", @aom.Document)
   let root = { ..root, children: [button], visible: true, }
   let tree = @aom.AccessibilityTree::new(root)
-  let coords = get_click_coords(tree, "ref_1")
+  let coords = @grounding.get_click_coords(tree, "ref_1")
   debug_inspect(coords, content="Some((200, 125))")
 }
 
 ///|
 test "spatial_region_to_string" {
-  inspect(SpatialRegion::TopLeft.to_string(), content="top-left")
-  inspect(SpatialRegion::Center.to_string(), content="center")
-  inspect(SpatialRegion::BottomRight.to_string(), content="bottom-right")
+  inspect(@grounding.SpatialRegion::TopLeft.to_string(), content="top-left")
+  inspect(@grounding.SpatialRegion::Center.to_string(), content="center")
+  inspect(
+    @grounding.SpatialRegion::BottomRight.to_string(),
+    content="bottom-right",
+  )
 }
 
 // The HTML → layout → AOM-with-bounds integration test lives in

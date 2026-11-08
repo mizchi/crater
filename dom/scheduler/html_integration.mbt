@@ -186,7 +186,7 @@ pub struct DocumentParser {
 ///|
 pub fn DocumentParser::new(
   scheduler : Scheduler,
-  base_url? : String = "",
+  base_url~ : String = "",
 ) -> DocumentParser {
   { scheduler, parsed_root: None, discovered: None, base_url, }
 }
@@ -306,11 +306,11 @@ pub(all) struct ParseCompleteResult {
   /// blocking タスク
   blocking_tasks : Array[TaskId]
   /// 発見されたリソース数
-  resource_count : Int
+  resource_count : Int32
   /// インラインスタイル数
-  inline_style_count : Int
+  inline_style_count : Int32
   /// インラインスクリプト数
-  inline_script_count : Int
+  inline_script_count : Int32
 }
 
 // =============================================================================
@@ -322,7 +322,7 @@ pub(all) struct ParseCompleteResult {
 pub fn parse_and_schedule(
   scheduler : Scheduler,
   html : String,
-  base_url? : String = "",
+  base_url~ : String = "",
 ) -> ParseCompleteResult {
   let parser = DocumentParser::new(scheduler, base_url~)
   parser.on_parse_complete(html)

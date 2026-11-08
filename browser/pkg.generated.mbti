@@ -11,7 +11,7 @@ import {
 }
 
 // Values
-pub fn browser(Int, Int, terminal_cols? : Int) -> @shell.Browser
+pub fn browser(Int32, Int32, terminal_cols? : Int32) -> @shell.Browser
 
 pub fn create_dom_init_code(@dom.DomTree) -> String
 

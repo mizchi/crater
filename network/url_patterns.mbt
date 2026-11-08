@@ -2,7 +2,7 @@
 pub(all) struct CanonicalNetworkHttpUrl {
   scheme : String
   host : String
-  port : Int
+  port : Int32
   path : String
   query : String
 }
@@ -205,7 +205,7 @@ fn extract_network_url_scheme(url : String) -> String? {
 fn parse_network_host_and_port(
   host_port : String,
   scheme : String,
-) -> (String, Int)? {
+) -> (String, Int32)? {
   if host_port == "" {
     return None
   }
@@ -240,7 +240,7 @@ fn parse_network_host_and_port(
 }
 
 ///|
-fn default_port_for_network_scheme(scheme : String) -> Int {
+fn default_port_for_network_scheme(scheme : String) -> Int32 {
   if scheme == "https" {
     443
   } else {
@@ -352,7 +352,7 @@ fn strip_url_fragment(url : String) -> String {
 }
 
 ///|
-fn find_substring(haystack : String, needle : String, start : Int) -> Int? {
+fn find_substring(haystack : String, needle : String, start : Int32) -> Int32? {
   if needle.length() == 0 || start < 0 || start >= haystack.length() {
     return None
   }
@@ -377,7 +377,7 @@ fn find_substring(haystack : String, needle : String, start : Int) -> Int? {
 }
 
 ///|
-fn parse_decimal_string(value : String) -> Int? {
+fn parse_decimal_string(value : String) -> Int32? {
   if value.length() == 0 {
     return None
   }

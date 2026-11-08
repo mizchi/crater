@@ -1,10 +1,10 @@
 ///|
 /// Global counter for generating unique node IDs
-let node_uid_counter : Ref[Int] = { val: 0 }
+let node_uid_counter : Ref[Int32] = { val: 0, }
 
 ///|
 /// Generate a new unique node ID
-fn next_uid() -> Int {
+fn next_uid() -> Int32 {
   let uid = node_uid_counter.val
   node_uid_counter.val = uid + 1
   uid
@@ -14,7 +14,7 @@ fn next_uid() -> Int {
 /// A node in the layout tree
 pub struct Node {
   id : String
-  mut uid : Int // Unique identifier for caching (stabilized across re-renders for incremental reflow)
+  mut uid : Int32 // Unique identifier for caching (stabilized across re-renders for incremental reflow)
   style : @style.Style
   children : Array[Node]
   measure : @layout_types.MeasureFunc?
@@ -24,7 +24,7 @@ pub struct Node {
   /// live DOM (the dynamic-rendering path). `None` for the static parse path.
   /// A stable, mutation-surviving identity used to key incremental reflow (see
   /// docs/incremental-reflow-design.md); does not affect layout or cascade.
-  mut dom_id : Int?
+  mut dom_id : Int32?
   /// Memo for `Node::resolved_rects`, filled on first use and only when the
   /// resolved value does not depend on the containing-block width. `style` is
   /// immutable, so this never goes stale for the node's lifetime.
@@ -33,7 +33,7 @@ pub struct Node {
 
 ///|
 /// Attach the originating DomTree node id (dynamic-rendering path).
-pub fn Node::set_dom_id(self : Node, dom_id : Int?) -> Unit {
+pub fn Node::set_dom_id(self : Node, dom_id : Int32?) -> Unit {
   self.dom_id = dom_id
 }
 
@@ -41,7 +41,7 @@ pub fn Node::set_dom_id(self : Node, dom_id : Int?) -> Unit {
 /// Overwrite the cache uid. Used to stabilize uids across re-renders so
 /// incremental reflow can match a rebuilt node to its prior layout (see
 /// `stabilize_uids`).
-pub fn Node::set_uid(self : Node, uid : Int) -> Unit {
+pub fn Node::set_uid(self : Node, uid : Int32) -> Unit {
   self.uid = uid
 }
 
@@ -68,7 +68,7 @@ pub fn Node::new(
 /// Create a node with a specific uid (for incremental layout)
 pub fn Node::with_uid(
   id : String,
-  uid : Int,
+  uid : Int32,
   style : @style.Style,
   children : Array[Node],
 ) -> Node {
@@ -89,12 +89,12 @@ pub fn Node::with_uid(
 /// Create a node with a specific uid and measure function
 pub fn Node::with_uid_and_measure(
   id : String,
-  uid : Int,
+  uid : Int32,
   style : @style.Style,
   children : Array[Node],
   measure : @layout_types.MeasureFunc?,
   text : String?,
-  src? : String? = None,
+  src~ : String? = None,
 ) -> Node {
   {
     id,
@@ -132,7 +132,7 @@ pub fn Node::with_measure(
   style : @style.Style,
   measure : @layout_types.MeasureFunc,
   text? : String,
-  src? : String? = None,
+  src~ : String? = None,
 ) -> Node {
   {
     id,
@@ -185,7 +185,7 @@ pub(all) struct LayoutDispatchFunc(
 
 ///|
 /// Global layout dispatch function (for incremental compute caching)
-let layout_dispatcher : Ref[LayoutDispatchFunc?] = { val: None }
+let layout_dispatcher : Ref[LayoutDispatchFunc?] = { val: None, }
 
 ///|
 /// Set the global layout dispatcher (used by incremental compute for caching)
@@ -211,12 +211,12 @@ pub fn get_layout_dispatcher() -> LayoutDispatchFunc? {
 /// the same way the layout dispatcher does. Absent an installed predicate (the
 /// non-incremental / full-layout path) it returns `false`, so memoization is off
 /// by default and the static path is byte-for-byte unchanged.
-let node_clean_predicate : Ref[((Int) -> Bool)?] = { val: None }
+let node_clean_predicate : Ref[((Int32) -> Bool)?] = { val: None, }
 
 ///|
 /// Install the subtree-clean predicate for the duration of an incremental layout.
 /// Pass `None` (via `clear_node_clean_predicate`) to remove it afterwards.
-pub fn set_node_clean_predicate(f : (Int) -> Bool) -> Unit {
+pub fn set_node_clean_predicate(f : (Int32) -> Bool) -> Unit {
   node_clean_predicate.val = Some(f)
 }
 
@@ -231,7 +231,7 @@ pub fn clear_node_clean_predicate() -> Unit {
 /// Whether the node with this `uid` has an entirely unchanged subtree since the
 /// last layout, per the installed predicate. `false` when no predicate is
 /// installed (the safe default: recompute).
-pub fn node_is_clean(uid : Int) -> Bool {
+pub fn node_is_clean(uid : Int32) -> Bool {
   match node_clean_predicate.val {
     Some(pred) => pred(uid)
     None => false

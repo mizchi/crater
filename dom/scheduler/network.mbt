@@ -8,12 +8,22 @@
 
 ///|
 /// ネットワークリクエストの一意識別子
-pub(all) struct RequestId(Int) derive(Eq, Hash, Debug)
+#derive(Eq, Hash, Debug)
+pub(all) struct RequestId(Int32)
+
+///|
+pub extend RequestId with Eq::{not_equal, equal}
+
+///|
+pub extend RequestId with Hash::{hash, hash_combine}
+
+///|
+pub extend RequestId with @debug.Debug::{to_repr}
 
 ///|
 /// ID generator
 priv struct RequestIdGenerator {
-  mut next_id : Int
+  mut next_id : Int32
 }
 
 ///|
@@ -38,6 +48,7 @@ pub fn reset_request_id_counter() -> Unit {
 
 ///|
 /// HTTP メソッド
+#derive(Eq, Debug)
 pub(all) enum HttpMethod {
   GET
   POST
@@ -46,7 +57,13 @@ pub(all) enum HttpMethod {
   HEAD
   OPTIONS
   PATCH
-} derive(Eq, Debug)
+}
+
+///|
+pub extend HttpMethod with Eq::{not_equal, equal}
+
+///|
+pub extend HttpMethod with @debug.Debug::{to_repr}
 
 ///|
 pub fn HttpMethod::from_string(s : String) -> HttpMethod {
@@ -81,6 +98,7 @@ pub fn HttpMethod::to_string(self : HttpMethod) -> String {
 
 ///|
 /// ネットワークリクエスト
+#derive(Debug)
 pub(all) struct NetworkRequest {
   /// リクエストID
   id : RequestId
@@ -100,15 +118,18 @@ pub(all) struct NetworkRequest {
   loader_id : String
   /// タイムスタンプ（ミリ秒）
   timestamp : Double
-} derive(Debug)
+}
+
+///|
+pub extend NetworkRequest with @debug.Debug::{to_repr}
 
 ///|
 pub fn NetworkRequest::new(
   url : String,
   resource_type : ResourceType,
-  document_url? : String = "",
-  frame_id? : String = "main",
-  http_method? : HttpMethod = GET,
+  document_url~ : String = "",
+  frame_id~ : String = "main",
+  http_method~ : HttpMethod = GET,
 ) -> NetworkRequest {
   let id = RequestId::next()
   {
@@ -154,13 +175,14 @@ pub fn NetworkRequest::with_loader_id(
 
 ///|
 /// ネットワークレスポンス
+#derive(Debug)
 pub(all) struct NetworkResponse {
   /// 対応するリクエストID
   request_id : RequestId
   /// レスポンスURL（リダイレクト後の最終URL）
   url : String
   /// HTTP ステータスコード
-  status : Int
+  status : Int32
   /// ステータステキスト
   status_text : String
   /// MIME タイプ
@@ -170,18 +192,21 @@ pub(all) struct NetworkResponse {
   /// レスポンスボディ（オプショナル）
   body : String?
   /// コンテンツ長
-  content_length : Int
+  content_length : Int32
   /// タイムスタンプ（ミリ秒）
   timestamp : Double
   /// ローダーID（オプショナル）
   loader_id : String
-} derive(Debug)
+}
+
+///|
+pub extend NetworkResponse with @debug.Debug::{to_repr}
 
 ///|
 pub fn NetworkResponse::new(
   request_id : RequestId,
   url : String,
-  status : Int,
+  status : Int32,
 ) -> NetworkResponse {
   let RequestId(id) = request_id
   {
@@ -199,7 +224,7 @@ pub fn NetworkResponse::new(
 }
 
 ///|
-fn status_to_text(status : Int) -> String {
+fn status_to_text(status : Int32) -> String {
   match status {
     200 => "OK"
     201 => "Created"
@@ -264,16 +289,20 @@ pub fn NetworkResponse::with_loader_id(
 
 ///|
 /// ネットワークイベント - CDP Network domain のイベントに対応
+#derive(Debug)
 pub(all) enum NetworkEvent {
   /// リクエスト送信前
   RequestWillBeSent(NetworkRequest)
   /// レスポンス受信
   ResponseReceived(NetworkResponse)
   /// ロード完了
-  LoadingFinished(request_id~ : RequestId, encoded_data_length~ : Int)
+  LoadingFinished(request_id~ : RequestId, encoded_data_length~ : Int32)
   /// ロード失敗
   LoadingFailed(request_id~ : RequestId, error~ : String)
-} derive(Debug)
+}
+
+///|
+pub extend NetworkEvent with @debug.Debug::{to_repr}
 
 ///|
 pub fn NetworkEvent::request_id(self : NetworkEvent) -> RequestId {
@@ -291,14 +320,18 @@ pub fn NetworkEvent::request_id(self : NetworkEvent) -> RequestId {
 
 ///|
 /// FetchResource タスクの結果
+#derive(Debug)
 pub(all) enum FetchResult {
   /// 成功
   Success(response~ : NetworkResponse)
   /// リダイレクト
-  Redirect(location~ : String, status~ : Int)
+  Redirect(location~ : String, status~ : Int32)
   /// 失敗
   Failure(error~ : String)
-} derive(Debug)
+}
+
+///|
+pub extend FetchResult with @debug.Debug::{to_repr}
 
 ///|
 pub impl Show for RequestId with fn output(self, logger) {
@@ -306,9 +339,15 @@ pub impl Show for RequestId with fn output(self, logger) {
 }
 
 ///|
+pub extend RequestId with Show::{to_string, output}
+
+///|
 pub impl Show for HttpMethod with fn output(self, logger) {
   logger.write_string(self.to_string())
 }
+
+///|
+pub extend HttpMethod with Show::{output}
 
 ///|
 pub impl Show for NetworkRequest with fn output(self, logger) {
@@ -334,6 +373,9 @@ pub impl Show for NetworkRequest with fn output(self, logger) {
   logger.write_string("\"")
   logger.write_string(", timestamp: \{self.timestamp}}")
 }
+
+///|
+pub extend NetworkRequest with Show::{to_string, output}
 
 ///|
 pub impl Show for NetworkResponse with fn output(self, logger) {
@@ -365,6 +407,9 @@ pub impl Show for NetworkResponse with fn output(self, logger) {
 }
 
 ///|
+pub extend NetworkResponse with Show::{to_string, output}
+
+///|
 pub impl Show for NetworkEvent with fn output(self, logger) {
   match self {
     RequestWillBeSent(request) =>
@@ -384,6 +429,9 @@ pub impl Show for NetworkEvent with fn output(self, logger) {
     }
   }
 }
+
+///|
+pub extend NetworkEvent with Show::{to_string, output}
 
 ///|
 pub impl Show for FetchResult with fn output(self, logger) {
@@ -411,10 +459,13 @@ pub impl Show for FetchResult with fn output(self, logger) {
 // =============================================================================
 
 ///|
+pub extend FetchResult with Show::{to_string, output}
+
+///|
 /// ネットワークリクエストを管理
 pub struct NetworkManager {
   /// 進行中のリクエスト
-  pending_requests : Map[Int, NetworkRequest]
+  pending_requests : Map[Int32, NetworkRequest]
   /// 発行されたイベント（外部に通知するため）
   mut pending_events : Array[NetworkEvent]
   /// Network.enable が呼ばれたか
@@ -467,7 +518,7 @@ pub fn NetworkManager::receive_response(
 pub fn NetworkManager::finish_loading(
   self : NetworkManager,
   request_id : RequestId,
-  encoded_data_length : Int,
+  encoded_data_length : Int32,
 ) -> Unit {
   let RequestId(id) = request_id
   self.pending_requests.remove(id)
@@ -508,6 +559,6 @@ pub fn NetworkManager::has_pending_events(self : NetworkManager) -> Bool {
 
 ///|
 /// 進行中のリクエスト数
-pub fn NetworkManager::pending_count(self : NetworkManager) -> Int {
+pub fn NetworkManager::pending_count(self : NetworkManager) -> Int32 {
   self.pending_requests.length()
 }

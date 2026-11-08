@@ -24,7 +24,7 @@ test "tui plain paint keeps node conversion" {
     children: [],
     text: None,
   }
-  let paint_node = from_node_and_layout(node, layout)
+  let paint_node = @plain.from_node_and_layout(node, layout)
   inspect(paint_node.id, content="root")
   inspect(paint_node.width, content="100")
 }

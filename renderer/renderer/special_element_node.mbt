@@ -44,7 +44,7 @@ fn append_svg_attr(buf : StringBuilder, name : String, value : String) -> Unit {
 
 ///|
 fn svg_color_to_hex(color : @types.Color) -> String {
-  fn hex_char(n : Int) -> Char {
+  fn hex_char(n : Int32) -> Char {
     if n < 10 {
       ('0'.to_int() + n).unsafe_to_char()
     } else {
@@ -52,7 +52,7 @@ fn svg_color_to_hex(color : @types.Color) -> String {
     }
   }
 
-  fn hex2(n : Int) -> String {
+  fn hex2(n : Int32) -> String {
     let clamped = n.max(0).min(255)
     let hi = clamped / 16 % 16
     let lo = clamped % 16
@@ -142,7 +142,7 @@ fn resolve_single_select_paint_text(elem : @html.Element) -> String? {
 }
 
 ///|
-fn find_svg_char_index(s : String, target : Char) -> Int? {
+fn find_svg_char_index(s : String, target : Char) -> Int32? {
   for i = 0; i < s.length(); i = i + 1 {
     if s[i].to_int().unsafe_to_char() == target {
       return Some(i)
@@ -156,7 +156,7 @@ fn resolve_svg_paint_value(
   value : String,
   inherited_color : String,
   css_vars : Map[String, String],
-  depth : Int,
+  depth : Int32,
 ) -> String {
   if depth > 8 {
     return inherited_color

@@ -41,7 +41,7 @@ fn url_decode_simple(s : String) -> String {
 }
 
 ///|
-fn hex_digit(c : Char) -> Int {
+fn hex_digit(c : Char) -> Int32 {
   if c >= '0' && c <= '9' {
     c.to_int() - '0'.to_int()
   } else if c >= 'a' && c <= 'f' {

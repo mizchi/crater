@@ -33,7 +33,7 @@ pub let crater_dom_id_attr : String = "data-crater-domid"
 ///|
 /// Parse a non-negative integer, or `None` on any non-digit. Dependency-free so
 /// `core`-adjacent render code keeps a small import surface.
-fn parse_dom_id(s : String) -> Int? {
+fn parse_dom_id(s : String) -> Int32? {
   if s.length() == 0 {
     return None
   }

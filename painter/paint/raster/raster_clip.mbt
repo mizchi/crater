@@ -2,10 +2,10 @@
 /// Clip rectangle for overflow clipping.
 /// None means no clipping (full framebuffer).
 pub(all) struct ClipRect {
-  x : Int
-  y : Int
-  w : Int
-  h : Int
+  x : Int32
+  y : Int32
+  w : Int32
+  h : Int32
 }
 
 ///|
@@ -24,7 +24,7 @@ fn clip_intersect(a : ClipRect, b : ClipRect) -> ClipRect? {
 
 ///|
 /// Check if a pixel is inside the clip rect
-fn pixel_in_clip(clip : ClipRect?, px : Int, py : Int) -> Bool {
+fn pixel_in_clip(clip : ClipRect?, px : Int32, py : Int32) -> Bool {
   match clip {
     None => true
     Some(c) => px >= c.x && px < c.x + c.w && py >= c.y && py < c.y + c.h

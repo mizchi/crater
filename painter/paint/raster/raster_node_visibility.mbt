@@ -4,8 +4,8 @@
 ///|
 fn is_visually_hidden_paint_node(
   node : @paint_model.PaintNode,
-  w : Int,
-  h : Int,
+  w : Int32,
+  h : Int32,
 ) -> Bool {
   if node.clips_content() && w <= 1 && h <= 1 {
     true
@@ -19,20 +19,20 @@ fn is_visually_hidden_paint_node(
 ///|
 fn is_node_outside_framebuffer(
   fb : Framebuffer,
-  x : Int,
-  y : Int,
-  w : Int,
-  h : Int,
+  x : Int32,
+  y : Int32,
+  w : Int32,
+  h : Int32,
 ) -> Bool {
   x >= fb.width || y >= fb.height || x + w <= 0 || y + h <= 0
 }
 
 ///|
 fn is_node_outside_clip(
-  x : Int,
-  y : Int,
-  w : Int,
-  h : Int,
+  x : Int32,
+  y : Int32,
+  w : Int32,
+  h : Int32,
   clip : ClipRect?,
 ) -> Bool {
   match clip {

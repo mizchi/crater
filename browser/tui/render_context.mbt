@@ -13,8 +13,8 @@ pub(all) struct ElementScrollPos {
 /// Rendering context for TUI
 pub struct TuiContext {
   buffer : CharBuffer
-  scroll_y : Int // Scroll offset in character rows
-  viewport_height : Int // Visible height in character rows
+  scroll_y : Int32 // Scroll offset in character rows
+  viewport_height : Int32 // Visible height in character rows
   link_regions : Array[LinkRegion] // Collected link regions
   hit_regions : Array[HitRegion] // Paint-order hit regions
   image_regions : Array[ImageRegion] // Collected image regions for graphics protocol

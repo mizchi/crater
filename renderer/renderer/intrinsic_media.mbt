@@ -33,7 +33,7 @@ fn url_decode(s : String) -> String {
       // Parse hex value
       let hex1 = s[i + 1].to_int().unsafe_to_char()
       let hex2 = s[i + 2].to_int().unsafe_to_char()
-      fn hex_digit(c : Char) -> Int {
+      fn hex_digit(c : Char) -> Int32 {
         if c >= '0' && c <= '9' {
           c.to_int() - '0'.to_int()
         } else if c >= 'a' && c <= 'f' {
@@ -58,7 +58,7 @@ fn url_decode(s : String) -> String {
 
 ///|
 /// Find index of pattern in string, returns -1 if not found
-fn find_string_index(s : String, pattern : String) -> Int {
+fn find_string_index(s : String, pattern : String) -> Int32 {
   if pattern.length() == 0 || pattern.length() > s.length() {
     return -1
   }
@@ -202,7 +202,7 @@ fn parse_svg_data_uri(src : String) -> (Double, Double)? {
 }
 
 ///|
-fn base64_char_value(c : Char) -> Int? {
+fn base64_char_value(c : Char) -> Int32? {
   let cp = c.to_int()
   if cp >= 'A'.to_int() && cp <= 'Z'.to_int() {
     Some(cp - 'A'.to_int())
@@ -220,9 +220,9 @@ fn base64_char_value(c : Char) -> Int? {
 }
 
 ///|
-fn decode_base64_prefix(encoded : String, byte_count : Int) -> Array[Int]? {
-  let bytes : Array[Int] = []
-  let quartet : Array[Int] = []
+fn decode_base64_prefix(encoded : String, byte_count : Int32) -> Array[Int32]? {
+  let bytes : Array[Int32] = []
+  let quartet : Array[Int32] = []
   for c in encoded.iter() {
     if c == '=' {
       quartet.push(-1)

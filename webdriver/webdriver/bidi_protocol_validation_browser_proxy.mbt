@@ -2,7 +2,7 @@
 /// Validate browser.createUserContext proxy config.
 fn BidiProtocol::validate_browser_proxy_config(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   proxy : Map[String, Json],
 ) -> Unit? {
   let proxy_type = match proxy.get("proxyType") {
@@ -55,7 +55,7 @@ fn BidiProtocol::validate_browser_proxy_config(
 /// Validate manual proxy configuration.
 fn BidiProtocol::validate_browser_manual_proxy(
   self : BidiProtocol,
-  request_id : Int,
+  request_id : Int32,
   proxy : Map[String, Json],
 ) -> Unit? {
   let mut has_socks_proxy = false
