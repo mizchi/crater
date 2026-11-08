@@ -29,21 +29,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
-      - name: Set up MoonBit
-        run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
-          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
+      - name: Set up Crater toolchain
+        uses: ./.github/actions/setup-crater
         with:
-          node-version: '24'
-
-      - name: Install wasm-tools
-        run: |
-          curl -LO https://github.com/bytecodealliance/wasm-tools/releases/download/v1.263.0/wasm-tools-1.263.0-x86_64-linux.tar.gz
-          tar xzf wasm-tools-1.263.0-x86_64-linux.tar.gz
-          sudo mv wasm-tools-1.263.0-x86_64-linux/wasm-tools /usr/local/bin/
+          wasm-tools: "true"
 
       - name: Update MoonBit dependencies
         run: |
@@ -51,12 +40,5 @@ jobs:
           moon update
           moon -C browser update
 
-      - name: Install npm dependencies
-        run: npm install
-
       - name: Build WASM component
-        run: |
-          moon -C wasm build --target wasm --release
-          wasm-tools component embed --world crater wasm/wit wasm/_build/wasm/release/build/gen/gen.wasm -o wasm/_build/crater-embedded.wasm
-          wasm-tools component new wasm/_build/crater-embedded.wasm -o wasm/_build/crater.wasm
-          npx jco transpile wasm/_build/crater.wasm -o wasm/dist --name crater
+        run: just build-wasm transpile-wasm
