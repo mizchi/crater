@@ -306,7 +306,7 @@ export function runCommands(
     spawn = spawnSync,
     sleep = sleepMs,
     retryDelayMs = 5000,
-    maxPublishAttempts = 12,
+    maxPublishAttempts = 5,
   } = {},
 ) {
   for (const [index, { module, args, command }] of commands.entries()) {
@@ -478,7 +478,7 @@ export function runCli({
         '--target-dir', path.join(cwd, '_build/release')]
       return { ...entry, args, command: ['moon', ...args].join(' ') }
     })
-    const runOptions = { action, cwd: release.workspaceRoot, stdout, stderr }
+    const runOptions = { action, cwd: release.workspaceRoot, stdout, stderr, maxPublishAttempts: 12 }
     const packageCommands = formatPackageCommands(plan.orderedModules, { frozen })
     const packageStatus = runCommands(stageCommands(packageCommands), { ...runOptions, action: 'package' })
     if (packageStatus !== 0) return packageStatus
