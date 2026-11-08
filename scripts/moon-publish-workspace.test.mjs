@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import os from 'node:os'
 import { execFileSync } from 'node:child_process'
 import path from 'node:path'
@@ -42,6 +42,8 @@ test('release staging separates module ignore rules and includes module-owned bu
     write('.moonignore', 'browser\njs\n')
     write('.gitignore', '_build/\nnode_modules/\n')
     write('moon.mod', 'name = "mizchi/crater"\nversion = "0.19.2"\n')
+    write('README.mbt.md', 'Release readme\n')
+    symlinkSync('README.mbt.md', path.join(source, 'README.md'))
     write('js/moon.mod', 'name = "mizchi/crater-js"\nversion = "0.19.2"\n')
     write('js/top.mbt', 'pub fn answer() -> Int32 { 42 }\n')
     write('js/_build/stale.js', 'generated')
@@ -58,6 +60,7 @@ test('release staging separates module ignore rules and includes module-owned bu
     assert.ok(existsSync(path.join(stagedNative, 'scripts/prebuild.mjs')))
     assert.ok(!existsSync(path.join(stagedJs, '_build')))
     assert.ok(!existsSync(path.join(stagedRoot, 'js')))
+    assert.equal(readFileSync(path.join(stagedRoot, 'README.md'), 'utf8'), 'Release readme\n')
     assert.ok(!existsSync(path.join(stagedJs, 'moon.work')))
     assert.notEqual(path.dirname(stagedJs), stagedRoot)
     assert.equal(loadWorkspaceModules(release.workspaceRoot).length, modules.length)

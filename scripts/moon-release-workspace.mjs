@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
@@ -55,7 +55,7 @@ export function prepareReleaseWorkspace({ sourceRoot, modules }) {
       if (lstatSync(source).isDirectory()) continue // Git submodule entries.
       const target = path.join(destination, path.posix.relative(owner, file))
       mkdirSync(path.dirname(target), { recursive: true })
-      cpSync(source, target, { dereference: true })
+      copyFileSync(source, target)
     }
     writeFileSync(path.join(workspaceRoot, 'moon.work'),
       `members = [\n${[...moduleRoots.values()].map(dir => `  ${JSON.stringify(path.basename(dir))},`).join('\n')}\n]\n`)
