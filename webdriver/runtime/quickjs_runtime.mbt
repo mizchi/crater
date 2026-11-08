@@ -24,8 +24,8 @@ extern "js" fn quickjs_init_runtime() -> @core.Any =
   #|   }
   #|
   #|   // Import quickjs-emscripten
-  #|   const { newQuickJSAsyncWASMModuleFromVariant } = await import("npm:quickjs-emscripten");
-  #|   const releaseVariant = (await import("npm:@jitl/quickjs-wasmfile-release-asyncify")).default;
+  #|   const { newQuickJSAsyncWASMModuleFromVariant } = await import("npm:quickjs-emscripten@^0.32.0");
+  #|   const releaseVariant = (await import("npm:@jitl/quickjs-wasmfile-release-asyncify@^0.32.0")).default;
   #|
   #|   console.log("[QuickJS] Loading ASYNCIFY variant...");
   #|   const QuickJS = await newQuickJSAsyncWASMModuleFromVariant(releaseVariant);

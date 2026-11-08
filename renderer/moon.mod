@@ -8,7 +8,7 @@ import {
   "mizchi/crater-dom@0.19.2",
   "mizchi/crater-layout@0.19.2",
   "mizchi/crater-painter@0.19.2",
-  "mizchi/gfx@0.1.0",
+  "mizchi/gfx@0.1.1",
   "mizchi/svg@0.2.3",
   "moonbitlang/async@0.22.7",
 }

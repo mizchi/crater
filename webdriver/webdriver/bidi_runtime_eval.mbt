@@ -2070,6 +2070,8 @@ extern "js" fn js_evaluate_expression(
   #|       set textContent(v) { this._textContent = String(v); },
   #|       get nodeValue() { return this._textContent; },
   #|       set nodeValue(v) { this._textContent = String(v); },
+  #|       get data() { return this._textContent; },
+  #|       set data(v) { this._textContent = v === null ? '' : String(v); },
   #|       get parentNode() { return this._parent; },
   #|       get nextSibling() {
   #|         if (!this._parent) return null;
@@ -2095,6 +2097,8 @@ extern "js" fn js_evaluate_expression(
   #|       set textContent(v) { this._textContent = String(v); },
   #|       get nodeValue() { return this._textContent; },
   #|       set nodeValue(v) { this._textContent = String(v); },
+  #|       get data() { return this._textContent; },
+  #|       set data(v) { this._textContent = v === null ? '' : String(v); },
   #|       get parentNode() { return this._parent; },
   #|       get nextSibling() {
   #|         if (!this._parent) return null;

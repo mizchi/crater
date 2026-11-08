@@ -19,7 +19,7 @@ runs:
   using: composite
   steps:
     - name: Restore rusty_v8 source binding cache
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: ~/.cargo/.rusty_v8
         key: rusty-v8-source-binding-${{ inputs.release }}-${{ runner.os }}-${{ inputs.cache-extra-key }}

@@ -28,7 +28,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -54,7 +54,7 @@ jobs:
           "$HOME/.local/bin/pkf" --version
 
       - name: Restore Pkl package cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.pkl/cache
           key: pkl-cache-${{ runner.os }}-${{ hashFiles('**/PklProject.deps.json') }}
@@ -94,10 +94,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install Nix
-        uses: cachix/install-nix-action@v30
+        uses: cachix/install-nix-action@v31
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
@@ -108,6 +108,8 @@ jobs:
 
       - name: Enter the dev shell and check the toolchain
         run: |
+          # Variables in the script are expanded by the dev-shell bash.
+          # shellcheck disable=SC2016
           nix develop --command bash -uo pipefail -c '
             echo "== tool versions =="
             echo "moon:       $(moon version 2>&1 | head -1)"
@@ -138,7 +140,7 @@ jobs:
 
       - name: Upload generated flake.lock
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: flake.lock
           path: flake.lock
@@ -149,7 +151,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           submodules: recursive
 
@@ -218,7 +220,7 @@ jobs:
 
       - name: Upload Moon diagnostics
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: moon-diagnostics-test
           path: ci-logs/**
@@ -237,7 +239,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           submodules: recursive
 
@@ -270,7 +272,7 @@ jobs:
       # curl/unzip bypass -- the same pattern the WPT / paint-vrt jobs use.
       - name: Restore Playwright Chromium browser cache
         if: ${{ github.event_name == 'schedule' || needs.affected.outputs.gfx_vrt == 'true' }}
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-${{ runner.os }}-${{ hashFiles('package.json', 'pnpm-lock.yaml') }}
@@ -313,7 +315,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           submodules: recursive
 
@@ -383,7 +385,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           submodules: recursive
 
@@ -416,7 +418,7 @@ jobs:
       # touched CSS. Caching removes that per-run network dependency.
       - name: Restore Playwright Chromium browser cache
         id: wpt_css_playwright_cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-${{ runner.os }}-${{ hashFiles('package.json', 'pnpm-lock.yaml') }}
@@ -466,7 +468,7 @@ jobs:
 
       - name: Upload WPT CSS shard report
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: wpt-css-report-${{ matrix.name }}
           path: wpt-reports/wpt-css-${{ matrix.name }}.json
@@ -483,7 +485,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           submodules: recursive
 
@@ -508,7 +510,7 @@ jobs:
 
       - name: Upload WPT DOM shard report
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: wpt-dom-report-all
           path: wpt-reports/wpt-dom-*.json
@@ -530,17 +532,17 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           submodules: recursive
 
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v5
+        uses: pnpm/action-setup@v6
 
       - name: Install dependencies
         run: pnpm install
@@ -564,7 +566,7 @@ jobs:
         run: cat wpt-summary/wpt-compat-summary.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload WPT compatibility summary
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: wpt-compat-summary
           path: wpt-summary/*
@@ -581,7 +583,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           submodules: recursive
 
@@ -637,7 +639,7 @@ jobs:
 
       - name: Upload WPT WebDriver shard report
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: wpt-webdriver-report-all
           path: wpt-reports/wpt-webdriver-*.json
@@ -645,7 +647,7 @@ jobs:
 
       - name: Upload Moon diagnostics
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: moon-diagnostics-wpt-webdriver
           path: ci-logs/**
@@ -657,7 +659,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           submodules: recursive
 
@@ -671,7 +673,7 @@ jobs:
 
       - name: Restore Playwright Chromium browser cache
         id: playwright_bidi_playwright_cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-${{ runner.os }}-${{ hashFiles('package.json', 'pnpm-lock.yaml') }}
@@ -732,7 +734,7 @@ jobs:
 
       - name: Upload Playwright JSON report
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: playwright-report.json
@@ -748,7 +750,7 @@ jobs:
 
       - name: Upload Playwright report summary
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-summary
           path: playwright-summary/*
@@ -756,7 +758,7 @@ jobs:
 
       - name: Upload Moon diagnostics
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: moon-diagnostics-playwright-bidi
           path: ci-logs/**
@@ -767,7 +769,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           submodules: recursive
 
@@ -792,14 +794,14 @@ jobs:
           cat flaker-quarantine-report/quarantine.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload flaker config summary
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: flaker-config-summary
           path: flaker-report/*
           if-no-files-found: error
 
       - name: Upload flaker quarantine summary
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: flaker-quarantine-summary
           path: flaker-quarantine-report/*
@@ -810,7 +812,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           submodules: recursive
 
@@ -846,7 +848,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload VRT bench summary
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: vrt-bench-summary
           path: vrt-bench/*
@@ -883,7 +885,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           submodules: recursive
 
@@ -894,14 +896,14 @@ jobs:
 
       - name: Restore paint VRT reference fixtures
         id: paint_vrt_reference_cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: .cache/paint-vrt-reference
           key: paint-vrt-reference-${{ runner.os }}-${{ hashFiles('tests/paint-vrt.test.ts', 'tests/helpers/crater-vrt.ts', 'scripts/real-world-snapshot.ts', 'scripts/ci/install-compatible-fonts.sh', 'package.json', 'pnpm-lock.yaml', 'benchmarks/fixtures/**', 'real-world/**/index.html', 'real-world/**/meta.json') }}
 
       - name: Restore Playwright Chromium browser cache
         id: paint_vrt_playwright_cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-${{ runner.os }}-${{ hashFiles('package.json', 'pnpm-lock.yaml') }}
@@ -920,7 +922,7 @@ jobs:
         if: steps.metric_ci_package.outcome == 'failure'
         id: metric_ci_source
         continue-on-error: true
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: mizchi/metric-ci
           path: metric-ci
@@ -980,7 +982,7 @@ jobs:
 
       - name: Upload paint VRT JSON report
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: paint-vrt-report-${{ matrix.name }}
           path: paint-vrt-report.json
@@ -1030,7 +1032,7 @@ jobs:
 
       - name: Upload paint VRT report summary
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: paint-vrt-summary-${{ matrix.name }}
           path: paint-vrt-summary/*
@@ -1038,7 +1040,7 @@ jobs:
 
       - name: Upload paint VRT flaker task summary
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: paint-vrt-flaker-summary-${{ matrix.name }}
           path: paint-vrt-flaker-summary/*
@@ -1046,7 +1048,7 @@ jobs:
 
       - name: Upload paint VRT artifact summary
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: paint-vrt-artifact-summary-${{ matrix.name }}
           path: paint-vrt-artifact-summary/*
@@ -1054,7 +1056,7 @@ jobs:
 
       - name: Upload paint VRT artifacts
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: paint-vrt-artifacts-${{ matrix.name }}
           path: |
@@ -1064,7 +1066,7 @@ jobs:
 
       - name: Upload Moon diagnostics
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: moon-diagnostics-paint-vrt-${{ matrix.name }}
           path: ci-logs/**
@@ -1088,20 +1090,20 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install just
         uses: extractions/setup-just@v4
         with:
-          just-version: '1.50.0'
+          just-version: '1.59.0'
 
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v5
+        uses: pnpm/action-setup@v6
 
       - name: Install dependencies
         run: pnpm install
@@ -1123,7 +1125,7 @@ jobs:
         run: cat paint-vrt-artifact-summary/paint-vrt-artifacts.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload paint VRT artifact summary
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: paint-vrt-artifact-summary
           path: paint-vrt-artifact-summary/*
@@ -1143,10 +1145,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
 
@@ -1172,7 +1174,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           submodules: recursive
 
@@ -1183,14 +1185,14 @@ jobs:
 
       - name: Restore WPT VRT reference fixtures
         id: wpt_vrt_reference_cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: .cache/wpt-vrt-reference
           key: wpt-vrt-reference-${{ runner.os }}-${{ hashFiles('tests/wpt-vrt.test.ts', 'tests/helpers/crater-vrt.ts', 'tests/helpers/wpt-vrt-utils.ts', 'scripts/wpt-html-utils.ts', 'scripts/ci/install-compatible-fonts.sh', 'wpt-vrt.json', 'package.json', 'pnpm-lock.yaml') }}
 
       - name: Restore Playwright Chromium browser cache
         id: wpt_vrt_playwright_cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-${{ runner.os }}-${{ hashFiles('package.json', 'pnpm-lock.yaml') }}
@@ -1239,7 +1241,7 @@ jobs:
 
       - name: Upload WPT VRT artifacts
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: wpt-vrt-artifacts-${{ matrix.name }}
           path: |
@@ -1249,7 +1251,7 @@ jobs:
 
       - name: Upload WPT VRT shard summary
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: wpt-vrt-summary-${{ matrix.name }}
           path: wpt-vrt-summary/*
@@ -1257,7 +1259,7 @@ jobs:
 
       - name: Upload Moon diagnostics
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: moon-diagnostics-wpt-vrt-${{ matrix.name }}
           path: ci-logs/**
@@ -1277,20 +1279,20 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install just
         uses: extractions/setup-just@v4
         with:
-          just-version: '1.50.0'
+          just-version: '1.59.0'
 
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v5
+        uses: pnpm/action-setup@v6
 
       - name: Install dependencies
         run: pnpm install
@@ -1312,7 +1314,7 @@ jobs:
         run: cat wpt-vrt-summary/wpt-vrt-summary.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload WPT VRT summary
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: wpt-vrt-summary
           path: wpt-vrt-summary/*
@@ -1343,21 +1345,21 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v5
+        uses: pnpm/action-setup@v6
 
       - name: Install dependencies
         run: pnpm install
 
       - name: Collect CI job timings
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require("node:fs");
@@ -1387,7 +1389,7 @@ jobs:
         run: cat ci-timing/summary.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload CI timing summary
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: ci-timing-summary
           path: ci-timing/*

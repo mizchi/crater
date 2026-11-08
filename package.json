@@ -26,7 +26,7 @@
     "test:component-vrt:baseline": "node --test benchmarks/tests/component-vrt-bench-baseline.test.mjs",
     "test:crater-cli:baseline": "node --test benchmarks/tests/crater-cli-bench-baseline.test.mjs",
     "test:bidi-e2e": "playwright test tests/bidi-e2e.test.ts",
-    "test:preact": "playwright test tests/preact-compat.test.ts",
+    "test:preact": "playwright test tests/preact-compat.test.ts tests/preact-package.test.ts",
     "test:playwright": "playwright test tests/playwright-adapter.test.ts tests/crater-playwright-adapter.test.ts tests/playwright-adapter-user-scenarios.test.ts tests/playwright-adapter-chromium-parity.test.ts",
     "test:vrt": "playwright test tests/paint-vrt.test.ts",
     "gen:paint-vrt-reference": "PAINT_VRT_REFRESH_REFERENCE_FIXTURES=1 playwright test tests/paint-vrt.test.ts",
@@ -46,22 +46,25 @@
   },
   "dependencies": {
     "pngjs": "^7.0.0",
-    "puppeteer": "^24.40.0"
+    "puppeteer": "^25.16.0"
   },
   "devDependencies": {
-    "@bytecodealliance/jco": "^1.17.6",
-    "@mizchi/flaker": "0.12.6",
-    "@playwright/test": "^1.59.1",
-    "@types/ws": "^8.18.1",
+    "@bytecodealliance/jco": "^1.41.0",
+    "@mizchi/flaker": "0.15.0",
+    "@playwright/test": "^1.65.0",
+    "@types/ws": "^8.18.2",
     "opentype.js": "^2.0.0",
-    "pixelmatch": "^7.1.0",
-    "playwright": "^1.59.1",
-    "preact": "^10.29.1",
-    "tsx": "^4.21.0",
-    "typescript": "^6.0.3",
-    "vitest": "^4.1.4",
+    "pixelmatch": "^8.0.0",
+    "playwright": "^1.65.0",
+    "preact": "^11.2.0",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0",
     "webidl2": "^24.5.0",
-    "ws": "^8.20.0"
+    "ws": "^8.22.2"
   },
-  "packageManager": "pnpm@10.25.0+sha512.5e82639027af37cf832061bcc6d639c219634488e0f2baebe785028a793de7b525ffcd3f7ff574f5e9860654e098fe852ba8ac5dd5cefe1767d23a020a92f501"
+  "packageManager": "pnpm@10.34.9+sha512.f49b5a8ea0fdedb44bb3c0c1d6575092a53c2950d95b7ad15df11f17974877a2de3a01c07e934e9b28ce716e51c09a94962c7306d09be2e1e4b18a8c8762fd32",
+  "engines": {
+    "node": "^24.22.1 || >=26.12.1"
+  }
 }

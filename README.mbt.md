@@ -13,7 +13,7 @@ A headless browser environment for [MoonBit](https://www.moonbitlang.com/), driv
 
 ## Quick start
 
-Use MoonBit **0.10.20** (stable toolchain dated 2026-11-05), Node.js 24+
+Use MoonBit **0.10.20** (stable toolchain dated 2026-11-05), Node.js 24.22.2+
 and pnpm. The workspace uses `mizchi/css@0.8.0` and `mizchi/image@0.5.0`.
 
 ```bash

@@ -11,7 +11,7 @@ inputs:
   just-version:
     description: just version
     required: false
-    default: "1.50.0"
+    default: "1.59.0"
   moonbit-version:
     description: >-
       MoonBit toolchain version. Defaults to "latest"; pin to a specific
@@ -26,7 +26,7 @@ inputs:
   wasm-tools-version:
     description: wasm-tools release version (without leading v)
     required: false
-    default: "1.219.1"
+    default: "1.263.0"
   deno:
     description: Install Deno (true/false)
     required: false
@@ -98,12 +98,12 @@ runs:
         wasm-tools --version
 
     - name: Set up Node.js
-      uses: actions/setup-node@v6
+      uses: actions/setup-node@v7
       with:
         node-version: ${{ inputs.node-version }}
 
     - name: Install pnpm
-      uses: pnpm/action-setup@v5
+      uses: pnpm/action-setup@v6
 
     - name: Install Node dependencies
       if: inputs.pnpm-install == 'true'
@@ -118,6 +118,6 @@ runs:
 
     - name: Install uv
       if: inputs.uv == 'true'
-      uses: astral-sh/setup-uv@v5
+      uses: astral-sh/setup-uv@v10
       with:
         version: latest

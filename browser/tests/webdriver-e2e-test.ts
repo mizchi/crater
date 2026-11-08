@@ -15,6 +15,9 @@
  */
 
 import { spawn, ChildProcess } from 'child_process';
+import { createServer } from 'node:http';
+import { once } from 'node:events';
+import assert from 'node:assert/strict';
 import WebDriver from 'webdriver';
 
 const PORT = 4444;
@@ -67,8 +70,20 @@ async function runTest(): Promise<void> {
 
   let server: ChildProcess | null = null;
   let client: WebdriverIO.Browser | null = null;
+  const fixtureServer = createServer((req, res) => {
+    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+    res.end(req.url === '/info'
+      ? '<title>Fixture Information</title><a href="/">Return</a>'
+      : `<title>Example Domain</title><a href="http://${req.headers.host}/info">Learn more</a>`);
+  });
 
   try {
+    fixtureServer.listen(0, '127.0.0.1');
+    await once(fixtureServer, 'listening');
+    const address = fixtureServer.address();
+    if (!address || typeof address === 'string') throw new Error('HTTP fixture did not start');
+    const fixtureUrl = `http://127.0.0.1:${address.port}/`;
+
     // Start the server
     console.log('1. Starting WebDriver server...');
     server = await startServer();
@@ -86,19 +101,19 @@ async function runTest(): Promise<void> {
     });
     console.log('   ✓ Session created:', client.sessionId, '\n');
 
-    // Navigate to example.com (real HTTP fetch)
-    console.log('3. Navigating to https://example.com (real fetch)...');
-    await client.navigateTo('https://example.com');
+    // Navigate to a controlled page through a real HTTP fetch
+    console.log('3. Navigating to HTTP fixture...');
+    await client.navigateTo(fixtureUrl);
     console.log('   ✓ Navigation complete\n');
 
     // Get current URL
     console.log('4. Getting current URL...');
     const url = await client.getUrl();
     console.log('   URL:', url);
-    if (url === 'https://example.com') {
+    if (url === fixtureUrl) {
       console.log('   ✓ URL matches\n');
     } else {
-      throw new Error(`URL mismatch: expected https://example.com, got ${url}`);
+      throw new Error(`URL mismatch: expected ${fixtureUrl}, got ${url}`);
     }
 
     // Get page title (from real HTML)
@@ -125,10 +140,10 @@ async function runTest(): Promise<void> {
     if (text === 'Learn more') {
       console.log('   ✓ Text matches\n');
     } else {
-      console.log('   ⚠ Text mismatch\n');
+      throw new Error(`Link text mismatch: ${text}`);
     }
 
-    // Click the link (should navigate to IANA)
+    // Click the link to the second fixture page
     console.log('8. Clicking the link...');
     await client.elementClick(elementId);
     console.log('   ✓ Click complete\n');
@@ -137,22 +152,21 @@ async function runTest(): Promise<void> {
     console.log('9. Verifying navigation after click...');
     const newUrl = await client.getUrl();
     console.log('   New URL:', newUrl);
-    if (newUrl.includes('iana.org')) {
-      console.log('   ✓ Navigated to IANA\n');
-    } else {
-      console.log('   ⚠ Expected IANA URL, got:', newUrl, '\n');
-    }
+    assert.equal(newUrl, `${fixtureUrl}info`);
+    console.log('   ✓ Navigated to the second fixture\n');
 
     // Get new page title
     console.log('10. Getting new page title...');
     const newTitle = await client.getTitle();
     console.log('    Title:', newTitle);
+    assert.equal(newTitle, 'Fixture Information');
     console.log('    ✓ Title retrieved\n');
 
     // Find all links on new page
     console.log('11. Finding all links on page...');
     const links = await client.findElements('css selector', 'a');
     console.log('    Found', links.length, 'links');
+    assert.equal(links.length, 1);
     console.log('    ✓ Elements found\n');
 
     // Delete session
@@ -179,6 +193,9 @@ async function runTest(): Promise<void> {
       server.kill();
       console.log('\nServer stopped.');
     }
+    await new Promise<void>((resolve, reject) => {
+      fixtureServer.close((error) => error ? reject(error) : resolve());
+    });
   }
 }
 

@@ -60,8 +60,8 @@ describe("CI VRT parallelization", () => {
     const summaryJob = extractWorkflowJob(workflow, "flaker-daily-summary");
 
     for (const job of [batchPlanJob, summaryJob]) {
-      expect(job).toContain("uses: actions/setup-node@v6");
-      expect(job).toContain("uses: pnpm/action-setup@v5");
+      expect(job).toContain("uses: actions/setup-node@v7");
+      expect(job).toContain("uses: pnpm/action-setup@v6");
       expect(job).toContain("run: pnpm install");
     }
     expect(batchPlanJob.indexOf("run: pnpm install")).toBeLessThan(

@@ -197,8 +197,8 @@ task(
 task(
   id="preact-compat",
   node="browser",
-  cmd=["pnpm", "exec", "playwright", "test", "tests/preact-compat.test.ts"],
-  srcs=["browser/**", "webdriver/**", "dom/**", "js/**"],
+  cmd=["pnpm", "exec", "playwright", "test", "tests/preact-compat.test.ts", "tests/preact-package.test.ts"],
+  srcs=["browser/**", "webdriver/**", "dom/**", "js/**", "tests/preact-*.test.ts", "package.json", "pnpm-lock.yaml"],
   needs=["playwright-adapter"],
   trigger="auto",
 )
